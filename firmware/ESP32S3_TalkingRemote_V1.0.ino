@@ -1,30 +1,42 @@
 /*
-  IC-7300 / IC-706 Talking Remote Controller — ESP32-S3 + CI-V + Speech
-  Version: V9.1.1  (based on V8.3)
+  ESP32 Talking Remote Controller — ESP32-S3 + Keypad + Speech + Multi-Radio Profiles
+  File: ESP32S3_TalkingRemote_V1.0.ino
+  Version: V1.0  (stable core; ongoing development)
 
-  What this is
-  - Reads CI-V data from an Icom radio (IC-7300 / IC-706MkIIG) over UART.
-  - Speaks frequency/mode/S-meter and menu prompts using pre-recorded voice clips (voice_data.h).
-  - Uses a 4x4 matrix keypad with 3 banks for commands (short/long '*' to speak/switch banks).
-  - Query keys (e.g. 0/4/7/8/9 in Bank 1) are spoken immediately on short press.
-  - “Staged execute” is used for actions that change radio settings (safety): confirm with ENTER.
+  Purpose
+  - Accessible “talking” remote controller for amateur radio transceivers.
+  - Provides spoken prompts and spoken radio status (frequency, mode, S-meter, SWR, power, etc.).
+  - Supports multiple radio profiles and multiple physical interfaces (CI-V, TTL-CAT, RS-232).
 
-  Hardware notes
-  - CI-V UART uses dedicated GPIOs (see config below).
-  - I2S audio output uses its own pins (see I2S section in code; avoid reusing those GPIOs).
-  - Keypad is a classic 4x4 matrix (8 wires: 4 rows + 4 columns).
+  High-level architecture (summary)
+  1) Keypad / UI
+     - 4x4 matrix keypad with banks and short/long press semantics.
+     - Input can be “immediate query” (short press) or “staged entry” (long press + ENTER).
+  2) Radio I/O
+     - CI-V (Icom) over UART (shared/open-collector wiring as configured).
+     - Optional RS-232 via MAX3232.
+     - Optional TTL-CAT (e.g., Xiegu) via UART.
+     - Incoming frames update the current “radio state” (latest freq/mode/etc.).
+  3) Speech / Audio
+     - Pre-recorded voice tokens compiled into flash via voice_data.h.
+     - Audio plays from a dedicated FreeRTOS task (queue-based).
+     - Any NEW key press aborts current speech immediately (and clears queued speech).
 
-  Two keypad types supported (compile-time)
-  - Folien-Tastatur (film/membrane): standard 4x4 mapping.
-  - Tasten-Tastatur (button keypad): rotated mapping (derived from your kcode measurements).
+  Files
+  - This sketch: the complete firmware (configuration + profiles + UI + audio).
+  - voice_data.h: generated/embedded voice clips (digits, words, prompts, radio names).
 
-  Keypad volume control (Bank 1)
-  - Short press 'A' : volume DOWN
-  - Long press  'A' : volume UP
+  Configuration
+  - Edit the parameters in the “USER CONFIG” section (pins, baud rates, feature flags).
+  - Select/extend radio profiles in the profiles section (CI-V/RS232/TTL-CAT mapping).
+  - Add new voice tokens by updating voice_data.h (and matching filenames/tokens).
 
-  -----
-  Edit the parameters in the “USER CONFIG” section below.
+  Notes for maintainers
+  - Keep “project-wide” explanations in this header.
+  - Keep “section-local” comments next to the code that implements that section.
+
 */
+
 
 #include <Arduino.h>
 #include <Preferences.h>
@@ -49,8 +61,6 @@ static const int CIV_TX_PIN = 17;        // adjust to your wiring
 // Optional RS232 UART (MAX3232 / CT-17) for profile 3 testing
 static const int RS232_RX_PIN = 9;       // adjust to your wiring
 static const int RS232_TX_PIN = 10;      // adjust to your wiring
-
-
 
 
 // TTL-CAT UART for Xiegu G106 (3.3V TTL, 19200 8N1, non-inverted)
@@ -114,7 +124,6 @@ static constexpr CivProfile PROFILE_706_RS232 = { 0x58, "IC-706MkIIG RS232", CIV
 // Profile 4: Xiegu G106 via TTL-CAT (TRS jack, Tip=TXD, Ring=RXD, GND=Sleeve)
 // CI-V-like framing: FE FE 76 E0 ... FD  (radio addr = 0x76, controller addr = 0xE0)
 static constexpr CivProfile PROFILE_G106_CAT = { 0x76, "Xiegu G106", CAT_BAUD, 2, CAT_RX_PIN, CAT_TX_PIN, CAT_TX_INVERT, CAT_RX_INVERT };
-
 
 
 static constexpr CivProfile getProfile(IcomModel m) {
@@ -183,43 +192,7 @@ static void speakCurrentProfile();
 // Controller (ESP32) CI-V address (typical for controllers/PC)
 static constexpr uint8_t CIV_MY_ADDR = 0xE0;
 
-/*
-  IC7300_CIV_ESP32S3_Reader_V7
-  ============================
-  What this sketch does:
-  - Reads live CI-V traffic from the Icom IC-7300 (UART) and keeps the latest frequency/mode in RAM.
-  - Can actively query the radio for Frequency and Mode (commands: FREQ? and MODE?).
-  - Polls the S-meter periodically (command: SM?) and can speak S-level changes.
-  - Plays pre-recorded voice clips from voice_data.h via I2S DAC/amp.
-
-  New in V7:
-  - Adds support for a simple 4x4 matrix keypad (8 GPIO pins).
-  - Key presses are translated into the same text commands you can type in the Serial Monitor.
-    This means you can use BOTH at the same time:
-      * Serial Monitor for typed commands and debug output
-      * Keypad for quick "one-tap" commands (e.g. key '0' -> FREQ?)
-
-  Hardware notes:
-  - The common 4x4 membrane keypad shown in your photo is a passive switch matrix (no 5V needed).
-    It works directly on ESP32 GPIOs with internal pullups.
-  - Connect the 8-pin ribbon to 8 GPIOs (4 rows + 4 columns). Update the pin list below to match your wiring.
-  - Keep keypad GPIOs away from pins already used for CI-V (17/18) and I2S audio (5/6/7).
-
-  Commands (Serial Monitor):
-  - HELP, FREQ?, MODE?, SM?, LFREQ, QUIET ON/OFF, SPEECH ON/OFF, TEST, SAY <text>
-
-  Keypad default mapping (editable below):
-  - '0' => FREQ?
-  - '1' => MODE?
-  - '2' => SM?
-  - '3' => HELP
-  - 'A' => toggle SPEECH
-  - 'B' => toggle QUIET
-  - 'C' => TEST
-  - 'D' => LFREQ
-  - '*' => SAY 7.300  (example)
-  - '#' => SAY CQ     (example)
-*/
+// [Legacy note] Older V7 reader documentation was consolidated into the header at the top of this file.
 
 
 // ============================================================
@@ -506,8 +479,6 @@ g_audioPlaying = false;
 }
 
 
-
-
 // ============================================================
 // Forward declarations (avoid Arduino auto-prototype pitfalls)
 // ============================================================
@@ -575,8 +546,6 @@ static HardwareSerial* g_civSerial = &civUart1;
 #define CIVSER (*g_civSerial)
 bool g_quiet = false;
 bool g_speechEnabled = true;
-
-
 
 
 // VFO / tuning speech enable (toggleable)
@@ -809,7 +778,6 @@ void playSilenceMs(int ms) {
   if (ms <= 0) return;
   (void)audioEnqueueSilence((uint16_t)ms);
 }
-
 
 
 void playDigit(int d) {
@@ -1057,7 +1025,6 @@ static float swrRawToValue(int32_t raw) {
   if (raw <= 120) return 2.0f + ((raw - 80) / 40.0f) * 1.0f;          // 2.0..3.0
   return 3.0f + ((raw - 120) / 135.0f) * 3.0f;                        // rough tail
 }
-
 
 
 // ============================================================
@@ -1401,7 +1368,6 @@ applyProfile(g_profileId);
   Serial.println(g_civRadioAddr, HEX);
 
 
-
 // Schedule boot confirmation voice (MAX/I2S may not be ready immediately)
 g_bootSpeakPending = true;
 g_bootSpeakAtMs = millis() + 900;
@@ -1690,7 +1656,6 @@ static void keypadEnter() {
     g_freqEntryIsMHz = false;
     return;
   }
-
 
 
   // Apply staged MODE (Bank1: 9 HOLD, then digit 1..9, then Enter to apply)
@@ -2066,8 +2031,6 @@ void keypadEvent(KeypadEvent k) {
       return;
     }
   }
-
-
 
 
   // Bank 3: Toggle VFO/tuning frequency announcements (so turning the knob doesn't always talk)
