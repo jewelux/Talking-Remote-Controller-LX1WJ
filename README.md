@@ -1,8 +1,8 @@
-# ESP32 Talking Remote Controller (V1.0)
+# Talking Remote Controller (V1.0)
 
 ## Overview
 
-The **ESP32 Talking Remote Controller** is an accessibility-oriented remote control for amateur radio transceivers.  
+The **Talking Remote Controller** is an accessibility-oriented remote control for amateur radio transceivers.  
 All interaction and radio status feedback is provided through spoken audio output, enabling operation without visual reference.
 
 Version **1.0** defines a stable control and speech architecture.  
@@ -45,7 +45,7 @@ Additional spoken information will be added as the project evolves.
   - RS-232
   - TTL-CAT (profile dependent)
 
-Wiring and tested hardware configurations are documented in the `hardware` directory.
+Wiring and tested hardware configurations are documented in the futur `hardware` directory.
 
 ---
 
@@ -95,7 +95,7 @@ Each transceiver is defined by a profile specifying:
 - Interface type
 - Spoken labels
 
-Profiles are documented in the `profiles` directory.
+Profiles are documented in the futur `profiles` directory.
 
 ### Currently implemented
 
