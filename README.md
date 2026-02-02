@@ -10,6 +10,16 @@ The project remains actively developed, extended, and documented.
 
 ---
 
+## ⚠️ Disclaimer / Safety Notice
+This project is provided **for experimental and educational use only**, **AS IS**, without any warranty.
+
+- The device is **not a certified measuring instrument**.
+- Measurements may be inaccurate and can lead to **equipment damage** or **unsafe RF operation** if relied upon.
+- You are responsible for correct wiring, safe RF practices, and compliance with local regulations.
+- Always verify results with trusted instruments (e.g. wattmeter/dummy load) before relying on them.
+
+---
+
 ## Core Characteristics
 
 - ESP32-S3 based controller
