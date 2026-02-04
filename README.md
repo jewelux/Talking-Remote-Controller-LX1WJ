@@ -110,7 +110,8 @@ Profiles are documented in the futur `profiles` directory.
 ### Currently implemented
 
 - **ICOM IC-7300** (CI-V)
-- **ICOM IC-706MKIIG** (CI-V and RS-232)
+- **ICOM IC-706MKIIG** (CI-V)
+- **ICOM IC-706MKIIG** (ct-17, RS232-Max3232 module)
 - **Xiegu G106**
 
 Additional radio profiles will be added as the project evolves.
