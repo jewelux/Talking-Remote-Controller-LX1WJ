@@ -4,6 +4,8 @@
 
 The **Talking Remote Controller** is an accessibility-oriented remote control for amateur radio transceivers.  
 All interaction and radio status feedback is provided through spoken audio output, enabling operation without visual reference.
+It is inspired by earlier projects like Hampod and Digimatel 2000.
+
 
 Version **1.0** defines a stable control and speech architecture.  
 The project remains actively developed, extended, and documented.
