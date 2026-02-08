@@ -49,8 +49,8 @@ If the keypad operates reliably on your breadboard setup, this configuration is 
 | LRC / WS | GPIO 6 |
 | DIN | GPIO 7 |
 | GND | GND |
-| VIN | 5V or 3.3V (module dependent) |
-| SD / EN | Not connected or tied HIGH |
+| VIN | board supply (often 3.3–5V depending on breakout; check your module) |
+| SD / EN | SD/EN optional HIGH / open |
 
 ---
 
