@@ -1,4 +1,4 @@
-# Talking Remote Controller LX1WJ
+# Talking Remote Controller LX1WJ for Ham Radio Transceivers
 
 ## Overview
 
