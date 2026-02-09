@@ -1,4 +1,4 @@
-# Talking Remote Controller (V1.0)
+# Talking Remote Controller LX1WJ
 
 ## Overview
 
