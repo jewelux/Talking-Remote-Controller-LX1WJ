@@ -11,7 +11,7 @@ All pin assignments listed below are taken directly from the firmware.
 
 ### Pin Assignment
 - Rows: `KP_ROW_PINS = {4, 8, 15, 16}`
-- Columns: `KP_COL_PINS = {1, 2, 3, 21}`
+- Columns: `KP_COL_PINS = {1, 2, 13, 21}`
 
 ### Wiring
 
@@ -23,11 +23,11 @@ All pin assignments listed below are taken directly from the firmware.
 | ROW4 | GPIO 16 |
 | COL1 | GPIO 1 |
 | COL2 | GPIO 2 |
-| COL3 | GPIO 3 |
+| COL3 | GPIO 13 |
 | COL4 | GPIO 21 |
 
 **Note:**  
-GPIOs 1, 2, and 3 are considered “special” on some ESP32-S3 boards (USB/UART/boot related).  
+GPIOs 1 and 2 are considered “special” on some ESP32-S3 boards (USB/UART/boot related).  
 If the keypad operates reliably on your breadboard setup, this configuration is acceptable.
 
 ---
