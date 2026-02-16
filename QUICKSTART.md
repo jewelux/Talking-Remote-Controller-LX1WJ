@@ -1,4 +1,4 @@
-# Talking Remote Controller – User Guide (V1.0)
+# Talking Remote Controller LX1WJ - QuickStart (V1.0)
 
 ## Purpose
 
