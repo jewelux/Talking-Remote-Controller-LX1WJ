@@ -23,7 +23,7 @@ This project is provided **for experimental and educational use only**, **AS IS*
 ---
 
 ## Related and Historical Projects
-This project continues the tradition of accessible amateur radio interfaces with audio feedback, following in the footsteps of pioneering systems like **[Hampod](http://hampod.com)** and Digimatel 2000. These early projects enabled blind and visually impaired operators to control transceivers via keyboard input with spoken status updates. They are no longer actively developed. The *Talking Remote Controller* builds on these concepts with updated hardware (ESP32-S3), modular radio profiles, and a reusable voice architecture.
+This project continues the tradition of accessible amateur radio interfaces with audio feedback, following in the footsteps of pioneering systems like **[Hampod](http://hampod.com)** and Digimatel 2000. These early projects enabled blind and visually impaired operators to control transceivers via keyboard input with spoken status updates. The *Talking Remote Controller* builds on these concepts with updated hardware (ESP32-S3), modular radio profiles, and a reusable voice architecture.
 
 ---
 
