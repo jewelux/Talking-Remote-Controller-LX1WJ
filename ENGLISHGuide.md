@@ -15,7 +15,7 @@ Assumed labeling:
 
    7  8  9  C
 
- *  0  #  D
+ "*"  0  #  D
 
 
 
