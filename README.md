@@ -18,6 +18,8 @@ This project is provided **for experimental and educational use only**, **AS IS*
 - The device is **not a certified instrument**.
 - You are responsible for correct wiring, safe RF practices, and compliance with local regulations.
 
+**Use at your own risk.**
+
 ---
 
 ## Related and Historical Projects
