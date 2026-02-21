@@ -101,6 +101,8 @@ Original WAV sources and documentation are located in the `voice` directory.
 
 This interaction model is consistent across all banks and radio profiles.
 
+*[English User Guide →](englishguide.md)*
+Step-by-step instructions, keypad layout, and voice feedback examples.
 ---
 
 ## Radio Profiles
