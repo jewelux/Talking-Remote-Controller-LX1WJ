@@ -25,7 +25,7 @@ Assumed labeling:
 
 ### \* (STAR)
 - **Short press:** Speaks the current bank number.
-- **Long press (HOLD):** Switches to next bank (Bank 1 → 2 → 3 → 1) and speaks it.
+- **Long press:** Switches to next bank (Bank 1 → 2 → 3 → 1) and speaks it.
 
 ### D (delta-ENTER)
 - Applies staged actions (e.g., staged volume, staged mode).
@@ -40,7 +40,7 @@ Assumed labeling:
 
 ## Banks (Layers)
 
-The controller uses **3 banks (layers)**. Use **\* (star-HOLD)** to cycle banks.
+The controller uses **3 banks (layers)**. Use **\* (star-long press)** to cycle banks.
 
 ---
 
@@ -52,7 +52,7 @@ The controller uses **3 banks (layers)**. Use **\* (star-HOLD)** to cycle banks.
 - Queries frequency from the radio (`FREQ?`).
 - If speech is enabled: speaks **"frequency"** and then the frequency.
 
-#### 0 (HOLD) – Frequency Entry
+#### 0 (Long press) – Frequency Entry
 - Starts frequency entry in **kHz**.
 - **Example:** Type `14070` and press **D** → sets **14.070 MHz**.
 - During entry: each digit is spoken for confirmation.
@@ -70,9 +70,9 @@ The controller uses **3 banks (layers)**. Use **\* (star-HOLD)** to cycle banks.
 #### 9 (Short Press)
 - Queries mode once (`MODE?`).
 
-#### 9 (HOLD) – "Mode Set Flow"
+#### 9 (long press) – "Mode Set Flow"
 - Starts mode selection.
-- After holding **9**, press a digit **1..9** to stage a mode, then press **D (ENTER)** to apply.
+- After long press **9**, press a digit **1..9** to stage a mode, then press **D (ENTER)** to apply.
 - **Mapping (digit → mode):**
   - `1` = LSB
   - `2` = USB
@@ -87,7 +87,7 @@ The controller uses **3 banks (layers)**. Use **\* (star-HOLD)** to cycle banks.
 
 #### A (Volume, Direct)
 - **Short press:** Volume down (level -1).
-- **HOLD:** Volume up (level +1).
+- **Long press:** Volume up (level +1).
 - **Levels:** 0 (very low) to 3 (loud).
 
 ---
@@ -101,7 +101,7 @@ Currently **reserved** in this firmware (no default actions).
 
 #### A
 - **Short press:** Speaks current profile.
-- **HOLD:** Profile select mode:
+- **long press:** Profile select mode:
   - Press:
     - `1` = IC-7300 (CI-V)
     - `2` = Icom 706 (CI-V)
@@ -111,7 +111,7 @@ Currently **reserved** in this firmware (no default actions).
 
 #### B
 - **Short press:** Toggles **"tuning frequency announcements"** ON/OFF (so the radio/VFO changes do not always talk).
-- **HOLD:** Speaks current state (frequency announcements ON/OFF).
+- **long press** Speaks current state (frequency announcements ON/OFF).
 
 #### Volume Staging (Then ENTER to Apply)
 - `0` → Stage volume level **0** (very low).
