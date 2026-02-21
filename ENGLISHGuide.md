@@ -15,7 +15,7 @@ Assumed labeling:
 
    7  8  9  C
 
- "*"  0  #  D
+ \*  0  \#  D   (star, zero, hash, delta)
 
 
 
@@ -23,15 +23,15 @@ Assumed labeling:
 
 ## Global Keys (Work in All Banks)
 
-### * (STAR)
+### \* (STAR)
 - **Short press:** Speaks the current bank number.
 - **Long press (HOLD):** Switches to next bank (Bank 1 → 2 → 3 → 1) and speaks it.
 
-### D (ENTER)
+### D (delta-ENTER)
 - Applies staged actions (e.g., staged volume, staged mode).
 - Confirms frequency entry (see below).
 
-### # (CLEAR / CANCEL)
+### \# (hash-CLEAR / CANCEL)
 - Cancels any active "modal" flow (frequency entry, mode set flow, profile select).
 - Clears any staged command.
 - Speaks **"OK"**.
