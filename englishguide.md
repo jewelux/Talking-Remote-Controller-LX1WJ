@@ -40,7 +40,7 @@ Assumed labeling:
 
 ## Banks (Layers)
 
-The controller uses **3 banks (layers)**. Use **\* (HOLD)** to cycle banks.
+The controller uses **3 banks (layers)**. Use **\* (hash-HOLD)** to cycle banks.
 
 ---
 
