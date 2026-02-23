@@ -12,6 +12,16 @@ The project remains actively developed, extended, and documented.
 
 ---
 
+## 🤝 Project Philosophy & Status
+**This project is not for commercial sale.**
+Its purpose is to **empower the amateur radio community** to **build and donate** accessible controllers for blind or visually impaired operators under the **open-source model**:
+
+- **Current Stage**: **Proof of concept** – Testing compatibility with multiple radio brands.
+- **Goal**: Provide a **modular, adaptable hardware/software platform** that anyone can build, modify, and share.
+- **Future**: The design will evolve (new profiles, voice tokens, hardware improvements).
+
+---
+
 ## ⚠️ Disclaimer / Safety Notice
 This project is provided **for experimental and educational use only**, **AS IS**, without any warranty.
 
