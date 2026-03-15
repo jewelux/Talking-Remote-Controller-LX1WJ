@@ -57,6 +57,8 @@ If the keypad operates reliably on your breadboard setup, this configuration is 
 | MISO	| GPIO13 |
 | MOSI	| GPIO11 |
 | CS	| GPIO10 |
+| GND | GND |
+| VIN | board supply (3.3V; check your module) |
 
 ---
 
