@@ -36,11 +36,6 @@ If the keypad operates reliably on your breadboard setup, this configuration is 
 
 ### Pin Assignment (from firmware)
 
-- `I2S_BCLK_PIN = 5`
-- `I2S_LRCLK_PIN = 6`
-- `I2S_DOUT_PIN = 7`
-- `AMP_SD_PIN = -1` (no amplifier shutdown control used)
-
 ### Wiring (MAX98357A)
 
 | I2S Module Pin | ESP32-S3 GPIO |
@@ -51,6 +46,17 @@ If the keypad operates reliably on your breadboard setup, this configuration is 
 | GND | GND |
 | VIN | board supply (often 3.3–5V depending on breakout; check your module) |
 | SD / EN | SD/EN optional HIGH / open |
+
+---
+
+### SD-Module ### 
+
+| SD-Signal	| ESP32-S3 GPIO |
+|-----------|---------------|
+| SCK | GPIO12 |
+| MISO	| GPIO13 |
+| MOSI	| GPIO11 |
+| CS	| GPIO10 |
 
 ---
 
