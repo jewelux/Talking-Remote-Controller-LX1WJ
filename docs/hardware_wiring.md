@@ -93,12 +93,14 @@ Direct TTL connection is not recommended without proper level protection.
 
 ### Wiring
 
-- ESP32 TX (GPIO 10) → MAX3232 **T1IN**
-- ESP32 RX (GPIO 9) ← MAX3232 **R1OUT**
-- MAX3232 RS-232 side:
-  - **T1OUT / R1IN** → DB9 connector or radio RS-232 port
 - GND ↔ GND
 - VCC → **5 V**
+- ESP32 side:
+  - ESP32 TX (GPIO 10) → Module MAX3232 TXD (input from ESP)
+  - ESP32 RX (GPIO 9) ← Module MAX3232 RXD (output to ESP)
+- MAX3232 RS-232 side:
+  - DB9 connector to radio RS-232 port
+
 
 ---
 
