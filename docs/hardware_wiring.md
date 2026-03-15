@@ -54,10 +54,10 @@ If the keypad operates reliably on your breadboard setup, this configuration is 
 | SD-Signal	| ESP32-S3 GPIO |
 |-----------|---------------|
 | GND | GND |
-| MISO	| GPIO13 |
-| SCK | GPIO12 |
-| MOSI	| GPIO11 |
-| CS	| GPIO10 |
+| MISO	| GPIO37 |
+| SCK | GPIO36 |
+| MOSI	| GPIO35 |
+| CS	| GPIO14 |
 | VIN | board supply (3.3V; check your module) |
 
 ---
