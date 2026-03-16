@@ -62,45 +62,69 @@ If the keypad operates reliably on your breadboard setup, this configuration is 
 
 ---
 
-## 3. ESP32-S3 ↔ ICOM CI-V Interface (TTL-UART)
+## 3. ESP32-S3 ↔ ICOM CI-V Interface
 
-### Pin Assignment (from firmware)
+### Firmware Pin Assignment ###
 
-- `CIV_TX_PIN = 17`
-- `CIV_RX_PIN = 18`
-- Baud rate: **9600**
+CIV_TX_PIN = GPIO17
 
-### Wiring
+CIV_RX_PIN = GPIO16
 
-- ESP32 TX (GPIO 17) → CI-V Data  
-  *(via open-collector transistor stage)*
-- ESP32 RX (GPIO 18) ← CI-V Data  
-  *(via resistor divider and 3.3 V Zener diode)*
-- GND ↔ GND
+Baud rate  = 9600
 
-**Note:**  
-CI-V is a single-wire, open-collector bus.  
-Direct TTL connection is not recommended without proper level protection.
+### CI-V Interface Wiring ###
 
----
+The ICOM CI-V interface uses a single-wire open-collector bus.
+A transistor stage is used to safely interface the ESP32-S3 to the CI-V line.
 
-## 4. ESP32-S3 ↔ RS-232 Interface (via MAX3232)
+### Transmit stage (open collector driver) ###
 
-### Pin Assignment (from firmware)
+GPIO17 -> 4.7kΩ -> BC548 Base
 
-- `RS232_TX_PIN = 10`
-- `RS232_RX_PIN = 9`
+BC548 Emitter -> GND
 
-### Wiring
+BC548 Collector -> CI-V line (3.5 mm jack TIP)
 
-- GND ↔ GND
-- VCC → **5 V**
-- ESP32 side:
-  - ESP32 TX (GPIO 10) → Module MAX3232 TXD (input from ESP)
-  - ESP32 RX (GPIO 9) ← Module MAX3232 RXD (output to ESP)
-- MAX3232 RS-232 side:
-  - DB9 connector to radio RS-232 port
+Description:
+- GPIO17 drives the base of an NPN transistor (BC548) through a 4.7 kΩ resistor
+- The transistor acts as an open collector driver
+- The collector connects to the CI-V data line (3.5 mm jack TIP)
+- The emitter is connected to GND
 
+### Receive stage (level protection) ###
+
+CI-V line (TIP) -> 1kΩ -> GPIO16
+
+GPIO16 -> 3.3 V Zener diode -> GND
+
+Description:
+- The CI-V line is connected to GPIO16 through a 1 kΩ resistor
+- A 3.3 V Zener diode to ground protects the ESP32 input from higher bus voltages
+- This allows safe reception of CI-V signals
+
+### Ground connection ###
+
+ESP32 GND <-> CI-V Sleeve
+
+### Important Note ###
+
+CI-V is a shared open-collector bus.
+Directly connecting the CI-V line to an ESP32 GPIO pin without protection is not recommended.
+The transistor driver and input protection network ensure reliable and safe operation.
+
+### Compact wiring summary ###
+
+GPIO17 -> 4k7 -> BC548 Base
+
+BC548 Emitter -> GND
+
+BC548 Collector -> CI-V Tip
+
+CI-V Tip -> 1k -> GPIO16
+
+GPIO16 -> 3.3V Zener -> GND
+
+CI-V Sleeve -> GND
 
 ---
 
