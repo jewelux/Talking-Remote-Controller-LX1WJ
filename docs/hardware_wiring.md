@@ -114,8 +114,8 @@ Direct TTL connection is not recommended without proper level protection.
 
 ### Wiring
 
-- ESP32 TX (GPIO 11) → **1 kΩ resistor** → G106 RX
-- ESP32 RX (GPIO 12) ← **1 kΩ resistor** ← G106 TX
+- ESP32 TX (GPIO 11) → **1 kΩ resistor** → G106 RX (tip)
+- ESP32 RX (GPIO 12) ← **1 kΩ resistor** ← G106 TX (ring)
 - GND ↔ GND
 
 **Note:**  
