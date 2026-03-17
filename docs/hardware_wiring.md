@@ -1,4 +1,4 @@
-# Hardware Wiring Reference (ESP32 Talking Remote Controller – V1.0)
+# Hardware Wiring Reference (ESP32 Talking Remote Controller – V1 - V3)
 
 This document describes the hardware wiring based on  
 `ESP32S3_TalkingRemote_V1.0.ino`.
@@ -48,8 +48,9 @@ If the keypad operates reliably on your breadboard setup, this configuration is 
 | SD / EN | SD/EN optional HIGH / open |
 
 ---
+## 3. ESP32-S3 ↔ SD-card-module
 
-### SD-Module ### 
+### Pin Assignment (from firmware)
 
 | SD-Signal	| ESP32-S3 GPIO |
 |-----------|---------------|
@@ -62,7 +63,7 @@ If the keypad operates reliably on your breadboard setup, this configuration is 
 
 ---
 
-## 3. ESP32-S3 ↔ ICOM CI-V Interface
+## 4. ESP32-S3 ↔ ICOM CI-V Interface
 
 ### Firmware Pin Assignment ###
 
@@ -72,7 +73,7 @@ CIV_RX_PIN = GPIO18
 
 Baud rate  = 9600
 
-### CI-V Interface Wiring ###
+### 4. CI-V Interface Wiring ###
 
 The ICOM CI-V interface uses a single-wire open-collector bus.
 A transistor stage is used to safely interface the ESP32-S3 to the CI-V line.
@@ -128,7 +129,21 @@ CI-V Sleeve -> GND
 
 ---
 
-## 5. ESP32-S3 ↔ TTL-CAT Interface (Xiegu G106)
+## 5. ESP32-S3 ↔ RS232 Interface
+
+### Pin Assignment (from firmware)
+
+ESP32 TX GPIO10 -> TXD (T1N)  MAX3232 / T1OUT -> RX Radio
+
+ESP32 RX GPIO9  <- RXD (R1OUT) MAX3232 / R1IN  <- TX Radio
+
+ESP32 GND    <-> GND  MAX3232 / GND   <-> GND Radio
+
+ESP32 5V -> VCC   MAX3232
+
+---
+
+## 6. ESP32-S3 ↔ TTL-CAT Interface
 
 ### Pin Assignment (from firmware)
 
