@@ -68,7 +68,7 @@ If the keypad operates reliably on your breadboard setup, this configuration is 
 
 CIV_TX_PIN = GPIO17
 
-CIV_RX_PIN = GPIO16
+CIV_RX_PIN = GPIO18
 
 Baud rate  = 9600
 
@@ -93,12 +93,12 @@ Description:
 
 ### Receive stage (level protection) ###
 
-CI-V line (TIP) -> 1kΩ -> GPIO16
+CI-V line (TIP) -> 1kΩ -> GPIO18
 
-GPIO16 -> 3.3 V Zener diode -> GND
+GPIO18 -> 3.3 V Zener diode -> GND
 
 Description:
-- The CI-V line is connected to GPIO16 through a 1 kΩ resistor
+- The CI-V line is connected to GPIO18 through a 1 kΩ resistor
 - A 3.3 V Zener diode to ground protects the ESP32 input from higher bus voltages
 - This allows safe reception of CI-V signals
 
@@ -120,9 +120,9 @@ BC548 Emitter -> GND
 
 BC548 Collector -> CI-V Tip
 
-CI-V Tip -> 1k -> GPIO16
+CI-V Tip -> 1k -> GPIO18
 
-GPIO16 -> 3.3V Zener -> GND
+GPIO18 -> 3.3V Zener -> GND
 
 CI-V Sleeve -> GND
 
