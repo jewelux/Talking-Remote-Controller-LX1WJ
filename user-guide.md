@@ -1,6 +1,6 @@
 # Talking Remote Controller LX1WJ - User Guide (English)
 
-**Firmware:** `firmware/TalkingRemoteControllerLX1WJ_V3_5.ino`
+**Firmware:** `firmware/TalkingRemoteControllerLX1WJ_V3_5.ino`  
 **Board:** ESP32-S3 DevKitC-1 (N16R8)
 
 ---
@@ -15,81 +15,251 @@ Assumed labeling:
 
    7  8  9  C
 
-   *  0  #  D   (star, zero, hash, delta)
+   *  0  #  D
 
 ---
 
-## Global Keys
+## Global Operating Rules
 
-The exact action set is now profile-dependent, but the operating philosophy remains stable.
+- A new key press interrupts ongoing speech immediately.
+- `D` is the confirmation key for staged actions.
+- `#` cancels active entry or staging states and speaks `OK`.
+- `*` short press speaks the current bank number.
+- `*` long press starts bank selection.
 
-### * (STAR)
-- Bank-related navigation and spoken bank feedback.
+### Bank Selection
 
-### D (ENTER)
-- Applies staged actions.
-- Confirms frequency entry and similar modal operations.
+1. Hold `*`
+2. Enter the target bank number
+3. Press `D` to confirm
 
-### # (CANCEL)
-- Cancels active modal flows.
-- Clears staged commands where supported.
-
----
-
-## Banks (Layers)
-
-The controller uses bank-based interaction so multiple functions can be reached from a compact keypad.
-The exact assignment may vary by firmware revision and active radio profile.
+Example:
+Hold `*`, press `2`, press `D` -> switch to Bank 2.
 
 ---
 
-## Typical Functions Available In The Current Project
+## Bank 1 - Live Radio Queries and Direct Actions
 
-Depending on the selected profile, the controller can speak or control:
+### `1` short
 
-- current frequency
-- operating mode
-- output power
-- S-meter
-- SWR
-- active radio profile
-- tuning announcements
-- profile and slot related functions
+- Toggle automatic tuning-frequency announcements on or off.
+- The controller speaks `frequency on` or `frequency off`.
+
+### `0` short
+
+- Query the current frequency from the radio.
+- The controller speaks `frequency` and then the value when available.
+
+### `0` long
+
+- Start manual frequency entry.
+- Enter digits in **kHz**.
+- Press `D` to send the new frequency.
+- The controller then speaks the resulting frequency.
+
+Example:
+Hold `0`, enter `14070`, press `D` -> sets `14.070 MHz` and speaks the value.
+
+### `4` short
+
+- Query output power.
+- The controller speaks the power value when supported by the active profile.
+
+### `7` short
+
+- Query S-meter.
+- The controller speaks the S-meter result when supported.
+
+### `8` short
+
+- Query SWR.
+- The controller speaks the SWR result when supported.
+
+### `9` short
+
+- Query operating mode.
+- The controller speaks the detected mode.
+
+### `9` long
+
+- Start mode selection.
+- Press a digit from `1` to `9` to stage a mode.
+- Press `D` to apply the staged mode.
+- The controller speaks the selected mode.
+
+Current mode digit mapping:
+
+- `1` = LSB
+- `2` = USB
+- `3` = CW
+- `4` = AM
+- `5` = FM
+- `6` = DIGI
+- `7` = RTTY
+- `8` = CWR
+- `9` = RTTYR
+
+Example:
+Hold `9`, press `2`, press `D` -> set mode to `USB`.
+
+### `A` short
+
+- Decrease speech volume by one step.
+- The controller speaks the new volume level.
+
+### `A` long
+
+- Increase speech volume by one step.
+- The controller speaks the new volume level.
 
 ---
 
-## Frequency Entry
+## Bank 2 - Feature Queries and Profile-Specific Actions
 
-Frequency entry is still based on spoken digit confirmation and an explicit ENTER step.
-This keeps operation predictable for non-visual use.
+Bank 2 depends more strongly on the active radio profile.
+Some functions are only available if the selected profile reports support for them.
 
-General pattern:
+### `1` short
 
-1. Enter frequency input mode.
-2. Type digits.
-3. Confirm with **D / ENTER**.
-4. The new frequency is sent to the radio and spoken back when supported.
+- Query noise reduction state.
+- The controller speaks `noise reduction on` or `noise reduction off` when supported.
+
+### `1` long
+
+- Toggle noise reduction.
+- For radios such as the TS-480, the current implementation can cycle between multiple NR levels.
+
+### `2` short
+
+- Query noise blanker state.
+- The controller speaks `noise blanker on` or `noise blanker off` when supported.
+
+### `2` long
+
+- Toggle noise blanker.
+
+### `3` short
+
+- Query notch filter state.
+- The controller speaks the current notch status.
+
+### `3` long
+
+- Toggle notch behavior.
+- On CI-V based radios, repeated long presses can cycle through notch states such as narrow, mid, wide, and off.
+
+### Yaesu FT-8x7 specific actions
+
+The following keys are active only for supported Yaesu FT-8x7 style profiles:
+
+#### `4` short
+
+- Query Yaesu status.
+
+#### `4` long
+
+- Toggle VFO.
+
+#### `5` short
+
+- Select VFO A.
+
+#### `5` long
+
+- Select VFO B.
+
+#### `6` short
+
+- Turn clarifier on.
+
+#### `6` long
+
+- Turn clarifier off.
+
+#### `7` short
+
+- Turn split on.
+
+#### `7` long
+
+- Turn split off.
+
+#### `8` short
+
+- Turn PTT on.
+
+#### `8` long
+
+- Turn PTT off.
+
+#### `9` short
+
+- Query the full Yaesu status block.
 
 ---
 
-## Speech Behavior
+## Bank 3 - Profiles, Tuning Speech, and Staged Volume
 
-- Spoken feedback confirms user actions.
-- New key presses interrupt current speech immediately.
-- Voice output uses pre-recorded tokens stored in flash.
+### `A` short
+
+- Speak the currently active radio profile.
+
+### `A` long
+
+- Start profile selection.
+- Enter the profile number.
+- Press `D` to confirm.
+- The controller loads the profile and speaks its name.
+
+Example:
+Hold `A`, press `3`, press `D` -> load profile slot 3 and speak it.
+
+### `B` short
+
+- Toggle automatic tuning-frequency announcements on or off.
+- The controller speaks the new state.
+
+### `B` long
+
+- Speak the current tuning-frequency announcement state without changing it.
+
+### Staged volume keys
+
+- `0` -> stage volume level 0
+- `7` -> stage volume level 1
+- `8` -> stage volume level 2
+- `9` -> stage volume level 3
+
+After selecting one of these levels, press `D` to apply it.
+The controller speaks the selected volume level.
+
+Example:
+Press `8`, then `D` in Bank 3 -> set speech volume to level 2.
 
 ---
 
-## Profile-Driven Operation
+## Cancel and Confirmation Behavior
 
-Version 3.5 separates firmware logic from radio-specific profile data.
-That means the user experience stays familiar while the supported radios can grow without rewriting the full project from scratch.
+### `D`
 
-Profile data is loaded from the SD card.
+- Confirms bank selection
+- Confirms profile selection
+- Confirms frequency entry
+- Confirms staged mode change
+- Confirms staged volume selection
+
+### `#`
+
+- Cancels active frequency entry
+- Cancels staged mode changes
+- Cancels profile selection
+- Cancels bank selection
+- Clears staged commands and speaks `OK`
 
 ---
 
 ## Notes
 
-This guide will continue to grow with the project.
-The repository now represents the newer modular branch rather than the earlier single-sketch-only release.
+- Frequency entry currently uses kHz digits, not direct MHz text entry.
+- Exact support depends on the selected radio profile and implemented command set.
+- The support status per radio is tracked in `docs/radio-support-matrix.md`.
