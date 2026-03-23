@@ -1,104 +1,71 @@
-# Talking Remote Controller LX1WJ - QuickStart (V1.0)
+# Talking Remote Controller LX1WJ - QuickStart (V3.5)
 
 ## Purpose
 
 The ESP32 Talking Remote Controller provides spoken feedback for controlling and monitoring amateur radio transceivers.
-All interaction is performed via a 4×4 keypad and audio output, enabling operation without visual reference.
+All interaction is performed via a 4x4 keypad and audio output, enabling operation without visual reference.
+The project may also be referred to as **HamTRC-LX1WJ** as a shorter project name.
+
+Version 3.5 uses a modular firmware architecture plus SD card based radio profiles.
+
+---
+
+## What Changed From The Older Single-Sketch Version
+
+- The project is now split into multiple source files instead of one large sketch.
+- Radio definitions are loaded from profile files on the SD card.
+- The spoken token data still remains compiled into flash through `voice_data.h`.
+- The operating concept stays voice-first and keypad-driven.
+
+---
+
+## Basic Setup
+
+1. Open `firmware/TalkingRemoteControllerLX1WJ_V3_5.ino` in Arduino IDE.
+2. Compile for your ESP32-S3 target.
+3. Keep `voice_data.h` in the firmware folder so the speech data is compiled into flash.
+4. Copy the contents of `firmware/SDCard` to the SD card used by the controller.
+5. Insert the SD card before normal operation so profile and slot data can be loaded.
 
 ---
 
 ## Basic Operating Concept
 
-- Functions are organized in **banks**
-- Each key supports:
-  - **Short press** → immediate action or query
-  - **Long press** → mode change, configuration, or numeric input
-- Spoken output confirms all actions
-- Any new key press **immediately interrupts** the current spoken message
+- Functions are organized in banks.
+- Each key supports short press and long press behavior.
+- Spoken output confirms actions, states, and values.
+- Any new key press immediately interrupts the current spoken message.
+- Exact behavior depends on the loaded radio profile.
 
 ---
 
-## Keypad Reference (V1.0)
+## Keypad Model
 
-### Bank 1 – Radio Status and Control
+The overall keypad philosophy remains the same:
 
-| Key | Short Press | Long Press |
-|-----|------------|------------|
-| 0   | Speak current frequency | Enter frequency input mode |
-| 4   | Speak output power | — |
-| 7   | Speak S-meter | — |
-| 8   | Speak SWR | — |
-| 9   | Speak operating mode | Change operating mode |
-| D   | Confirm numeric input | - |
+- **Short press** -> immediate action or query
+- **Long press** -> mode change, configuration, or numeric input
+- **D / ENTER** -> confirm staged actions or frequency entry
+- **# / CANCEL** -> leave modal flows safely
+- *** / STAR** -> bank-related navigation functions
 
----
-
-### Bank 3 – System and Profile Functions
-
-| Key | Short Press | Long Press |
-|-----|------------|------------|
-| A   | Announce current radio profile |  Select radio profile|
-| B   | Toggle tuning frequency announcements | - |
-| *   | Announce current bank | Switch to next bank |
-
-*Exact functions may depend on the active radio profile.*
+Because Version 3.5 is profile-driven, the exact mapping can differ by radio family and firmware state.
 
 ---
 
-### Global Keys
+## SD Card Content
 
-| Key | Function |
-|-----|----------|
-| * (long) | Cycle through banks |
-| D (short) | Confirm numeric input |
+The `firmware/SDCard` folder currently contains:
 
----
+- `slots.ini` for slot assignment
+- profile `.ini` files for supported radios
 
-## Frequency Entry
-
-Frequency entry is performed in Bank 1:
-
-1. Activate frequency input mode (0 long)
-2. Enter digits using keys `0–9`
-3. Confirm with **ENTER**
-4. The new frequency is sent to the radio and spoken once for confirmation
-
----
-
-## System Behavior
-
-### Automatic Frequency Announcements During Tuning
-
-When enabled, frequency changes received from the radio (e.g. VFO tuning) are spoken automatically.
-This function can be toggled and is stored in non-volatile memory.
-
----
-
-### Speech Interruption
-
-Any new key press immediately stops the current spoken message.
-The new command is processed without delay.
-
----
-
-### Power-Up Behavior
-
-After power-up:
-- The last active radio profile is restored
-- The active profile is announced
-- Stored user preferences are reloaded
-
----
-
-## Supported Radios (V1.0)
-
-- ICOM IC-7300 (CI-V)
-- ICOM IC-706MKIIG (CI-V and RS-232)
-- Xiegu G106
+Examples include ICOM, Yaesu, Kenwood, Xiegu, and Elecraft related profiles.
 
 ---
 
 ## Notes
 
-Version 1.0 defines a stable operating model.
-Additional commands, voice tokens, and radio profiles will be added in future versions.
+This repository reflects the newer modular branch of the project.
+Documentation will continue to be expanded while keeping the original accessibility focus, licensing model, and safety disclaimer intact.
+For the current per-radio support state, see `docs/radio-support-matrix.md`.

@@ -1,0 +1,30 @@
+#include "ui_keypad_state.h"
+
+uint8_t g_bank = 1;
+bool g_bankSelectActive = false;
+uint8_t g_bankStage = 0;
+bool g_modeSetActive = false;
+bool g_modeStageActive = false;
+uint8_t g_modeStageMode = 0xFF;
+char g_modeStageKey = 0;
+bool g_profileSelectActive = false;
+uint8_t g_profileStage = 0;
+bool g_nineHoldConsumed = false;
+String g_kpStagedCmd;
+bool g_kpHasStagedCmd = false;
+bool g_starHoldConsumed = false;
+bool g_zeroHoldConsumed = false;
+bool g_aHoldConsumed = false;
+bool g_oneHoldConsumed = false;
+bool g_twoHoldConsumed = false;
+bool g_threeHoldConsumed = false;
+bool g_fourHoldConsumed = false;
+bool g_fiveHoldConsumed = false;
+bool g_sixHoldConsumed = false;
+bool g_sevenHoldConsumed = false;
+bool g_eightHoldConsumed = false;
+bool g_freqEntryActive = false;
+String g_freqEntryDigits;
+bool g_freqEntryIsMHz = false;
+bool g_volStageActive = false;
+uint8_t g_volStageLevel = 2;

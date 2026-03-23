@@ -2,27 +2,27 @@
 
 ## Overview
 
-The **Talking Remote Controller** is an accessibility-oriented remote control for amateur radio transceivers.  
+The **Talking Remote Controller** is an accessibility-oriented remote control for amateur radio transceivers.
+The project may also be referred to as **HamTRC-LX1WJ** as a shorter project name.
 All interaction and radio status feedback is provided through spoken audio output, enabling operation without visual reference.
 It is inspired by earlier projects like Hampod and Digimatel 2000.
 
-
-Version **1.0** defines a stable control and speech architecture.  
-The project remains actively developed, extended, and documented.
+Version **3.5** is the current modular architecture.
+It extends the earlier single-sketch concept into a profile-driven firmware platform with SD card based radio definitions while preserving the voice-guided operating concept.
 
 ---
 
-## 🤝 Project Philosophy & Status
+## Project Philosophy & Status
 **This project is not for commercial sale.**
 Its purpose is to **empower the amateur radio community** to **build and donate** accessible controllers for blind or visually impaired operators under the **open-source model**:
 
-- **Current Stage**: **Proof of concept** – Testing compatibility with multiple radio brands.
-- **Goal**: Provide a **modular, adaptable hardware/software platform** that anyone can build, modify, and share.
-- **Future**: The design will evolve (new profiles, voice tokens, hardware improvements).
+- **Current Stage**: proof-of-concept and field expansion across multiple radio families.
+- **Goal**: provide a **modular, adaptable hardware/software platform** that anyone can build, modify, and share.
+- **Future**: the design will continue to evolve with new profiles, voice tokens, and hardware refinements.
 
 ---
 
-## ⚠️ Disclaimer / Safety Notice
+## Disclaimer / Safety Notice
 This project is provided **for experimental and educational use only**, **AS IS**, without any warranty.
 
 - The device is **not a certified instrument**.
@@ -45,7 +45,9 @@ This project continues the tradition of accessible amateur radio interfaces with
 - Immediate speech interruption on new user input
 - Numeric entry with spoken confirmation
 - Non-volatile storage of user settings
-- Modular radio profile architecture
+- Modular radio protocol layer
+- SD card based profile and slot configuration
+- Flash-resident spoken token set via `voice_data.h`
 
 ---
 
@@ -57,6 +59,7 @@ This project continues the tradition of accessible amateur radio interfaces with
 - SWR
 - Output power
 - Active bank and radio profile
+- Profile-dependent control and query functions
 
 Additional spoken information will be added as the project evolves.
 
@@ -65,26 +68,34 @@ Additional spoken information will be added as the project evolves.
 ## Hardware Requirements
 
 - ESP32-S3 development board
-- 4×4 matrix keypad
+- 4x4 matrix keypad
 - Audio output (I2S DAC or external amplifier)
-- One or more radio interfaces:
+- MicroSD card support for profile files
+- One or more radio interfaces, depending on the active profile:
   - ICOM CI-V
   - RS-232
-  - TTL-CAT (profile dependent)
+  - TTL CAT
+  - ASCII style serial protocols
 
-Wiring and tested hardware configurations are documented in the futur `hardware` directory.
+The exact wiring and tested hardware notes continue to evolve in the documentation.
 
 ---
 
-## Firmware Layout
+## Repository Layout
 
+```text
 firmware/
+  TalkingRemoteControllerLX1WJ_V3_5.ino
+  *.cpp / *.h modular source files
+  voice_data.h
+  SDCard/*.ini radio profiles and slots
 
-         ├─ ESP32S3_TalkingRemote_V1.0.ino
-         
-         └─ voice_data.h
+docs/
+  supporting hardware and project documentation
+```
 
-The firmware is self-contained and uses the Arduino ESP32 core.
+The firmware is no longer a single self-contained sketch only. The main `.ino` now ties together a modular codebase for protocol handling, user interface logic, profile loading, and runtime state.
+Internal working notes are intentionally kept out of the public repository so the published project tree stays focused and readable.
 
 ---
 
@@ -98,8 +109,34 @@ Design principles:
 - Numeric values composed from digit tokens
 - Protocol-independent command vocabulary
 - Radio-specific name tokens
+- Immediate interruption when new user input arrives
 
-Original WAV sources and documentation are located in the `voice` directory.
+This keeps spoken interaction fast and predictable while avoiding dependence on online text-to-speech systems.
+
+---
+
+## SD Card Profile System
+
+Version 3.5 introduces profile-driven configuration from the SD card.
+
+Each radio profile can define:
+
+- Protocol family
+- Supported commands
+- Query and control mappings
+- Spoken labels
+- Slot assignments
+
+Current profile files in `firmware/SDCard` include definitions for radios such as:
+
+- ICOM IC-7300
+- ICOM IC-706
+- Xiegu G106
+- Kenwood TS-480
+- Yaesu FT-817 / FT-857 / FT-897 / FTDX series
+- Elecraft KX2
+
+Profile coverage is still evolving and not every profile necessarily exposes the same command set yet.
 
 ---
 
@@ -107,52 +144,49 @@ Original WAV sources and documentation are located in the `voice` directory.
 
 - **Short press**: query or immediate action
 - **Long press**: mode change, configuration, or numeric input
-- **ENTER**: confirms numeric input
+- **ENTER**: confirms numeric input or staged actions
+- **Cancel**: aborts modal flows without requiring visual feedback
 
-This interaction model is consistent across all banks and radio profiles.
+This interaction model remains consistent as the project grows.
 
-
-Please visit  [English User Guide →](englishguide.md)
-Step-by-step instructions, keypad layout, and voice feedback examples.
-
----
-
-## Radio Profiles
-
-Each transceiver is defined by a profile specifying:
-
-- Supported commands
-- Protocol mapping
-- Interface type
-- Spoken labels
-
-Profiles are documented in the futur `profiles` directory.
-
-### Currently implemented
-
-- **ICOM IC-7300** (CI-V)
-- **ICOM IC-706MKIIG** (CI-V)
-- **ICOM IC-706MKIIG** (ct-17, RS232-Max3232 module)
-- **Xiegu G106**
-
-Additional radio profiles will be added as the project evolves.
+Please visit [User Guide ->](user-guide.md)
+for keypad behavior and spoken feedback examples.
+The current per-radio support state is tracked in [docs/radio-support-matrix.md](docs/radio-support-matrix.md).
 
 ---
 
 ## Project Scope and Evolution
 
-Versions prior to **1.0** were integration and design iterations.  
-Version **1.0** establishes a stable foundation for further expansion.
+Versions prior to the current modular branch were integration and design iterations.
+The newer architecture separates protocol logic, runtime state, UI behavior, and profile data so the project can expand without rewriting the whole sketch for each radio.
+
+---
+
+## What Changed From Earlier Versions
+
+The earlier public repository state was centered around a much simpler single-sketch firmware approach.
+That version already demonstrated the core accessibility concept, but it was still tightly coupled to a smaller set of radios and did not yet reflect the current modular direction of the project.
+
+The current `V3.5` branch introduces several major changes:
+
+- the firmware moved from one primary sketch to a modular multi-file structure
+- radio handling is now separated into protocol, runtime, UI, and profile-related components
+- SD card based profile files now describe supported radios and slot assignments
+- the repository now represents a broader platform for further radio expansion rather than a narrow proof-of-concept build
+- the original voice-token approach with `voice_data.h` remains in place, but is now used inside a more extensible architecture
+
+This means the repository history now contains a visible transition from the earlier compact prototype toward a more maintainable and expandable controller platform.
 
 Future development focuses on:
 
 - Extended command coverage
 - Additional radio profiles
 - Expanded voice token sets
+- Cleaner documentation for builders and operators
 
 ---
 
 ## License
 
-This project uses the same license model as the **Talking SWR Meter** project by the same author.  
-See the `LICENSE` file for details.
+This project uses the same license model as the **Talking SWR Meter** project by the same author.
+See the `LICENSE` file for code and `LICENSE-docs` for documentation material.
