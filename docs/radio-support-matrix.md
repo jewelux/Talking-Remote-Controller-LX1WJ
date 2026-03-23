@@ -33,18 +33,6 @@ Suggested status wording:
 | Yaesu FTDX101D | CAT | `ftdx101d.ini` | partial | partial | partial | planned | planned | implemented | not recently verified | Needs command-by-command confirmation. |
 | Yaesu FTDX101MP | CAT | `ftdx101mp.ini` | partial | partial | partial | planned | planned | implemented | not recently verified | Needs command-by-command confirmation. |
 
----
-
-## How To Update This File
-
-When a radio or command set changes, update only what is actually known.
-
-Recommended approach:
-
-1. Change the status only after code inspection or real hardware testing.
-2. Prefer `partial` over optimistic claims.
-3. Add a short note when behavior differs by protocol or firmware branch.
-4. Mark hardware test status conservatively if the result is older or uncertain.
 
 ---
 
