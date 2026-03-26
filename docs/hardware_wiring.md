@@ -16,9 +16,9 @@ All pin assignments listed below are taken from the current firmware files.
 
 ### Wiring
 
-| Keypad Signal | ESP32-S3 GPIO |
+| Pin | Keypad Signal | ESP32-S3 GPIO |
 |---|---|---|
-|1| ROW1 | GPIO 4 |
+| 1 | ROW1 | GPIO 4 |
 |2| ROW2 | GPIO 8 |
 |3| 3=ROW3 | GPIO 15 |
 |4| ROW4 | GPIO 16 |
