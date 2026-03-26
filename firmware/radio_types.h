@@ -185,6 +185,14 @@ struct CivDecoded {
   size_t payloadLen = 0;
 };
 
+struct BandStackEntry {
+  uint8_t bandCode = 0;
+  uint8_t registerCode = 0;
+  uint64_t freqHz = 0;
+  uint8_t mode = 0xFF;
+  uint8_t filter = 0xFF;
+};
+
 struct LiveState {
   bool freqValid = false;
   uint64_t freqHz = 0;
@@ -223,4 +231,6 @@ struct LiveState {
   bool notchWidthValid = false;
   NotchWidth notchWidth = NOTCH_WIDTH_UNKNOWN;
   uint32_t lastNotchMs = 0;
+  bool activeVfoKnown = false;
+  bool activeVfoA = true;
 };

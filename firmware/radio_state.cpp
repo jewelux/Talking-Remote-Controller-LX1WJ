@@ -18,6 +18,8 @@ void resetLiveRadioState() {
   live.notchValid = false;
   live.notchWidthValid = false;
   live.notchWidth = NOTCH_WIDTH_UNKNOWN;
+  live.activeVfoKnown = false;
+  live.activeVfoA = true;
 }
 
 void rememberLiveFrequency(uint64_t hz, uint32_t nowMs) {
@@ -68,4 +70,9 @@ void rememberLiveNotch(bool on, uint32_t nowMs, bool widthValid, NotchWidth widt
   live.notchWidthValid = on && widthValid;
   live.notchWidth = (on && widthValid) ? width : NOTCH_WIDTH_UNKNOWN;
   live.lastNotchMs = nowMs;
+}
+
+void rememberActiveVfo(bool vfoA) {
+  live.activeVfoKnown = true;
+  live.activeVfoA = vfoA;
 }

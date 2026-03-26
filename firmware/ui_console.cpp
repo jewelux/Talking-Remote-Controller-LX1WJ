@@ -23,6 +23,90 @@ static void speakBinaryFeatureState(const uint8_t* featureData, size_t featureLe
   playClipProgmem(on ? voice_on : voice_off, on ? voice_on_len : voice_off_len);
 }
 
+static uint8_t levelRawToPercent(uint16_t raw) {
+  if (raw >= 255) return 100;
+  return (uint8_t)((raw * 100U + 127U) / 255U);
+}
+
+static uint16_t levelPercentToRaw(int percent) {
+  if (percent < 0) percent = 0;
+  if (percent > 100) percent = 100;
+  return (uint16_t)((percent * 255 + 50) / 100);
+}
+
+static int pbtRawToOffset(uint16_t raw) {
+  if (raw > 255) raw = 255;
+  return (int)raw - 128;
+}
+
+static uint16_t pbtOffsetToRaw(int offset) {
+  if (offset < -128) offset = -128;
+  if (offset > 127) offset = 127;
+  return (uint16_t)(offset + 128);
+}
+
+static bool queryCurrentModeValue(uint8_t& modeOut) {
+  if (live.modeValid) {
+    modeOut = live.mode;
+    return true;
+  }
+  return queryMode(modeOut, 800);
+}
+
+static bool queryCurrentFilterSlot(uint8_t& filterOut) {
+  uint8_t mode = 0xFF;
+  uint8_t filter = 0xFF;
+  const bool hadKnown = live.activeVfoKnown;
+  if (!hadKnown) {
+    if (!queryVfoMode(true, mode, filter, 800)) return false;
+  }
+  if (live.activeVfoKnown) {
+    return queryVfoMode(live.activeVfoA, mode, filterOut, 800);
+  }
+  filterOut = filter;
+  return true;
+}
+
+static bool queryCurrentFrequencyValue(uint64_t& hzOut) {
+  if (live.freqValid) {
+    hzOut = live.freqHz;
+    return true;
+  }
+  return queryFrequency(hzOut, 800);
+}
+
+static bool bandCodeFromFrequency(uint64_t hz, uint8_t& bandCodeOut) {
+  if (hz >= 1800000ULL && hz <= 1999999ULL) { bandCodeOut = 0x01; return true; }
+  if (hz >= 3400000ULL && hz <= 4099999ULL) { bandCodeOut = 0x02; return true; }
+  if (hz >= 6900000ULL && hz <= 7499999ULL) { bandCodeOut = 0x03; return true; }
+  if (hz >= 9900000ULL && hz <= 10499999ULL) { bandCodeOut = 0x04; return true; }
+  if (hz >= 13900000ULL && hz <= 14499999ULL) { bandCodeOut = 0x05; return true; }
+  if (hz >= 17900000ULL && hz <= 18499999ULL) { bandCodeOut = 0x06; return true; }
+  if (hz >= 20900000ULL && hz <= 21499999ULL) { bandCodeOut = 0x07; return true; }
+  if (hz >= 24400000ULL && hz <= 25099999ULL) { bandCodeOut = 0x08; return true; }
+  if (hz >= 28000000ULL && hz <= 29999999ULL) { bandCodeOut = 0x09; return true; }
+  if (hz >= 50000000ULL && hz <= 54000000ULL) { bandCodeOut = 0x0A; return true; }
+  bandCodeOut = 0x0B;
+  return true;
+}
+
+static const char* bandLabelForCode(uint8_t bandCode) {
+  switch (bandCode) {
+    case 0x01: return "1.8";
+    case 0x02: return "3.5";
+    case 0x03: return "7";
+    case 0x04: return "10";
+    case 0x05: return "14";
+    case 0x06: return "18";
+    case 0x07: return "21";
+    case 0x08: return "24";
+    case 0x09: return "28";
+    case 0x0A: return "50";
+    case 0x0B: return "GENE";
+    default: return "?";
+  }
+}
+
 static bool usbConsoleReady() {
   return (bool)Serial;
 }
@@ -41,6 +125,11 @@ static void speakNotchCycleState(bool on, NotchWidth width) {
     case NOTCH_WIDTH_WIDE: playClipProgmem(voice_three, voice_three_len); break;
     default: playClipProgmem(voice_on, voice_on_len); break;
   }
+}
+
+static void speakSimpleBinaryState(bool on) {
+  if (!g_speechEnabled) return;
+  playClipProgmem(on ? voice_on : voice_off, on ? voice_on_len : voice_off_len);
 }
 
 static bool isCurrentYaesuFt8x7() {
@@ -92,67 +181,106 @@ String upperCopy(String s) {
 void printHelp() {
   Serial.println();
   Serial.println("Commands (case-insensitive):");
-  Serial.println("  HELP");
-  Serial.println("  STATUS?");
-  Serial.println("  MODE LIST");
-  Serial.println("  QUIET ON | QUIET OFF");
-  Serial.println("  QUIET?");
-  Serial.println("  SPEECH ON | SPEECH OFF");
-  Serial.println("  SPEECH?");
-  Serial.println("  BANK?");
-  Serial.println("  BANK NEXT | PREV");
-  Serial.println("  LFREQ");
-  Serial.println("  FREQ?");
-  Serial.println("  FREQ <kHz>");
-  Serial.println("  FREQMHZ <MHz>");
-  Serial.println("  MODE?");
-  Serial.println("  MODE <n>");
-  Serial.println("  IF? | ID? | OM?");
-  Serial.println("  FB? | FB <kHz> | FBMHZ <MHz>");
-  Serial.println("  FR? | FR0");
-  Serial.println("  FT? | FT A | FT B");
-  Serial.println("  RX | TX");
-  Serial.println("  AK?");
-  Serial.println("  SWT <nn> | SWH <nn>");
-  Serial.println("  SM?");
-  Serial.println("  SWR?");
-  Serial.println("  PO?");
-  Serial.println("  NR?");
-  Serial.println("  NR ON | OFF");
-  Serial.println("  NB?");
-  Serial.println("  NB ON | OFF");
-  Serial.println("  PA? | PA ON | OFF");
-  Serial.println("  GT? | GT FAST | SLOW");
-  Serial.println("  PS? | PS ON | OFF");
-  Serial.println("  NOTCH?");
-  Serial.println("  NOTCH ON | OFF");
-  Serial.println("  NOTCH NAR | MID | WIDE");
-  Serial.println("  YSTATUS?");
-  Serial.println("  YALL?");
-  Serial.println("  ALC? | VOL? | SQL?");
-  Serial.println("  VFO TOGGLE | A | B");
-  Serial.println("  PTT ON | OFF");
-  Serial.println("  SPLIT ON | OFF");
-  Serial.println("  CLAR ON | OFF");
-  Serial.println("  CLAR OFFSET <8 hex digits>");
-  Serial.println("  MEM WRITE | MEM READ RAW");
-  Serial.println("  AGC <hex byte>");
-  Serial.println("  LOCKDOC ON | OFF");
-  Serial.println("  YCAT <10 hex digits>");
-  Serial.println("  YCAT? <10 hex digits>");
-  Serial.println("  PROFILE <1..9>");
-  Serial.println("  PROFILE NEXT | PREV");
-  Serial.println("  SAY <digits>");
-  Serial.println("  TEST");
-  Serial.println("  BANK 1|2|3");
-  Serial.println("  PROFILE?");
-  Serial.println("  SLOTS?");
-  Serial.println("  TUNINGSPEECH?");
-  Serial.println("  TUNINGSPEECH ON | OFF");
-  Serial.println("  VOLUME?");
-  Serial.println("  VOLUME <0..3>");
-  Serial.println("  LISTVOICES");
-  Serial.println("  VOICE <name>");
+  Serial.println("  General:");
+  Serial.println("    AK?");
+  Serial.println("    BANK?");
+  Serial.println("    BANK NEXT | PREV");
+  Serial.println("    BSTACK <1..3>");
+  Serial.println("    BSTACK? <1..3>");
+  Serial.println("    FB? | FB <kHz> | FBMHZ <MHz>");
+  Serial.println("    FREQ <kHz>");
+  Serial.println("    FREQ?");
+  Serial.println("    FREQMHZ <MHz>");
+  Serial.println("    FR? | FR0");
+  Serial.println("    FT? | FT A | FT B");
+  Serial.println("    HELP");
+  Serial.println("    ID? | IF? | OM?");
+  Serial.println("    LFREQ");
+  Serial.println("    LISTVOICES");
+  Serial.println("    MODE <n>");
+  Serial.println("    MODE LIST");
+  Serial.println("    MODE?");
+  Serial.println("    PROFILE <1..9>");
+  Serial.println("    PROFILE NEXT | PREV");
+  Serial.println("    PROFILE?");
+  Serial.println("    QUIET OFF | QUIET ON");
+  Serial.println("    QUIET?");
+  Serial.println("    RX | TX");
+  Serial.println("    SAY <digits>");
+  Serial.println("    SLOTS?");
+  Serial.println("    SPEECH OFF | SPEECH ON");
+  Serial.println("    SPEECH?");
+  Serial.println("    STATUS?");
+  Serial.println("    SWT <nn> | SWH <nn>");
+  Serial.println("    TEST");
+  Serial.println("    TUNINGSPEECH OFF | ON");
+  Serial.println("    TUNINGSPEECH?");
+  Serial.println("    VOICE <name>");
+  Serial.println("    VOLUME <0..3>");
+  Serial.println("    VOLUME?");
+  Serial.println();
+  Serial.println("  IC-7300 / CI-V Extensions:");
+  Serial.println("    NBLEVEL <0..100>");
+  Serial.println("    NBLEVEL?");
+  Serial.println("    NB OFF | ON");
+  Serial.println("    NB?");
+  Serial.println("    FILSHAPE SHARP | SOFT");
+  Serial.println("    FILSHAPE?");
+  Serial.println("    FILWIDTH <1..3>");
+  Serial.println("    FILWIDTH?");
+  Serial.println("    LOCK OFF | ON");
+  Serial.println("    LOCK?");
+  Serial.println("    MONITOR OFF | ON");
+  Serial.println("    MONITOR?");
+  Serial.println("    MONLEVEL <0..100>");
+  Serial.println("    MONLEVEL?");
+  Serial.println("    NOTCH MID | NAR | WIDE");
+  Serial.println("    NOTCH OFF | ON");
+  Serial.println("    NOTCH?");
+  Serial.println("    NRLEVEL <0..100>");
+  Serial.println("    NRLEVEL?");
+  Serial.println("    NR OFF | ON");
+  Serial.println("    NR?");
+  Serial.println("    PBT1 <-128..127> | CENTER");
+  Serial.println("    PBT1?");
+  Serial.println("    PBT2 <-128..127> | CENTER");
+  Serial.println("    PBT2?");
+  Serial.println("    RIT <Hz>");
+  Serial.println("    RIT OFF | ON");
+  Serial.println("    RIT?");
+  Serial.println("    RXTX?");
+  Serial.println("    SPLIT OFF | ON");
+  Serial.println("    SPLIT?");
+  Serial.println("    TUNE");
+  Serial.println("    TRANSCEIVE OFF | ON");
+  Serial.println("    TRANSCEIVE?");
+  Serial.println("    TUNER OFF | ON");
+  Serial.println("    TUNER?");
+  Serial.println("    TXFREQ?");
+  Serial.println("    VFO A | B");
+  Serial.println("    VFOA <kHz> | VFOA?");
+  Serial.println("    VFOA MODE <n> | VFOA MODE?");
+  Serial.println("    VFOB <kHz> | VFOB?");
+  Serial.println("    VFOB MODE <n> | VFOB MODE?");
+  Serial.println();
+  Serial.println("  ASCII / Yaesu Extensions:");
+  Serial.println("    ALC? | VOL? | SQL?");
+  Serial.println("    AGC <hex byte>");
+  Serial.println("    CLAR OFFSET <8 hex digits>");
+  Serial.println("    CLAR OFF | ON");
+  Serial.println("    GT? | GT FAST | SLOW");
+  Serial.println("    LOCKDOC OFF | ON");
+  Serial.println("    MEM READ RAW | MEM WRITE");
+  Serial.println("    PA? | PA OFF | ON");
+  Serial.println("    PS? | PS OFF | ON");
+  Serial.println("    PTT OFF | ON");
+  Serial.println("    SM?");
+  Serial.println("    SWR?");
+  Serial.println("    VFO TOGGLE | A | B");
+  Serial.println("    YALL?");
+  Serial.println("    YCAT <10 hex digits>");
+  Serial.println("    YCAT? <10 hex digits>");
+  Serial.println("    YSTATUS?");
   Serial.println();
 }
 
@@ -222,6 +350,57 @@ static bool handleConsoleProfileCommands(const String& line, const String& upper
     Serial.print("OK PROFILE ");
     Serial.println(slot);
     speakCurrentProfile();
+    return true;
+  }
+  if (upper.startsWith("BSTACK? ")) {
+    int reg = line.substring(8).toInt();
+    uint64_t hz = 0;
+    uint8_t bandCode = 0;
+    BandStackEntry entry;
+    if (reg < 1 || reg > 3) { Serial.println("BSTACK? -> invalid register (use 1..3)"); return true; }
+    if (!queryCurrentFrequencyValue(hz) || !bandCodeFromFrequency(hz, bandCode)) { Serial.println("BSTACK? -> no current band"); return true; }
+    if (!queryBandStackEntry(bandCode, (uint8_t)reg, entry, 800)) { Serial.println("BSTACK? -> no reply"); return true; }
+    Serial.print("BSTACK ");
+    Serial.print(bandLabelForCode(entry.bandCode));
+    Serial.print("M REG");
+    Serial.print((int)entry.registerCode);
+    Serial.print(": ");
+    Serial.print(hzToMHzString3(entry.freqHz));
+    Serial.print(" MHz ");
+    Serial.print(modeToString(entry.mode));
+    Serial.print(" FIL");
+    Serial.println((int)entry.filter);
+    if (g_speechEnabled) {
+      speakDigitsAndPoint(hzToMHzString3(entry.freqHz));
+      g_suppressModePrefixOnce = true;
+      speakMode(entry.mode);
+    }
+    return true;
+  }
+  if (upper.startsWith("BSTACK ")) {
+    int reg = line.substring(7).toInt();
+    uint64_t hz = 0;
+    uint8_t bandCode = 0;
+    BandStackEntry entry;
+    if (reg < 1 || reg > 3) { Serial.println("BSTACK -> invalid register (use 1..3)"); return true; }
+    if (!queryCurrentFrequencyValue(hz) || !bandCodeFromFrequency(hz, bandCode)) { Serial.println("BSTACK -> no current band"); return true; }
+    if (!queryBandStackEntry(bandCode, (uint8_t)reg, entry, 800)) { Serial.println("BSTACK -> no reply"); return true; }
+    if (!setFrequency(entry.freqHz) || !setMode(entry.mode, entry.filter)) { Serial.println("BSTACK -> failed"); return true; }
+    Serial.print("BSTACK ");
+    Serial.print(bandLabelForCode(entry.bandCode));
+    Serial.print("M REG");
+    Serial.print((int)entry.registerCode);
+    Serial.print(": ");
+    Serial.print(hzToMHzString3(entry.freqHz));
+    Serial.print(" MHz ");
+    Serial.print(modeToString(entry.mode));
+    Serial.print(" FIL");
+    Serial.println((int)entry.filter);
+    if (g_speechEnabled) {
+      speakDigitsAndPoint(hzToMHzString3(entry.freqHz));
+      g_suppressModePrefixOnce = true;
+      speakMode(entry.mode);
+    }
     return true;
   }
   return false;
@@ -422,11 +601,11 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     Serial.println();
     return true;
   }
-  if (upper == "LOCK?") {
+  if (upper == "LOCK?" && currentProtocolType() == PROTO_YAESU_FT8X7) {
     Serial.println("LOCK? -> no safe read command known here; documented write bytes collide with VFO A/B");
     return true;
   }
-  if (upper == "LOCK ON" || upper == "LOCK OFF") {
+  if ((upper == "LOCK ON" || upper == "LOCK OFF") && currentProtocolType() == PROTO_YAESU_FT8X7) {
     Serial.println("LOCK -> not sent via generic LOCK; documented bytes collide with VFO A/B");
     Serial.println("Use LOCKDOC ON/OFF if you want to send the documented raw bytes deliberately.");
     return true;
@@ -689,6 +868,163 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     }
     return true;
   }
+  if (upper == "TUNER?") {
+    bool on = false;
+    if (!queryTuner(on, 800)) { Serial.println("TUNER? -> no reply"); return true; }
+    Serial.println(on ? "TUNER ON" : "TUNER OFF");
+    return true;
+  }
+  if (upper == "TUNER ON") {
+    if (!setTuner(true)) { Serial.println("TUNER ON -> failed"); return true; }
+    Serial.println("TUNER ON");
+    return true;
+  }
+  if (upper == "TUNER OFF") {
+    if (!setTuner(false)) { Serial.println("TUNER OFF -> failed"); return true; }
+    Serial.println("TUNER OFF");
+    return true;
+  }
+  if (upper == "TUNE") {
+    if (!startTune()) { Serial.println("TUNE -> failed"); return true; }
+    Serial.println("TUNE");
+    return true;
+  }
+  if (upper == "RXTX?") {
+    bool tx = false;
+    if (!queryRxTxStatus(tx, 800)) { Serial.println("RXTX? -> no reply"); return true; }
+    Serial.println(tx ? "TX" : "RX");
+    return true;
+  }
+  if (upper == "TXFREQ?") {
+    uint64_t hz = 0;
+    if (!queryTxFrequency(hz, 800)) { Serial.println("TXFREQ? -> no reply"); return true; }
+    Serial.print("TXFREQ: ");
+    Serial.print(hzToMHzString3(hz));
+    Serial.println(" MHz");
+    if (g_speechEnabled) speakDigitsAndPoint(hzToMHzString3(hz));
+    return true;
+  }
+  if (upper == "VFO A") {
+    if (!selectVfoA()) { Serial.println("VFO A -> failed"); return true; }
+    Serial.println("VFO A");
+    return true;
+  }
+  if (upper == "VFO B") {
+    if (!selectVfoB()) { Serial.println("VFO B -> failed"); return true; }
+    Serial.println("VFO B");
+    return true;
+  }
+  if (upper == "VFOA?") {
+    uint64_t hz = 0;
+    if (!queryVfoFrequency(true, hz, 800)) { Serial.println("VFOA? -> no reply"); return true; }
+    Serial.print("VFOA: ");
+    Serial.print(hzToMHzString3(hz));
+    Serial.println(" MHz");
+    if (g_speechEnabled) speakDigitsAndPoint(hzToMHzString3(hz));
+    return true;
+  }
+  if (upper == "VFOB?") {
+    uint64_t hz = 0;
+    if (!queryVfoFrequency(false, hz, 800)) { Serial.println("VFOB? -> no reply"); return true; }
+    Serial.print("VFOB: ");
+    Serial.print(hzToMHzString3(hz));
+    Serial.println(" MHz");
+    if (g_speechEnabled) speakDigitsAndPoint(hzToMHzString3(hz));
+    return true;
+  }
+  if (upper.startsWith("VFOA MODE?")) {
+    uint8_t mode = 0xFF;
+    uint8_t filter = 0xFF;
+    if (!queryVfoMode(true, mode, filter, 800)) { Serial.println("VFOA MODE? -> no reply"); return true; }
+    Serial.print("VFOA MODE: ");
+    Serial.println(modeToString(mode));
+    if (g_keypadExecuting) g_suppressModePrefixOnce = true;
+    speakMode(mode);
+    return true;
+  }
+  if (upper.startsWith("VFOB MODE?")) {
+    uint8_t mode = 0xFF;
+    uint8_t filter = 0xFF;
+    if (!queryVfoMode(false, mode, filter, 800)) { Serial.println("VFOB MODE? -> no reply"); return true; }
+    Serial.print("VFOB MODE: ");
+    Serial.println(modeToString(mode));
+    if (g_keypadExecuting) g_suppressModePrefixOnce = true;
+    speakMode(mode);
+    return true;
+  }
+  if (upper.startsWith("VFOA MODE ")) {
+    char k = line.substring(10)[0];
+    uint8_t mode = 0xFF;
+    (void)profileModeFromDigit(k, mode);
+    if (mode == 0xFF || !setVfoMode(true, mode, 1)) { Serial.println("VFOA MODE -> failed"); return true; }
+    Serial.println("VFOA MODE -> command sent");
+    return true;
+  }
+  if (upper.startsWith("VFOB MODE ")) {
+    char k = line.substring(10)[0];
+    uint8_t mode = 0xFF;
+    (void)profileModeFromDigit(k, mode);
+    if (mode == 0xFF || !setVfoMode(false, mode, 1)) { Serial.println("VFOB MODE -> failed"); return true; }
+    Serial.println("VFOB MODE -> command sent");
+    return true;
+  }
+  if (upper.startsWith("VFOA ")) {
+    uint64_t khz = strtoull(line.substring(5).c_str(), nullptr, 10);
+    uint64_t hzSet = khz * 1000ULL;
+    if (!setVfoFrequency(true, hzSet)) { Serial.println("VFOA -> failed"); return true; }
+    return true;
+  }
+  if (upper.startsWith("VFOB ")) {
+    uint64_t khz = strtoull(line.substring(5).c_str(), nullptr, 10);
+    uint64_t hzSet = khz * 1000ULL;
+    if (!setVfoFrequency(false, hzSet)) { Serial.println("VFOB -> failed"); return true; }
+    return true;
+  }
+  if (upper == "SPLIT?") {
+    bool on = false;
+    if (!querySplit(on, 800)) { Serial.println("SPLIT? -> no reply"); return true; }
+    Serial.println(on ? "SPLIT ON" : "SPLIT OFF");
+    return true;
+  }
+  if (upper == "SPLIT ON") {
+    if (!setSplit(true)) { Serial.println("SPLIT ON -> failed"); return true; }
+    Serial.println("SPLIT ON");
+    return true;
+  }
+  if (upper == "SPLIT OFF") {
+    if (!setSplit(false)) { Serial.println("SPLIT OFF -> failed"); return true; }
+    Serial.println("SPLIT OFF");
+    return true;
+  }
+  if (upper == "RIT?") {
+    bool on = false;
+    int32_t offset = 0;
+    if (!queryRitEnabled(on, 800)) { Serial.println("RIT? -> no reply"); return true; }
+    if (!queryRitOffsetHz(offset, 800)) { Serial.println(on ? "RIT ON" : "RIT OFF"); return true; }
+    Serial.print(on ? "RIT ON " : "RIT OFF ");
+    Serial.print(offset);
+    Serial.println(" Hz");
+    return true;
+  }
+  if (upper == "RIT ON") {
+    if (!setRitEnabled(true)) { Serial.println("RIT ON -> failed"); return true; }
+    Serial.println("RIT ON");
+    return true;
+  }
+  if (upper == "RIT OFF") {
+    if (!setRitEnabled(false)) { Serial.println("RIT OFF -> failed"); return true; }
+    Serial.println("RIT OFF");
+    return true;
+  }
+  if (upper.startsWith("RIT ")) {
+    int32_t hz = line.substring(4).toInt();
+    if (hz < -9999 || hz > 9999) { Serial.println("RIT -> invalid (use -9999..9999 Hz)"); return true; }
+    if (!setRitOffsetHz(hz)) { Serial.println("RIT -> failed"); return true; }
+    Serial.print("RIT ");
+    Serial.print(hz);
+    Serial.println(" Hz");
+    return true;
+  }
   if (upper == "NR?") {
     if (!sp.caps.getNr) { if (usbConsoleReady()) Serial.println("NR? -> unsupported"); return true; }
     if (!refreshLiveNr()) { if (usbConsoleReady()) Serial.println("NR? -> no reply"); return true; }
@@ -701,6 +1037,203 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     if (!refreshLiveNb()) { if (usbConsoleReady()) Serial.println("NB? -> no reply"); return true; }
     if (usbConsoleReady()) Serial.println(live.nbOn ? "NB ON" : "NB OFF");
     speakBinaryFeatureState(voice_noiseblanker, voice_noiseblanker_len, live.nbOn);
+    return true;
+  }
+  if (upper == "PBT1?") {
+    uint16_t raw = 0;
+    if (!queryPbtInner(raw, 800)) { Serial.println("PBT1? -> no reply"); return true; }
+    Serial.print("PBT1 ");
+    Serial.print(pbtRawToOffset(raw));
+    Serial.println(" step");
+    return true;
+  }
+  if (upper == "PBT2?") {
+    uint16_t raw = 0;
+    if (!queryPbtOuter(raw, 800)) { Serial.println("PBT2? -> no reply"); return true; }
+    Serial.print("PBT2 ");
+    Serial.print(pbtRawToOffset(raw));
+    Serial.println(" step");
+    return true;
+  }
+  if (upper == "LOCK?") {
+    bool on = false;
+    if (!queryDialLock(on, 800)) { Serial.println("LOCK? -> no reply"); return true; }
+    Serial.println(on ? "LOCK ON" : "LOCK OFF");
+    speakSimpleBinaryState(on);
+    return true;
+  }
+  if (upper == "LOCK ON") {
+    if (!setDialLock(true)) { Serial.println("LOCK ON -> failed"); return true; }
+    Serial.println("LOCK ON");
+    speakSimpleBinaryState(true);
+    return true;
+  }
+  if (upper == "LOCK OFF") {
+    if (!setDialLock(false)) { Serial.println("LOCK OFF -> failed"); return true; }
+    Serial.println("LOCK OFF");
+    speakSimpleBinaryState(false);
+    return true;
+  }
+  if (upper == "FILSHAPE?") {
+    bool soft = false;
+    if (!queryFilterShape(soft, 800)) { Serial.println("FILSHAPE? -> no reply"); return true; }
+    Serial.println(soft ? "FILSHAPE SOFT" : "FILSHAPE SHARP");
+    return true;
+  }
+  if (upper == "FILSHAPE SHARP") {
+    if (!setFilterShape(false)) { Serial.println("FILSHAPE SHARP -> failed"); return true; }
+    Serial.println("FILSHAPE SHARP");
+    return true;
+  }
+  if (upper == "FILSHAPE SOFT") {
+    if (!setFilterShape(true)) { Serial.println("FILSHAPE SOFT -> failed"); return true; }
+    Serial.println("FILSHAPE SOFT");
+    return true;
+  }
+  if (upper == "FILWIDTH?") {
+    uint8_t filter = 0xFF;
+    if (!queryCurrentFilterSlot(filter)) { Serial.println("FILWIDTH? -> no reply"); return true; }
+    Serial.print("FILWIDTH ");
+    Serial.println((int)filter);
+    return true;
+  }
+  if (upper == "MONITOR?") {
+    bool on = false;
+    if (!queryMonitorEnabled(on, 800)) { Serial.println("MONITOR? -> no reply"); return true; }
+    Serial.println(on ? "MONITOR ON" : "MONITOR OFF");
+    if (g_speechEnabled) speakSimpleBinaryState(on);
+    return true;
+  }
+  if (upper == "MONITOR ON") {
+    if (!setMonitorEnabled(true)) { Serial.println("MONITOR ON -> failed"); return true; }
+    Serial.println("MONITOR ON");
+    if (g_speechEnabled) speakSimpleBinaryState(true);
+    return true;
+  }
+  if (upper == "MONITOR OFF") {
+    if (!setMonitorEnabled(false)) { Serial.println("MONITOR OFF -> failed"); return true; }
+    Serial.println("MONITOR OFF");
+    if (g_speechEnabled) speakSimpleBinaryState(false);
+    return true;
+  }
+  if (upper == "MONLEVEL?") {
+    uint16_t raw = 0;
+    if (!queryMonitorLevel(raw, 800)) { Serial.println("MONLEVEL? -> no reply"); return true; }
+    Serial.print("MONLEVEL ");
+    Serial.print((int)levelRawToPercent(raw));
+    Serial.println("%");
+    return true;
+  }
+  if (upper == "TRANSCEIVE?") {
+    bool on = false;
+    if (!queryTransceiveEnabled(on, 800)) { Serial.println("TRANSCEIVE? -> no reply"); return true; }
+    Serial.println(on ? "TRANSCEIVE ON" : "TRANSCEIVE OFF");
+    if (g_speechEnabled) speakSimpleBinaryState(on);
+    return true;
+  }
+  if (upper == "NRLEVEL?") {
+    uint16_t raw = 0;
+    if (!queryNrLevel(raw, 800)) { Serial.println("NRLEVEL? -> no reply"); return true; }
+    Serial.print("NRLEVEL ");
+    Serial.print((int)levelRawToPercent(raw));
+    Serial.println("%");
+    if (g_speechEnabled) {
+      playClipProgmem(voice_noisereduction, voice_noisereduction_len);
+      playSilenceMs(60);
+      speakDigitsAndPoint(String((int)levelRawToPercent(raw)));
+    }
+    return true;
+  }
+  if (upper.startsWith("NRLEVEL ")) {
+    int percent = line.substring(8).toInt();
+    if (percent < 0 || percent > 100) { Serial.println("NRLEVEL -> invalid (use 0..100)"); return true; }
+    if (!setNrLevel(levelPercentToRaw(percent))) { Serial.println("NRLEVEL -> failed"); return true; }
+    Serial.print("NRLEVEL ");
+    Serial.print(percent);
+    Serial.println("%");
+    if (g_speechEnabled) {
+      playClipProgmem(voice_noisereduction, voice_noisereduction_len);
+      playSilenceMs(60);
+      speakDigitsAndPoint(String(percent));
+    }
+    return true;
+  }
+  if (upper == "NBLEVEL?") {
+    uint16_t raw = 0;
+    if (!queryNbLevel(raw, 800)) { Serial.println("NBLEVEL? -> no reply"); return true; }
+    Serial.print("NBLEVEL ");
+    Serial.print((int)levelRawToPercent(raw));
+    Serial.println("%");
+    if (g_speechEnabled) {
+      playClipProgmem(voice_noiseblanker, voice_noiseblanker_len);
+      playSilenceMs(60);
+      speakDigitsAndPoint(String((int)levelRawToPercent(raw)));
+    }
+    return true;
+  }
+  if (upper.startsWith("NBLEVEL ")) {
+    int percent = line.substring(8).toInt();
+    if (percent < 0 || percent > 100) { Serial.println("NBLEVEL -> invalid (use 0..100)"); return true; }
+    if (!setNbLevel(levelPercentToRaw(percent))) { Serial.println("NBLEVEL -> failed"); return true; }
+    Serial.print("NBLEVEL ");
+    Serial.print(percent);
+    Serial.println("%");
+    if (g_speechEnabled) {
+      playClipProgmem(voice_noiseblanker, voice_noiseblanker_len);
+      playSilenceMs(60);
+      speakDigitsAndPoint(String(percent));
+    }
+    return true;
+  }
+  if (upper.startsWith("PBT1 ")) {
+    String arg = upper.substring(5);
+    int value = (arg == "CENTER") ? 0 : line.substring(5).toInt();
+    if (arg != "CENTER" && (value < -128 || value > 127)) { Serial.println("PBT1 -> invalid (use CENTER or -128..127)"); return true; }
+    if (!setPbtInner(pbtOffsetToRaw(value))) { Serial.println("PBT1 -> failed"); return true; }
+    Serial.print("PBT1 ");
+    Serial.print(value);
+    Serial.println(" step");
+    return true;
+  }
+  if (upper.startsWith("PBT2 ")) {
+    String arg = upper.substring(5);
+    int value = (arg == "CENTER") ? 0 : line.substring(5).toInt();
+    if (arg != "CENTER" && (value < -128 || value > 127)) { Serial.println("PBT2 -> invalid (use CENTER or -128..127)"); return true; }
+    if (!setPbtOuter(pbtOffsetToRaw(value))) { Serial.println("PBT2 -> failed"); return true; }
+    Serial.print("PBT2 ");
+    Serial.print(value);
+    Serial.println(" step");
+    return true;
+  }
+  if (upper.startsWith("FILWIDTH ")) {
+    int filter = line.substring(9).toInt();
+    uint8_t mode = 0xFF;
+    if (filter < 1 || filter > 3) { Serial.println("FILWIDTH -> invalid (use 1..3)"); return true; }
+    if (!queryCurrentModeValue(mode)) { Serial.println("FILWIDTH -> no mode"); return true; }
+    if (!setMode(mode, (uint8_t)filter)) { Serial.println("FILWIDTH -> failed"); return true; }
+    Serial.print("FILWIDTH ");
+    Serial.println(filter);
+    return true;
+  }
+  if (upper.startsWith("MONLEVEL ")) {
+    int percent = line.substring(9).toInt();
+    if (percent < 0 || percent > 100) { Serial.println("MONLEVEL -> invalid (use 0..100)"); return true; }
+    if (!setMonitorLevel(levelPercentToRaw(percent))) { Serial.println("MONLEVEL -> failed"); return true; }
+    Serial.print("MONLEVEL ");
+    Serial.print(percent);
+    Serial.println("%");
+    return true;
+  }
+  if (upper == "TRANSCEIVE ON") {
+    if (!setTransceiveEnabled(true)) { Serial.println("TRANSCEIVE ON -> failed"); return true; }
+    Serial.println("TRANSCEIVE ON");
+    if (g_speechEnabled) speakSimpleBinaryState(true);
+    return true;
+  }
+  if (upper == "TRANSCEIVE OFF") {
+    if (!setTransceiveEnabled(false)) { Serial.println("TRANSCEIVE OFF -> failed"); return true; }
+    Serial.println("TRANSCEIVE OFF");
+    if (g_speechEnabled) speakSimpleBinaryState(false);
     return true;
   }
   if (upper == "NOTCH?") {

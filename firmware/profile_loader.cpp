@@ -153,6 +153,14 @@ static void assignStoredProfile(StoredProfile& sp, const CivProfile& civ, Protoc
   sp.civ = civ;
   sp.protocolType = proto;
   setProtocolDefaults(sp);
+  if (proto == PROTO_CIV && civ.civAddr == 0x94) {
+    sp.caps.getNr = true;
+    sp.caps.setNr = true;
+    sp.caps.getNb = true;
+    sp.caps.setNb = true;
+    sp.caps.getNotch = true;
+    sp.caps.setNotch = true;
+  }
   sp.valid = true;
   sp.fromSd = fromSd;
   copyCString(sp.name, sizeof(sp.name), civ.name ? civ.name : "");

@@ -84,6 +84,20 @@ bool setNr(bool on) {
   return false;
 }
 
+bool queryNrLevel(uint16_t& valueOut, uint32_t timeoutMs) {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (pt == PROTO_CIV) return civQueryNrLevel(sp, valueOut, timeoutMs);
+  return false;
+}
+
+bool setNrLevel(uint16_t value) {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (pt == PROTO_CIV) return civSetNrLevel(sp, value);
+  return false;
+}
+
 bool queryNb(bool& onOut, uint32_t timeoutMs) {
   ProtocolType pt = currentProtocolType();
   const StoredProfile& sp = currentStoredProfile();
@@ -97,6 +111,20 @@ bool setNb(bool on) {
   const StoredProfile& sp = currentStoredProfile();
   if (pt == PROTO_CIV) return civSetNb(sp, on);
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiSetNb(sp, on);
+  return false;
+}
+
+bool queryNbLevel(uint16_t& valueOut, uint32_t timeoutMs) {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (pt == PROTO_CIV) return civQueryNbLevel(sp, valueOut, timeoutMs);
+  return false;
+}
+
+bool setNbLevel(uint16_t value) {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (pt == PROTO_CIV) return civSetNbLevel(sp, value);
   return false;
 }
 
@@ -127,5 +155,248 @@ bool setNotchWidth(NotchWidth width) {
   ProtocolType pt = currentProtocolType();
   const StoredProfile& sp = currentStoredProfile();
   if (pt == PROTO_CIV) return civSetNotchWidth(sp, width);
+  return false;
+}
+
+bool queryPbtInner(uint16_t& valueOut, uint32_t timeoutMs) {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (pt == PROTO_CIV) return civQueryPbtInner(sp, valueOut, timeoutMs);
+  return false;
+}
+
+bool setPbtInner(uint16_t value) {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (pt == PROTO_CIV) return civSetPbtInner(sp, value);
+  return false;
+}
+
+bool queryPbtOuter(uint16_t& valueOut, uint32_t timeoutMs) {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (pt == PROTO_CIV) return civQueryPbtOuter(sp, valueOut, timeoutMs);
+  return false;
+}
+
+bool setPbtOuter(uint16_t value) {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (pt == PROTO_CIV) return civSetPbtOuter(sp, value);
+  return false;
+}
+
+bool queryDialLock(bool& onOut, uint32_t timeoutMs) {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (pt == PROTO_CIV) return civQueryDialLock(sp, onOut, timeoutMs);
+  return false;
+}
+
+bool setDialLock(bool on) {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (pt == PROTO_CIV) return civSetDialLock(sp, on);
+  return false;
+}
+
+bool queryFilterShape(bool& softOut, uint32_t timeoutMs) {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (pt == PROTO_CIV) return civQueryFilterShape(sp, softOut, timeoutMs);
+  return false;
+}
+
+bool setFilterShape(bool soft) {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (pt == PROTO_CIV) return civSetFilterShape(sp, soft);
+  return false;
+}
+
+bool queryFilterWidth(uint8_t& rawOut, uint32_t timeoutMs) {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (pt == PROTO_CIV) return civQueryFilterWidth(sp, rawOut, timeoutMs);
+  return false;
+}
+
+bool setFilterWidth(uint8_t raw) {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (pt == PROTO_CIV) return civSetFilterWidth(sp, raw);
+  return false;
+}
+
+bool queryMonitorEnabled(bool& onOut, uint32_t timeoutMs) {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (pt == PROTO_CIV) return civQueryMonitorEnabled(sp, onOut, timeoutMs);
+  return false;
+}
+
+bool setMonitorEnabled(bool on) {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (pt == PROTO_CIV) return civSetMonitorEnabled(sp, on);
+  return false;
+}
+
+bool queryMonitorLevel(uint16_t& valueOut, uint32_t timeoutMs) {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (pt == PROTO_CIV) return civQueryMonitorLevel(sp, valueOut, timeoutMs);
+  return false;
+}
+
+bool setMonitorLevel(uint16_t value) {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (pt == PROTO_CIV) return civSetMonitorLevel(sp, value);
+  return false;
+}
+
+bool queryTransceiveEnabled(bool& onOut, uint32_t timeoutMs) {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (pt == PROTO_CIV) return civQueryTransceiveEnabled(sp, onOut, timeoutMs);
+  return false;
+}
+
+bool setTransceiveEnabled(bool on) {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (pt == PROTO_CIV) return civSetTransceiveEnabled(sp, on);
+  return false;
+}
+
+bool queryBandStackEntry(uint8_t bandCode, uint8_t registerCode, BandStackEntry& entryOut, uint32_t timeoutMs) {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (pt == PROTO_CIV) return civQueryBandStackEntry(sp, bandCode, registerCode, entryOut, timeoutMs);
+  return false;
+}
+
+bool queryTuner(bool& onOut, uint32_t timeoutMs) {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (pt == PROTO_CIV) return civQueryTuner(sp, onOut, timeoutMs);
+  return false;
+}
+
+bool setTuner(bool on) {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (pt == PROTO_CIV) return civSetTuner(sp, on);
+  return false;
+}
+
+bool startTune() {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (pt == PROTO_CIV) return civStartTune(sp);
+  return false;
+}
+
+bool queryRxTxStatus(bool& txOut, uint32_t timeoutMs) {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (pt == PROTO_CIV) return civQueryRxTxStatus(sp, txOut, timeoutMs);
+  return false;
+}
+
+bool queryTxFrequency(uint64_t& hzOut, uint32_t timeoutMs) {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (pt == PROTO_CIV) return civQueryTxFrequency(sp, hzOut, timeoutMs);
+  return false;
+}
+
+bool selectVfoA() {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (pt == PROTO_CIV) return civSelectVfoA(sp);
+  return false;
+}
+
+bool selectVfoB() {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (pt == PROTO_CIV) return civSelectVfoB(sp);
+  return false;
+}
+
+bool queryVfoFrequency(bool targetVfoA, uint64_t& hzOut, uint32_t timeoutMs) {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (pt == PROTO_CIV) return civQueryVfoFrequency(sp, targetVfoA, hzOut, timeoutMs);
+  return false;
+}
+
+bool setVfoFrequency(bool targetVfoA, uint64_t hz) {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (pt == PROTO_CIV) return civSetVfoFrequency(sp, targetVfoA, hz);
+  return false;
+}
+
+bool queryVfoMode(bool targetVfoA, uint8_t& modeOut, uint8_t& filterOut, uint32_t timeoutMs) {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (pt == PROTO_CIV) return civQueryVfoMode(sp, targetVfoA, modeOut, filterOut, timeoutMs);
+  return false;
+}
+
+bool setVfoMode(bool targetVfoA, uint8_t mode, uint8_t filter) {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (pt == PROTO_CIV) return civSetVfoMode(sp, targetVfoA, mode, filter);
+  return false;
+}
+
+bool querySplit(bool& onOut, uint32_t timeoutMs) {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (pt == PROTO_CIV) return civQuerySplit(sp, onOut, timeoutMs);
+  if (pt == PROTO_YAESU_FT8X7) {
+    onOut = false;
+    return false;
+  }
+  return false;
+}
+
+bool setSplit(bool on) {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (pt == PROTO_CIV) return civSetSplit(sp, on);
+  if (pt == PROTO_YAESU_FT8X7) return yaesuCatSetSplit(on);
+  return false;
+}
+
+bool queryRitEnabled(bool& onOut, uint32_t timeoutMs) {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (pt == PROTO_CIV) return civQueryRitEnabled(sp, onOut, timeoutMs);
+  return false;
+}
+
+bool setRitEnabled(bool on) {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (pt == PROTO_CIV) return civSetRitEnabled(sp, on);
+  return false;
+}
+
+bool queryRitOffsetHz(int32_t& hzOut, uint32_t timeoutMs) {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (pt == PROTO_CIV) return civQueryRitOffsetHz(sp, hzOut, timeoutMs);
+  return false;
+}
+
+bool setRitOffsetHz(int32_t hz) {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (pt == PROTO_CIV) return civSetRitOffsetHz(sp, hz);
   return false;
 }

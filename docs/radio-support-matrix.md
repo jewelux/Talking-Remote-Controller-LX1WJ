@@ -19,7 +19,7 @@ Suggested status wording:
 
 | Radio / Profile | Protocol / Interface | Profile File | Frequency | Mode | Power | S-Meter | SWR | Profile Load | Hardware Test Status | Notes |
 |---|---|---|---|---|---|---|---|---|---|---|
-| ICOM IC-7300 | CI-V | `ic7300.ini` | implemented | implemented | implemented | implemented | implemented | implemented | not recently verified | One of the core reference radios in the project history. |
+| ICOM IC-7300 | CI-V | `ic7300.ini` | implemented | implemented | implemented | implemented | implemented | implemented | not recently verified | Expanded command map documented in `docs/radios/icom-ic-7300.md`; verify bank-by-bank behavior on hardware. |
 | ICOM IC-7300 (RS-232) | RS-232 | `ic7300_rs232.ini` | partial | partial | partial | partial | partial | implemented | not recently verified | Verify actual command coverage against current firmware behavior. |
 | ICOM IC-706 (CI-V) | CI-V | `ic706_civ.ini` | implemented | implemented | partial | partial | partial | implemented | not recently verified | Legacy support path carried into the modular structure. |
 | ICOM IC-706 (RS-232) | RS-232 | `ic706_rs232.ini` | partial | partial | partial | partial | partial | implemented | not recently verified | Needs confirmation against live hardware in V3.5 structure. |

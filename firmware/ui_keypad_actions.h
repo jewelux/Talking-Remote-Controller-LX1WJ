@@ -7,3 +7,6 @@ void keypadStageCommand(const String& cmd);
 void keypadSendNow(const String& cmd);
 void keypadEnter();
 void keypadHandleReleased(char k);
+void keypadBank2QueryNr();
+void keypadBank2QueryNb();
+void keypadBank2QueryNotch();

@@ -14,3 +14,10 @@ Main changes in this transition:
 - updated the top-level documentation so the project description matches the new architecture while keeping the existing licensing and safety/disclaimer approach
 
 This transition marks the step from the earlier proof-of-concept repository state toward a more extensible multi-radio platform.
+
+## Documentation Update - IC-7300 Command Map
+
+- added `docs/radios/icom-ic-7300.md` as a dedicated radio-specific command page
+- kept the general user guide separate from per-radio command descriptions
+- updated the support matrix note for the IC-7300 profile to point to the dedicated page
+- synced updated `V3.5` firmware source files into the repository

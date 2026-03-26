@@ -263,3 +263,7 @@ Press `8`, then `D` in Bank 3 -> set speech volume to level 2.
 - Frequency entry currently uses kHz digits, not direct MHz text entry.
 - Exact support depends on the selected radio profile and implemented command set.
 - The support status per radio is tracked in `docs/radio-support-matrix.md`.
+- Radio-specific command pages should be documented separately from this general
+  guide.
+- The ICOM IC-7300 command reference is documented in
+  `docs/radios/icom-ic-7300.md`.
