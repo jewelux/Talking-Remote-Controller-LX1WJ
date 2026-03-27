@@ -26,6 +26,7 @@ Assumed labeling:
 - `#` cancels active entry or staging states and speaks `OK`.
 - `*` short press speaks the current bank number.
 - `*` long press starts bank selection.
+- Exact command behavior depends on the active radio profile.
 
 ### Bank Selection
 
@@ -38,12 +39,7 @@ Hold `*`, press `2`, press `D` -> switch to Bank 2.
 
 ---
 
-## Bank 1 - Live Radio Queries and Direct Actions
-
-### `1` short
-
-- Toggle automatic tuning-frequency announcements on or off.
-- The controller speaks `frequency on` or `frequency off`.
+## Global Actions Typically Used Across Profiles
 
 ### `0` short
 
@@ -60,19 +56,14 @@ Hold `*`, press `2`, press `D` -> switch to Bank 2.
 Example:
 Hold `0`, enter `14070`, press `D` -> sets `14.070 MHz` and speaks the value.
 
-### `4` short
-
-- Query output power.
-- The controller speaks the power value when supported by the active profile.
-
 ### `7` short
 
-- Query S-meter.
+- Query S-meter when the active profile supports it.
 - The controller speaks the S-meter result when supported.
 
 ### `8` short
 
-- Query SWR.
+- Query SWR when the active profile supports it.
 - The controller speaks the SWR result when supported.
 
 ### `9` short
@@ -102,139 +93,40 @@ Current mode digit mapping:
 Example:
 Hold `9`, press `2`, press `D` -> set mode to `USB`.
 
-### `A` short
-
-- Decrease speech volume by one step.
-- The controller speaks the new volume level.
-
-### `A` long
-
-- Increase speech volume by one step.
-- The controller speaks the new volume level.
-
 ---
 
-## Bank 2 - Feature Queries and Profile-Specific Actions
+## Profile-Dependent Functions
 
-Bank 2 depends more strongly on the active radio profile.
-Some functions are only available if the selected profile reports support for them.
+Many keys outside the core frequency and mode flow are radio-dependent.
+Some functions are only available if the selected profile reports support for
+them or if the protocol family implements them.
 
 ### `1` short
 
-- Query noise reduction state.
+- Query noise reduction state when supported.
 - The controller speaks `noise reduction on` or `noise reduction off` when supported.
 
 ### `1` long
 
-- Toggle noise reduction.
-- For radios such as the TS-480, the current implementation can cycle between multiple NR levels.
+- Toggle noise reduction when supported.
 
 ### `2` short
 
-- Query noise blanker state.
+- Query noise blanker state when supported.
 - The controller speaks `noise blanker on` or `noise blanker off` when supported.
 
 ### `2` long
 
-- Toggle noise blanker.
+- Toggle noise blanker when supported.
 
 ### `3` short
 
-- Query notch filter state.
+- Query notch filter state when supported.
 - The controller speaks the current notch status.
 
 ### `3` long
 
-- Toggle notch behavior.
-- On CI-V based radios, repeated long presses can cycle through notch states such as narrow, mid, wide, and off.
-
-### Yaesu FT-8x7 specific actions
-
-The following keys are active only for supported Yaesu FT-8x7 style profiles:
-
-#### `4` short
-
-- Query Yaesu status.
-
-#### `4` long
-
-- Toggle VFO.
-
-#### `5` short
-
-- Select VFO A.
-
-#### `5` long
-
-- Select VFO B.
-
-#### `6` short
-
-- Turn clarifier on.
-
-#### `6` long
-
-- Turn clarifier off.
-
-#### `7` short
-
-- Turn split on.
-
-#### `7` long
-
-- Turn split off.
-
-#### `8` short
-
-- Turn PTT on.
-
-#### `8` long
-
-- Turn PTT off.
-
-#### `9` short
-
-- Query the full Yaesu status block.
-
----
-
-## Bank 3 - Profiles, Tuning Speech, and Staged Volume
-
-### `A` short
-
-- Speak the currently active radio profile.
-
-### `A` long
-
-- Start profile selection.
-- Enter the profile number.
-- Press `D` to confirm.
-- The controller loads the profile and speaks its name.
-
-Example:
-Hold `A`, press `3`, press `D` -> load profile slot 3 and speak it.
-
-### `B` short
-
-- Toggle automatic tuning-frequency announcements on or off.
-- The controller speaks the new state.
-
-### `B` long
-
-- Speak the current tuning-frequency announcement state without changing it.
-
-### Staged volume keys
-
-- `0` -> stage volume level 0
-- `7` -> stage volume level 1
-- `8` -> stage volume level 2
-- `9` -> stage volume level 3
-
-After selecting one of these levels, press `D` to apply it.
-The controller speaks the selected volume level.
-
-Example:
-Press `8`, then `D` in Bank 3 -> set speech volume to level 2.
+- Toggle notch behavior when supported.
 
 ---
 
@@ -246,7 +138,6 @@ Press `8`, then `D` in Bank 3 -> set speech volume to level 2.
 - Confirms profile selection
 - Confirms frequency entry
 - Confirms staged mode change
-- Confirms staged volume selection
 
 ### `#`
 
@@ -267,3 +158,7 @@ Press `8`, then `D` in Bank 3 -> set speech volume to level 2.
   guide.
 - The ICOM IC-7300 command reference is documented in
   `docs/radios/icom-ic-7300.md`.
+- The Yaesu FT-817 command reference is documented in
+  `docs/radios/yaesu-ft-817.md`.
+- The Yaesu FT-857 command reference is documented in
+  `docs/radios/yaesu-ft-857.md`.

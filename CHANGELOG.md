@@ -21,3 +21,4 @@ This transition marks the step from the earlier proof-of-concept repository stat
 - kept the general user guide separate from per-radio command descriptions
 - updated the support matrix note for the IC-7300 profile to point to the dedicated page
 - synced updated `V3.5` firmware source files into the repository
+- added dedicated `V3.5` radio pages for Yaesu FT-817 and FT-857

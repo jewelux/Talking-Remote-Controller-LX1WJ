@@ -152,6 +152,10 @@ This interaction model remains consistent as the project grows.
 Please visit [User Guide ->](user-guide.md)
 for keypad behavior and spoken feedback examples.
 The current per-radio support state is tracked in [docs/radio-support-matrix.md](docs/radio-support-matrix.md).
+Radio-specific command references currently include
+[ICOM IC-7300](docs/radios/icom-ic-7300.md),
+[Yaesu FT-817](docs/radios/yaesu-ft-817.md), and
+[Yaesu FT-857](docs/radios/yaesu-ft-857.md).
 
 ---
 
