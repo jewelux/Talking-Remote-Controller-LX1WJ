@@ -1,7 +1,7 @@
 /*
   Talking Remote Controller LX1WJ - ESP32-S3 + Keypad + Speech + Multi-Radio Profiles
-  File: main.ino
-  Version: V3.4  (based on V3.2, with staged expansion plan)
+  File: TalkingRemoteControllerLX1WJ_V3_5.ino
+  Version: V3.5
 */
 
 #include "radio_globals.h"
@@ -36,7 +36,7 @@ void setup() {
   g_tuningSpeakEnabled = loadTuningSpeakFromNvs(true);
   applyProfile(g_profileId);
 
-  DBG_PRINT("Talking Remote Controller LX1WJ (V3.4) - Selected radio: ");
+  DBG_PRINT("Talking Remote Controller LX1WJ (V3.5) - Selected radio: ");
   DBG_PRINT(currentProfile().name);
   DBG_PRINT("  CI-V addr=0x");
   if (debugLogEnabled()) Serial.println(g_civRadioAddr, HEX);
