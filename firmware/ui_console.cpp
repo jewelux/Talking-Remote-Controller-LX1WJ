@@ -111,25 +111,90 @@ static bool usbConsoleReady() {
   return (bool)Serial;
 }
 
+static void speakVfoLabel(char which) {
+  if (!g_speechEnabled) return;
+  speakToken("vfo");
+  playSilenceMs(60);
+  if (which == 'A') speakToken("a");
+  else if (which == 'B') speakToken("b");
+}
+
+static void speakVfoFrequencyLabel(char which) {
+  if (!g_speechEnabled) return;
+  speakVfoLabel(which);
+  playSilenceMs(60);
+  speakToken("frequency");
+}
+
+static void speakRitStateAndOffset(bool on, int32_t offset) {
+  if (!g_speechEnabled) return;
+  speakToken("rit");
+  playSilenceMs(60);
+  speakToken(on ? "on" : "off");
+  if (offset == 0) return;
+  playSilenceMs(60);
+  if (offset > 0) {
+    speakToken("plus");
+    playSilenceMs(60);
+  } else {
+    speakToken("minus");
+    playSilenceMs(60);
+    offset = -offset;
+  }
+  speakDigitsAndPoint(String(offset));
+  playSilenceMs(60);
+  speakToken("hertz");
+}
+
+static void speakFeatureValue(const uint8_t* featureData, size_t featureLen, uint8_t value) {
+  if (!g_speechEnabled) return;
+  playClipProgmem(featureData, featureLen);
+  playSilenceMs(60);
+  speakDigitsAndPoint(String((int)value));
+}
+
 static void speakNotchCycleState(bool on, NotchWidth width) {
   if (!g_speechEnabled) return;
-  playClipProgmem(voice_notchfilter, voice_notchfilter_len);
+  speakToken("notch filter");
   playSilenceMs(60);
   if (!on) {
-    playClipProgmem(voice_off, voice_off_len);
+    speakToken("off");
     return;
   }
   switch (width) {
-    case NOTCH_WIDTH_NAR: playClipProgmem(voice_one, voice_one_len); break;
-    case NOTCH_WIDTH_MID: playClipProgmem(voice_two, voice_two_len); break;
-    case NOTCH_WIDTH_WIDE: playClipProgmem(voice_three, voice_three_len); break;
-    default: playClipProgmem(voice_on, voice_on_len); break;
+    case NOTCH_WIDTH_NAR: playDigit(1); break;
+    case NOTCH_WIDTH_MID: playDigit(2); break;
+    case NOTCH_WIDTH_WIDE: playDigit(3); break;
+    default: speakToken("on"); break;
   }
 }
 
 static void speakSimpleBinaryState(bool on) {
   if (!g_speechEnabled) return;
   playClipProgmem(on ? voice_on : voice_off, on ? voice_on_len : voice_off_len);
+}
+
+static void speakSignedStepValue(const String& label, int value) {
+  if (!g_speechEnabled) return;
+  speakToken(label);
+  playSilenceMs(60);
+  if (value < 0) {
+    speakToken("minus");
+    playSilenceMs(60);
+    value = -value;
+  }
+  speakDigitsAndPoint(String(value));
+  playSilenceMs(60);
+  speakToken("step");
+}
+
+static void speakBandStackLabel(uint8_t reg) {
+  if (!g_speechEnabled) return;
+  speakToken("b");
+  playSilenceMs(60);
+  speakToken("stack");
+  playSilenceMs(60);
+  playDigit((int)reg);
 }
 
 static bool isCurrentYaesuFt8x7() {
@@ -371,6 +436,8 @@ static bool handleConsoleProfileCommands(const String& line, const String& upper
     Serial.print(" FIL");
     Serial.println((int)entry.filter);
     if (g_speechEnabled) {
+      speakBandStackLabel((uint8_t)reg);
+      playSilenceMs(60);
       speakDigitsAndPoint(hzToMHzString3(entry.freqHz));
       g_suppressModePrefixOnce = true;
       speakMode(entry.mode);
@@ -397,6 +464,8 @@ static bool handleConsoleProfileCommands(const String& line, const String& upper
     Serial.print(" FIL");
     Serial.println((int)entry.filter);
     if (g_speechEnabled) {
+      speakBandStackLabel((uint8_t)reg);
+      playSilenceMs(60);
       speakDigitsAndPoint(hzToMHzString3(entry.freqHz));
       g_suppressModePrefixOnce = true;
       speakMode(entry.mode);
@@ -854,7 +923,8 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     float swr = swrRawToValue(live.swrRaw);
     Serial.println(swr, 2);
     if (g_speechEnabled) {
-      playClipProgmem(voice_swr, voice_swr_len);
+      speakToken("swr");
+      playSilenceMs(60);
       speakDigitsAndPoint(String(swr, 2));
     }
     return true;
@@ -907,11 +977,13 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   if (upper == "VFO A") {
     if (!selectVfoA()) { Serial.println("VFO A -> failed"); return true; }
     Serial.println("VFO A");
+    speakVfoLabel('A');
     return true;
   }
   if (upper == "VFO B") {
     if (!selectVfoB()) { Serial.println("VFO B -> failed"); return true; }
     Serial.println("VFO B");
+    speakVfoLabel('B');
     return true;
   }
   if (upper == "VFOA?") {
@@ -920,7 +992,11 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     Serial.print("VFOA: ");
     Serial.print(hzToMHzString3(hz));
     Serial.println(" MHz");
-    if (g_speechEnabled) speakDigitsAndPoint(hzToMHzString3(hz));
+    if (g_speechEnabled) {
+      speakVfoFrequencyLabel('A');
+      playSilenceMs(60);
+      speakDigitsAndPoint(hzToMHzString3(hz));
+    }
     return true;
   }
   if (upper == "VFOB?") {
@@ -929,7 +1005,11 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     Serial.print("VFOB: ");
     Serial.print(hzToMHzString3(hz));
     Serial.println(" MHz");
-    if (g_speechEnabled) speakDigitsAndPoint(hzToMHzString3(hz));
+    if (g_speechEnabled) {
+      speakVfoFrequencyLabel('B');
+      playSilenceMs(60);
+      speakDigitsAndPoint(hzToMHzString3(hz));
+    }
     return true;
   }
   if (upper.startsWith("VFOA MODE?")) {
@@ -1000,20 +1080,27 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     bool on = false;
     int32_t offset = 0;
     if (!queryRitEnabled(on, 800)) { Serial.println("RIT? -> no reply"); return true; }
-    if (!queryRitOffsetHz(offset, 800)) { Serial.println(on ? "RIT ON" : "RIT OFF"); return true; }
+    if (!queryRitOffsetHz(offset, 800)) {
+      Serial.println(on ? "RIT ON" : "RIT OFF");
+      speakTokenState("rit", on);
+      return true;
+    }
     Serial.print(on ? "RIT ON " : "RIT OFF ");
     Serial.print(offset);
     Serial.println(" Hz");
+    speakRitStateAndOffset(on, offset);
     return true;
   }
   if (upper == "RIT ON") {
     if (!setRitEnabled(true)) { Serial.println("RIT ON -> failed"); return true; }
     Serial.println("RIT ON");
+    speakTokenState("rit", true);
     return true;
   }
   if (upper == "RIT OFF") {
     if (!setRitEnabled(false)) { Serial.println("RIT OFF -> failed"); return true; }
     Serial.println("RIT OFF");
+    speakTokenState("rit", false);
     return true;
   }
   if (upper.startsWith("RIT ")) {
@@ -1023,6 +1110,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     Serial.print("RIT ");
     Serial.print(hz);
     Serial.println(" Hz");
+    speakRitStateAndOffset(true, hz);
     return true;
   }
   if (upper == "NR?") {
@@ -1045,6 +1133,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     Serial.print("PBT1 ");
     Serial.print(pbtRawToOffset(raw));
     Serial.println(" step");
+    speakSignedStepValue("pbt", pbtRawToOffset(raw));
     return true;
   }
   if (upper == "PBT2?") {
@@ -1053,41 +1142,57 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     Serial.print("PBT2 ");
     Serial.print(pbtRawToOffset(raw));
     Serial.println(" step");
+    speakSignedStepValue("pbt", pbtRawToOffset(raw));
     return true;
   }
   if (upper == "LOCK?") {
     bool on = false;
     if (!queryDialLock(on, 800)) { Serial.println("LOCK? -> no reply"); return true; }
     Serial.println(on ? "LOCK ON" : "LOCK OFF");
-    speakSimpleBinaryState(on);
+    speakTokenState("lock", on);
     return true;
   }
   if (upper == "LOCK ON") {
     if (!setDialLock(true)) { Serial.println("LOCK ON -> failed"); return true; }
     Serial.println("LOCK ON");
-    speakSimpleBinaryState(true);
+    speakTokenState("lock", true);
     return true;
   }
   if (upper == "LOCK OFF") {
     if (!setDialLock(false)) { Serial.println("LOCK OFF -> failed"); return true; }
     Serial.println("LOCK OFF");
-    speakSimpleBinaryState(false);
+    speakTokenState("lock", false);
     return true;
   }
   if (upper == "FILSHAPE?") {
     bool soft = false;
     if (!queryFilterShape(soft, 800)) { Serial.println("FILSHAPE? -> no reply"); return true; }
     Serial.println(soft ? "FILSHAPE SOFT" : "FILSHAPE SHARP");
+    if (g_speechEnabled) {
+      speakToken("filtershape");
+      playSilenceMs(60);
+      speakToken(soft ? "soft" : "sharp");
+    }
     return true;
   }
   if (upper == "FILSHAPE SHARP") {
     if (!setFilterShape(false)) { Serial.println("FILSHAPE SHARP -> failed"); return true; }
     Serial.println("FILSHAPE SHARP");
+    if (g_speechEnabled) {
+      speakToken("filtershape");
+      playSilenceMs(60);
+      speakToken("sharp");
+    }
     return true;
   }
   if (upper == "FILSHAPE SOFT") {
     if (!setFilterShape(true)) { Serial.println("FILSHAPE SOFT -> failed"); return true; }
     Serial.println("FILSHAPE SOFT");
+    if (g_speechEnabled) {
+      speakToken("filtershape");
+      playSilenceMs(60);
+      speakToken("soft");
+    }
     return true;
   }
   if (upper == "FILWIDTH?") {
@@ -1095,25 +1200,30 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     if (!queryCurrentFilterSlot(filter)) { Serial.println("FILWIDTH? -> no reply"); return true; }
     Serial.print("FILWIDTH ");
     Serial.println((int)filter);
+    if (g_speechEnabled) {
+      speakToken("filterwidth");
+      playSilenceMs(60);
+      playDigit(filter);
+    }
     return true;
   }
   if (upper == "MONITOR?") {
     bool on = false;
     if (!queryMonitorEnabled(on, 800)) { Serial.println("MONITOR? -> no reply"); return true; }
     Serial.println(on ? "MONITOR ON" : "MONITOR OFF");
-    if (g_speechEnabled) speakSimpleBinaryState(on);
+    if (g_speechEnabled) speakTokenState("monitor", on);
     return true;
   }
   if (upper == "MONITOR ON") {
     if (!setMonitorEnabled(true)) { Serial.println("MONITOR ON -> failed"); return true; }
     Serial.println("MONITOR ON");
-    if (g_speechEnabled) speakSimpleBinaryState(true);
+    if (g_speechEnabled) speakTokenState("monitor", true);
     return true;
   }
   if (upper == "MONITOR OFF") {
     if (!setMonitorEnabled(false)) { Serial.println("MONITOR OFF -> failed"); return true; }
     Serial.println("MONITOR OFF");
-    if (g_speechEnabled) speakSimpleBinaryState(false);
+    if (g_speechEnabled) speakTokenState("monitor", false);
     return true;
   }
   if (upper == "MONLEVEL?") {
@@ -1122,13 +1232,14 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     Serial.print("MONLEVEL ");
     Serial.print((int)levelRawToPercent(raw));
     Serial.println("%");
+    speakFeatureValue(voice_monitor, voice_monitor_len, levelRawToPercent(raw));
     return true;
   }
   if (upper == "TRANSCEIVE?") {
     bool on = false;
     if (!queryTransceiveEnabled(on, 800)) { Serial.println("TRANSCEIVE? -> no reply"); return true; }
     Serial.println(on ? "TRANSCEIVE ON" : "TRANSCEIVE OFF");
-    if (g_speechEnabled) speakSimpleBinaryState(on);
+    if (g_speechEnabled) speakTokenState("transceiver", on);
     return true;
   }
   if (upper == "NRLEVEL?") {
@@ -1137,11 +1248,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     Serial.print("NRLEVEL ");
     Serial.print((int)levelRawToPercent(raw));
     Serial.println("%");
-    if (g_speechEnabled) {
-      playClipProgmem(voice_noisereduction, voice_noisereduction_len);
-      playSilenceMs(60);
-      speakDigitsAndPoint(String((int)levelRawToPercent(raw)));
-    }
+    speakFeatureValue(voice_noisereduction, voice_noisereduction_len, levelRawToPercent(raw));
     return true;
   }
   if (upper.startsWith("NRLEVEL ")) {
@@ -1151,11 +1258,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     Serial.print("NRLEVEL ");
     Serial.print(percent);
     Serial.println("%");
-    if (g_speechEnabled) {
-      playClipProgmem(voice_noisereduction, voice_noisereduction_len);
-      playSilenceMs(60);
-      speakDigitsAndPoint(String(percent));
-    }
+    speakFeatureValue(voice_noisereduction, voice_noisereduction_len, (uint8_t)percent);
     return true;
   }
   if (upper == "NBLEVEL?") {
@@ -1168,6 +1271,8 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
       playClipProgmem(voice_noiseblanker, voice_noiseblanker_len);
       playSilenceMs(60);
       speakDigitsAndPoint(String((int)levelRawToPercent(raw)));
+      playSilenceMs(60);
+      speakToken("percent");
     }
     return true;
   }
@@ -1182,6 +1287,8 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
       playClipProgmem(voice_noiseblanker, voice_noiseblanker_len);
       playSilenceMs(60);
       speakDigitsAndPoint(String(percent));
+      playSilenceMs(60);
+      speakToken("percent");
     }
     return true;
   }
@@ -1193,6 +1300,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     Serial.print("PBT1 ");
     Serial.print(value);
     Serial.println(" step");
+    speakSignedStepValue("pbt", value);
     return true;
   }
   if (upper.startsWith("PBT2 ")) {
@@ -1203,6 +1311,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     Serial.print("PBT2 ");
     Serial.print(value);
     Serial.println(" step");
+    speakSignedStepValue("pbt", value);
     return true;
   }
   if (upper.startsWith("FILWIDTH ")) {
@@ -1213,6 +1322,11 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     if (!setMode(mode, (uint8_t)filter)) { Serial.println("FILWIDTH -> failed"); return true; }
     Serial.print("FILWIDTH ");
     Serial.println(filter);
+    if (g_speechEnabled) {
+      speakToken("filterwidth");
+      playSilenceMs(60);
+      playDigit((uint8_t)filter);
+    }
     return true;
   }
   if (upper.startsWith("MONLEVEL ")) {
@@ -1222,18 +1336,19 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     Serial.print("MONLEVEL ");
     Serial.print(percent);
     Serial.println("%");
+    speakFeatureValue(voice_monitor, voice_monitor_len, (uint8_t)percent);
     return true;
   }
   if (upper == "TRANSCEIVE ON") {
     if (!setTransceiveEnabled(true)) { Serial.println("TRANSCEIVE ON -> failed"); return true; }
     Serial.println("TRANSCEIVE ON");
-    if (g_speechEnabled) speakSimpleBinaryState(true);
+    if (g_speechEnabled) speakTokenState("transceiver", true);
     return true;
   }
   if (upper == "TRANSCEIVE OFF") {
     if (!setTransceiveEnabled(false)) { Serial.println("TRANSCEIVE OFF -> failed"); return true; }
     Serial.println("TRANSCEIVE OFF");
-    if (g_speechEnabled) speakSimpleBinaryState(false);
+    if (g_speechEnabled) speakTokenState("transceiver", false);
     return true;
   }
   if (upper == "NOTCH?") {
@@ -1255,7 +1370,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
       return true;
     }
     if (usbConsoleReady()) Serial.println("NOTCH ON");
-    speakBinaryFeatureState(voice_notchfilter, voice_notchfilter_len, true);
+    speakTokenState("notch filter", true);
     return true;
   }
   if (upper == "NR ON") {
@@ -1339,7 +1454,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     if (!sp.caps.setNotch) { Serial.println("NOTCH ON -> unsupported"); return true; }
     if (!applyNotchAndTrack(true)) { Serial.println("NOTCH ON -> failed"); return true; }
     Serial.println("NOTCH ON");
-    speakBinaryFeatureState(voice_notchfilter, voice_notchfilter_len, true);
+    speakTokenState("notch filter", true);
     return true;
   }
   if (upper == "NOTCH NAR") {
@@ -1367,7 +1482,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     if (!sp.caps.setNotch) { Serial.println("NOTCH OFF -> unsupported"); return true; }
     if (!applyNotchAndTrack(false)) { Serial.println("NOTCH OFF -> failed"); return true; }
     Serial.println("NOTCH OFF");
-    speakBinaryFeatureState(voice_notchfilter, voice_notchfilter_len, false);
+    speakTokenState("notch filter", false);
     return true;
   }
   return false;

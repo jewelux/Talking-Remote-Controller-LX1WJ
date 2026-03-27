@@ -30,15 +30,16 @@ void speakMode(uint8_t mode) {
   }
 #endif
   switch (mode) {
-    case 0x00: playClipProgmem(voice_lsb, voice_lsb_len); break;
-    case 0x01: playClipProgmem(voice_usb, voice_usb_len); break;
-    case 0x02: playClipProgmem(voice_am, voice_am_len); break;
-    case 0x03: playClipProgmem(voice_cw, voice_cw_len); break;
-    case 0x04: playClipProgmem(voice_rtty, voice_rtty_len); break;
-    case 0x05: playClipProgmem(voice_fm, voice_fm_len); break;
-    case 0x07: playClipProgmem(voice_cwr, voice_cwr_len); break;
-    case 0x08: playClipProgmem(voice_rttyr, voice_rttyr_len); break;
-    case 0x11: playClipProgmem(voice_digi, voice_digi_len); break;
+    case 0x00: speakToken("lsb"); break;
+    case 0x01: speakToken("usb"); break;
+    case 0x02: speakToken("am"); break;
+    case 0x03: speakToken("cw"); break;
+    case 0x04: speakToken("rtty"); break;
+    case 0x05: speakToken("fm"); break;
+    case 0x06: speakToken("wfm"); break;
+    case 0x07: speakToken("cwr"); break;
+    case 0x08: speakToken("rttyr"); break;
+    case 0x11: speakToken("digi"); break;
     default: break;
   }
   playSilenceMs(200);

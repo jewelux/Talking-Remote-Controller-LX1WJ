@@ -40,6 +40,7 @@ static void queryBank1RxTx();
 static void queryBank1TxFrequency();
 static void queryBank1Lock();
 static void toggleBank1Lock();
+static void beginBank1FrequencySet();
 static void queryBank3Split();
 static void toggleBank3Split();
 static void queryBank3TxFrequency();
@@ -101,9 +102,26 @@ static void speakFrequencyWord() {
 
 void speakTuningSpeechState() {
   if (!g_speechEnabled) return;
+  speakToken("tune");
+  playSilenceMs(60);
   speakFrequencyWord();
   playSilenceMs(60);
   speakToken(g_tuningSpeakEnabled ? "on" : "off");
+}
+
+static void speakVfoFrequencyLabel(char which) {
+  if (!g_speechEnabled) return;
+  speakToken("vfo");
+  playSilenceMs(60);
+  if (which == 'A') speakToken("a");
+  else if (which == 'B') speakToken("b");
+  playSilenceMs(60);
+  speakFrequencyWord();
+}
+
+static void speakRitLabel() {
+  if (!g_speechEnabled) return;
+  speakToken("rit");
 }
 
 bool profileModeFromDigit(char digit, uint8_t& modeOut) {
@@ -149,17 +167,17 @@ static void speakBinaryFeatureState(const uint8_t* featureData, size_t featureLe
 
 static void speakNotchCycleState(bool on, NotchWidth width) {
   if (!g_speechEnabled) return;
-  playClipProgmem(voice_notchfilter, voice_notchfilter_len);
+  speakToken("notch filter");
   playSilenceMs(60);
   if (!on) {
-    playClipProgmem(voice_off, voice_off_len);
+    speakToken("off");
     return;
   }
   switch (width) {
-    case NOTCH_WIDTH_NAR: playClipProgmem(voice_one, voice_one_len); break;
-    case NOTCH_WIDTH_MID: playClipProgmem(voice_two, voice_two_len); break;
-    case NOTCH_WIDTH_WIDE: playClipProgmem(voice_three, voice_three_len); break;
-    default: playClipProgmem(voice_on, voice_on_len); break;
+    case NOTCH_WIDTH_NAR: playDigit(1); break;
+    case NOTCH_WIDTH_MID: playDigit(2); break;
+    case NOTCH_WIDTH_WIDE: playDigit(3); break;
+    default: speakToken("on"); break;
   }
 }
 
@@ -170,6 +188,13 @@ static void speakNrLevel(int level) {
   if (level <= 0) playClipProgmem(voice_off, voice_off_len);
   else if (level == 1) playClipProgmem(voice_one, voice_one_len);
   else playClipProgmem(voice_two, voice_two_len);
+}
+
+static void speakFeatureValue(const uint8_t* featureData, size_t featureLen, uint8_t value) {
+  if (!g_speechEnabled) return;
+  playClipProgmem(featureData, featureLen);
+  playSilenceMs(60);
+  speakDigitsAndPoint(String((int)value));
 }
 
 static uint8_t levelRawToPercent(uint16_t raw) {
@@ -208,6 +233,20 @@ static void printKeypadCommand(const String& line) {
 static void speakSimpleBinaryState(bool on) {
   if (!g_speechEnabled) return;
   playClipProgmem(on ? voice_on : voice_off, on ? voice_on_len : voice_off_len);
+}
+
+static void speakSignedStepValue(const String& label, int value) {
+  if (!g_speechEnabled) return;
+  speakToken(label);
+  playSilenceMs(60);
+  if (value < 0) {
+    speakToken("minus");
+    playSilenceMs(60);
+    value = -value;
+  }
+  speakDigitsAndPoint(String(value));
+  playSilenceMs(60);
+  speakToken("step");
 }
 
 static void toggleBank2Nr() {
@@ -264,7 +303,7 @@ static void toggleBank2Notch() {
     bool next = !live.notchOn;
     if (applyNotchAndTrack(next)) {
       printKeypadStatus(next ? "NOTCH ON" : "NOTCH OFF");
-      speakBinaryFeatureState(voice_notchfilter, voice_notchfilter_len, next);
+      speakTokenState("notch filter", next);
     }
     return;
   }
@@ -306,7 +345,7 @@ static void queryBank2Tuner() {
   bool on = false;
   if (!queryTuner(on, 800)) return;
   printKeypadStatus(on ? "TUNER ON" : "TUNER OFF");
-  speakSimpleBinaryState(on);
+  speakTokenState("tuner", on);
 }
 
 static void toggleBank2Tuner() {
@@ -315,14 +354,14 @@ static void toggleBank2Tuner() {
   if (!queryTuner(on, 800)) return;
   if (!setTuner(!on)) return;
   printKeypadStatus(!on ? "TUNER ON" : "TUNER OFF");
-  speakSimpleBinaryState(!on);
+  speakTokenState("tuner", !on);
 }
 
 static void triggerBank2Tune() {
   printKeypadCommand("BANK2 0 DOUBLE -> TUNE");
   if (!startTune()) return;
   printKeypadStatus("TUNE");
-  if (g_speechEnabled) playClipProgmem(voice_ok, voice_ok_len);
+  if (g_speechEnabled) speakToken("tune");
 }
 
 static void speakFeaturePercent(const uint8_t* featureData, size_t featureLen, uint8_t percent) {
@@ -338,7 +377,7 @@ static void queryBank2NrLevel() {
   if (!queryNrLevel(raw, 800)) return;
   uint8_t percent = levelRawToPercent(raw);
   printKeypadStatus(String("NRLEVEL ") + String((int)percent) + "%");
-  speakFeaturePercent(voice_noisereduction, voice_noisereduction_len, percent);
+  speakFeatureValue(voice_noisereduction, voice_noisereduction_len, percent);
 }
 
 static void adjustBank2NrLevel(int deltaPercent) {
@@ -370,7 +409,7 @@ static void adjustBank2NrLevel(int deltaPercent) {
   if (!wrote && (bool)Serial) {
     Serial.println("WARN NRLEVEL write not confirmed; using readback value");
   }
-  speakFeaturePercent(voice_noisereduction, voice_noisereduction_len, readPercent);
+  speakFeatureValue(voice_noisereduction, voice_noisereduction_len, readPercent);
 }
 
 static void queryBank2NbLevel() {
@@ -379,7 +418,7 @@ static void queryBank2NbLevel() {
   if (!queryNbLevel(raw, 800)) return;
   uint8_t percent = levelRawToPercent(raw);
   printKeypadStatus(String("NBLEVEL ") + String((int)percent) + "%");
-  speakFeaturePercent(voice_noiseblanker, voice_noiseblanker_len, percent);
+  speakTokenPercent("noiseblanker", percent);
 }
 
 static void adjustBank2NbLevel(int deltaPercent) {
@@ -391,7 +430,7 @@ static void adjustBank2NbLevel(int deltaPercent) {
   if (percent > 100) percent = 100;
   if (!setNbLevel(levelPercentToRaw(percent))) return;
   printKeypadStatus(String("NBLEVEL ") + String(percent) + "%");
-  speakFeaturePercent(voice_noiseblanker, voice_noiseblanker_len, (uint8_t)percent);
+  speakTokenPercent("noiseblanker", (uint8_t)percent);
 }
 
 static void speakQueriedFrequencyHz(uint64_t hz) {
@@ -406,7 +445,7 @@ static void queryBank3Split() {
   bool on = false;
   if (!querySplit(on, 800)) return;
   printKeypadStatus(on ? "SPLIT ON" : "SPLIT OFF");
-  speakSimpleBinaryState(on);
+  speakTokenState("split", on);
 }
 
 static void toggleBank3Split() {
@@ -415,7 +454,7 @@ static void toggleBank3Split() {
   if (!querySplit(on, 800)) return;
   if (!setSplit(!on)) return;
   printKeypadStatus(!on ? "SPLIT ON" : "SPLIT OFF");
-  speakSimpleBinaryState(!on);
+  speakTokenState("split", !on);
 }
 
 static void queryBank3TxFrequency() {
@@ -431,7 +470,11 @@ static void queryBank3VfoA() {
   uint64_t hz = 0;
   if (!queryVfoFrequency(true, hz, 800)) return;
   printKeypadStatus(String("VFOA: ") + hzToMHzString3(hz) + " MHz");
-  speakQueriedFrequencyHz(hz);
+  if (g_speechEnabled) {
+    speakVfoFrequencyLabel('A');
+    playSilenceMs(60);
+    speakDigitsAndPoint(hzToMHzString3(hz));
+  }
 }
 
 static void selectBank3VfoA() {
@@ -459,7 +502,11 @@ static void queryBank3VfoB() {
   uint64_t hz = 0;
   if (!queryVfoFrequency(false, hz, 800)) return;
   printKeypadStatus(String("VFOB: ") + hzToMHzString3(hz) + " MHz");
-  speakQueriedFrequencyHz(hz);
+  if (g_speechEnabled) {
+    speakVfoFrequencyLabel('B');
+    playSilenceMs(60);
+    speakDigitsAndPoint(hzToMHzString3(hz));
+  }
 }
 
 static void selectBank3VfoB() {
@@ -573,7 +620,20 @@ static void queryBank1Lock() {
   bool on = false;
   if (!queryDialLock(on, 800)) return;
   printKeypadStatus(on ? "LOCK ON" : "LOCK OFF");
-  speakSimpleBinaryState(on);
+  speakTokenState("lock", on);
+}
+
+static void beginBank1FrequencySet() {
+  printKeypadCommand("BANK1 0 LONG -> FREQ");
+  g_freqEntryActive = true;
+  g_freqEntryIsMHz = false;
+  g_freqEntryDigits = "";
+  g_freqEntryTargetVfo = 0;
+  if (g_speechEnabled) {
+    speakFrequencyWord();
+    playSilenceMs(80);
+    speakToken("please");
+  }
 }
 
 static void toggleBank1Lock() {
@@ -582,7 +642,7 @@ static void toggleBank1Lock() {
   if (!queryDialLock(on, 800)) return;
   if (!setDialLock(!on)) return;
   printKeypadStatus(!on ? "LOCK ON" : "LOCK OFF");
-  speakSimpleBinaryState(!on);
+  speakTokenState("lock", !on);
 }
 
 static void queryBank2PbtInner() {
@@ -590,7 +650,7 @@ static void queryBank2PbtInner() {
   uint16_t raw = 0;
   if (!queryPbtInner(raw, 800)) return;
   printKeypadStatus(String("PBT1 ") + String(pbtRawToOffset(raw)) + " step");
-  if (g_speechEnabled) speakDigitsAndPoint(String(pbtRawToOffset(raw)));
+  speakSignedStepValue("pbt", pbtRawToOffset(raw));
 }
 
 static void adjustBank2PbtInner(int delta) {
@@ -607,7 +667,7 @@ static void queryBank2PbtOuter() {
   uint16_t raw = 0;
   if (!queryPbtOuter(raw, 800)) return;
   printKeypadStatus(String("PBT2 ") + String(pbtRawToOffset(raw)) + " step");
-  if (g_speechEnabled) speakDigitsAndPoint(String(pbtRawToOffset(raw)));
+  speakSignedStepValue("pbt", pbtRawToOffset(raw));
 }
 
 static void adjustBank2PbtOuter(int delta) {
@@ -624,7 +684,11 @@ static void queryBank2FilterShape() {
   bool soft = false;
   if (!queryFilterShape(soft, 800)) return;
   printKeypadStatus(soft ? "FILSHAPE SOFT" : "FILSHAPE SHARP");
-  speakSimpleBinaryState(soft);
+  if (g_speechEnabled) {
+    speakToken("filtershape");
+    playSilenceMs(60);
+    speakToken(soft ? "soft" : "sharp");
+  }
 }
 
 static void toggleBank2FilterShape() {
@@ -633,7 +697,11 @@ static void toggleBank2FilterShape() {
   if (!queryFilterShape(soft, 800)) return;
   if (!setFilterShape(!soft)) return;
   printKeypadStatus(!soft ? "FILSHAPE SOFT" : "FILSHAPE SHARP");
-  speakSimpleBinaryState(!soft);
+  if (g_speechEnabled) {
+    speakToken("filtershape");
+    playSilenceMs(60);
+    speakToken(!soft ? "soft" : "sharp");
+  }
 }
 
 static void queryBank2FilterWidth() {
@@ -641,7 +709,11 @@ static void queryBank2FilterWidth() {
   uint8_t filter = 0xFF;
   if (!queryCurrentFilterSlotForKeypad(filter)) return;
   printKeypadStatus(String("FILWIDTH ") + String((int)filter));
-  if (g_speechEnabled) playDigit(filter);
+  if (g_speechEnabled) {
+    speakToken("filterwidth");
+    playSilenceMs(60);
+    playDigit(filter);
+  }
 }
 
 static void cycleBank2FilterWidth(int delta) {
@@ -655,7 +727,11 @@ static void cycleBank2FilterWidth(int delta) {
   if (next > 3) next = 1;
   if (!setMode(mode, (uint8_t)next)) return;
   printKeypadStatus(String("FILWIDTH ") + String(next));
-  if (g_speechEnabled) playDigit((uint8_t)next);
+  if (g_speechEnabled) {
+    speakToken("filterwidth");
+    playSilenceMs(60);
+    playDigit((uint8_t)next);
+  }
 }
 
 static void queryBank3BandStack(uint8_t reg) {
@@ -673,7 +749,7 @@ static void queryBank4Tuner() {
   bool on = false;
   if (!queryTuner(on, 800)) return;
   printKeypadStatus(on ? "TUNER ON" : "TUNER OFF");
-  speakSimpleBinaryState(on);
+  speakTokenState("tuner", on);
 }
 
 static void toggleBank4Tuner() {
@@ -682,14 +758,14 @@ static void toggleBank4Tuner() {
   if (!queryTuner(on, 800)) return;
   if (!setTuner(!on)) return;
   printKeypadStatus(!on ? "TUNER ON" : "TUNER OFF");
-  speakSimpleBinaryState(!on);
+  speakTokenState("tuner", !on);
 }
 
 static void triggerBank4Tune() {
   printKeypadCommand("BANK4 0 DOUBLE -> TUNE");
   if (!startTune()) return;
   printKeypadStatus("TUNE");
-  if (g_speechEnabled) playClipProgmem(voice_ok, voice_ok_len);
+  if (g_speechEnabled) speakToken("tune");
 }
 
 static void queryBank4Monitor() {
@@ -697,7 +773,7 @@ static void queryBank4Monitor() {
   bool on = false;
   if (!queryMonitorEnabled(on, 800)) return;
   printKeypadStatus(on ? "MONITOR ON" : "MONITOR OFF");
-  speakSimpleBinaryState(on);
+  speakTokenState("monitor", on);
 }
 
 static void toggleBank4Monitor() {
@@ -706,7 +782,7 @@ static void toggleBank4Monitor() {
   if (!queryMonitorEnabled(on, 800)) return;
   if (!setMonitorEnabled(!on)) return;
   printKeypadStatus(!on ? "MONITOR ON" : "MONITOR OFF");
-  speakSimpleBinaryState(!on);
+  speakTokenState("monitor", !on);
 }
 
 static void queryBank4MonitorLevel() {
@@ -715,7 +791,7 @@ static void queryBank4MonitorLevel() {
   if (!queryMonitorLevel(raw, 800)) return;
   const uint8_t percent = levelRawToPercent(raw);
   printKeypadStatus(String("MONLEVEL ") + String((int)percent) + "%");
-  if (g_speechEnabled) speakDigitsAndPoint(String((int)percent));
+  speakFeatureValue(voice_monitor, voice_monitor_len, percent);
 }
 
 static void adjustBank4MonitorLevel(int deltaPercent) {
@@ -734,7 +810,7 @@ static void queryBank4Transceive() {
   bool on = false;
   if (!queryTransceiveEnabled(on, 800)) return;
   printKeypadStatus(on ? "TRANSCEIVE ON" : "TRANSCEIVE OFF");
-  speakSimpleBinaryState(on);
+  speakTokenState("transceiver", on);
 }
 
 static void toggleBank4Transceive() {
@@ -743,7 +819,7 @@ static void toggleBank4Transceive() {
   if (!queryTransceiveEnabled(on, 800)) return;
   if (!setTransceiveEnabled(!on)) return;
   printKeypadStatus(!on ? "TRANSCEIVE ON" : "TRANSCEIVE OFF");
-  speakSimpleBinaryState(!on);
+  speakTokenState("transceiver", !on);
 }
 
 static void queryBank9Profile() {
@@ -803,11 +879,19 @@ static void queryBank9Volume() {
 
 static void speakRitOffsetValue(int32_t hz) {
   if (!g_speechEnabled) return;
+  speakRitLabel();
+  playSilenceMs(60);
   if (hz > 0) {
-    playClipProgmem(voice_plus, voice_plus_len);
+    speakToken("plus");
+    playSilenceMs(60);
+  }
+  if (hz < 0) {
+    speakToken("minus");
     playSilenceMs(60);
   }
   speakDigitsAndPoint(String(hz < 0 ? -hz : hz));
+  playSilenceMs(60);
+  speakToken("hertz");
 }
 
 static void queryBank5Rit() {
@@ -818,6 +902,8 @@ static void queryBank5Rit() {
   if (!queryRitOffsetHz(offset, 800)) offset = 0;
   printKeypadStatus(String(on ? "RIT ON " : "RIT OFF ") + String(offset) + " Hz");
   if (!g_speechEnabled) return;
+  speakRitLabel();
+  playSilenceMs(60);
   speakToken(on ? "on" : "off");
   if (offset != 0) {
     playSilenceMs(60);
@@ -831,7 +917,9 @@ static void toggleBank5Rit() {
   if (!queryRitEnabled(on, 800)) return;
   if (!setRitEnabled(!on)) return;
   printKeypadStatus(!on ? "RIT ON" : "RIT OFF");
-  speakSimpleBinaryState(!on);
+  speakRitLabel();
+  playSilenceMs(60);
+  speakToken(!on ? "on" : "off");
 }
 
 static void setBank5RitOffset(int32_t hz) {
@@ -1051,6 +1139,13 @@ void keypadEvent(KeypadEvent k) {
     return;
   }
   if (g_bank == 1 && k == '3' && s == RELEASED && g_threeHoldConsumed) { g_threeHoldConsumed = false; return; }
+
+  if (g_bank == 1 && k == '0' && s == HOLD) {
+    beginBank1FrequencySet();
+    g_zeroHoldConsumed = true;
+    return;
+  }
+  if (g_bank == 1 && k == '0' && s == RELEASED && g_zeroHoldConsumed) { g_zeroHoldConsumed = false; return; }
 
   if (g_bank == 2 && k == '1' && s == HOLD) {
     toggleBank2Nr();

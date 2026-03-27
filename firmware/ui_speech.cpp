@@ -71,21 +71,32 @@ static inline float volumeLevelToGain(uint8_t lvl) {
 }
 
 static const VoiceClip kVoiceClips[] = {
+  {"voice_a", voice_a, voice_a_len},
   {"voice_am", voice_am, voice_am_len},
   {"voice_bank", voice_bank, voice_bank_len},
+  {"voice_b", voice_b, voice_b_len},
   {"voice_c", voice_c, voice_c_len},
   {"voice_choose", voice_choose, voice_choose_len},
   {"voice_cw", voice_cw, voice_cw_len},
   {"voice_cwr", voice_cwr, voice_cwr_len},
+  {"voice_d", voice_d, voice_d_len},
   {"voice_db", voice_db, voice_db_len},
   {"voice_digi", voice_digi, voice_digi_len},
   {"voice_eight", voice_eight, voice_eight_len},
   {"voice_elecraft", voice_elecraft, voice_elecraft_len},
   {"voice_error", voice_error, voice_error_len},
+  {"voice_f", voice_f, voice_f_len},
   {"voice_five", voice_five, voice_five_len},
+  {"voice_filter", voice_filter, voice_filter_len},
+  {"voice_filtershape", voice_filtershape, voice_filtershape_len},
+  {"voice_filterwidth", voice_filterwidth, voice_filterwidth_len},
   {"voice_fm", voice_fm, voice_fm_len},
   {"voice_four", voice_four, voice_four_len},
   {"voice_frequency", voice_frequency, voice_frequency_len},
+#if defined(HAS_VOICE_voice_g)
+  {"voice_g", voice_g, voice_g_len},
+#endif
+  {"voice_hertz", voice_hertz, voice_hertz_len},
 #if defined(HAS_VOICE_voice_mode)
   {"voice_mode", voice_mode, voice_mode_len},
 #endif
@@ -93,8 +104,14 @@ static const VoiceClip kVoiceClips[] = {
   {"voice_icom", voice_icom, voice_icom_len},
   {"voice_kenwood", voice_kenwood, voice_kenwood_len},
   {"voice_kilohertz", voice_kilohertz, voice_kilohertz_len},
+  {"voice_l", voice_l, voice_l_len},
+  {"voice_level", voice_level, voice_level_len},
   {"voice_lsb", voice_lsb, voice_lsb_len},
+  {"voice_lock", voice_lock, voice_lock_len},
+  {"voice_m", voice_m, voice_m_len},
   {"voice_megahertz", voice_megahertz, voice_megahertz_len},
+  {"voice_minus", voice_minus, voice_minus_len},
+  {"voice_monitor", voice_monitor, voice_monitor_len},
   {"voice_nine", voice_nine, voice_nine_len},
 #if defined(HAS_VOICE_voice_noiseblanker)
   {"voice_noiseblanker", voice_noiseblanker, voice_noiseblanker_len},
@@ -102,6 +119,7 @@ static const VoiceClip kVoiceClips[] = {
 #if defined(HAS_VOICE_voice_noisereduction)
   {"voice_noisereduction", voice_noisereduction, voice_noisereduction_len},
 #endif
+  {"voice_notch", voice_notch, voice_notch_len},
 #if defined(HAS_VOICE_voice_notchfilter)
   {"voice_notchfilter", voice_notchfilter, voice_notchfilter_len},
 #endif
@@ -109,27 +127,46 @@ static const VoiceClip kVoiceClips[] = {
   {"voice_ok", voice_ok, voice_ok_len},
   {"voice_on", voice_on, voice_on_len},
   {"voice_one", voice_one, voice_one_len},
+  {"voice_pbt", voice_pbt, voice_pbt_len},
+  {"voice_percent", voice_percent, voice_percent_len},
   {"voice_please", voice_please, voice_please_len},
   {"voice_plus", voice_plus, voice_plus_len},
   {"voice_point", voice_point, voice_point_len},
   {"voice_power", voice_power, voice_power_len},
-  {"voice_rtty", voice_rtty, voice_rtty_len},
-  {"voice_rttyr", voice_rttyr, voice_rttyr_len},
-  {"voice_s", voice_s, voice_s_len},
-  {"voice_seven", voice_seven, voice_seven_len},
-  {"voice_six", voice_six, voice_six_len},
-  {"voice_swr", voice_swr, voice_swr_len},
-  {"voice_thankyou", voice_thankyou, voice_thankyou_len},
-  {"voice_three", voice_three, voice_three_len},
-  {"voice_transceiver", voice_transceiver, voice_transceiver_len},
-  {"voice_two", voice_two, voice_two_len},
-  {"voice_u", voice_u, voice_u_len},
-  {"voice_usb", voice_usb, voice_usb_len},
-  {"voice_watts", voice_watts, voice_watts_len},
-  {"voice_yaesu", voice_yaesu, voice_yaesu_len},
 #if defined(HAS_VOICE_voice_r)
   {"voice_r", voice_r, voice_r_len},
 #endif
+#if defined(HAS_VOICE_voice_rit)
+  {"voice_rit", voice_rit, voice_rit_len},
+#endif
+  {"voice_rtty", voice_rtty, voice_rtty_len},
+  {"voice_rttyr", voice_rttyr, voice_rttyr_len},
+  {"voice_s", voice_s, voice_s_len},
+#if defined(HAS_VOICE_voice_s_meter)
+  {"voice_s_meter", voice_s_meter, voice_s_meter_len},
+#endif
+  {"voice_seven", voice_seven, voice_seven_len},
+  {"voice_sharp", voice_sharp, voice_sharp_len},
+  {"voice_six", voice_six, voice_six_len},
+  {"voice_soft", voice_soft, voice_soft_len},
+  {"voice_split", voice_split, voice_split_len},
+  {"voice_stack", voice_stack, voice_stack_len},
+  {"voice_step", voice_step, voice_step_len},
+  {"voice_swr", voice_swr, voice_swr_len},
+  {"voice_t", voice_t, voice_t_len},
+  {"voice_thankyou", voice_thankyou, voice_thankyou_len},
+  {"voice_three", voice_three, voice_three_len},
+  {"voice_transceiver", voice_transceiver, voice_transceiver_len},
+  {"voice_tune", voice_tune, voice_tune_len},
+  {"voice_tuner", voice_tuner, voice_tuner_len},
+  {"voice_two", voice_two, voice_two_len},
+  {"voice_u", voice_u, voice_u_len},
+  {"voice_usb", voice_usb, voice_usb_len},
+  {"voice_vfo", voice_vfo, voice_vfo_len},
+  {"voice_w", voice_w, voice_w_len},
+  {"voice_watts", voice_watts, voice_watts_len},
+  {"voice_y", voice_y, voice_y_len},
+  {"voice_yaesu", voice_yaesu, voice_yaesu_len},
 #if defined(HAS_VOICE_voice_xiegu)
   {"voice_xiegu", voice_xiegu, voice_xiegu_len},
 #endif
@@ -145,6 +182,50 @@ static const VoiceClip* findVoiceClip(String token) {
     if (token.equalsIgnoreCase(kVoiceClips[i].name)) return &kVoiceClips[i];
   }
   return nullptr;
+}
+
+struct VoiceAlias {
+  const char* token;
+  const char* parts[5];
+  uint8_t count;
+};
+
+static const VoiceAlias kVoiceAliases[] = {
+  {"usb", {"u", "s", "b"}, 3},
+  {"lsb", {"l", "s", "b"}, 3},
+  {"cw", {"c", "w"}, 2},
+  {"cwr", {"c", "w", "r"}, 3},
+  {"fm", {"f", "m"}, 2},
+  {"wfm", {"w", "f", "m"}, 3},
+  {"db", {"d", "b"}, 2},
+  {"swr", {"s", "w", "r"}, 3},
+  {"rtty", {"r", "t", "t", "y"}, 4},
+  {"rttyr", {"r", "t", "t", "y", "r"}, 5},
+  {"rtty_r", {"r", "t", "t", "y", "r"}, 5},
+  {"notchfilter", {"notch", "filter"}, 2},
+  {"vfoa", {"vfo", "a"}, 2},
+  {"vfob", {"vfo", "b"}, 2},
+  {"pbt1", {"pbt", "one"}, 2},
+  {"pbt2", {"pbt", "two"}, 2},
+  {"filshape", {"filtershape"}, 1},
+  {"filwidth", {"filterwidth"}, 1},
+  {"transceive", {"transceiver"}, 1},
+};
+
+static bool speakClipToken(const String& token) {
+  const VoiceClip* c = findVoiceClip(token);
+  if (!c) return false;
+  return playClipProgmem(c->data, c->len);
+}
+
+bool speakTokens(const char* const* tokens, size_t count, uint16_t gapMs) {
+  if (!g_speechEnabled) return false;
+  bool ok = true;
+  for (size_t i = 0; i < count; ++i) {
+    ok = speakToken(tokens[i]) && ok;
+    if (i + 1 < count) playSilenceMs((int)gapMs);
+  }
+  return ok;
 }
 
 void audioAmpOn() { if (AMP_SD_PIN >= 0) digitalWrite(AMP_SD_PIN, HIGH); }
@@ -292,7 +373,7 @@ void speakDigitsAndPoint(const String& s) {
 
 void speakSValue(uint8_t sVal) {
   if (!g_speechEnabled) return;
-  if (!g_keypadExecuting) playClipProgmem(voice_s, voice_s_len);
+  if (!g_keypadExecuting) speakToken("s_meter");
   playSilenceMs(60);
   playDigit((int)min<uint8_t>(sVal, 9));
   playSilenceMs(250);
@@ -300,12 +381,56 @@ void speakSValue(uint8_t sVal) {
 
 bool speakToken(const String& token) {
   if (!g_speechEnabled) return false;
-  const VoiceClip* c = findVoiceClip(token);
-  if (!c) {
-    playClipProgmem(voice_error, voice_error_len);
-    return false;
+
+  String normalized = token;
+  normalized.trim();
+  normalized.toLowerCase();
+  normalized.replace("-", "_");
+  if (!normalized.length()) return false;
+
+  int spacePos = normalized.indexOf(' ');
+  if (spacePos >= 0) {
+    bool ok = true;
+    int start = 0;
+    while (start < normalized.length()) {
+      while (start < normalized.length() && normalized[start] == ' ') start++;
+      if (start >= normalized.length()) break;
+      int end = normalized.indexOf(' ', start);
+      if (end < 0) end = normalized.length();
+      ok = speakToken(normalized.substring(start, end)) && ok;
+      start = end;
+      while (start < normalized.length() && normalized[start] == ' ') start++;
+      if (start < normalized.length()) playSilenceMs(60);
+    }
+    return ok;
   }
-  return playClipProgmem(c->data, c->len);
+
+  if (speakClipToken(normalized)) return true;
+
+  for (size_t i = 0; i < sizeof(kVoiceAliases) / sizeof(kVoiceAliases[0]); ++i) {
+    if (normalized.equals(kVoiceAliases[i].token)) {
+      return speakTokens(kVoiceAliases[i].parts, kVoiceAliases[i].count, 60);
+    }
+  }
+
+  playClipProgmem(voice_error, voice_error_len);
+  return false;
+}
+
+bool speakTokenState(const String& token, bool on) {
+  if (!g_speechEnabled) return false;
+  bool ok = speakToken(token);
+  playSilenceMs(60);
+  return speakToken(on ? "on" : "off") && ok;
+}
+
+bool speakTokenPercent(const String& token, uint8_t percent) {
+  if (!g_speechEnabled) return false;
+  bool ok = speakToken(token);
+  playSilenceMs(60);
+  speakDigitsAndPoint(String((int)percent));
+  playSilenceMs(60);
+  return speakToken("percent") && ok;
 }
 
 void speakOk() { speakToken("ok"); }

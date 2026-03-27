@@ -39,17 +39,17 @@ static void speakBinaryFeatureState(const uint8_t* featureData, size_t featureLe
 
 static void speakNotchCycleState(bool on, NotchWidth width) {
   if (!g_speechEnabled) return;
-  playClipProgmem(voice_notchfilter, voice_notchfilter_len);
+  speakToken("notch filter");
   playSilenceMs(60);
   if (!on) {
-    playClipProgmem(voice_off, voice_off_len);
+    speakToken("off");
     return;
   }
   switch (width) {
-    case NOTCH_WIDTH_NAR: playClipProgmem(voice_one, voice_one_len); break;
-    case NOTCH_WIDTH_MID: playClipProgmem(voice_two, voice_two_len); break;
-    case NOTCH_WIDTH_WIDE: playClipProgmem(voice_three, voice_three_len); break;
-    default: playClipProgmem(voice_on, voice_on_len); break;
+    case NOTCH_WIDTH_NAR: playDigit(1); break;
+    case NOTCH_WIDTH_MID: playDigit(2); break;
+    case NOTCH_WIDTH_WIDE: playDigit(3); break;
+    default: speakToken("on"); break;
   }
 }
 
@@ -86,7 +86,7 @@ static void queryBank2Notch() {
     return;
   }
   printKeypadStatus("NOTCH ON");
-  speakBinaryFeatureState(voice_notchfilter, voice_notchfilter_len, true);
+  speakTokenState("notch filter", true);
 }
 
 void keypadBank2QueryNr() {
@@ -105,8 +105,9 @@ static void speakKeypadCommandWord(const String& cmd) {
   if (!g_speechEnabled) return;
   if (cmd == "FREQ?") speakFrequencyWord();
   else if (cmd == "MODE?") speakToken("mode");
-  else if (cmd == "SM?") speakToken("s");
-  else if (cmd == "NOTCH?") speakToken("notchfilter");
+  else if (cmd == "SM?") speakToken("s_meter");
+  else if (cmd == "SWR?") speakToken("swr");
+  else if (cmd == "NOTCH?") speakToken("notch filter");
 }
 
 static void sendOrStageBank1Command(const String& keyLabel, const String& cmd, bool suppressModePrefix = false) {
