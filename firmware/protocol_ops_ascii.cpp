@@ -169,6 +169,17 @@ bool asciiStartTune(const StoredProfile& sp) {
   return asciiSendSimpleCommand(sp.ascii.tuneStartCmd);
 }
 
+bool asciiQuerySplit(const StoredProfile& sp, bool& onOut, uint32_t timeoutMs) {
+  if (!sp.ascii.splitGet[0] || !sp.ascii.splitReplyPrefix[0]) return false;
+  String line;
+  if (!transactAsciiCommand(sp.ascii.splitGet, line, sp.ascii.splitReplyPrefix, timeoutMs)) return false;
+  return asciiParseOnOffResponse(line, sp.ascii.splitReplyPrefix, onOut);
+}
+
+bool asciiSetSplit(const StoredProfile& sp, bool on) {
+  return asciiSendSimpleCommand(on ? sp.ascii.splitOnCmd : sp.ascii.splitOffCmd);
+}
+
 bool asciiQueryNr(const StoredProfile& sp, bool& onOut, uint32_t timeoutMs) {
   if (!sp.caps.getNr || !sp.ascii.nrGet[0] || !sp.ascii.nrReplyPrefix[0]) return false;
   String line;
@@ -214,4 +225,50 @@ bool asciiQueryLock(const StoredProfile& sp, bool& onOut, uint32_t timeoutMs) {
 
 bool asciiSetLock(const StoredProfile& sp, bool on) {
   return asciiSendSimpleCommand(on ? sp.ascii.lockOnCmd : sp.ascii.lockOffCmd);
+}
+
+bool asciiQueryActiveVfoA(const StoredProfile& sp, bool& vfoAOut, uint32_t timeoutMs) {
+  if (!sp.ascii.vfoGet[0] || !sp.ascii.vfoReplyPrefix[0]) return false;
+  String line;
+  if (!transactAsciiCommand(sp.ascii.vfoGet, line, sp.ascii.vfoReplyPrefix, timeoutMs)) return false;
+  int start = (int)strlen(sp.ascii.vfoReplyPrefix);
+  int semi = line.indexOf(';', start);
+  if (semi < 0) semi = line.length();
+  String value = line.substring(start, semi);
+  value.trim();
+  if (value == "0") { vfoAOut = true; return true; }
+  if (value == "1") { vfoAOut = false; return true; }
+  return false;
+}
+
+bool asciiSelectVfoA(const StoredProfile& sp) {
+  return asciiSendSimpleCommand(sp.ascii.vfoACmd);
+}
+
+bool asciiSelectVfoB(const StoredProfile& sp) {
+  return asciiSendSimpleCommand(sp.ascii.vfoBCmd);
+}
+
+bool asciiSwapVfo(const StoredProfile& sp) {
+  return asciiSendSimpleCommand(sp.ascii.vfoSwapCmd);
+}
+
+bool asciiQueryVfoFrequency(const StoredProfile& sp, bool targetVfoA, uint64_t& hzOut, uint32_t timeoutMs) {
+  const char* cmd = targetVfoA ? sp.ascii.vfoAGet : sp.ascii.vfoBGet;
+  const char* prefix = targetVfoA ? "FA" : "FB";
+  if (!cmd[0]) return false;
+  String line;
+  if (!transactAsciiCommand(cmd, line, prefix, timeoutMs)) return false;
+  return parseAsciiUnsignedResponse(line, prefix, hzOut);
+}
+
+bool asciiSetVfoFrequency(const StoredProfile& sp, bool targetVfoA, uint64_t hz) {
+  const char* format = targetVfoA ? sp.ascii.vfoASetFormat : sp.ascii.vfoBSetFormat;
+  if (!format[0]) return false;
+  char buf[32];
+  snprintf(buf, sizeof(buf), format, (unsigned long long)hz);
+  serialTransportFlushInput();
+  serialTransportPrint(buf);
+  serialTransportFlushOutput();
+  return true;
 }

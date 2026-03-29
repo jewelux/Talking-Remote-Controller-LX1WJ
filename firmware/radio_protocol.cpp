@@ -328,6 +328,7 @@ bool selectVfoA() {
   ProtocolType pt = currentProtocolType();
   const StoredProfile& sp = currentStoredProfile();
   if (pt == PROTO_CIV) return civSelectVfoA(sp);
+  if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiSelectVfoA(sp);
   if (pt == PROTO_YAESU_FT8X7 && sp.caps.setVfo && currentProfileVariantIs("ft817")) return yaesuCatSelectVfoA();
   return false;
 }
@@ -336,6 +337,7 @@ bool selectVfoB() {
   ProtocolType pt = currentProtocolType();
   const StoredProfile& sp = currentStoredProfile();
   if (pt == PROTO_CIV) return civSelectVfoB(sp);
+  if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiSelectVfoB(sp);
   if (pt == PROTO_YAESU_FT8X7 && sp.caps.setVfo && currentProfileVariantIs("ft817")) return yaesuCatSelectVfoB();
   return false;
 }
@@ -344,6 +346,7 @@ bool queryVfoFrequency(bool targetVfoA, uint64_t& hzOut, uint32_t timeoutMs) {
   ProtocolType pt = currentProtocolType();
   const StoredProfile& sp = currentStoredProfile();
   if (pt == PROTO_CIV) return civQueryVfoFrequency(sp, targetVfoA, hzOut, timeoutMs);
+  if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiQueryVfoFrequency(sp, targetVfoA, hzOut, timeoutMs);
   if (pt == PROTO_YAESU_FT8X7 && sp.caps.getVfo && sp.caps.setVfo && currentProfileVariantIs("ft817")) {
     if (!(targetVfoA ? yaesuCatSelectVfoA() : yaesuCatSelectVfoB())) return false;
     delay(60);
@@ -356,6 +359,7 @@ bool setVfoFrequency(bool targetVfoA, uint64_t hz) {
   ProtocolType pt = currentProtocolType();
   const StoredProfile& sp = currentStoredProfile();
   if (pt == PROTO_CIV) return civSetVfoFrequency(sp, targetVfoA, hz);
+  if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiSetVfoFrequency(sp, targetVfoA, hz);
   if (pt == PROTO_YAESU_FT8X7 && sp.caps.setVfo && sp.caps.setFreq && currentProfileVariantIs("ft817")) {
     if (!(targetVfoA ? yaesuCatSelectVfoA() : yaesuCatSelectVfoB())) return false;
     delay(60);
@@ -393,6 +397,7 @@ bool querySplit(bool& onOut, uint32_t timeoutMs) {
   ProtocolType pt = currentProtocolType();
   const StoredProfile& sp = currentStoredProfile();
   if (pt == PROTO_CIV) return civQuerySplit(sp, onOut, timeoutMs);
+  if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiQuerySplit(sp, onOut, timeoutMs);
   if (pt == PROTO_YAESU_FT8X7 && sp.caps.getSplit) {
     if (currentProfileVariantIs("ft857_897") && g_ft8x7SplitKnown) {
       onOut = g_ft8x7SplitOn;
@@ -412,6 +417,7 @@ bool setSplit(bool on) {
   ProtocolType pt = currentProtocolType();
   const StoredProfile& sp = currentStoredProfile();
   if (pt == PROTO_CIV) return civSetSplit(sp, on);
+  if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiSetSplit(sp, on);
   if (pt == PROTO_YAESU_FT8X7) {
     if (!yaesuCatSetSplit(on)) return false;
     if (currentProfileVariantIs("ft857_897")) rememberSplitState(on);

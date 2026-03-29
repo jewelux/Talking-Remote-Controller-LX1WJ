@@ -16,6 +16,9 @@ Verify the first safe and useful CAT feature block before moving anything to ded
 Included in this first block:
 - frequency read and set
 - mode read and set
+- VFO A/B select
+- VFO-A and VFO-B frequency read and set
+- split read and set
 - S-meter
 - power meter
 - SWR meter
@@ -59,6 +62,25 @@ Expected:
 - all queries return a reply
 - `MODE USB` is accepted
 - `MODE?` reports the changed mode
+
+## VFO And Split Test
+
+```text
+VFO A
+VFOA?
+VFO B
+VFOB?
+SPLIT?
+SPLIT ON
+SPLIT?
+SPLIT OFF
+SPLIT?
+```
+
+Expected:
+- `VFO A` and `VFO B` are accepted
+- `VFOA?` and `VFOB?` return frequencies
+- `SPLIT?` changes consistently after `SPLIT ON/OFF`
 
 ## Lock And Tuner Test
 
@@ -148,6 +170,8 @@ Please return results in a short form like this:
 ```text
 FREQ? works
 MODE? works
+VFO A/B works
+SPLIT works
 SM? works
 LOCK ON/OFF works
 TUNER ON works

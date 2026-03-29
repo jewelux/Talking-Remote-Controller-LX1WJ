@@ -47,3 +47,14 @@ Main points:
 - enriched the FTDX10, FTDX101D, and FTDX101MP SD profiles with documented CAT command mappings for tuner, lock, NR, NB, notch, preamp, AGC, and power-state handling
 - added a concise first-test document for remote hardware validation at docs/radios/yaesu-ftdx10-test-plan.md
 - kept the scope intentionally focused on a safe first real-radio validation block before keypad specialization
+
+## FTDX10 VFO and Split Expansion
+
+The first FTDX10 bring-up block has been extended with documented VFO and split handling.
+
+Main points:
+
+- added documented ASCII VFO A, VFO B, VFO-A frequency, and VFO-B frequency support in the generic protocol layer
+- added documented ASCII split query and split set handling for the FTDX10/101 family profiles
+- extended the first public FTDX10 test plan accordingly
+- added a simple blind-friendly FTDX10 test list for assisted keypad and serial validation

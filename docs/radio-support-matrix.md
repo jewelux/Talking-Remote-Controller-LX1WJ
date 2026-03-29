@@ -29,9 +29,9 @@ Suggested status wording:
 | Yaesu FT-817 | CAT | `ft817.ini` | implemented | implemented | partial | implemented | partial | implemented | tested on hardware | FT8x7 family documentation now also includes `docs/radios/yaesu-ft8x7-keypad.md` and `docs/radios/yaesu-ft8x7-status.md`. |
 | Yaesu FT-857 | CAT | `ft857.ini` | implemented | implemented | partial | implemented | partial | implemented | tested on hardware | FT8x7 family documentation now also includes `docs/radios/yaesu-ft8x7-keypad.md` and `docs/radios/yaesu-ft8x7-status.md`; some documented CAT functions remain unreliable in practice. |
 | Yaesu FT-897 | CAT | `ft897.ini` | partial | partial | partial | partial | partial | implemented | not recently verified | Currently grouped with the FT-857/897 variant logic; hardware verification still pending. |
-| Yaesu FTDX10 | ASCII CAT | `ftdx10.ini` | implemented | implemented | implemented | implemented | implemented | implemented | not recently verified | First documented FTDX10 bring-up block prepared; see `docs/radios/yaesu-ftdx10-test-plan.md`. |
-| Yaesu FTDX101D | ASCII CAT | `ftdx101d.ini` | implemented | implemented | implemented | implemented | implemented | implemented | not recently verified | Shares the same first documented ASCII bring-up block as FTDX10; hardware confirmation still needed. |
-| Yaesu FTDX101MP | ASCII CAT | `ftdx101mp.ini` | implemented | implemented | implemented | implemented | implemented | implemented | not recently verified | Shares the same first documented ASCII bring-up block as FTDX10; hardware confirmation still needed. |
+| Yaesu FTDX10 | ASCII CAT | `ftdx10.ini` | implemented | implemented | implemented | implemented | implemented | implemented | not recently verified | First documented bring-up now includes VFO and split test coverage; see `docs/radios/yaesu-ftdx10-test-plan.md`. |
+| Yaesu FTDX101D | ASCII CAT | `ftdx101d.ini` | implemented | implemented | implemented | implemented | implemented | implemented | not recently verified | Shares the same documented first-block plus VFO/split bring-up as FTDX10; hardware confirmation still needed. |
+| Yaesu FTDX101MP | ASCII CAT | `ftdx101mp.ini` | implemented | implemented | implemented | implemented | implemented | implemented | not recently verified | Shares the same documented first-block plus VFO/split bring-up as FTDX10; hardware confirmation still needed. |
 
 
 ---
@@ -40,4 +40,5 @@ Suggested status wording:
 
 This matrix is a working engineering overview.
 It does not replace the project disclaimer, operating precautions, or hardware responsibility notes described elsewhere in the repository.
+
 

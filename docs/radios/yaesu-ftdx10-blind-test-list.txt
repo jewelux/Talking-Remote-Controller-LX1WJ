@@ -1,0 +1,123 @@
+FTDX10 first test list
+Simple text format for blind operators and helpers
+
+Format:
+serial command - short meaning - keypad position
+
+Profile selection
+PROFILE 11 - select Yaesu FTDX-10 profile - Bank 9 T0 long, then digits 1 1, then Enter
+PROFILE? - say active profile - Bank 9 T0 short
+
+Basic radio control
+FREQ? - read current receive frequency - Bank 1 T0 short
+FREQ set - set receive frequency - Bank 1 T0 long, then digits, then Enter
+MODE? - read current mode - Bank 1 T9 short
+MODE set - set operating mode - Bank 1 T9 long, then mode digit, then Enter
+SM? - read S meter - Bank 1 T7 short
+PO? - read transmit power meter - Bank 1 T4 short
+SWR? - read SWR meter - Bank 1 T8 short
+
+VFO and split
+VFO A - select VFO-A - Bank 3 T1 long
+VFOA? - read VFO-A frequency - Bank 3 T1 short
+VFO B - select VFO-B - Bank 3 T2 long
+VFOB? - read VFO-B frequency - Bank 3 T2 short
+SPLIT? - read split state - Bank 3 T0 short
+SPLIT ON/OFF - toggle split - Bank 3 T0 long
+
+Lock
+LOCK? - read main dial lock state - Bank 1 T3 short
+LOCK ON/OFF - toggle main dial lock - Bank 1 T3 long
+
+DSP and receive features
+NR? - read noise reduction state - Bank 2 T1 short
+NR ON/OFF - toggle noise reduction - Bank 2 T1 long
+NB? - read noise blanker state - Bank 2 T2 short
+NB ON/OFF - toggle noise blanker - Bank 2 T2 long
+NOTCH? - read notch filter state - Bank 2 T3 short
+NOTCH ON/OFF - toggle notch filter - Bank 2 T3 long
+
+Tuner
+TUNER? - read tuner state - Bank 2 T0 short or Bank 4 T0 short
+TUNER ON/OFF - toggle tuner state - Bank 2 T0 long or Bank 4 T0 long
+TUNE - start tuner tune cycle - Bank 2 T0 double or Bank 4 T0 double
+
+Monitor
+MONITOR? - read monitor state - Bank 4 T1 short
+MONITOR ON/OFF - toggle monitor state - Bank 4 T1 long
+MONLEVEL? - read monitor level - Bank 4 T2 short
+MONLEVEL up - increase monitor level - Bank 4 T2 long
+MONLEVEL down - decrease monitor level - Bank 4 T2 double
+
+Functions available in serial monitor only for now
+PA? - read preamp or IPO state - serial only
+PA ON - set preamp or IPO on - serial only
+PA OFF - set preamp or IPO off - serial only
+GT? - read AGC setting - serial only
+GT FAST - set AGC fast - serial only
+GT SLOW - set AGC slow - serial only
+PS? - read power state - serial only
+PS OFF - power radio off - serial only
+PS ON - power radio on - serial only
+
+Suggested first blind test order
+1. PROFILE 11
+2. FREQ?
+3. MODE?
+4. SM?
+5. LOCK?
+6. LOCK toggle
+7. VFOA?
+8. VFO B
+9. VFOB?
+10. SPLIT?
+11. SPLIT toggle
+12. NR?
+13. NR toggle
+14. NB?
+15. NB toggle
+16. NOTCH?
+17. NOTCH toggle
+18. TUNER?
+19. TUNER toggle
+20. TUNE
+
+Suggested helper serial test order
+1. PROFILE 11
+2. FREQ?
+3. MODE?
+4. SM?
+5. PO?
+6. SWR?
+7. LOCK?
+8. LOCK ON
+9. LOCK OFF
+10. VFO A
+11. VFOA?
+12. VFO B
+13. VFOB?
+14. SPLIT?
+15. SPLIT ON
+16. SPLIT?
+17. SPLIT OFF
+18. SPLIT?
+19. NR?
+20. NR ON
+21. NR OFF
+22. NB?
+23. NB ON
+24. NB OFF
+25. NOTCH?
+26. NOTCH ON
+27. NOTCH OFF
+28. TUNER?
+29. TUNER ON
+30. TUNER OFF
+31. TUNE
+32. PA?
+33. PA ON
+34. PA OFF
+35. GT?
+36. GT FAST
+37. GT SLOW
+38. PS?

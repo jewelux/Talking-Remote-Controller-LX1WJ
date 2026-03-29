@@ -17,6 +17,10 @@ static void setAsciiDefaults(StoredProfile& sp) {
   copyCString(sp.ascii.freqSetFormat, sizeof(sp.ascii.freqSetFormat), "FA%011llu;");
   copyCString(sp.ascii.modeGet, sizeof(sp.ascii.modeGet), "MD;");
   copyCString(sp.ascii.modeSetFormat, sizeof(sp.ascii.modeSetFormat), "MD%s;");
+  copyCString(sp.ascii.vfoAGet, sizeof(sp.ascii.vfoAGet), "");
+  copyCString(sp.ascii.vfoASetFormat, sizeof(sp.ascii.vfoASetFormat), "");
+  copyCString(sp.ascii.vfoBGet, sizeof(sp.ascii.vfoBGet), "");
+  copyCString(sp.ascii.vfoBSetFormat, sizeof(sp.ascii.vfoBSetFormat), "");
   copyCString(sp.ascii.ifGet, sizeof(sp.ascii.ifGet), "");
   copyCString(sp.ascii.idGet, sizeof(sp.ascii.idGet), "");
   copyCString(sp.ascii.omGet, sizeof(sp.ascii.omGet), "");
@@ -43,6 +47,13 @@ static void setAsciiDefaults(StoredProfile& sp) {
   copyCString(sp.ascii.tunerOnCmd, sizeof(sp.ascii.tunerOnCmd), "");
   copyCString(sp.ascii.tunerOffCmd, sizeof(sp.ascii.tunerOffCmd), "");
   copyCString(sp.ascii.tuneStartCmd, sizeof(sp.ascii.tuneStartCmd), "");
+  copyCString(sp.ascii.splitGet, sizeof(sp.ascii.splitGet), "");
+  copyCString(sp.ascii.splitOnCmd, sizeof(sp.ascii.splitOnCmd), "");
+  copyCString(sp.ascii.splitOffCmd, sizeof(sp.ascii.splitOffCmd), "");
+  copyCString(sp.ascii.vfoGet, sizeof(sp.ascii.vfoGet), "");
+  copyCString(sp.ascii.vfoACmd, sizeof(sp.ascii.vfoACmd), "");
+  copyCString(sp.ascii.vfoBCmd, sizeof(sp.ascii.vfoBCmd), "");
+  copyCString(sp.ascii.vfoSwapCmd, sizeof(sp.ascii.vfoSwapCmd), "");
   copyCString(sp.ascii.notchGet, sizeof(sp.ascii.notchGet), "");
   copyCString(sp.ascii.notchOnCmd, sizeof(sp.ascii.notchOnCmd), "");
   copyCString(sp.ascii.notchOffCmd, sizeof(sp.ascii.notchOffCmd), "");
@@ -63,6 +74,8 @@ static void setAsciiDefaults(StoredProfile& sp) {
   copyCString(sp.ascii.agcReplyPrefix, sizeof(sp.ascii.agcReplyPrefix), "");
   copyCString(sp.ascii.powerStateReplyPrefix, sizeof(sp.ascii.powerStateReplyPrefix), "");
   copyCString(sp.ascii.tunerReplyPrefix, sizeof(sp.ascii.tunerReplyPrefix), "");
+  copyCString(sp.ascii.splitReplyPrefix, sizeof(sp.ascii.splitReplyPrefix), "");
+  copyCString(sp.ascii.vfoReplyPrefix, sizeof(sp.ascii.vfoReplyPrefix), "");
   copyCString(sp.ascii.notchReplyPrefix, sizeof(sp.ascii.notchReplyPrefix), "");
   copyCString(sp.ascii.lockReplyPrefix, sizeof(sp.ascii.lockReplyPrefix), "");
   copyCString(sp.ascii.modeLsb, sizeof(sp.ascii.modeLsb), "1");
@@ -175,6 +188,10 @@ static void setProtocolDefaults(StoredProfile& sp) {
     copyCString(sp.ascii.smeterGet, sizeof(sp.ascii.smeterGet), "SM0;");
     copyCString(sp.ascii.powerGet, sizeof(sp.ascii.powerGet), "RM5;");
     copyCString(sp.ascii.swrGet, sizeof(sp.ascii.swrGet), "RM6;");
+    copyCString(sp.ascii.vfoAGet, sizeof(sp.ascii.vfoAGet), "FA;");
+    copyCString(sp.ascii.vfoASetFormat, sizeof(sp.ascii.vfoASetFormat), "FA%09llu;");
+    copyCString(sp.ascii.vfoBGet, sizeof(sp.ascii.vfoBGet), "FB;");
+    copyCString(sp.ascii.vfoBSetFormat, sizeof(sp.ascii.vfoBSetFormat), "FB%09llu;");
     copyCString(sp.ascii.smeterReplyPrefix, sizeof(sp.ascii.smeterReplyPrefix), "SM0");
     copyCString(sp.ascii.powerReplyPrefix, sizeof(sp.ascii.powerReplyPrefix), "RM5");
     copyCString(sp.ascii.swrReplyPrefix, sizeof(sp.ascii.swrReplyPrefix), "RM6");
@@ -183,6 +200,15 @@ static void setProtocolDefaults(StoredProfile& sp) {
     copyCString(sp.ascii.tunerOffCmd, sizeof(sp.ascii.tunerOffCmd), "AC000;");
     copyCString(sp.ascii.tuneStartCmd, sizeof(sp.ascii.tuneStartCmd), "AC002;");
     copyCString(sp.ascii.tunerReplyPrefix, sizeof(sp.ascii.tunerReplyPrefix), "AC");
+    copyCString(sp.ascii.splitGet, sizeof(sp.ascii.splitGet), "ST;");
+    copyCString(sp.ascii.splitOnCmd, sizeof(sp.ascii.splitOnCmd), "ST1;");
+    copyCString(sp.ascii.splitOffCmd, sizeof(sp.ascii.splitOffCmd), "ST0;");
+    copyCString(sp.ascii.splitReplyPrefix, sizeof(sp.ascii.splitReplyPrefix), "ST");
+    copyCString(sp.ascii.vfoGet, sizeof(sp.ascii.vfoGet), "VS;");
+    copyCString(sp.ascii.vfoACmd, sizeof(sp.ascii.vfoACmd), "VS0;");
+    copyCString(sp.ascii.vfoBCmd, sizeof(sp.ascii.vfoBCmd), "VS1;");
+    copyCString(sp.ascii.vfoSwapCmd, sizeof(sp.ascii.vfoSwapCmd), "SV;");
+    copyCString(sp.ascii.vfoReplyPrefix, sizeof(sp.ascii.vfoReplyPrefix), "VS");
     copyCString(sp.ascii.lockGet, sizeof(sp.ascii.lockGet), "LK;");
     copyCString(sp.ascii.lockOnCmd, sizeof(sp.ascii.lockOnCmd), "LK1;");
     copyCString(sp.ascii.lockOffCmd, sizeof(sp.ascii.lockOffCmd), "LK0;");
@@ -204,6 +230,10 @@ static void setProtocolDefaults(StoredProfile& sp) {
     sp.caps.getTuner = true;
     sp.caps.setTuner = true;
     sp.caps.startTune = true;
+    sp.caps.getVfo = true;
+    sp.caps.setVfo = true;
+    sp.caps.getSplit = true;
+    sp.caps.setSplit = true;
   }
 }
 

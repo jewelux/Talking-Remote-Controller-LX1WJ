@@ -126,6 +126,10 @@ struct AsciiCommandProfile {
   char freqSetFormat[32];
   char modeGet[20];
   char modeSetFormat[20];
+  char vfoAGet[20];
+  char vfoASetFormat[32];
+  char vfoBGet[20];
+  char vfoBSetFormat[32];
   char ifGet[20];
   char idGet[20];
   char omGet[20];
@@ -152,6 +156,13 @@ struct AsciiCommandProfile {
   char tunerOnCmd[20];
   char tunerOffCmd[20];
   char tuneStartCmd[20];
+  char splitGet[20];
+  char splitOnCmd[20];
+  char splitOffCmd[20];
+  char vfoGet[20];
+  char vfoACmd[20];
+  char vfoBCmd[20];
+  char vfoSwapCmd[20];
   char notchGet[20];
   char notchOnCmd[20];
   char notchOffCmd[20];
@@ -172,6 +183,8 @@ struct AsciiCommandProfile {
   char agcReplyPrefix[8];
   char powerStateReplyPrefix[8];
   char tunerReplyPrefix[8];
+  char splitReplyPrefix[8];
+  char vfoReplyPrefix[8];
   char notchReplyPrefix[8];
   char lockReplyPrefix[8];
   char modeLsb[4];

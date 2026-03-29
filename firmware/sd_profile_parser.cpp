@@ -142,6 +142,10 @@ bool loadSingleProfileIni(const String& path, StoredProfile& out) {
       else if (key == "freq_set_format") profileLoaderCopyCString(sp.ascii.freqSetFormat, sizeof(sp.ascii.freqSetFormat), val.c_str());
       else if (key == "mode_get") profileLoaderCopyCString(sp.ascii.modeGet, sizeof(sp.ascii.modeGet), val.c_str());
       else if (key == "mode_set_format") profileLoaderCopyCString(sp.ascii.modeSetFormat, sizeof(sp.ascii.modeSetFormat), val.c_str());
+      else if (key == "vfoa_get") profileLoaderCopyCString(sp.ascii.vfoAGet, sizeof(sp.ascii.vfoAGet), val.c_str());
+      else if (key == "vfoa_set_format") profileLoaderCopyCString(sp.ascii.vfoASetFormat, sizeof(sp.ascii.vfoASetFormat), val.c_str());
+      else if (key == "vfob_get") profileLoaderCopyCString(sp.ascii.vfoBGet, sizeof(sp.ascii.vfoBGet), val.c_str());
+      else if (key == "vfob_set_format") profileLoaderCopyCString(sp.ascii.vfoBSetFormat, sizeof(sp.ascii.vfoBSetFormat), val.c_str());
       else if (key == "if_get") profileLoaderCopyCString(sp.ascii.ifGet, sizeof(sp.ascii.ifGet), val.c_str());
       else if (key == "id_get") profileLoaderCopyCString(sp.ascii.idGet, sizeof(sp.ascii.idGet), val.c_str());
       else if (key == "om_get") profileLoaderCopyCString(sp.ascii.omGet, sizeof(sp.ascii.omGet), val.c_str());
@@ -168,6 +172,13 @@ bool loadSingleProfileIni(const String& path, StoredProfile& out) {
       else if (key == "tuner_on") profileLoaderCopyCString(sp.ascii.tunerOnCmd, sizeof(sp.ascii.tunerOnCmd), val.c_str());
       else if (key == "tuner_off") profileLoaderCopyCString(sp.ascii.tunerOffCmd, sizeof(sp.ascii.tunerOffCmd), val.c_str());
       else if (key == "tune_start") profileLoaderCopyCString(sp.ascii.tuneStartCmd, sizeof(sp.ascii.tuneStartCmd), val.c_str());
+      else if (key == "split_get") profileLoaderCopyCString(sp.ascii.splitGet, sizeof(sp.ascii.splitGet), val.c_str());
+      else if (key == "split_on") profileLoaderCopyCString(sp.ascii.splitOnCmd, sizeof(sp.ascii.splitOnCmd), val.c_str());
+      else if (key == "split_off") profileLoaderCopyCString(sp.ascii.splitOffCmd, sizeof(sp.ascii.splitOffCmd), val.c_str());
+      else if (key == "vfo_get") profileLoaderCopyCString(sp.ascii.vfoGet, sizeof(sp.ascii.vfoGet), val.c_str());
+      else if (key == "vfo_a") profileLoaderCopyCString(sp.ascii.vfoACmd, sizeof(sp.ascii.vfoACmd), val.c_str());
+      else if (key == "vfo_b") profileLoaderCopyCString(sp.ascii.vfoBCmd, sizeof(sp.ascii.vfoBCmd), val.c_str());
+      else if (key == "vfo_swap") profileLoaderCopyCString(sp.ascii.vfoSwapCmd, sizeof(sp.ascii.vfoSwapCmd), val.c_str());
       else if (key == "notch_get") profileLoaderCopyCString(sp.ascii.notchGet, sizeof(sp.ascii.notchGet), val.c_str());
       else if (key == "notch_on") profileLoaderCopyCString(sp.ascii.notchOnCmd, sizeof(sp.ascii.notchOnCmd), val.c_str());
       else if (key == "notch_off") profileLoaderCopyCString(sp.ascii.notchOffCmd, sizeof(sp.ascii.notchOffCmd), val.c_str());
@@ -189,6 +200,8 @@ bool loadSingleProfileIni(const String& path, StoredProfile& out) {
       else if (key == "agc_prefix") profileLoaderCopyCString(sp.ascii.agcReplyPrefix, sizeof(sp.ascii.agcReplyPrefix), val.c_str());
       else if (key == "power_state_prefix") profileLoaderCopyCString(sp.ascii.powerStateReplyPrefix, sizeof(sp.ascii.powerStateReplyPrefix), val.c_str());
       else if (key == "tuner_prefix") profileLoaderCopyCString(sp.ascii.tunerReplyPrefix, sizeof(sp.ascii.tunerReplyPrefix), val.c_str());
+      else if (key == "split_prefix") profileLoaderCopyCString(sp.ascii.splitReplyPrefix, sizeof(sp.ascii.splitReplyPrefix), val.c_str());
+      else if (key == "vfo_prefix") profileLoaderCopyCString(sp.ascii.vfoReplyPrefix, sizeof(sp.ascii.vfoReplyPrefix), val.c_str());
       else if (key == "notch_prefix") profileLoaderCopyCString(sp.ascii.notchReplyPrefix, sizeof(sp.ascii.notchReplyPrefix), val.c_str());
       else if (key == "lock_prefix") profileLoaderCopyCString(sp.ascii.lockReplyPrefix, sizeof(sp.ascii.lockReplyPrefix), val.c_str());
     } else if (section == "modes") {

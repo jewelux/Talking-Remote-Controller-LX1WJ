@@ -159,9 +159,8 @@ Radio-specific command references currently include
 
 
 
-A first FTDX10 bring-up document is now also available:
 
-- [Yaesu FTDX10 first test plan](docs/radios/yaesu-ftdx10-test-plan.md)
+- [Yaesu FTDX10 blind test list](docs/radios/yaesu-ftdx10-blind-test-list.txt)
 
 ---
 
@@ -201,4 +200,5 @@ Future development focuses on:
 
 This project uses the same license model as the **Talking SWR Meter** project by the same author.
 See the `LICENSE` file for code and `LICENSE-docs` for documentation material.
+
 
