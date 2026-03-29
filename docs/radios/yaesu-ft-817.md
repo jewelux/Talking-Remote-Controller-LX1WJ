@@ -1,58 +1,25 @@
-# Yaesu FT-817
+﻿# Yaesu FT-817
 
-## Overview
+## Status
 
-This page documents the current radio-specific command layout for the Yaesu
-FT-817 profile in firmware `V3.5`.
+The FT-817 is now best understood as part of the broader Yaesu FT8x7 family support in firmware `V3.5`.
 
-The current `ft817.ini` profile uses protocol type `YAESU_FT8X7` and currently
-supports frequency query/set, mode query/set, and S-meter query.
-Power and SWR are not currently declared in the profile capabilities.
+For the current public state, please use these documents first:
 
----
+- [Yaesu FT8x7 keypad layout](./yaesu-ft8x7-keypad.md)
+- [Yaesu FT8x7 CAT status](./yaesu-ft8x7-status.md)
 
-## Currently Supported Core Functions
+## Why This Page Is Short
 
-### Bank 1
+This page is intentionally kept minimal so the repository does not present two conflicting descriptions of the same family.
 
-- `0` short: query frequency
-- `0` long: enter and set frequency in kHz, then confirm with `D`
-- `7` short: query S-meter
-- `9` short: query mode
-- `9` long: select mode, then confirm with `D`
+The FT-817 remains important because it is the more fully verified member of the FT8x7 CAT family, but the detailed keypad and CAT status now live in the family-level pages above.
 
-Current mode mapping from the active profile:
+## Summary
 
-- `1` = LSB
-- `2` = USB
-- `3` = CW
-- `4` = AM
-- `5` = FM
-- `6` = DIGI
-- `8` = CWR
+Current FT-817 strengths in the project include:
 
-### Bank 2 - FT-8x7 Specific Actions
-
-The current firmware includes a Yaesu FT-8x7 specific action block for this
-profile family.
-
-- `4` short: query Yaesu status
-- `4` long: toggle VFO
-- `5` short: select VFO A
-- `5` long: select VFO B
-- `6` short: turn clarifier on
-- `6` long: turn clarifier off
-- `7` short: turn split on
-- `7` long: turn split off
-- `8` short: turn PTT on
-- `8` long: turn PTT off
-- `9` short: query the full Yaesu status block
-
----
-
-## Notes
-
-- This page reflects the current `V3.5` firmware and `ft817.ini` profile state.
-- The FT-817 and FT-857 currently share the same protocol family and broadly
-  the same command coverage in this repository.
-- Hardware behavior should still be verified on a live radio.
+- documented CAT core functions verified on real hardware
+- reliable handling of frequency and mode control
+- verified lock, split, VFO, clarifier, repeater, tone, DCS, and power test paths
+- alignment with the shared FT8x7 keypad structure where practical
