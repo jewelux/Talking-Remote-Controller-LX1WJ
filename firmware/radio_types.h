@@ -148,9 +148,16 @@ struct AsciiCommandProfile {
   char powerStateGet[20];
   char powerStateOnCmd[20];
   char powerStateOffCmd[20];
+  char tunerGet[20];
+  char tunerOnCmd[20];
+  char tunerOffCmd[20];
+  char tuneStartCmd[20];
   char notchGet[20];
   char notchOnCmd[20];
   char notchOffCmd[20];
+  char lockGet[20];
+  char lockOnCmd[20];
+  char lockOffCmd[20];
   char freqReplyPrefix[8];
   char modeReplyPrefix[8];
   char ifReplyPrefix[8];
@@ -164,7 +171,9 @@ struct AsciiCommandProfile {
   char preampReplyPrefix[8];
   char agcReplyPrefix[8];
   char powerStateReplyPrefix[8];
+  char tunerReplyPrefix[8];
   char notchReplyPrefix[8];
+  char lockReplyPrefix[8];
   char modeLsb[4];
   char modeUsb[4];
   char modeAm[4];

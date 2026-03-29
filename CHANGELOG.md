@@ -1,4 +1,4 @@
-# Changelog
+﻿# Changelog
 
 ## V3.5 Transition
 
@@ -36,3 +36,14 @@ Main points:
 - synced the current FT8x7 firmware and profile state into the repository
 
 This update improves both practical radio support and the published documentation without turning the changelog into a command-by-command lab report.
+
+## FTDX10 Family Bring-Up
+
+A first documented Yaesu FTDX10/101 ASCII CAT bring-up has been added to the modular V3.5 codebase.
+
+Main points:
+
+- expanded the generic ASCII layer with documented lock and tuner support for the FTDX10 family
+- enriched the FTDX10, FTDX101D, and FTDX101MP SD profiles with documented CAT command mappings for tuner, lock, NR, NB, notch, preamp, AGC, and power-state handling
+- added a concise first-test document for remote hardware validation at docs/radios/yaesu-ftdx10-test-plan.md
+- kept the scope intentionally focused on a safe first real-radio validation block before keypad specialization

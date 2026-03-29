@@ -164,9 +164,16 @@ bool loadSingleProfileIni(const String& path, StoredProfile& out) {
       else if (key == "power_state_get") profileLoaderCopyCString(sp.ascii.powerStateGet, sizeof(sp.ascii.powerStateGet), val.c_str());
       else if (key == "power_state_on") profileLoaderCopyCString(sp.ascii.powerStateOnCmd, sizeof(sp.ascii.powerStateOnCmd), val.c_str());
       else if (key == "power_state_off") profileLoaderCopyCString(sp.ascii.powerStateOffCmd, sizeof(sp.ascii.powerStateOffCmd), val.c_str());
+      else if (key == "tuner_get") profileLoaderCopyCString(sp.ascii.tunerGet, sizeof(sp.ascii.tunerGet), val.c_str());
+      else if (key == "tuner_on") profileLoaderCopyCString(sp.ascii.tunerOnCmd, sizeof(sp.ascii.tunerOnCmd), val.c_str());
+      else if (key == "tuner_off") profileLoaderCopyCString(sp.ascii.tunerOffCmd, sizeof(sp.ascii.tunerOffCmd), val.c_str());
+      else if (key == "tune_start") profileLoaderCopyCString(sp.ascii.tuneStartCmd, sizeof(sp.ascii.tuneStartCmd), val.c_str());
       else if (key == "notch_get") profileLoaderCopyCString(sp.ascii.notchGet, sizeof(sp.ascii.notchGet), val.c_str());
       else if (key == "notch_on") profileLoaderCopyCString(sp.ascii.notchOnCmd, sizeof(sp.ascii.notchOnCmd), val.c_str());
       else if (key == "notch_off") profileLoaderCopyCString(sp.ascii.notchOffCmd, sizeof(sp.ascii.notchOffCmd), val.c_str());
+      else if (key == "lock_get") profileLoaderCopyCString(sp.ascii.lockGet, sizeof(sp.ascii.lockGet), val.c_str());
+      else if (key == "lock_on") profileLoaderCopyCString(sp.ascii.lockOnCmd, sizeof(sp.ascii.lockOnCmd), val.c_str());
+      else if (key == "lock_off") profileLoaderCopyCString(sp.ascii.lockOffCmd, sizeof(sp.ascii.lockOffCmd), val.c_str());
     } else if (section == "responses") {
       if (key == "freq_prefix") profileLoaderCopyCString(sp.ascii.freqReplyPrefix, sizeof(sp.ascii.freqReplyPrefix), val.c_str());
       else if (key == "mode_prefix") profileLoaderCopyCString(sp.ascii.modeReplyPrefix, sizeof(sp.ascii.modeReplyPrefix), val.c_str());
@@ -181,7 +188,9 @@ bool loadSingleProfileIni(const String& path, StoredProfile& out) {
       else if (key == "preamp_prefix") profileLoaderCopyCString(sp.ascii.preampReplyPrefix, sizeof(sp.ascii.preampReplyPrefix), val.c_str());
       else if (key == "agc_prefix") profileLoaderCopyCString(sp.ascii.agcReplyPrefix, sizeof(sp.ascii.agcReplyPrefix), val.c_str());
       else if (key == "power_state_prefix") profileLoaderCopyCString(sp.ascii.powerStateReplyPrefix, sizeof(sp.ascii.powerStateReplyPrefix), val.c_str());
+      else if (key == "tuner_prefix") profileLoaderCopyCString(sp.ascii.tunerReplyPrefix, sizeof(sp.ascii.tunerReplyPrefix), val.c_str());
       else if (key == "notch_prefix") profileLoaderCopyCString(sp.ascii.notchReplyPrefix, sizeof(sp.ascii.notchReplyPrefix), val.c_str());
+      else if (key == "lock_prefix") profileLoaderCopyCString(sp.ascii.lockReplyPrefix, sizeof(sp.ascii.lockReplyPrefix), val.c_str());
     } else if (section == "modes") {
       if (key == "lsb") profileLoaderCopyCString(sp.ascii.modeLsb, sizeof(sp.ascii.modeLsb), val.c_str());
       else if (key == "usb") profileLoaderCopyCString(sp.ascii.modeUsb, sizeof(sp.ascii.modeUsb), val.c_str());

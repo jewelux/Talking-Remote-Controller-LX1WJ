@@ -18,9 +18,14 @@ bool asciiQueryAgcLine(const StoredProfile& sp, String& lineOut, uint32_t timeou
 bool asciiSetAgcCommand(const StoredProfile& sp, const char* cmd);
 bool asciiQueryPowerState(const StoredProfile& sp, bool& onOut, uint32_t timeoutMs);
 bool asciiSetPowerState(const StoredProfile& sp, bool on);
+bool asciiQueryTuner(const StoredProfile& sp, bool& onOut, uint32_t timeoutMs);
+bool asciiSetTuner(const StoredProfile& sp, bool on);
+bool asciiStartTune(const StoredProfile& sp);
 bool asciiQueryNr(const StoredProfile& sp, bool& onOut, uint32_t timeoutMs);
 bool asciiSetNr(const StoredProfile& sp, bool on);
 bool asciiQueryNb(const StoredProfile& sp, bool& onOut, uint32_t timeoutMs);
 bool asciiSetNb(const StoredProfile& sp, bool on);
 bool asciiQueryNotch(const StoredProfile& sp, bool& onOut, uint32_t timeoutMs);
 bool asciiSetNotch(const StoredProfile& sp, bool on);
+bool asciiQueryLock(const StoredProfile& sp, bool& onOut, uint32_t timeoutMs);
+bool asciiSetLock(const StoredProfile& sp, bool on);

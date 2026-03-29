@@ -143,7 +143,30 @@ bool asciiQueryPowerState(const StoredProfile& sp, bool& onOut, uint32_t timeout
 }
 
 bool asciiSetPowerState(const StoredProfile& sp, bool on) {
-  return asciiSendSimpleCommand(on ? sp.ascii.powerStateOnCmd : sp.ascii.powerStateOffCmd);
+  const char* cmd = on ? sp.ascii.powerStateOnCmd : sp.ascii.powerStateOffCmd;
+  if (!cmd || !cmd[0]) return false;
+  if (sp.protocolType == PROTO_YAESU_FTDX_ASCII && on) {
+    // FTDX10/101 CAT power-on requires the documented double-send timing window.
+    if (!asciiSendSimpleCommand(cmd)) return false;
+    delay(1100);
+    return asciiSendSimpleCommand(cmd);
+  }
+  return asciiSendSimpleCommand(cmd);
+}
+
+bool asciiQueryTuner(const StoredProfile& sp, bool& onOut, uint32_t timeoutMs) {
+  if (!sp.ascii.tunerGet[0] || !sp.ascii.tunerReplyPrefix[0]) return false;
+  String line;
+  if (!transactAsciiCommand(sp.ascii.tunerGet, line, sp.ascii.tunerReplyPrefix, timeoutMs)) return false;
+  return asciiParseOnOffResponse(line, sp.ascii.tunerReplyPrefix, onOut);
+}
+
+bool asciiSetTuner(const StoredProfile& sp, bool on) {
+  return asciiSendSimpleCommand(on ? sp.ascii.tunerOnCmd : sp.ascii.tunerOffCmd);
+}
+
+bool asciiStartTune(const StoredProfile& sp) {
+  return asciiSendSimpleCommand(sp.ascii.tuneStartCmd);
 }
 
 bool asciiQueryNr(const StoredProfile& sp, bool& onOut, uint32_t timeoutMs) {
@@ -180,4 +203,15 @@ bool asciiQueryNotch(const StoredProfile& sp, bool& onOut, uint32_t timeoutMs) {
 bool asciiSetNotch(const StoredProfile& sp, bool on) {
   if (!sp.caps.setNotch) return false;
   return asciiSendSimpleCommand(on ? sp.ascii.notchOnCmd : sp.ascii.notchOffCmd);
+}
+
+bool asciiQueryLock(const StoredProfile& sp, bool& onOut, uint32_t timeoutMs) {
+  if (!sp.ascii.lockGet[0] || !sp.ascii.lockReplyPrefix[0]) return false;
+  String line;
+  if (!transactAsciiCommand(sp.ascii.lockGet, line, sp.ascii.lockReplyPrefix, timeoutMs)) return false;
+  return asciiParseOnOffResponse(line, sp.ascii.lockReplyPrefix, onOut);
+}
+
+bool asciiSetLock(const StoredProfile& sp, bool on) {
+  return asciiSendSimpleCommand(on ? sp.ascii.lockOnCmd : sp.ascii.lockOffCmd);
 }

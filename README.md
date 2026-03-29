@@ -1,4 +1,4 @@
-# Talking Remote Controller LX1WJ for Ham Radio Transceivers
+﻿# Talking Remote Controller LX1WJ for Ham Radio Transceivers
 
 ## Overview
 
@@ -157,10 +157,11 @@ Radio-specific command references currently include
 [Yaesu FT-817](docs/radios/yaesu-ft-817.md), and
 [Yaesu FT-857](docs/radios/yaesu-ft-857.md).
 
-Additional FT8x7 family documentation now includes:
 
-- [Yaesu FT8x7 keypad layout](docs/radios/yaesu-ft8x7-keypad.md)
-- [Yaesu FT8x7 CAT status](docs/radios/yaesu-ft8x7-status.md)
+
+A first FTDX10 bring-up document is now also available:
+
+- [Yaesu FTDX10 first test plan](docs/radios/yaesu-ftdx10-test-plan.md)
 
 ---
 
@@ -192,7 +193,7 @@ Future development focuses on:
 - Additional radio profiles
 - Expanded voice token sets
 - Cleaner documentation for builders and operators
-- Continued refinement of the Yaesu FT8x7 family using the same keypad structure principles already established for the IC-7300
+- Continued refinement of the Yaesu FT8x7 family using the same keypad structure principles already established for the IC-7300`r`n- First documented bring-up of the Yaesu FTDX10/101 ASCII CAT family
 
 ---
 
@@ -200,3 +201,4 @@ Future development focuses on:
 
 This project uses the same license model as the **Talking SWR Meter** project by the same author.
 See the `LICENSE` file for code and `LICENSE-docs` for documentation material.
+

@@ -39,9 +39,16 @@ static void setAsciiDefaults(StoredProfile& sp) {
   copyCString(sp.ascii.powerStateGet, sizeof(sp.ascii.powerStateGet), "");
   copyCString(sp.ascii.powerStateOnCmd, sizeof(sp.ascii.powerStateOnCmd), "");
   copyCString(sp.ascii.powerStateOffCmd, sizeof(sp.ascii.powerStateOffCmd), "");
+  copyCString(sp.ascii.tunerGet, sizeof(sp.ascii.tunerGet), "");
+  copyCString(sp.ascii.tunerOnCmd, sizeof(sp.ascii.tunerOnCmd), "");
+  copyCString(sp.ascii.tunerOffCmd, sizeof(sp.ascii.tunerOffCmd), "");
+  copyCString(sp.ascii.tuneStartCmd, sizeof(sp.ascii.tuneStartCmd), "");
   copyCString(sp.ascii.notchGet, sizeof(sp.ascii.notchGet), "");
   copyCString(sp.ascii.notchOnCmd, sizeof(sp.ascii.notchOnCmd), "");
   copyCString(sp.ascii.notchOffCmd, sizeof(sp.ascii.notchOffCmd), "");
+  copyCString(sp.ascii.lockGet, sizeof(sp.ascii.lockGet), "");
+  copyCString(sp.ascii.lockOnCmd, sizeof(sp.ascii.lockOnCmd), "");
+  copyCString(sp.ascii.lockOffCmd, sizeof(sp.ascii.lockOffCmd), "");
   copyCString(sp.ascii.freqReplyPrefix, sizeof(sp.ascii.freqReplyPrefix), "FA");
   copyCString(sp.ascii.modeReplyPrefix, sizeof(sp.ascii.modeReplyPrefix), "MD");
   copyCString(sp.ascii.ifReplyPrefix, sizeof(sp.ascii.ifReplyPrefix), "IF");
@@ -55,7 +62,9 @@ static void setAsciiDefaults(StoredProfile& sp) {
   copyCString(sp.ascii.preampReplyPrefix, sizeof(sp.ascii.preampReplyPrefix), "");
   copyCString(sp.ascii.agcReplyPrefix, sizeof(sp.ascii.agcReplyPrefix), "");
   copyCString(sp.ascii.powerStateReplyPrefix, sizeof(sp.ascii.powerStateReplyPrefix), "");
+  copyCString(sp.ascii.tunerReplyPrefix, sizeof(sp.ascii.tunerReplyPrefix), "");
   copyCString(sp.ascii.notchReplyPrefix, sizeof(sp.ascii.notchReplyPrefix), "");
+  copyCString(sp.ascii.lockReplyPrefix, sizeof(sp.ascii.lockReplyPrefix), "");
   copyCString(sp.ascii.modeLsb, sizeof(sp.ascii.modeLsb), "1");
   copyCString(sp.ascii.modeUsb, sizeof(sp.ascii.modeUsb), "2");
   copyCString(sp.ascii.modeAm, sizeof(sp.ascii.modeAm), "5");
@@ -169,6 +178,15 @@ static void setProtocolDefaults(StoredProfile& sp) {
     copyCString(sp.ascii.smeterReplyPrefix, sizeof(sp.ascii.smeterReplyPrefix), "SM0");
     copyCString(sp.ascii.powerReplyPrefix, sizeof(sp.ascii.powerReplyPrefix), "RM5");
     copyCString(sp.ascii.swrReplyPrefix, sizeof(sp.ascii.swrReplyPrefix), "RM6");
+    copyCString(sp.ascii.tunerGet, sizeof(sp.ascii.tunerGet), "AC;");
+    copyCString(sp.ascii.tunerOnCmd, sizeof(sp.ascii.tunerOnCmd), "AC001;");
+    copyCString(sp.ascii.tunerOffCmd, sizeof(sp.ascii.tunerOffCmd), "AC000;");
+    copyCString(sp.ascii.tuneStartCmd, sizeof(sp.ascii.tuneStartCmd), "AC002;");
+    copyCString(sp.ascii.tunerReplyPrefix, sizeof(sp.ascii.tunerReplyPrefix), "AC");
+    copyCString(sp.ascii.lockGet, sizeof(sp.ascii.lockGet), "LK;");
+    copyCString(sp.ascii.lockOnCmd, sizeof(sp.ascii.lockOnCmd), "LK1;");
+    copyCString(sp.ascii.lockOffCmd, sizeof(sp.ascii.lockOffCmd), "LK0;");
+    copyCString(sp.ascii.lockReplyPrefix, sizeof(sp.ascii.lockReplyPrefix), "LK");
     copyCString(sp.ascii.modeLsb, sizeof(sp.ascii.modeLsb), "1");
     copyCString(sp.ascii.modeUsb, sizeof(sp.ascii.modeUsb), "2");
     copyCString(sp.ascii.modeCw, sizeof(sp.ascii.modeCw), "3");
@@ -181,6 +199,11 @@ static void setProtocolDefaults(StoredProfile& sp) {
     sp.caps.getSmeter = true;
     sp.caps.getPower = true;
     sp.caps.getSwr = true;
+    sp.caps.getDialLock = true;
+    sp.caps.setDialLock = true;
+    sp.caps.getTuner = true;
+    sp.caps.setTuner = true;
+    sp.caps.startTune = true;
   }
 }
 
