@@ -1,6 +1,5 @@
 #include "ui_keypad_actions.h"
 
-#include "protocol_ops_yaesu.h"
 #include "radio_catalog.h"
 #include "radio_mode.h"
 #include "radio_protocol.h"
@@ -137,7 +136,7 @@ void keypadClearAll() {
   g_modeStageTargetVfo = 0;
   g_modeStageKey = 0;
   g_profileSelectActive = false;
-  g_profileStage = 0;
+  g_profileStageDigits = "";
   g_volStageActive = false;
   g_pendingClickActive = false;
   g_pendingClickBank = 0;
@@ -196,15 +195,16 @@ void keypadEnter() {
 
   if (g_profileSelectActive) {
     printKeypadCommand("ENTER -> PROFILE");
-    if (g_profileStage >= 1 && g_profileStage <= 9) {
-      applyProfile(g_profileStage);
-      printKeypadStatus(String("PROFILE ") + String((int)g_profileStage));
+    int slot = g_profileStageDigits.toInt();
+    if (slot >= 1 && slot <= MAX_PROFILE_SLOTS && storedProfileForId((uint8_t)slot)) {
+      applyProfile((uint8_t)slot);
+      printKeypadStatus(String("PROFILE ") + String(slot));
       speakCurrentProfile();
     } else {
       printKeypadStatus("PROFILE -> no selection");
     }
     g_profileSelectActive = false;
-    g_profileStage = 0;
+    g_profileStageDigits = "";
     return;
   }
 
@@ -350,39 +350,20 @@ void keypadHandleReleased(char k) {
         if (currentProtocolType() == PROTO_CIV) {
           return;
         }
-        if (currentProtocolType() == PROTO_YAESU_FT8X7) {
-          printKeypadCommand("BANK2 4 SHORT -> YSTATUS?");
-          keypadSendNow("YSTATUS?");
-        }
         return;
       case '5':
         if (currentProtocolType() == PROTO_CIV) {
           return;
-        }
-        if (currentProtocolType() == PROTO_YAESU_FT8X7) {
-          printKeypadCommand("BANK2 5 SHORT -> VFO A");
-          yaesuCatSelectVfoA();
-          printKeypadStatus("VFO A");
         }
         return;
       case '6':
         if (currentProtocolType() == PROTO_CIV) {
           return;
         }
-        if (currentProtocolType() == PROTO_YAESU_FT8X7) {
-          printKeypadCommand("BANK2 6 SHORT -> CLAR ON");
-          yaesuCatSetClarifier(true);
-          printKeypadStatus("CLAR ON");
-        }
         return;
       case '7':
         if (currentProtocolType() == PROTO_CIV) {
           return;
-        }
-        if (currentProtocolType() == PROTO_YAESU_FT8X7) {
-          printKeypadCommand("BANK2 7 SHORT -> SPLIT ON");
-          yaesuCatSetSplit(true);
-          printKeypadStatus("SPLIT ON");
         }
         return;
       case '8':
@@ -391,19 +372,10 @@ void keypadHandleReleased(char k) {
           keypadSendNow("FILSHAPE?");
           return;
         }
-        if (currentProtocolType() == PROTO_YAESU_FT8X7) {
-          printKeypadCommand("BANK2 8 SHORT -> PTT ON");
-          yaesuCatSetPtt(true);
-          printKeypadStatus("PTT ON");
-        }
         return;
       case '9':
         if (currentProtocolType() == PROTO_CIV) {
           return;
-        }
-        if (currentProtocolType() == PROTO_YAESU_FT8X7) {
-          printKeypadCommand("BANK2 9 SHORT -> YALL?");
-          keypadSendNow("YALL?");
         }
         return;
       default: break;

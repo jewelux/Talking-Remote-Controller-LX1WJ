@@ -9,7 +9,7 @@ uint8_t g_modeStageMode = 0xFF;
 uint8_t g_modeStageTargetVfo = 0;
 char g_modeStageKey = 0;
 bool g_profileSelectActive = false;
-uint8_t g_profileStage = 0;
+String g_profileStageDigits;
 bool g_nineHoldConsumed = false;
 String g_kpStagedCmd;
 bool g_kpHasStagedCmd = false;

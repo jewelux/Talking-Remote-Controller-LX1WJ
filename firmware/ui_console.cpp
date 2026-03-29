@@ -222,6 +222,20 @@ static bool parseHexNybbleString(String s, uint8_t* out, size_t count) {
   return true;
 }
 
+static bool parseTwoHexByteArgs(const String& input, uint8_t& firstOut, uint8_t& secondOut) {
+  String s = input;
+  s.trim();
+  int sep = s.indexOf(' ');
+  if (sep < 0) sep = s.indexOf(',');
+  if (sep < 0) sep = s.indexOf('-');
+  if (sep < 0) return false;
+  String a = s.substring(0, sep);
+  String b = s.substring(sep + 1);
+  a.trim();
+  b.trim();
+  return parseHexByteString(a, firstOut) && parseHexByteString(b, secondOut);
+}
+
 String readLine() {
   static String line;
   while (Serial.available()) {
@@ -243,6 +257,30 @@ String upperCopy(String s) {
   return s;
 }
 
+static bool parseConsoleModeToken(String token, uint8_t& modeOut) {
+  token.trim();
+  if (!token.length()) return false;
+
+  if (token.length() == 1) {
+    modeOut = 0xFF;
+    (void)profileModeFromDigit(token[0], modeOut);
+    if (modeOut != 0xFF) return true;
+  }
+
+  String upper = upperCopy(token);
+  if (upper == "LSB") { modeOut = 0x00; return true; }
+  if (upper == "USB") { modeOut = 0x01; return true; }
+  if (upper == "AM") { modeOut = 0x02; return true; }
+  if (upper == "CW") { modeOut = 0x03; return true; }
+  if (upper == "RTTY") { modeOut = 0x04; return true; }
+  if (upper == "FM") { modeOut = 0x05; return true; }
+  if (upper == "WFM") { modeOut = 0x06; return true; }
+  if (upper == "CWR") { modeOut = 0x07; return true; }
+  if (upper == "RTTY-R" || upper == "RTTYR") { modeOut = 0x08; return true; }
+  if (upper == "DIGI" || upper == "DIG" || upper == "PKT") { modeOut = 0x11; return true; }
+  return false;
+}
+
 void printHelp() {
   Serial.println();
   Serial.println("Commands (case-insensitive):");
@@ -262,10 +300,10 @@ void printHelp() {
   Serial.println("    ID? | IF? | OM?");
   Serial.println("    LFREQ");
   Serial.println("    LISTVOICES");
-  Serial.println("    MODE <n>");
+  Serial.println("    MODE <n|name>");
   Serial.println("    MODE LIST");
   Serial.println("    MODE?");
-  Serial.println("    PROFILE <1..9>");
+  Serial.println("    PROFILE <1..24>");
   Serial.println("    PROFILE NEXT | PREV");
   Serial.println("    PROFILE?");
   Serial.println("    QUIET OFF | QUIET ON");
@@ -335,7 +373,7 @@ void printHelp() {
   Serial.println("    CLAR OFF | ON");
   Serial.println("    GT? | GT FAST | SLOW");
   Serial.println("    LOCKDOC OFF | ON");
-  Serial.println("    MEM READ RAW | MEM WRITE");
+  Serial.println("    MEM READ RAW | MEM WRITE  (experimental)");
   Serial.println("    PA? | PA OFF | ON");
   Serial.println("    PS? | PS OFF | ON");
   Serial.println("    PTT OFF | ON");
@@ -343,8 +381,22 @@ void printHelp() {
   Serial.println("    SWR?");
   Serial.println("    VFO TOGGLE | A | B");
   Serial.println("    YALL?");
+  Serial.println("    YDCS <hex>");
+  Serial.println("    YPOWER OFF | ON");
+  Serial.println("    YRPT MINUS | PLUS | SIMPLEX");
+  Serial.println("    YRPTSHIFT <MHz>");
+  Serial.println("    YLOCKRAW OFF | ON");
+  Serial.println("    YMODEBYTE?");
+  Serial.println("    YRXSTATUS?");
+  Serial.println("    YSETMODE <hex byte>");
+  Serial.println("    YTMODE <name|hex>");
+  Serial.println("    YTONE <hex>");
+  Serial.println("    YTXSTATUS?");
+  Serial.println("    YVAR?");
   Serial.println("    YCAT <10 hex digits>");
   Serial.println("    YCAT? <10 hex digits>");
+  Serial.println("    YCAT1? <hex byte>");
+  Serial.println("    YSCAN1 <start hex> <end hex>");
   Serial.println("    YSTATUS?");
   Serial.println();
 }
@@ -406,7 +458,7 @@ static bool handleConsoleProfileCommands(const String& line, const String& upper
   }
   if (upper.startsWith("PROFILE ")) {
     int slot = line.substring(8).toInt();
-    if (slot < 1 || slot > 9 || !storedProfileForId((uint8_t)slot)) {
+    if (slot < 1 || slot > MAX_PROFILE_SLOTS || !storedProfileForId((uint8_t)slot)) {
       Serial.println("PROFILE -> invalid or empty slot");
       speakError();
       return true;
@@ -516,6 +568,10 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
 
   if (upper == "YALL?") {
     Serial.println("[YAESU FT8X7]");
+    Serial.print("  VARIANT: ");
+    Serial.println(currentProfileVariant()[0] ? currentProfileVariant() : "(default)");
+    const bool isFt817 = currentProfileVariantIs("ft817");
+    const bool isFt857Family = currentProfileVariantIs("ft857_897");
 
     uint64_t hz = 0;
     if (queryFrequency(hz, 800)) {
@@ -559,36 +615,262 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     } else {
       Serial.println("  ALC: no reply");
     }
-    if (yaesuCatQueryVolumeRaw(raw, 800)) {
-      Serial.print("  VOL: ");
-      Serial.println(raw);
+    if (isFt817) {
+      if (yaesuCatQueryVolumeRaw(raw, 800)) {
+        Serial.print("  VOL: ");
+        Serial.println(raw);
+      } else {
+        Serial.println("  VOL: no reply");
+      }
+    } else if (isFt857Family) {
+      Serial.println("  VOL: unsupported on verified FT-857/897 path");
     } else {
-      Serial.println("  VOL: no reply");
+      Serial.println("  VOL: variant unknown");
     }
-    if (yaesuCatQuerySquelchRaw(raw, 800)) {
-      Serial.print("  SQL: ");
-      Serial.println(raw);
+    if (isFt817) {
+      if (yaesuCatQuerySquelchRaw(raw, 800)) {
+        Serial.print("  SQL: ");
+        Serial.println(raw);
+      } else {
+        Serial.println("  SQL: no reply");
+      }
+    } else if (isFt857Family) {
+      Serial.println("  SQL: unsupported on verified FT-857/897 path");
     } else {
-      Serial.println("  SQL: no reply");
+      Serial.println("  SQL: variant unknown");
     }
 
-    uint8_t status = 0;
-    if (yaesuCatQueryStatusRaw(status, 800)) {
-      Serial.print("  STATUS: 0x");
-      if (status < 0x10) Serial.print('0');
-      Serial.println(status, HEX);
+    if (isFt817) {
+      uint8_t status = 0;
+      if (yaesuCatQueryStatusRaw(status, 800)) {
+        Serial.print("  STATUS: 0x");
+        if (status < 0x10) Serial.print('0');
+        Serial.println(status, HEX);
+      } else {
+        Serial.println("  STATUS: no reply");
+      }
+    } else if (isFt857Family) {
+      uint8_t status = 0;
+      if (yaesuCatQueryTxStatusRaw(status, 800)) {
+        Serial.print("  STATUS: 0x");
+        if (status < 0x10) Serial.print('0');
+        Serial.println(status, HEX);
+      } else {
+        Serial.println("  STATUS: no reply");
+      }
     } else {
-      Serial.println("  STATUS: no reply");
+      Serial.println("  STATUS: variant unknown");
     }
     return true;
   }
 
-  if (upper == "YSTATUS?") {
+  if (upper == "YVAR?") {
+    const char* variant = currentProfileVariant();
+    Serial.print("YVAR: ");
+    Serial.println(variant[0] ? variant : "(default)");
+    if (currentProfileVariantIs("ft817")) {
+      Serial.println("  Tone/DCS family: FT-817 style (simple Tone/DCS layout)");
+    } else if (currentProfileVariantIs("ft857_897")) {
+      Serial.println("  Tone/DCS family: FT-857/897 style (separate TX/RX Tone/DCS layout)");
+    } else {
+      Serial.println("  Tone/DCS family: unknown variant");
+    }
+    return true;
+  }
+
+  if (upper.startsWith("YTMODE ")) {
+    String arg = line.substring(7);
+    arg.trim();
+    String modeName = arg;
+    modeName.toUpperCase();
+    uint8_t modeByte = 0;
+    bool known = true;
+    if (modeName == "DCS") modeByte = 0x0A;
+    else if (modeName == "DCSDEC" || modeName == "DCS_DEC" || modeName == "DCS-DEC") modeByte = 0x0B;
+    else if (modeName == "DCSENC" || modeName == "DCS_ENC" || modeName == "DCS-ENC") modeByte = 0x0C;
+    else if (modeName == "CTCSS") modeByte = 0x2A;
+    else if (modeName == "CTCSSDEC" || modeName == "CTCSS_DEC" || modeName == "CTCSS-DEC") modeByte = 0x3A;
+    else if (modeName == "CTCSSENC" || modeName == "CTCSS_ENC" || modeName == "CTCSS-ENC" || modeName == "ENCODER") modeByte = 0x4A;
+    else if (modeName == "OFF") modeByte = 0x8A;
+    else known = parseHexByteString(arg, modeByte);
+    if (!known) {
+      Serial.println("YTMODE -> use DCS, DCSDEC, DCSENC, CTCSS, CTCSSDEC, CTCSSENC, OFF, or hex byte");
+      return true;
+    }
+    if (currentProfileVariantIs("ft817")) {
+      if (!(modeByte == 0x0A || modeByte == 0x2A || modeByte == 0x4A || modeByte == 0x8A)) {
+        Serial.println("YTMODE -> mode not documented for FT-817 variant");
+        return true;
+      }
+    } else if (currentProfileVariantIs("ft857_897")) {
+      if (!(modeByte == 0x0A || modeByte == 0x0B || modeByte == 0x0C || modeByte == 0x2A || modeByte == 0x3A || modeByte == 0x4A || modeByte == 0x8A)) {
+        Serial.println("YTMODE -> mode not documented for FT-857/897 variant");
+        return true;
+      }
+    } else {
+      Serial.println("YTMODE -> unknown FT8x7 variant");
+      return true;
+    }
+    yaesuCatSetToneDcsModeRaw(modeByte);
+    Serial.print("YTMODE 0x");
+    if (modeByte < 0x10) Serial.print('0');
+    Serial.println(modeByte, HEX);
+    return true;
+  }
+
+  if (upper.startsWith("YTONE ")) {
+    uint8_t data[4] = {0};
+    String arg = line.substring(6);
+    bool ok = false;
+    if (currentProfileVariantIs("ft817")) {
+      uint8_t pair[2] = {0};
+      ok = parseHexNybbleString(arg, pair, 2);
+      data[0] = pair[0];
+      data[1] = pair[1];
+    } else if (currentProfileVariantIs("ft857_897")) {
+      ok = parseHexNybbleString(arg, data, 4);
+    }
+    if (!ok) {
+      if (currentProfileVariantIs("ft817")) Serial.println("YTONE -> FT-817 expects 4 hex digits, e.g. 0885");
+      else Serial.println("YTONE -> FT-857/897 expects 8 hex digits, e.g. 08851000");
+      return true;
+    }
+    yaesuCatSetCtcssToneRaw(data);
+    Serial.print("YTONE RAW: ");
+    const uint8_t frame[5] = {data[0], data[1], data[2], data[3], 0x0B};
+    yaesuCatPrintFrame(frame);
+    Serial.println();
+    return true;
+  }
+
+  if (upper.startsWith("YDCS ")) {
+    uint8_t data[4] = {0};
+    String arg = line.substring(5);
+    bool ok = false;
+    if (currentProfileVariantIs("ft817")) {
+      uint8_t pair[2] = {0};
+      ok = parseHexNybbleString(arg, pair, 2);
+      data[0] = pair[0];
+      data[1] = pair[1];
+    } else if (currentProfileVariantIs("ft857_897")) {
+      ok = parseHexNybbleString(arg, data, 4);
+    }
+    if (!ok) {
+      if (currentProfileVariantIs("ft817")) Serial.println("YDCS -> FT-817 expects 4 hex digits, e.g. 0023");
+      else Serial.println("YDCS -> FT-857/897 expects 8 hex digits, e.g. 00230371");
+      return true;
+    }
+    yaesuCatSetDcsCodeRaw(data);
+    Serial.print("YDCS RAW: ");
+    const uint8_t frame[5] = {data[0], data[1], data[2], data[3], 0x0C};
+    yaesuCatPrintFrame(frame);
+    Serial.println();
+    return true;
+  }
+
+  if (upper == "YPOWER ON" || upper == "YPOWER OFF") {
+    if (!currentProfileVariantIs("ft817")) {
+      Serial.println("YPOWER -> documented only for FT-817 variant");
+      return true;
+    }
+    const bool on = (upper == "YPOWER ON");
+    yaesuCatSetPowerDocumentedRaw(on);
+    Serial.println(on ? "YPOWER ON" : "YPOWER OFF");
+    return true;
+  }
+
+  if (upper == "YRPT MINUS" || upper == "YRPT PLUS" || upper == "YRPT SIMPLEX") {
+    uint8_t shiftByte = 0x89;
+    if (upper == "YRPT MINUS") shiftByte = 0x09;
+    else if (upper == "YRPT PLUS") shiftByte = 0x49;
+    yaesuCatSetRepeaterShiftRaw(shiftByte);
+    Serial.print("YRPT RAW: ");
+    const uint8_t frame[5] = {shiftByte, 0x00, 0x00, 0x00, 0x09};
+    yaesuCatPrintFrame(frame);
+    Serial.println();
+    return true;
+  }
+
+  if (upper.startsWith("YRPTSHIFT ")) {
+    String arg = line.substring(10);
+    arg.trim();
+    double mhz = arg.toDouble();
+    if (mhz <= 0.0) {
+      Serial.println("YRPTSHIFT -> use MHz, e.g. 0.600 or 5.000");
+      return true;
+    }
+    uint64_t hz = (uint64_t)(mhz * 1000000.0 + 0.5);
+    yaesuCatSetRepeaterOffsetHzRaw(hz);
+    uint8_t frame[5] = {0x00, 0x00, 0x00, 0x00, 0xF9};
+    yaesuCatEncodeFreqHz(hz, frame);
+    Serial.print("YRPTSHIFT RAW: ");
+    yaesuCatPrintFrame(frame);
+    Serial.print("  (");
+    Serial.print(hzToMHzString3(hz));
+    Serial.println(" MHz)");
+    return true;
+  }
+
+  if (upper == "YLOCKRAW ON" || upper == "YLOCKRAW OFF") {
+    const bool on = (upper == "YLOCKRAW ON");
+    yaesuCatSetLockDocumentedRaw(on);
+    Serial.println(on ? "YLOCKRAW ON -> sent documented FT8x7 raw bytes 00 00 00 00 00"
+                      : "YLOCKRAW OFF -> sent documented FT8x7 raw bytes 00 00 00 00 80");
+    return true;
+  }
+
+  if (upper == "YMODEBYTE?") {
+    uint8_t modeByte = 0;
+    if (!yaesuCatQueryModeRawByte(modeByte, 800)) {
+      Serial.println("YMODEBYTE? -> no reply");
+      return true;
+    }
+    Serial.print("YMODEBYTE: 0x");
+    if (modeByte < 0x10) Serial.print('0');
+    Serial.println(modeByte, HEX);
+    return true;
+  }
+
+  if (upper.startsWith("YSETMODE ")) {
+    uint8_t modeByte = 0;
+    if (!parseHexByteString(line.substring(9), modeByte)) {
+      Serial.println("YSETMODE -> use hex byte, e.g. 08, 88, 0A, 0C");
+      return true;
+    }
+    yaesuCatSetModeRawByte(modeByte);
+    Serial.print("YSETMODE 0x");
+    if (modeByte < 0x10) Serial.print('0');
+    Serial.println(modeByte, HEX);
+    return true;
+  }
+
+  if (upper == "YRXSTATUS?") {
     uint8_t raw = 0;
-    if (!yaesuCatQueryStatusRaw(raw, 800)) { Serial.println("YSTATUS? -> no reply"); return true; }
-    Serial.print("YSTATUS: 0x");
+    if (!yaesuCatQueryRxStatusRaw(raw, 800)) { Serial.println("YRXSTATUS? -> no reply"); return true; }
+    Serial.print("YRXSTATUS: 0x");
     if (raw < 0x10) Serial.print('0');
     Serial.println(raw, HEX);
+    return true;
+  }
+  if (upper == "YTXSTATUS?" || upper == "YSTATUS?") {
+    uint8_t raw = 0;
+    if (!yaesuCatQueryTxStatusRaw(raw, 800)) {
+      Serial.println((upper == "YSTATUS?") ? "YSTATUS? -> no reply" : "YTXSTATUS? -> no reply");
+      return true;
+    }
+    Serial.print((upper == "YSTATUS?") ? "YSTATUS: 0x" : "YTXSTATUS: 0x");
+    if (raw < 0x10) Serial.print('0');
+    Serial.println(raw, HEX);
+    return true;
+  }
+  if (upper == "RXTX?" && currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft857_897")) {
+    bool tx = false;
+    if (!queryRxTxStatus(tx, 800)) { Serial.println("RXTX? -> no reply"); return true; }
+    Serial.println(tx ? "TX" : "RX");
+    return true;
+  }
+  if (upper == "SPLIT?" && currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft857_897")) {
+    Serial.println("SPLIT? -> not reliable on FT-857/897");
     return true;
   }
   if (upper == "ALC?") {
@@ -599,6 +881,10 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     return true;
   }
   if (upper == "VOL?") {
+    if (currentProfileVariantIs("ft857_897")) {
+      Serial.println("VOL? -> unsupported on verified FT-857/897 path");
+      return true;
+    }
     int32_t raw = 0;
     if (!yaesuCatQueryVolumeRaw(raw, 800)) { Serial.println("VOL? -> no reply"); return true; }
     Serial.print("VOL: ");
@@ -606,6 +892,10 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     return true;
   }
   if (upper == "SQL?") {
+    if (currentProfileVariantIs("ft857_897")) {
+      Serial.println("SQL? -> unsupported on verified FT-857/897 path");
+      return true;
+    }
     int32_t raw = 0;
     if (!yaesuCatQuerySquelchRaw(raw, 800)) { Serial.println("SQL? -> no reply"); return true; }
     Serial.print("SQL: ");
@@ -618,11 +908,19 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     return true;
   }
   if (upper == "VFO A") {
+    if (!currentProfileVariantIs("ft817")) {
+      Serial.println("VFO A -> raw FT8x7 VFO select is currently enabled only for FT-817");
+      return true;
+    }
     yaesuCatSelectVfoA();
     Serial.println("VFO A");
     return true;
   }
   if (upper == "VFO B") {
+    if (!currentProfileVariantIs("ft817")) {
+      Serial.println("VFO B -> raw FT8x7 VFO select is currently enabled only for FT-817");
+      return true;
+    }
     yaesuCatSelectVfoB();
     Serial.println("VFO B");
     return true;
@@ -675,26 +973,28 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     return true;
   }
   if ((upper == "LOCK ON" || upper == "LOCK OFF") && currentProtocolType() == PROTO_YAESU_FT8X7) {
-    Serial.println("LOCK -> not sent via generic LOCK; documented bytes collide with VFO A/B");
-    Serial.println("Use LOCKDOC ON/OFF if you want to send the documented raw bytes deliberately.");
+    const bool on = (upper == "LOCK ON");
+    yaesuCatSetLockDocumentedRaw(on);
+    Serial.println(on ? "LOCK ON -> sent documented FT8x7 raw bytes 00 00 00 00 00" : "LOCK OFF -> sent documented FT8x7 raw bytes 00 00 00 00 80");
     return true;
   }
   if (upper == "LOCKDOC ON") {
     yaesuCatSetLockDocumentedRaw(true);
-    Serial.println("LOCKDOC ON -> sent documented raw bytes 00 00 00 01 00");
+    Serial.println("LOCKDOC ON -> sent documented raw bytes 00 00 00 00 00");
     return true;
   }
   if (upper == "LOCKDOC OFF") {
     yaesuCatSetLockDocumentedRaw(false);
-    Serial.println("LOCKDOC OFF -> sent documented raw bytes 00 00 00 00 00");
+    Serial.println("LOCKDOC OFF -> sent documented raw bytes 00 00 00 00 80");
     return true;
   }
   if (upper == "MEM WRITE") {
+    Serial.println("MEM WRITE -> experimental FT8x7 raw path; not confirmed as documented normal CAT on FT-857/897");
     yaesuCatMemoryWrite();
-    Serial.println("MEM WRITE");
     return true;
   }
   if (upper == "MEM READ RAW") {
+    Serial.println("MEM READ RAW -> experimental FT8x7 raw path; not confirmed as documented normal CAT on FT-857/897");
     uint8_t rsp[5] = {0};
     if (!yaesuCatMemoryReadRaw(rsp, 800)) { Serial.println("MEM READ RAW -> no reply"); return true; }
     Serial.print("MEM RAW: ");
@@ -743,6 +1043,62 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     Serial.println();
     return true;
   }
+  if (upper.startsWith("YCAT1? ")) {
+    uint8_t opcode = 0;
+    if (!parseHexByteString(line.substring(7), opcode)) {
+      Serial.println("YCAT1? -> use hex byte, e.g. E7 or F7");
+      return true;
+    }
+    const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, opcode};
+    uint8_t rsp = 0;
+    if (!yaesuCatTransact1(cmd, rsp, 800)) {
+      Serial.println("YCAT1? -> no reply");
+      return true;
+    }
+    Serial.print("YCAT1 RX 0x");
+    if (opcode < 0x10) Serial.print('0');
+    Serial.print(opcode, HEX);
+    Serial.print(": 0x");
+    if (rsp < 0x10) Serial.print('0');
+    Serial.println(rsp, HEX);
+    return true;
+  }
+  if (upper.startsWith("YSCAN1 ")) {
+    uint8_t first = 0;
+    uint8_t last = 0;
+    if (!parseTwoHexByteArgs(line.substring(7), first, last)) {
+      Serial.println("YSCAN1 -> use two hex bytes, e.g. E0 EF or 00 1F");
+      return true;
+    }
+    if (first > last) {
+      uint8_t tmp = first;
+      first = last;
+      last = tmp;
+    }
+    Serial.print("YSCAN1 0x");
+    if (first < 0x10) Serial.print('0');
+    Serial.print(first, HEX);
+    Serial.print("..0x");
+    if (last < 0x10) Serial.print('0');
+    Serial.println(last, HEX);
+    for (uint16_t op = first; op <= last; ++op) {
+      const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, (uint8_t)op};
+      uint8_t rsp = 0;
+      Serial.print("  0x");
+      if (op < 0x10) Serial.print('0');
+      Serial.print(op, HEX);
+      Serial.print(" -> ");
+      if (!yaesuCatTransact1(cmd, rsp, 160)) {
+        Serial.println("--");
+      } else {
+        Serial.print("0x");
+        if (rsp < 0x10) Serial.print('0');
+        Serial.println(rsp, HEX);
+      }
+      delay(10);
+    }
+    return true;
+  }
   return false;
 }
 
@@ -786,10 +1142,11 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     return true;
   }
   if (upper.startsWith("MODE ")) {
-    char k = line.substring(5)[0];
     uint8_t mode = 0xFF;
-    (void)profileModeFromDigit(k, mode);
-    if (mode == 0xFF || !applyModeAndTrack(mode, 1)) { Serial.println("SET MODE -> failed"); return true; }
+    if (!parseConsoleModeToken(line.substring(5), mode) || !applyModeAndTrack(mode, 1)) {
+      Serial.println("SET MODE -> failed");
+      return true;
+    }
     Serial.println("SET MODE -> command sent");
     return true;
   }
@@ -1033,18 +1390,14 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     return true;
   }
   if (upper.startsWith("VFOA MODE ")) {
-    char k = line.substring(10)[0];
     uint8_t mode = 0xFF;
-    (void)profileModeFromDigit(k, mode);
-    if (mode == 0xFF || !setVfoMode(true, mode, 1)) { Serial.println("VFOA MODE -> failed"); return true; }
+    if (!parseConsoleModeToken(line.substring(10), mode) || !setVfoMode(true, mode, 1)) { Serial.println("VFOA MODE -> failed"); return true; }
     Serial.println("VFOA MODE -> command sent");
     return true;
   }
   if (upper.startsWith("VFOB MODE ")) {
-    char k = line.substring(10)[0];
     uint8_t mode = 0xFF;
-    (void)profileModeFromDigit(k, mode);
-    if (mode == 0xFF || !setVfoMode(false, mode, 1)) { Serial.println("VFOB MODE -> failed"); return true; }
+    if (!parseConsoleModeToken(line.substring(10), mode) || !setVfoMode(false, mode, 1)) { Serial.println("VFOB MODE -> failed"); return true; }
     Serial.println("VFOB MODE -> command sent");
     return true;
   }

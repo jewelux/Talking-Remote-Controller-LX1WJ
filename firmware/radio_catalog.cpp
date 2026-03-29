@@ -24,3 +24,12 @@ const CivProfile& currentProfile() {
 ProtocolType currentProtocolType() {
   return currentStoredProfile().protocolType;
 }
+
+const char* currentProfileVariant() {
+  return currentStoredProfile().variant;
+}
+
+bool currentProfileVariantIs(const char* variant) {
+  if (!variant) return false;
+  return strcmp(currentStoredProfile().variant, variant) == 0;
+}

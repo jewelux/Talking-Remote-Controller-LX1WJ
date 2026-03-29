@@ -14,3 +14,5 @@ bool g_speechEnabled = true;
 bool g_tuningSpeakEnabled = true;
 uint32_t g_suppressFreqSpeakUntilMs = 0;
 LiveState live;
+bool g_ft8x7SplitKnown = false;
+bool g_ft8x7SplitOn = false;

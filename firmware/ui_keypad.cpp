@@ -58,6 +58,13 @@ static void queryBank5Rit();
 static void toggleBank5Rit();
 static void adjustBank5Rit(int32_t deltaHz);
 static void setBank5RitOffset(int32_t hz);
+static void setBank6Ft8x7RepeaterShift(uint8_t shiftByte, const char* label);
+static void setBank6Ft8x7RepeaterOffsetHz(uint64_t hz);
+static void setBank6Ft8x7ToneMode(uint8_t modeByte, const char* label);
+static void setBank6Ft8x7CtcssPreset(uint8_t b0, uint8_t b1, const char* label);
+static void setBank6Ft8x7DcsPreset(uint8_t b0, uint8_t b1, const char* label);
+static void setBank6Ft8x7DefaultCtcss();
+static void setBank6Ft8x7DefaultDcs();
 static void queryBank3BandStack(uint8_t reg);
 static void recallBank3BandStack(uint8_t reg);
 static void queryBank4Tuner();
@@ -440,8 +447,121 @@ static void speakQueriedFrequencyHz(uint64_t hz) {
   speakDigitsAndPoint(hzToMHzString3(hz));
 }
 
+static bool isFt8x7Ft857FamilyKeypad() {
+  return currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft857_897");
+}
+
+static bool isFt8x7Keypad() {
+  return currentProtocolType() == PROTO_YAESU_FT8X7;
+}
+
+static void setBank3Ft857Split(bool on) {
+  printKeypadCommand(String("BANK3 FT857 -> SPLIT ") + (on ? "ON" : "OFF"));
+  if (!setSplit(on)) return;
+  printKeypadStatus(on ? "SPLIT ON" : "SPLIT OFF");
+  speakTokenState("split", on);
+}
+
+static void setBank3Ft857Clar(bool on) {
+  printKeypadCommand(String("BANK3 FT857 -> CLAR ") + (on ? "ON" : "OFF"));
+  if (!yaesuCatSetClarifier(on)) return;
+  printKeypadStatus(on ? "CLAR ON" : "CLAR OFF");
+  if (g_speechEnabled) {
+    speakToken("clarifier");
+    playSilenceMs(60);
+    speakSimpleBinaryState(on);
+  }
+}
+
+static void setBank6Ft8x7RepeaterShift(uint8_t shiftByte, const char* label) {
+  printKeypadCommand(String("BANK6 FT8X7 -> RPT ") + label);
+  if (!yaesuCatSetRepeaterShiftRaw(shiftByte)) return;
+  printKeypadStatus(String("RPT ") + label);
+  if (!g_speechEnabled) return;
+  speakToken("repeater");
+  playSilenceMs(60);
+  if (String(label) == "MINUS") speakToken("minus");
+  else if (String(label) == "PLUS") speakToken("plus");
+  else speakToken("off");
+}
+
+static void setBank6Ft8x7RepeaterOffsetHz(uint64_t hz) {
+  printKeypadCommand(String("BANK6 FT8X7 -> RPTSHIFT ") + hzToMHzString3(hz));
+  if (!yaesuCatSetRepeaterOffsetHzRaw(hz)) return;
+  printKeypadStatus(String("RPTSHIFT ") + hzToMHzString3(hz) + " MHz");
+  if (!g_speechEnabled) return;
+  speakToken("repeater");
+  playSilenceMs(60);
+  speakFrequencyWord();
+  playSilenceMs(60);
+  speakDigitsAndPoint(hzToMHzString3(hz));
+}
+
+static void setBank6Ft8x7ToneMode(uint8_t modeByte, const char* label) {
+  printKeypadCommand(String("BANK6 FT8X7 -> TONE ") + label);
+  if (!yaesuCatSetToneDcsModeRaw(modeByte)) return;
+  printKeypadStatus(String("TONE ") + label);
+  if (!g_speechEnabled) return;
+  speakToken("tone");
+  playSilenceMs(60);
+  if (String(label) == "OFF") speakToken("off");
+  else if (String(label) == "CTCSS") speakToken("ctcss");
+  else speakToken("dcs");
+}
+
+static void setBank6Ft8x7CtcssPreset(uint8_t b0, uint8_t b1, const char* label) {
+  printKeypadCommand(String("BANK6 FT8X7 -> CTCSS ") + label);
+  uint8_t data[4] = {b0, b1, 0x00, 0x00};
+  if (currentProfileVariantIs("ft857_897")) {
+    data[2] = b0;
+    data[3] = b1;
+  }
+  if (!yaesuCatSetCtcssToneRaw(data)) return;
+  printKeypadStatus(String("CTCSS ") + label);
+  if (!g_speechEnabled) return;
+  speakToken("ctcss");
+  playSilenceMs(60);
+  speakDigitsAndPoint(label);
+}
+
+static void setBank6Ft8x7DcsPreset(uint8_t b0, uint8_t b1, const char* label) {
+  printKeypadCommand(String("BANK6 FT8X7 -> DCS ") + label);
+  uint8_t data[4] = {b0, b1, 0x00, 0x00};
+  if (currentProfileVariantIs("ft857_897")) {
+    data[2] = b0;
+    data[3] = b1;
+  }
+  if (!yaesuCatSetDcsCodeRaw(data)) return;
+  printKeypadStatus(String("DCS ") + label);
+  if (!g_speechEnabled) return;
+  speakToken("dcs");
+  playSilenceMs(60);
+  speakDigitsAndPoint(label);
+}
+
+static void setBank6Ft8x7DefaultCtcss() {
+  setBank6Ft8x7CtcssPreset(0x08, 0x85, "88.5");
+}
+
+static void setBank6Ft8x7DefaultDcs() {
+  setBank6Ft8x7DcsPreset(0x00, 0x23, "023");
+}
+
+static void setBank3Ft857Ptt(bool on) {
+  printKeypadCommand(String("BANK3 FT857 -> PTT ") + (on ? "ON" : "OFF"));
+  if (!yaesuCatSetPtt(on)) return;
+  printKeypadStatus(on ? "PTT ON" : "PTT OFF");
+  speakToken("ptt");
+  playSilenceMs(60);
+  speakSimpleBinaryState(on);
+}
+
 static void queryBank3Split() {
   printKeypadCommand("BANK3 0 SHORT -> SPLIT?");
+  if (isFt8x7Ft857FamilyKeypad()) {
+    printKeypadStatus("SPLIT console only");
+    return;
+  }
   bool on = false;
   if (!querySplit(on, 800)) return;
   printKeypadStatus(on ? "SPLIT ON" : "SPLIT OFF");
@@ -450,6 +570,10 @@ static void queryBank3Split() {
 
 static void toggleBank3Split() {
   printKeypadCommand("BANK3 0 LONG -> SPLIT");
+  if (isFt8x7Ft857FamilyKeypad()) {
+    printKeypadStatus("SPLIT console only");
+    return;
+  }
   bool on = false;
   if (!querySplit(on, 800)) return;
   if (!setSplit(!on)) return;
@@ -459,14 +583,33 @@ static void toggleBank3Split() {
 
 static void queryBank3TxFrequency() {
   printKeypadCommand("BANK3 0 DOUBLE -> TXFREQ?");
+  if (isFt8x7Ft857FamilyKeypad()) {
+    printKeypadStatus("TXFREQ unavailable");
+    return;
+  }
   uint64_t hz = 0;
-  if (!queryTxFrequency(hz, 800)) return;
+  if (!queryTxFrequency(hz, 800)) {
+    if (currentProtocolType() == PROTO_YAESU_FT8X7) {
+      bool splitOn = false;
+      if (querySplit(splitOn, 800) && !splitOn && queryFrequency(hz, 800)) {
+        printKeypadStatus(String("TXFREQ: ") + hzToMHzString3(hz) + " MHz");
+        speakQueriedFrequencyHz(hz);
+      } else {
+        printKeypadStatus("TXFREQ -> unavailable");
+      }
+    }
+    return;
+  }
   printKeypadStatus(String("TXFREQ: ") + hzToMHzString3(hz) + " MHz");
   speakQueriedFrequencyHz(hz);
 }
 
 static void queryBank3VfoA() {
   printKeypadCommand("BANK3 1 SHORT -> VFOA?");
+  if (isFt8x7Ft857FamilyKeypad()) {
+    printKeypadStatus("CLAR console only");
+    return;
+  }
   uint64_t hz = 0;
   if (!queryVfoFrequency(true, hz, 800)) return;
   printKeypadStatus(String("VFOA: ") + hzToMHzString3(hz) + " MHz");
@@ -480,12 +623,29 @@ static void queryBank3VfoA() {
 static void selectBank3VfoA() {
   printKeypadCommand("BANK3 1 LONG -> VFO A");
   g_suppressFreqSpeakUntilMs = millis() + 1500;
+  if (isFt8x7Ft857FamilyKeypad()) {
+    printKeypadStatus("CLAR console only");
+    return;
+  }
   if (!selectVfoA()) return;
+  if (currentProtocolType() == PROTO_YAESU_FT8X7) {
+    printKeypadStatus("VFO A");
+    if (g_speechEnabled) {
+      speakToken("vfo");
+      playSilenceMs(60);
+      speakToken("a");
+    }
+    return;
+  }
   queryBank3VfoA();
 }
 
 static void beginBank3VfoAFrequencySet() {
   printKeypadCommand("BANK3 1 DOUBLE -> VFOA FREQ");
+  if (isFt8x7Ft857FamilyKeypad()) {
+    printKeypadStatus("CLAR OFFSET console");
+    return;
+  }
   g_freqEntryActive = true;
   g_freqEntryIsMHz = false;
   g_freqEntryDigits = "";
@@ -499,6 +659,10 @@ static void beginBank3VfoAFrequencySet() {
 
 static void queryBank3VfoB() {
   printKeypadCommand("BANK3 2 SHORT -> VFOB?");
+  if (isFt8x7Ft857FamilyKeypad()) {
+    printKeypadStatus("VFOB unsupported");
+    return;
+  }
   uint64_t hz = 0;
   if (!queryVfoFrequency(false, hz, 800)) return;
   printKeypadStatus(String("VFOB: ") + hzToMHzString3(hz) + " MHz");
@@ -512,12 +676,29 @@ static void queryBank3VfoB() {
 static void selectBank3VfoB() {
   printKeypadCommand("BANK3 2 LONG -> VFO B");
   g_suppressFreqSpeakUntilMs = millis() + 1500;
+  if (isFt8x7Ft857FamilyKeypad()) {
+    printKeypadStatus("VFO B unsupported");
+    return;
+  }
   if (!selectVfoB()) return;
+  if (currentProtocolType() == PROTO_YAESU_FT8X7) {
+    printKeypadStatus("VFO B");
+    if (g_speechEnabled) {
+      speakToken("vfo");
+      playSilenceMs(60);
+      speakToken("b");
+    }
+    return;
+  }
   queryBank3VfoB();
 }
 
 static void beginBank3VfoBFrequencySet() {
   printKeypadCommand("BANK3 2 DOUBLE -> VFOB FREQ");
+  if (isFt8x7Ft857FamilyKeypad()) {
+    printKeypadStatus("VFOB FREQ unsupported");
+    return;
+  }
   g_freqEntryActive = true;
   g_freqEntryIsMHz = false;
   g_freqEntryDigits = "";
@@ -531,6 +712,10 @@ static void beginBank3VfoBFrequencySet() {
 
 static void queryBank4VfoAMode(uint8_t sourceBank) {
   printKeypadCommand(String("BANK") + String((int)sourceBank) + (sourceBank == 3 ? " 4" : " 1") + " SHORT -> VFOA MODE?");
+  if (isFt8x7Ft857FamilyKeypad()) {
+    printKeypadStatus("VFOA MODE unsupported");
+    return;
+  }
   uint8_t mode = 0xFF;
   uint8_t filter = 0xFF;
   if (!queryVfoMode(true, mode, filter, 800)) return;
@@ -541,6 +726,10 @@ static void queryBank4VfoAMode(uint8_t sourceBank) {
 
 static void beginBank4VfoAModeSet(uint8_t sourceBank) {
   printKeypadCommand(String("BANK") + String((int)sourceBank) + (sourceBank == 3 ? " 4" : " 1") + " LONG -> VFOA MODE");
+  if (isFt8x7Ft857FamilyKeypad()) {
+    printKeypadStatus("VFOA MODE unsupported");
+    return;
+  }
   g_modeSetActive = true;
   g_modeStageTargetVfo = 1;
   g_oneHoldConsumed = true;
@@ -553,6 +742,10 @@ static void beginBank4VfoAModeSet(uint8_t sourceBank) {
 
 static void queryBank4VfoBMode(uint8_t sourceBank) {
   printKeypadCommand(String("BANK") + String((int)sourceBank) + (sourceBank == 3 ? " 5" : " 2") + " SHORT -> VFOB MODE?");
+  if (isFt8x7Ft857FamilyKeypad()) {
+    printKeypadStatus("VFOB MODE unsupported");
+    return;
+  }
   uint8_t mode = 0xFF;
   uint8_t filter = 0xFF;
   if (!queryVfoMode(false, mode, filter, 800)) return;
@@ -563,6 +756,10 @@ static void queryBank4VfoBMode(uint8_t sourceBank) {
 
 static void beginBank4VfoBModeSet(uint8_t sourceBank) {
   printKeypadCommand(String("BANK") + String((int)sourceBank) + (sourceBank == 3 ? " 5" : " 2") + " LONG -> VFOB MODE");
+  if (isFt8x7Ft857FamilyKeypad()) {
+    printKeypadStatus("VFOB MODE unsupported");
+    return;
+  }
   g_modeSetActive = true;
   g_modeStageTargetVfo = 2;
   g_twoHoldConsumed = true;
@@ -575,6 +772,10 @@ static void beginBank4VfoBModeSet(uint8_t sourceBank) {
 
 static void queryBank3RxTx() {
   printKeypadCommand("BANK3 6 SHORT -> RXTX?");
+  if (isFt8x7Ft857FamilyKeypad()) {
+    setBank3Ft857Ptt(false);
+    return;
+  }
   bool tx = false;
   if (!queryRxTxStatus(tx, 800)) return;
   printKeypadStatus(tx ? "TX" : "RX");
@@ -598,6 +799,10 @@ static bool queryCurrentFilterSlotForKeypad(uint8_t& filterOut) {
 
 static void queryBank1RxTx() {
   printKeypadCommand("BANK1 1 SHORT -> RXTX?");
+  if (isFt8x7Ft857FamilyKeypad()) {
+    printKeypadStatus("RXTX unsupported");
+    return;
+  }
   bool tx = false;
   if (!queryRxTxStatus(tx, 800)) return;
   printKeypadStatus(tx ? "TX" : "RX");
@@ -609,8 +814,23 @@ static void queryBank1RxTx() {
 
 static void queryBank1TxFrequency() {
   printKeypadCommand("BANK1 2 SHORT -> TXFREQ?");
+  if (isFt8x7Ft857FamilyKeypad()) {
+    printKeypadStatus("TXFREQ unsupported");
+    return;
+  }
   uint64_t hz = 0;
-  if (!queryTxFrequency(hz, 800)) return;
+  if (!queryTxFrequency(hz, 800)) {
+    if (currentProtocolType() == PROTO_YAESU_FT8X7) {
+      bool splitOn = false;
+      if (querySplit(splitOn, 800) && !splitOn && queryFrequency(hz, 800)) {
+        printKeypadStatus(String("TXFREQ: ") + hzToMHzString3(hz) + " MHz");
+        speakQueriedFrequencyHz(hz);
+      } else {
+        printKeypadStatus("TXFREQ -> unavailable");
+      }
+    }
+    return;
+  }
   printKeypadStatus(String("TXFREQ: ") + hzToMHzString3(hz) + " MHz");
   speakQueriedFrequencyHz(hz);
 }
@@ -830,7 +1050,7 @@ static void queryBank9Profile() {
 
 static void beginBank9ProfileSelect() {
   g_profileSelectActive = true;
-  g_profileStage = 0;
+  g_profileStageDigits = "";
   printKeypadCommand("BANK9 0 LONG -> PROFILE SELECT");
   printKeypadStatus("CHOOSE PLEASE");
   speakChoosePlease();
@@ -939,13 +1159,148 @@ static void adjustBank5Rit(int32_t deltaHz) {
   setBank5RitOffset(next);
 }
 
-static bool isCurrentYaesuFt8x7() {
-  return currentProtocolType() == PROTO_YAESU_FT8X7;
+static void queryBank6Repeater() {
+  printKeypadCommand("BANK6 0 SHORT -> RPT OFF");
+  if (!isFt8x7Keypad()) {
+    printKeypadStatus("BANK6 reserved");
+    return;
+  }
+  setBank6Ft8x7RepeaterShift(0x89, "OFF");
 }
 
-static void sendYaesuBank2Action(const char* label, bool ok) {
-  if (!ok) return;
-  printKeypadStatus(label);
+static void setBank6RepeaterMinus() {
+  printKeypadCommand("BANK6 0 LONG -> RPT MINUS");
+  if (!isFt8x7Keypad()) {
+    printKeypadStatus("BANK6 reserved");
+    return;
+  }
+  setBank6Ft8x7RepeaterShift(0x09, "MINUS");
+}
+
+static void setBank6RepeaterPlus() {
+  printKeypadCommand("BANK6 0 DOUBLE -> RPT PLUS");
+  if (!isFt8x7Keypad()) {
+    printKeypadStatus("BANK6 reserved");
+    return;
+  }
+  setBank6Ft8x7RepeaterShift(0x49, "PLUS");
+}
+
+static void queryBank6RepeaterOffset() {
+  printKeypadCommand("BANK6 1 SHORT -> RPTSHIFT 0.600");
+  if (!isFt8x7Keypad()) {
+    printKeypadStatus("BANK6 reserved");
+    return;
+  }
+  setBank6Ft8x7RepeaterOffsetHz(600000ULL);
+}
+
+static void setBank6RepeaterOffset70cm() {
+  printKeypadCommand("BANK6 1 LONG -> RPTSHIFT 1.600");
+  if (!isFt8x7Keypad()) {
+    printKeypadStatus("BANK6 reserved");
+    return;
+  }
+  setBank6Ft8x7RepeaterOffsetHz(1600000ULL);
+}
+
+static void setBank6RepeaterOffset10m() {
+  printKeypadCommand("BANK6 1 DOUBLE -> RPTSHIFT 5.000");
+  if (!isFt8x7Keypad()) {
+    printKeypadStatus("BANK6 reserved");
+    return;
+  }
+  setBank6Ft8x7RepeaterOffsetHz(5000000ULL);
+}
+
+static void queryBank6ToneMode() {
+  printKeypadCommand("BANK6 2 SHORT -> TONE OFF");
+  if (!isFt8x7Keypad()) {
+    printKeypadStatus("BANK6 reserved");
+    return;
+  }
+  setBank6Ft8x7ToneMode(0x8A, "OFF");
+}
+
+static void setBank6ToneModeCtcss() {
+  printKeypadCommand("BANK6 2 LONG -> TONE CTCSS");
+  if (!isFt8x7Keypad()) {
+    printKeypadStatus("BANK6 reserved");
+    return;
+  }
+  setBank6Ft8x7ToneMode(0x2A, "CTCSS");
+}
+
+static void setBank6ToneModeDcs() {
+  printKeypadCommand("BANK6 2 DOUBLE -> TONE DCS");
+  if (!isFt8x7Keypad()) {
+    printKeypadStatus("BANK6 reserved");
+    return;
+  }
+  setBank6Ft8x7ToneMode(0x0A, "DCS");
+}
+
+static void queryBank6CtcssDefault() {
+  printKeypadCommand("BANK6 3 SHORT -> CTCSS 88.5");
+  if (!isFt8x7Keypad()) {
+    printKeypadStatus("BANK6 reserved");
+    return;
+  }
+  setBank6Ft8x7DefaultCtcss();
+}
+
+static void queryBank6DcsDefault() {
+  printKeypadCommand("BANK6 4 SHORT -> DCS 023");
+  if (!isFt8x7Keypad()) {
+    printKeypadStatus("BANK6 reserved");
+    return;
+  }
+  setBank6Ft8x7DefaultDcs();
+}
+
+static void queryBank6Ctcss67() {
+  printKeypadCommand("BANK6 5 SHORT -> CTCSS 67.0");
+  if (!isFt8x7Keypad()) {
+    printKeypadStatus("BANK6 reserved");
+    return;
+  }
+  setBank6Ft8x7CtcssPreset(0x06, 0x70, "67.0");
+}
+
+static void queryBank6Ctcss71_9() {
+  printKeypadCommand("BANK6 6 SHORT -> CTCSS 71.9");
+  if (!isFt8x7Keypad()) {
+    printKeypadStatus("BANK6 reserved");
+    return;
+  }
+  setBank6Ft8x7CtcssPreset(0x07, 0x19, "71.9");
+}
+
+static void queryBank6Ctcss77_0() {
+  printKeypadCommand("BANK6 7 SHORT -> CTCSS 77.0");
+  if (!isFt8x7Keypad()) {
+    printKeypadStatus("BANK6 reserved");
+    return;
+  }
+  setBank6Ft8x7CtcssPreset(0x07, 0x70, "77.0");
+}
+
+static void queryBank6Ctcss82_5() {
+  printKeypadCommand("BANK6 8 SHORT -> CTCSS 82.5");
+  if (!isFt8x7Keypad()) {
+    printKeypadStatus("BANK6 reserved");
+    return;
+  }
+  setBank6Ft8x7CtcssPreset(0x08, 0x25, "82.5");
+}
+
+static void queryBank6Ctcss100_0() {
+  printKeypadCommand("BANK6 9 SHORT -> CTCSS 100.0");
+  if (!isFt8x7Keypad()) {
+    printKeypadStatus("BANK6 reserved");
+    return;
+  }
+  setBank6Ft8x7CtcssPreset(0x10, 0x00, "100.0");
 }
 
 static bool handleDeferredShortRelease(uint8_t bank, char key) {
@@ -998,6 +1353,21 @@ static bool handleDeferredShortRelease(uint8_t bank, char key) {
       case '1': adjustBank5Rit(-10); return true;
       case '2': adjustBank5Rit(10); return true;
       case '3': setBank5RitOffset(0); return true;
+      default: break;
+    }
+  }
+  if (bank == 6) {
+    switch (key) {
+      case '0': queryBank6Repeater(); return true;
+      case '1': queryBank6RepeaterOffset(); return true;
+      case '2': queryBank6ToneMode(); return true;
+      case '3': queryBank6CtcssDefault(); return true;
+      case '4': queryBank6DcsDefault(); return true;
+      case '5': queryBank6Ctcss67(); return true;
+      case '6': queryBank6Ctcss71_9(); return true;
+      case '7': queryBank6Ctcss77_0(); return true;
+      case '8': queryBank6Ctcss82_5(); return true;
+      case '9': queryBank6Ctcss100_0(); return true;
       default: break;
     }
   }
@@ -1055,6 +1425,18 @@ static bool handleDoubleClick(uint8_t bank, char key) {
     setBank5RitOffset(0);
     return true;
   }
+  if (bank == 6 && key == '0') {
+    setBank6RepeaterPlus();
+    return true;
+  }
+  if (bank == 6 && key == '1') {
+    setBank6RepeaterOffset10m();
+    return true;
+  }
+  if (bank == 6 && key == '2') {
+    setBank6ToneModeDcs();
+    return true;
+  }
   if (bank == 2 && key == '9') {
     cycleBank2FilterWidth(-1);
     return true;
@@ -1068,7 +1450,8 @@ static bool shouldDelayShortRelease(uint8_t bank, char key) {
          (bank == 2 && (key == '0' || (currentProtocolType() == PROTO_CIV && (key == '4' || key == '5' || key == '6' || key == '7' || key == '9')))) ||
          (bank == 3 && (key == '0' || key == '1' || key == '2')) ||
          (bank == 4 && (key == '0' || key == '2')) ||
-         (bank == 5 && key == '0');
+         (bank == 5 && key == '0') ||
+         (bank == 6 && (key == '0' || key == '1' || key == '2'));
 }
 
 void keypadEvent(KeypadEvent k) {
@@ -1089,15 +1472,18 @@ void keypadEvent(KeypadEvent k) {
   }
 
   if (g_profileSelectActive) {
-    if (k >= '1' && k <= '9' && s == RELEASED) {
-      g_profileStage = (uint8_t)(k - '0');
+    if (k >= '0' && k <= '9' && s == RELEASED) {
+      if (g_profileStageDigits.length() >= 2) return;
+      if (!g_profileStageDigits.length() && k == '0') return;
+      g_profileStageDigits += (char)k;
       printKeypadCommand(String("PROFILE DIGIT -> ") + String(k));
-      printKeypadStatus(String("PROFILE ") + String((int)g_profileStage));
-      if (g_speechEnabled) speakProfileIdentityFromSlot(g_profileStage, false);
+      printKeypadStatus(String("PROFILE ") + g_profileStageDigits);
+      int slot = g_profileStageDigits.toInt();
+      if (g_speechEnabled && slot >= 1 && slot <= MAX_PROFILE_SLOTS) speakProfileIdentityFromSlot((uint8_t)slot, false);
       return;
     }
     if (k == 'D' && s == RELEASED) { keypadEnter(); return; }
-    if (k == '#' && s == RELEASED) { g_profileSelectActive = false; g_profileStage = 0; return; }
+    if (k == '#' && s == RELEASED) { g_profileSelectActive = false; g_profileStageDigits = ""; return; }
     return;
   }
 
@@ -1259,6 +1645,15 @@ void keypadEvent(KeypadEvent k) {
     return;
   }
 
+  if (g_bank == 3 && isFt8x7Ft857FamilyKeypad() && k == '6' && s == HOLD) {
+    setBank3Ft857Ptt(true);
+    g_sixHoldConsumed = true;
+    return;
+  }
+  if (g_bank == 3 && isFt8x7Ft857FamilyKeypad() && k == '6' && s == RELEASED && g_sixHoldConsumed) {
+    g_sixHoldConsumed = false;
+    return;
+  }
   if (g_bank == 3 && !g_freqEntryActive && k == '6' && s == RELEASED) {
     queryBank3RxTx();
     return;
@@ -1335,6 +1730,65 @@ void keypadEvent(KeypadEvent k) {
   }
   if (g_bank == 5 && k == '0' && s == RELEASED && g_zeroHoldConsumed) { g_zeroHoldConsumed = false; return; }
 
+  if (g_bank == 6 && k == '0' && s == HOLD) {
+    setBank6RepeaterMinus();
+    g_zeroHoldConsumed = true;
+    g_pendingClickActive = false;
+    return;
+  }
+  if (g_bank == 6 && k == '0' && s == RELEASED && g_zeroHoldConsumed) { g_zeroHoldConsumed = false; return; }
+
+  if (g_bank == 6 && k == '1' && s == HOLD) {
+    setBank6RepeaterOffset70cm();
+    g_oneHoldConsumed = true;
+    g_pendingClickActive = false;
+    return;
+  }
+  if (g_bank == 6 && k == '1' && s == RELEASED && g_oneHoldConsumed) { g_oneHoldConsumed = false; return; }
+
+  if (g_bank == 6 && k == '2' && s == HOLD) {
+    setBank6ToneModeCtcss();
+    g_twoHoldConsumed = true;
+    g_pendingClickActive = false;
+    return;
+  }
+  if (g_bank == 6 && k == '2' && s == RELEASED && g_twoHoldConsumed) { g_twoHoldConsumed = false; return; }
+
+  if (g_bank == 6 && k == '3' && s == RELEASED) {
+    queryBank6CtcssDefault();
+    return;
+  }
+
+  if (g_bank == 6 && k == '4' && s == RELEASED) {
+    queryBank6DcsDefault();
+    return;
+  }
+
+  if (g_bank == 6 && k == '5' && s == RELEASED) {
+    queryBank6Ctcss67();
+    return;
+  }
+
+  if (g_bank == 6 && k == '6' && s == RELEASED) {
+    queryBank6Ctcss71_9();
+    return;
+  }
+
+  if (g_bank == 6 && k == '7' && s == RELEASED) {
+    queryBank6Ctcss77_0();
+    return;
+  }
+
+  if (g_bank == 6 && k == '8' && s == RELEASED) {
+    queryBank6Ctcss82_5();
+    return;
+  }
+
+  if (g_bank == 6 && k == '9' && s == RELEASED) {
+    queryBank6Ctcss100_0();
+    return;
+  }
+
   if (g_bank == 5 && k == '1' && s == HOLD) {
     adjustBank5Rit(-100);
     g_oneHoldConsumed = true;
@@ -1393,46 +1847,6 @@ void keypadEvent(KeypadEvent k) {
     setBank5RitOffset(0);
     return;
   }
-
-  if (g_bank == 2 && isCurrentYaesuFt8x7() && k == '4' && s == HOLD) {
-    printKeypadCommand("BANK2 4 LONG -> VFO TOGGLE");
-    sendYaesuBank2Action("VFO TOGGLE", yaesuCatToggleVfo());
-    g_fourHoldConsumed = true;
-    return;
-  }
-  if (g_bank == 2 && k == '4' && s == RELEASED && g_fourHoldConsumed) { g_fourHoldConsumed = false; return; }
-
-  if (g_bank == 2 && isCurrentYaesuFt8x7() && k == '5' && s == HOLD) {
-    printKeypadCommand("BANK2 5 LONG -> VFO B");
-    sendYaesuBank2Action("VFO B", yaesuCatSelectVfoB());
-    g_fiveHoldConsumed = true;
-    return;
-  }
-  if (g_bank == 2 && k == '5' && s == RELEASED && g_fiveHoldConsumed) { g_fiveHoldConsumed = false; return; }
-
-  if (g_bank == 2 && isCurrentYaesuFt8x7() && k == '6' && s == HOLD) {
-    printKeypadCommand("BANK2 6 LONG -> CLAR OFF");
-    sendYaesuBank2Action("CLAR OFF", yaesuCatSetClarifier(false));
-    g_sixHoldConsumed = true;
-    return;
-  }
-  if (g_bank == 2 && k == '6' && s == RELEASED && g_sixHoldConsumed) { g_sixHoldConsumed = false; return; }
-
-  if (g_bank == 2 && isCurrentYaesuFt8x7() && k == '7' && s == HOLD) {
-    printKeypadCommand("BANK2 7 LONG -> SPLIT OFF");
-    sendYaesuBank2Action("SPLIT OFF", yaesuCatSetSplit(false));
-    g_sevenHoldConsumed = true;
-    return;
-  }
-  if (g_bank == 2 && k == '7' && s == RELEASED && g_sevenHoldConsumed) { g_sevenHoldConsumed = false; return; }
-
-  if (g_bank == 2 && isCurrentYaesuFt8x7() && k == '8' && s == HOLD) {
-    printKeypadCommand("BANK2 8 LONG -> PTT OFF");
-    sendYaesuBank2Action("PTT OFF", yaesuCatSetPtt(false));
-    g_eightHoldConsumed = true;
-    return;
-  }
-  if (g_bank == 2 && k == '8' && s == RELEASED && g_eightHoldConsumed) { g_eightHoldConsumed = false; return; }
 
   if (g_bank == 9 && k == 'A' && s == HOLD) {
     beginBank9ProfileSelect();

@@ -15,6 +15,8 @@ extern bool g_speechEnabled;
 extern bool g_tuningSpeakEnabled;
 extern uint32_t g_suppressFreqSpeakUntilMs;
 extern LiveState live;
+extern bool g_ft8x7SplitKnown;
+extern bool g_ft8x7SplitOn;
 extern volatile bool g_audioPlaying;
 extern uint8_t g_volumeLevel;
 extern bool g_keypadExecuting;

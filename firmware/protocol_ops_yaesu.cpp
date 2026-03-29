@@ -28,6 +28,14 @@ bool yaesuCatQueryFrequency(const StoredProfile& sp, uint64_t& hzOut, uint32_t t
   return true;
 }
 
+bool yaesuCatQueryModeRawByte(uint8_t& modeByteOut, uint32_t timeoutMs) {
+  const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, 0x03};
+  uint8_t rsp[5] = {0};
+  if (!yaesuCatTransact5(cmd, rsp, timeoutMs)) return false;
+  modeByteOut = (uint8_t)(rsp[4] & 0x7F);
+  return true;
+}
+
 bool yaesuCatSetFrequency(const StoredProfile& sp, uint64_t hz) {
   if (!sp.caps.setFreq) return false;
   uint8_t cmd[5] = {0, 0, 0, 0, 0x01};
@@ -54,10 +62,14 @@ bool yaesuCatSetMode(const StoredProfile& sp, uint8_t mode) {
   uint8_t modeByte = 0;
   if (!profileModeCodeForInternal(sp, mode, code)) return false;
   if (!parseHexByteString(code, modeByte)) return false;
-  const uint8_t cmd[5] = {modeByte, 0x00, 0x00, 0x00, 0x07};
-  yaesuCatSendWriteOnly(cmd);
+  if (!yaesuCatSetModeRawByte(modeByte)) return false;
   uint8_t readMode = 0xFF;
   return queryMode(readMode, 800) && (readMode == mode);
+}
+
+bool yaesuCatSetModeRawByte(uint8_t modeByte) {
+  const uint8_t cmd[5] = {modeByte, 0x00, 0x00, 0x00, 0x07};
+  return yaesuCatSendWriteOnly(cmd);
 }
 
 bool yaesuCatQuerySMeterRaw(const StoredProfile& sp, int32_t& rawOut, uint32_t timeoutMs) {
@@ -87,9 +99,18 @@ bool yaesuCatQuerySquelchRaw(int32_t& rawOut, uint32_t timeoutMs) {
   return yaesuCatQueryMeterByte(0x14, rawOut, timeoutMs);
 }
 
-bool yaesuCatQueryStatusRaw(uint8_t& rawOut, uint32_t timeoutMs) {
+bool yaesuCatQueryRxStatusRaw(uint8_t& rawOut, uint32_t timeoutMs) {
+  const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, 0xE7};
+  return yaesuCatTransact1(cmd, rawOut, timeoutMs);
+}
+
+bool yaesuCatQueryTxStatusRaw(uint8_t& rawOut, uint32_t timeoutMs) {
   const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, 0xF7};
   return yaesuCatTransact1(cmd, rawOut, timeoutMs);
+}
+
+bool yaesuCatQueryStatusRaw(uint8_t& rawOut, uint32_t timeoutMs) {
+  return yaesuCatQueryTxStatusRaw(rawOut, timeoutMs);
 }
 
 bool yaesuCatToggleVfo() {
@@ -123,7 +144,23 @@ bool yaesuCatSetSplit(bool on) {
 }
 
 bool yaesuCatSetLockDocumentedRaw(bool on) {
-  const uint8_t cmd[5] = {0x00, 0x00, 0x00, on ? 0x01 : 0x00, 0x00};
+  const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, on ? 0x00 : 0x80};
+  return yaesuCatSendWriteOnly(cmd);
+}
+
+bool yaesuCatSetRepeaterShiftRaw(uint8_t shiftByte) {
+  const uint8_t cmd[5] = {shiftByte, 0x00, 0x00, 0x00, 0x09};
+  return yaesuCatSendWriteOnly(cmd);
+}
+
+bool yaesuCatSetRepeaterOffsetHzRaw(uint64_t hz) {
+  uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, 0xF9};
+  yaesuCatEncodeFreqHz(hz, cmd);
+  return yaesuCatSendWriteOnly(cmd);
+}
+
+bool yaesuCatSetPowerDocumentedRaw(bool on) {
+  const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, on ? 0x0F : 0x8F};
   return yaesuCatSendWriteOnly(cmd);
 }
 
@@ -144,5 +181,20 @@ bool yaesuCatSetAgcMode(uint8_t modeByte) {
 
 bool yaesuCatSetClarifierOffsetRaw(const uint8_t data[4]) {
   const uint8_t cmd[5] = {data[0], data[1], data[2], data[3], 0xF5};
+  return yaesuCatSendWriteOnly(cmd);
+}
+
+bool yaesuCatSetToneDcsModeRaw(uint8_t modeByte) {
+  const uint8_t cmd[5] = {modeByte, 0x00, 0x00, 0x00, 0x0A};
+  return yaesuCatSendWriteOnly(cmd);
+}
+
+bool yaesuCatSetCtcssToneRaw(const uint8_t data[4]) {
+  const uint8_t cmd[5] = {data[0], data[1], data[2], data[3], 0x0B};
+  return yaesuCatSendWriteOnly(cmd);
+}
+
+bool yaesuCatSetDcsCodeRaw(const uint8_t data[4]) {
+  const uint8_t cmd[5] = {data[0], data[1], data[2], data[3], 0x0C};
   return yaesuCatSendWriteOnly(cmd);
 }

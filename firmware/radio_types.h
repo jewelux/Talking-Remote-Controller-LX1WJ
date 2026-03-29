@@ -21,7 +21,7 @@ struct VoiceClip {
 };
 
 static constexpr bool AUTO_SEND_BANK1_QUERIES = true;
-static constexpr uint8_t MAX_PROFILE_SLOTS = 9;
+static constexpr uint8_t MAX_PROFILE_SLOTS = 24;
 static constexpr uint8_t CIV_MY_ADDR = 0xE0;
 static constexpr uint8_t CIV_CTRL_ADDR = CIV_MY_ADDR;
 static constexpr uint32_t CIV_PUMP_BUDGET_MS = 3;
@@ -192,7 +192,22 @@ enum ProfileId : uint8_t {
   PROFILE_ID_SLOT6 = 6,
   PROFILE_ID_SLOT7 = 7,
   PROFILE_ID_SLOT8 = 8,
-  PROFILE_ID_SLOT9 = 9
+  PROFILE_ID_SLOT9 = 9,
+  PROFILE_ID_SLOT10 = 10,
+  PROFILE_ID_SLOT11 = 11,
+  PROFILE_ID_SLOT12 = 12,
+  PROFILE_ID_SLOT13 = 13,
+  PROFILE_ID_SLOT14 = 14,
+  PROFILE_ID_SLOT15 = 15,
+  PROFILE_ID_SLOT16 = 16,
+  PROFILE_ID_SLOT17 = 17,
+  PROFILE_ID_SLOT18 = 18,
+  PROFILE_ID_SLOT19 = 19,
+  PROFILE_ID_SLOT20 = 20,
+  PROFILE_ID_SLOT21 = 21,
+  PROFILE_ID_SLOT22 = 22,
+  PROFILE_ID_SLOT23 = 23,
+  PROFILE_ID_SLOT24 = 24
 };
 
 static constexpr uint8_t PROFILE_ID_7300 = PROFILE_ID_SLOT1;
@@ -210,6 +225,7 @@ struct StoredProfile {
   char name[32];
   char voiceVendor[16];
   char voiceDigits[16];
+  char variant[16];
 };
 
 struct CivDecoded {
@@ -269,4 +285,6 @@ struct LiveState {
   uint32_t lastNotchMs = 0;
   bool activeVfoKnown = false;
   bool activeVfoA = true;
+  bool splitKnown = false;
+  bool splitOn = false;
 };

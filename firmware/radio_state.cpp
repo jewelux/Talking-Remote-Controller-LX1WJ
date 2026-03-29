@@ -20,6 +20,10 @@ void resetLiveRadioState() {
   live.notchWidth = NOTCH_WIDTH_UNKNOWN;
   live.activeVfoKnown = false;
   live.activeVfoA = true;
+  live.splitKnown = false;
+  live.splitOn = false;
+  g_ft8x7SplitKnown = false;
+  g_ft8x7SplitOn = false;
 }
 
 void rememberLiveFrequency(uint64_t hz, uint32_t nowMs) {
@@ -75,4 +79,11 @@ void rememberLiveNotch(bool on, uint32_t nowMs, bool widthValid, NotchWidth widt
 void rememberActiveVfo(bool vfoA) {
   live.activeVfoKnown = true;
   live.activeVfoA = vfoA;
+}
+
+void rememberSplitState(bool on) {
+  live.splitKnown = true;
+  live.splitOn = on;
+  g_ft8x7SplitKnown = true;
+  g_ft8x7SplitOn = on;
 }

@@ -4,6 +4,7 @@
 #include "protocol_ops_civ.h"
 #include "protocol_ops_yaesu.h"
 #include "radio_protocol.h"
+#include "radio_state.h"
 
 bool queryFrequency(uint64_t& hzOut, uint32_t timeoutMs) {
   ProtocolType pt = currentProtocolType();
@@ -302,6 +303,12 @@ bool queryRxTxStatus(bool& txOut, uint32_t timeoutMs) {
   ProtocolType pt = currentProtocolType();
   const StoredProfile& sp = currentStoredProfile();
   if (pt == PROTO_CIV) return civQueryRxTxStatus(sp, txOut, timeoutMs);
+  if (pt == PROTO_YAESU_FT8X7 && sp.caps.getRxTx) {
+    uint8_t raw = 0;
+    if (!yaesuCatQueryStatusRaw(raw, timeoutMs)) return false;
+    txOut = (raw & 0x01) == 0;
+    return true;
+  }
   return false;
 }
 
@@ -316,6 +323,7 @@ bool selectVfoA() {
   ProtocolType pt = currentProtocolType();
   const StoredProfile& sp = currentStoredProfile();
   if (pt == PROTO_CIV) return civSelectVfoA(sp);
+  if (pt == PROTO_YAESU_FT8X7 && sp.caps.setVfo && currentProfileVariantIs("ft817")) return yaesuCatSelectVfoA();
   return false;
 }
 
@@ -323,6 +331,7 @@ bool selectVfoB() {
   ProtocolType pt = currentProtocolType();
   const StoredProfile& sp = currentStoredProfile();
   if (pt == PROTO_CIV) return civSelectVfoB(sp);
+  if (pt == PROTO_YAESU_FT8X7 && sp.caps.setVfo && currentProfileVariantIs("ft817")) return yaesuCatSelectVfoB();
   return false;
 }
 
@@ -330,6 +339,11 @@ bool queryVfoFrequency(bool targetVfoA, uint64_t& hzOut, uint32_t timeoutMs) {
   ProtocolType pt = currentProtocolType();
   const StoredProfile& sp = currentStoredProfile();
   if (pt == PROTO_CIV) return civQueryVfoFrequency(sp, targetVfoA, hzOut, timeoutMs);
+  if (pt == PROTO_YAESU_FT8X7 && sp.caps.getVfo && sp.caps.setVfo && currentProfileVariantIs("ft817")) {
+    if (!(targetVfoA ? yaesuCatSelectVfoA() : yaesuCatSelectVfoB())) return false;
+    delay(60);
+    return queryFrequency(hzOut, timeoutMs);
+  }
   return false;
 }
 
@@ -337,6 +351,11 @@ bool setVfoFrequency(bool targetVfoA, uint64_t hz) {
   ProtocolType pt = currentProtocolType();
   const StoredProfile& sp = currentStoredProfile();
   if (pt == PROTO_CIV) return civSetVfoFrequency(sp, targetVfoA, hz);
+  if (pt == PROTO_YAESU_FT8X7 && sp.caps.setVfo && sp.caps.setFreq && currentProfileVariantIs("ft817")) {
+    if (!(targetVfoA ? yaesuCatSelectVfoA() : yaesuCatSelectVfoB())) return false;
+    delay(60);
+    return setFrequency(hz);
+  }
   return false;
 }
 
@@ -344,6 +363,12 @@ bool queryVfoMode(bool targetVfoA, uint8_t& modeOut, uint8_t& filterOut, uint32_
   ProtocolType pt = currentProtocolType();
   const StoredProfile& sp = currentStoredProfile();
   if (pt == PROTO_CIV) return civQueryVfoMode(sp, targetVfoA, modeOut, filterOut, timeoutMs);
+  if (pt == PROTO_YAESU_FT8X7 && sp.caps.getVfoMode && sp.caps.setVfo && currentProfileVariantIs("ft817")) {
+    if (!(targetVfoA ? yaesuCatSelectVfoA() : yaesuCatSelectVfoB())) return false;
+    delay(60);
+    filterOut = 1;
+    return queryMode(modeOut, timeoutMs);
+  }
   return false;
 }
 
@@ -351,6 +376,11 @@ bool setVfoMode(bool targetVfoA, uint8_t mode, uint8_t filter) {
   ProtocolType pt = currentProtocolType();
   const StoredProfile& sp = currentStoredProfile();
   if (pt == PROTO_CIV) return civSetVfoMode(sp, targetVfoA, mode, filter);
+  if (pt == PROTO_YAESU_FT8X7 && sp.caps.setVfoMode && sp.caps.setVfo && currentProfileVariantIs("ft817")) {
+    if (!(targetVfoA ? yaesuCatSelectVfoA() : yaesuCatSelectVfoB())) return false;
+    delay(60);
+    return setMode(mode, filter);
+  }
   return false;
 }
 
@@ -358,9 +388,17 @@ bool querySplit(bool& onOut, uint32_t timeoutMs) {
   ProtocolType pt = currentProtocolType();
   const StoredProfile& sp = currentStoredProfile();
   if (pt == PROTO_CIV) return civQuerySplit(sp, onOut, timeoutMs);
-  if (pt == PROTO_YAESU_FT8X7) {
-    onOut = false;
-    return false;
+  if (pt == PROTO_YAESU_FT8X7 && sp.caps.getSplit) {
+    if (currentProfileVariantIs("ft857_897") && g_ft8x7SplitKnown) {
+      onOut = g_ft8x7SplitOn;
+      return true;
+    }
+    uint8_t raw = 0;
+    if (!yaesuCatQueryStatusRaw(raw, timeoutMs)) return false;
+    if (currentProfileVariantIs("ft857_897")) onOut = (raw & 0x04) != 0;
+    else onOut = (raw & 0x04) == 0;
+    rememberSplitState(onOut);
+    return true;
   }
   return false;
 }
@@ -369,7 +407,11 @@ bool setSplit(bool on) {
   ProtocolType pt = currentProtocolType();
   const StoredProfile& sp = currentStoredProfile();
   if (pt == PROTO_CIV) return civSetSplit(sp, on);
-  if (pt == PROTO_YAESU_FT8X7) return yaesuCatSetSplit(on);
+  if (pt == PROTO_YAESU_FT8X7) {
+    if (!yaesuCatSetSplit(on)) return false;
+    if (currentProfileVariantIs("ft857_897")) rememberSplitState(on);
+    return true;
+  }
   return false;
 }
 

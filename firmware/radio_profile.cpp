@@ -53,6 +53,8 @@ void printActiveProfileDetails() {
     Serial.println(sp->voiceVendor);
     Serial.print("  voice_digits: ");
     Serial.println(sp->voiceDigits);
+    Serial.print("  variant: ");
+    Serial.println(sp->variant[0] ? sp->variant : "(default)");
     Serial.print("  caps: freq=");
     Serial.print(sp->caps.getFreq ? "R" : "-");
     Serial.print(sp->caps.setFreq ? "W" : "-");

@@ -11,7 +11,7 @@ extern uint8_t g_modeStageMode;
 extern uint8_t g_modeStageTargetVfo;
 extern char g_modeStageKey;
 extern bool g_profileSelectActive;
-extern uint8_t g_profileStage;
+extern String g_profileStageDigits;
 extern bool g_nineHoldConsumed;
 extern String g_kpStagedCmd;
 extern bool g_kpHasStagedCmd;

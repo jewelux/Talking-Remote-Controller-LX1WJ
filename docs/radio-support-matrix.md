@@ -26,9 +26,9 @@ Suggested status wording:
 | Xiegu G106 | CAT | `g106.ini` | implemented | partial | partial | partial | partial | implemented | not recently verified | Existing support should be re-checked command by command. |
 | Kenwood TS-480 | ASCII / CAT | `ts480.ini` | partial | partial | planned | planned | planned | implemented | not recently verified | Good candidate for incremental command expansion. |
 | Elecraft KX2 | ASCII / CAT | `kx2.ini` | partial | partial | partial | planned | planned | implemented | not recently verified | Important evolving profile with ongoing command work. |
-| Yaesu FT-817 | CAT | `ft817.ini` | implemented | implemented | planned | implemented | planned | implemented | not recently verified | Radio-specific reference documented in `docs/radios/yaesu-ft-817.md`; verify live FT-8x7 behavior. |
-| Yaesu FT-857 | CAT | `ft857.ini` | implemented | implemented | planned | implemented | planned | implemented | not recently verified | Radio-specific reference documented in `docs/radios/yaesu-ft-857.md`; verify live FT-8x7 behavior. |
-| Yaesu FT-897 | CAT | `ft897.ini` | partial | partial | planned | planned | planned | implemented | not recently verified | Verify exact CAT coverage. |
+| Yaesu FT-817 | CAT | `ft817.ini` | implemented | implemented | partial | implemented | partial | implemented | tested on hardware | FT8x7 family documentation now also includes `docs/radios/yaesu-ft8x7-keypad.md` and `docs/radios/yaesu-ft8x7-status.md`. |
+| Yaesu FT-857 | CAT | `ft857.ini` | implemented | implemented | partial | implemented | partial | implemented | tested on hardware | FT8x7 family documentation now also includes `docs/radios/yaesu-ft8x7-keypad.md` and `docs/radios/yaesu-ft8x7-status.md`; some documented CAT functions remain unreliable in practice. |
+| Yaesu FT-897 | CAT | `ft897.ini` | partial | partial | partial | partial | partial | implemented | not recently verified | Currently grouped with the FT-857/897 variant logic; hardware verification still pending. |
 | Yaesu FTDX10 | CAT | `ftdx10.ini` | partial | partial | partial | planned | planned | implemented | not recently verified | Newer profile family in the SD-card architecture. |
 | Yaesu FTDX101D | CAT | `ftdx101d.ini` | partial | partial | partial | planned | planned | implemented | not recently verified | Needs command-by-command confirmation. |
 | Yaesu FTDX101MP | CAT | `ftdx101mp.ini` | partial | partial | partial | planned | planned | implemented | not recently verified | Needs command-by-command confirmation. |

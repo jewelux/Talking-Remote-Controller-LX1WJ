@@ -238,6 +238,7 @@ static void assignStoredProfile(StoredProfile& sp, const CivProfile& civ, Protoc
   copyCString(sp.name, sizeof(sp.name), civ.name ? civ.name : "");
   copyCString(sp.voiceVendor, sizeof(sp.voiceVendor), voiceVendor ? voiceVendor : "");
   copyCString(sp.voiceDigits, sizeof(sp.voiceDigits), voiceDigits ? voiceDigits : "");
+  copyCString(sp.variant, sizeof(sp.variant), "");
   sp.civ.name = sp.name;
 }
 

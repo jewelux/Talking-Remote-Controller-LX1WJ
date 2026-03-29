@@ -7,3 +7,5 @@ const StoredProfile* storedProfileForId(uint8_t id);
 const StoredProfile& currentStoredProfile();
 const CivProfile& currentProfile();
 ProtocolType currentProtocolType();
+const char* currentProfileVariant();
+bool currentProfileVariantIs(const char* variant);

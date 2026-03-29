@@ -35,6 +35,7 @@ bool loadSingleProfileIni(const String& path, StoredProfile& out) {
   char tempName[32] = "";
   char voiceVendor[16] = "icom";
   char voiceDigits[16] = "";
+  char variant[16] = "";
   StoredProfile sp;
   profileLoaderPrepareDefaults(sp, proto);
   String section;
@@ -64,6 +65,7 @@ bool loadSingleProfileIni(const String& path, StoredProfile& out) {
       if (key == "name") profileLoaderCopyCString(tempName, sizeof(tempName), val.c_str());
       else if (key == "voice_vendor") profileLoaderCopyCString(voiceVendor, sizeof(voiceVendor), val.c_str());
       else if (key == "voice_digits") profileLoaderCopyCString(voiceDigits, sizeof(voiceDigits), val.c_str());
+      else if (key == "variant") profileLoaderCopyCString(variant, sizeof(variant), val.c_str());
     } else if (section == "protocol") {
       String v = val;
       v.trim();
@@ -198,5 +200,6 @@ bool loadSingleProfileIni(const String& path, StoredProfile& out) {
   if (!tempName[0]) profileLoaderCopyCString(tempName, sizeof(tempName), path.c_str());
   civ.name = tempName;
   profileLoaderAssignIniProfile(out, civ, proto, voiceVendor, voiceDigits, sp);
+  profileLoaderCopyCString(out.variant, sizeof(out.variant), variant);
   return true;
 }
