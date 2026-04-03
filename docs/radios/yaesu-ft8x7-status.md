@@ -117,3 +117,4 @@ The goal of this document is to separate:
 - Repeater and tone functions are now concentrated in Bank 6.
 - For FT-857/897, only functions that behaved well in practical testing should be considered product-ready.
 - The recent FT-857/897 Bank 3 work was intentionally kept separate from the FT-817 branch logic; FT-817 and FT-857/897 now have different keypad handling where that matches real device behavior better.
+- FT-897 still needs practical device testing.
