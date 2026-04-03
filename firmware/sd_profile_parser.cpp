@@ -12,6 +12,29 @@ static int parseIniInt(const String& s, int fallback = 0) {
   return t.toInt();
 }
 
+static uint16_t parseIniTenths(const String& s, uint16_t fallback = 0) {
+  String t = s;
+  t.trim();
+  if (!t.length()) return fallback;
+
+  int dot = t.indexOf('.');
+  if (dot < 0) {
+    int whole = t.toInt();
+    return whole >= 0 ? (uint16_t)(whole * 10) : fallback;
+  }
+
+  String wholePart = t.substring(0, dot);
+  String fracPart = t.substring(dot + 1);
+  wholePart.trim();
+  fracPart.trim();
+  if (!wholePart.length()) wholePart = "0";
+  if (!fracPart.length()) fracPart = "0";
+  int whole = wholePart.toInt();
+  int frac = fracPart.substring(0, 1).toInt();
+  if (whole < 0 || frac < 0) return fallback;
+  return (uint16_t)(whole * 10 + frac);
+}
+
 static bool parseIniBool(const String& s, bool fallback = false) {
   String t = s;
   t.trim();
@@ -214,6 +237,11 @@ bool loadSingleProfileIni(const String& path, StoredProfile& out) {
       else if (key == "cwr") profileLoaderCopyCString(sp.ascii.modeCwr, sizeof(sp.ascii.modeCwr), val.c_str());
       else if (key == "rttyr") profileLoaderCopyCString(sp.ascii.modeRttyR, sizeof(sp.ascii.modeRttyR), val.c_str());
       else if (key == "digi") profileLoaderCopyCString(sp.ascii.modeDigi, sizeof(sp.ascii.modeDigi), val.c_str());
+    } else if (section == "bank6") {
+      if (key == "rpt_offset_1") sp.ft8x7Bank6.repeaterOffsetsHz[0] = (uint32_t)parseIniInt(val, (int)sp.ft8x7Bank6.repeaterOffsetsHz[0]);
+      else if (key == "rpt_offset_2") sp.ft8x7Bank6.repeaterOffsetsHz[1] = (uint32_t)parseIniInt(val, (int)sp.ft8x7Bank6.repeaterOffsetsHz[1]);
+      else if (key == "ctcss_default") sp.ft8x7Bank6.ctcssDefaultTenths = parseIniTenths(val, sp.ft8x7Bank6.ctcssDefaultTenths);
+      else if (key == "dcs_default") sp.ft8x7Bank6.dcsDefaultCode = (uint16_t)parseIniInt(val, sp.ft8x7Bank6.dcsDefaultCode);
     }
   }
 

@@ -18,6 +18,10 @@ void resetLiveRadioState() {
   live.notchValid = false;
   live.notchWidthValid = false;
   live.notchWidth = NOTCH_WIDTH_UNKNOWN;
+  live.ctcssValid = false;
+  live.ctcssTenths = 0;
+  live.dcsValid = false;
+  live.dcsCode = 0;
   live.activeVfoKnown = false;
   live.activeVfoA = true;
   live.splitKnown = false;

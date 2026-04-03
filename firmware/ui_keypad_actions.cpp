@@ -5,7 +5,9 @@
 #include "radio_protocol.h"
 #include "radio_profile.h"
 #include "radio_runtime.h"
+#include "radio_state.h"
 #include "radio_utils.h"
+#include "protocol_ops_yaesu.h"
 #include "ui_console.h"
 #include "ui_console_support.h"
 #include "ui_keypad.h"
@@ -24,9 +26,144 @@ static void printKeypadCommand(const String& line) {
   }
 }
 
+static char ft817CurrentVfoLabelForKeypad() {
+  if (currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft817") && !live.activeVfoKnown) {
+    rememberActiveVfo(true);
+  }
+  if (!(currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft817") && live.activeVfoKnown)) return '?';
+  return live.activeVfoA ? 'A' : 'B';
+}
+
+static char ft817OtherVfoLabelForKeypad() {
+  if (currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft817") && !live.activeVfoKnown) {
+    rememberActiveVfo(true);
+  }
+  if (!(currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft817") && live.activeVfoKnown)) return '?';
+  return live.activeVfoA ? 'B' : 'A';
+}
+
+static char ft857CurrentVfoLabelForKeypad() {
+  if (currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft857_897") && !live.activeVfoKnown) {
+    rememberActiveVfo(true);
+  }
+  if (!(currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft857_897") && live.activeVfoKnown)) return '?';
+  return live.activeVfoA ? 'A' : 'B';
+}
+
+static char ft857OtherVfoLabelForKeypad() {
+  if (currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft857_897") && !live.activeVfoKnown) {
+    rememberActiveVfo(true);
+  }
+  if (!(currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft857_897") && live.activeVfoKnown)) return '?';
+  return live.activeVfoA ? 'B' : 'A';
+}
+
 static void speakFrequencyWord() {
   if (!g_speechEnabled) return;
   speakToken("frequency");
+}
+
+static constexpr uint16_t kValidCtcssTenths[] = {
+  670, 693, 719, 744, 770, 797, 825, 854, 885, 915,
+  948, 974, 1000, 1035, 1072, 1109, 1148, 1188, 1230, 1273,
+  1318, 1365, 1413, 1462, 1514, 1567, 1598, 1622, 1655, 1679,
+  1713, 1738, 1773, 1799, 1835, 1862, 1899, 1928, 1966, 1995,
+  2035, 2065, 2107, 2181, 2257, 2291, 2336, 2418, 2503, 2541
+};
+
+static constexpr uint16_t kValidDcsCodes[] = {
+  23, 25, 26, 31, 32, 36, 43, 47, 51, 53, 54, 65, 71, 72, 73,
+  74, 114, 115, 116, 122, 125, 131, 132, 134, 143, 145, 152, 155, 156, 162,
+  165, 172, 174, 205, 212, 223, 225, 226, 243, 244, 245, 246, 251, 252, 255,
+  261, 263, 265, 266, 271, 274, 306, 311, 315, 325, 331, 332, 343, 346, 351,
+  356, 364, 365, 371, 411, 412, 413, 423, 431, 432, 445, 446, 452, 454, 455,
+  462, 464, 465, 466, 503, 506, 516, 523, 526, 532, 546, 565, 606, 612, 624,
+  627, 631, 632, 654, 662, 664, 703, 712, 723, 731, 732, 734, 743, 754
+};
+
+template <size_t N>
+static bool containsU16(const uint16_t (&values)[N], uint16_t needle) {
+  for (size_t i = 0; i < N; ++i) {
+    if (values[i] == needle) return true;
+  }
+  return false;
+}
+
+static bool isValidCtcssTenths(uint16_t toneTenths) {
+  return containsU16(kValidCtcssTenths, toneTenths);
+}
+
+static bool isValidDcsCode(uint16_t dcsCode) {
+  return containsU16(kValidDcsCodes, dcsCode);
+}
+
+static void speakRepeaterOffsetHz(uint64_t hz) {
+  if (!g_speechEnabled) return;
+  speakToken("repeater");
+  playSilenceMs(60);
+  speakFrequencyWord();
+  playSilenceMs(60);
+  speakDigitsAndPoint(hzToMHzString3(hz));
+}
+
+static void formatCtcssTenthsLabel(uint16_t toneTenths, char* out, size_t outSize) {
+  if (!out || outSize < 2) return;
+  snprintf(out, outSize, "%u.%u", (unsigned)(toneTenths / 10), (unsigned)(toneTenths % 10));
+}
+
+static bool encodeCtcssTenths(uint16_t toneTenths, uint8_t& b0, uint8_t& b1) {
+  if (toneTenths > 9999) return false;
+  uint16_t value = toneTenths;
+  uint8_t d1 = (uint8_t)(value % 10); value /= 10;
+  uint8_t d10 = (uint8_t)(value % 10); value /= 10;
+  uint8_t d100 = (uint8_t)(value % 10); value /= 10;
+  uint8_t d1000 = (uint8_t)(value % 10);
+  b0 = (uint8_t)((d1000 << 4) | d100);
+  b1 = (uint8_t)((d10 << 4) | d1);
+  return true;
+}
+
+static bool encodeDcsCode(uint16_t dcsCode, uint8_t& b0, uint8_t& b1) {
+  if (dcsCode > 999) return false;
+  uint16_t value = dcsCode;
+  uint8_t d1 = (uint8_t)(value % 10); value /= 10;
+  uint8_t d10 = (uint8_t)(value % 10); value /= 10;
+  uint8_t d100 = (uint8_t)(value % 10);
+  b0 = d100;
+  b1 = (uint8_t)((d10 << 4) | d1);
+  return true;
+}
+
+static bool applyCtcssTenths(uint16_t toneTenths) {
+  if (!isValidCtcssTenths(toneTenths)) return false;
+  uint8_t b0 = 0;
+  uint8_t b1 = 0;
+  if (!encodeCtcssTenths(toneTenths, b0, b1)) return false;
+  uint8_t data[4] = {b0, b1, 0x00, 0x00};
+  if (currentProfileVariantIs("ft857_897")) {
+    data[2] = b0;
+    data[3] = b1;
+  }
+  if (!yaesuCatSetCtcssToneRaw(data)) return false;
+  live.ctcssValid = true;
+  live.ctcssTenths = toneTenths;
+  return true;
+}
+
+static bool applyDcsCode(uint16_t dcsCode) {
+  if (!isValidDcsCode(dcsCode)) return false;
+  uint8_t b0 = 0;
+  uint8_t b1 = 0;
+  if (!encodeDcsCode(dcsCode, b0, b1)) return false;
+  uint8_t data[4] = {b0, b1, 0x00, 0x00};
+  if (currentProfileVariantIs("ft857_897")) {
+    data[2] = b0;
+    data[3] = b1;
+  }
+  if (!yaesuCatSetDcsCodeRaw(data)) return false;
+  live.dcsValid = true;
+  live.dcsCode = dcsCode;
+  return true;
 }
 
 static void speakBinaryFeatureState(const uint8_t* featureData, size_t featureLen, bool on) {
@@ -130,6 +267,8 @@ void keypadClearAll() {
   g_freqEntryDigits = "";
   g_freqEntryIsMHz = false;
   g_freqEntryTargetVfo = 0;
+  g_bank6EntryMode = BANK6_ENTRY_NONE;
+  g_bank6EntryDigits = "";
   g_modeSetActive = false;
   g_modeStageActive = false;
   g_modeStageMode = 0xFF;
@@ -212,14 +351,48 @@ void keypadEnter() {
     uint64_t hz = g_freqEntryIsMHz ? (uint64_t)g_freqEntryDigits.toInt() * 1000000ULL : (uint64_t)g_freqEntryDigits.toInt() * 1000ULL;
     if (g_freqEntryTargetVfo == 1) printKeypadCommand("ENTER -> VFOA FREQ");
     else if (g_freqEntryTargetVfo == 2) printKeypadCommand("ENTER -> VFOB FREQ");
+    else if (g_freqEntryTargetVfo == 3) {
+      char which = '?';
+      if (currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft817")) which = ft817OtherVfoLabelForKeypad();
+      else if (currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft857_897")) which = ft857OtherVfoLabelForKeypad();
+      printKeypadCommand(String("ENTER -> VFO") + which + " FREQ");
+    } else if (currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft817")) {
+      const char which = ft817CurrentVfoLabelForKeypad();
+      printKeypadCommand(String("ENTER -> VFO") + which + " FREQ");
+    } else if (currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft857_897")) {
+      const char which = ft857CurrentVfoLabelForKeypad();
+      printKeypadCommand(String("ENTER -> VFO") + which + " FREQ");
+    }
     else printKeypadCommand("ENTER -> FREQ");
     bool ok = false;
     if (g_freqEntryTargetVfo == 1) ok = setVfoFrequency(true, hz);
     else if (g_freqEntryTargetVfo == 2) ok = setVfoFrequency(false, hz);
+    else if (g_freqEntryTargetVfo == 3 && currentProtocolType() == PROTO_YAESU_FT8X7 &&
+             (currentProfileVariantIs("ft817") || currentProfileVariantIs("ft857_897"))) {
+      if (yaesuCatToggleVfo()) {
+        delay(120);
+        ok = setFrequency(hz);
+        delay(120);
+        yaesuCatToggleVfo();
+        delay(120);
+      }
+    }
     else ok = applyFrequencyAndTrack(hz, true);
     if (ok) {
       if (g_freqEntryTargetVfo == 1) printKeypadStatus(String("VFOA: ") + hzToMHzString3(hz) + " MHz");
       else if (g_freqEntryTargetVfo == 2) printKeypadStatus(String("VFOB: ") + hzToMHzString3(hz) + " MHz");
+      else if (g_freqEntryTargetVfo == 3) {
+        char which = '?';
+        if (currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft817")) which = ft817OtherVfoLabelForKeypad();
+        else if (currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft857_897")) which = ft857OtherVfoLabelForKeypad();
+        printKeypadStatus(String("VFO") + which + ": " + hzToMHzString3(hz) + " MHz");
+      } else if (currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft817")) {
+        const char which = ft817CurrentVfoLabelForKeypad();
+        printKeypadStatus(String("VFO") + which + ": " + hzToMHzString3(hz) + " MHz");
+      } else if (currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft857_897")) {
+        const char which = ft857CurrentVfoLabelForKeypad();
+        printKeypadStatus(String("VFO") + which + ": " + hzToMHzString3(hz) + " MHz");
+      }
       else printKeypadStatus(String("FREQ: ") + hzToMHzString3(hz) + " MHz");
       if (g_speechEnabled) speakDigitsAndPoint(hzToMHzString3(hz));
     } else {
@@ -229,6 +402,56 @@ void keypadEnter() {
     g_freqEntryDigits = "";
     g_freqEntryIsMHz = false;
     g_freqEntryTargetVfo = 0;
+    return;
+  }
+
+  if (g_bank6EntryMode != BANK6_ENTRY_NONE) {
+    if (g_bank6EntryMode == BANK6_ENTRY_OFFSET) {
+      printKeypadCommand("ENTER -> RPTSHIFT");
+      uint64_t hz = (uint64_t)g_bank6EntryDigits.toInt() * 1000ULL;
+      if (hz > 0 && yaesuCatSetRepeaterOffsetHzRaw(hz)) {
+        printKeypadStatus(String("RPTSHIFT ") + hzToMHzString3(hz) + " MHz");
+        speakRepeaterOffsetHz(hz);
+      } else {
+        printKeypadStatus("RPTSHIFT -> failed");
+      }
+    } else if (g_bank6EntryMode == BANK6_ENTRY_CTCSS) {
+      printKeypadCommand("ENTER -> CTCSS");
+      uint16_t toneTenths = (uint16_t)g_bank6EntryDigits.toInt();
+      char label[12] = "";
+      formatCtcssTenthsLabel(toneTenths, label, sizeof(label));
+      if (toneTenths > 0 && applyCtcssTenths(toneTenths)) {
+        printKeypadStatus(String("CTCSS ") + label);
+        if (g_speechEnabled) {
+          speakToken("ctcss");
+          playSilenceMs(60);
+          speakDigitsAndPoint(label);
+        }
+      } else if (!isValidCtcssTenths(toneTenths)) {
+        printKeypadStatus("CTCSS -> invalid");
+      } else {
+        printKeypadStatus("CTCSS -> failed");
+      }
+    } else if (g_bank6EntryMode == BANK6_ENTRY_DCS) {
+      printKeypadCommand("ENTER -> DCS");
+      uint16_t dcsCode = (uint16_t)g_bank6EntryDigits.toInt();
+      char label[8] = "";
+      snprintf(label, sizeof(label), "%03u", (unsigned)dcsCode);
+      if (applyDcsCode(dcsCode)) {
+        printKeypadStatus(String("DCS ") + label);
+        if (g_speechEnabled) {
+          speakToken("dcs");
+          playSilenceMs(60);
+          speakDigitsAndPoint(label);
+        }
+      } else if (!isValidDcsCode(dcsCode)) {
+        printKeypadStatus("DCS -> invalid");
+      } else {
+        printKeypadStatus("DCS -> failed");
+      }
+    }
+    g_bank6EntryMode = BANK6_ENTRY_NONE;
+    g_bank6EntryDigits = "";
     return;
   }
 
@@ -299,6 +522,26 @@ void keypadHandleReleased(char k) {
       g_freqEntryDigits += k;
       printKeypadCommand(String("FREQ DIGIT -> ") + String(k));
       printKeypadStatus(String("FREQ STAGE: ") + g_freqEntryDigits);
+      if (g_speechEnabled) speakDigitsAndPoint(String(k));
+    }
+    return;
+  }
+
+  if (g_bank6EntryMode != BANK6_ENTRY_NONE) {
+    size_t maxDigits = 4;
+    if (g_bank6EntryMode == BANK6_ENTRY_DCS) maxDigits = 3;
+    if (k >= '0' && k <= '9' && g_bank6EntryDigits.length() < maxDigits) {
+      g_bank6EntryDigits += k;
+      if (g_bank6EntryMode == BANK6_ENTRY_OFFSET) {
+        printKeypadCommand(String("RPTSHIFT DIGIT -> ") + String(k));
+        printKeypadStatus(String("RPTSHIFT STAGE: ") + g_bank6EntryDigits + " kHz");
+      } else if (g_bank6EntryMode == BANK6_ENTRY_CTCSS) {
+        printKeypadCommand(String("CTCSS DIGIT -> ") + String(k));
+        printKeypadStatus(String("CTCSS STAGE: ") + g_bank6EntryDigits);
+      } else {
+        printKeypadCommand(String("DCS DIGIT -> ") + String(k));
+        printKeypadStatus(String("DCS STAGE: ") + g_bank6EntryDigits);
+      }
       if (g_speechEnabled) speakDigitsAndPoint(String(k));
     }
     return;
@@ -421,29 +664,10 @@ void keypadHandleReleased(char k) {
         printKeypadStatus("PROFILE CURRENT");
         speakCurrentProfile();
         return;
-      case '1':
-        printKeypadCommand("BANK9 1 SHORT -> PROFILE NEXT");
-        applyProfile(findAdjacentValidProfile(1));
-        printKeypadStatus("PROFILE NEXT");
-        speakCurrentProfile();
-        return;
-      case '2':
-        printKeypadCommand("BANK9 2 SHORT -> PROFILE PREV");
-        applyProfile(findAdjacentValidProfile(-1));
-        printKeypadStatus("PROFILE PREV");
-        speakCurrentProfile();
-        return;
-      case '3':
-        return;
       case '4':
         printKeypadCommand("BANK9 4 SHORT -> TUNINGSPEECH?");
         printKeypadStatus(String("TUNINGSPEECH ") + (g_tuningSpeakEnabled ? "ON" : "OFF"));
         speakTuningSpeechState();
-        return;
-      case '5':
-        printKeypadCommand("BANK9 5 SHORT -> VOLUME?");
-        printKeypadStatus(String("VOLUME ") + String((int)g_volumeLevel));
-        if (g_speechEnabled) speakVolumeLevel(g_volumeLevel);
         return;
       case '7':
         g_volStageLevel = 1;

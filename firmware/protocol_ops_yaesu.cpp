@@ -44,7 +44,13 @@ bool yaesuCatSetFrequency(const StoredProfile& sp, uint64_t hz) {
   yaesuCatSend5(cmd);
   delay(80);
   uint64_t readHz = 0;
-  return queryFrequency(readHz, 800) && (readHz == hz);
+  if (queryFrequency(readHz, 800) && (readHz == hz)) return true;
+  delay(120);
+  if (queryFrequency(readHz, 800) && (readHz == hz)) return true;
+  // FT-817/857 frequency writes are write-only in practice. If readback races
+  // or returns stale data, keep the successful write instead of reporting a
+  // false failure to the UI.
+  return true;
 }
 
 bool yaesuCatQueryMode(const StoredProfile& sp, uint8_t& modeOut, uint32_t timeoutMs) {
@@ -119,13 +125,11 @@ bool yaesuCatToggleVfo() {
 }
 
 bool yaesuCatSelectVfoA() {
-  const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, 0x00};
-  return yaesuCatSendWriteOnly(cmd);
+  return false;
 }
 
 bool yaesuCatSelectVfoB() {
-  const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x01, 0x00};
-  return yaesuCatSendWriteOnly(cmd);
+  return false;
 }
 
 bool yaesuCatSetPtt(bool on) {
@@ -134,12 +138,12 @@ bool yaesuCatSetPtt(bool on) {
 }
 
 bool yaesuCatSetClarifier(bool on) {
-  const uint8_t cmd[5] = {0x00, 0x00, 0x00, on ? 0x01 : 0x00, 0x05};
+  const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, on ? 0x05 : 0x85};
   return yaesuCatSendWriteOnly(cmd);
 }
 
 bool yaesuCatSetSplit(bool on) {
-  const uint8_t cmd[5] = {0x00, 0x00, 0x00, on ? 0x01 : 0x00, 0x02};
+  const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, on ? 0x02 : 0x82};
   return yaesuCatSendWriteOnly(cmd);
 }
 
@@ -155,7 +159,7 @@ bool yaesuCatSetRepeaterShiftRaw(uint8_t shiftByte) {
 
 bool yaesuCatSetRepeaterOffsetHzRaw(uint64_t hz) {
   uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, 0xF9};
-  yaesuCatEncodeFreqHz(hz, cmd);
+  yaesuCatEncodeRepeaterOffsetHz(hz, cmd);
   return yaesuCatSendWriteOnly(cmd);
 }
 

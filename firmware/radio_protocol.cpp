@@ -399,7 +399,7 @@ bool querySplit(bool& onOut, uint32_t timeoutMs) {
   if (pt == PROTO_CIV) return civQuerySplit(sp, onOut, timeoutMs);
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiQuerySplit(sp, onOut, timeoutMs);
   if (pt == PROTO_YAESU_FT8X7 && sp.caps.getSplit) {
-    if (currentProfileVariantIs("ft857_897") && g_ft8x7SplitKnown) {
+    if (g_ft8x7SplitKnown) {
       onOut = g_ft8x7SplitOn;
       return true;
     }
@@ -420,7 +420,7 @@ bool setSplit(bool on) {
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiSetSplit(sp, on);
   if (pt == PROTO_YAESU_FT8X7) {
     if (!yaesuCatSetSplit(on)) return false;
-    if (currentProfileVariantIs("ft857_897")) rememberSplitState(on);
+    rememberSplitState(on);
     return true;
   }
   return false;

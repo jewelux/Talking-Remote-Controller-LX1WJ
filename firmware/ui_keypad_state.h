@@ -2,6 +2,13 @@
 
 #include <Arduino.h>
 
+enum Bank6EntryMode : uint8_t {
+  BANK6_ENTRY_NONE = 0,
+  BANK6_ENTRY_OFFSET = 1,
+  BANK6_ENTRY_CTCSS = 2,
+  BANK6_ENTRY_DCS = 3
+};
+
 extern uint8_t g_bank;
 extern bool g_bankSelectActive;
 extern uint8_t g_bankStage;
@@ -30,6 +37,8 @@ extern bool g_freqEntryActive;
 extern String g_freqEntryDigits;
 extern bool g_freqEntryIsMHz;
 extern uint8_t g_freqEntryTargetVfo;
+extern Bank6EntryMode g_bank6EntryMode;
+extern String g_bank6EntryDigits;
 extern bool g_volStageActive;
 extern uint8_t g_volStageLevel;
 extern bool g_pendingClickActive;

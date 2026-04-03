@@ -198,6 +198,12 @@ struct AsciiCommandProfile {
   char modeDigi[4];
 };
 
+struct Ft8x7Bank6Profile {
+  uint32_t repeaterOffsetsHz[2];
+  uint16_t ctcssDefaultTenths;
+  uint16_t dcsDefaultCode;
+};
+
 enum NotchWidth : uint8_t {
   NOTCH_WIDTH_NAR = 0,
   NOTCH_WIDTH_MID = 1,
@@ -242,6 +248,7 @@ struct StoredProfile {
   ProtocolType protocolType;
   RadioCapabilities caps;
   AsciiCommandProfile ascii;
+  Ft8x7Bank6Profile ft8x7Bank6;
   bool valid;
   bool fromSd;
   char name[32];
@@ -305,6 +312,10 @@ struct LiveState {
   bool notchWidthValid = false;
   NotchWidth notchWidth = NOTCH_WIDTH_UNKNOWN;
   uint32_t lastNotchMs = 0;
+  bool ctcssValid = false;
+  uint16_t ctcssTenths = 0;
+  bool dcsValid = false;
+  uint16_t dcsCode = 0;
   bool activeVfoKnown = false;
   bool activeVfoA = true;
   bool splitKnown = false;

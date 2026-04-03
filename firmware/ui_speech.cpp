@@ -77,13 +77,25 @@ static const VoiceClip kVoiceClips[] = {
   {"voice_b", voice_b, voice_b_len},
   {"voice_c", voice_c, voice_c_len},
   {"voice_choose", voice_choose, voice_choose_len},
+#if defined(HAS_VOICE_voice_clarifier)
+  {"voice_clarifier", voice_clarifier, voice_clarifier_len},
+#endif
+#if defined(HAS_VOICE_voice_ctcss)
+  {"voice_ctcss", voice_ctcss, voice_ctcss_len},
+#endif
   {"voice_cw", voice_cw, voice_cw_len},
   {"voice_cwr", voice_cwr, voice_cwr_len},
   {"voice_d", voice_d, voice_d_len},
+#if defined(HAS_VOICE_voice_dcs)
+  {"voice_dcs", voice_dcs, voice_dcs_len},
+#endif
   {"voice_db", voice_db, voice_db_len},
   {"voice_digi", voice_digi, voice_digi_len},
   {"voice_eight", voice_eight, voice_eight_len},
   {"voice_elecraft", voice_elecraft, voice_elecraft_len},
+#if defined(HAS_VOICE_voice_equals)
+  {"voice_equals", voice_equals, voice_equals_len},
+#endif
   {"voice_error", voice_error, voice_error_len},
   {"voice_f", voice_f, voice_f_len},
   {"voice_five", voice_five, voice_five_len},
@@ -133,8 +145,14 @@ static const VoiceClip kVoiceClips[] = {
   {"voice_plus", voice_plus, voice_plus_len},
   {"voice_point", voice_point, voice_point_len},
   {"voice_power", voice_power, voice_power_len},
+#if defined(HAS_VOICE_voice_ptt)
+  {"voice_ptt", voice_ptt, voice_ptt_len},
+#endif
 #if defined(HAS_VOICE_voice_r)
   {"voice_r", voice_r, voice_r_len},
+#endif
+#if defined(HAS_VOICE_voice_repeater)
+  {"voice_repeater", voice_repeater, voice_repeater_len},
 #endif
 #if defined(HAS_VOICE_voice_rit)
   {"voice_rit", voice_rit, voice_rit_len},
@@ -153,10 +171,16 @@ static const VoiceClip kVoiceClips[] = {
   {"voice_stack", voice_stack, voice_stack_len},
   {"voice_step", voice_step, voice_step_len},
   {"voice_swr", voice_swr, voice_swr_len},
+#if defined(HAS_VOICE_voice_sync)
+  {"voice_sync", voice_sync, voice_sync_len},
+#endif
   {"voice_t", voice_t, voice_t_len},
   {"voice_thankyou", voice_thankyou, voice_thankyou_len},
   {"voice_three", voice_three, voice_three_len},
   {"voice_transceiver", voice_transceiver, voice_transceiver_len},
+#if defined(HAS_VOICE_voice_tone)
+  {"voice_tone", voice_tone, voice_tone_len},
+#endif
   {"voice_tune", voice_tune, voice_tune_len},
   {"voice_tuner", voice_tuner, voice_tuner_len},
   {"voice_two", voice_two, voice_two_len},
@@ -203,6 +227,7 @@ static const VoiceAlias kVoiceAliases[] = {
   {"rttyr", {"r", "t", "t", "y", "r"}, 5},
   {"rtty_r", {"r", "t", "t", "y", "r"}, 5},
   {"notchfilter", {"notch", "filter"}, 2},
+  {"notch filter", {"notch", "filter"}, 2},
   {"vfoa", {"vfo", "a"}, 2},
   {"vfob", {"vfo", "b"}, 2},
   {"pbt1", {"pbt", "one"}, 2},

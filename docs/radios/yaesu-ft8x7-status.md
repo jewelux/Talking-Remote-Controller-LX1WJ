@@ -33,6 +33,9 @@ The goal of this document is to separate:
 | CTCSS tone write | implemented and verified |
 | DCS code write | implemented and verified |
 | Power on/off | implemented and verified |
+| Bank 3 split keypad workflow | implemented and verified |
+| Bank 3 current/other VFO keypad workflow | implemented and verified |
+| Bank 3 sync `VFOA/VFOB` | implemented and verified |
 
 ### Implemented but still incomplete
 
@@ -74,20 +77,27 @@ The goal of this document is to separate:
 | RX status raw read | implemented and verified |
 | TX status raw read | implemented and verified |
 | RX/TX state query | implemented and verified |
+| `TXFREQ?` fallback on keypad | implemented and practically usable |
+| Bank 3 current/other VFO read | implemented and practically usable |
+| Bank 3 current/other VFO frequency set | implemented and practically usable |
+| Bank 3 sync `VFOA/VFOB` | implemented and practically usable |
+| Bank 3 `A/B` toggle | implemented and practically usable |
+| Clarifier off | implemented and practically usable |
 
-### Implemented but unreliable
+### Implemented but still worth more testing
 
 | Function | Status |
 |---|---|
-| Split on/off | documented, but not reliable in practical testing |
-| Split status query | documented, but not reliable in practical testing |
-| Clarifier off | not yet cleanly confirmed in practical testing |
+| Split on/off | currently usable from keypad, but should still be cross-checked more broadly |
+| Split status query | currently usable from keypad, but should still be cross-checked more broadly |
+| FT-857/897 VFO tracking after manual front-panel A/B changes | keypad workflow is usable, but sync is recommended |
 
 ### Experimental or incomplete
 
 | Function | Status |
 |---|---|
-| Absolute VFO A/B selection | not cleanly usable for FT-857 |
+| Absolute VFO A/B without sync | not reliable after manual front-panel A/B changes |
+| Bank 2 `NR/NB/Notch/filter` functions | not currently available through documented FT8x7 CAT |
 | Memory read/write raw path | experimental |
 | Volume / SQL / PO / SWR extras | not cleanly validated |
 
@@ -106,3 +116,4 @@ The goal of this document is to separate:
 - The keypad layout for this family is documented separately in [FT8X7_KEYPAD.md](./FT8X7_KEYPAD.md).
 - Repeater and tone functions are now concentrated in Bank 6.
 - For FT-857/897, only functions that behaved well in practical testing should be considered product-ready.
+- The recent FT-857/897 Bank 3 work was intentionally kept separate from the FT-817 branch logic; FT-817 and FT-857/897 now have different keypad handling where that matches real device behavior better.

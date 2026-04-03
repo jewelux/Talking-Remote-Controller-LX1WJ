@@ -89,6 +89,13 @@ static void setAsciiDefaults(StoredProfile& sp) {
   copyCString(sp.ascii.modeDigi, sizeof(sp.ascii.modeDigi), "6");
 }
 
+static void setFt8x7Bank6Defaults(StoredProfile& sp) {
+  sp.ft8x7Bank6.repeaterOffsetsHz[0] = 600000UL;
+  sp.ft8x7Bank6.repeaterOffsetsHz[1] = 7600000UL;
+  sp.ft8x7Bank6.ctcssDefaultTenths = 885;
+  sp.ft8x7Bank6.dcsDefaultCode = 23;
+}
+
 static void setProtocolDefaults(StoredProfile& sp) {
   sp.caps.getFreq = true;
   sp.caps.setFreq = true;
@@ -140,6 +147,7 @@ static void setProtocolDefaults(StoredProfile& sp) {
   sp.caps.setRit = false;
   sp.caps.getBandStack = false;
   setAsciiDefaults(sp);
+  setFt8x7Bank6Defaults(sp);
 
   if (sp.protocolType == PROTO_CIV) {
     sp.caps.getSmeter = true;
@@ -319,6 +327,7 @@ void profileLoaderAssignIniProfile(
   assignStoredProfile(out, civ, proto, voiceVendor, voiceDigits, true);
   out.caps = parsedDefaults.caps;
   out.ascii = parsedDefaults.ascii;
+  out.ft8x7Bank6 = parsedDefaults.ft8x7Bank6;
 }
 
 void profileLoaderPrepareDefaults(StoredProfile& sp, ProtocolType proto) {

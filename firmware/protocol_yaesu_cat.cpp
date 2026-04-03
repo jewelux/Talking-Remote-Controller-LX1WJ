@@ -75,6 +75,19 @@ void yaesuCatEncodeFreqHz(uint64_t hz, uint8_t out[4]) {
   }
 }
 
+void yaesuCatEncodeRepeaterOffsetHz(uint64_t hz, uint8_t out[4]) {
+  // FT-817 practical testing shows repeater offset uses the same 10 Hz BCD
+  // scaling as the standard Yaesu frequency write path.
+  uint64_t units10 = hz / 10ULL;
+  char buf[9];
+  snprintf(buf, sizeof(buf), "%08llu", (unsigned long long)units10);
+  for (int i = 0; i < 4; ++i) {
+    uint8_t hi = (uint8_t)(buf[i * 2] - '0');
+    uint8_t lo = (uint8_t)(buf[i * 2 + 1] - '0');
+    out[i] = (uint8_t)((hi << 4) | lo);
+  }
+}
+
 bool parseHexByteString(const String& s, uint8_t& valueOut) {
   String t = s;
   t.trim();

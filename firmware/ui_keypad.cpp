@@ -9,6 +9,7 @@
 #include "ui_keypad_actions.h"
 #include "ui_keypad_state.h"
 #include "radio_runtime.h"
+#include "radio_state.h"
 #include "radio_protocol.h"
 #include "radio_utils.h"
 #include "ui_speech.h"
@@ -63,8 +64,12 @@ static void setBank6Ft8x7RepeaterOffsetHz(uint64_t hz);
 static void setBank6Ft8x7ToneMode(uint8_t modeByte, const char* label);
 static void setBank6Ft8x7CtcssPreset(uint8_t b0, uint8_t b1, const char* label);
 static void setBank6Ft8x7DcsPreset(uint8_t b0, uint8_t b1, const char* label);
+static void setBank6Ft8x7CtcssPresetTenths(uint16_t toneTenths);
 static void setBank6Ft8x7DefaultCtcss();
 static void setBank6Ft8x7DefaultDcs();
+static void beginBank6RepeaterOffsetEntry();
+static void beginBank6CtcssEntry();
+static void beginBank6DcsEntry();
 static void queryBank3BandStack(uint8_t reg);
 static void recallBank3BandStack(uint8_t reg);
 static void queryBank4Tuner();
@@ -76,14 +81,11 @@ static void queryBank4MonitorLevel();
 static void adjustBank4MonitorLevel(int deltaPercent);
 static void queryBank4Transceive();
 static void toggleBank4Transceive();
-static void queryBank9Profile();
 static void beginBank9ProfileSelect();
 static void selectNextProfile();
 static void selectPrevProfile();
-static void queryBank9Bank();
 static void queryBank9TuningSpeech();
 static void toggleBank9TuningSpeech();
-static void queryBank9Volume();
 static bool handleDeferredShortRelease(uint8_t bank, char key);
 static bool handleDoubleClick(uint8_t bank, char key);
 static bool shouldDelayShortRelease(uint8_t bank, char key);
@@ -124,6 +126,26 @@ static void speakVfoFrequencyLabel(char which) {
   else if (which == 'B') speakToken("b");
   playSilenceMs(60);
   speakFrequencyWord();
+}
+
+static char ft817CurrentVfoLabel() {
+  if (!live.activeVfoKnown) return '?';
+  return live.activeVfoA ? 'A' : 'B';
+}
+
+static char ft817OtherVfoLabel() {
+  if (!live.activeVfoKnown) return '?';
+  return live.activeVfoA ? 'B' : 'A';
+}
+
+static char ft857CurrentVfoLabel() {
+  if (!live.activeVfoKnown) return '?';
+  return live.activeVfoA ? 'A' : 'B';
+}
+
+static char ft857OtherVfoLabel() {
+  if (!live.activeVfoKnown) return '?';
+  return live.activeVfoA ? 'B' : 'A';
 }
 
 static void speakRitLabel() {
@@ -451,8 +473,68 @@ static bool isFt8x7Ft857FamilyKeypad() {
   return currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft857_897");
 }
 
+static bool isFt8x7Ft817Keypad() {
+  return currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft817");
+}
+
 static bool isFt8x7Keypad() {
   return currentProtocolType() == PROTO_YAESU_FT8X7;
+}
+
+static void ensureFt817VfoTrackingInitialized() {
+  if (isFt8x7Ft817Keypad() && !live.activeVfoKnown) {
+    // The FT-817 keypad workflow treats the starting point as VFO A until
+    // we have toggled or queried enough to track A/B locally.
+    rememberActiveVfo(true);
+  }
+}
+
+static void ensureFt857VfoTrackingInitialized() {
+  if (isFt8x7Ft857FamilyKeypad() && !live.activeVfoKnown) {
+    // FT-857/897 Bank 3 now tracks A/B locally from an assumed VFO A start.
+    rememberActiveVfo(true);
+  }
+}
+
+static uint32_t currentFt8x7RepeaterOffsetHz(uint8_t index) {
+  if (index >= 2) return 0;
+  return currentStoredProfile().ft8x7Bank6.repeaterOffsetsHz[index];
+}
+
+static uint16_t currentFt8x7DefaultCtcssTenths() {
+  return currentStoredProfile().ft8x7Bank6.ctcssDefaultTenths;
+}
+
+static uint16_t currentFt8x7DefaultDcsCode() {
+  return currentStoredProfile().ft8x7Bank6.dcsDefaultCode;
+}
+
+static void formatCtcssTenthsLabel(uint16_t toneTenths, char* out, size_t outSize) {
+  if (!out || outSize < 2) return;
+  snprintf(out, outSize, "%u.%u", (unsigned)(toneTenths / 10), (unsigned)(toneTenths % 10));
+}
+
+static bool encodeCtcssTenths(uint16_t toneTenths, uint8_t& b0, uint8_t& b1) {
+  if (toneTenths > 9999) return false;
+  uint16_t value = toneTenths;
+  uint8_t d1 = (uint8_t)(value % 10); value /= 10;
+  uint8_t d10 = (uint8_t)(value % 10); value /= 10;
+  uint8_t d100 = (uint8_t)(value % 10); value /= 10;
+  uint8_t d1000 = (uint8_t)(value % 10);
+  b0 = (uint8_t)((d1000 << 4) | d100);
+  b1 = (uint8_t)((d10 << 4) | d1);
+  return true;
+}
+
+static bool encodeDcsCode(uint16_t dcsCode, uint8_t& b0, uint8_t& b1) {
+  if (dcsCode > 999) return false;
+  uint16_t value = dcsCode;
+  uint8_t d1 = (uint8_t)(value % 10); value /= 10;
+  uint8_t d10 = (uint8_t)(value % 10); value /= 10;
+  uint8_t d100 = (uint8_t)(value % 10);
+  b0 = d100;
+  b1 = (uint8_t)((d10 << 4) | d1);
+  return true;
 }
 
 static void setBank3Ft857Split(bool on) {
@@ -504,9 +586,17 @@ static void setBank6Ft8x7ToneMode(uint8_t modeByte, const char* label) {
   if (!g_speechEnabled) return;
   speakToken("tone");
   playSilenceMs(60);
-  if (String(label) == "OFF") speakToken("off");
-  else if (String(label) == "CTCSS") speakToken("ctcss");
-  else speakToken("dcs");
+  if (String(label) == "OFF") {
+    speakToken("off");
+  } else if (String(label) == "CTCSS") {
+    speakToken("ctcss");
+    playSilenceMs(60);
+    speakToken("on");
+  } else {
+    speakToken("dcs");
+    playSilenceMs(60);
+    speakToken("on");
+  }
 }
 
 static void setBank6Ft8x7CtcssPreset(uint8_t b0, uint8_t b1, const char* label) {
@@ -518,6 +608,8 @@ static void setBank6Ft8x7CtcssPreset(uint8_t b0, uint8_t b1, const char* label) 
   }
   if (!yaesuCatSetCtcssToneRaw(data)) return;
   printKeypadStatus(String("CTCSS ") + label);
+  live.ctcssValid = true;
+  live.ctcssTenths = (uint16_t)(((uint16_t)(b0 >> 4) * 1000U) + ((uint16_t)(b0 & 0x0F) * 100U) + ((uint16_t)(b1 >> 4) * 10U) + (uint16_t)(b1 & 0x0F));
   if (!g_speechEnabled) return;
   speakToken("ctcss");
   playSilenceMs(60);
@@ -533,18 +625,85 @@ static void setBank6Ft8x7DcsPreset(uint8_t b0, uint8_t b1, const char* label) {
   }
   if (!yaesuCatSetDcsCodeRaw(data)) return;
   printKeypadStatus(String("DCS ") + label);
+  live.dcsValid = true;
+  live.dcsCode = (uint16_t)(((uint16_t)(b0 >> 4) * 100U) + ((uint16_t)(b0 & 0x0F) * 10U) + (uint16_t)(b1 >> 4));
   if (!g_speechEnabled) return;
   speakToken("dcs");
   playSilenceMs(60);
   speakDigitsAndPoint(label);
 }
 
+static void setBank6Ft8x7CtcssPresetTenths(uint16_t toneTenths) {
+  uint8_t b0 = 0;
+  uint8_t b1 = 0;
+  char label[12] = "";
+  if (!encodeCtcssTenths(toneTenths, b0, b1)) return;
+  formatCtcssTenthsLabel(toneTenths, label, sizeof(label));
+  setBank6Ft8x7CtcssPreset(b0, b1, label);
+}
+
 static void setBank6Ft8x7DefaultCtcss() {
-  setBank6Ft8x7CtcssPreset(0x08, 0x85, "88.5");
+  setBank6Ft8x7CtcssPresetTenths(currentFt8x7DefaultCtcssTenths());
 }
 
 static void setBank6Ft8x7DefaultDcs() {
-  setBank6Ft8x7DcsPreset(0x00, 0x23, "023");
+  uint8_t b0 = 0;
+  uint8_t b1 = 0;
+  char label[8] = "";
+  uint16_t dcsCode = currentFt8x7DefaultDcsCode();
+  if (!encodeDcsCode(dcsCode, b0, b1)) return;
+  snprintf(label, sizeof(label), "%03u", (unsigned)dcsCode);
+  setBank6Ft8x7DcsPreset(b0, b1, label);
+}
+
+static void beginBank6RepeaterOffsetEntry() {
+  printKeypadCommand("BANK6 1 DOUBLE -> RPTSHIFT ENTRY");
+  if (!isFt8x7Keypad()) {
+    printKeypadStatus("BANK6 reserved");
+    return;
+  }
+  g_bank6EntryMode = BANK6_ENTRY_OFFSET;
+  g_bank6EntryDigits = "";
+  printKeypadStatus("RPTSHIFT KHZ PLEASE");
+  if (g_speechEnabled) {
+    speakToken("repeater");
+    playSilenceMs(60);
+    speakFrequencyWord();
+    playSilenceMs(80);
+    speakToken("please");
+  }
+}
+
+static void beginBank6CtcssEntry() {
+  printKeypadCommand("BANK6 3 LONG -> CTCSS ENTRY");
+  if (!isFt8x7Keypad()) {
+    printKeypadStatus("BANK6 reserved");
+    return;
+  }
+  g_bank6EntryMode = BANK6_ENTRY_CTCSS;
+  g_bank6EntryDigits = "";
+  printKeypadStatus("CTCSS PLEASE");
+  if (g_speechEnabled) {
+    speakToken("ctcss");
+    playSilenceMs(80);
+    speakToken("please");
+  }
+}
+
+static void beginBank6DcsEntry() {
+  printKeypadCommand("BANK6 4 LONG -> DCS ENTRY");
+  if (!isFt8x7Keypad()) {
+    printKeypadStatus("BANK6 reserved");
+    return;
+  }
+  g_bank6EntryMode = BANK6_ENTRY_DCS;
+  g_bank6EntryDigits = "";
+  printKeypadStatus("DCS PLEASE");
+  if (g_speechEnabled) {
+    speakToken("dcs");
+    playSilenceMs(80);
+    speakToken("please");
+  }
 }
 
 static void setBank3Ft857Ptt(bool on) {
@@ -558,10 +717,6 @@ static void setBank3Ft857Ptt(bool on) {
 
 static void queryBank3Split() {
   printKeypadCommand("BANK3 0 SHORT -> SPLIT?");
-  if (isFt8x7Ft857FamilyKeypad()) {
-    printKeypadStatus("SPLIT console only");
-    return;
-  }
   bool on = false;
   if (!querySplit(on, 800)) return;
   printKeypadStatus(on ? "SPLIT ON" : "SPLIT OFF");
@@ -570,10 +725,6 @@ static void queryBank3Split() {
 
 static void toggleBank3Split() {
   printKeypadCommand("BANK3 0 LONG -> SPLIT");
-  if (isFt8x7Ft857FamilyKeypad()) {
-    printKeypadStatus("SPLIT console only");
-    return;
-  }
   bool on = false;
   if (!querySplit(on, 800)) return;
   if (!setSplit(!on)) return;
@@ -605,9 +756,41 @@ static void queryBank3TxFrequency() {
 }
 
 static void queryBank3VfoA() {
-  printKeypadCommand("BANK3 1 SHORT -> VFOA?");
+  if (isFt8x7Ft817Keypad()) {
+    ensureFt817VfoTrackingInitialized();
+    const char which = ft817CurrentVfoLabel();
+    if (which == 'A' || which == 'B') printKeypadCommand(String("BANK3 1 SHORT -> VFO") + which + "?");
+    else printKeypadCommand("BANK3 1 SHORT -> VFO?");
+  } else if (isFt8x7Ft857FamilyKeypad()) {
+    ensureFt857VfoTrackingInitialized();
+    const char which = ft857CurrentVfoLabel();
+    printKeypadCommand(String("BANK3 1 SHORT -> VFO") + which + "?");
+  } else {
+    printKeypadCommand("BANK3 1 SHORT -> VFOA?");
+  }
   if (isFt8x7Ft857FamilyKeypad()) {
-    printKeypadStatus("CLAR console only");
+    ensureFt857VfoTrackingInitialized();
+    uint64_t hz = 0;
+    if (!queryFrequency(hz, 800)) return;
+    const char which = ft857CurrentVfoLabel();
+    printKeypadStatus(String("VFO") + which + ": " + hzToMHzString3(hz) + " MHz");
+    if (g_speechEnabled) {
+      speakVfoFrequencyLabel(which);
+      playSilenceMs(60);
+      speakDigitsAndPoint(hzToMHzString3(hz));
+    }
+    return;
+  }
+  if (isFt8x7Ft817Keypad()) {
+    uint64_t hz = 0;
+    if (!queryFrequency(hz, 800)) return;
+    const char which = ft817CurrentVfoLabel();
+    printKeypadStatus(String("VFO") + which + ": " + hzToMHzString3(hz) + " MHz");
+    if (g_speechEnabled) {
+      speakVfoFrequencyLabel(which);
+      playSilenceMs(60);
+      speakDigitsAndPoint(hzToMHzString3(hz));
+    }
     return;
   }
   uint64_t hz = 0;
@@ -621,10 +804,33 @@ static void queryBank3VfoA() {
 }
 
 static void selectBank3VfoA() {
-  printKeypadCommand("BANK3 1 LONG -> VFO A");
+  if (isFt8x7Ft817Keypad() || isFt8x7Ft857FamilyKeypad()) printKeypadCommand("BANK3 1 LONG -> A/B");
+  else printKeypadCommand("BANK3 1 LONG -> VFO A");
   g_suppressFreqSpeakUntilMs = millis() + 1500;
   if (isFt8x7Ft857FamilyKeypad()) {
-    printKeypadStatus("CLAR console only");
+    ensureFt857VfoTrackingInitialized();
+    if (!yaesuCatToggleVfo()) return;
+    rememberActiveVfo(!live.activeVfoA);
+    const char which = ft857CurrentVfoLabel();
+    printKeypadStatus(String("VFO") + which);
+    if (g_speechEnabled) {
+      speakToken("vfo");
+      playSilenceMs(60);
+      speakToken(which == 'A' ? "a" : "b");
+    }
+    return;
+  }
+  if (isFt8x7Ft817Keypad()) {
+    ensureFt817VfoTrackingInitialized();
+    if (!yaesuCatToggleVfo()) return;
+    if (live.activeVfoKnown) rememberActiveVfo(!live.activeVfoA);
+    const char which = ft817CurrentVfoLabel();
+    printKeypadStatus(String("VFO") + which);
+    if (g_speechEnabled) {
+      speakToken("vfo");
+      playSilenceMs(60);
+      speakToken(which == 'A' ? "a" : "b");
+    }
     return;
   }
   if (!selectVfoA()) return;
@@ -641,26 +847,83 @@ static void selectBank3VfoA() {
 }
 
 static void beginBank3VfoAFrequencySet() {
-  printKeypadCommand("BANK3 1 DOUBLE -> VFOA FREQ");
-  if (isFt8x7Ft857FamilyKeypad()) {
-    printKeypadStatus("CLAR OFFSET console");
-    return;
+  if (isFt8x7Ft817Keypad()) {
+    ensureFt817VfoTrackingInitialized();
+    const char which = ft817CurrentVfoLabel();
+    if (which == 'A' || which == 'B') printKeypadCommand(String("BANK3 1 DOUBLE -> VFO") + which + " FREQ");
+    else printKeypadCommand("BANK3 1 DOUBLE -> VFO CURRENT FREQ");
+  } else if (isFt8x7Ft857FamilyKeypad()) {
+    ensureFt857VfoTrackingInitialized();
+    const char which = ft857CurrentVfoLabel();
+    printKeypadCommand(String("BANK3 1 DOUBLE -> VFO") + which + " FREQ");
+  } else {
+    printKeypadCommand("BANK3 1 DOUBLE -> VFOA FREQ");
   }
   g_freqEntryActive = true;
   g_freqEntryIsMHz = false;
   g_freqEntryDigits = "";
-  g_freqEntryTargetVfo = 1;
+  g_freqEntryTargetVfo = (isFt8x7Ft817Keypad() || isFt8x7Ft857FamilyKeypad()) ? 0 : 1;
   if (g_speechEnabled) {
-    speakFrequencyWord();
+    const char which = isFt8x7Ft817Keypad() ? ft817CurrentVfoLabel() : (isFt8x7Ft857FamilyKeypad() ? ft857CurrentVfoLabel() : '?');
+    if (which == 'A' || which == 'B') speakVfoFrequencyLabel(which);
+    else speakFrequencyWord();
     playSilenceMs(80);
     speakToken("please");
   }
 }
 
 static void queryBank3VfoB() {
-  printKeypadCommand("BANK3 2 SHORT -> VFOB?");
+  if (isFt8x7Ft817Keypad()) {
+    ensureFt817VfoTrackingInitialized();
+    const char which = ft817OtherVfoLabel();
+    if (which == 'A' || which == 'B') printKeypadCommand(String("BANK3 2 SHORT -> VFO") + which + "?");
+    else printKeypadCommand("BANK3 2 SHORT -> VFO OTHER?");
+  } else if (isFt8x7Ft857FamilyKeypad()) {
+    ensureFt857VfoTrackingInitialized();
+    const char which = ft857OtherVfoLabel();
+    printKeypadCommand(String("BANK3 2 SHORT -> VFO") + which + "?");
+  } else printKeypadCommand("BANK3 2 SHORT -> VFOB?");
   if (isFt8x7Ft857FamilyKeypad()) {
-    printKeypadStatus("VFOB unsupported");
+    ensureFt857VfoTrackingInitialized();
+    uint64_t hz = 0;
+    if (!yaesuCatToggleVfo()) return;
+    delay(120);
+    bool ok = queryFrequency(hz, 800);
+    delay(40);
+    yaesuCatToggleVfo();
+    delay(120);
+    if (!ok) return;
+    const char which = ft857OtherVfoLabel();
+    printKeypadStatus(String("VFO") + which + ": " + hzToMHzString3(hz) + " MHz");
+    if (g_speechEnabled) {
+      speakVfoFrequencyLabel(which);
+      playSilenceMs(60);
+      speakDigitsAndPoint(hzToMHzString3(hz));
+    }
+    return;
+  }
+  if (isFt8x7Ft817Keypad()) {
+    ensureFt817VfoTrackingInitialized();
+    uint64_t hz = 0;
+    bool ok = false;
+    if (!yaesuCatToggleVfo()) return;
+    delay(120);
+    ok = queryFrequency(hz, 800);
+    if (!ok) {
+      delay(120);
+      ok = queryFrequency(hz, 800);
+    }
+    delay(40);
+    yaesuCatToggleVfo();
+    delay(120);
+    if (!ok) return;
+    const char which = ft817OtherVfoLabel();
+    printKeypadStatus(String("VFO") + which + ": " + hzToMHzString3(hz) + " MHz");
+    if (g_speechEnabled) {
+      speakVfoFrequencyLabel(which);
+      playSilenceMs(60);
+      speakDigitsAndPoint(hzToMHzString3(hz));
+    }
     return;
   }
   uint64_t hz = 0;
@@ -674,10 +937,36 @@ static void queryBank3VfoB() {
 }
 
 static void selectBank3VfoB() {
-  printKeypadCommand("BANK3 2 LONG -> VFO B");
+  if (isFt8x7Ft817Keypad()) printKeypadCommand("BANK3 2 LONG -> A=B");
+  else printKeypadCommand("BANK3 2 LONG -> VFO B");
   g_suppressFreqSpeakUntilMs = millis() + 1500;
   if (isFt8x7Ft857FamilyKeypad()) {
     printKeypadStatus("VFO B unsupported");
+    return;
+  }
+  if (isFt8x7Ft817Keypad()) {
+    ensureFt817VfoTrackingInitialized();
+    uint64_t hz = 0;
+    uint8_t mode = 0xFF;
+    if (!queryFrequency(hz, 800)) return;
+    if (!queryMode(mode, 800)) return;
+    if (!yaesuCatToggleVfo()) return;
+    delay(120);
+    bool ok = setFrequency(hz);
+    delay(120);
+    if (ok) ok = setMode(mode, 1);
+    delay(120);
+    yaesuCatToggleVfo();
+    delay(120);
+    if (!ok) return;
+    printKeypadStatus("A=B");
+    if (g_speechEnabled) {
+      playDigit(1);
+      playSilenceMs(60);
+      speakToken("equals");
+      playSilenceMs(60);
+      playDigit(2);
+    }
     return;
   }
   if (!selectVfoB()) return;
@@ -694,19 +983,94 @@ static void selectBank3VfoB() {
 }
 
 static void beginBank3VfoBFrequencySet() {
-  printKeypadCommand("BANK3 2 DOUBLE -> VFOB FREQ");
-  if (isFt8x7Ft857FamilyKeypad()) {
-    printKeypadStatus("VFOB FREQ unsupported");
-    return;
-  }
+  if (isFt8x7Ft817Keypad()) {
+    ensureFt817VfoTrackingInitialized();
+    const char which = ft817OtherVfoLabel();
+    if (which == 'A' || which == 'B') printKeypadCommand(String("BANK3 2 DOUBLE -> VFO") + which + " FREQ");
+    else printKeypadCommand("BANK3 2 DOUBLE -> VFO OTHER FREQ");
+  } else if (isFt8x7Ft857FamilyKeypad()) {
+    ensureFt857VfoTrackingInitialized();
+    const char which = ft857OtherVfoLabel();
+    printKeypadCommand(String("BANK3 2 DOUBLE -> VFO") + which + " FREQ");
+  } else printKeypadCommand("BANK3 2 DOUBLE -> VFOB FREQ");
   g_freqEntryActive = true;
   g_freqEntryIsMHz = false;
   g_freqEntryDigits = "";
-  g_freqEntryTargetVfo = 2;
+  g_freqEntryTargetVfo = (isFt8x7Ft817Keypad() || isFt8x7Ft857FamilyKeypad()) ? 3 : 2;
   if (g_speechEnabled) {
-    speakFrequencyWord();
+    const char which = isFt8x7Ft817Keypad() ? ft817OtherVfoLabel() : (isFt8x7Ft857FamilyKeypad() ? ft857OtherVfoLabel() : '?');
+    if (which == 'A' || which == 'B') speakVfoFrequencyLabel(which);
+    else speakFrequencyWord();
     playSilenceMs(80);
     speakToken("please");
+  }
+}
+
+static void syncBank3Ft817VfoA() {
+  printKeypadCommand("BANK3 4 SHORT -> SYNC VFO A");
+  if (!isFt8x7Ft817Keypad()) {
+    queryBank4VfoAMode(3);
+    return;
+  }
+  rememberActiveVfo(true);
+  printKeypadStatus("SYNC VFOA");
+  if (g_speechEnabled) {
+    speakToken("sync");
+    playSilenceMs(60);
+    speakToken("vfo");
+    playSilenceMs(60);
+    speakToken("a");
+  }
+}
+
+static void syncBank3Ft817VfoB() {
+  printKeypadCommand("BANK3 4 LONG -> SYNC VFO B");
+  if (!isFt8x7Ft817Keypad()) {
+    beginBank4VfoAModeSet(3);
+    return;
+  }
+  rememberActiveVfo(false);
+  printKeypadStatus("SYNC VFOB");
+  if (g_speechEnabled) {
+    speakToken("sync");
+    playSilenceMs(60);
+    speakToken("vfo");
+    playSilenceMs(60);
+    speakToken("b");
+  }
+}
+
+static void syncBank3Ft857VfoA() {
+  printKeypadCommand("BANK3 4 SHORT -> SYNC VFO A");
+  if (!isFt8x7Ft857FamilyKeypad()) {
+    queryBank4VfoAMode(3);
+    return;
+  }
+  rememberActiveVfo(true);
+  printKeypadStatus("SYNC VFOA");
+  if (g_speechEnabled) {
+    speakToken("sync");
+    playSilenceMs(60);
+    speakToken("vfo");
+    playSilenceMs(60);
+    speakToken("a");
+  }
+}
+
+static void syncBank3Ft857VfoB() {
+  printKeypadCommand("BANK3 4 LONG -> SYNC VFO B");
+  if (!isFt8x7Ft857FamilyKeypad()) {
+    beginBank4VfoAModeSet(3);
+    return;
+  }
+  rememberActiveVfo(false);
+  printKeypadStatus("SYNC VFOB");
+  if (g_speechEnabled) {
+    speakToken("sync");
+    playSilenceMs(60);
+    speakToken("vfo");
+    playSilenceMs(60);
+    speakToken("b");
   }
 }
 
@@ -799,10 +1163,6 @@ static bool queryCurrentFilterSlotForKeypad(uint8_t& filterOut) {
 
 static void queryBank1RxTx() {
   printKeypadCommand("BANK1 1 SHORT -> RXTX?");
-  if (isFt8x7Ft857FamilyKeypad()) {
-    printKeypadStatus("RXTX unsupported");
-    return;
-  }
   bool tx = false;
   if (!queryRxTxStatus(tx, 800)) return;
   printKeypadStatus(tx ? "TX" : "RX");
@@ -814,15 +1174,27 @@ static void queryBank1RxTx() {
 
 static void queryBank1TxFrequency() {
   printKeypadCommand("BANK1 2 SHORT -> TXFREQ?");
-  if (isFt8x7Ft857FamilyKeypad()) {
-    printKeypadStatus("TXFREQ unsupported");
-    return;
-  }
   uint64_t hz = 0;
   if (!queryTxFrequency(hz, 800)) {
     if (currentProtocolType() == PROTO_YAESU_FT8X7) {
-      bool splitOn = false;
-      if (querySplit(splitOn, 800) && !splitOn && queryFrequency(hz, 800)) {
+      if (isFt8x7Ft857FamilyKeypad()) {
+        bool splitOn = false;
+        if (querySplit(splitOn, 800) && splitOn) {
+          if (yaesuCatToggleVfo()) {
+            delay(120);
+            bool ok = queryFrequency(hz, 800);
+            delay(40);
+            yaesuCatToggleVfo();
+            delay(120);
+            if (ok) {
+              printKeypadStatus(String("TXFREQ: ") + hzToMHzString3(hz) + " MHz");
+              speakQueriedFrequencyHz(hz);
+              return;
+            }
+          }
+        }
+      }
+      if (queryFrequency(hz, 800)) {
         printKeypadStatus(String("TXFREQ: ") + hzToMHzString3(hz) + " MHz");
         speakQueriedFrequencyHz(hz);
       } else {
@@ -1042,22 +1414,16 @@ static void toggleBank4Transceive() {
   speakTokenState("transceiver", !on);
 }
 
-static void queryBank9Profile() {
-  printKeypadCommand("BANK9 0 SHORT -> PROFILE?");
-  printKeypadStatus("PROFILE CURRENT");
-  speakCurrentProfile();
-}
-
 static void beginBank9ProfileSelect() {
   g_profileSelectActive = true;
   g_profileStageDigits = "";
-  printKeypadCommand("BANK9 0 LONG -> PROFILE SELECT");
+  printKeypadCommand("BANK9 A LONG -> PROFILE SELECT");
   printKeypadStatus("CHOOSE PLEASE");
   speakChoosePlease();
 }
 
 static void selectNextProfile() {
-  printKeypadCommand("BANK9 1 SHORT -> PROFILE NEXT");
+  printKeypadCommand("BANK9 B SHORT -> PROFILE NEXT");
   uint8_t next = findAdjacentValidProfile(1);
   applyProfile(next);
   printKeypadStatus(String("PROFILE ") + String((int)next));
@@ -1065,17 +1431,11 @@ static void selectNextProfile() {
 }
 
 static void selectPrevProfile() {
-  printKeypadCommand("BANK9 2 SHORT -> PROFILE PREV");
+  printKeypadCommand("BANK9 C SHORT -> PROFILE PREV");
   uint8_t prev = findAdjacentValidProfile(-1);
   applyProfile(prev);
   printKeypadStatus(String("PROFILE ") + String((int)prev));
   speakCurrentProfile();
-}
-
-static void queryBank9Bank() {
-  printKeypadCommand("BANK9 3 SHORT -> BANK?");
-  printKeypadStatus(String("BANK ") + String((int)g_bank));
-  speakBankNumber();
 }
 
 static void queryBank9TuningSpeech() {
@@ -1089,12 +1449,6 @@ static void toggleBank9TuningSpeech() {
   setTuningSpeechEnabled(!g_tuningSpeakEnabled);
   printKeypadStatus(String("TUNINGSPEECH ") + (g_tuningSpeakEnabled ? "ON" : "OFF"));
   speakTuningSpeechState();
-}
-
-static void queryBank9Volume() {
-  printKeypadCommand("BANK9 5 SHORT -> VOLUME?");
-  printKeypadStatus(String("VOLUME ") + String((int)g_volumeLevel));
-  if (g_speechEnabled) speakVolumeLevel(g_volumeLevel);
 }
 
 static void speakRitOffsetValue(int32_t hz) {
@@ -1187,30 +1541,27 @@ static void setBank6RepeaterPlus() {
 }
 
 static void queryBank6RepeaterOffset() {
-  printKeypadCommand("BANK6 1 SHORT -> RPTSHIFT 0.600");
+  const uint32_t hz = currentFt8x7RepeaterOffsetHz(0);
+  printKeypadCommand(String("BANK6 1 SHORT -> RPTSHIFT ") + hzToMHzString3(hz));
   if (!isFt8x7Keypad()) {
     printKeypadStatus("BANK6 reserved");
     return;
   }
-  setBank6Ft8x7RepeaterOffsetHz(600000ULL);
+  setBank6Ft8x7RepeaterOffsetHz(hz);
 }
 
 static void setBank6RepeaterOffset70cm() {
-  printKeypadCommand("BANK6 1 LONG -> RPTSHIFT 1.600");
+  const uint32_t hz = currentFt8x7RepeaterOffsetHz(1);
+  printKeypadCommand(String("BANK6 1 LONG -> RPTSHIFT ") + hzToMHzString3(hz));
   if (!isFt8x7Keypad()) {
     printKeypadStatus("BANK6 reserved");
     return;
   }
-  setBank6Ft8x7RepeaterOffsetHz(1600000ULL);
+  setBank6Ft8x7RepeaterOffsetHz(hz);
 }
 
 static void setBank6RepeaterOffset10m() {
-  printKeypadCommand("BANK6 1 DOUBLE -> RPTSHIFT 5.000");
-  if (!isFt8x7Keypad()) {
-    printKeypadStatus("BANK6 reserved");
-    return;
-  }
-  setBank6Ft8x7RepeaterOffsetHz(5000000ULL);
+  beginBank6RepeaterOffsetEntry();
 }
 
 static void queryBank6ToneMode() {
@@ -1241,66 +1592,35 @@ static void setBank6ToneModeDcs() {
 }
 
 static void queryBank6CtcssDefault() {
-  printKeypadCommand("BANK6 3 SHORT -> CTCSS 88.5");
+  char label[12] = "";
+  uint16_t toneTenths = live.ctcssValid ? live.ctcssTenths : currentFt8x7DefaultCtcssTenths();
+  formatCtcssTenthsLabel(toneTenths, label, sizeof(label));
+  printKeypadCommand(String("BANK6 3 SHORT -> CTCSS ") + label);
   if (!isFt8x7Keypad()) {
     printKeypadStatus("BANK6 reserved");
     return;
   }
-  setBank6Ft8x7DefaultCtcss();
+  printKeypadStatus(String("CTCSS ") + label);
+  if (!g_speechEnabled) return;
+  speakToken("ctcss");
+  playSilenceMs(60);
+  speakDigitsAndPoint(label);
 }
 
 static void queryBank6DcsDefault() {
-  printKeypadCommand("BANK6 4 SHORT -> DCS 023");
+  char label[8] = "";
+  const uint16_t dcsCode = live.dcsValid ? live.dcsCode : currentFt8x7DefaultDcsCode();
+  snprintf(label, sizeof(label), "%03u", (unsigned)dcsCode);
+  printKeypadCommand(String("BANK6 4 SHORT -> DCS ") + label);
   if (!isFt8x7Keypad()) {
     printKeypadStatus("BANK6 reserved");
     return;
   }
-  setBank6Ft8x7DefaultDcs();
-}
-
-static void queryBank6Ctcss67() {
-  printKeypadCommand("BANK6 5 SHORT -> CTCSS 67.0");
-  if (!isFt8x7Keypad()) {
-    printKeypadStatus("BANK6 reserved");
-    return;
-  }
-  setBank6Ft8x7CtcssPreset(0x06, 0x70, "67.0");
-}
-
-static void queryBank6Ctcss71_9() {
-  printKeypadCommand("BANK6 6 SHORT -> CTCSS 71.9");
-  if (!isFt8x7Keypad()) {
-    printKeypadStatus("BANK6 reserved");
-    return;
-  }
-  setBank6Ft8x7CtcssPreset(0x07, 0x19, "71.9");
-}
-
-static void queryBank6Ctcss77_0() {
-  printKeypadCommand("BANK6 7 SHORT -> CTCSS 77.0");
-  if (!isFt8x7Keypad()) {
-    printKeypadStatus("BANK6 reserved");
-    return;
-  }
-  setBank6Ft8x7CtcssPreset(0x07, 0x70, "77.0");
-}
-
-static void queryBank6Ctcss82_5() {
-  printKeypadCommand("BANK6 8 SHORT -> CTCSS 82.5");
-  if (!isFt8x7Keypad()) {
-    printKeypadStatus("BANK6 reserved");
-    return;
-  }
-  setBank6Ft8x7CtcssPreset(0x08, 0x25, "82.5");
-}
-
-static void queryBank6Ctcss100_0() {
-  printKeypadCommand("BANK6 9 SHORT -> CTCSS 100.0");
-  if (!isFt8x7Keypad()) {
-    printKeypadStatus("BANK6 reserved");
-    return;
-  }
-  setBank6Ft8x7CtcssPreset(0x10, 0x00, "100.0");
+  printKeypadStatus(String("DCS ") + label);
+  if (!g_speechEnabled) return;
+  speakToken("dcs");
+  playSilenceMs(60);
+  speakDigitsAndPoint(label);
 }
 
 static bool handleDeferredShortRelease(uint8_t bank, char key) {
@@ -1329,8 +1649,13 @@ static bool handleDeferredShortRelease(uint8_t bank, char key) {
       case '0': queryBank3Split(); return true;
       case '1': queryBank3VfoA(); return true;
       case '2': queryBank3VfoB(); return true;
-      case '4': queryBank4VfoAMode(); return true;
-      case '5': queryBank4VfoBMode(); return true;
+      case '4':
+        if (isFt8x7Ft817Keypad()) { syncBank3Ft817VfoA(); return true; }
+        if (isFt8x7Ft857FamilyKeypad()) { syncBank3Ft857VfoA(); return true; }
+        queryBank4VfoAMode(); return true;
+      case '5':
+        if (isFt8x7Ft857FamilyKeypad()) { setBank3Ft857Clar(true); return true; }
+        queryBank4VfoBMode(); return true;
       case '6': queryBank3RxTx(); return true;
       case '7': queryBank3BandStack(1); return true;
       case '8': queryBank3BandStack(2); return true;
@@ -1363,17 +1688,11 @@ static bool handleDeferredShortRelease(uint8_t bank, char key) {
       case '2': queryBank6ToneMode(); return true;
       case '3': queryBank6CtcssDefault(); return true;
       case '4': queryBank6DcsDefault(); return true;
-      case '5': queryBank6Ctcss67(); return true;
-      case '6': queryBank6Ctcss71_9(); return true;
-      case '7': queryBank6Ctcss77_0(); return true;
-      case '8': queryBank6Ctcss82_5(); return true;
-      case '9': queryBank6Ctcss100_0(); return true;
       default: break;
     }
   }
   if (bank == 9) {
     switch (key) {
-      case '0': queryBank9Profile(); return true;
       default: break;
     }
   }
@@ -1445,7 +1764,7 @@ static bool handleDoubleClick(uint8_t bank, char key) {
 }
 
 static bool shouldDelayShortRelease(uint8_t bank, char key) {
-  if (g_freqEntryActive || g_modeSetActive) return false;
+  if (g_freqEntryActive || g_modeSetActive || g_bank6EntryMode != BANK6_ENTRY_NONE) return false;
   return (bank == 1 && (key == '1' || key == '2')) ||
          (bank == 2 && (key == '0' || (currentProtocolType() == PROTO_CIV && (key == '4' || key == '5' || key == '6' || key == '7' || key == '9')))) ||
          (bank == 3 && (key == '0' || key == '1' || key == '2')) ||
@@ -1478,12 +1797,34 @@ void keypadEvent(KeypadEvent k) {
       g_profileStageDigits += (char)k;
       printKeypadCommand(String("PROFILE DIGIT -> ") + String(k));
       printKeypadStatus(String("PROFILE ") + g_profileStageDigits);
-      int slot = g_profileStageDigits.toInt();
-      if (g_speechEnabled && slot >= 1 && slot <= MAX_PROFILE_SLOTS) speakProfileIdentityFromSlot((uint8_t)slot, false);
+      if (g_speechEnabled) playDigit((uint8_t)(k - '0'));
       return;
     }
     if (k == 'D' && s == RELEASED) { keypadEnter(); return; }
     if (k == '#' && s == RELEASED) { g_profileSelectActive = false; g_profileStageDigits = ""; return; }
+    return;
+  }
+
+  if (g_freqEntryActive) {
+    if (k == 'D' && s == RELEASED) { keypadEnter(); return; }
+    if (k == '#' && s == RELEASED) { keypadClearAll(); return; }
+    if (k >= '0' && k <= '9' && s == RELEASED) {
+      keypadHandleReleased((char)k);
+      return;
+    }
+    return;
+  }
+
+  if (g_bank == 6 && k == '3' && s == RELEASED && g_threeHoldConsumed) { g_threeHoldConsumed = false; return; }
+  if (g_bank == 6 && k == '4' && s == RELEASED && g_fourHoldConsumed) { g_fourHoldConsumed = false; return; }
+
+  if (g_bank6EntryMode != BANK6_ENTRY_NONE) {
+    if (k == 'D' && s == RELEASED) { keypadEnter(); return; }
+    if (k == '#' && s == RELEASED) { keypadClearAll(); return; }
+    if (k >= '0' && k <= '9' && s == RELEASED) {
+      keypadHandleReleased((char)k);
+      return;
+    }
     return;
   }
 
@@ -1624,24 +1965,30 @@ void keypadEvent(KeypadEvent k) {
   if (g_bank == 3 && k == '2' && s == RELEASED && g_twoHoldConsumed) { g_twoHoldConsumed = false; return; }
 
   if (g_bank == 3 && !g_modeSetActive && !g_freqEntryActive && k == '4' && s == HOLD) {
-    beginBank4VfoAModeSet(3);
+    if (isFt8x7Ft817Keypad()) syncBank3Ft817VfoB();
+    else if (isFt8x7Ft857FamilyKeypad()) syncBank3Ft857VfoB();
+    else beginBank4VfoAModeSet(3);
     g_fourHoldConsumed = true;
     return;
   }
   if (g_bank == 3 && k == '4' && s == RELEASED && g_fourHoldConsumed) { g_fourHoldConsumed = false; return; }
   if (g_bank == 3 && !g_modeSetActive && !g_freqEntryActive && k == '4' && s == RELEASED) {
-    queryBank4VfoAMode(3);
+    if (isFt8x7Ft817Keypad()) syncBank3Ft817VfoA();
+    else if (isFt8x7Ft857FamilyKeypad()) syncBank3Ft857VfoA();
+    else queryBank4VfoAMode(3);
     return;
   }
 
   if (g_bank == 3 && !g_modeSetActive && !g_freqEntryActive && k == '5' && s == HOLD) {
-    beginBank4VfoBModeSet(3);
+    if (isFt8x7Ft857FamilyKeypad()) setBank3Ft857Clar(false);
+    else beginBank4VfoBModeSet(3);
     g_fiveHoldConsumed = true;
     return;
   }
   if (g_bank == 3 && k == '5' && s == RELEASED && g_fiveHoldConsumed) { g_fiveHoldConsumed = false; return; }
   if (g_bank == 3 && !g_modeSetActive && !g_freqEntryActive && k == '5' && s == RELEASED) {
-    queryBank4VfoBMode(3);
+    if (isFt8x7Ft857FamilyKeypad()) setBank3Ft857Clar(true);
+    else queryBank4VfoBMode(3);
     return;
   }
 
@@ -1754,6 +2101,22 @@ void keypadEvent(KeypadEvent k) {
   }
   if (g_bank == 6 && k == '2' && s == RELEASED && g_twoHoldConsumed) { g_twoHoldConsumed = false; return; }
 
+  if (g_bank == 6 && k == '3' && s == HOLD) {
+    beginBank6CtcssEntry();
+    g_threeHoldConsumed = true;
+    g_pendingClickActive = false;
+    return;
+  }
+  if (g_bank == 6 && k == '3' && s == RELEASED && g_threeHoldConsumed) { g_threeHoldConsumed = false; return; }
+
+  if (g_bank == 6 && k == '4' && s == HOLD) {
+    beginBank6DcsEntry();
+    g_fourHoldConsumed = true;
+    g_pendingClickActive = false;
+    return;
+  }
+  if (g_bank == 6 && k == '4' && s == RELEASED && g_fourHoldConsumed) { g_fourHoldConsumed = false; return; }
+
   if (g_bank == 6 && k == '3' && s == RELEASED) {
     queryBank6CtcssDefault();
     return;
@@ -1761,31 +2124,6 @@ void keypadEvent(KeypadEvent k) {
 
   if (g_bank == 6 && k == '4' && s == RELEASED) {
     queryBank6DcsDefault();
-    return;
-  }
-
-  if (g_bank == 6 && k == '5' && s == RELEASED) {
-    queryBank6Ctcss67();
-    return;
-  }
-
-  if (g_bank == 6 && k == '6' && s == RELEASED) {
-    queryBank6Ctcss71_9();
-    return;
-  }
-
-  if (g_bank == 6 && k == '7' && s == RELEASED) {
-    queryBank6Ctcss77_0();
-    return;
-  }
-
-  if (g_bank == 6 && k == '8' && s == RELEASED) {
-    queryBank6Ctcss82_5();
-    return;
-  }
-
-  if (g_bank == 6 && k == '9' && s == RELEASED) {
-    queryBank6Ctcss100_0();
     return;
   }
 
@@ -1854,6 +2192,16 @@ void keypadEvent(KeypadEvent k) {
     return;
   }
   if (g_bank == 9 && k == 'A' && s == RELEASED && g_aHoldConsumed) { g_aHoldConsumed = false; return; }
+
+  if (g_bank == 9 && k == 'B' && s == RELEASED) {
+    selectNextProfile();
+    return;
+  }
+
+  if (g_bank == 9 && k == 'C' && s == RELEASED) {
+    selectPrevProfile();
+    return;
+  }
 
   if (g_bank == 9 && k == '4' && s == HOLD) {
     toggleBank9TuningSpeech();
