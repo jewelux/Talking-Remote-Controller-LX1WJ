@@ -120,7 +120,7 @@ This project benefits from practical support by several radio amateurs in concep
 - **Stefan DK7STJ**: support for KX2 and Elecraft topics
 - **Tom OK1ICQ** and **Jan OK1TE**: support for the Yaesu FT8x7 family
 - **Damian SP9QLO**: support for Yaesu FTDX10 work
-- **Gena M0EBP**: support for blind-friendly documentation structure and wording
+- ...
 
 ---
 
