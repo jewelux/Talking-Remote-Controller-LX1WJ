@@ -5,6 +5,15 @@
 
 ---
 
+## Who This Guide Is For
+
+This guide is for operators and helpers who want to use the controller in practice.
+It focuses on spoken behavior and keypad use, not on firmware structure or hardware development.
+
+If you want to build or adapt the project, use the [Builder Guide](builder-guide.md).
+
+---
+
 ## Keypad Layout (4x4 Matrix)
 
 Assumed labeling:

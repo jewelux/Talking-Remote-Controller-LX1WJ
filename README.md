@@ -1,43 +1,41 @@
-﻿# Talking Remote Controller LX1WJ for Ham Radio Transceivers
-
-## Overview
+# Talking Remote Controller LX1WJ for Ham Radio Transceivers
 
 The **Talking Remote Controller** is an accessibility-oriented remote control for amateur radio transceivers.
 The project may also be referred to as **HamTRC-LX1WJ** as a shorter project name.
 All interaction and radio status feedback is provided through spoken audio output, enabling operation without visual reference.
-It is inspired by earlier projects like Hampod and Digimatel 2000.
 
 Version **3.5** is the current modular architecture.
 It extends the earlier single-sketch concept into a profile-driven firmware platform with SD card based radio definitions while preserving the voice-guided operating concept.
 
 ---
 
-## Project Philosophy & Status
-**This project is not for commercial sale.**
-Its purpose is to **empower the amateur radio community** to **build and donate** accessible controllers for blind or visually impaired operators under the **open-source model**:
+## Start Here
 
-- **Current Stage**: proof-of-concept and field expansion across multiple radio families.
-- **Goal**: provide a **modular, adaptable hardware/software platform** that anyone can build, modify, and share.
-- **Future**: the design will continue to evolve with new profiles, voice tokens, and hardware refinements.
+This repository serves two main audiences.
+Please choose the path that best matches what you need:
 
----
+- **I want to use the controller** -> see the [User Guide](user-guide.md)
+- **I want to build, adapt, or document the project** -> see the [Builder Guide](builder-guide.md)
 
-## Disclaimer / Safety Notice
-This project is provided **for experimental and educational use only**, **AS IS**, without any warranty.
+Useful companion documents:
 
-- The device is **not a certified instrument**.
-- You are responsible for correct wiring, safe RF practices, and compliance with local regulations.
-
-**Use at your own risk.**
-
----
-
-## Related and Historical Projects
-This project continues the tradition of accessible amateur radio interfaces with audio feedback, following in the footsteps of pioneering systems like **[Hampod](http://hampod.com)** and Digimatel 2000. These early projects enabled blind and visually impaired operators to control transceivers via keyboard input with spoken status updates. The *Talking Remote Controller* builds on these concepts with updated hardware (ESP32-S3), modular radio profiles, and a reusable voice architecture.
+- [QUICKSTART.md](QUICKSTART.md) for a short technical setup overview
+- [docs/radio-support-matrix.md](docs/radio-support-matrix.md) for the current per-radio support state
+- Radio-specific command references:
+  [ICOM IC-7300](docs/radios/icom-ic-7300.md),
+  [Yaesu FT-817](docs/radios/yaesu-ft-817.md),
+  [Yaesu FT-857](docs/radios/yaesu-ft-857.md)
+- [Yaesu FTDX10 blind test list](docs/radios/yaesu-ftdx10-blind-test-list.txt)
 
 ---
 
-## Core Characteristics
+## What This Project Is
+
+The Talking Remote Controller is a voice-first keypad controller for amateur radio operation.
+It is intended to help blind or visually impaired operators access radio functions through spoken feedback and predictable keypad control.
+The project continues the tradition of earlier accessible amateur radio interfaces such as **[Hampod](http://hampod.com)** and Digimatel 2000.
+
+Core characteristics:
 
 - ESP32-S3 based controller
 - Spoken feedback for radio status and user actions
@@ -49,9 +47,7 @@ This project continues the tradition of accessible amateur radio interfaces with
 - SD card based profile and slot configuration
 - Flash-resident spoken token set via `voice_data.h`
 
----
-
-## Supported Information Output
+Typical spoken information currently includes:
 
 - Frequency
 - Operating mode
@@ -61,23 +57,40 @@ This project continues the tradition of accessible amateur radio interfaces with
 - Active bank and radio profile
 - Profile-dependent control and query functions
 
-Additional spoken information will be added as the project evolves.
+Additional spoken information will continue to be added as the project evolves.
 
 ---
 
-## Hardware Requirements
+## Project Philosophy And Status
 
-- ESP32-S3 development board
-- 4x4 matrix keypad
-- Audio output (I2S DAC or external amplifier)
-- MicroSD card support for profile files
-- One or more radio interfaces, depending on the active profile:
-  - ICOM CI-V
-  - RS-232
-  - TTL CAT
-  - ASCII style serial protocols
+**This project is not for commercial sale.**
+Its purpose is to support the amateur radio community in building, adapting, and donating accessible controllers under an open-source model.
 
-The exact wiring and tested hardware notes continue to evolve in the documentation.
+- **Current stage**: proof-of-concept and field expansion across multiple radio families
+- **Goal**: provide a modular, adaptable hardware and software platform that others can build, modify, test, and share
+- **Direction**: continue expanding profiles, voice tokens, hardware notes, and blind-friendly documentation
+
+---
+
+## Documentation Paths
+
+### End User Documentation
+
+The end-user path should stay as plain and practical as possible.
+Use these pages if the main question is how to operate the controller:
+
+- [user-guide.md](user-guide.md)
+- Radio-specific user behavior pages in [docs/radios](docs/radios)
+
+### Builder And Technical Documentation
+
+The builder path covers hardware, firmware structure, profiles, and implementation context:
+
+- [builder-guide.md](builder-guide.md)
+- [QUICKSTART.md](QUICKSTART.md)
+- [docs/hardware_wiring.md](docs/hardware_wiring.md)
+- [docs/circuit-diagram-under-construction.pdf](docs/circuit-diagram-under-construction.pdf)
+- [docs/radio-support-matrix.md](docs/radio-support-matrix.md)
 
 ---
 
@@ -94,80 +107,31 @@ docs/
   supporting hardware and project documentation
 ```
 
-The firmware is no longer a single self-contained sketch only. The main `.ino` now ties together a modular codebase for protocol handling, user interface logic, profile loading, and runtime state.
-Internal working notes are intentionally kept out of the public repository so the published project tree stays focused and readable.
+The firmware is no longer a single self-contained sketch only.
+The main `.ino` now ties together a modular codebase for protocol handling, user interface logic, profile loading, and runtime state.
 
 ---
 
-## Voice Architecture
+## Project Collaboration
 
-Speech output is based on pre-recorded voice tokens stored in flash memory.
+This project benefits from practical support by several radio amateurs in concept work, implementation, testing, and documentation.
 
-Design principles:
-
-- Reusable single-word or short-phrase tokens
-- Numeric values composed from digit tokens
-- Protocol-independent command vocabulary
-- Radio-specific name tokens
-- Immediate interruption when new user input arrives
-
-This keeps spoken interaction fast and predictable while avoiding dependence on online text-to-speech systems.
+- **Richard DO9RE**: concept support and test pilot
+- **Stefan DK7STJ**: support for KX2 and Elecraft topics
+- **Tom OK1ICQ** and **Jan OK1TE**: support for the Yaesu FT8x7 family
+- **Damian SP9QLO**: support for Yaesu FTDX10 work
+- **Gena M0EBP**: support for blind-friendly documentation structure and wording
 
 ---
 
-## SD Card Profile System
+## Disclaimer And Safety Notice
 
-Version 3.5 introduces profile-driven configuration from the SD card.
+This project is provided **for experimental and educational use only**, **AS IS**, without any warranty.
 
-Each radio profile can define:
+- The device is **not a certified instrument**
+- You are responsible for correct wiring, safe RF practices, and compliance with local regulations
 
-- Protocol family
-- Supported commands
-- Query and control mappings
-- Spoken labels
-- Slot assignments
-
-Current profile files in `firmware/SDCard` include definitions for radios such as:
-
-- ICOM IC-7300
-- ICOM IC-706
-- Xiegu G106
-- Kenwood TS-480
-- Yaesu FT-817 / FT-857 / FT-897 / FTDX series
-- Elecraft KX2
-
-Profile coverage is still evolving and not every profile necessarily exposes the same command set yet.
-
----
-
-## Keypad Interaction Model
-
-- **Short press**: query or immediate action
-- **Long press**: mode change, configuration, or numeric input
-- **ENTER**: confirms numeric input or staged actions
-- **Cancel**: aborts modal flows without requiring visual feedback
-
-This interaction model remains consistent as the project grows.
-
-Please visit [User Guide ->](user-guide.md)
-for keypad behavior and spoken feedback examples.
-The current per-radio support state is tracked in [docs/radio-support-matrix.md](docs/radio-support-matrix.md).
-Radio-specific command references currently include
-[ICOM IC-7300](docs/radios/icom-ic-7300.md),
-[Yaesu FT-817](docs/radios/yaesu-ft-817.md), and
-[Yaesu FT-857](docs/radios/yaesu-ft-857.md).
-
-
-
-
-- [Yaesu FTDX10 blind test list](docs/radios/yaesu-ftdx10-blind-test-list.txt)
-
----
-
-## Project Scope and Evolution
-
-Versions prior to the current modular branch were integration and design iterations.
-The newer architecture separates protocol logic, runtime state, UI behavior, and profile data so the project can expand without rewriting the whole sketch for each radio.
+**Use at your own risk.**
 
 ---
 
@@ -184,15 +148,14 @@ The current `V3.5` branch introduces several major changes:
 - the repository now represents a broader platform for further radio expansion rather than a narrow proof-of-concept build
 - the original voice-token approach with `voice_data.h` remains in place, but is now used inside a more extensible architecture
 
-This means the repository history now contains a visible transition from the earlier compact prototype toward a more maintainable and expandable controller platform.
-
 Future development focuses on:
 
-- Extended command coverage
-- Additional radio profiles
-- Expanded voice token sets
-- Cleaner documentation for builders and operators
-- Continued refinement of the Yaesu FT8x7 family using the same keypad structure principles already established for the IC-7300`r`n- First documented bring-up of the Yaesu FTDX10/101 ASCII CAT family
+- extended command coverage
+- additional radio profiles
+- expanded voice token sets
+- cleaner documentation for builders and operators
+- continued refinement of the Yaesu FT8x7 family
+- further bring-up and validation work for the Yaesu FTDX10/101 ASCII CAT family
 
 ---
 
@@ -200,5 +163,3 @@ Future development focuses on:
 
 This project uses the same license model as the **Talking SWR Meter** project by the same author.
 See the `LICENSE` file for code and `LICENSE-docs` for documentation material.
-
-
