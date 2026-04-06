@@ -97,12 +97,13 @@ Directly connecting the CI-V line to an ESP32 GPIO pin without protection is not
 ---
 
 ## 5. ESP32-S3 to RS-232 Interface
-Wiring
 
-    ESP32 TX GPIO10 <-> MAX3232 Pin named TX path
-    ESP32 RX GPIO9 <- MAX3232 Pin named RX path
-    ESP32 GND <-> MAX3232 GND <-> radio GND
-    ESP32 5V -> MAX3232 VCC
+### Wiring
+
+- ESP32 TX GPIO10 <-> MAX3232 Pin named TX path
+- ESP32 RX GPIO9 <- MAX3232 Pin named RX path
+- ESP32 GND <-> MAX3232 GND <-> radio GND
+- ESP32 5V -> MAX3232 VCC
 
 ---
 
@@ -131,5 +132,3 @@ Series resistors provide basic protection and can improve signal robustness.
 - This document reflects the current V3.5 repository state.
 - Future firmware versions may add profiles, interfaces, or alternative pin mappings.
 - The hardware setup is still a development and test platform rather than a finished certified product.
-
-
