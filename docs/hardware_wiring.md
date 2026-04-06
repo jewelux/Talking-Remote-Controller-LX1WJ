@@ -100,8 +100,8 @@ Directly connecting the CI-V line to an ESP32 GPIO pin without protection is not
 
 ### Wiring
 
-- ESP32 TX GPIO10 -> MAX3232 TX path -> radio RX
-- ESP32 RX GPIO9 <- MAX3232 RX path <- radio TX
+- ESP32 TX GPIO10 <-> MAX3232 Pin named TX path
+- ESP32 RX GPIO9 <- MAX3232 Pin named RX path
 - ESP32 GND <-> MAX3232 GND <-> radio GND
 - ESP32 5V -> MAX3232 VCC
 
