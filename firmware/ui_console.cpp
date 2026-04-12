@@ -10,6 +10,7 @@
 #include "radio_profile.h"
 #include "radio_protocol.h"
 #include "radio_runtime.h"
+#include "radio_state.h"
 #include "radio_utils.h"
 #include "sd_slots.h"
 #include "ui_speech.h"
@@ -37,6 +38,120 @@ static uint16_t levelPercentToRaw(int percent) {
 static int pbtRawToOffset(uint16_t raw) {
   if (raw > 255) raw = 255;
   return (int)raw - 128;
+}
+
+static void printYaesuProbeByte(const char* label, bool ok, uint8_t raw) {
+  Serial.print(label);
+  if (!ok) {
+    Serial.println("no reply");
+    return;
+  }
+  Serial.print("0x");
+  if (raw < 0x10) Serial.print('0');
+  Serial.println(raw, HEX);
+}
+
+static void probeYaesuFt817ModeTxRx(const char* phaseLabel) {
+  uint8_t raw = 0;
+  Serial.println(phaseLabel);
+  yaesuCatFlushInput();
+  delay(90);
+  printYaesuProbeByte("  MODE: ", yaesuCatQueryModeRawByte(raw, 800), raw);
+  yaesuCatFlushInput();
+  delay(90);
+  printYaesuProbeByte("  TX:   ", yaesuCatQueryTxStatusRaw(raw, 800), raw);
+  yaesuCatFlushInput();
+  delay(90);
+  printYaesuProbeByte("  RX:   ", yaesuCatQueryRxStatusRaw(raw, 800), raw);
+}
+
+static void printYesNoUnknown(const char* label, bool known, bool on) {
+  Serial.print(label);
+  if (!known) {
+    Serial.println("unknown");
+    return;
+  }
+  Serial.println(on ? "on" : "off");
+}
+
+static void printLiveToneStateSummary() {
+  Serial.print("  CTCSS cache: ");
+  if (!live.ctcssValid) {
+    Serial.println("unknown");
+  } else {
+    Serial.print((double)live.ctcssTenths / 10.0, 1);
+    Serial.println(" Hz");
+  }
+  Serial.print("  DCS cache:   ");
+  if (!live.dcsValid) {
+    Serial.println("unknown");
+  } else {
+    char label[4];
+    snprintf(label, sizeof(label), "%03u", (unsigned)live.dcsCode);
+    Serial.println(label);
+  }
+}
+
+static void printYaesuFt817FmContext() {
+  const uint32_t savedSuspendPollingUntilMs = g_suspendPollingUntilMs;
+  g_suspendPollingUntilMs = millis() + 2500;
+  Serial.println("[FT-817 FM CONTEXT]");
+
+  uint64_t hz = 0;
+  if (queryFrequency(hz, 800)) {
+    Serial.print("  FREQ:        ");
+    Serial.print(hzToMHzString3(hz));
+    Serial.println(" MHz");
+  } else {
+    Serial.println("  FREQ:        no reply");
+  }
+
+  uint8_t mode = 0xFF;
+  if (queryMode(mode, 800)) {
+    Serial.print("  MODE:        ");
+    Serial.println(modeToString(mode));
+  } else {
+    Serial.println("  MODE:        no reply");
+  }
+
+  uint8_t raw = 0;
+  if (yaesuCatQueryModeRawByte(raw, 800)) {
+    Serial.print("  MODE RAW:    0x");
+    if (raw < 0x10) Serial.print('0');
+    Serial.println(raw, HEX);
+  } else {
+    Serial.println("  MODE RAW:    no reply");
+  }
+
+  if (yaesuCatQueryTxStatusRaw(raw, 800)) {
+    Serial.print("  TX RAW:      0x");
+    if (raw < 0x10) Serial.print('0');
+    Serial.println(raw, HEX);
+  } else {
+    Serial.println("  TX RAW:      no reply");
+  }
+
+  if (yaesuCatQueryRxStatusRaw(raw, 800)) {
+    Serial.print("  RX RAW:      0x");
+    if (raw < 0x10) Serial.print('0');
+    Serial.println(raw, HEX);
+  } else {
+    Serial.println("  RX RAW:      no reply");
+  }
+
+  bool splitOn = false;
+  if (querySplit(splitOn, 800)) {
+    Serial.print("  SPLIT:       ");
+    Serial.println(splitOn ? "on" : "off");
+  } else {
+    printYesNoUnknown("  SPLIT CACHE: ", g_ft8x7SplitKnown, g_ft8x7SplitOn);
+  }
+
+  printLiveToneStateSummary();
+  Serial.println("  CLAR query:  unavailable");
+  Serial.print("  TRACE:       ");
+  Serial.println(g_yaesuCatTrace ? "on" : "off");
+  g_suspendPollingUntilMs = savedSuspendPollingUntilMs;
 }
 
 static uint16_t pbtOffsetToRaw(int offset) {
@@ -387,8 +502,11 @@ void printHelp() {
   Serial.println("    YRPTSHIFT <MHz>");
   Serial.println("    YLOCKRAW OFF | ON");
   Serial.println("    YMODEBYTE?");
+  Serial.println("    YFMCTX?");
+  Serial.println("    YSETMODEQ <hex byte>  (quiet write, then wait)");
   Serial.println("    YRXSTATUS?");
   Serial.println("    YSETMODE <hex byte>");
+  Serial.println("    YTRACE OFF | ON");
   Serial.println("    YTMODE <name|hex>");
   Serial.println("    YTONE <hex>");
   Serial.println("    YTXSTATUS?");
@@ -814,6 +932,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
   if (upper == "YLOCKRAW ON" || upper == "YLOCKRAW OFF") {
     const bool on = (upper == "YLOCKRAW ON");
     yaesuCatSetLockDocumentedRaw(on);
+    rememberDialLockState(on);
     Serial.println(on ? "YLOCKRAW ON -> sent documented FT8x7 raw bytes 00 00 00 00 00"
                       : "YLOCKRAW OFF -> sent documented FT8x7 raw bytes 00 00 00 00 80");
     return true;
@@ -837,10 +956,61 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
       Serial.println("YSETMODE -> use hex byte, e.g. 08, 88, 0A, 0C");
       return true;
     }
+    const bool ft817Debug = currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft817");
+    const uint32_t savedSuspendPollingUntilMs = g_suspendPollingUntilMs;
+    if (ft817Debug) g_suspendPollingUntilMs = millis() + 2500;
+    if (ft817Debug) {
+      const uint8_t cmd[5] = {modeByte, 0x00, 0x00, 0x00, 0x07};
+      Serial.print("YSETMODE CMD: ");
+      yaesuCatPrintFrame(cmd);
+      Serial.println();
+      probeYaesuFt817ModeTxRx("YSETMODE BEFORE");
+    }
     yaesuCatSetModeRawByte(modeByte);
     Serial.print("YSETMODE 0x");
     if (modeByte < 0x10) Serial.print('0');
     Serial.println(modeByte, HEX);
+    if (ft817Debug) {
+      delay(320);
+      probeYaesuFt817ModeTxRx("YSETMODE AFTER");
+      g_suspendPollingUntilMs = savedSuspendPollingUntilMs;
+    }
+    return true;
+  }
+
+  if (upper.startsWith("YSETMODEQ ")) {
+    uint8_t modeByte = 0;
+    if (!parseHexByteString(line.substring(10), modeByte)) {
+      Serial.println("YSETMODEQ -> use hex byte, e.g. 08, 04, 02");
+      return true;
+    }
+    const bool ft817Quiet = currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft817");
+    const uint32_t savedSuspendPollingUntilMs = g_suspendPollingUntilMs;
+    if (ft817Quiet) g_suspendPollingUntilMs = millis() + 2500;
+    yaesuCatFlushInput();
+    delay(120);
+    yaesuCatSetModeRawByte(modeByte);
+    Serial.print("YSETMODEQ 0x");
+    if (modeByte < 0x10) Serial.print('0');
+    Serial.println(modeByte, HEX);
+    Serial.println("  quiet wait...");
+    delay(ft817Quiet ? 1400 : 600);
+    if (ft817Quiet) g_suspendPollingUntilMs = savedSuspendPollingUntilMs;
+    return true;
+  }
+
+  if (upper == "YFMCTX?") {
+    if (!currentProfileVariantIs("ft817")) {
+      Serial.println("YFMCTX? -> FT-817 only");
+      return true;
+    }
+    printYaesuFt817FmContext();
+    return true;
+  }
+
+  if (upper == "YTRACE ON" || upper == "YTRACE OFF") {
+    g_yaesuCatTrace = (upper == "YTRACE ON");
+    Serial.println(g_yaesuCatTrace ? "YTRACE ON" : "YTRACE OFF");
     return true;
   }
 
@@ -937,11 +1107,13 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
   }
   if (upper == "SPLIT ON") {
     yaesuCatSetSplit(true);
+    rememberSplitState(true);
     Serial.println("SPLIT ON");
     return true;
   }
   if (upper == "SPLIT OFF") {
     yaesuCatSetSplit(false);
+    rememberSplitState(false);
     Serial.println("SPLIT OFF");
     return true;
   }
@@ -975,16 +1147,19 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
   if ((upper == "LOCK ON" || upper == "LOCK OFF") && currentProtocolType() == PROTO_YAESU_FT8X7) {
     const bool on = (upper == "LOCK ON");
     yaesuCatSetLockDocumentedRaw(on);
+    rememberDialLockState(on);
     Serial.println(on ? "LOCK ON -> sent documented FT8x7 raw bytes 00 00 00 00 00" : "LOCK OFF -> sent documented FT8x7 raw bytes 00 00 00 00 80");
     return true;
   }
   if (upper == "LOCKDOC ON") {
     yaesuCatSetLockDocumentedRaw(true);
+    rememberDialLockState(true);
     Serial.println("LOCKDOC ON -> sent documented raw bytes 00 00 00 00 00");
     return true;
   }
   if (upper == "LOCKDOC OFF") {
     yaesuCatSetLockDocumentedRaw(false);
+    rememberDialLockState(false);
     Serial.println("LOCKDOC OFF -> sent documented raw bytes 00 00 00 00 80");
     return true;
   }

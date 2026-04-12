@@ -1,21 +1,38 @@
 #include "radio_runtime.h"
 
+#include "engine_civ.h"
 #include "radio_protocol.h"
 #include "radio_state.h"
 #include "radio_utils.h"
 
 bool refreshLiveFrequency() {
-  uint64_t hz = 0;
-  if (!queryFrequency(hz)) return false;
-  rememberLiveFrequency(hz, millis());
-  return true;
+  for (uint8_t attempt = 0; attempt < 3; ++attempt) {
+    uint64_t hz = 0;
+    if (queryFrequency(hz)) {
+      rememberLiveFrequency(hz, millis());
+      return true;
+    }
+    if (attempt < 2) {
+      pumpIncoming(20);
+      delay(25);
+    }
+  }
+  return false;
 }
 
 bool refreshLiveMode() {
-  uint8_t mode = 0xFF;
-  if (!queryMode(mode)) return false;
-  rememberLiveMode(mode, millis());
-  return true;
+  for (uint8_t attempt = 0; attempt < 3; ++attempt) {
+    uint8_t mode = 0xFF;
+    if (queryMode(mode)) {
+      rememberLiveMode(mode, millis());
+      return true;
+    }
+    if (attempt < 2) {
+      pumpIncoming(20);
+      delay(25);
+    }
+  }
+  return false;
 }
 
 bool refreshLiveSmeter() {

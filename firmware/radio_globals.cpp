@@ -13,6 +13,8 @@ bool g_quiet = false;
 bool g_speechEnabled = true;
 bool g_tuningSpeakEnabled = true;
 uint32_t g_suppressFreqSpeakUntilMs = 0;
+uint32_t g_suspendPollingUntilMs = 0;
 LiveState live;
 bool g_ft8x7SplitKnown = false;
 bool g_ft8x7SplitOn = false;
+bool g_yaesuCatTrace = false;

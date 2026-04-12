@@ -1,5 +1,7 @@
 #include "transport_serial.h"
 
+#include "radio_catalog.h"
+
 void serialTransportApplyProfile(const CivProfile& profile) {
   civUart1.end();
   civUart2.end();
@@ -10,7 +12,8 @@ void serialTransportApplyProfile(const CivProfile& profile) {
 
   g_civSerial = (profile.uartNum == 2) ? &civUart2 : &civUart1;
   g_civSerial->end();
-  g_civSerial->begin(profile.baud, SERIAL_8N1, profile.rxPin, profile.txPin);
+  const uint32_t serialConfig = (currentProtocolType() == PROTO_YAESU_FT8X7) ? SERIAL_8N2 : SERIAL_8N1;
+  g_civSerial->begin(profile.baud, serialConfig, profile.rxPin, profile.txPin);
 
   uart_port_t up = (profile.uartNum == 2) ? UART_NUM_2 : UART_NUM_1;
   uint32_t invMask = 0;

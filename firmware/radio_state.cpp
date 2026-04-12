@@ -26,6 +26,8 @@ void resetLiveRadioState() {
   live.activeVfoA = true;
   live.splitKnown = false;
   live.splitOn = false;
+  live.lockKnown = false;
+  live.lockOn = false;
   g_ft8x7SplitKnown = false;
   g_ft8x7SplitOn = false;
 }
@@ -90,4 +92,9 @@ void rememberSplitState(bool on) {
   live.splitOn = on;
   g_ft8x7SplitKnown = true;
   g_ft8x7SplitOn = on;
+}
+
+void rememberDialLockState(bool on) {
+  live.lockKnown = true;
+  live.lockOn = on;
 }

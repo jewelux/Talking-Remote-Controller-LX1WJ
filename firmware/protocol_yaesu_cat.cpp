@@ -2,11 +2,30 @@
 
 #include "transport_serial.h"
 
+static void yaesuCatTraceFrame(const char* label, const uint8_t data[5]) {
+  if (!g_yaesuCatTrace || !Serial) return;
+  Serial.print("[YCAT] ");
+  Serial.print(label);
+  Serial.print(": ");
+  yaesuCatPrintFrame(data);
+  Serial.println();
+}
+
+static void yaesuCatTraceByte(const char* label, uint8_t data) {
+  if (!g_yaesuCatTrace || !Serial) return;
+  Serial.print("[YCAT] ");
+  Serial.print(label);
+  Serial.print(": 0x");
+  if (data < 0x10) Serial.print('0');
+  Serial.println(data, HEX);
+}
+
 void yaesuCatFlushInput() {
   serialTransportFlushInput();
 }
 
 void yaesuCatSend5(const uint8_t data[5]) {
+  yaesuCatTraceFrame("TX", data);
   serialTransportWrite(data, 5);
   serialTransportFlushOutput();
 }
@@ -16,6 +35,7 @@ bool yaesuCatRead1(uint8_t& out, uint32_t timeoutMs) {
   while (millis() - start < timeoutMs) {
     if (serialTransportAvailable()) {
       out = (uint8_t)serialTransportRead();
+      yaesuCatTraceByte("RX1", out);
       return true;
     }
     delay(1);
@@ -29,7 +49,10 @@ bool yaesuCatRead5(uint8_t out[5], uint32_t timeoutMs) {
   while (millis() - start < timeoutMs) {
     while (serialTransportAvailable()) {
       out[n++] = (uint8_t)serialTransportRead();
-      if (n >= 5) return true;
+      if (n >= 5) {
+        yaesuCatTraceFrame("RX5", out);
+        return true;
+      }
     }
     delay(1);
   }

@@ -192,6 +192,11 @@ bool queryDialLock(bool& onOut, uint32_t timeoutMs) {
   const StoredProfile& sp = currentStoredProfile();
   if (pt == PROTO_CIV) return civQueryDialLock(sp, onOut, timeoutMs);
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiQueryLock(sp, onOut, timeoutMs);
+  if (pt == PROTO_YAESU_FT8X7) {
+    if (!live.lockKnown) return false;
+    onOut = live.lockOn;
+    return true;
+  }
   return false;
 }
 
@@ -200,6 +205,11 @@ bool setDialLock(bool on) {
   const StoredProfile& sp = currentStoredProfile();
   if (pt == PROTO_CIV) return civSetDialLock(sp, on);
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiSetLock(sp, on);
+  if (pt == PROTO_YAESU_FT8X7) {
+    if (!yaesuCatSetLockDocumentedRaw(on)) return false;
+    rememberDialLockState(on);
+    return true;
+  }
   return false;
 }
 
@@ -405,8 +415,11 @@ bool querySplit(bool& onOut, uint32_t timeoutMs) {
     }
     uint8_t raw = 0;
     if (!yaesuCatQueryStatusRaw(raw, timeoutMs)) return false;
-    if (currentProfileVariantIs("ft857_897")) onOut = (raw & 0x04) != 0;
-    else onOut = (raw & 0x04) == 0;
+    // BUGFIX V3.5.1: TX-Status-Byte (Opcode 0xF7) Bit-Layout laut KA7OEI/Yaesu-Doku:
+    //   Bit7=0:TX/1:RX  Bit5=1:Split-ON  Bit3=1:HighSWR  Bit2=1:HighALC  Bit1=1:HighPwr
+    // Alter Code verwendete (raw & 0x04) = Bit2 = "High ALC" fuer beide Varianten.
+    // Korrektur: Bit5 = 0x20 ist der Split-Indikator fuer FT-817 und FT-857/897.
+    onOut = (raw & 0x20) != 0;
     rememberSplitState(onOut);
     return true;
   }

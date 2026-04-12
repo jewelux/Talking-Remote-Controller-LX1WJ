@@ -3,6 +3,7 @@
 
 static const char* kSdCardDir = "/SDCard";
 static const char* kSlotsFilePath = "/SDCard/slots.ini";
+static SdLoadStatus g_lastSdLoadStatus = SD_LOAD_NO_VALID_PROFILES;
 
 static String buildSdProfilePath(const String& file) {
   if (!file.length()) return String();
@@ -12,12 +13,14 @@ static String buildSdProfilePath(const String& file) {
 
 bool loadProfilesFromSd() {
   if (!initSdProfiles()) {
+    g_lastSdLoadStatus = SD_LOAD_INIT_FAILED;
     Serial.println("[SD] init failed");
     return false;
   }
 
   File f = SD.open(kSlotsFilePath);
   if (!f) {
+    g_lastSdLoadStatus = SD_LOAD_SLOTS_FILE_MISSING;
     Serial.print("[SD] missing ");
     Serial.println(kSlotsFilePath);
     return false;
@@ -54,6 +57,7 @@ bool loadProfilesFromSd() {
   }
 
   f.close();
+  g_lastSdLoadStatus = any ? SD_LOAD_OK : SD_LOAD_NO_VALID_PROFILES;
   return any;
 }
 
@@ -65,5 +69,24 @@ void printProfileSlots() {
     Serial.print(" -> ");
     if (g_slotProfiles[i].valid) Serial.println(g_slotProfiles[i].civ.name);
     else Serial.println("(empty)");
+  }
+}
+
+SdLoadStatus getLastSdLoadStatus() {
+  return g_lastSdLoadStatus;
+}
+
+const char* getLastSdLoadStatusText() {
+  switch (g_lastSdLoadStatus) {
+    case SD_LOAD_OK:
+      return "OK";
+    case SD_LOAD_INIT_FAILED:
+      return "FAILED: SD init failed";
+    case SD_LOAD_SLOTS_FILE_MISSING:
+      return "FAILED: /SDCard/slots.ini missing";
+    case SD_LOAD_NO_VALID_PROFILES:
+      return "FAILED: no valid SD profiles loaded";
+    default:
+      return "FAILED: unknown";
   }
 }

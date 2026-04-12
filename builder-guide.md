@@ -10,7 +10,7 @@ If you are mainly interested in operating the finished controller, start with th
 The Talking Remote Controller is an accessibility-oriented project for amateur radio transceivers.
 Its goal is to provide a voice-first remote control platform that can be built, adapted, tested, and donated within the amateur radio community.
 
-Version **3.5** is the current modular architecture.
+Version **3.5.1** is the current modular architecture.
 It moves beyond the older single-sketch proof of concept toward a profile-driven platform with SD card based radio definitions.
 
 ---
@@ -55,7 +55,7 @@ See [docs/hardware_wiring.md](docs/hardware_wiring.md) for the current notes.
 ## Firmware Structure
 
 The firmware is no longer a single self-contained sketch only.
-The main file `firmware/TalkingRemoteControllerLX1WJ_V3_5.ino` now ties together a modular codebase for:
+The main file `firmware/TalkingRemoteControllerLX1WJ_V3_5_1.ino` now ties together a modular codebase for:
 
 - protocol handling
 - user interface logic
@@ -70,7 +70,7 @@ This keeps spoken interaction deterministic and independent of online text-to-sp
 
 ## SD Card Profile System
 
-Version 3.5 introduces profile-driven configuration from the SD card.
+Version 3.5.1 introduces profile-driven configuration from the SD card.
 
 Each radio profile can define:
 

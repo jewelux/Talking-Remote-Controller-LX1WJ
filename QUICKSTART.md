@@ -1,4 +1,4 @@
-# Talking Remote Controller LX1WJ - QuickStart (V3.5)
+# Talking Remote Controller LX1WJ - QuickStart (V3.5.1)
 
 ## Purpose
 
@@ -6,7 +6,7 @@ The ESP32 Talking Remote Controller provides spoken feedback for controlling and
 All interaction is performed via a 4x4 keypad and audio output, enabling operation without visual reference.
 The project may also be referred to as **HamTRC-LX1WJ** as a shorter project name.
 
-Version 3.5 uses a modular firmware architecture plus SD card based radio profiles.
+Version 3.5.1 uses a modular firmware architecture plus SD card based radio profiles.
 
 ---
 
@@ -21,7 +21,7 @@ Version 3.5 uses a modular firmware architecture plus SD card based radio profil
 
 ## Basic Setup
 
-1. Open `firmware/TalkingRemoteControllerLX1WJ_V3_5.ino` in Arduino IDE.
+1. Open `firmware/TalkingRemoteControllerLX1WJ_V3_5_1.ino` in Arduino IDE.
 2. Compile for your ESP32-S3 target.
 3. Keep `voice_data.h` in the firmware folder so the speech data is compiled into flash.
 4. Copy the contents of `firmware/SDCard` to the SD card used by the controller.
@@ -49,7 +49,7 @@ The overall keypad philosophy remains the same:
 - **# / CANCEL** -> leave modal flows safely
 - *** / STAR** -> bank-related navigation functions
 
-Because Version 3.5 is profile-driven, the exact mapping can differ by radio family and firmware state.
+Because Version 3.5.1 is profile-driven, the exact mapping can differ by radio family and firmware state.
 
 ---
 

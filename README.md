@@ -4,7 +4,7 @@ The **Talking Remote Controller** is an accessibility-oriented remote control fo
 The project may also be referred to as **HamTRC-LX1WJ** as a shorter project name.
 All interaction and radio status feedback is provided through spoken audio output, enabling operation without visual reference.
 
-Version **3.5** is the current modular architecture.
+Version **3.5.1** is the current modular architecture.
 It extends the earlier single-sketch concept into a profile-driven firmware platform with SD card based radio definitions while preserving the voice-guided operating concept.
 
 ---
@@ -25,6 +25,7 @@ Useful companion documents:
   [ICOM IC-7300](docs/radios/icom-ic-7300.md),
   [Yaesu FT-817](docs/radios/yaesu-ft-817.md),
   [Yaesu FT-857](docs/radios/yaesu-ft-857.md)
+- [Yaesu FT8x7 CAT status](docs/radios/yaesu-ft8x7-status.md)
 - [Yaesu FTDX10 blind test list](docs/radios/yaesu-ftdx10-blind-test-list.txt)
 
 ---
@@ -98,7 +99,7 @@ The builder path covers hardware, firmware structure, profiles, and implementati
 
 ```text
 firmware/
-  TalkingRemoteControllerLX1WJ_V3_5.ino
+  TalkingRemoteControllerLX1WJ_V3_5_1.ino
   *.cpp / *.h modular source files
   voice_data.h
   SDCard/*.ini radio profiles and slots
@@ -140,7 +141,7 @@ This project is provided **for experimental and educational use only**, **AS IS*
 The earlier public repository state was centered around a much simpler single-sketch firmware approach.
 That version already demonstrated the core accessibility concept, but it was still tightly coupled to a smaller set of radios and did not yet reflect the current modular direction of the project.
 
-The current `V3.5` branch introduces several major changes:
+The current `V3.5.1` branch introduces several major changes:
 
 - the firmware moved from one primary sketch to a modular multi-file structure
 - radio handling is now separated into protocol, runtime, UI, and profile-related components

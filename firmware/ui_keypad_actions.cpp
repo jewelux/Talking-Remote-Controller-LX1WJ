@@ -63,6 +63,50 @@ static void speakFrequencyWord() {
   speakToken("frequency");
 }
 
+static bool rejectFt8x7WriteWhileTx(const char* statusLabel) {
+  if (currentProtocolType() != PROTO_YAESU_FT8X7) return false;
+  if (!currentStoredProfile().caps.getRxTx) return false;
+  const bool isFt817 = currentProfileVariantIs("ft817");
+  uint8_t txHits = 0;
+  const uint8_t attempts = isFt817 ? 3 : 1;
+  for (uint8_t i = 0; i < attempts; ++i) {
+    bool tx = false;
+    if (queryRxTxStatus(tx, 800) && tx) ++txHits;
+    if (i + 1 < attempts) delay(40);
+  }
+  if ((isFt817 && txHits < attempts) || (!isFt817 && txHits == 0)) return false;
+  printKeypadStatus(String(statusLabel) + " -> TX");
+  if (g_speechEnabled) {
+    speakToken("transceiver");
+    playSilenceMs(60);
+    speakToken("tx");
+  }
+  return true;
+}
+
+static bool verifyKeypadFrequencyWrite(uint8_t targetVfo, uint64_t expectedHz) {
+  if (currentProtocolType() != PROTO_YAESU_FT8X7) return true;
+  delay(220);
+  uint64_t readHz = 0;
+  bool ok = false;
+  if (targetVfo == 1) ok = queryVfoFrequency(true, readHz, 900);
+  else if (targetVfo == 2) ok = queryVfoFrequency(false, readHz, 900);
+  else ok = queryFrequency(readHz, 900);
+  return ok && readHz == expectedHz;
+}
+
+static bool verifyKeypadModeWrite(uint8_t targetVfo, uint8_t expectedMode) {
+  if (currentProtocolType() != PROTO_YAESU_FT8X7) return true;
+  delay(220);
+  uint8_t readMode = 0xFF;
+  uint8_t filter = 0xFF;
+  bool ok = false;
+  if (targetVfo == 1) ok = queryVfoMode(true, readMode, filter, 900);
+  else if (targetVfo == 2) ok = queryVfoMode(false, readMode, filter, 900);
+  else ok = queryMode(readMode, 900);
+  return ok && readMode == expectedMode;
+}
+
 static constexpr uint16_t kValidCtcssTenths[] = {
   670, 693, 719, 744, 770, 797, 825, 854, 885, 915,
   948, 974, 1000, 1035, 1072, 1109, 1148, 1188, 1230, 1273,
@@ -192,7 +236,17 @@ static void speakNotchCycleState(bool on, NotchWidth width) {
 static void queryBank2Nr() {
   printKeypadCommand("BANK2 1 SHORT -> NR?");
   if (!currentStoredProfile().caps.getNr) return;
-  if (!refreshLiveNr()) return;
+  g_suspendPollingUntilMs = millis() + 900;
+  g_suppressFreqSpeakUntilMs = millis() + 2000;
+  live.tuning = false;
+  live.pendingHz = 0;
+  live.tuningStartSpokenHz = 0;
+  if (g_audioPlaying) audioAbortNow();
+  if (!refreshLiveNr()) {
+    printKeypadStatus("NR? -> no reply");
+    if (g_speechEnabled) speakError();
+    return;
+  }
   printKeypadStatus(live.nrOn ? "NR ON" : "NR OFF");
   speakBinaryFeatureState(voice_noisereduction, voice_noisereduction_len, live.nrOn);
 }
@@ -200,7 +254,17 @@ static void queryBank2Nr() {
 static void queryBank2Nb() {
   printKeypadCommand("BANK2 2 SHORT -> NB?");
   if (!currentStoredProfile().caps.getNb) return;
-  if (!refreshLiveNb()) return;
+  g_suspendPollingUntilMs = millis() + 900;
+  g_suppressFreqSpeakUntilMs = millis() + 2000;
+  live.tuning = false;
+  live.pendingHz = 0;
+  live.tuningStartSpokenHz = 0;
+  if (g_audioPlaying) audioAbortNow();
+  if (!refreshLiveNb()) {
+    printKeypadStatus("NB? -> no reply");
+    if (g_speechEnabled) speakError();
+    return;
+  }
   printKeypadStatus(live.nbOn ? "NB ON" : "NB OFF");
   speakBinaryFeatureState(voice_noiseblanker, voice_noiseblanker_len, live.nbOn);
 }
@@ -208,7 +272,17 @@ static void queryBank2Nb() {
 static void queryBank2Notch() {
   printKeypadCommand("BANK2 3 SHORT -> NOTCH?");
   if (!currentStoredProfile().caps.getNotch) return;
-  if (!refreshLiveNotch()) return;
+  g_suspendPollingUntilMs = millis() + 900;
+  g_suppressFreqSpeakUntilMs = millis() + 2000;
+  live.tuning = false;
+  live.pendingHz = 0;
+  live.tuningStartSpokenHz = 0;
+  if (g_audioPlaying) audioAbortNow();
+  if (!refreshLiveNotch()) {
+    printKeypadStatus("NOTCH? -> no reply");
+    if (g_speechEnabled) speakError();
+    return;
+  }
   if (!live.notchOn) {
     printKeypadStatus("NOTCH OFF");
     speakNotchCycleState(false, NOTCH_WIDTH_UNKNOWN);
@@ -312,9 +386,16 @@ void keypadSendNow(const String& cmd) {
     Serial.print("CMD SEND ");
     Serial.println(cmd);
   }
+  g_suppressFreqSpeakUntilMs = millis() + 2000;
+  live.tuning = false;
+  live.pendingHz = 0;
+  live.tuningStartSpokenHz = 0;
+  if (g_audioPlaying) audioAbortNow();
+  g_suspendPollingUntilMs = millis() + 900;
   g_keypadExecuting = true;
   processCommand(cmd);
   g_keypadExecuting = false;
+  g_suspendPollingUntilMs = millis() + 900;
 }
 
 void keypadEnter() {
@@ -348,6 +429,15 @@ void keypadEnter() {
   }
 
   if (g_freqEntryActive) {
+    g_suspendPollingUntilMs = millis() + 1400;
+    g_suppressFreqSpeakUntilMs = millis() + 2000;
+    if (rejectFt8x7WriteWhileTx("FREQ")) {
+      g_freqEntryActive = false;
+      g_freqEntryDigits = "";
+      g_freqEntryIsMHz = false;
+      g_freqEntryTargetVfo = 0;
+      return;
+    }
     uint64_t hz = g_freqEntryIsMHz ? (uint64_t)g_freqEntryDigits.toInt() * 1000000ULL : (uint64_t)g_freqEntryDigits.toInt() * 1000ULL;
     if (g_freqEntryTargetVfo == 1) printKeypadCommand("ENTER -> VFOA FREQ");
     else if (g_freqEntryTargetVfo == 2) printKeypadCommand("ENTER -> VFOB FREQ");
@@ -378,6 +468,7 @@ void keypadEnter() {
       }
     }
     else ok = applyFrequencyAndTrack(hz, true);
+    if (ok && g_freqEntryTargetVfo != 3) ok = verifyKeypadFrequencyWrite(g_freqEntryTargetVfo, hz);
     if (ok) {
       if (g_freqEntryTargetVfo == 1) printKeypadStatus(String("VFOA: ") + hzToMHzString3(hz) + " MHz");
       else if (g_freqEntryTargetVfo == 2) printKeypadStatus(String("VFOB: ") + hzToMHzString3(hz) + " MHz");
@@ -396,7 +487,8 @@ void keypadEnter() {
       else printKeypadStatus(String("FREQ: ") + hzToMHzString3(hz) + " MHz");
       if (g_speechEnabled) speakDigitsAndPoint(hzToMHzString3(hz));
     } else {
-      printKeypadStatus("FREQ -> failed");
+      printKeypadStatus(currentProtocolType() == PROTO_YAESU_FT8X7 ? "FREQ -> no change" : "FREQ -> failed");
+      if (g_speechEnabled && currentProtocolType() == PROTO_YAESU_FT8X7) speakError();
     }
     g_freqEntryActive = false;
     g_freqEntryDigits = "";
@@ -456,6 +548,15 @@ void keypadEnter() {
   }
 
   if (g_modeStageActive) {
+    g_suspendPollingUntilMs = millis() + 1400;
+    g_suppressFreqSpeakUntilMs = millis() + 2000;
+    if (rejectFt8x7WriteWhileTx("MODE")) {
+      g_modeStageActive = false;
+      g_modeStageMode = 0xFF;
+      g_modeStageTargetVfo = 0;
+      g_modeStageKey = 0;
+      return;
+    }
     if (g_modeStageTargetVfo == 1) printKeypadCommand("ENTER -> VFOA MODE");
     else if (g_modeStageTargetVfo == 2) printKeypadCommand("ENTER -> VFOB MODE");
     else printKeypadCommand("ENTER -> MODE");
@@ -463,13 +564,15 @@ void keypadEnter() {
     if (g_modeStageTargetVfo == 1) ok = setVfoMode(true, g_modeStageMode, 1);
     else if (g_modeStageTargetVfo == 2) ok = setVfoMode(false, g_modeStageMode, 1);
     else ok = applyModeAndTrack(g_modeStageMode, 1);
+    if (ok) ok = verifyKeypadModeWrite(g_modeStageTargetVfo, g_modeStageMode);
     if (ok) {
       if (g_modeStageTargetVfo == 1) printKeypadStatus(String("VFOA MODE: ") + modeToString(g_modeStageMode));
       else if (g_modeStageTargetVfo == 2) printKeypadStatus(String("VFOB MODE: ") + modeToString(g_modeStageMode));
       else printKeypadStatus(String("MODE: ") + modeToString(g_modeStageMode));
       if (g_speechEnabled) playClipProgmem(voice_ok, voice_ok_len);
     } else {
-      printKeypadStatus("MODE -> failed");
+      printKeypadStatus(currentProtocolType() == PROTO_YAESU_FT8X7 ? "MODE -> no change" : "MODE -> failed");
+      if (g_speechEnabled && currentProtocolType() == PROTO_YAESU_FT8X7) speakError();
     }
     g_modeStageActive = false;
     g_modeStageMode = 0xFF;
@@ -558,8 +661,7 @@ void keypadHandleReleased(char k) {
         keypadSendNow("TXFREQ?");
         return;
       case '3':
-        printKeypadCommand("BANK1 3 SHORT -> LOCK?");
-        keypadSendNow("LOCK?");
+        keypadQueryBank1Lock();
         return;
       case '0':
         sendOrStageBank1Command("BANK1 0 SHORT", "FREQ?");

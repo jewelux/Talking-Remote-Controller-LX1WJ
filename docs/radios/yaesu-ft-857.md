@@ -2,7 +2,7 @@
 
 ## Status
 
-The FT-857 is now best understood as part of the broader Yaesu FT8x7 family support in firmware `V3.5`.
+The FT-857 is now best understood as part of the broader Yaesu FT8x7 family support in firmware `V3.5.1`.
 
 For the current public state, please use these documents first:
 
@@ -13,7 +13,7 @@ For the current public state, please use these documents first:
 
 This page is intentionally kept minimal so the repository does not present two conflicting descriptions of the same family.
 
-The FT-857 remains important because it defines much of the `ft857_897` variant behavior, but the detailed keypad and CAT status now live in the family-level pages above.
+The FT-857 remains important because it defines much of the `ft857_897` variant behavior, and `V3.5.1` tightens that shared logic around split handling and keypad write safety.
 
 ## Summary
 
@@ -21,7 +21,14 @@ Current FT-857 strengths in the project include:
 
 - documented CAT core functions verified on real hardware
 - reliable handling of frequency and mode control
-- verified lock, VFO toggle, repeater, tone, DCS, metering, and RX/TX query paths
+- verified lock, VFO toggle, repeater, tone, DCS, metering, RX/TX query, and split control paths
 - shared FT8x7 keypad structure with family-specific limitations clearly documented
 
 Known limitations are intentionally tracked in the FT8x7 family status page rather than repeated here.
+
+Important `V3.5.1` notes:
+
+- the shipped profile now exposes split query and split set
+- split status decoding was corrected to the proper FT8x7 TX-status bit
+- Bank 6 repeater and tone defaults are now included in the shipped profile
+- manual front-panel A/B changes can still require keypad resync before absolute VFO operations

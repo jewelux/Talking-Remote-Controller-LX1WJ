@@ -41,7 +41,7 @@ The goal of this document is to separate:
 
 | Function | Status |
 |---|---|
-| RX/TX status bit interpretation | raw commands exist, bit meaning not fully documented from a primary source |
+| RX/TX status bit interpretation | raw commands exist, but keypad `RXTX?` is currently disabled for FT-817 because practical results are unstable |
 | Meter/status interpretation | partially usable, not fully finalized |
 
 ### Experimental or incomplete
@@ -113,8 +113,7 @@ The goal of this document is to separate:
 
 ## Notes
 
-- The keypad layout for this family is documented separately in [FT8X7_KEYPAD.md](./FT8X7_KEYPAD.md).
+- The keypad layout for this family is documented separately in [yaesu-ft8x7-keypad.md](./yaesu-ft8x7-keypad.md).
 - Repeater and tone functions are now concentrated in Bank 6.
 - For FT-857/897, only functions that behaved well in practical testing should be considered product-ready.
 - The recent FT-857/897 Bank 3 work was intentionally kept separate from the FT-817 branch logic; FT-817 and FT-857/897 now have different keypad handling where that matches real device behavior better.
-- FT-897 still needs practical device testing.

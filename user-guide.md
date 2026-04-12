@@ -1,6 +1,6 @@
 # Talking Remote Controller LX1WJ - User Guide (English)
 
-**Firmware:** `firmware/TalkingRemoteControllerLX1WJ_V3_5.ino`  
+**Firmware:** `firmware/TalkingRemoteControllerLX1WJ_V3_5_1.ino`  
 **Board:** ESP32-S3 DevKitC-1 (N16R8)
 
 ---

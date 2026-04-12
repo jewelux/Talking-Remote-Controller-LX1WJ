@@ -50,6 +50,7 @@ void pollFrequencyIfDue() {
   if (!currentStoredProfile().caps.getFreq) return;
 
   const uint32_t now = millis();
+  if ((int32_t)(now - g_suspendPollingUntilMs) < 0) return;
   if (now - live.lastFreqPollMs < FREQ_POLL_MS) return;
   live.lastFreqPollMs = now;
 
@@ -87,6 +88,7 @@ void handleSMeterRaw(int32_t raw) {
 void pollSMeterIfDue() {
   if (!SMETER_POLL_ENABLE) return;
   const uint32_t now = millis();
+  if ((int32_t)(now - g_suspendPollingUntilMs) < 0) return;
   if (now - live.lastSmPollMs < SMETER_POLL_MS) return;
   live.lastSmPollMs = now;
   int32_t raw = 0;

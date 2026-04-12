@@ -3,6 +3,7 @@
 #include "protocol_ascii.h"
 #include "protocol_yaesu_cat.h"
 #include "radio_protocol.h"
+#include "radio_state.h"
 
 static bool yaesuCatQueryMeterByte(uint8_t cmdByte, int32_t& rawOut, uint32_t timeoutMs) {
   const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, cmdByte};
@@ -42,14 +43,10 @@ bool yaesuCatSetFrequency(const StoredProfile& sp, uint64_t hz) {
   yaesuCatEncodeFreqHz(hz, cmd);
   yaesuCatFlushInput();
   yaesuCatSend5(cmd);
-  delay(80);
-  uint64_t readHz = 0;
-  if (queryFrequency(readHz, 800) && (readHz == hz)) return true;
-  delay(120);
-  if (queryFrequency(readHz, 800) && (readHz == hz)) return true;
-  // FT-817/857 frequency writes are write-only in practice. If readback races
-  // or returns stale data, keep the successful write instead of reporting a
-  // false failure to the UI.
+  // FT-817/857 frequency writes behave like write-only commands in practice.
+  // Avoid querying immediately afterward because the follow-up CAT traffic can
+  // steal the bus before the radio settles the new value.
+  delay(140);
   return true;
 }
 
@@ -69,8 +66,10 @@ bool yaesuCatSetMode(const StoredProfile& sp, uint8_t mode) {
   if (!profileModeCodeForInternal(sp, mode, code)) return false;
   if (!parseHexByteString(code, modeByte)) return false;
   if (!yaesuCatSetModeRawByte(modeByte)) return false;
-  uint8_t readMode = 0xFF;
-  return queryMode(readMode, 800) && (readMode == mode);
+  // FT-817/857 mode writes also need quiet time after the raw write command.
+  // A direct readback right here is more likely to interfere than to help.
+  delay(140);
+  return true;
 }
 
 bool yaesuCatSetModeRawByte(uint8_t modeByte) {
@@ -94,7 +93,19 @@ bool yaesuCatQuerySWRRaw(const StoredProfile& sp, int32_t& rawOut, uint32_t time
 }
 
 bool yaesuCatQueryAlcRaw(int32_t& rawOut, uint32_t timeoutMs) {
-  return yaesuCatQueryMeterByte(0xBB, rawOut, timeoutMs);
+  // BUGFIX V3.5.1: Opcode 0xBB = EEPROM Read auf FT-817/857. Das Radio antwortet mit
+  // 2 Bytes (nicht 1). Der alte Code las nur 1 Byte, das zweite blieb im RX-Puffer
+  // und korrumpierte die naechste Frequenzabfrage (Frame-Shift um 1 Byte).
+  // Fix: beide Bytes lesen und das zweite verwerfen.
+  const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, 0xBB};
+  yaesuCatFlushInput();
+  yaesuCatSend5(cmd);
+  uint8_t b0 = 0;
+  uint8_t b1 = 0;
+  if (!yaesuCatRead1(b0, timeoutMs)) return false;
+  yaesuCatRead1(b1, 50);  // zweites Byte lesen und verwerfen
+  rawOut = b0;
+  return true;
 }
 
 bool yaesuCatQueryVolumeRaw(int32_t& rawOut, uint32_t timeoutMs) {
@@ -125,11 +136,39 @@ bool yaesuCatToggleVfo() {
 }
 
 bool yaesuCatSelectVfoA() {
-  return false;
+  // BUGFIX V3.5.1: War ein Stub (return false). Alle Aufrufer (selectVfoA,
+  // queryVfoFrequency, setVfoFrequency, queryVfoMode, setVfoMode) schlugen dadurch
+  // lautlos fehl. Frequenzschreiben auf VFO A/B meldete fälschlich "Error".
+  //
+  // FT-817 hat keinen direkten "Gehe zu VFO A"-Befehl. Einzige Moeglichkeit:
+  // Toggle (0x81) wenn wir wissen dass gerade VFO B aktiv ist.
+  // Ist der aktive VFO unbekannt oder bereits A -> nichts senden, als OK melden.
+  if (!live.activeVfoKnown || live.activeVfoA) {
+    rememberActiveVfo(true);
+    return true;
+  }
+  // Aktuell auf VFO B -> einmal toggeln um auf A zu wechseln
+  const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, 0x81};
+  yaesuCatFlushInput();
+  yaesuCatSend5(cmd);
+  delay(60);
+  rememberActiveVfo(true);
+  return true;
 }
 
 bool yaesuCatSelectVfoB() {
-  return false;
+  // BUGFIX V3.5.1: War ein Stub (return false). Siehe yaesuCatSelectVfoA().
+  if (!live.activeVfoKnown || !live.activeVfoA) {
+    rememberActiveVfo(false);
+    return true;
+  }
+  // Aktuell auf VFO A -> einmal toggeln um auf B zu wechseln
+  const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, 0x81};
+  yaesuCatFlushInput();
+  yaesuCatSend5(cmd);
+  delay(60);
+  rememberActiveVfo(false);
+  return true;
 }
 
 bool yaesuCatSetPtt(bool on) {
@@ -169,13 +208,21 @@ bool yaesuCatSetPowerDocumentedRaw(bool on) {
 }
 
 bool yaesuCatMemoryWrite() {
-  const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, 0x0A};
-  return yaesuCatSendWriteOnly(cmd);
+  // BUGFIX V3.5.1: Opcode 0x0A ist auf FT-817/857 "Set CTCSS/DCS Mode" (NICHT
+  // "Memory Write"). [0x00,0x00,0x00,0x00,0x0A] = Mode 0x00 = CTCSS/DCS ausschalten.
+  // Aufruf dieses Befehls hat unbeabsichtigt CTCSS auf dem Radio deaktiviert!
+  // Einen "Memory Write"-CAT-Befehl gibt es beim FT8x7 nicht.
+  // Funktion deaktiviert um Radio-Einstellungen zu schuetzen.
+  return false;
 }
 
 bool yaesuCatMemoryReadRaw(uint8_t rsp[5], uint32_t timeoutMs) {
-  const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, 0x0B};
-  return yaesuCatTransact5(cmd, rsp, timeoutMs);
+  // HINWEIS: Opcode 0x0B ist auf FT-817/857 "Set CTCSS Tone" (Write-Only).
+  // Ein "Memory Read"-Befehl existiert beim FT8x7 nicht via CAT.
+  // Diese Funktion ist nicht implementierbar und gibt immer false zurueck.
+  (void)rsp;
+  (void)timeoutMs;
+  return false;
 }
 
 bool yaesuCatSetAgcMode(uint8_t modeByte) {

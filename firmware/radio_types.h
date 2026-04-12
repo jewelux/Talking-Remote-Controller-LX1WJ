@@ -320,4 +320,6 @@ struct LiveState {
   bool activeVfoA = true;
   bool splitKnown = false;
   bool splitOn = false;
+  bool lockKnown = false;
+  bool lockOn = false;
 };
