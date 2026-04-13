@@ -1,10 +1,10 @@
 # FT8x7 Keypad Layout
 
-This document describes the current keypad layout for the Yaesu FT-817, FT-857, and FT-897 family in relation to the Icom-driven keypad structure already used elsewhere in the project.
+This document describes the current keypad layout for the Yaesu FT-817, FT-857, and FT-897 family.
 
 The intention is:
 
-- keep the overall bank structure consistent with the IC-7300
+- keep the overall bank structure consistent across the FT8x7 family
 - only expose functions that are documented and practically usable
 - move repeater and tone functions into a dedicated Bank 6
 - Bank 6 now favors direct manual entry for repeater offset, CTCSS, and DCS, with only a small set of SD-card defaults in `[bank6]`
@@ -17,47 +17,47 @@ Important practical note:
 
 ## Bank 1
 
-| Key | Icom | FT-817 | FT-857/897 |
-|---|---|---|---|
-| `T0 short` | `FREQ?` | `FREQ?` | `FREQ?` |
-| `T0 long` | `FREQ set` | `FREQ set` | `FREQ set` |
-| `T1 short` | `RXTX?` | `RXTX?` | `RXTX?` |
-| `T2 short` | `TXFREQ?` | `TXFREQ?` | `TXFREQ?` with FT8x7 fallback |
-| `T3 short` | `LOCK?` | `LOCK?` | no clean readback |
-| `T3 long` | `LOCK toggle` | `LOCK toggle` | not placed on keypad |
-| `T4 short` | `PO?` | experimental | experimental |
-| `T7 short` | `SM?` | `SM?` | `SM?` |
-| `T8 short` | `SWR?` | experimental | experimental |
-| `T9 short` | `MODE?` | `MODE?` | `MODE?` |
-| `T9 long` | `MODE set` | `MODE set` | `MODE set` |
+| Key | FT-817 | FT-857/897 |
+|---|---|---|
+| `T0 short` | `FREQ?` | `FREQ?` |
+| `T0 long` | `FREQ set` | `FREQ set` |
+| `T1 short` | `RXTX?` | `RXTX?` |
+| `T2 short` | `TXFREQ?` | `TXFREQ?` with FT8x7 fallback |
+| `T3 short` | `LOCK?` | no clean readback |
+| `T3 long` | `LOCK toggle` | not placed on keypad |
+| `T4 short` | experimental | experimental |
+| `T7 short` | `SM?` | `SM?` |
+| `T8 short` | experimental | experimental |
+| `T9 short` | `MODE?` | `MODE?` |
+| `T9 long` | `MODE set` | `MODE set` |
 
 ## Bank 3
 
-| Key | Icom | FT-817 | FT-857/897 |
-|---|---|---|---|
-| `T0 short` | `SPLIT?` | `SPLIT?` | `SPLIT?` |
-| `T0 long` | `SPLIT toggle` | `SPLIT toggle` | `SPLIT toggle` |
-| `T0 double` | `TXFREQ?` | `TXFREQ?` | `TXFREQ?` |
-| `T1 short` | `VFOA?` | current `VFOA/VFOB?` | current `VFOA/VFOB?` |
-| `T1 long` | `VFO A` | current tracked `VFOA/VFOB FREQ set` | `A/B` |
-| `T1 double` | `VFOA FREQ` | current tracked `VFOA/VFOB FREQ set` | current `VFOA/VFOB FREQ` |
-| `T2 short` | `VFOB?` | other `VFOA/VFOB?` | other `VFOA/VFOB?` |
-| `T2 long` | `VFO B` | other tracked `VFOA/VFOB FREQ set` | reserved |
-| `T2 double` | `VFOB FREQ` | other tracked `VFOA/VFOB FREQ set` | other `VFOA/VFOB FREQ` |
-| `T3 short` | free | `VFOA MODE?` | free |
-| `T3 long` | free | `VFOA MODE set` | free |
-| `T4 short` | `VFOA MODE?` | `SYNC VFOA` | `SYNC VFOA` |
-| `T4 long` | `VFOA MODE set` | `SYNC VFOB` | `SYNC VFOB` |
-| `T5 short` | `VFOB MODE?` | `VFOB MODE?` | `CLAR ON` |
-| `T5 long` | `VFOB MODE set` | `VFOB MODE set` | `CLAR OFF` |
-| `T6 short` | tx/rx related | active `VFO A` | `RX` |
-| `T6 long` | tx/rx related | active `VFO B` | `TX` |
-| `T7 short` | `BSTACK? 1` | `BSTACK? 1` | `BSTACK? 1` |
-| `T7 long` | `BSTACK 1` | `BSTACK 1` | `BSTACK 1` |
-| `T8 short` | `BSTACK? 2` | `BSTACK? 2` | `BSTACK? 2` |
-| `T8 long` | `BSTACK 2` | `BSTACK 2` | `BSTACK 2` |
-| `T9 short` | `BSTACK? 3` | `BSTACK? 3` | `BSTACK? 3` |
-| `T9 long` | `BSTACK 3` | `BSTACK 3` | `BSTACK 3` |
+| Key | FT-817 | FT-857/897 |
+|---|---|---|
+| `T0 short` | `SPLIT?` | `SPLIT?` |
+| `T0 long` | `SPLIT toggle` | `SPLIT toggle` |
+| `T0 double` | `TXFREQ?` | `TXFREQ?` |
+| `T1 short` | current `VFOA/VFOB?` | current `VFOA/VFOB?` |
+| `T1 long` | current tracked `VFOA/VFOB FREQ set` | `A/B` |
+| `T1 double` | current tracked `VFOA/VFOB FREQ set` | current `VFOA/VFOB FREQ` |
+| `T2 short` | other `VFOA/VFOB?` | other `VFOA/VFOB?` |
+| `T2 long` | other tracked `VFOA/VFOB FREQ set` | reserved |
+| `T2 double` | other tracked `VFOA/VFOB FREQ set` | other `VFOA/VFOB FREQ` |
+| `T3 short` | `VFOA MODE?` | free |
+| `T3 long` | `VFOA MODE set` | free |
+| `T4 short` | `SYNC VFOA` | `SYNC VFOA` |
+| `T4 long` | `SYNC VFOB` | `SYNC VFOB` |
+| `T5 short` | `VFOB MODE?` | `CLAR ON` |
+| `T5 long` | `VFOB MODE set` | `CLAR OFF` |
+| `T6 short` | active `VFO A` | `RX` |
+| `T6 long` | active `VFO B` | `TX` |
+| `T7 short` | `BSTACK? 1` | `BSTACK? 1` |
+| `T7 long` | `BSTACK 1` | `BSTACK 1` |
+| `T8 short` | `BSTACK? 2` | `BSTACK? 2` |
+| `T8 long` | `BSTACK 2` | `BSTACK 2` |
+| `T9 short` | `BSTACK? 3` | `BSTACK? 3` |
+| `T9 long` | `BSTACK 3` | `BSTACK 3` |
 
 FT-817 Bank 3 note:
 
@@ -67,26 +67,26 @@ FT-817 Bank 3 note:
 
 ## Bank 6
 
-| Key | Icom | FT-817 | FT-857/897 |
-|---|---|---|---|
-| `T0 short` | free | `RPT OFF` | `RPT OFF` |
-| `T0 long` | free | `RPT MINUS` | `RPT MINUS` |
-| `T0 double` | free | `RPT PLUS` | `RPT PLUS` |
-| `T1 short` | free | `RPTSHIFT 0.600` | `RPTSHIFT 0.600` |
-| `T1 long` | free | `RPTSHIFT 7.600` | `RPTSHIFT 7.600` |
-| `T1 double` | free | `RPTSHIFT entry` | `RPTSHIFT entry` |
-| `T2 short` | free | `TONE OFF` | `TONE OFF` |
-| `T2 long` | free | `TONE CTCSS` | `TONE CTCSS` |
-| `T2 double` | free | `TONE DCS` | `TONE DCS` |
-| `T3 short` | free | `CTCSS 88.5` | `CTCSS 88.5` |
-| `T3 long` | free | `CTCSS entry` | `CTCSS entry` |
-| `T4 short` | free | `DCS 023` | `DCS 023` |
-| `T4 long` | free | `DCS entry` | `DCS entry` |
-| `T5 short` | free | free | free |
-| `T6 short` | free | free | free |
-| `T7 short` | free | free | free |
-| `T8 short` | free | free | free |
-| `T9 short` | free | free | free |
+| Key | FT-817 | FT-857/897 |
+|---|---|---|
+| `T0 short` | `RPT OFF` | `RPT OFF` |
+| `T0 long` | `RPT MINUS` | `RPT MINUS` |
+| `T0 double` | `RPT PLUS` | `RPT PLUS` |
+| `T1 short` | `RPTSHIFT 0.600` | `RPTSHIFT 0.600` |
+| `T1 long` | `RPTSHIFT 7.600` | `RPTSHIFT 7.600` |
+| `T1 double` | `RPTSHIFT entry` | `RPTSHIFT entry` |
+| `T2 short` | `TONE OFF` | `TONE OFF` |
+| `T2 long` | `TONE CTCSS` | `TONE CTCSS` |
+| `T2 double` | `TONE DCS` | `TONE DCS` |
+| `T3 short` | `CTCSS 88.5` | `CTCSS 88.5` |
+| `T3 long` | `CTCSS entry` | `CTCSS entry` |
+| `T4 short` | `DCS 023` | `DCS 023` |
+| `T4 long` | `DCS entry` | `DCS entry` |
+| `T5 short` | free | free |
+| `T6 short` | free | free |
+| `T7 short` | free | free |
+| `T8 short` | free | free |
+| `T9 short` | free | free |
 
 For Bank 6 tone handling, `T2` is an explicit mode selector:
 
@@ -96,17 +96,17 @@ For Bank 6 tone handling, `T2` is an explicit mode selector:
 
 ## Bank 9
 
-| Key | Icom | FT-817 | FT-857/897 |
-|---|---|---|---|
-| `A short` | `PROFILE?` | `PROFILE?` | `PROFILE?` |
-| `A long` | `PROFILE SELECT` | `PROFILE SELECT` (`1..24`, one or two digits, then `Enter`) | `PROFILE SELECT` (`1..24`, one or two digits, then `Enter`) |
-| `B short` | `PROFILE NEXT` | `PROFILE NEXT` | `PROFILE NEXT` |
-| `C short` | `PROFILE PREV` | `PROFILE PREV` | `PROFILE PREV` |
-| `T4 short` | `TUNINGSPEECH?` | same | same |
-| `T4 long` | `TUNINGSPEECH toggle` | same | same |
-| `T7 short` | `speech volume 1` | same | same |
-| `T8 short` | `speech volume 2` | same | same |
-| `T9 short` | `speech volume 3` | same | same |
+| Key | FT-817 | FT-857/897 |
+|---|---|---|
+| `A short` | `PROFILE?` | `PROFILE?` |
+| `A long` | `PROFILE SELECT` (`1..24`, one or two digits, then `Enter`) | `PROFILE SELECT` (`1..24`, one or two digits, then `Enter`) |
+| `B short` | `PROFILE NEXT` | `PROFILE NEXT` |
+| `C short` | `PROFILE PREV` | `PROFILE PREV` |
+| `T4 short` | same | same |
+| `T4 long` | same | same |
+| `T7 short` | same | same |
+| `T8 short` | same | same |
+| `T9 short` | same | same |
 
 ## Known Limits
 
