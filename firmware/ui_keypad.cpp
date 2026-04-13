@@ -1674,34 +1674,26 @@ static void setBank6ToneModeDcs() {
 
 static void queryBank6CtcssDefault() {
   char label[12] = "";
-  uint16_t toneTenths = live.ctcssValid ? live.ctcssTenths : currentFt8x7DefaultCtcssTenths();
+  const uint16_t toneTenths = currentFt8x7DefaultCtcssTenths();
   formatCtcssTenthsLabel(toneTenths, label, sizeof(label));
   printKeypadCommand(String("BANK6 3 SHORT -> CTCSS ") + label);
   if (!isFt8x7Keypad()) {
     printKeypadStatus("BANK6 reserved");
     return;
   }
-  printKeypadStatus(String("CTCSS ") + label);
-  if (!g_speechEnabled) return;
-  speakToken("ctcss");
-  playSilenceMs(60);
-  speakDigitsAndPoint(label);
+  setBank6Ft8x7DefaultCtcss();
 }
 
 static void queryBank6DcsDefault() {
   char label[8] = "";
-  const uint16_t dcsCode = live.dcsValid ? live.dcsCode : currentFt8x7DefaultDcsCode();
+  const uint16_t dcsCode = currentFt8x7DefaultDcsCode();
   snprintf(label, sizeof(label), "%03u", (unsigned)dcsCode);
   printKeypadCommand(String("BANK6 4 SHORT -> DCS ") + label);
   if (!isFt8x7Keypad()) {
     printKeypadStatus("BANK6 reserved");
     return;
   }
-  printKeypadStatus(String("DCS ") + label);
-  if (!g_speechEnabled) return;
-  speakToken("dcs");
-  playSilenceMs(60);
-  speakDigitsAndPoint(label);
+  setBank6Ft8x7DefaultDcs();
 }
 
 static bool handleDeferredShortRelease(uint8_t bank, char key) {

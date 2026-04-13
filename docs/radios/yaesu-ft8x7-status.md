@@ -34,8 +34,11 @@ The goal of this document is to separate:
 | DCS code write | implemented and verified |
 | Power on/off | implemented and verified |
 | Bank 3 split keypad workflow | implemented and verified |
-| Bank 3 current/other VFO keypad workflow | implemented and verified |
+| Bank 3 current/other VFO frequency read workflow | implemented and verified |
+| Bank 3 current/other VFO staged frequency entry | implemented and verified |
+| Bank 3 `VFOA MODE` on `T3` | implemented and verified |
 | Bank 3 sync `VFOA/VFOB` | implemented and verified |
+| Bank 3 active `VFO A/B` selection on `T6` | implemented and verified |
 
 ### Implemented but still incomplete
 
@@ -43,6 +46,8 @@ The goal of this document is to separate:
 |---|---|
 | RX/TX status bit interpretation | raw commands exist, but keypad `RXTX?` is currently disabled for FT-817 because practical results are unstable |
 | Meter/status interpretation | partially usable, not fully finalized |
+| Hidden FT-817 background conditions around some documented CAT functions | practical tests suggest the documented commands can work correctly, but the exact conditions for stable behavior are still not fully mapped |
+| Repeater and tone/DCS write paths outside normal VHF/UHF FM context | CAT bytes are implemented, but practical success is much more predictable when the radio is already on `2 m` or `70 cm` and already in `FM` |
 
 ### Experimental or incomplete
 
@@ -90,6 +95,7 @@ The goal of this document is to separate:
 |---|---|
 | Split on/off | currently usable from keypad, but should still be cross-checked more broadly |
 | Split status query | currently usable from keypad, but should still be cross-checked more broadly |
+| Repeater and tone/DCS write paths outside normal FM repeater context | CAT bytes are implemented, but practical success can still depend on the radio already being in the appropriate VHF/UHF band and FM context |
 | FT-857/897 VFO tracking after manual front-panel A/B changes | keypad workflow is usable, but sync is recommended |
 
 ### Experimental or incomplete
@@ -115,5 +121,7 @@ The goal of this document is to separate:
 
 - The keypad layout for this family is documented separately in [yaesu-ft8x7-keypad.md](./yaesu-ft8x7-keypad.md).
 - Repeater and tone functions are now concentrated in Bank 6.
+- Profile selection in the current firmware supports up to 24 slots. On the keypad this means Bank 9 `A` long, then one or two digits, then `Enter`.
+- For FT8x7 repeater work, `FM` on the intended `VHF/UHF` band should be treated as a practical precondition, not just a recommendation.
 - For FT-857/897, only functions that behaved well in practical testing should be considered product-ready.
 - The recent FT-857/897 Bank 3 work was intentionally kept separate from the FT-817 branch logic; FT-817 and FT-857/897 now have different keypad handling where that matches real device behavior better.

@@ -23,6 +23,7 @@ Current FT-817 strengths in the project include:
 - reliable handling of frequency and mode control with keypad-side write verification
 - verified lock, split, VFO, clarifier, repeater, tone, DCS, and power test paths
 - alignment with the shared FT8x7 keypad structure where practical
+- the newer FT-817 Bank 3 layout that now gives `VFOA MODE` its own direct keypad position while keeping `SYNC` and explicit active-`VFO A/B` selection
 
 Important `V3.5.1` notes:
 
@@ -30,3 +31,5 @@ Important `V3.5.1` notes:
 - split status now uses the correct TX-status bit interpretation
 - keypad writes are blocked while the radio reports TX to avoid accidental changes on air
 - keypad `RXTX?` remains disabled on FT-817 because field results are still not stable enough
+- repeater and tone functions should be treated as an `FM` plus `2 m/70 cm` workflow; outside that context, the radio may ignore otherwise documented CAT writes
+- recent testing suggests some documented FT-817 CAT commands still depend on background radio state that is not yet fully characterized, so more field testing is still needed

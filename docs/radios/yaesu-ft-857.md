@@ -32,3 +32,4 @@ Important `V3.5.1` notes:
 - split status decoding was corrected to the proper FT8x7 TX-status bit
 - Bank 6 repeater and tone defaults are now included in the shipped profile
 - manual front-panel A/B changes can still require keypad resync before absolute VFO operations
+- repeater and tone/DCS writes are still best treated as a practical `VHF/UHF + FM` workflow even when the documented CAT bytes are correct

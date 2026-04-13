@@ -403,6 +403,7 @@ void printHelp() {
   Serial.println("    AK?");
   Serial.println("    BANK?");
   Serial.println("    BANK NEXT | PREV");
+  Serial.println("    BANK <1..9>");
   Serial.println("    BSTACK <1..3>");
   Serial.println("    BSTACK? <1..3>");
   Serial.println("    FB? | FB <kHz> | FBMHZ <MHz>");
@@ -2018,7 +2019,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
 
 static bool handleConsoleBankCommands(const String& line, const String& upper) {
   if (upper == "BANK NEXT") {
-    uint8_t nextBank = (uiGetBank() >= 3) ? 1 : (uint8_t)(uiGetBank() + 1);
+    uint8_t nextBank = (uiGetBank() >= 9) ? 1 : (uint8_t)(uiGetBank() + 1);
     uiSetBank(nextBank);
     Serial.print("OK BANK ");
     Serial.println((int)nextBank);
@@ -2026,7 +2027,7 @@ static bool handleConsoleBankCommands(const String& line, const String& upper) {
     return true;
   }
   if (upper == "BANK PREV") {
-    uint8_t prevBank = (uiGetBank() <= 1) ? 3 : (uint8_t)(uiGetBank() - 1);
+    uint8_t prevBank = (uiGetBank() <= 1) ? 9 : (uint8_t)(uiGetBank() - 1);
     uiSetBank(prevBank);
     Serial.print("OK BANK ");
     Serial.println((int)prevBank);
@@ -2035,7 +2036,7 @@ static bool handleConsoleBankCommands(const String& line, const String& upper) {
   }
   if (upper.startsWith("BANK ")) {
     int b = line.substring(5).toInt();
-    if (b < 1 || b > 3) { Serial.println("BANK -> invalid (use 1..3)"); speakError(); return true; }
+    if (b < 1 || b > 9) { Serial.println("BANK -> invalid (use 1..9)"); speakError(); return true; }
     uiSetBank((uint8_t)b);
     Serial.print("OK BANK ");
     Serial.println((int)b);
