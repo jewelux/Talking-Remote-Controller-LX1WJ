@@ -33,6 +33,10 @@ Important practical note:
 
 ## Bank 3
 
+FT-817 note:
+
+- If the spoken `SPLIT?` state is out of sync, toggle `T0 long` a few times to bring the spoken state back into sync with the radio.
+
 | Key | FT-817 | FT-857/897 |
 |---|---|---|
 | `T0 short` | `SPLIT?` | `SPLIT?` |
