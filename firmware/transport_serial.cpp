@@ -7,12 +7,17 @@ void serialTransportApplyProfile(const CivProfile& profile) {
   civUart2.end();
   pinMode(CIV_TX_PIN, INPUT);
   pinMode(RS232_TX_PIN, INPUT);
-  pinMode(CAT_TX_PIN, INPUT);
+  pinMode(CAT_TX_PIN, INPUT_PULLUP);
   pinMode(CAT_RX_PIN, INPUT);
 
   g_civSerial = (profile.uartNum == 2) ? &civUart2 : &civUart1;
   g_civSerial->end();
   const uint32_t serialConfig = (currentProtocolType() == PROTO_YAESU_FT8X7) ? SERIAL_8N2 : SERIAL_8N1;
+  if (currentProtocolType() == PROTO_YAESU_FT8X7) {
+    digitalWrite(profile.txPin, profile.txInvert ? LOW : HIGH);
+    pinMode(profile.txPin, OUTPUT);
+    delay(5);
+  }
   g_civSerial->begin(profile.baud, serialConfig, profile.rxPin, profile.txPin);
 
   uart_port_t up = (profile.uartNum == 2) ? UART_NUM_2 : UART_NUM_1;

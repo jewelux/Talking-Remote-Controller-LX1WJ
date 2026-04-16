@@ -1,188 +1,101 @@
-# FTDX10 First Test Plan
+# Yaesu FTDX10 Family Test Plan
 
-This is the first serial-monitor validation plan for the Yaesu `FTDX10` family.
+This is the short technical serial test plan for the current **V3.5.4** FTDX10 family block.
 
 Target profiles:
+
 - `PROFILE 11` = `FTDX10`
 - `PROFILE 12` = `FTDX101D`
 - `PROFILE 13` = `FTDX101MP`
 
-The current implementation is based on the documented Yaesu ASCII CAT command set used by the `FTDX10` reference manual.
-
-## Goal
-
-Verify the first safe and useful CAT feature block before moving anything to dedicated keypad behavior.
-
-Included in this first block:
-- frequency read and set
-- mode read and set
-- VFO A/B select
-- VFO-A and VFO-B frequency read and set
-- split read and set
-- S-meter
-- power meter
-- SWR meter
-- NR
-- NB
-- notch
-- lock
-- tuner on/off/tune
-- preamp query and set
-- AGC query and set
-- power state query and set
-
-## Preparation
-
-1. Connect the radio with CAT enabled.
-2. Use the correct serial speed for the profile.
-3. Open the serial monitor.
-4. Select the profile:
+## Confirm First
 
 ```text
 PROFILE 11
 PROFILE?
+ID?
+IF?
+FREQ?
+MODE?
 ```
 
 Expected:
-- active profile is `Yaesu FTDX-10`
 
-## Core Radio Test
+- the intended profile loads
+- `ID?` and `IF?` reply
+- frequency and mode reply
+
+## Safe Core Test
 
 ```text
+FREQ 14100
 FREQ?
+MODE USB
 MODE?
 SM?
 PO?
 SWR?
-MODE USB
-MODE?
 ```
 
-Expected:
-- all queries return a reply
-- `MODE USB` is accepted
-- `MODE?` reports the changed mode
-
-## VFO And Split Test
+## VFO And Split
 
 ```text
 VFO A
 VFOA?
 VFO B
 VFOB?
+VFOA MODE?
+VFOB MODE?
 SPLIT?
 SPLIT ON
 SPLIT?
 SPLIT OFF
-SPLIT?
 ```
 
-Expected:
-- `VFO A` and `VFO B` are accepted
-- `VFOA?` and `VFOB?` return frequencies
-- `SPLIT?` changes consistently after `SPLIT ON/OFF`
-
-## Lock And Tuner Test
-
-```text
-LOCK?
-LOCK ON
-LOCK?
-LOCK OFF
-LOCK?
-TUNER?
-TUNER ON
-TUNER?
-TUNE
-TUNER OFF
-TUNER?
-```
-
-Expected:
-- lock state changes are visible in replies and, if practical, on the radio
-- tuner state changes are accepted
-- `TUNE` starts tuner action
-
-## DSP Toggle Test
+## DSP And Front-End
 
 ```text
 NR?
 NR ON
-NR?
-NR OFF
 NB?
 NB ON
-NB?
-NB OFF
 NOTCH?
 NOTCH ON
-NOTCH?
-NOTCH OFF
-```
-
-Expected:
-- each feature toggles and reads back consistently
-
-## Front-End And AGC Test
-
-```text
 PA?
 PA ON
-PA?
-PA OFF
-PA?
 GT?
 GT FAST
-GT?
 GT SLOW
-GT?
 ```
 
-Expected:
-- preamp/IPO state changes are accepted
-- AGC replies change in a meaningful way
-
-## Power State Test
+## Lock, Tuner, Power
 
 ```text
+LOCK?
+LOCK ON
+LOCK OFF
+TUNER?
+TUNER ON
+TUNE
+TUNER OFF
 PS?
 PS OFF
-```
-
-Expected:
-- the radio powers down
-
-Then power it back on manually if needed, or test the documented CAT power-on path carefully:
-
-```text
 PS ON
-PS?
 ```
-
-Note:
-- on `FTDX10`, CAT power-on may require the documented double-send timing behavior
-- the firmware now applies that timing for the ASCII `PS ON` path
 
 ## Report Format
 
-Please return results in a short form like this:
+Use short tags:
+
+- `works`
+- `wobbles`
+- `fails`
+
+Example:
 
 ```text
-FREQ? works
-MODE? works
-VFO A/B works
-SPLIT works
-SM? works
-LOCK ON/OFF works
-TUNER ON works
-TUNE works
-NR read/write works
-NB read/write works
-NOTCH read/write works
-PA read/write works
-GT read/write unclear
-PS OFF works
-PS ON no reply
+FREQ set works
+VFOA MODE works
+GT FAST works
+PS ON wobbles
 ```
-
-That is enough for the next implementation step.

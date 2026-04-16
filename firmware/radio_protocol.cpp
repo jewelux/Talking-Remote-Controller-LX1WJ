@@ -1,10 +1,32 @@
 #include "radio_catalog.h"
 #include "radio_globals.h"
+#include "protocol_ascii.h"
 #include "protocol_ops_ascii.h"
 #include "protocol_ops_civ.h"
 #include "protocol_ops_yaesu.h"
 #include "radio_protocol.h"
 #include "radio_state.h"
+
+static bool isYaesuFtdxAsciiProfile(const StoredProfile& sp) {
+  return sp.protocolType == PROTO_YAESU_FTDX_ASCII;
+}
+
+static bool ensureYaesuFtdxActiveVfoKnown(const StoredProfile& sp, uint32_t timeoutMs) {
+  if (!isYaesuFtdxAsciiProfile(sp)) return false;
+  if (live.activeVfoKnown) return true;
+  bool activeVfoA = true;
+  if (!asciiQueryActiveVfoA(sp, activeVfoA, timeoutMs)) return false;
+  rememberActiveVfo(activeVfoA);
+  return true;
+}
+
+static bool selectYaesuFtdxVfo(const StoredProfile& sp, bool targetVfoA) {
+  if (!isYaesuFtdxAsciiProfile(sp)) return false;
+  if (!(targetVfoA ? asciiSelectVfoA(sp) : asciiSelectVfoB(sp))) return false;
+  rememberActiveVfo(targetVfoA);
+  delay(60);
+  return true;
+}
 
 bool queryFrequency(uint64_t& hzOut, uint32_t timeoutMs) {
   ProtocolType pt = currentProtocolType();
@@ -318,6 +340,19 @@ bool queryRxTxStatus(bool& txOut, uint32_t timeoutMs) {
   ProtocolType pt = currentProtocolType();
   const StoredProfile& sp = currentStoredProfile();
   if (pt == PROTO_CIV) return civQueryRxTxStatus(sp, txOut, timeoutMs);
+  if (pt == PROTO_YAESU_FTDX_ASCII) {
+    if (!ensureYaesuFtdxActiveVfoKnown(sp, timeoutMs)) return false;
+    const char* txCode = live.activeVfoA ? "5" : "6";
+    const char* rxCode = live.activeVfoA ? "7" : "8";
+    bool flag = false;
+    if (asciiQueryYaesuRadioInfoFlag(sp, txCode, flag, timeoutMs) && flag) {
+      txOut = true;
+      return true;
+    }
+    if (!asciiQueryYaesuRadioInfoFlag(sp, rxCode, flag, timeoutMs)) return false;
+    txOut = false;
+    return true;
+  }
   if (pt == PROTO_YAESU_FT8X7 && sp.caps.getRxTx) {
     uint8_t raw = 0;
     if (!yaesuCatQueryStatusRaw(raw, timeoutMs)) return false;
@@ -331,6 +366,11 @@ bool queryTxFrequency(uint64_t& hzOut, uint32_t timeoutMs) {
   ProtocolType pt = currentProtocolType();
   const StoredProfile& sp = currentStoredProfile();
   if (pt == PROTO_CIV) return civQueryTxFrequency(sp, hzOut, timeoutMs);
+  if (pt == PROTO_YAESU_FTDX_ASCII) {
+    bool splitOn = false;
+    if (querySplit(splitOn, timeoutMs) && splitOn) return queryVfoFrequency(false, hzOut, timeoutMs);
+    return queryVfoFrequency(true, hzOut, timeoutMs);
+  }
   return false;
 }
 
@@ -338,7 +378,8 @@ bool selectVfoA() {
   ProtocolType pt = currentProtocolType();
   const StoredProfile& sp = currentStoredProfile();
   if (pt == PROTO_CIV) return civSelectVfoA(sp);
-  if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiSelectVfoA(sp);
+  if (pt == PROTO_YAESU_FTDX_ASCII) return selectYaesuFtdxVfo(sp, true);
+  if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII) return asciiSelectVfoA(sp);
   if (pt == PROTO_YAESU_FT8X7 && sp.caps.setVfo && currentProfileVariantIs("ft817")) return yaesuCatSelectVfoA();
   return false;
 }
@@ -347,7 +388,8 @@ bool selectVfoB() {
   ProtocolType pt = currentProtocolType();
   const StoredProfile& sp = currentStoredProfile();
   if (pt == PROTO_CIV) return civSelectVfoB(sp);
-  if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiSelectVfoB(sp);
+  if (pt == PROTO_YAESU_FTDX_ASCII) return selectYaesuFtdxVfo(sp, false);
+  if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII) return asciiSelectVfoB(sp);
   if (pt == PROTO_YAESU_FT8X7 && sp.caps.setVfo && currentProfileVariantIs("ft817")) return yaesuCatSelectVfoB();
   return false;
 }
@@ -382,6 +424,21 @@ bool queryVfoMode(bool targetVfoA, uint8_t& modeOut, uint8_t& filterOut, uint32_
   ProtocolType pt = currentProtocolType();
   const StoredProfile& sp = currentStoredProfile();
   if (pt == PROTO_CIV) return civQueryVfoMode(sp, targetVfoA, modeOut, filterOut, timeoutMs);
+  if (pt == PROTO_YAESU_FTDX_ASCII) {
+    if (!ensureYaesuFtdxActiveVfoKnown(sp, timeoutMs)) return false;
+    const bool priorVfoA = live.activeVfoA;
+    if (priorVfoA != targetVfoA && !selectYaesuFtdxVfo(sp, targetVfoA)) return false;
+    delay(40);
+    bool ok = queryMode(modeOut, timeoutMs);
+    if (!ok) {
+      delay(60);
+      ok = queryMode(modeOut, timeoutMs);
+    }
+    if (priorVfoA != targetVfoA) (void)selectYaesuFtdxVfo(sp, priorVfoA);
+    if (!ok) return false;
+    filterOut = 1;
+    return true;
+  }
   if (pt == PROTO_YAESU_FT8X7 && sp.caps.getVfoMode && sp.caps.setVfo && currentProfileVariantIs("ft817")) {
     if (!(targetVfoA ? yaesuCatSelectVfoA() : yaesuCatSelectVfoB())) return false;
     delay(60);
@@ -395,6 +452,16 @@ bool setVfoMode(bool targetVfoA, uint8_t mode, uint8_t filter) {
   ProtocolType pt = currentProtocolType();
   const StoredProfile& sp = currentStoredProfile();
   if (pt == PROTO_CIV) return civSetVfoMode(sp, targetVfoA, mode, filter);
+  if (pt == PROTO_YAESU_FTDX_ASCII) {
+    (void)filter;
+    if (!ensureYaesuFtdxActiveVfoKnown(sp, 800)) return false;
+    const bool priorVfoA = live.activeVfoA;
+    if (priorVfoA != targetVfoA && !selectYaesuFtdxVfo(sp, targetVfoA)) return false;
+    delay(40);
+    const bool ok = setMode(mode, 1);
+    if (priorVfoA != targetVfoA) (void)selectYaesuFtdxVfo(sp, priorVfoA);
+    return ok;
+  }
   if (pt == PROTO_YAESU_FT8X7 && sp.caps.setVfoMode && sp.caps.setVfo && currentProfileVariantIs("ft817")) {
     if (!(targetVfoA ? yaesuCatSelectVfoA() : yaesuCatSelectVfoB())) return false;
     delay(60);

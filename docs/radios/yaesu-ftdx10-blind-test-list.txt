@@ -1,123 +1,61 @@
-FTDX10 first test list
-Simple text format for blind operators and helpers
+FTDX10 family blind helper list
+Current V3.5.4 assisted field-test scope
 
-Format:
-serial command - short meaning - keypad position
+Profiles
+PROFILE 11 - FTDX10
+PROFILE 12 - FTDX101D
+PROFILE 13 - FTDX101MP
 
-Profile selection
-PROFILE 11 - select Yaesu FTDX-10 profile - Bank 9 T0 long, then digits 1 1, then Enter
-PROFILE? - say active profile - Bank 9 T0 short
+Profile selection on keypad
+Bank 9, key 0 long, enter profile number, then D
 
-Basic radio control
-FREQ? - read current receive frequency - Bank 1 T0 short
-FREQ set - set receive frequency - Bank 1 T0 long, then digits, then Enter
-MODE? - read current mode - Bank 1 T9 short
-MODE set - set operating mode - Bank 1 T9 long, then mode digit, then Enter
-SM? - read S meter - Bank 1 T7 short
-PO? - read transmit power meter - Bank 1 T4 short
-SWR? - read SWR meter - Bank 1 T8 short
+Safe first keypad checks
+Bank 1, key 0 short - speak frequency
+Bank 1, key 9 short - speak mode
+Bank 1, key 7 short - speak S meter
+Bank 1, key 8 short - speak power meter
+Bank 1, key 3 short - speak lock state
+Bank 1, key 3 long - toggle lock
+
+Tuner and front end
+Bank 1, key 5 short - tuner state
+Bank 1, key 5 long - tuner on or off
+Bank 1, key 5 double - start tune
+Bank 1, key 6 short - preamp state
+Bank 1, key 6 long - preamp on or off
+
+DSP
+Bank 2, key 1 short or long - NR query or toggle
+Bank 2, key 2 short or long - NB query or toggle
+Bank 2, key 3 short or long - notch query or toggle
+Bank 2, key 4 short - AGC query
+Bank 2, key 4 long - AGC fast
+Bank 2, key 4 double - AGC slow
+
+Radio information
+Bank 2, key 5 short - power state query
+Bank 2, key 5 long - power off
+Bank 2, key 5 double - power on
+Bank 2, key 6 short - IF information
+Bank 2, key 7 short - radio ID
 
 VFO and split
-VFO A - select VFO-A - Bank 3 T1 long
-VFOA? - read VFO-A frequency - Bank 3 T1 short
-VFO B - select VFO-B - Bank 3 T2 long
-VFOB? - read VFO-B frequency - Bank 3 T2 short
-SPLIT? - read split state - Bank 3 T0 short
-SPLIT ON/OFF - toggle split - Bank 3 T0 long
+Bank 3, key 0 short or long - split query or toggle
+Bank 3, key 1 short or long - VFO-A frequency or select VFO-A
+Bank 3, key 2 short or long - VFO-B frequency or select VFO-B
+Bank 3, key 3 short - RX or TX state
+Bank 3, key 4 short or long - VFO-A mode query or set
+Bank 3, key 5 short or long - VFO-B mode query or set
 
-Lock
-LOCK? - read main dial lock state - Bank 1 T3 short
-LOCK ON/OFF - toggle main dial lock - Bank 1 T3 long
-
-DSP and receive features
-NR? - read noise reduction state - Bank 2 T1 short
-NR ON/OFF - toggle noise reduction - Bank 2 T1 long
-NB? - read noise blanker state - Bank 2 T2 short
-NB ON/OFF - toggle noise blanker - Bank 2 T2 long
-NOTCH? - read notch filter state - Bank 2 T3 short
-NOTCH ON/OFF - toggle notch filter - Bank 2 T3 long
-
-Tuner
-TUNER? - read tuner state - Bank 2 T0 short or Bank 4 T0 short
-TUNER ON/OFF - toggle tuner state - Bank 2 T0 long or Bank 4 T0 long
-TUNE - start tuner tune cycle - Bank 2 T0 double or Bank 4 T0 double
-
-Monitor
-MONITOR? - read monitor state - Bank 4 T1 short
-MONITOR ON/OFF - toggle monitor state - Bank 4 T1 long
-MONLEVEL? - read monitor level - Bank 4 T2 short
-MONLEVEL up - increase monitor level - Bank 4 T2 long
-MONLEVEL down - decrease monitor level - Bank 4 T2 double
-
-Functions available in serial monitor only for now
-PA? - read preamp or IPO state - serial only
-PA ON - set preamp or IPO on - serial only
-PA OFF - set preamp or IPO off - serial only
-GT? - read AGC setting - serial only
-GT FAST - set AGC fast - serial only
-GT SLOW - set AGC slow - serial only
-PS? - read power state - serial only
-PS OFF - power radio off - serial only
-PS ON - power radio on - serial only
-
-Suggested first blind test order
-1. PROFILE 11
-2. FREQ?
-3. MODE?
-4. SM?
-5. LOCK?
-6. LOCK toggle
-7. VFOA?
-8. VFO B
-9. VFOB?
-10. SPLIT?
-11. SPLIT toggle
-12. NR?
-13. NR toggle
-14. NB?
-15. NB toggle
-16. NOTCH?
-17. NOTCH toggle
-18. TUNER?
-19. TUNER toggle
-20. TUNE
-
-Suggested helper serial test order
-1. PROFILE 11
-2. FREQ?
-3. MODE?
-4. SM?
-5. PO?
-6. SWR?
-7. LOCK?
-8. LOCK ON
-9. LOCK OFF
-10. VFO A
-11. VFOA?
-12. VFO B
-13. VFOB?
-14. SPLIT?
-15. SPLIT ON
-16. SPLIT?
-17. SPLIT OFF
-18. SPLIT?
-19. NR?
-20. NR ON
-21. NR OFF
-22. NB?
-23. NB ON
-24. NB OFF
-25. NOTCH?
-26. NOTCH ON
-27. NOTCH OFF
-28. TUNER?
-29. TUNER ON
-30. TUNER OFF
-31. TUNE
-32. PA?
-33. PA ON
-34. PA OFF
-35. GT?
-36. GT FAST
-37. GT SLOW
-38. PS?
+Suggested first test order
+1. Select profile
+2. Frequency
+3. Mode
+4. S meter
+5. Lock query and toggle
+6. Tuner query, toggle, tune
+7. Preamp query and toggle
+8. NR, NB, notch
+9. VFO-A
+10. VFO-B
+11. Split

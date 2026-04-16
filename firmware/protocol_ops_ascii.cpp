@@ -157,12 +157,17 @@ bool asciiSetPowerState(const StoredProfile& sp, bool on) {
 bool asciiQueryTuner(const StoredProfile& sp, bool& onOut, uint32_t timeoutMs) {
   if (!sp.ascii.tunerGet[0] || !sp.ascii.tunerReplyPrefix[0]) return false;
   String line;
-  if (!transactAsciiCommand(sp.ascii.tunerGet, line, sp.ascii.tunerReplyPrefix, timeoutMs)) return false;
+  if (!transactAsciiCommand(sp.ascii.tunerGet, line, sp.ascii.tunerReplyPrefix, timeoutMs)) {
+    delay(40);
+    if (!transactAsciiCommand(sp.ascii.tunerGet, line, sp.ascii.tunerReplyPrefix, timeoutMs)) return false;
+  }
   return asciiParseOnOffResponse(line, sp.ascii.tunerReplyPrefix, onOut);
 }
 
 bool asciiSetTuner(const StoredProfile& sp, bool on) {
-  return asciiSendSimpleCommand(on ? sp.ascii.tunerOnCmd : sp.ascii.tunerOffCmd);
+  if (!asciiSendSimpleCommand(on ? sp.ascii.tunerOnCmd : sp.ascii.tunerOffCmd)) return false;
+  delay(50);
+  return true;
 }
 
 bool asciiStartTune(const StoredProfile& sp) {
@@ -225,6 +230,28 @@ bool asciiQueryLock(const StoredProfile& sp, bool& onOut, uint32_t timeoutMs) {
 
 bool asciiSetLock(const StoredProfile& sp, bool on) {
   return asciiSendSimpleCommand(on ? sp.ascii.lockOnCmd : sp.ascii.lockOffCmd);
+}
+
+bool asciiQueryYaesuRadioInfoFlag(const StoredProfile& sp, const char* code, bool& onOut, uint32_t timeoutMs) {
+  if (sp.protocolType != PROTO_YAESU_FTDX_ASCII || !code || !code[0]) return false;
+  char cmd[12];
+  snprintf(cmd, sizeof(cmd), "RI%s;", code);
+  String line;
+  if (!transactAsciiCommand(cmd, line, "RI", timeoutMs)) return false;
+
+  int start = 2;
+  int semi = line.indexOf(';', start);
+  if (semi < 0) semi = line.length();
+  String payload = line.substring(start, semi);
+  payload.trim();
+  const size_t codeLen = strlen(code);
+  if (payload.length() < (int)(codeLen + 1)) return false;
+  if (!payload.substring(0, (int)codeLen).equalsIgnoreCase(code)) return false;
+
+  const char state = payload[(int)codeLen];
+  if (state == '0') { onOut = false; return true; }
+  if (state == '1') { onOut = true; return true; }
+  return false;
 }
 
 bool asciiQueryActiveVfoA(const StoredProfile& sp, bool& vfoAOut, uint32_t timeoutMs) {

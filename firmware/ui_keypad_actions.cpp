@@ -15,6 +15,18 @@
 #include "ui_speech.h"
 #include "debug_log.h"
 
+static bool isFtdx10KeypadProfile() {
+  const StoredProfile& sp = currentStoredProfile();
+  return sp.protocolType == PROTO_YAESU_FTDX_ASCII &&
+         strcmp(sp.voiceVendor, "yaesu") == 0 &&
+         strcmp(sp.voiceDigits, "10") == 0;
+}
+
+static void reportFtdx10HiddenKeypadAction(const char* label) {
+  if ((bool)Serial) Serial.println(String(label) + " hidden on FTDX10");
+  if (g_speechEnabled) speakError();
+}
+
 static void printKeypadStatus(const String& line) {
   if ((bool)Serial) Serial.println(line);
 }
@@ -235,6 +247,10 @@ static void speakNotchCycleState(bool on, NotchWidth width) {
 
 static void queryBank2Nr() {
   printKeypadCommand("BANK2 1 SHORT -> NR?");
+  if (isFtdx10KeypadProfile()) {
+    keypadSendNow("NR?");
+    return;
+  }
   if (!currentStoredProfile().caps.getNr) return;
   g_suspendPollingUntilMs = millis() + 900;
   g_suppressFreqSpeakUntilMs = millis() + 2000;
@@ -253,6 +269,10 @@ static void queryBank2Nr() {
 
 static void queryBank2Nb() {
   printKeypadCommand("BANK2 2 SHORT -> NB?");
+  if (isFtdx10KeypadProfile()) {
+    keypadSendNow("NB?");
+    return;
+  }
   if (!currentStoredProfile().caps.getNb) return;
   g_suspendPollingUntilMs = millis() + 900;
   g_suppressFreqSpeakUntilMs = millis() + 2000;
@@ -271,6 +291,10 @@ static void queryBank2Nb() {
 
 static void queryBank2Notch() {
   printKeypadCommand("BANK2 3 SHORT -> NOTCH?");
+  if (isFtdx10KeypadProfile()) {
+    keypadSendNow("NOTCH?");
+    return;
+  }
   if (!currentStoredProfile().caps.getNotch) return;
   g_suspendPollingUntilMs = millis() + 900;
   g_suppressFreqSpeakUntilMs = millis() + 2000;
@@ -439,6 +463,7 @@ void keypadEnter() {
       return;
     }
     uint64_t hz = g_freqEntryIsMHz ? (uint64_t)g_freqEntryDigits.toInt() * 1000000ULL : (uint64_t)g_freqEntryDigits.toInt() * 1000ULL;
+    const uint64_t khz = hz / 1000ULL;
     if (g_freqEntryTargetVfo == 1) printKeypadCommand("ENTER -> VFOA FREQ");
     else if (g_freqEntryTargetVfo == 2) printKeypadCommand("ENTER -> VFOB FREQ");
     else if (g_freqEntryTargetVfo == 3) {
@@ -455,7 +480,14 @@ void keypadEnter() {
     }
     else printKeypadCommand("ENTER -> FREQ");
     bool ok = false;
-    if (g_freqEntryTargetVfo == 1) ok = setVfoFrequency(true, hz);
+    if (isFtdx10KeypadProfile()) {
+      String cmd;
+      if (g_freqEntryTargetVfo == 1) cmd = String("VFOA ") + String((unsigned long long)khz);
+      else if (g_freqEntryTargetVfo == 2) cmd = String("VFOB ") + String((unsigned long long)khz);
+      else cmd = String("FREQ ") + String((unsigned long long)khz);
+      keypadSendNow(cmd);
+      ok = true;
+    } else if (g_freqEntryTargetVfo == 1) ok = setVfoFrequency(true, hz);
     else if (g_freqEntryTargetVfo == 2) ok = setVfoFrequency(false, hz);
     else if (g_freqEntryTargetVfo == 3 && currentProtocolType() == PROTO_YAESU_FT8X7 &&
              (currentProfileVariantIs("ft817") || currentProfileVariantIs("ft857_897"))) {
@@ -468,7 +500,7 @@ void keypadEnter() {
       }
     }
     else ok = applyFrequencyAndTrack(hz, true);
-    if (ok && g_freqEntryTargetVfo != 3) ok = verifyKeypadFrequencyWrite(g_freqEntryTargetVfo, hz);
+    if (ok && !isFtdx10KeypadProfile() && g_freqEntryTargetVfo != 3) ok = verifyKeypadFrequencyWrite(g_freqEntryTargetVfo, hz);
     if (ok) {
       if (g_freqEntryTargetVfo == 1) printKeypadStatus(String("VFOA: ") + hzToMHzString3(hz) + " MHz");
       else if (g_freqEntryTargetVfo == 2) printKeypadStatus(String("VFOB: ") + hzToMHzString3(hz) + " MHz");
@@ -561,15 +593,25 @@ void keypadEnter() {
     else if (g_modeStageTargetVfo == 2) printKeypadCommand("ENTER -> VFOB MODE");
     else printKeypadCommand("ENTER -> MODE");
     bool ok = false;
-    if (g_modeStageTargetVfo == 1) ok = setVfoMode(true, g_modeStageMode, 1);
+    if (isFtdx10KeypadProfile()) {
+      String cmd;
+      if (g_modeStageTargetVfo == 1) cmd = String("VFOA MODE ") + modeToString(g_modeStageMode);
+      else if (g_modeStageTargetVfo == 2) cmd = String("VFOB MODE ") + modeToString(g_modeStageMode);
+      else cmd = String("MODE ") + modeToString(g_modeStageMode);
+      keypadSendNow(cmd);
+      ok = true;
+    } else if (g_modeStageTargetVfo == 1) ok = setVfoMode(true, g_modeStageMode, 1);
     else if (g_modeStageTargetVfo == 2) ok = setVfoMode(false, g_modeStageMode, 1);
     else ok = applyModeAndTrack(g_modeStageMode, 1);
-    if (ok) ok = verifyKeypadModeWrite(g_modeStageTargetVfo, g_modeStageMode);
+    if (ok && !isFtdx10KeypadProfile()) ok = verifyKeypadModeWrite(g_modeStageTargetVfo, g_modeStageMode);
     if (ok) {
       if (g_modeStageTargetVfo == 1) printKeypadStatus(String("VFOA MODE: ") + modeToString(g_modeStageMode));
       else if (g_modeStageTargetVfo == 2) printKeypadStatus(String("VFOB MODE: ") + modeToString(g_modeStageMode));
       else printKeypadStatus(String("MODE: ") + modeToString(g_modeStageMode));
-      if (g_speechEnabled) playClipProgmem(voice_ok, voice_ok_len);
+      if (g_speechEnabled) {
+        g_suppressModePrefixOnce = true;
+        speakMode(g_modeStageMode);
+      }
     } else {
       printKeypadStatus(currentProtocolType() == PROTO_YAESU_FT8X7 ? "MODE -> no change" : "MODE -> failed");
       if (g_speechEnabled && currentProtocolType() == PROTO_YAESU_FT8X7) speakError();
@@ -678,6 +720,20 @@ void keypadHandleReleased(char k) {
       case '4':
         sendOrStageBank1Command("BANK1 4 SHORT", "PO?");
         return;
+      case '5':
+        if (isFtdx10KeypadProfile()) {
+          printKeypadCommand("BANK1 5 SHORT -> TUNER?");
+          keypadSendNow("TUNER?");
+          return;
+        }
+        return;
+      case '6':
+        if (isFtdx10KeypadProfile()) {
+          printKeypadCommand("BANK1 6 SHORT -> PA?");
+          keypadSendNow("PA?");
+          return;
+        }
+        return;
       default: break;
     }
   } else if (g_bank == 2) {
@@ -695,9 +751,19 @@ void keypadHandleReleased(char k) {
         if (currentProtocolType() == PROTO_CIV) {
           return;
         }
+        if (isFtdx10KeypadProfile()) {
+          printKeypadCommand("BANK2 4 SHORT -> GT?");
+          keypadSendNow("GT?");
+          return;
+        }
         return;
       case '5':
         if (currentProtocolType() == PROTO_CIV) {
+          return;
+        }
+        if (isFtdx10KeypadProfile()) {
+          printKeypadCommand("BANK2 5 SHORT -> PS?");
+          keypadSendNow("PS?");
           return;
         }
         return;
@@ -705,9 +771,19 @@ void keypadHandleReleased(char k) {
         if (currentProtocolType() == PROTO_CIV) {
           return;
         }
+        if (isFtdx10KeypadProfile()) {
+          printKeypadCommand("BANK2 6 SHORT -> IF?");
+          keypadSendNow("IF?");
+          return;
+        }
         return;
       case '7':
         if (currentProtocolType() == PROTO_CIV) {
+          return;
+        }
+        if (isFtdx10KeypadProfile()) {
+          printKeypadCommand("BANK2 7 SHORT -> ID?");
+          keypadSendNow("ID?");
           return;
         }
         return;
@@ -728,14 +804,26 @@ void keypadHandleReleased(char k) {
   } else if (g_bank == 3) {
     switch (k) {
       case '7':
+        if (isFtdx10KeypadProfile()) {
+          reportFtdx10HiddenKeypadAction("BANK3 BSTACK");
+          return;
+        }
         printKeypadCommand("BANK3 7 SHORT -> BSTACK? 1");
         keypadSendNow("BSTACK? 1");
         return;
       case '8':
+        if (isFtdx10KeypadProfile()) {
+          reportFtdx10HiddenKeypadAction("BANK3 BSTACK");
+          return;
+        }
         printKeypadCommand("BANK3 8 SHORT -> BSTACK? 2");
         keypadSendNow("BSTACK? 2");
         return;
       case '9':
+        if (isFtdx10KeypadProfile()) {
+          reportFtdx10HiddenKeypadAction("BANK3 BSTACK");
+          return;
+        }
         printKeypadCommand("BANK3 9 SHORT -> BSTACK? 3");
         keypadSendNow("BSTACK? 3");
         return;
@@ -747,12 +835,23 @@ void keypadHandleReleased(char k) {
       case '0':
         return;
       case '1':
+        if (isFtdx10KeypadProfile()) {
+          reportFtdx10HiddenKeypadAction("BANK4");
+          return;
+        }
         printKeypadCommand("BANK4 1 SHORT -> MONITOR?");
         keypadSendNow("MONITOR?");
         return;
       case '2':
+        if (isFtdx10KeypadProfile()) {
+          reportFtdx10HiddenKeypadAction("BANK4");
+        }
         return;
       case '3':
+        if (isFtdx10KeypadProfile()) {
+          reportFtdx10HiddenKeypadAction("BANK4");
+          return;
+        }
         printKeypadCommand("BANK4 3 SHORT -> TRANSCEIVE?");
         keypadSendNow("TRANSCEIVE?");
         return;

@@ -1,173 +1,106 @@
-# Talking Remote Controller LX1WJ - User Guide (English)
+# Talking Remote Controller LX1WJ User Guide
 
-**Firmware:** `firmware/TalkingRemoteControllerLX1WJ_V3_5_1.ino`  
-**Board:** ESP32-S3 DevKitC-1 (N16R8)
+This guide is for operators and helpers.
+It explains practical use in simple terms and keeps technical details out of the way.
 
----
+## What The Controller Does
 
-## Who This Guide Is For
+You operate the radio with a `4x4` keypad.
+The controller speaks the result, so you do not need to read the radio display.
 
-This guide is for operators and helpers who want to use the controller in practice.
-It focuses on spoken behavior and keypad use, not on firmware structure or hardware development.
+## Keypad Basics
 
-If you want to build or adapt the project, use the [Builder Guide](builder-guide.md).
+Key layout:
 
----
+```text
+1 2 3 A
+4 5 6 B
+7 8 9 C
+* 0 # D
+```
 
-## Keypad Layout (4x4 Matrix)
+Global rules:
 
-Assumed labeling:
+- Short press: ask or read something
+- Long press: change something
+- `D`: confirm
+- `#`: cancel and leave the current entry
+- `*` short: speak the current bank
+- `*` long, then digits, then `D`: change bank
 
-   1  2  3  A
+## Two Things To Remember
 
-   4  5  6  B
+- A new key press stops the current speech immediately.
+- The spoken result depends on the selected radio profile.
 
-   7  8  9  C
+## Practical Everyday Use
 
-   *  0  #  D
+These actions are the normal starting point on many profiles:
 
----
+- Bank 1, `0` short: speak current frequency
+- Bank 1, `0` long, digits, `D`: set frequency in kHz
+- Bank 1, `9` short: speak mode
+- Bank 1, `9` long, mode digit, `D`: change mode
+- Bank 1, `7` short: speak S-meter if supported
+- Bank 1, `8` short: speak SWR if supported
 
-## Global Operating Rules
+Mode digits:
 
-- A new key press interrupts ongoing speech immediately.
-- `D` is the confirmation key for staged actions.
-- `#` cancels active entry or staging states and speaks `OK`.
-- `*` short press speaks the current bank number.
-- `*` long press starts bank selection.
-- Exact command behavior depends on the active radio profile.
+- `1` LSB
+- `2` USB
+- `3` CW
+- `4` FM
+- `5` AM
+- `6` RTTY
+- `7` CWR
+- `8` DIGI
+- `9` RTTYR
 
-### Bank Selection
+## FTDX10 Family First Test
 
-1. Hold `*`
-2. Enter the target bank number
-3. Press `D` to confirm
+For `FTDX10`, `FTDX101D`, and `FTDX101MP`, the current practical test path is intentionally small and clear.
 
-Example:
-Hold `*`, press `2`, press `D` -> switch to Bank 2.
+Use these keypad functions first:
 
----
+- Bank 1, `0` short or long: read or set frequency
+- Bank 1, `3` short or long: read or toggle lock
+- Bank 1, `5` short, long, or double: tuner query, tuner toggle, tune
+- Bank 1, `6` short or long: preamp query or toggle
+- Bank 1, `7` short: S-meter
+- Bank 1, `8` short: power meter
+- Bank 1, `9` short or long: read or set mode
+- Bank 2, `1`, `2`, `3` short or long: NR, NB, notch query or toggle
+- Bank 2, `4` short, long, or double: AGC query, fast, slow
+- Bank 2, `5` short, long, or double: power-state query, off, on
+- Bank 2, `6` short: IF info
+- Bank 2, `7` short: radio ID
+- Bank 3, `0` short or long: split query or toggle
+- Bank 3, `1` short or long: VFO-A frequency or select VFO-A
+- Bank 3, `2` short or long: VFO-B frequency or select VFO-B
+- Bank 3, `3` short: RX or TX state
+- Bank 3, `4` short or long: VFO-A mode read or set
+- Bank 3, `5` short or long: VFO-B mode read or set
 
-## Global Actions Typically Used Across Profiles
+Keep the first field test simple:
 
-### `0` short
+1. Select the FTDX10 family profile.
+2. Check frequency.
+3. Check mode.
+4. Check S-meter.
+5. Try lock on and off.
+6. Try VFO-A, VFO-B, and split.
+7. Try NR, NB, and notch.
+8. Try tuner query, toggle, and tune.
 
-- Query the current frequency from the radio.
-- The controller speaks `frequency` and then the value when available.
+## When Something Feels Wrong
 
-### `0` long
+- Press `#` to cancel the current action.
+- Ask the current frequency again with Bank 1, `0` short.
+- Ask the current bank again with `*` short.
+- If a function is not implemented for the active profile, the controller should simply not offer a useful action there.
 
-- Start manual frequency entry.
-- Enter digits in **kHz**.
-- Press `D` to send the new frequency.
-- The controller then speaks the resulting frequency.
+## More Help
 
-Example:
-Hold `0`, enter `14070`, press `D` -> sets `14.070 MHz` and speaks the value.
-
-### `7` short
-
-- Query S-meter when the active profile supports it.
-- The controller speaks the S-meter result when supported.
-
-### `8` short
-
-- Query SWR when the active profile supports it.
-- The controller speaks the SWR result when supported.
-
-### `9` short
-
-- Query operating mode.
-- The controller speaks the detected mode.
-
-### `9` long
-
-- Start mode selection.
-- Press a digit from `1` to `9` to stage a mode.
-- Press `D` to apply the staged mode.
-- The controller speaks the selected mode.
-
-Current mode digit mapping:
-
-- `1` = LSB
-- `2` = USB
-- `3` = CW
-- `4` = AM
-- `5` = FM
-- `6` = DIGI
-- `7` = RTTY
-- `8` = CWR
-- `9` = RTTYR
-
-Example:
-Hold `9`, press `2`, press `D` -> set mode to `USB`.
-
----
-
-## Profile-Dependent Functions
-
-Many keys outside the core frequency and mode flow are radio-dependent.
-Some functions are only available if the selected profile reports support for
-them or if the protocol family implements them.
-
-### `1` short
-
-- Query noise reduction state when supported.
-- The controller speaks `noise reduction on` or `noise reduction off` when supported.
-
-### `1` long
-
-- Toggle noise reduction when supported.
-
-### `2` short
-
-- Query noise blanker state when supported.
-- The controller speaks `noise blanker on` or `noise blanker off` when supported.
-
-### `2` long
-
-- Toggle noise blanker when supported.
-
-### `3` short
-
-- Query notch filter state when supported.
-- The controller speaks the current notch status.
-
-### `3` long
-
-- Toggle notch behavior when supported.
-
----
-
-## Cancel and Confirmation Behavior
-
-### `D`
-
-- Confirms bank selection
-- Confirms profile selection
-- Confirms frequency entry
-- Confirms staged mode change
-
-### `#`
-
-- Cancels active frequency entry
-- Cancels staged mode changes
-- Cancels profile selection
-- Cancels bank selection
-- Clears staged commands and speaks `OK`
-
----
-
-## Notes
-
-- Frequency entry currently uses kHz digits, not direct MHz text entry.
-- Exact support depends on the selected radio profile and implemented command set.
-- The support status per radio is tracked in `docs/radio-support-matrix.md`.
-- Radio-specific command pages should be documented separately from this general
-  guide.
-- The ICOM IC-7300 command reference is documented in
-  `docs/radios/icom-ic-7300.md`.
-- The Yaesu FT-817 command reference is documented in
-  `docs/radios/yaesu-ft-817.md`.
-- The Yaesu FT-857 command reference is documented in
-  `docs/radios/yaesu-ft-857.md`.
+- Short setup path: [QUICKSTART.md](QUICKSTART.md)
+- Current per-radio support: [docs/radio-support-matrix.md](docs/radio-support-matrix.md)
+- FTDX10 family helper list: [docs/radios/yaesu-ftdx10-blind-test-list.txt](docs/radios/yaesu-ftdx10-blind-test-list.txt)

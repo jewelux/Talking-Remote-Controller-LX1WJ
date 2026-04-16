@@ -372,6 +372,62 @@ String upperCopy(String s) {
   return s;
 }
 
+static bool isFtdx10ConsoleProfile() {
+  const StoredProfile& sp = currentStoredProfile();
+  return sp.protocolType == PROTO_YAESU_FTDX_ASCII &&
+         strcmp(sp.voiceVendor, "yaesu") == 0 &&
+         strcmp(sp.voiceDigits, "10") == 0;
+}
+
+static bool handleFtdx10BlockedConsoleCommand(const String& upper) {
+  if (!isFtdx10ConsoleProfile()) return false;
+  if (upper == "MONITOR?" || upper == "MONITOR ON" || upper == "MONITOR OFF") {
+    Serial.println("MONITOR -> hidden on FTDX10 (no clean Yaesu path here)");
+    return true;
+  }
+  if (upper == "MONLEVEL?" || upper.startsWith("MONLEVEL ")) {
+    Serial.println("MONLEVEL -> hidden on FTDX10 (no clean Yaesu path here)");
+    return true;
+  }
+  if (upper == "TRANSCEIVE?" || upper == "TRANSCEIVE ON" || upper == "TRANSCEIVE OFF") {
+    Serial.println("TRANSCEIVE -> hidden on FTDX10 (no clean Yaesu path here)");
+    return true;
+  }
+  if (upper == "PBT1?" || upper.startsWith("PBT1 ")) {
+    Serial.println("PBT1 -> hidden on FTDX10 (use documented Yaesu CAT later)");
+    return true;
+  }
+  if (upper == "PBT2?" || upper.startsWith("PBT2 ")) {
+    Serial.println("PBT2 -> hidden on FTDX10 (use documented Yaesu CAT later)");
+    return true;
+  }
+  if (upper == "FILSHAPE?" || upper == "FILSHAPE SHARP" || upper == "FILSHAPE SOFT") {
+    Serial.println("FILSHAPE -> hidden on FTDX10 (use documented Yaesu CAT later)");
+    return true;
+  }
+  if (upper == "FILWIDTH?" || upper.startsWith("FILWIDTH ")) {
+    Serial.println("FILWIDTH -> hidden on FTDX10 (use documented Yaesu CAT later)");
+    return true;
+  }
+  if (upper == "RIT?" || upper == "RIT ON" || upper == "RIT OFF" || upper.startsWith("RIT ")) {
+    Serial.println("RIT -> hidden on FTDX10 (no clean Yaesu path here)");
+    return true;
+  }
+  if (upper == "NBLEVEL?" || upper.startsWith("NBLEVEL ")) {
+    Serial.println("NBLEVEL -> hidden on FTDX10 (no clean Yaesu path here)");
+    return true;
+  }
+  if (upper == "NRLEVEL?" || upper.startsWith("NRLEVEL ")) {
+    Serial.println("NRLEVEL -> hidden on FTDX10 (no clean Yaesu path here)");
+    return true;
+  }
+  if (upper == "NOTCH NAR" || upper == "NOTCH MID" || upper == "NOTCH WIDE") {
+    Serial.println("NOTCH width -> hidden on FTDX10 (only clean ON/OFF path is exposed)");
+    return true;
+  }
+  return false;
+}
+
 static bool parseConsoleModeToken(String token, uint8_t& modeOut) {
   token.trim();
   if (!token.length()) return false;
@@ -397,15 +453,17 @@ static bool parseConsoleModeToken(String token, uint8_t& modeOut) {
 }
 
 void printHelp() {
+  const bool ftdx10 = isFtdx10ConsoleProfile();
   Serial.println();
   Serial.println("Commands (case-insensitive):");
   Serial.println("  General:");
   Serial.println("    AK?");
   Serial.println("    BANK?");
   Serial.println("    BANK NEXT | PREV");
-  Serial.println("    BANK <1..9>");
-  Serial.println("    BSTACK <1..3>");
-  Serial.println("    BSTACK? <1..3>");
+  if (!ftdx10) {
+    Serial.println("    BSTACK <1..3>  (hamTRC internal)");
+    Serial.println("    BSTACK? <1..3>  (hamTRC internal)");
+  }
   Serial.println("    FB? | FB <kHz> | FBMHZ <MHz>");
   Serial.println("    FREQ <kHz>");
   Serial.println("    FREQ?");
@@ -438,85 +496,120 @@ void printHelp() {
   Serial.println("    VOLUME <0..3>");
   Serial.println("    VOLUME?");
   Serial.println();
-  Serial.println("  IC-7300 / CI-V Extensions:");
-  Serial.println("    NBLEVEL <0..100>");
-  Serial.println("    NBLEVEL?");
-  Serial.println("    NB OFF | ON");
-  Serial.println("    NB?");
-  Serial.println("    FILSHAPE SHARP | SOFT");
-  Serial.println("    FILSHAPE?");
-  Serial.println("    FILWIDTH <1..3>");
-  Serial.println("    FILWIDTH?");
-  Serial.println("    LOCK OFF | ON");
-  Serial.println("    LOCK?");
-  Serial.println("    MONITOR OFF | ON");
-  Serial.println("    MONITOR?");
-  Serial.println("    MONLEVEL <0..100>");
-  Serial.println("    MONLEVEL?");
-  Serial.println("    NOTCH MID | NAR | WIDE");
-  Serial.println("    NOTCH OFF | ON");
-  Serial.println("    NOTCH?");
-  Serial.println("    NRLEVEL <0..100>");
-  Serial.println("    NRLEVEL?");
-  Serial.println("    NR OFF | ON");
-  Serial.println("    NR?");
-  Serial.println("    PBT1 <-128..127> | CENTER");
-  Serial.println("    PBT1?");
-  Serial.println("    PBT2 <-128..127> | CENTER");
-  Serial.println("    PBT2?");
-  Serial.println("    RIT <Hz>");
-  Serial.println("    RIT OFF | ON");
-  Serial.println("    RIT?");
-  Serial.println("    RXTX?");
-  Serial.println("    SPLIT OFF | ON");
-  Serial.println("    SPLIT?");
-  Serial.println("    TUNE");
-  Serial.println("    TRANSCEIVE OFF | ON");
-  Serial.println("    TRANSCEIVE?");
-  Serial.println("    TUNER OFF | ON");
-  Serial.println("    TUNER?");
-  Serial.println("    TXFREQ?");
-  Serial.println("    VFO A | B");
-  Serial.println("    VFOA <kHz> | VFOA?");
-  Serial.println("    VFOA MODE <n> | VFOA MODE?");
-  Serial.println("    VFOB <kHz> | VFOB?");
-  Serial.println("    VFOB MODE <n> | VFOB MODE?");
-  Serial.println();
-  Serial.println("  ASCII / Yaesu Extensions:");
-  Serial.println("    ALC? | VOL? | SQL?");
-  Serial.println("    AGC <hex byte>");
-  Serial.println("    CLAR OFFSET <8 hex digits>");
-  Serial.println("    CLAR OFF | ON");
-  Serial.println("    GT? | GT FAST | SLOW");
-  Serial.println("    LOCKDOC OFF | ON");
-  Serial.println("    MEM READ RAW | MEM WRITE  (experimental)");
-  Serial.println("    PA? | PA OFF | ON");
-  Serial.println("    PS? | PS OFF | ON");
-  Serial.println("    PTT OFF | ON");
-  Serial.println("    SM?");
-  Serial.println("    SWR?");
-  Serial.println("    VFO TOGGLE | A | B");
-  Serial.println("    YALL?");
-  Serial.println("    YDCS <hex>");
-  Serial.println("    YPOWER OFF | ON");
-  Serial.println("    YRPT MINUS | PLUS | SIMPLEX");
-  Serial.println("    YRPTSHIFT <MHz>");
-  Serial.println("    YLOCKRAW OFF | ON");
-  Serial.println("    YMODEBYTE?");
-  Serial.println("    YFMCTX?");
-  Serial.println("    YSETMODEQ <hex byte>  (quiet write, then wait)");
-  Serial.println("    YRXSTATUS?");
-  Serial.println("    YSETMODE <hex byte>");
-  Serial.println("    YTRACE OFF | ON");
-  Serial.println("    YTMODE <name|hex>");
-  Serial.println("    YTONE <hex>");
-  Serial.println("    YTXSTATUS?");
-  Serial.println("    YVAR?");
-  Serial.println("    YCAT <10 hex digits>");
-  Serial.println("    YCAT? <10 hex digits>");
-  Serial.println("    YCAT1? <hex byte>");
-  Serial.println("    YSCAN1 <start hex> <end hex>");
-  Serial.println("    YSTATUS?");
+  if (!ftdx10) {
+    Serial.println("  IC-7300 / CI-V Extensions:");
+    Serial.println("    NBLEVEL <0..100>");
+    Serial.println("    NBLEVEL?");
+    Serial.println("    NB OFF | ON | TOGGLE");
+    Serial.println("    NB?");
+    Serial.println("    FILSHAPE SHARP | SOFT");
+    Serial.println("    FILSHAPE?");
+    Serial.println("    FILWIDTH <1..3>");
+    Serial.println("    FILWIDTH?");
+    Serial.println("    LOCK OFF | ON | TOGGLE");
+    Serial.println("    LOCK?");
+    Serial.println("    MONITOR OFF | ON");
+    Serial.println("    MONITOR?");
+    Serial.println("    MONLEVEL <0..100>");
+    Serial.println("    MONLEVEL?");
+    Serial.println("    NOTCH MID | NAR | WIDE");
+    Serial.println("    NOTCH OFF | ON | TOGGLE");
+    Serial.println("    NOTCH?");
+    Serial.println("    NRLEVEL <0..100>");
+    Serial.println("    NRLEVEL?");
+    Serial.println("    NR OFF | ON | TOGGLE");
+    Serial.println("    NR?");
+    Serial.println("    PBT1 <-128..127> | CENTER");
+    Serial.println("    PBT1?");
+    Serial.println("    PBT2 <-128..127> | CENTER");
+    Serial.println("    PBT2?");
+    Serial.println("    RIT <Hz>");
+    Serial.println("    RIT OFF | ON");
+    Serial.println("    RIT?");
+    Serial.println("    RXTX?");
+    Serial.println("    SPLIT OFF | ON | TOGGLE");
+    Serial.println("    SPLIT?");
+    Serial.println("    TUNE");
+    Serial.println("    TRANSCEIVE OFF | ON");
+    Serial.println("    TRANSCEIVE?");
+    Serial.println("    TUNER OFF | ON");
+    Serial.println("    TUNER? | TUNER OFF | ON | TOGGLE");
+    Serial.println("    TXFREQ?");
+    Serial.println("    VFO A | B");
+    Serial.println("    VFOA <kHz> | VFOA?");
+    Serial.println("    VFOA MODE <n> | VFOA MODE?");
+    Serial.println("    VFOB <kHz> | VFOB?");
+    Serial.println("    VFOB MODE <n> | VFOB MODE?");
+    Serial.println();
+    Serial.println("  ASCII / Yaesu Extensions:");
+  } else {
+    Serial.println("  FTDX10 / hamTRC:");
+    Serial.println("    LOCK OFF | ON | TOGGLE");
+    Serial.println("    LOCK?");
+    Serial.println("    NB OFF | ON | TOGGLE");
+    Serial.println("    NB?");
+    Serial.println("    NOTCH OFF | ON | TOGGLE");
+    Serial.println("    NOTCH?");
+    Serial.println("    NR OFF | ON | TOGGLE");
+    Serial.println("    NR?");
+    Serial.println("    RXTX?");
+    Serial.println("    SPLIT OFF | ON | TOGGLE");
+    Serial.println("    SPLIT?");
+    Serial.println("    TUNE");
+    Serial.println("    TUNER? | TUNER OFF | ON | TOGGLE");
+    Serial.println("    TXFREQ?");
+    Serial.println("    VFO A | B");
+    Serial.println("    VFOA <kHz> | VFOA?");
+    Serial.println("    VFOA MODE <n> | VFOA MODE?");
+    Serial.println("    VFOB <kHz> | VFOB?");
+    Serial.println("    VFOB MODE <n> | VFOB MODE?");
+    Serial.println();
+    Serial.println("  FTDX10 ASCII / Yaesu:");
+  }
+  if (!ftdx10) {
+    Serial.println("    ALC? | VOL? | SQL?");
+    Serial.println("    AGC <hex byte>");
+    Serial.println("    CLAR OFFSET <8 hex digits>");
+    Serial.println("    CLAR OFF | ON");
+    Serial.println("    GT? | GT FAST | SLOW | OFF");
+    Serial.println("    LOCKDOC OFF | ON");
+    Serial.println("    MEM READ RAW | MEM WRITE  (experimental)");
+    Serial.println("    PA? | PA OFF | ON | TOGGLE");
+    Serial.println("    PS? | PS OFF | ON");
+    Serial.println("    PTT OFF | ON");
+    Serial.println("    SM?");
+    Serial.println("    SWR?");
+    Serial.println("    VFO TOGGLE | A | B");
+    Serial.println("    YALL?");
+    Serial.println("    YDCS <hex>");
+    Serial.println("    YPOWER OFF | ON");
+    Serial.println("    YRPT MINUS | PLUS | SIMPLEX");
+    Serial.println("    YRPTSHIFT <MHz>");
+    Serial.println("    YLOCKRAW OFF | ON");
+    Serial.println("    YMODEBYTE?");
+    Serial.println("    YFMCTX?");
+    Serial.println("    YSETMODEQ <hex byte>  (quiet write, then wait)");
+    Serial.println("    YRXSTATUS?");
+    Serial.println("    YSETMODE <hex byte>");
+    Serial.println("    YTRACE OFF | ON");
+    Serial.println("    YTMODE <name|hex>");
+    Serial.println("    YTONE <hex>");
+    Serial.println("    YTXSTATUS?");
+    Serial.println("    YVAR?");
+    Serial.println("    YCAT <10 hex digits>");
+    Serial.println("    YCAT? <10 hex digits>");
+    Serial.println("    YCAT1? <hex byte>");
+    Serial.println("    YSCAN1 <start hex> <end hex>");
+    Serial.println("    YSTATUS?");
+  } else {
+    Serial.println("    GT? | GT FAST | SLOW | OFF");
+    Serial.println("    ID?");
+    Serial.println("    IF?");
+    Serial.println("    PA? | PA OFF | ON | TOGGLE");
+    Serial.println("    PS? | PS OFF | ON");
+    Serial.println("    SM?");
+    Serial.println("    SWR?");
+  }
   Serial.println();
 }
 
@@ -589,6 +682,10 @@ static bool handleConsoleProfileCommands(const String& line, const String& upper
     return true;
   }
   if (upper.startsWith("BSTACK? ")) {
+    if (isFtdx10ConsoleProfile()) {
+      Serial.println("BSTACK? -> hidden on FTDX10 (hamTRC internal, not Yaesu CAT)");
+      return true;
+    }
     int reg = line.substring(8).toInt();
     uint64_t hz = 0;
     uint8_t bandCode = 0;
@@ -616,6 +713,10 @@ static bool handleConsoleProfileCommands(const String& line, const String& upper
     return true;
   }
   if (upper.startsWith("BSTACK ")) {
+    if (isFtdx10ConsoleProfile()) {
+      Serial.println("BSTACK -> hidden on FTDX10 (hamTRC internal, not Yaesu CAT)");
+      return true;
+    }
     int reg = line.substring(7).toInt();
     uint64_t hz = 0;
     uint8_t bandCode = 0;
@@ -1324,6 +1425,8 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
       return true;
     }
     Serial.println("SET MODE -> command sent");
+    if (g_keypadExecuting) g_suppressModePrefixOnce = true;
+    speakMode(mode);
     return true;
   }
   if (upper == "FB?") {
@@ -1475,27 +1578,40 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     bool on = false;
     if (!queryTuner(on, 800)) { Serial.println("TUNER? -> no reply"); return true; }
     Serial.println(on ? "TUNER ON" : "TUNER OFF");
+    speakTokenState("tuner", on);
     return true;
   }
   if (upper == "TUNER ON") {
     if (!setTuner(true)) { Serial.println("TUNER ON -> failed"); return true; }
     Serial.println("TUNER ON");
+    speakTokenState("tuner", true);
     return true;
   }
   if (upper == "TUNER OFF") {
     if (!setTuner(false)) { Serial.println("TUNER OFF -> failed"); return true; }
     Serial.println("TUNER OFF");
+    speakTokenState("tuner", false);
+    return true;
+  }
+  if (upper == "TUNER TOGGLE") {
+    bool on = false;
+    if (!queryTuner(on, 800)) { Serial.println("TUNER TOGGLE -> no reply"); return true; }
+    if (!setTuner(!on)) { Serial.println("TUNER TOGGLE -> failed"); return true; }
+    Serial.println(!on ? "TUNER ON" : "TUNER OFF");
+    speakTokenState("tuner", !on);
     return true;
   }
   if (upper == "TUNE") {
     if (!startTune()) { Serial.println("TUNE -> failed"); return true; }
     Serial.println("TUNE");
+    if (g_speechEnabled) speakToken("tune");
     return true;
   }
   if (upper == "RXTX?") {
     bool tx = false;
     if (!queryRxTxStatus(tx, 800)) { Serial.println("RXTX? -> no reply"); return true; }
     Serial.println(tx ? "TX" : "RX");
+    if (g_speechEnabled) speakToken(tx ? "tx" : "rx");
     return true;
   }
   if (upper == "TXFREQ?") {
@@ -1691,6 +1807,14 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     if (!setDialLock(false)) { Serial.println("LOCK OFF -> failed"); return true; }
     Serial.println("LOCK OFF");
     speakTokenState("lock", false);
+    return true;
+  }
+  if (upper == "LOCK TOGGLE") {
+    bool on = false;
+    if (!queryDialLock(on, 800)) { Serial.println("LOCK TOGGLE -> no reply"); return true; }
+    if (!setDialLock(!on)) { Serial.println("LOCK TOGGLE -> failed"); return true; }
+    Serial.println(!on ? "LOCK ON" : "LOCK OFF");
+    speakTokenState("lock", !on);
     return true;
   }
   if (upper == "FILSHAPE?") {
@@ -1916,6 +2040,15 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     speakBinaryFeatureState(voice_noisereduction, voice_noisereduction_len, false);
     return true;
   }
+  if (upper == "NR TOGGLE") {
+    if (!sp.caps.getNr || !sp.caps.setNr) { Serial.println("NR TOGGLE -> unsupported"); return true; }
+    if (!refreshLiveNr()) { Serial.println("NR TOGGLE -> no reply"); return true; }
+    const bool next = !live.nrOn;
+    if (!applyNrAndTrack(next)) { Serial.println("NR TOGGLE -> failed"); return true; }
+    Serial.println(next ? "NR ON" : "NR OFF");
+    speakBinaryFeatureState(voice_noisereduction, voice_noisereduction_len, next);
+    return true;
+  }
   if (upper == "NB ON") {
     if (!sp.caps.setNb) { Serial.println("NB ON -> unsupported"); return true; }
     if (!applyNbAndTrack(true)) { Serial.println("NB ON -> failed"); return true; }
@@ -1928,6 +2061,15 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     if (!applyNbAndTrack(false)) { Serial.println("NB OFF -> failed"); return true; }
     Serial.println("NB OFF");
     speakBinaryFeatureState(voice_noiseblanker, voice_noiseblanker_len, false);
+    return true;
+  }
+  if (upper == "NB TOGGLE") {
+    if (!sp.caps.getNb || !sp.caps.setNb) { Serial.println("NB TOGGLE -> unsupported"); return true; }
+    if (!refreshLiveNb()) { Serial.println("NB TOGGLE -> no reply"); return true; }
+    const bool next = !live.nbOn;
+    if (!applyNbAndTrack(next)) { Serial.println("NB TOGGLE -> failed"); return true; }
+    Serial.println(next ? "NB ON" : "NB OFF");
+    speakBinaryFeatureState(voice_noiseblanker, voice_noiseblanker_len, next);
     return true;
   }
   if (upper == "PA?") {
@@ -1944,6 +2086,13 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   if (upper == "PA OFF") {
     if (!asciiSetPreamp(sp, false)) { Serial.println("PA OFF -> failed"); return true; }
     Serial.println("PA OFF");
+    return true;
+  }
+  if (upper == "PA TOGGLE") {
+    bool on = false;
+    if (!asciiQueryPreamp(sp, on, 800)) { Serial.println("PA TOGGLE -> no reply"); return true; }
+    if (!asciiSetPreamp(sp, !on)) { Serial.println("PA TOGGLE -> failed"); return true; }
+    Serial.println(!on ? "PA ON" : "PA OFF");
     return true;
   }
   if (upper == "GT?") {
@@ -1963,6 +2112,11 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     Serial.println("GT SLOW");
     return true;
   }
+  if (upper == "GT OFF") {
+    if (!asciiSetAgcCommand(sp, sp.ascii.agcOffCmd)) { Serial.println("GT OFF -> failed"); return true; }
+    Serial.println("GT OFF");
+    return true;
+  }
   if (upper == "PS?") {
     bool on = false;
     if (!asciiQueryPowerState(sp, on, 800)) { Serial.println("PS? -> no reply"); return true; }
@@ -1977,6 +2131,14 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   if (upper == "PS OFF") {
     if (!asciiSetPowerState(sp, false)) { Serial.println("PS OFF -> failed"); return true; }
     Serial.println("PS OFF");
+    return true;
+  }
+  if (upper == "SPLIT TOGGLE") {
+    bool on = false;
+    if (!querySplit(on, 800)) { Serial.println("SPLIT TOGGLE -> no reply"); return true; }
+    if (!setSplit(!on)) { Serial.println("SPLIT TOGGLE -> failed"); return true; }
+    Serial.println(!on ? "SPLIT ON" : "SPLIT OFF");
+    speakTokenState("split", !on);
     return true;
   }
   if (upper == "NOTCH ON") {
@@ -2014,12 +2176,21 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     speakTokenState("notch filter", false);
     return true;
   }
+  if (upper == "NOTCH TOGGLE") {
+    if (!sp.caps.getNotch || !sp.caps.setNotch) { Serial.println("NOTCH TOGGLE -> unsupported"); return true; }
+    if (!refreshLiveNotch()) { Serial.println("NOTCH TOGGLE -> no reply"); return true; }
+    const bool next = !live.notchOn;
+    if (!applyNotchAndTrack(next)) { Serial.println("NOTCH TOGGLE -> failed"); return true; }
+    Serial.println(next ? "NOTCH ON" : "NOTCH OFF");
+    speakTokenState("notch filter", next);
+    return true;
+  }
   return false;
 }
 
 static bool handleConsoleBankCommands(const String& line, const String& upper) {
   if (upper == "BANK NEXT") {
-    uint8_t nextBank = (uiGetBank() >= 9) ? 1 : (uint8_t)(uiGetBank() + 1);
+    uint8_t nextBank = (uiGetBank() >= 3) ? 1 : (uint8_t)(uiGetBank() + 1);
     uiSetBank(nextBank);
     Serial.print("OK BANK ");
     Serial.println((int)nextBank);
@@ -2027,7 +2198,7 @@ static bool handleConsoleBankCommands(const String& line, const String& upper) {
     return true;
   }
   if (upper == "BANK PREV") {
-    uint8_t prevBank = (uiGetBank() <= 1) ? 9 : (uint8_t)(uiGetBank() - 1);
+    uint8_t prevBank = (uiGetBank() <= 1) ? 3 : (uint8_t)(uiGetBank() - 1);
     uiSetBank(prevBank);
     Serial.print("OK BANK ");
     Serial.println((int)prevBank);
@@ -2036,7 +2207,7 @@ static bool handleConsoleBankCommands(const String& line, const String& upper) {
   }
   if (upper.startsWith("BANK ")) {
     int b = line.substring(5).toInt();
-    if (b < 1 || b > 9) { Serial.println("BANK -> invalid (use 1..9)"); speakError(); return true; }
+    if (b < 1 || b > 3) { Serial.println("BANK -> invalid (use 1..3)"); speakError(); return true; }
     uiSetBank((uint8_t)b);
     Serial.print("OK BANK ");
     Serial.println((int)b);
@@ -2059,6 +2230,7 @@ void processCommand(String line) {
   String upper = upperCopy(line);
   if (handleConsoleInfoCommands(upper)) return;
   if (handleConsoleProfileCommands(line, upper)) return;
+  if (handleFtdx10BlockedConsoleCommand(upper)) return;
   if (handleConsoleToggleCommands(line, upper)) return;
   if (handleConsoleYaesuFt8x7Commands(line, upper)) return;
   if (handleConsoleRadioCommands(line, upper)) return;

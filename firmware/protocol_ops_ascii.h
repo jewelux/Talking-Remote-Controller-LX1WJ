@@ -31,6 +31,7 @@ bool asciiQueryNotch(const StoredProfile& sp, bool& onOut, uint32_t timeoutMs);
 bool asciiSetNotch(const StoredProfile& sp, bool on);
 bool asciiQueryLock(const StoredProfile& sp, bool& onOut, uint32_t timeoutMs);
 bool asciiSetLock(const StoredProfile& sp, bool on);
+bool asciiQueryYaesuRadioInfoFlag(const StoredProfile& sp, const char* code, bool& onOut, uint32_t timeoutMs);
 bool asciiQueryActiveVfoA(const StoredProfile& sp, bool& vfoAOut, uint32_t timeoutMs);
 bool asciiSelectVfoA(const StoredProfile& sp);
 bool asciiSelectVfoB(const StoredProfile& sp);
