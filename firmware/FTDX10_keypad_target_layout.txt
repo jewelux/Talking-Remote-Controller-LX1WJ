@@ -1,0 +1,93 @@
+FTDX10 keypad layout - current software state in V3_5_5
+
+Profile selection
+- Bank 9, A long = profile select
+- Profile 11 = FTDX10
+
+Bank 1
+- T0 short = FREQ?
+- T0 long = set frequency
+- T1 short = RXTX?
+- T2 short = TXFREQ?
+- T3 short = LOCK?
+- T3 long = LOCK TOGGLE
+- T4 short = PO?
+- T5 short = TUNER?
+- T5 long = TUNER TOGGLE
+- T5 double = TUNE
+- T6 short = PA?
+- T6 long = PA TOGGLE
+- T7 short = SM?
+- T8 short = SWR?
+- T9 short = MODE?
+- T9 long = set mode
+
+Bank 2
+- T1 short = NR?
+- T1 long = NR TOGGLE
+- T2 short = NB?
+- T2 long = NB TOGGLE
+- T3 short = NOTCH?
+- T3 long = NOTCH TOGGLE
+- T4 short = GT?
+- T4 long = GT FAST
+- T4 double = GT SLOW
+- T5 short = PS?
+- T5 long = PS OFF
+- T5 double = PS ON
+- T6 short = IF?
+- T7 short = ID?
+- T8 = hidden on FTDX10
+- T9 = hidden on FTDX10
+
+Bank 3
+- T0 short = SPLIT?
+- T0 long = SPLIT TOGGLE
+- T0 double = TXFREQ?
+- T1 short = VFOA?
+- T1 long = VFO A
+- T1 double = set VFO A frequency
+- T2 short = VFOB?
+- T2 long = VFO B
+- T2 double = set VFO B frequency
+- T3 = not used for FTDX10
+- T4 short = VFOA MODE?
+- T4 long = set VFO A mode
+- T5 short = VFOB MODE?
+- T5 long = set VFO B mode
+- T6 short = RXTX?
+- T7 = hidden on FTDX10
+- T8 = hidden on FTDX10
+- T9 = hidden on FTDX10
+
+Bank 4
+- T0 short = TUNER?
+- T0 long = TUNER TOGGLE
+- T0 double = TUNE
+- T1 = hidden on FTDX10
+- T2 = hidden on FTDX10
+- T3 = hidden on FTDX10
+
+Bank 5
+- not used for FTDX10 in the current target layout
+
+Bank 6
+- not used for FTDX10 in the current target layout
+
+Bank 7
+- not used for FTDX10 in the current target layout
+
+Bank 8
+- not used for FTDX10 in the current target layout
+
+Bank 9
+- A long = profile select
+- B short = next profile
+- C short = previous profile
+- 4 short = tuning speech state
+- 4 long = tuning speech toggle
+
+Notes
+- This file describes the current implemented FTDX10 keypad layout, not an old planning layout.
+- Hidden means the key path is intentionally blocked for FTDX10 in the current software.
+- Keypad and serial monitor use the same command engine for the active FTDX10 command set.

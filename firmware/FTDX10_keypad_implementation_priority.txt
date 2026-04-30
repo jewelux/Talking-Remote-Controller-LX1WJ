@@ -1,0 +1,170 @@
+FTDX10 keypad implementation priority based on current target layout
+
+SOFORT UMSETZBAR MIT HEUTIGEM CODE
+
+Bank 1
+- FREQ?
+- FREQ set
+- LOCK?
+- LOCK toggle
+- SM?
+- PO?
+- SWR?
+- MODE?
+- MODE set
+- TUNER?
+- TUNER toggle
+- TUNE
+- PA?
+- PA toggle
+
+Bank 2
+- NR?
+- NR toggle
+- NB?
+- NB toggle
+- NOTCH?
+- NOTCH toggle
+- AGC? via GT?
+- AGC cycle via GT FAST/SLOW/OFF
+- IPO/PREAMP? via PA?
+- IPO/PREAMP toggle via PA ON/OFF
+
+Bank 3
+- SPLIT?
+- SPLIT toggle
+- VFOA?
+- VFOA set freq
+- VFOB?
+- VFOB set freq
+- VFO A select
+- VFO B select
+
+Bank 4
+- TUNER?
+- TUNER toggle
+- TUNE
+- PS?
+- PS OFF
+- PS ON
+
+Bank 6
+- IF? nur falls wir IF im ftdx10-Profil nachtragen, ohne neue Protokollfunktion
+- ID? nur falls wir ID im ftdx10-Profil nachtragen, ohne neue Protokollfunktion
+- VS?
+- SV
+- RM5 power
+- RM6 swr
+- SM0 s-meter
+
+
+NUR NACH NEUER FTDX10-PROTOKOLLFUNKTION
+
+Bank 1
+- RXTX? falls echte FTDX10-RX/TX-Abfrage gewuenscht
+- TXFREQ? falls echte getrennte TX-Frequenzabfrage gewuenscht
+
+Bank 2
+- RL? / NR level
+- NL? / NB level
+- BP Notch frequency/parameter statt nur on/off
+- RF ATT?
+- RF ATT toggle
+- IF SHIFT?
+- IF SHIFT down/up/center
+- WIDTH?
+- WIDTH wider/narrower
+- CONTOUR/APF?
+- CONTOUR/APF toggle
+- NARROW?
+- NARROW toggle
+
+Bank 3
+- VFOA MODE?
+- VFOA MODE set
+- VFOB MODE?
+- VFOB MODE set
+- AB / BA copy
+- QS quick split
+- aktive TX/RX-VFO-Statuslogik wenn sauber getrennt benoetigt
+
+Bank 4
+- MONITOR?
+- MONITOR toggle
+- MONLEVEL?
+- MONLEVEL plus/minus
+- PR?
+- PR toggle
+- PL?
+- PL plus/minus
+- PC?
+- PC plus/minus
+- TS?
+- TS toggle/cycle
+- MG?
+- MG plus/minus
+- AO?
+- AO plus/minus
+
+Bank 5
+- RIT/RT?
+- RIT/RT toggle
+- RIT offset setzen/lesen
+- XT?
+- XT toggle
+- CLAR clear/down/up falls sauber auf FTDX10 umgesetzt
+
+Bank 6
+- RI?
+- RS?
+- AI?
+- AI toggle
+- MS?
+- meter source cycle
+
+Bank 7
+- Memory/QMB-Befehle allgemein
+- MC?
+- MW
+- MR?
+- MT
+- MA
+- MB
+- AM
+- BM
+- QI
+- QR
+
+Bank 8
+- BS / BU / BD
+- RG?
+- RG plus/minus
+- SQ?
+- SQ plus/minus
+- SS scope control
+- FN fine tuning
+- SF sub dial
+- RF roofing filter
+- BC auto notch
+
+
+BESSER NUR SERIELL LASSEN
+
+- EX menu commands
+- DT date/time
+- komplette Speicherverwaltung mit Tags und komplexen Kontextwechseln
+- CW keyer memory and CW text commands: KM, KP, KR, KS, KY
+- Scope detail commands: SS und verwandte Anzeigeparameter
+- seltene Audio-Feineinstellungen, die viele Wertebereiche haben
+- Service-/Diagnosebefehle
+- Rohkommandos und experimentelle CAT-Tests
+- alles, was keine klare sprachfreundliche Rueckmeldung auf dem Keypad ergibt
+
+
+WICHTIGE ANMERKUNG
+
+- Einige Punkte koennen von "nur nach neuer Protokollfunktion" nach "sofort umsetzbar" rutschen, wenn wir nur das ftdx10-Profil erweitern und die generische ASCII-Infrastruktur bereits vorhanden ist.
+- Der sicherste Ausbaupfad ist:
+  1. erst alle sofort umsetzbaren FTDX10-Keypadfunktionen
+  2. dann FTDX10-spezifische neue Protokollfunktionen
+  3. seltene und komplexe Kommandos seriell belassen

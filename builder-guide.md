@@ -4,7 +4,7 @@ This guide is the short technical entry point for builders, contributors, and te
 
 ## Current Firmware Line
 
-The repository now documents and ships the modular firmware line **V3.5.4**.
+The repository now documents and ships the modular firmware line **V3.5.5**.
 The current focus is a clean first Yaesu **FTDX10 family** field-test block on top of the existing multi-radio platform.
 
 ## Builder Path
@@ -27,7 +27,7 @@ Use this repository if you need to:
 
 ## Firmware Structure
 
-`firmware/TalkingRemoteControllerLX1WJ_V3_5_4.ino` is the main sketch entry.
+`firmware/TalkingRemoteControllerLX1WJ_V3_5_5.ino` is the main sketch entry.
 The project is split into modular source files for:
 
 - protocol handling

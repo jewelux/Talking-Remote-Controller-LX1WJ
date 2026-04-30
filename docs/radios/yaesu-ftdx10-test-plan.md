@@ -1,6 +1,6 @@
 # Yaesu FTDX10 Family Test Plan
 
-This is the short technical serial test plan for the current **V3.5.4** FTDX10 family block.
+This is the short technical serial test plan for the current **V3.5.5** FTDX10 family block.
 
 Target profiles:
 

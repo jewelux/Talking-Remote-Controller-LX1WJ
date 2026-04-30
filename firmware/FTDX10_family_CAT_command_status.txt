@@ -1,0 +1,105 @@
+FTDX10 family CAT command status for V3_5_5
+Source basis: official Yaesu FTDX10 CAT Operation Reference Manual command list, cross-checked against current local software.
+
+CMD | Funktion | Status in V3_5_5 | Hinweis
+AB | VFO-A to VFO-B | nein | keine FTDX10-Implementierung gefunden
+AC | Antenna tuner control | implementiert | AC read/on/off/tune_start im ftdx10-Profil vorhanden
+AG | AF gain | nein | keine FTDX10-Implementierung gefunden
+AI | Auto information | nein | keine FTDX10-Implementierung gefunden
+AM | VFO-A to memory channel | nein | keine FTDX10-Implementierung gefunden
+AO | AMC output level | nein | keine FTDX10-Implementierung gefunden
+AV | Anti VOX level | nein | keine FTDX10-Implementierung gefunden
+BA | VFO-B to VFO-A | nein | keine FTDX10-Implementierung gefunden
+BC | Auto notch (DNF) | nein | nur BP manual notch vorhanden
+BD | Band down | nein | keine FTDX10-Implementierung gefunden
+BI | Break-in | nein | keine FTDX10-Implementierung gefunden
+BM | VFO-B to memory channel | nein | keine FTDX10-Implementierung gefunden
+BP | Manual notch | teilweise | BP0/BP0000/BP0001 fuer on/off implementiert, volle Frequenzparameter nicht
+BS | Band select | nein | keine FTDX10-Implementierung gefunden
+BU | Band up | nein | keine FTDX10-Implementierung gefunden
+BY | Busy | nein | keine FTDX10-Implementierung gefunden
+CF | Clarifier | nein | keine FTDX10-Implementierung gefunden
+CH | Channel up/down | nein | keine FTDX10-Implementierung gefunden
+CN | CTCSS number | nein | keine FTDX10-Implementierung gefunden
+CO | Contour/APF | nein | keine FTDX10-Implementierung gefunden
+CS | CW spot | nein | keine FTDX10-Implementierung gefunden
+CT | CTCSS | nein | keine FTDX10-Implementierung gefunden
+DA | LCD contrast/dimmer | nein | keine FTDX10-Implementierung gefunden
+DN | Down | nein | keine FTDX10-Implementierung gefunden
+DT | Date and time | nein | keine FTDX10-Implementierung gefunden
+ED | Encoder down | nein | keine FTDX10-Implementierung gefunden
+EM | Encode memory | nein | keine FTDX10-Implementierung gefunden
+EN | Encode | nein | keine FTDX10-Implementierung gefunden
+EU | Encoder up | nein | keine FTDX10-Implementierung gefunden
+EX | Menu | nein | keine FTDX10-Implementierung gefunden
+FA | Frequency VFO-A | implementiert | lesen/schreiben vorhanden
+FB | Frequency VFO-B | implementiert | lesen/schreiben vorhanden
+FN | Fine tuning | nein | keine FTDX10-Implementierung gefunden
+GT | AGC function | teilweise | GT read plus FAST/SLOW/OFF im Profil und in der Konsole, nicht voll ausgewertet
+ID | Identification | vorbereitet | generische ASCII-Infrastruktur vorhanden, ftdx10-Profil fuellt ID nicht
+IF | Information | vorbereitet | generische ASCII-Infrastruktur vorhanden, ftdx10-Profil fuellt IF nicht
+IS | IF-shift | nein | keine FTDX10-Implementierung gefunden
+KM | Keyer memory | nein | keine FTDX10-Implementierung gefunden
+KP | Key pitch | nein | keine FTDX10-Implementierung gefunden
+KR | Keyer | nein | keine FTDX10-Implementierung gefunden
+KS | Key speed | nein | keine FTDX10-Implementierung gefunden
+KY | CW keying | nein | keine FTDX10-Implementierung gefunden
+LK | Lock | implementiert | read/on/off vorhanden
+LM | Load message | nein | keine FTDX10-Implementierung gefunden
+MA | Memory channel to VFO-A | nein | keine FTDX10-Implementierung gefunden
+MB | Memory channel to VFO-B | nein | keine FTDX10-Implementierung gefunden
+MC | Memory channel | nein | keine FTDX10-Implementierung gefunden
+MD | Mode | implementiert | lesen/schreiben vorhanden
+MG | Mic gain | nein | keine FTDX10-Implementierung gefunden
+ML | Monitor level | nein | aktuelle Monitor-Pfade sind nur fuer CI-V umgesetzt
+MR | Memory read | nein | keine FTDX10-Implementierung gefunden
+MS | Meter switch | nein | keine FTDX10-Implementierung gefunden
+MT | Memory channel write/tag | nein | keine FTDX10-Implementierung gefunden
+MW | Memory write | nein | keine FTDX10-Implementierung gefunden
+MX | MOX set | nein | keine FTDX10-Implementierung gefunden
+NA | Narrow | nein | keine FTDX10-Implementierung gefunden
+NB | Noise blanker | implementiert | read/on/off vorhanden
+NL | Noise blanker level | nein | keine FTDX10-Implementierung gefunden
+NR | Noise reduction (DNR) | implementiert | read/on/off vorhanden
+OI | Opposite band information | nein | keine FTDX10-Implementierung gefunden
+OS | Offset (repeater shift) | nein | keine FTDX10-Implementierung gefunden
+PA | Pre-amp (IPO) | teilweise | PA read/on/off ueber serielle ASCII-Konsole vorhanden
+PB | Play back | nein | keine FTDX10-Implementierung gefunden
+PC | Power control | nein | nur Meterabfrage vorhanden, keine Power-Control-Implementierung
+PL | Speech processor level | nein | keine FTDX10-Implementierung gefunden
+PR | Speech processor | nein | keine FTDX10-Implementierung gefunden
+PS | Power switch | teilweise | PS read/on/off in ASCII-Konsole vorhanden, spezieller FTDX10/101 Power-on-Workaround implementiert
+QI | QMB store | nein | keine FTDX10-Implementierung gefunden
+QR | QMB recall | nein | keine FTDX10-Implementierung gefunden
+QS | Quick split | nein | keine FTDX10-Implementierung gefunden
+RA | RF attenuator | nein | keine FTDX10-Implementierung gefunden
+RC | Clarifier clear | nein | keine FTDX10-Implementierung gefunden
+RD | Clarifier down | nein | keine FTDX10-Implementierung gefunden
+RF | Roofing filter | nein | keine FTDX10-Implementierung gefunden
+RG | RF gain | nein | keine FTDX10-Implementierung gefunden
+RI | Radio information | nein | keine FTDX10-Implementierung gefunden
+RL | Noise reduction level | nein | keine FTDX10-Implementierung gefunden
+RM | Read meter | teilweise | konkret RM5 power und RM6 swr vorhanden, kein generischer RM-Zugriff
+RS | Radio status | nein | keine FTDX10-Implementierung gefunden
+RT | RX clarifier | nein | keine FTDX10-Implementierung gefunden
+RU | Clarifier up | nein | keine FTDX10-Implementierung gefunden
+SC | Scan | nein | keine FTDX10-Implementierung gefunden
+SD | Semi break-in delay time | nein | keine FTDX10-Implementierung gefunden
+SF | Sub dial | nein | keine FTDX10-Implementierung gefunden
+SH | Width | nein | keine FTDX10-Implementierung gefunden
+SM | S meter | teilweise | konkret SM0 Abfrage vorhanden, kein allgemeiner SM-Ausbau darueber hinaus
+SQ | Squelch level | nein | keine FTDX10-Implementierung gefunden
+SS | Spectrum scope | nein | keine FTDX10-Implementierung gefunden
+ST | Split | teilweise | ST read/on/off vorhanden, kein +5 kHz quick-split Parameter
+SV | Swap VFO | vorbereitet | SV-Kommando und asciiSwapVfo vorhanden, aber kein klarer FTDX10-Userpfad in der UI
+TS | TXW | nein | keine FTDX10-Implementierung gefunden
+TX | TX set | nein | keine FTDX10-Implementierung gefunden
+UL | Unlock | nein | keine FTDX10-Implementierung gefunden
+UP | Up | nein | keine FTDX10-Implementierung gefunden
+VD | VOX delay time | nein | keine FTDX10-Implementierung gefunden
+VG | VOX gain | nein | keine FTDX10-Implementierung gefunden
+VM | [V/M] key function | nein | keine FTDX10-Implementierung gefunden
+VS | VFO select | implementiert | read/select A/select B vorhanden
+VX | VOX | nein | keine FTDX10-Implementierung gefunden
+XT | TX clarifier | nein | keine FTDX10-Implementierung gefunden
+ZI | Zero in | nein | keine FTDX10-Implementierung gefunden

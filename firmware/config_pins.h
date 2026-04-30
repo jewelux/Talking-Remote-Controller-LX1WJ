@@ -37,4 +37,4 @@ static const int I2S_BCLK_PIN = 5;
 static const int I2S_LRCLK_PIN = 6;
 static const int I2S_DOUT_PIN = 7;
 static const int AMP_SD_PIN = -1;
-static const int I2S_SAMPLE_RATE = 11025;
+static const int I2S_SAMPLE_RATE = 8000;

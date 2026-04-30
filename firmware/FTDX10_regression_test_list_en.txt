@@ -1,0 +1,120 @@
+FTDX10 regression test list
+
+Profile / basic
+PROFILE 11
+ID?
+IF?
+FREQ?
+MODE?
+
+Frequency / mode
+FREQ 14100
+FREQ?
+MODE LSB
+MODE?
+MODE CW
+MODE?
+
+VFO / split
+VFOA?
+VFOB?
+VFO A
+VFO B
+SPLIT?
+SPLIT ON
+SPLIT?
+SPLIT OFF
+SPLIT?
+TXFREQ?
+
+VFO frequencies
+VFOA 14074
+VFOA?
+VFOB 7080
+VFOB?
+
+VFO modes
+VFOA MODE USB
+VFOA MODE?
+VFOA MODE LSB
+VFOA MODE?
+VFOB MODE CW
+VFOB MODE?
+VFOB MODE LSB
+VFOB MODE?
+
+Meters
+SM?
+PO?
+SWR?
+
+Switches
+LOCK?
+LOCK ON
+LOCK?
+LOCK OFF
+NR?
+NR ON
+NR?
+NR OFF
+NB?
+NB ON
+NB?
+NB OFF
+NOTCH?
+NOTCH ON
+NOTCH?
+NOTCH OFF
+
+Tuner
+TUNER?
+TUNER ON
+TUNER?
+TUNER OFF
+TUNER?
+TUNER TOGGLE
+TUNER?
+TUNER TOGGLE
+TUNER?
+TUNE
+
+Yaesu extras
+PA?
+PA ON
+PA?
+PA OFF
+GT?
+GT FAST
+GT?
+GT SLOW
+GT?
+GT OFF
+GT?
+PS?
+
+RX / TX
+RXTX?
+Enable TX active in simulator
+RXTX?
+Disable TX active in simulator
+RXTX?
+
+Simulator reverse direction
+Click Split in simulator, then run SPLIT?
+Click Tuner in simulator, then run TUNER?
+Use left-side VFO A mode buttons in simulator, then run VFOA MODE?
+Use right-side VFO B mode buttons in simulator, then run VFOB MODE?
+
+Keypad quick check
+Bank 1 T0 short -> FREQ?
+Bank 1 T9 short / long -> MODE? / set mode
+Bank 1 T7 short -> SM?
+Bank 1 T3 short / long -> LOCK? / toggle
+Bank 2 T1 / T2 / T3 short / long -> NR / NB / NOTCH
+Bank 4 T0 short / long / double -> TUNER? / TOGGLE / TUNE
+Bank 3 T0 / T1 / T2 / T4 / T5 / T6 -> SPLIT / VFOA / VFOB / VFOA MODE / VFOB MODE / RXTX
+
+Recommended result tags
+works
+wobbles
+fails

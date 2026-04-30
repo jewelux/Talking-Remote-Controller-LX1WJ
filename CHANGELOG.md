@@ -1,5 +1,16 @@
 # Changelog
 
+## V3.5.5 Voice and FTDX10 Test Refresh
+
+The repository is now aligned to the local `V3.5.5` firmware state.
+
+Main points:
+
+- synced the current local firmware sources into `firmware/`
+- refreshed generated `voice_data.h` and the matching `voice_assets` clips
+- added the current FTDX10 planning and regression notes from the local project folder
+- renamed the main sketch entry to `TalkingRemoteControllerLX1WJ_V3_5_5.ino`
+
 ## V3.5.4 FTDX10 Family Test Update
 
 The repository is now aligned to the local `V3.5.4` firmware state.

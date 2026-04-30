@@ -1,0 +1,21 @@
+diese Tools-Einstellungen verwenden:
+
+Board: ESP32S3 Dev Module
+Port: den COM-Port des Boards suchen
+USB CDC On Boot: Enabled
+CPU Frequency: 240MHz (WiFi)
+Core Debug Level: None
+USB DFU On Boot: disabled
+Erase all flash ...: enabled
+Events Run On: Core 1
+Flash Mode: DIO 80MHz
+Flash Size: 16MB (128Mb)
+JTEG Adapter: disabled
+Arduino Runs On: Core 1
+USB Firmware MSC on boot: disabled
+Partition Scheme: 16MB Flash (3MB App / 9.9 MB FatFS
+PSRAM: disabled
+upload mode: uart0 / hardware CDC
+Upload Speed: 921600
+USB Mode: Hardware CDC and JTAG
+Zigbee mode: disabled

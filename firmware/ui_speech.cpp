@@ -98,6 +98,9 @@ static const VoiceClip kVoiceClips[] = {
 #endif
   {"voice_error", voice_error, voice_error_len},
   {"voice_f", voice_f, voice_f_len},
+#if defined(HAS_VOICE_voice_fast)
+  {"voice_fast", voice_fast, voice_fast_len},
+#endif
   {"voice_five", voice_five, voice_five_len},
   {"voice_filter", voice_filter, voice_filter_len},
   {"voice_filtershape", voice_filtershape, voice_filtershape_len},
@@ -139,6 +142,9 @@ static const VoiceClip kVoiceClips[] = {
   {"voice_ok", voice_ok, voice_ok_len},
   {"voice_on", voice_on, voice_on_len},
   {"voice_one", voice_one, voice_one_len},
+#if defined(HAS_VOICE_voice_p)
+  {"voice_p", voice_p, voice_p_len},
+#endif
   {"voice_pbt", voice_pbt, voice_pbt_len},
   {"voice_percent", voice_percent, voice_percent_len},
   {"voice_please", voice_please, voice_please_len},
@@ -166,6 +172,9 @@ static const VoiceClip kVoiceClips[] = {
   {"voice_seven", voice_seven, voice_seven_len},
   {"voice_sharp", voice_sharp, voice_sharp_len},
   {"voice_six", voice_six, voice_six_len},
+#if defined(HAS_VOICE_voice_slow)
+  {"voice_slow", voice_slow, voice_slow_len},
+#endif
   {"voice_soft", voice_soft, voice_soft_len},
   {"voice_split", voice_split, voice_split_len},
   {"voice_stack", voice_stack, voice_stack_len},
@@ -177,6 +186,9 @@ static const VoiceClip kVoiceClips[] = {
   {"voice_t", voice_t, voice_t_len},
   {"voice_thankyou", voice_thankyou, voice_thankyou_len},
   {"voice_three", voice_three, voice_three_len},
+#if defined(HAS_VOICE_voice_transceive)
+  {"voice_transceive", voice_transceive, voice_transceive_len},
+#endif
   {"voice_transceiver", voice_transceiver, voice_transceiver_len},
 #if defined(HAS_VOICE_voice_tone)
   {"voice_tone", voice_tone, voice_tone_len},
@@ -189,6 +201,9 @@ static const VoiceClip kVoiceClips[] = {
   {"voice_vfo", voice_vfo, voice_vfo_len},
   {"voice_w", voice_w, voice_w_len},
   {"voice_watts", voice_watts, voice_watts_len},
+#if defined(HAS_VOICE_voice_x)
+  {"voice_x", voice_x, voice_x_len},
+#endif
   {"voice_y", voice_y, voice_y_len},
   {"voice_yaesu", voice_yaesu, voice_yaesu_len},
 #if defined(HAS_VOICE_voice_xiegu)
@@ -226,6 +241,13 @@ static const VoiceAlias kVoiceAliases[] = {
   {"rtty", {"r", "t", "t", "y"}, 4},
   {"rttyr", {"r", "t", "t", "y", "r"}, 5},
   {"rtty_r", {"r", "t", "t", "y", "r"}, 5},
+  {"gt", {"g", "t"}, 2},
+  {"id", {"i", "d"}, 2},
+  {"if", {"i", "f"}, 2},
+  {"pa", {"p", "a"}, 2},
+  {"ps", {"p", "s"}, 2},
+  {"rx", {"r", "x"}, 2},
+  {"tx", {"t", "x"}, 2},
   {"notchfilter", {"notch", "filter"}, 2},
   {"notch filter", {"notch", "filter"}, 2},
   {"vfoa", {"vfo", "a"}, 2},

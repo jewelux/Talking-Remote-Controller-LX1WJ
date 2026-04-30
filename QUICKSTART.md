@@ -1,10 +1,10 @@
 # Talking Remote Controller LX1WJ QuickStart
 
-This is the shortest technical path for the current firmware line **V3.5.4**.
+This is the shortest technical path for the current firmware line **V3.5.5**.
 
 ## Basic Setup
 
-1. Open `firmware/TalkingRemoteControllerLX1WJ_V3_5_4.ino` in Arduino IDE.
+1. Open `firmware/TalkingRemoteControllerLX1WJ_V3_5_5.ino` in Arduino IDE.
 2. Build for the intended ESP32-S3 target.
 3. Keep `voice_data.h` in the firmware folder.
 4. Copy the contents of `firmware/SDCard` to the controller SD card.

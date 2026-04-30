@@ -3,7 +3,7 @@
 The Talking Remote Controller is a voice-first keypad controller for amateur radio transceivers.
 It is intended to make practical radio operation possible without relying on a display.
 
-The repository now tracks the current modular firmware line **V3.5.4**.
+The repository now tracks the current modular firmware line **V3.5.5**.
 The newest work in this state is the first practical Yaesu **FTDX10 / FTDX101D / FTDX101MP** support block for assisted field testing.
 
 ## Start Here
@@ -23,7 +23,7 @@ The newest work in this state is the first practical Yaesu **FTDX10 / FTDX101D /
 
 ```text
 firmware/
-  TalkingRemoteControllerLX1WJ_V3_5_4.ino
+  TalkingRemoteControllerLX1WJ_V3_5_5.ino
   modular source files
   SDCard/*.ini radio profiles
 

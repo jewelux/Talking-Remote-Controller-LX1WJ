@@ -1,0 +1,173 @@
+Current speech style in this project
+
+- Numbers are usually spoken as single digits: zero, one, two, three, four, five, six, seven, eight, nine.
+- Decimal values are built from digits plus point.
+- Short abbreviations are often better spoken as letter sequences:
+  USB = u s b
+  LSB = l s b
+  CW = c w
+  CWR = c w r
+  WFM = w f m
+  SWR = s w r
+  RTTY = r t t y
+  VFO A/B = vfo + a/b
+- Common operating functions are spoken as normal words:
+  frequency, mode, lock, tuner, tune, split, rit, repeater, tone, monitor, transceiver, percent, hertz
+- Many states are built from a function word plus on/off.
+- Profile names are spoken as vendor word plus spoken digits.
+
+
+Files that are necessary for the current software speech system
+
+1. Number building blocks
+voice_zero.wav
+voice_one.wav
+voice_two.wav
+voice_three.wav
+voice_four.wav
+voice_five.wav
+voice_six.wav
+voice_seven.wav
+voice_eight.wav
+voice_nine.wav
+voice_point.wav
+
+2. Letter clips needed for abbreviations and profile spelling
+voice_a.wav
+voice_b.wav
+voice_c.wav
+voice_d.wav
+voice_f.wav
+voice_g.wav
+voice_i.wav
+voice_l.wav
+voice_m.wav
+voice_r.wav
+voice_s.wav
+voice_t.wav
+voice_u.wav
+voice_w.wav
+voice_y.wav
+
+3. Core control words
+voice_bank.wav
+voice_choose.wav
+voice_frequency.wav
+voice_mode.wav
+voice_lock.wav
+voice_on.wav
+voice_off.wav
+voice_ok.wav
+voice_error.wav
+voice_please.wav
+voice_plus.wav
+voice_minus.wav
+voice_equals.wav
+voice_step.wav
+voice_hertz.wav
+voice_percent.wav
+
+4. Radio operating words
+voice_vfo.wav
+voice_split.wav
+voice_tune.wav
+voice_tuner.wav
+voice_power.wav
+voice_s_meter.wav
+voice_swr.wav
+voice_rit.wav
+voice_clarifier.wav
+voice_repeater.wav
+voice_tone.wav
+voice_ctcss.wav
+voice_dcs.wav
+voice_ptt.wav
+voice_monitor.wav
+voice_transceiver.wav
+voice_sync.wav
+
+5. Mode words that are directly useful as spoken words
+voice_am.wav
+voice_digi.wav
+
+6. Filter / DSP words
+voice_filter.wav
+voice_filtershape.wav
+voice_filterwidth.wav
+voice_pbt.wav
+voice_notch.wav
+voice_noisereduction.wav
+voice_noiseblanker.wav
+voice_sharp.wav
+voice_soft.wav
+voice_level.wav
+
+7. Vendor words for profile speech
+voice_yaesu.wav
+voice_icom.wav
+voice_kenwood.wav
+voice_elecraft.wav
+voice_xiegu.wav
+
+
+Important files that are already present in the build, but missing as editable WAV source files in voice_assets/voice_clips
+
+voice_cw.wav
+voice_cwr.wav
+voice_db.wav
+voice_fm.wav
+voice_lsb.wav
+voice_notchfilter.wav
+voice_rtty.wav
+voice_rttyr.wav
+voice_usb.wav
+
+These are less critical at runtime right now because several of them can be built from letters or aliases.
+But they should exist as WAV source files if the voice set is meant to stay complete and reproducible.
+
+
+Important speech gaps for the current software
+
+voice_tx.wav
+voice_rx.wav
+
+Reason:
+- The current software already speaks TX/RX state in the FTDX10 path.
+- There is no clean TX/RX voice clip or alias in the current speech set.
+- Without these two clips, TX/RX feedback is not fully consistent.
+
+
+Recommended priority order
+
+1. Must have immediately
+voice_tx.wav
+voice_rx.wav
+
+2. Must keep safe and unchanged
+all number clips
+all core control words
+all vendor words
+all VFO/tuner/lock/split/power/S-meter/SWR clips
+
+3. Should be added as editable source WAV files for completeness
+voice_cw.wav
+voice_cwr.wav
+voice_db.wav
+voice_fm.wav
+voice_lsb.wav
+voice_notchfilter.wav
+voice_rtty.wav
+voice_rttyr.wav
+voice_usb.wav
+
+
+Short conclusion
+
+The current voice style is practical and good:
+- digits spoken individually
+- abbreviations often spoken letter by letter
+- common radio functions as normal words
+
+For the current software, the most important real speech additions are:
+voice_tx.wav
+voice_rx.wav

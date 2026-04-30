@@ -2,7 +2,7 @@
 
 ## Status
 
-The FT-857 is now best understood as part of the broader Yaesu FT8x7 family support in firmware `V3.5.4`.
+The FT-857 is now best understood as part of the broader Yaesu FT8x7 family support in firmware `V3.5.5`.
 
 For the current public state, please use these documents first:
 
@@ -13,7 +13,7 @@ For the current public state, please use these documents first:
 
 This page is intentionally kept minimal so the repository does not present two conflicting descriptions of the same family.
 
-The FT-857 remains important because it defines much of the `ft857_897` variant behavior, and `V3.5.4` keeps that shared logic around split handling and keypad write safety.
+The FT-857 remains important because it defines much of the `ft857_897` variant behavior, and `V3.5.5` keeps that shared logic around split handling and keypad write safety.
 
 ## Summary
 
@@ -26,7 +26,7 @@ Current FT-857 strengths in the project include:
 
 Known limitations are intentionally tracked in the FT8x7 family status page rather than repeated here.
 
-Important `V3.5.4` notes:
+Important `V3.5.5` notes:
 
 - the shipped profile now exposes split query and split set
 - split status decoding was corrected to the proper FT8x7 TX-status bit

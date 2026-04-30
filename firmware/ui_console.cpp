@@ -241,6 +241,16 @@ static void speakVfoFrequencyLabel(char which) {
   speakToken("frequency");
 }
 
+static void speakConsoleSpeechGapMarker() {
+  if (!g_speechEnabled) return;
+  speakError();
+}
+
+static void speakConsoleTokenOrGap(const char* token) {
+  if (!g_speechEnabled) return;
+  if (!speakToken(token)) speakError();
+}
+
 static void speakRitStateAndOffset(bool on, int32_t offset) {
   if (!g_speechEnabled) return;
   speakToken("rit");
@@ -1465,6 +1475,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     if (!asciiQueryStatusLine(sp, rsp, 800)) { Serial.println("IF? -> no reply"); return true; }
     Serial.print("IF: ");
     Serial.println(rsp);
+    speakConsoleTokenOrGap("if");
     return true;
   }
   if (upper == "ID?") {
@@ -1472,6 +1483,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     if (!asciiQueryIdLine(sp, rsp, 800)) { Serial.println("ID? -> no reply"); return true; }
     Serial.print("ID: ");
     printAsciiReplyPayload(rsp, sp.ascii.idReplyPrefix);
+    speakConsoleTokenOrGap("id");
     return true;
   }
   if (upper == "OM?") {
@@ -1709,16 +1721,19 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     bool on = false;
     if (!querySplit(on, 800)) { Serial.println("SPLIT? -> no reply"); return true; }
     Serial.println(on ? "SPLIT ON" : "SPLIT OFF");
+    speakTokenState("split", on);
     return true;
   }
   if (upper == "SPLIT ON") {
     if (!setSplit(true)) { Serial.println("SPLIT ON -> failed"); return true; }
     Serial.println("SPLIT ON");
+    speakTokenState("split", true);
     return true;
   }
   if (upper == "SPLIT OFF") {
     if (!setSplit(false)) { Serial.println("SPLIT OFF -> failed"); return true; }
     Serial.println("SPLIT OFF");
+    speakTokenState("split", false);
     return true;
   }
   if (upper == "RIT?") {
@@ -2076,16 +2091,19 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     bool on = false;
     if (!asciiQueryPreamp(sp, on, 800)) { Serial.println("PA? -> no reply"); return true; }
     Serial.println(on ? "PA ON" : "PA OFF");
+    if (g_speechEnabled) speakTokenState("pa", on);
     return true;
   }
   if (upper == "PA ON") {
     if (!asciiSetPreamp(sp, true)) { Serial.println("PA ON -> failed"); return true; }
     Serial.println("PA ON");
+    if (g_speechEnabled) speakTokenState("pa", true);
     return true;
   }
   if (upper == "PA OFF") {
     if (!asciiSetPreamp(sp, false)) { Serial.println("PA OFF -> failed"); return true; }
     Serial.println("PA OFF");
+    if (g_speechEnabled) speakTokenState("pa", false);
     return true;
   }
   if (upper == "PA TOGGLE") {
@@ -2093,6 +2111,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     if (!asciiQueryPreamp(sp, on, 800)) { Serial.println("PA TOGGLE -> no reply"); return true; }
     if (!asciiSetPreamp(sp, !on)) { Serial.println("PA TOGGLE -> failed"); return true; }
     Serial.println(!on ? "PA ON" : "PA OFF");
+    if (g_speechEnabled) speakTokenState("pa", !on);
     return true;
   }
   if (upper == "GT?") {
@@ -2100,37 +2119,48 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     if (!asciiQueryAgcLine(sp, rsp, 800)) { Serial.println("GT? -> no reply"); return true; }
     Serial.print("GT: ");
     printAsciiReplyPayload(rsp, sp.ascii.agcReplyPrefix);
+    speakConsoleTokenOrGap("gt");
     return true;
   }
   if (upper == "GT FAST") {
     if (!asciiSetAgcCommand(sp, sp.ascii.agcFastCmd)) { Serial.println("GT FAST -> failed"); return true; }
     Serial.println("GT FAST");
+    speakConsoleTokenOrGap("gt");
+    playSilenceMs(60);
+    speakConsoleTokenOrGap("fast");
     return true;
   }
   if (upper == "GT SLOW") {
     if (!asciiSetAgcCommand(sp, sp.ascii.agcSlowCmd)) { Serial.println("GT SLOW -> failed"); return true; }
     Serial.println("GT SLOW");
+    speakConsoleTokenOrGap("gt");
+    playSilenceMs(60);
+    speakConsoleTokenOrGap("slow");
     return true;
   }
   if (upper == "GT OFF") {
     if (!asciiSetAgcCommand(sp, sp.ascii.agcOffCmd)) { Serial.println("GT OFF -> failed"); return true; }
     Serial.println("GT OFF");
+    if (g_speechEnabled) speakTokenState("gt", false);
     return true;
   }
   if (upper == "PS?") {
     bool on = false;
     if (!asciiQueryPowerState(sp, on, 800)) { Serial.println("PS? -> no reply"); return true; }
     Serial.println(on ? "PS ON" : "PS OFF");
+    if (g_speechEnabled) speakTokenState("ps", on);
     return true;
   }
   if (upper == "PS ON") {
     if (!asciiSetPowerState(sp, true)) { Serial.println("PS ON -> failed"); return true; }
     Serial.println("PS ON");
+    if (g_speechEnabled) speakTokenState("ps", true);
     return true;
   }
   if (upper == "PS OFF") {
     if (!asciiSetPowerState(sp, false)) { Serial.println("PS OFF -> failed"); return true; }
     Serial.println("PS OFF");
+    if (g_speechEnabled) speakTokenState("ps", false);
     return true;
   }
   if (upper == "SPLIT TOGGLE") {

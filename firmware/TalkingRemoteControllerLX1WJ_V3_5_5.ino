@@ -1,7 +1,7 @@
 /*
   Talking Remote Controller LX1WJ - ESP32-S3 + Keypad + Speech + Multi-Radio Profiles
-  File: TalkingRemoteControllerLX1WJ_V3_5_4.ino
-  Version: V3.5.4
+  File: TalkingRemoteControllerLX1WJ_V3_5_5.ino
+  Version: V3.5.5
   Bugfixes vs V3.5:
     - FT-817: yaesuCatSelectVfoA/B() waren Stubs (return false) -> VFO-Ops schlugen lautlos fehl
     - FT-817: Split-Status las Bit2 (ALC) statt Bit5 (Split) aus dem TX-Status-Byte
@@ -60,7 +60,7 @@ void setup() {
   g_tuningSpeakEnabled = loadTuningSpeakFromNvs(true);
   applyProfile(g_profileId);
 
-  DBG_PRINT("Talking Remote Controller LX1WJ (V3.5.4) - Selected radio: ");
+  DBG_PRINT("Talking Remote Controller LX1WJ (V3.5.5) - Selected radio: ");
   DBG_PRINT(currentProfile().name);
   DBG_PRINT("  CI-V addr=0x");
   if (debugLogEnabled()) Serial.println(g_civRadioAddr, HEX);
