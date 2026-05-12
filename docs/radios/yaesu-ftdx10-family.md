@@ -1,6 +1,6 @@
 # Yaesu FTDX10 Family Status
 
-This page is the short technical summary for the current **V3.5.5** FTDX10 family state.
+This page is the short technical summary for the current **V3.5.7** FTDX10 family state.
 
 Profiles:
 

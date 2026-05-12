@@ -12,6 +12,7 @@
 #include "radio_state.h"
 #include "radio_protocol.h"
 #include "radio_utils.h"
+#include "sd_slots.h"
 #include "ui_speech.h"
 #include "ui_console_support.h"
 #include "engine_civ.h"
@@ -42,6 +43,7 @@ static void queryBank1TxFrequency();
 static void queryBank1Lock();
 static void toggleBank1Lock();
 static void beginBank1FrequencySet();
+static void beginBank1RfPowerSet();
 static void queryBank3Split();
 static void toggleBank3Split();
 static void queryBank3TxFrequency();
@@ -89,6 +91,7 @@ static void selectNextProfile();
 static void selectPrevProfile();
 static void queryBank9TuningSpeech();
 static void toggleBank9TuningSpeech();
+static bool selectBank9DirectProfile(char key);
 static bool handleDeferredShortRelease(uint8_t bank, char key);
 static bool handleDoubleClick(uint8_t bank, char key);
 static bool shouldDelayShortRelease(uint8_t bank, char key);
@@ -1417,6 +1420,23 @@ static void beginBank1FrequencySet() {
   }
 }
 
+static void beginBank1RfPowerSet() {
+  if (currentProtocolType() != PROTO_CIV || !currentStoredProfile().caps.setRfPower) {
+    printKeypadStatus("RFPOWER -> unavailable");
+    if (g_speechEnabled) speakError();
+    return;
+  }
+  printKeypadCommand("BANK1 6 LONG -> RFPOWER");
+  g_rfPowerEntryActive = true;
+  g_rfPowerEntryDigits = "";
+  printKeypadStatus("POWER PLEASE");
+  if (g_speechEnabled) {
+    speakToken("power");
+    playSilenceMs(80);
+    speakToken("please");
+  }
+}
+
 static void toggleBank1Lock() {
   printKeypadCommand("BANK1 3 LONG -> LOCK");
   if (isFtdx10KeypadProfile()) {
@@ -1667,6 +1687,27 @@ static void toggleBank9TuningSpeech() {
   setTuningSpeechEnabled(!g_tuningSpeakEnabled);
   printKeypadStatus(String("TUNINGSPEECH ") + (g_tuningSpeakEnabled ? "ON" : "OFF"));
   speakTuningSpeechState();
+}
+
+static bool lightIcomFallbackActive() {
+  return getLastSdLoadStatus() != SD_LOAD_OK;
+}
+
+static bool selectBank9DirectProfile(char key) {
+  if (!lightIcomFallbackActive()) return false;
+  if (key < '1' || key > '9') return false;
+  const uint8_t slot = (uint8_t)(key - '0');
+  if (!storedProfileForId(slot)) {
+    printKeypadCommand(String("BANK9 ") + key + " SHORT -> PROFILE");
+    printKeypadStatus(String("PROFILE ") + String((int)slot) + " EMPTY");
+    if (g_speechEnabled) speakError();
+    return true;
+  }
+  printKeypadCommand(String("BANK9 ") + key + " SHORT -> PROFILE " + String((int)slot));
+  applyProfile(slot);
+  printKeypadStatus(String("PROFILE ") + String((int)slot));
+  speakCurrentProfile();
+  return true;
 }
 
 static void speakRitOffsetValue(int32_t hz) {
@@ -1977,6 +2018,17 @@ static bool handleDeferredShortRelease(uint8_t bank, char key) {
   }
   if (bank == 9) {
     switch (key) {
+      case '1':
+      case '2':
+      case '3':
+      case '4':
+      case '5':
+      case '6':
+      case '7':
+      case '8':
+      case '9':
+        if (selectBank9DirectProfile(key)) return true;
+        break;
       default: break;
     }
   }
@@ -2123,8 +2175,22 @@ void keypadEvent(KeypadEvent k) {
     g_zeroHoldConsumed = false;
     return;
   }
+  if (s == RELEASED && g_sixHoldConsumed && g_bank == 1 && k == '6') {
+    g_sixHoldConsumed = false;
+    return;
+  }
 
   if (g_freqEntryActive) {
+    if (k == 'D' && s == RELEASED) { keypadEnter(); return; }
+    if (k == '#' && s == RELEASED) { keypadClearAll(); return; }
+    if (k >= '0' && k <= '9' && s == RELEASED) {
+      keypadHandleReleased((char)k);
+      return;
+    }
+    return;
+  }
+
+  if (g_rfPowerEntryActive) {
     if (k == 'D' && s == RELEASED) { keypadEnter(); return; }
     if (k == '#' && s == RELEASED) { keypadClearAll(); return; }
     if (k >= '0' && k <= '9' && s == RELEASED) {
@@ -2198,6 +2264,11 @@ void keypadEvent(KeypadEvent k) {
   if (g_bank == 1 && isFtdx10KeypadProfile() && k == '6' && s == HOLD) {
     printKeypadCommand("BANK1 6 LONG -> PA TOGGLE");
     keypadSendNow("PA TOGGLE");
+    g_sixHoldConsumed = true;
+    return;
+  }
+  if (g_bank == 1 && currentProtocolType() == PROTO_CIV && k == '6' && s == HOLD) {
+    beginBank1RfPowerSet();
     g_sixHoldConsumed = true;
     return;
   }
@@ -2623,6 +2694,9 @@ void keypadEvent(KeypadEvent k) {
 
   if (s == RELEASED) {
     char key = (char)k;
+    if (g_bank == 9 && lightIcomFallbackActive() && key >= '1' && key <= '9') {
+      if (selectBank9DirectProfile(key)) return;
+    }
     if (g_pendingClickActive &&
         g_pendingClickBank == g_bank &&
         g_pendingClickKey == key &&

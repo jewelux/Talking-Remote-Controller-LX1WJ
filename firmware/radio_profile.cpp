@@ -65,6 +65,9 @@ void printActiveProfileDetails() {
     Serial.print(sp->caps.getSmeter ? "1" : "0");
     Serial.print(" power=");
     Serial.print(sp->caps.getPower ? "1" : "0");
+    Serial.print(" rfpower=");
+    Serial.print(sp->caps.getRfPower ? "R" : "-");
+    Serial.print(sp->caps.setRfPower ? "W" : "-");
     Serial.print(" swr=");
     Serial.print(sp->caps.getSwr ? "1" : "0");
     Serial.print(" rxtx=");

@@ -341,6 +341,7 @@ static void speakKeypadCommandWord(const String& cmd) {
   else if (cmd == "MODE?") speakToken("mode");
   else if (cmd == "SM?") speakToken("s_meter");
   else if (cmd == "SWR?") speakToken("swr");
+  else if (cmd == "RFPOWER?") speakToken("power");
   else if (cmd == "NOTCH?") speakToken("notch filter");
 }
 
@@ -365,6 +366,8 @@ void keypadClearAll() {
   g_freqEntryDigits = "";
   g_freqEntryIsMHz = false;
   g_freqEntryTargetVfo = 0;
+  g_rfPowerEntryActive = false;
+  g_rfPowerEntryDigits = "";
   g_bank6EntryMode = BANK6_ENTRY_NONE;
   g_bank6EntryDigits = "";
   g_modeSetActive = false;
@@ -529,6 +532,19 @@ void keypadEnter() {
     return;
   }
 
+  if (g_rfPowerEntryActive) {
+    printKeypadCommand("ENTER -> RFPOWER");
+    if (!g_rfPowerEntryDigits.length()) {
+      printKeypadStatus("RFPOWER -> no value");
+      if (g_speechEnabled) speakError();
+    } else {
+      keypadSendNow(String("RFPOWER ") + g_rfPowerEntryDigits);
+    }
+    g_rfPowerEntryActive = false;
+    g_rfPowerEntryDigits = "";
+    return;
+  }
+
   if (g_bank6EntryMode != BANK6_ENTRY_NONE) {
     if (g_bank6EntryMode == BANK6_ENTRY_OFFSET) {
       printKeypadCommand("ENTER -> RPTSHIFT");
@@ -672,6 +688,16 @@ void keypadHandleReleased(char k) {
     return;
   }
 
+  if (g_rfPowerEntryActive) {
+    if (k >= '0' && k <= '9' && g_rfPowerEntryDigits.length() < 3) {
+      g_rfPowerEntryDigits += k;
+      printKeypadCommand(String("RFPOWER DIGIT -> ") + String(k));
+      printKeypadStatus(String("RFPOWER STAGE: ") + g_rfPowerEntryDigits + " W");
+      if (g_speechEnabled) speakDigitsAndPoint(String(k));
+    }
+    return;
+  }
+
   if (g_bank6EntryMode != BANK6_ENTRY_NONE) {
     size_t maxDigits = 4;
     if (g_bank6EntryMode == BANK6_ENTRY_DCS) maxDigits = 3;
@@ -731,6 +757,10 @@ void keypadHandleReleased(char k) {
         if (isFtdx10KeypadProfile()) {
           printKeypadCommand("BANK1 6 SHORT -> PA?");
           keypadSendNow("PA?");
+          return;
+        }
+        if (currentProtocolType() == PROTO_CIV && currentStoredProfile().caps.getRfPower) {
+          sendOrStageBank1Command("BANK1 6 SHORT", "RFPOWER?");
           return;
         }
         return;

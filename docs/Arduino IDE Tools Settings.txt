@@ -13,7 +13,7 @@ Flash Size: 16MB (128Mb)
 JTEG Adapter: disabled
 Arduino Runs On: Core 1
 USB Firmware MSC on boot: disabled
-Partition Scheme: 16MB Flash (3MB App / 9.9 MB FatFS
+Partition Scheme: custom
 PSRAM: disabled
 upload mode: uart0 / hardware CDC
 Upload Speed: 921600

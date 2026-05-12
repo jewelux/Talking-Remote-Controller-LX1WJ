@@ -7,6 +7,8 @@
 #include "radio_state.h"
 #include "radio_utils.h"
 
+#include <string.h>
+
 static bool civQueryToggleSub(uint8_t subcmd, bool& onOut, uint32_t timeoutMs) {
   civFlushInput();
   const uint8_t sub[] = {subcmd};
@@ -110,6 +112,79 @@ static bool civSet14Value(uint8_t subcmd, uint16_t value) {
   return true;
 }
 
+static bool isIcom7760Profile(const StoredProfile& sp) {
+  return sp.protocolType == PROTO_CIV && strcmp(sp.variant, "ic7760") == 0;
+}
+
+static uint8_t civMainSubSelector(bool main) {
+  return main ? 0x00 : 0x01;
+}
+
+static void civSendMainSub(uint8_t mainSub, uint8_t cmd, const uint8_t* data, size_t dataLen) {
+  uint8_t pl[32];
+  if (dataLen + 2 > sizeof(pl)) return;
+  pl[0] = mainSub;
+  pl[1] = cmd;
+  if (data && dataLen) memcpy(pl + 2, data, dataLen);
+  civSend(0x29, pl, dataLen + 2);
+}
+
+static bool waitMainSubReply(uint8_t mainSub, uint8_t innerCmd, CivDecoded& out, uint32_t timeoutMs) {
+  CivDecoded d;
+  if (!waitReply(0x29, d, timeoutMs) || d.payloadLen < 2) return false;
+  if (d.payload[0] != mainSub || d.payload[1] != innerCmd) return false;
+  out = d;
+  out.payload = d.payload + 2;
+  out.payloadLen = d.payloadLen - 2;
+  return true;
+}
+
+static bool civQueryMainSubFrequency(uint8_t mainSub, uint64_t& hzOut, uint32_t timeoutMs) {
+  civFlushInput();
+  civSendMainSub(mainSub, 0x03, nullptr, 0);
+  CivDecoded d;
+  if (!waitMainSubReply(mainSub, 0x03, d, timeoutMs) || d.payloadLen < 5) return false;
+  hzOut = decodeBcdFrequencyHz(d.payload, 5);
+  return true;
+}
+
+static bool civSetMainSubFrequency(uint8_t mainSub, uint64_t hz) {
+  uint8_t bcd[5] = {0};
+  uint64_t v = hz;
+  for (int i = 0; i < 5; ++i) {
+    uint8_t d1 = v % 10; v /= 10;
+    uint8_t d2 = v % 10; v /= 10;
+    bcd[i] = (d2 << 4) | d1;
+  }
+  civFlushInput();
+  civSendMainSub(mainSub, 0x05, bcd, 5);
+  civSettleAfterWrite();
+  uint64_t readBack = 0;
+  return civQueryMainSubFrequency(mainSub, readBack, 800) && readBack == hz;
+}
+
+static bool civQueryMainSubMode(uint8_t mainSub, uint8_t& modeOut, uint8_t& filterOut, uint32_t timeoutMs) {
+  civFlushInput();
+  civSendMainSub(mainSub, 0x04, nullptr, 0);
+  CivDecoded d;
+  if (!waitMainSubReply(mainSub, 0x04, d, timeoutMs) || d.payloadLen < 1) return false;
+  modeOut = d.payload[0];
+  filterOut = d.payloadLen >= 2 ? d.payload[1] : 1;
+  return true;
+}
+
+static bool civSetMainSubMode(uint8_t mainSub, uint8_t mode, uint8_t filter) {
+  const uint8_t pl[] = {mode, filter};
+  civFlushInput();
+  civSendMainSub(mainSub, 0x06, pl, 2);
+  civSettleAfterWrite();
+  uint8_t readMode = 0xFF;
+  uint8_t readFilter = 0xFF;
+  return civQueryMainSubMode(mainSub, readMode, readFilter, 800) &&
+         readMode == mode &&
+         readFilter == filter;
+}
+
 static bool decodeIcomNotchWidth(uint8_t raw, NotchWidth& widthOut) {
   switch (raw) {
     case 0x00: widthOut = NOTCH_WIDTH_WIDE; return true;
@@ -204,6 +279,19 @@ bool civQuerySWRRaw(const StoredProfile& sp, int32_t& rawOut, uint32_t timeoutMs
   if (!waitReply(0x15, d, timeoutMs) || d.payloadLen < 2 || d.payload[0] != 0x12) return false;
   rawOut = bcdDigitsToInt(d.payload + 1, d.payloadLen - 1);
   return true;
+}
+
+bool civQueryRfPowerLevel(const StoredProfile& sp, uint16_t& valueOut, uint32_t timeoutMs) {
+  if (!sp.caps.getRfPower) return false;
+  return civQuery14Value(0x0A, valueOut, timeoutMs);
+}
+
+bool civSetRfPowerLevel(const StoredProfile& sp, uint16_t value) {
+  if (!sp.caps.setRfPower) return false;
+  if (!civSet14Value(0x0A, value)) return false;
+  civSettleAfterWrite();
+  uint16_t readBack = 0;
+  return civQueryRfPowerLevel(sp, readBack, 800) && readBack == value;
 }
 
 bool civQueryNr(const StoredProfile& sp, bool& onOut, uint32_t timeoutMs) {
@@ -484,6 +572,10 @@ bool civQueryTxFrequency(const StoredProfile& sp, uint64_t& hzOut, uint32_t time
 
 bool civSelectVfoA(const StoredProfile& sp) {
   if (sp.protocolType != PROTO_CIV) return false;
+  if (isIcom7760Profile(sp)) {
+    rememberActiveVfo(true);
+    return true;
+  }
   civFlushInput();
   const uint8_t sub[] = {0x00};
   civSend(0x07, sub, 1);
@@ -494,6 +586,10 @@ bool civSelectVfoA(const StoredProfile& sp) {
 
 bool civSelectVfoB(const StoredProfile& sp) {
   if (sp.protocolType != PROTO_CIV) return false;
+  if (isIcom7760Profile(sp)) {
+    rememberActiveVfo(false);
+    return true;
+  }
   civFlushInput();
   const uint8_t sub[] = {0x01};
   civSend(0x07, sub, 1);
@@ -549,6 +645,7 @@ static bool civEnsureActiveVfoKnown(const StoredProfile& sp) {
 
 bool civQueryVfoFrequency(const StoredProfile& sp, bool targetVfoA, uint64_t& hzOut, uint32_t timeoutMs) {
   if (sp.protocolType != PROTO_CIV) return false;
+  if (isIcom7760Profile(sp)) return civQueryMainSubFrequency(civMainSubSelector(targetVfoA), hzOut, timeoutMs);
   if (!civEnsureActiveVfoKnown(sp)) return false;
   const uint8_t selector = civEncodeVfoSelector(targetVfoA);
   return civQuerySelectedOrUnselectedFrequencyRaw(selector, hzOut, timeoutMs);
@@ -556,6 +653,7 @@ bool civQueryVfoFrequency(const StoredProfile& sp, bool targetVfoA, uint64_t& hz
 
 bool civSetVfoFrequency(const StoredProfile& sp, bool targetVfoA, uint64_t hz) {
   if (sp.protocolType != PROTO_CIV) return false;
+  if (isIcom7760Profile(sp)) return civSetMainSubFrequency(civMainSubSelector(targetVfoA), hz);
   if (!civEnsureActiveVfoKnown(sp)) return false;
   uint8_t pl[6] = {0};
   pl[0] = civEncodeVfoSelector(targetVfoA);
@@ -574,6 +672,7 @@ bool civSetVfoFrequency(const StoredProfile& sp, bool targetVfoA, uint64_t hz) {
 
 bool civQueryVfoMode(const StoredProfile& sp, bool targetVfoA, uint8_t& modeOut, uint8_t& filterOut, uint32_t timeoutMs) {
   if (sp.protocolType != PROTO_CIV) return false;
+  if (isIcom7760Profile(sp)) return civQueryMainSubMode(civMainSubSelector(targetVfoA), modeOut, filterOut, timeoutMs);
   if (!civEnsureActiveVfoKnown(sp)) return false;
   const uint8_t selector = civEncodeVfoSelector(targetVfoA);
   civFlushInput();
@@ -588,6 +687,7 @@ bool civQueryVfoMode(const StoredProfile& sp, bool targetVfoA, uint8_t& modeOut,
 
 bool civSetVfoMode(const StoredProfile& sp, bool targetVfoA, uint8_t mode, uint8_t filter) {
   if (sp.protocolType != PROTO_CIV) return false;
+  if (isIcom7760Profile(sp)) return civSetMainSubMode(civMainSubSelector(targetVfoA), mode, filter);
   if (!civEnsureActiveVfoKnown(sp)) return false;
   const uint8_t pl[] = {civEncodeVfoSelector(targetVfoA), mode, 0x00, filter};
   civFlushInput();

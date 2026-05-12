@@ -96,6 +96,10 @@ static void setFt8x7Bank6Defaults(StoredProfile& sp) {
   sp.ft8x7Bank6.dcsDefaultCode = 23;
 }
 
+static void setPowerDefaults(StoredProfile& sp) {
+  sp.rfPowerMaxWatts = 100;
+}
+
 static void setProtocolDefaults(StoredProfile& sp) {
   sp.caps.getFreq = true;
   sp.caps.setFreq = true;
@@ -103,6 +107,8 @@ static void setProtocolDefaults(StoredProfile& sp) {
   sp.caps.setMode = true;
   sp.caps.getSmeter = false;
   sp.caps.getPower = false;
+  sp.caps.getRfPower = false;
+  sp.caps.setRfPower = false;
   sp.caps.getSwr = false;
   sp.caps.getRxTx = false;
   sp.caps.getTxFreq = false;
@@ -148,6 +154,7 @@ static void setProtocolDefaults(StoredProfile& sp) {
   sp.caps.getBandStack = false;
   setAsciiDefaults(sp);
   setFt8x7Bank6Defaults(sp);
+  setPowerDefaults(sp);
 
   if (sp.protocolType == PROTO_CIV) {
     sp.caps.getSmeter = true;
@@ -305,15 +312,28 @@ static void assignStoredProfile(StoredProfile& sp, const CivProfile& civ, Protoc
 
 void seedBuiltInSlots() {
   const CivProfile profile7300 = {0x94, "IC-7300", CIV_BAUD, 1, CIV_RX_PIN, CIV_TX_PIN, true, false};
-  const CivProfile profile706 = {0x58, "Icom 706", CIV_BAUD, 1, CIV_RX_PIN, CIV_TX_PIN, true, false};
   const CivProfile profile7300Rs232 = {0x94, "Icom 7300 rs232", CIV_BAUD, 2, RS232_RX_PIN, RS232_TX_PIN, false, false};
-  const CivProfile profileG106 = {0x76, "Xiegu 106", CAT_BAUD, 2, CAT_RX_PIN, CAT_TX_PIN, CAT_TX_INVERT, CAT_RX_INVERT};
+  const CivProfile profile706 = {0x58, "Icom 706", CIV_BAUD, 1, CIV_RX_PIN, CIV_TX_PIN, true, false};
+  const CivProfile profile706Rs232 = {0x58, "Icom 706 rs232", CIV_BAUD, 2, RS232_RX_PIN, RS232_TX_PIN, false, false};
+  const CivProfile profile705 = {0xA4, "Icom IC-705", CIV_BAUD, 1, CIV_RX_PIN, CIV_TX_PIN, true, false};
+  const CivProfile profile7760 = {0xB2, "Icom IC-7760", 19200, 1, CIV_RX_PIN, CIV_TX_PIN, true, false};
 
   for (uint8_t i = 0; i < MAX_PROFILE_SLOTS; ++i) clearStoredProfile(g_slotProfiles[i]);
   assignStoredProfile(g_slotProfiles[0], profile7300, PROTO_CIV, "icom", "7300", false);
-  assignStoredProfile(g_slotProfiles[1], profile706, PROTO_CIV, "icom", "706", false);
-  assignStoredProfile(g_slotProfiles[2], profile7300Rs232, PROTO_CIV, "icom", "7300232", false);
-  assignStoredProfile(g_slotProfiles[3], profileG106, PROTO_CIV, "xiegu", "106", false);
+  assignStoredProfile(g_slotProfiles[1], profile7300Rs232, PROTO_CIV, "icom", "7300232", false);
+  assignStoredProfile(g_slotProfiles[2], profile706, PROTO_CIV, "icom", "706", false);
+  assignStoredProfile(g_slotProfiles[3], profile706Rs232, PROTO_CIV, "icom", "706232", false);
+  assignStoredProfile(g_slotProfiles[4], profile705, PROTO_CIV, "icom", "705", false);
+  assignStoredProfile(g_slotProfiles[5], profile7760, PROTO_CIV, "icom", "7760", false);
+  g_slotProfiles[0].caps.getRfPower = true;
+  g_slotProfiles[0].caps.setRfPower = true;
+  g_slotProfiles[1].caps.getRfPower = true;
+  g_slotProfiles[1].caps.setRfPower = true;
+  g_slotProfiles[5].caps.getRfPower = true;
+  g_slotProfiles[5].caps.setRfPower = true;
+  g_slotProfiles[5].rfPowerMaxWatts = 200;
+  copyCString(g_slotProfiles[4].variant, sizeof(g_slotProfiles[4].variant), "ic705");
+  copyCString(g_slotProfiles[5].variant, sizeof(g_slotProfiles[5].variant), "ic7760");
 }
 
 void profileLoaderAssignIniProfile(
@@ -328,6 +348,7 @@ void profileLoaderAssignIniProfile(
   out.caps = parsedDefaults.caps;
   out.ascii = parsedDefaults.ascii;
   out.ft8x7Bank6 = parsedDefaults.ft8x7Bank6;
+  out.rfPowerMaxWatts = parsedDefaults.rfPowerMaxWatts;
 }
 
 void profileLoaderPrepareDefaults(StoredProfile& sp, ProtocolType proto) {

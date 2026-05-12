@@ -4,6 +4,7 @@
 #include "radio_mode.h"
 #include "packet_ascii.h"
 #include "protocol_ascii.h"
+#include "protocol_civ.h"
 #include "protocol_ops_ascii.h"
 #include "protocol_ops_yaesu.h"
 #include "protocol_yaesu_cat.h"
@@ -13,9 +14,11 @@
 #include "radio_state.h"
 #include "radio_utils.h"
 #include "sd_slots.h"
+#include "transport_serial.h"
 #include "ui_speech.h"
 #include "ui_console_support.h"
 #include "ui_keypad.h"
+#include "firmware_version.h"
 
 static void speakBinaryFeatureState(const uint8_t* featureData, size_t featureLen, bool on) {
   if (!g_speechEnabled) return;
@@ -33,6 +36,19 @@ static uint16_t levelPercentToRaw(int percent) {
   if (percent < 0) percent = 0;
   if (percent > 100) percent = 100;
   return (uint16_t)((percent * 255 + 50) / 100);
+}
+
+static uint16_t rfPowerRawToWatts(uint16_t raw) {
+  const uint16_t maxWatts = currentStoredProfile().rfPowerMaxWatts ? currentStoredProfile().rfPowerMaxWatts : 100;
+  if (raw >= 255) return maxWatts;
+  return (uint16_t)((raw * (uint32_t)maxWatts + 127U) / 255U);
+}
+
+static uint16_t rfPowerWattsToRaw(int watts) {
+  const uint16_t maxWatts = currentStoredProfile().rfPowerMaxWatts ? currentStoredProfile().rfPowerMaxWatts : 100;
+  if (watts < 0) watts = 0;
+  if (watts > maxWatts) watts = maxWatts;
+  return (uint16_t)((watts * 255UL + (maxWatts / 2U)) / maxWatts);
 }
 
 static int pbtRawToOffset(uint16_t raw) {
@@ -361,20 +377,104 @@ static bool parseTwoHexByteArgs(const String& input, uint8_t& firstOut, uint8_t&
   return parseHexByteString(a, firstOut) && parseHexByteString(b, secondOut);
 }
 
-String readLine() {
-  static String line;
-  while (Serial.available()) {
-    char c = (char)Serial.read();
+static void printHexByte2(uint8_t b) {
+  if (b < 0x10) Serial.print('0');
+  Serial.print(b, HEX);
+}
+
+static bool parseCivRawArgs(String args, uint8_t& cmdOut, uint8_t* payloadOut, size_t& payloadLenOut, size_t payloadMax) {
+  args.trim();
+  if (!args.length()) return false;
+  payloadLenOut = 0;
+
+  int sep = args.indexOf(' ');
+  String cmdToken = sep < 0 ? args : args.substring(0, sep);
+  cmdToken.trim();
+  if (!parseHexByteString(cmdToken, cmdOut)) return false;
+  if (sep < 0) return true;
+
+  String rest = args.substring(sep + 1);
+  rest.trim();
+  while (rest.length()) {
+    if (payloadLenOut >= payloadMax) return false;
+    int next = rest.indexOf(' ');
+    String token = next < 0 ? rest : rest.substring(0, next);
+    token.trim();
+    if (token.length()) {
+      if (!parseHexByteString(token, payloadOut[payloadLenOut])) return false;
+      ++payloadLenOut;
+    }
+    if (next < 0) break;
+    rest = rest.substring(next + 1);
+    rest.trim();
+  }
+  return true;
+}
+
+static bool printCivRawTransaction(uint8_t cmd, const uint8_t* payload, size_t payloadLen, bool query) {
+  civFlushInput();
+  civSend(cmd, payload, payloadLen);
+  Serial.print(query ? "CIVRAW? TX: " : "CIVRAW TX: ");
+  printHexByte2(cmd);
+  for (size_t i = 0; i < payloadLen; ++i) {
+    Serial.print(' ');
+    printHexByte2(payload[i]);
+  }
+  Serial.println();
+
+  const uint32_t start = millis();
+  bool any = false;
+  uint8_t buf[96];
+  while (millis() - start < 1000) {
+    size_t n = civReadFrame(buf, sizeof(buf), 80);
+    if (!n) continue;
+    CivDecoded d = civDecode(buf, n);
+    if (!d.ok) continue;
+    if (d.from != currentProfile().civAddr) continue;
+    any = true;
+    Serial.print("CIVRAW RX: to=");
+    printHexByte2(d.to);
+    Serial.print(" from=");
+    printHexByte2(d.from);
+    Serial.print(" cmd=");
+    printHexByte2(d.cmd);
+    Serial.print(" payload=");
+    if (!d.payloadLen) {
+      Serial.print("(none)");
+    } else {
+      for (size_t i = 0; i < d.payloadLen; ++i) {
+        if (i) Serial.print(' ');
+        printHexByte2(d.payload[i]);
+      }
+    }
+    Serial.println();
+  }
+  if (!any) Serial.println("CIVRAW RX: no reply");
+  return true;
+}
+
+String readLineFrom(Stream& input, String& lineBuffer) {
+  while (input.available()) {
+    char c = (char)input.read();
     if (c == '\r') continue;
     if (c == '\n') {
-      String r = line;
-      line = "";
+      String r = lineBuffer;
+      lineBuffer = "";
       r.trim();
       return r;
     }
-    line += c;
+    if (lineBuffer.length() < 96) {
+      lineBuffer += c;
+    } else {
+      lineBuffer = "";
+    }
   }
   return "";
+}
+
+String readLine() {
+  static String line;
+  return readLineFrom(Serial, line);
 }
 
 String upperCopy(String s) {
@@ -533,6 +633,10 @@ void printHelp() {
     Serial.println("    PBT1?");
     Serial.println("    PBT2 <-128..127> | CENTER");
     Serial.println("    PBT2?");
+    Serial.print("    RFPOWER <0..");
+    Serial.print((int)(currentStoredProfile().rfPowerMaxWatts ? currentStoredProfile().rfPowerMaxWatts : 100));
+    Serial.println(" W>");
+    Serial.println("    RFPOWER?");
     Serial.println("    RIT <Hz>");
     Serial.println("    RIT OFF | ON");
     Serial.println("    RIT?");
@@ -546,6 +650,10 @@ void printHelp() {
     Serial.println("    TUNER? | TUNER OFF | ON | TOGGLE");
     Serial.println("    TXFREQ?");
     Serial.println("    VFO A | B");
+    Serial.println("    MAIN <kHz> | MAIN?");
+    Serial.println("    MAIN MODE <n> | MAIN MODE?");
+    Serial.println("    SUB <kHz> | SUB?");
+    Serial.println("    SUB MODE <n> | SUB MODE?");
     Serial.println("    VFOA <kHz> | VFOA?");
     Serial.println("    VFOA MODE <n> | VFOA MODE?");
     Serial.println("    VFOB <kHz> | VFOB?");
@@ -579,6 +687,8 @@ void printHelp() {
   if (!ftdx10) {
     Serial.println("    ALC? | VOL? | SQL?");
     Serial.println("    AGC <hex byte>");
+    Serial.println("    CIVRAW? <cmd hex> [payload hex bytes]");
+    Serial.println("    CIVRAW <cmd hex> [payload hex bytes]");
     Serial.println("    CLAR OFFSET <8 hex digits>");
     Serial.println("    CLAR OFF | ON");
     Serial.println("    GT? | GT FAST | SLOW | OFF");
@@ -627,6 +737,23 @@ static bool handleConsoleInfoCommands(const String& upper) {
   if (upper == "HELP") { printHelp(); return true; }
   if (upper == "STATUS?") { printStatusSummary(); return true; }
   if (upper == "MODE LIST") { printModeList(); return true; }
+  if (upper.startsWith("CIVRAW? ") || upper.startsWith("CIVRAW ")) {
+    uint8_t cmd = 0;
+    uint8_t payload[32] = {0};
+    size_t payloadLen = 0;
+    const bool query = upper.startsWith("CIVRAW? ");
+    const int prefixLen = query ? 8 : 7;
+    if (currentProtocolType() != PROTO_CIV) {
+      Serial.println("CIVRAW -> CI-V profile required");
+      return true;
+    }
+    if (!parseCivRawArgs(upper.substring(prefixLen), cmd, payload, payloadLen, sizeof(payload))) {
+      Serial.println(query ? "CIVRAW? -> use: CIVRAW? 14 0A" : "CIVRAW -> use: CIVRAW 14 0A 00 26");
+      return true;
+    }
+    printCivRawTransaction(cmd, payload, payloadLen, query);
+    return true;
+  }
   if (upper == "QUIET?") {
     Serial.print("QUIET ");
     Serial.println(g_quiet ? "ON" : "OFF");
@@ -1586,6 +1713,42 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     }
     return true;
   }
+  if (upper == "RFPOWER?") {
+    uint16_t raw = 0;
+    if (!queryRfPowerLevel(raw, 800)) { Serial.println("RFPOWER? -> no reply"); return true; }
+    const uint16_t watts = rfPowerRawToWatts(raw);
+    Serial.print("RFPOWER ");
+    Serial.print((int)watts);
+    Serial.println(" W");
+    if (g_speechEnabled) {
+      speakDigitsAndPoint(String((int)watts));
+      playSilenceMs(60);
+      speakToken("watts");
+    }
+    return true;
+  }
+  if (upper.startsWith("RFPOWER ")) {
+    int watts = line.substring(8).toInt();
+    const uint16_t maxWatts = currentStoredProfile().rfPowerMaxWatts ? currentStoredProfile().rfPowerMaxWatts : 100;
+    if (watts < 0 || watts > maxWatts) {
+      Serial.print("RFPOWER -> invalid (use 0..");
+      Serial.print((int)maxWatts);
+      Serial.println(" W)");
+      return true;
+    }
+    if (!setRfPowerLevel(rfPowerWattsToRaw(watts))) { Serial.println("RFPOWER -> failed"); return true; }
+    Serial.print("RFPOWER ");
+    Serial.print(watts);
+    Serial.println(" W");
+    if (g_speechEnabled) {
+      speakToken("power");
+      playSilenceMs(60);
+      speakDigitsAndPoint(String(watts));
+      playSilenceMs(60);
+      speakToken("watts");
+    }
+    return true;
+  }
   if (upper == "TUNER?") {
     bool on = false;
     if (!queryTuner(on, 800)) { Serial.println("TUNER? -> no reply"); return true; }
@@ -1645,6 +1808,66 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     if (!selectVfoB()) { Serial.println("VFO B -> failed"); return true; }
     Serial.println("VFO B");
     speakVfoLabel('B');
+    return true;
+  }
+  if (upper == "MAIN?") {
+    uint64_t hz = 0;
+    if (!queryVfoFrequency(true, hz, 800)) { Serial.println("MAIN? -> no reply"); return true; }
+    Serial.print("MAIN: ");
+    Serial.print(hzToMHzString3(hz));
+    Serial.println(" MHz");
+    if (g_speechEnabled) speakDigitsAndPoint(hzToMHzString3(hz));
+    return true;
+  }
+  if (upper == "SUB?") {
+    uint64_t hz = 0;
+    if (!queryVfoFrequency(false, hz, 800)) { Serial.println("SUB? -> no reply"); return true; }
+    Serial.print("SUB: ");
+    Serial.print(hzToMHzString3(hz));
+    Serial.println(" MHz");
+    if (g_speechEnabled) speakDigitsAndPoint(hzToMHzString3(hz));
+    return true;
+  }
+  if (upper.startsWith("MAIN MODE?")) {
+    uint8_t mode = 0xFF;
+    uint8_t filter = 0xFF;
+    if (!queryVfoMode(true, mode, filter, 800)) { Serial.println("MAIN MODE? -> no reply"); return true; }
+    Serial.print("MAIN MODE: ");
+    Serial.println(modeToString(mode));
+    if (g_keypadExecuting) g_suppressModePrefixOnce = true;
+    speakMode(mode);
+    return true;
+  }
+  if (upper.startsWith("SUB MODE?")) {
+    uint8_t mode = 0xFF;
+    uint8_t filter = 0xFF;
+    if (!queryVfoMode(false, mode, filter, 800)) { Serial.println("SUB MODE? -> no reply"); return true; }
+    Serial.print("SUB MODE: ");
+    Serial.println(modeToString(mode));
+    if (g_keypadExecuting) g_suppressModePrefixOnce = true;
+    speakMode(mode);
+    return true;
+  }
+  if (upper.startsWith("MAIN MODE ")) {
+    uint8_t mode = 0xFF;
+    if (!parseConsoleModeToken(line.substring(10), mode) || !setVfoMode(true, mode, 1)) { Serial.println("MAIN MODE -> failed"); return true; }
+    Serial.println("MAIN MODE -> command sent");
+    return true;
+  }
+  if (upper.startsWith("SUB MODE ")) {
+    uint8_t mode = 0xFF;
+    if (!parseConsoleModeToken(line.substring(9), mode) || !setVfoMode(false, mode, 1)) { Serial.println("SUB MODE -> failed"); return true; }
+    Serial.println("SUB MODE -> command sent");
+    return true;
+  }
+  if (upper.startsWith("MAIN ")) {
+    uint64_t khz = strtoull(line.substring(5).c_str(), nullptr, 10);
+    if (!setVfoFrequency(true, khz * 1000ULL)) { Serial.println("MAIN -> failed"); return true; }
+    return true;
+  }
+  if (upper.startsWith("SUB ")) {
+    uint64_t khz = strtoull(line.substring(4).c_str(), nullptr, 10);
+    if (!setVfoFrequency(false, khz * 1000ULL)) { Serial.println("SUB -> failed"); return true; }
     return true;
   }
   if (upper == "VFOA?") {
@@ -2247,9 +2470,42 @@ static bool handleConsoleBankCommands(const String& line, const String& upper) {
   return false;
 }
 
+static bool handleHamtrcServiceCommand(const String& upper, Print& output) {
+  if (upper == "HAMTRC?") {
+    output.print("LX1WJ-HAMTRC;protocol=1;chip=esp32;version=");
+    output.println(HAMTRC_FIRMWARE_VERSION);
+    return true;
+  }
+
+  if (upper == "HAMTRC_BOOTLOADER") {
+    if (g_audioPlaying) audioAbortNow();
+    g_suspendPollingUntilMs = millis() + 5000;
+    serialTransportFlushInput();
+    serialTransportFlushOutput();
+    output.println("OK HAMTRC_BOOTLOADER;action=restarting");
+    Serial.flush();
+    delay(200);
+    ESP.restart();
+    return true;
+  }
+
+  return false;
+}
+
+bool processHamtrcServiceCommand(String line, Print& output) {
+  line.trim();
+  if (!line.length()) return false;
+  String upper = upperCopy(line);
+  return handleHamtrcServiceCommand(upper, output);
+}
+
 void processCommand(String line) {
   line.trim();
   if (!line.length()) return;
+
+  String upper = upperCopy(line);
+  if (handleHamtrcServiceCommand(upper, Serial)) return;
+
   if (g_audioPlaying) audioAbortNow();
 
   if (usbConsoleReady()) {
@@ -2257,7 +2513,6 @@ void processCommand(String line) {
     Serial.println(line);
   }
 
-  String upper = upperCopy(line);
   if (handleConsoleInfoCommands(upper)) return;
   if (handleConsoleProfileCommands(line, upper)) return;
   if (handleFtdx10BlockedConsoleCommand(upper)) return;

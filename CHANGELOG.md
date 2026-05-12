@@ -1,5 +1,19 @@
 # Changelog
 
+## V3.5.7 Firmware and Online Update Prep
+
+The repository is now aligned to the local `V3.5.7` firmware state.
+
+Main points:
+
+- synced the current local firmware sources into `firmware/`
+- renamed the main sketch entry to `TalkingRemoteControllerLX1WJ_V3_5_7.ino`
+- added `firmware_version.h` with `HAMTRC_FIRMWARE_VERSION` set to `V3.5.7`
+- added the HAMTRC service response for online updater port detection via `HAMTRC?`
+- added the `HAMTRC_BOOTLOADER` service command for controlled updater handoff
+- refreshed SD card profiles, including the IC-7760 profile
+- added the current V3.5.7 German operation guide under `docs/`
+
 ## V3.5.5 Voice and FTDX10 Test Refresh
 
 The repository is now aligned to the local `V3.5.5` firmware state.

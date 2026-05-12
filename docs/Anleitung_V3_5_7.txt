@@ -1,0 +1,533 @@
+Talking Remote Controller LX1WJ - Anleitung V3_5_7
+Stand: 2026-05-04
+
+Diese Anleitung beschreibt die Bedienung ueber die 4x4-Tastatur.
+Die tatsaechlich ausgefuehrte Funktion haengt vom aktiven Profil ab. Wenn ein
+Transceiver eine Funktion nicht kann oder das Profil die Funktion nicht freigibt,
+kommt keine Antwort oder "error".
+
+
+1. Grundbedienung
+-----------------
+
+* kurz
+  Aktuelle Bank ansagen.
+
+* lang
+  Bank-Auswahl starten. Danach Taste 1 bis 9 druecken und mit D bestaetigen.
+
+D
+  Eingabe bestaetigen, z.B. Frequenz, Mode, Profil, RF Power, Bank6-Eingaben.
+
+#
+  Eingabe abbrechen / staged input loeschen.
+
+kurz
+  Taste normal druecken.
+
+lang
+  Taste halten, bis die Langfunktion ausgeloest wird.
+
+doppelt
+  Zwei kurze Tastendruecke schnell hintereinander.
+
+
+2. Profile mit SD-Karte
+-----------------------
+
+Beim Start wird SDCard/slots.ini geladen. Die Profile liegen als INI-Dateien
+auf der SD-Karte. In V3_5_7 sind diese Slots vorgesehen:
+
+1  Icom IC-7300 CI-V
+2  Icom IC-706 CI-V
+3  Icom IC-7300 RS232
+4  Icom IC-706 RS232
+5  Xiegu G106
+6  Elecraft KX2
+7  Kenwood TS-480
+8  Yaesu FT-817
+9  Yaesu FT-857
+10 Yaesu FT-897
+11 Yaesu FTDX10
+12 Yaesu FTDX101D
+13 Yaesu FTDX101MP
+14 Yaesu FT-818
+15 Yaesu FT-891
+17 Icom IC-705
+18 Icom IC-7760
+
+Profil waehlen:
+
+Bank 9, A kurz
+  Aktuelles Profil ansagen.
+
+Bank 9, A lang
+  Profilwahl starten. Profilnummer eingeben und mit D bestaetigen.
+
+Bank 9, B kurz
+  Naechstes Profil.
+
+Bank 9, C kurz
+  Vorheriges Profil.
+
+
+3. No-SD-Fallback
+-----------------
+
+Wenn keine SD-Karte geladen wird oder das Laden fehlschlaegt, startet V3_5_7
+mit eingebauten Fallback-Profilen. Diese sind absichtlich begrenzt:
+
+1  Icom IC-7300 CI-V, Adresse 0x94, UART1, 9600 Baud
+2  Icom IC-7300 RS232, Adresse 0x94, UART2, 9600 Baud
+3  Icom IC-706 CI-V, Adresse 0x58, UART1, 9600 Baud
+4  Icom IC-706 RS232, Adresse 0x58, UART2, 9600 Baud
+5  Icom IC-705 CI-V, Adresse 0xA4, UART1, 9600 Baud
+6  Icom IC-7760 CI-V, Adresse 0xB2, UART1, 19200 Baud
+
+No-SD Direktwahl in Bank 9:
+
+Bank 9, Taste 1 kurz
+  Fallback-Profil 1 direkt waehlen.
+
+Bank 9, Taste 2 kurz
+  Fallback-Profil 2 direkt waehlen.
+
+Bank 9, Taste 3 kurz
+  Fallback-Profil 3 direkt waehlen.
+
+Bank 9, Taste 4 kurz
+  Fallback-Profil 4 direkt waehlen.
+
+Bank 9, Taste 5 kurz
+  Fallback-Profil 5 direkt waehlen.
+
+Bank 9, Taste 6 kurz
+  Fallback-Profil 6 direkt waehlen.
+
+Bank 9, Taste 7/8/9 kurz
+  Kein Fallback-Profil vorhanden, es kommt error.
+
+Wichtig:
+Bank 9, Taste 4 lang bleibt immer TuningSpeech Toggle, auch ohne SD-Karte.
+Profil 4 wird im No-SD-Fallback mit Bank 9, Taste 4 kurz gewaehlt.
+
+
+4. Bank 1 - Hauptfunktionen
+---------------------------
+
+0 kurz
+  Frequenz abfragen: FREQ?
+
+0 lang
+  Frequenz setzen. Frequenz eingeben und mit D bestaetigen.
+
+1 kurz
+  RX/TX Status abfragen: RXTX?
+
+2 kurz
+  TX-Frequenz abfragen: TXFREQ?
+
+3 kurz
+  Lock abfragen: LOCK?
+
+3 lang
+  Lock umschalten.
+
+4 kurz
+  Power-Meter / Output abfragen: PO?
+  Hinweis: In RX kann das je nach Geraet 0 oder keine sinnvolle Leistung sein.
+
+5 kurz / 5 lang / 5 doppelt
+  Nur bei FTDX10 benutzt: TUNER?, Tuner Toggle, TUNE.
+  Bei den normalen Icom CI-V Profilen ist Bank 1 Taste 5 nicht belegt.
+
+6 kurz
+  RF Power abfragen, wenn das Profil RFPOWER unterstuetzt.
+  Beispiel IC-7300: RFPOWER? spricht den eingestellten Wert in Watt.
+
+6 lang
+  RF Power setzen. Watt-Wert eingeben und mit D bestaetigen.
+  Beispiel IC-7300: 0 bis 100 W.
+  Beispiel IC-7760: bis 200 W.
+
+7 kurz
+  S-Meter abfragen: SM?
+
+8 kurz
+  SWR abfragen: SWR?
+
+9 kurz
+  Betriebsart abfragen: MODE?
+
+9 lang
+  Betriebsart setzen. Mode-Ziffer eingeben und mit D bestaetigen.
+  Typische Icom-Ziffern:
+  1 LSB, 2 USB, 3 CW, 4 AM, 5 FM, 6 DATA/DIGI, 7 RTTY, 8 CW-R, 9 RTTY-R.
+
+
+5. Bank 2 - DSP, Filter, PBT
+----------------------------
+
+Diese Bank ist vor allem fuer CI-V/Icom-Profile. Bei FTDX10 sind einige Tasten
+anders oder absichtlich verborgen.
+
+1 kurz
+  NR abfragen.
+
+1 lang
+  NR umschalten.
+
+2 kurz
+  NB abfragen.
+
+2 lang
+  NB umschalten.
+
+3 kurz
+  Notch abfragen.
+
+3 lang
+  Notch umschalten.
+
+4 kurz
+  NR Level abfragen.
+
+4 lang
+  NR Level +10.
+
+4 doppelt
+  NR Level -10.
+
+5 kurz
+  NB Level abfragen.
+
+5 lang
+  NB Level +10.
+
+5 doppelt
+  NB Level -10.
+
+6 kurz
+  PBT1 / inner PBT abfragen.
+
+6 lang
+  PBT1 +10.
+
+6 doppelt
+  PBT1 -10.
+
+7 kurz
+  PBT2 / outer PBT abfragen.
+
+7 lang
+  PBT2 +10.
+
+7 doppelt
+  PBT2 -10.
+
+8 kurz
+  Filter Shape abfragen.
+
+8 lang
+  Filter Shape umschalten.
+
+9 kurz
+  Filter Width abfragen.
+
+9 lang
+  Filter Width naechster Schritt.
+
+9 doppelt
+  Filter Width vorheriger Schritt.
+
+FTDX10 Sonderfall in Bank 2:
+4 kurz GT?, 4 lang GT FAST, 4 doppelt GT SLOW.
+5 kurz PS?, 5 lang PS OFF, 5 doppelt PS ON.
+6 kurz IF?, 7 kurz ID?, 8 und 9 sind hidden.
+
+
+6. Bank 3 - VFO, Split, Bandstack
+---------------------------------
+
+0 kurz
+  Split abfragen.
+
+0 lang
+  Split umschalten.
+
+0 doppelt
+  TX-Frequenz abfragen.
+
+1 kurz
+  VFO A abfragen.
+
+1 lang
+  VFO A waehlen.
+
+1 doppelt
+  VFO A Frequenz setzen.
+
+2 kurz
+  VFO B abfragen.
+
+2 lang
+  VFO B waehlen.
+
+2 doppelt
+  VFO B Frequenz setzen.
+
+4 kurz
+  VFO A Mode abfragen.
+
+4 lang
+  VFO A Mode setzen.
+
+5 kurz
+  VFO B Mode abfragen.
+
+5 lang
+  VFO B Mode setzen.
+
+6 kurz
+  RX/TX Status abfragen.
+
+7 kurz
+  Bandstack 1 abfragen.
+
+7 lang
+  Bandstack 1 abrufen.
+
+8 kurz
+  Bandstack 2 abfragen.
+
+8 lang
+  Bandstack 2 abrufen.
+
+9 kurz
+  Bandstack 3 abfragen.
+
+9 lang
+  Bandstack 3 abrufen.
+
+FT-817/FT-857/FT-897 haben in Bank 3 teils eigene VFO/Clarifier-Funktionen.
+FTDX10 blendet die Bandstack-Tasten 7/8/9 aus.
+
+
+7. Bank 4 - Tuner, Monitor, Transceive
+--------------------------------------
+
+0 kurz
+  Tuner-Status abfragen.
+
+0 lang
+  Tuner umschalten.
+
+0 doppelt
+  Tune starten.
+
+1 kurz
+  Monitor abfragen.
+
+1 lang
+  Monitor umschalten.
+
+2 kurz
+  Monitor-Level abfragen.
+
+2 lang
+  Monitor-Level +10.
+
+2 doppelt
+  Monitor-Level -10.
+
+3 kurz
+  Transceive abfragen.
+
+3 lang
+  Transceive umschalten.
+
+FTDX10 Sonderfall:
+Bank 4 Tasten 1/2/3 sind hidden.
+
+
+8. Bank 5 - RIT
+---------------
+
+0 kurz
+  RIT abfragen.
+
+0 lang
+  RIT umschalten.
+
+0 doppelt
+  RIT Offset auf 0 setzen.
+
+1 kurz
+  RIT -10 Hz.
+
+1 lang
+  RIT -100 Hz.
+
+2 kurz
+  RIT +10 Hz.
+
+2 lang
+  RIT +100 Hz.
+
+3 kurz
+  RIT Offset auf 0 setzen.
+
+3 lang
+  RIT aus.
+
+4 kurz
+  RIT -1 Hz.
+
+4 lang
+  RIT -500 Hz.
+
+5 kurz
+  RIT +1 Hz.
+
+5 lang
+  RIT +500 Hz.
+
+
+9. Bank 6 - FT-8x7 Repeater und Tone
+------------------------------------
+
+Bank 6 ist fuer Yaesu FT-817/FT-818/FT-857/FT-897-artige Profile gedacht.
+Bei anderen Profilen ist diese Bank reserviert oder ohne Wirkung.
+
+0 kurz
+  Repeater Shift OFF.
+
+0 lang
+  Repeater Shift MINUS.
+
+0 doppelt
+  Repeater Shift PLUS.
+
+1 kurz
+  Standard-Repeater-Offset aus dem Profil setzen.
+
+1 lang
+  70-cm-Repeater-Offset aus dem Profil setzen.
+
+1 doppelt
+  Repeater-Offset manuell eingeben. Eingabe in kHz, dann D.
+
+2 kurz
+  Tone OFF.
+
+2 lang
+  Tone CTCSS.
+
+2 doppelt
+  Tone DCS.
+
+3 kurz
+  Standard-CTCSS aus dem Profil setzen.
+
+3 lang
+  CTCSS manuell eingeben, dann D.
+
+4 kurz
+  Standard-DCS aus dem Profil setzen.
+
+4 lang
+  DCS manuell eingeben, dann D.
+
+
+10. Bank 7 und Bank 8
+---------------------
+
+In der aktuellen V3_5_7 sind Bank 7 und Bank 8 nicht als allgemeine
+Bedienbanken dokumentiert. Sie sind fuer Erweiterungen bzw. profilabhaengige
+Sonderfunktionen frei.
+
+
+11. Bank 9 - System, Profile, Audio
+-----------------------------------
+
+A kurz
+  Aktuelles Profil ansagen.
+
+A lang
+  Profilnummer manuell eingeben und mit D bestaetigen.
+
+B kurz
+  Naechstes Profil.
+
+C kurz
+  Vorheriges Profil.
+
+4 kurz
+  TuningSpeech Status ansagen.
+
+4 lang
+  TuningSpeech ein/aus.
+
+7 kurz
+  Volume Level 1 vormerken, mit D bestaetigen.
+
+8 kurz
+  Volume Level 2 vormerken, mit D bestaetigen.
+
+9 kurz
+  Volume Level 3 vormerken, mit D bestaetigen.
+
+No-SD-Fallback:
+  1 bis 6 kurz waehlt direkt die eingebauten Fallback-Profile 1 bis 6.
+  4 lang bleibt trotzdem immer TuningSpeech Toggle.
+
+
+12. Nuetzliche Konsolenbefehle
+------------------------------
+
+PROFILE?
+  Aktives Profil mit Details anzeigen.
+
+PROFILE <nr>
+  Profil direkt waehlen.
+
+FREQ?
+  Frequenz abfragen.
+
+MODE?
+  Betriebsart abfragen.
+
+PO?
+  Power-Meter / Output abfragen.
+
+RFPOWER?
+  Eingestellte RF Power abfragen, wenn vom Profil unterstuetzt.
+
+RFPOWER <watt>
+  RF Power setzen, wenn vom Profil unterstuetzt.
+
+CIVRAW? <cmd hex> [payload hex bytes]
+  CI-V Rohbefehl abfragen, Diagnose.
+
+CIVRAW <cmd hex> [payload hex bytes]
+  CI-V Rohbefehl senden, Diagnose.
+
+
+13. Praktische Hinweise
+-----------------------
+
+IC-7300:
+  RFPOWER? und RFPOWER <Watt> laufen ueber CI-V 14/0A.
+  Bank 1 Taste 6 kurz fragt die RF Power ab.
+  Bank 1 Taste 6 lang startet die Watt-Eingabe.
+
+IC-7760:
+  Profil ist mit CI-V Adresse 0xB2 und 19200 Baud vorgesehen.
+  RF Power ist bis 200 W vorgesehen.
+
+TuningSpeech:
+  Immer ueber Bank 9 Taste 4 lang schaltbar, mit und ohne SD-Karte.
+
+PO? gegen RFPOWER?:
+  PO? ist das aktuelle Power-Meter bzw. die ausgegebene Leistung.
+  RFPOWER? ist die eingestellte maximale RF Power in Watt.

@@ -89,6 +89,7 @@ bool loadSingleProfileIni(const String& path, StoredProfile& out) {
       else if (key == "voice_vendor") profileLoaderCopyCString(voiceVendor, sizeof(voiceVendor), val.c_str());
       else if (key == "voice_digits") profileLoaderCopyCString(voiceDigits, sizeof(voiceDigits), val.c_str());
       else if (key == "variant") profileLoaderCopyCString(variant, sizeof(variant), val.c_str());
+      else if (key == "rf_power_max_watts") sp.rfPowerMaxWatts = (uint16_t)parseIniInt(val, sp.rfPowerMaxWatts);
     } else if (section == "protocol") {
       String v = val;
       v.trim();
@@ -117,6 +118,9 @@ bool loadSingleProfileIni(const String& path, StoredProfile& out) {
       else if (key == "set_mode") sp.caps.setMode = parseIniBool(val, sp.caps.setMode);
       else if (key == "get_smeter") sp.caps.getSmeter = parseIniBool(val, sp.caps.getSmeter);
       else if (key == "get_power") sp.caps.getPower = parseIniBool(val, sp.caps.getPower);
+      else if (key == "get_rf_power") sp.caps.getRfPower = parseIniBool(val, sp.caps.getRfPower);
+      else if (key == "set_rf_power") sp.caps.setRfPower = parseIniBool(val, sp.caps.setRfPower);
+      else if (key == "rf_power_max_watts") sp.rfPowerMaxWatts = (uint16_t)parseIniInt(val, sp.rfPowerMaxWatts);
       else if (key == "get_swr") sp.caps.getSwr = parseIniBool(val, sp.caps.getSwr);
       else if (key == "get_rxtx") sp.caps.getRxTx = parseIniBool(val, sp.caps.getRxTx);
       else if (key == "get_txfreq") sp.caps.getTxFreq = parseIniBool(val, sp.caps.getTxFreq);

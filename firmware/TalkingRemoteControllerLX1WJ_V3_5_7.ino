@@ -1,7 +1,7 @@
 /*
   Talking Remote Controller LX1WJ - ESP32-S3 + Keypad + Speech + Multi-Radio Profiles
-  File: TalkingRemoteControllerLX1WJ_V3_5_5.ino
-  Version: V3.5.5
+  File: TalkingRemoteControllerLX1WJ_V3_5_7.ino
+  Version: V3.5.7
   Bugfixes vs V3.5:
     - FT-817: yaesuCatSelectVfoA/B() waren Stubs (return false) -> VFO-Ops schlugen lautlos fehl
     - FT-817: Split-Status las Bit2 (ALC) statt Bit5 (Split) aus dem TX-Status-Byte
@@ -24,10 +24,12 @@
 #include "ui_keypad.h"
 #include "ui_speech.h"
 #include "debug_log.h"
+#include "firmware_version.h"
 
 static bool g_bootSpeakPending = false;
 static uint32_t g_bootSpeakAtMs = 0;
 static bool g_sdProfilesLoaded = false;
+static String g_serial0ServiceLine;
 
 static void waitForUsbSerial(uint32_t timeoutMs) {
   const uint32_t startMs = millis();
@@ -40,12 +42,13 @@ static void printSdBootSummary() {
   Serial.print("[BOOT] SD profile loading: ");
   Serial.println(getLastSdLoadStatusText());
   if (!g_sdProfilesLoaded) {
-    Serial.println("[BOOT] Using built-in fallback slots");
+    Serial.println("[BOOT] Using LIGHT Icom fallback slots (Bank 9 keys 1-9)");
   }
 }
 
 void setup() {
   Serial.begin(PC_BAUD);
+  Serial0.begin(PC_BAUD);
   delay(200);
   waitForUsbSerial(2000);
 
@@ -60,7 +63,9 @@ void setup() {
   g_tuningSpeakEnabled = loadTuningSpeakFromNvs(true);
   applyProfile(g_profileId);
 
-  DBG_PRINT("Talking Remote Controller LX1WJ (V3.5.5) - Selected radio: ");
+  DBG_PRINT("Talking Remote Controller LX1WJ (");
+  DBG_PRINT(HAMTRC_FIRMWARE_VERSION);
+  DBG_PRINT(") - Selected radio: ");
   DBG_PRINT(currentProfile().name);
   DBG_PRINT("  CI-V addr=0x");
   if (debugLogEnabled()) Serial.println(g_civRadioAddr, HEX);
@@ -92,4 +97,7 @@ void loop() {
 
   String line = readLine();
   if (line.length()) processCommand(line);
+
+  String serial0Line = readLineFrom(Serial0, g_serial0ServiceLine);
+  if (serial0Line.length()) (void)processHamtrcServiceCommand(serial0Line, Serial0);
 }

@@ -9,6 +9,8 @@ bool civSetMode(const StoredProfile& sp, uint8_t mode, uint8_t filter);
 bool civQuerySMeterRaw(const StoredProfile& sp, int32_t& rawOut, uint32_t timeoutMs);
 bool civQueryPoMeterRaw(const StoredProfile& sp, int32_t& rawOut, uint32_t timeoutMs);
 bool civQuerySWRRaw(const StoredProfile& sp, int32_t& rawOut, uint32_t timeoutMs);
+bool civQueryRfPowerLevel(const StoredProfile& sp, uint16_t& valueOut, uint32_t timeoutMs);
+bool civSetRfPowerLevel(const StoredProfile& sp, uint16_t value);
 bool civQueryNr(const StoredProfile& sp, bool& onOut, uint32_t timeoutMs);
 bool civSetNr(const StoredProfile& sp, bool on);
 bool civQueryNrLevel(const StoredProfile& sp, uint16_t& valueOut, uint32_t timeoutMs);

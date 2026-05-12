@@ -91,6 +91,20 @@ bool querySWRRaw(int32_t& rawOut, uint32_t timeoutMs) {
   return false;
 }
 
+bool queryRfPowerLevel(uint16_t& valueOut, uint32_t timeoutMs) {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (pt == PROTO_CIV) return civQueryRfPowerLevel(sp, valueOut, timeoutMs);
+  return false;
+}
+
+bool setRfPowerLevel(uint16_t value) {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (pt == PROTO_CIV) return civSetRfPowerLevel(sp, value);
+  return false;
+}
+
 bool queryNr(bool& onOut, uint32_t timeoutMs) {
   ProtocolType pt = currentProtocolType();
   const StoredProfile& sp = currentStoredProfile();

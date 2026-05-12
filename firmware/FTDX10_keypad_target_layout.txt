@@ -1,4 +1,4 @@
-FTDX10 keypad layout - current software state in V3_5_5
+FTDX10 keypad layout - current software state in V3_5_7
 
 Profile selection
 - Bank 9, A long = profile select

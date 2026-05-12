@@ -76,6 +76,8 @@ struct RadioCapabilities {
   bool setMode;
   bool getSmeter;
   bool getPower;
+  bool getRfPower;
+  bool setRfPower;
   bool getSwr;
   bool getRxTx;
   bool getTxFreq;
@@ -239,9 +241,11 @@ enum ProfileId : uint8_t {
 };
 
 static constexpr uint8_t PROFILE_ID_7300 = PROFILE_ID_SLOT1;
-static constexpr uint8_t PROFILE_ID_706_CIV = PROFILE_ID_SLOT2;
-static constexpr uint8_t PROFILE_ID_7300_RS232 = PROFILE_ID_SLOT3;
-static constexpr uint8_t PROFILE_ID_G106_CAT = PROFILE_ID_SLOT4;
+static constexpr uint8_t PROFILE_ID_7300_RS232 = PROFILE_ID_SLOT2;
+static constexpr uint8_t PROFILE_ID_706_CIV = PROFILE_ID_SLOT3;
+static constexpr uint8_t PROFILE_ID_706_RS232 = PROFILE_ID_SLOT4;
+static constexpr uint8_t PROFILE_ID_705 = PROFILE_ID_SLOT5;
+static constexpr uint8_t PROFILE_ID_7760 = PROFILE_ID_SLOT6;
 
 struct StoredProfile {
   CivProfile civ;
@@ -249,6 +253,7 @@ struct StoredProfile {
   RadioCapabilities caps;
   AsciiCommandProfile ascii;
   Ft8x7Bank6Profile ft8x7Bank6;
+  uint16_t rfPowerMaxWatts;
   bool valid;
   bool fromSd;
   char name[32];

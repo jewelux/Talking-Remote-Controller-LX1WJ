@@ -28,6 +28,8 @@ bool g_freqEntryActive = false;
 String g_freqEntryDigits;
 bool g_freqEntryIsMHz = false;
 uint8_t g_freqEntryTargetVfo = 0;
+bool g_rfPowerEntryActive = false;
+String g_rfPowerEntryDigits;
 Bank6EntryMode g_bank6EntryMode = BANK6_ENTRY_NONE;
 String g_bank6EntryDigits;
 bool g_volStageActive = false;
