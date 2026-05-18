@@ -91,6 +91,7 @@ static void selectNextProfile();
 static void selectPrevProfile();
 static void queryBank9TuningSpeech();
 static void toggleBank9TuningSpeech();
+static void adjustBank9Volume(int delta);
 static bool selectBank9DirectProfile(char key);
 static bool handleDeferredShortRelease(uint8_t bank, char key);
 static bool handleDoubleClick(uint8_t bank, char key);
@@ -609,6 +610,20 @@ static void setBank3Ft857Split(bool on) {
   speakTokenState("split", on);
 }
 
+static void calibrateBank3Ft857Split() {
+  printKeypadCommand("BANK3 0 DOUBLE -> SPLIT CAL");
+  if (!yaesuCatSetSplit(true)) return;
+  delay(120);
+  if (!yaesuCatSetSplit(false)) return;
+  rememberSplitState(false);
+  printKeypadStatus("SPLIT OFF");
+  speakTokenState("split", false);
+  if (g_speechEnabled) {
+    playSilenceMs(60);
+    speakToken("ok");
+  }
+}
+
 static void setBank3Ft857Clar(bool on) {
   printKeypadCommand(String("BANK3 FT857 -> CLAR ") + (on ? "ON" : "OFF"));
   if (!yaesuCatSetClarifier(on)) return;
@@ -781,6 +796,10 @@ static void setBank3Ft857Ptt(bool on) {
 }
 
 static void queryBank3Split() {
+  if (isFt8x7Ft857FamilyKeypad()) {
+    setBank3Ft857Split(false);
+    return;
+  }
   printKeypadCommand("BANK3 0 SHORT -> SPLIT?");
   if (isFtdx10KeypadProfile()) {
     keypadSendNow("SPLIT?");
@@ -793,6 +812,10 @@ static void queryBank3Split() {
 }
 
 static void toggleBank3Split() {
+  if (isFt8x7Ft857FamilyKeypad()) {
+    setBank3Ft857Split(true);
+    return;
+  }
   printKeypadCommand("BANK3 0 LONG -> SPLIT");
   if (isFtdx10KeypadProfile()) {
     keypadSendNow("SPLIT TOGGLE");
@@ -977,18 +1000,21 @@ static void queryBank3VfoB() {
   if (isFt8x7Ft857FamilyKeypad()) {
     ensureFt857VfoTrackingInitialized();
     if (!guardFt8x7VfoToggleLock()) return;
+    const bool priorVfoA = live.activeVfoA;
+    const char other = priorVfoA ? 'B' : 'A';
     uint64_t hz = 0;
     if (!yaesuCatToggleVfo()) return;
+    rememberActiveVfo(!priorVfoA);
     delay(120);
     bool ok = queryFrequency(hz, 800);
-    delay(40);
-    yaesuCatToggleVfo();
-    delay(120);
+    delay(180);
+    if (!yaesuCatToggleVfo()) return;
+    rememberActiveVfo(priorVfoA);
+    delay(180);
     if (!ok) return;
-    const char which = ft857OtherVfoLabel();
-    printKeypadStatus(String("VFO") + which + ": " + hzToMHzString3(hz) + " MHz");
+    printKeypadStatus(String("VFO") + other + ": " + hzToMHzString3(hz) + " MHz");
     if (g_speechEnabled) {
-      speakVfoFrequencyLabel(which);
+      speakVfoFrequencyLabel(other);
       playSilenceMs(60);
       speakDigitsAndPoint(hzToMHzString3(hz));
     }
@@ -1352,6 +1378,17 @@ static void queryBank1TxFrequency() {
     keypadSendNow("TXFREQ?");
     return;
   }
+  if (isFt8x7Ft857FamilyKeypad()) {
+    uint64_t hz = 0;
+    if (g_ft8x7SplitKnown && !g_ft8x7SplitOn && queryFrequency(hz, 800)) {
+      printKeypadStatus(String("TXFREQ: ") + hzToMHzString3(hz) + " MHz");
+      speakQueriedFrequencyHz(hz);
+    } else {
+      printKeypadStatus("TXFREQ unavailable on FT-857/897");
+      if (g_speechEnabled) speakError();
+    }
+    return;
+  }
   uint64_t hz = 0;
   if (!queryTxFrequency(hz, 800)) {
     if (currentProtocolType() == PROTO_YAESU_FT8X7) {
@@ -1687,6 +1724,20 @@ static void toggleBank9TuningSpeech() {
   setTuningSpeechEnabled(!g_tuningSpeakEnabled);
   printKeypadStatus(String("TUNINGSPEECH ") + (g_tuningSpeakEnabled ? "ON" : "OFF"));
   speakTuningSpeechState();
+}
+
+static void adjustBank9Volume(int delta) {
+  int next = (int)g_volumeLevel + delta;
+  if (next < 1) next = 1;
+  if (next > 9) next = 9;
+  applyVolumeLevel((uint8_t)next);
+  saveVolumeToNvs((uint8_t)next);
+  printKeypadStatus(String("VOLUME ") + String(next));
+  if (g_speechEnabled) {
+    speakVolumeLevel((uint8_t)next);
+    playSilenceMs(60);
+    speakToken("ok");
+  }
 }
 
 static bool lightIcomFallbackActive() {
@@ -2076,6 +2127,10 @@ static bool handleDoubleClick(uint8_t bank, char key) {
     return true;
   }
   if (bank == 3 && key == '0') {
+    if (isFt8x7Ft857FamilyKeypad()) {
+      calibrateBank3Ft857Split();
+      return true;
+    }
     queryBank3TxFrequency();
     return true;
   }
@@ -2691,6 +2746,22 @@ void keypadEvent(KeypadEvent k) {
     return;
   }
   if (g_bank == 9 && k == '4' && s == RELEASED && g_fourHoldConsumed) { g_fourHoldConsumed = false; return; }
+
+  if (g_bank == 9 && k == '7' && s == HOLD) {
+    printKeypadCommand("BANK9 7 LONG -> VOLUME DOWN FAST");
+    adjustBank9Volume(-2);
+    g_sevenHoldConsumed = true;
+    return;
+  }
+  if (g_bank == 9 && k == '7' && s == RELEASED && g_sevenHoldConsumed) { g_sevenHoldConsumed = false; return; }
+
+  if (g_bank == 9 && k == '8' && s == HOLD) {
+    printKeypadCommand("BANK9 8 LONG -> VOLUME UP FAST");
+    adjustBank9Volume(2);
+    g_eightHoldConsumed = true;
+    return;
+  }
+  if (g_bank == 9 && k == '8' && s == RELEASED && g_eightHoldConsumed) { g_eightHoldConsumed = false; return; }
 
   if (s == RELEASED) {
     char key = (char)k;

@@ -1,0 +1,186 @@
+HamTRC + FT-897D Testing
+Connection
+
+My radio is configured to 38400 baud. To avoid changing it globally, I updated the HamTRC profile instead—this part was straightforward and worked as expected.
+
+I used the included null-modem adapter—excellent work there—and the device connected on the first attempt without any issues.
+
+BTW: the orange design is unexpectedly popular here—my son immediately claimed it looks “cool”. :)
+
+I like the power switch above the connector; that’s very practical. The orientation is a bit unconventional (it breaks the typical “up = on” rule), but the logic “towards the power jack = on” is actually defensible as a mnemonic.
+
+I did not observe any increase in noise when HamTRC is actively sending CAT commands, which is good.
+Power observations
+
+I noticed the alternative USB power path:
+
+    If USB is powered, HamTRC is ON regardless of the main switch position.
+    When powered only via USB, the radio produces clearly audible pulses at roughly 3 Hz.
+    When powered from the main supply, USB presence does not introduce noise.
+
+So likely a grounding / DC-DC characteristic when USB-only powered.
+Hardware suggestion
+
+Consider using a 2.5 mm × 5.5 mm DC barrel jack. This is effectively a ham-radio de facto standard (LDG, HamPod, many DIY devices). It would allow reuse of existing power distribution cables. Personally, I already have multiple such outputs wired and ready.
+Bank 1
+Behavior
+
+    0 short (freq?): Works, e.g. “14 point 044 MHz” [0s]
+    0 long (freq kHz): Works [0l]
+    1 short (rxtx?): Works
+    2 short (txfreq?): Works [2s]
+    3 short (lock?): Always reports error
+    3 long (lock toggle): Works correctly
+    4 short (po?): No response at all
+    7 short (sm?): Always reports 0; terminal shows raw value
+    8 short (swr?): Announces SWR, then no reply
+    9 short (mode?): Works very well [9s]
+    9 long (mode set): Works [9l]
+    * short (bank?): Works [*s]
+    * long (bank set): Works [*l]
+    # short (clear): Reports OK
+
+Notes
+
+[0s] Frequency precision
+Full frequency resolution would be highly beneficial. For example, .037 vs .0375 is a significant difference, especially in CW. HamPod goes down to tens of Hz (e.g. “14 point 0 3 7 dot 5 5”), trimming trailing zeros.
+
+Also, the delay between digits could be shorter or configurable.
+
+[0l] Input parsing
+Decimal handling is missing. Expected behavior:
+
+    14 → 14.000 MHz
+    14.12345 → 14.12345 MHz
+    144.3 → 144.300 MHz
+
+Currently ambiguous.
+
+[2s] TX frequency semantics
+There is an audible VFO switch. The returned value is always VFO B, regardless of split state. So this is effectively “other VFO frequency”, not strictly TX frequency.
+
+Also: txfreq? returns no reply via terminal.
+
+[9s] Mode detection
+Works correctly even on my unit with CW filter (where HamPod fails).
+However, packet is interpreted as digi.
+
+[9l] Mode setting
+Needs a clear mapping table (numeric ↔ mode).
+Observed issues:
+
+    7 / 9 announce RTTY / RTTY-R but setting fails
+    Packet mode missing
+    Pressing 0 → no voice feedback, but terminal shows error
+
+*[s] Bank query edge case
+After bank change or even after clear, the first press produces no output.
+
+*[l] Bank selection robustness
+
+    Accepts arbitrary number of digits; only last is used
+    0 is ignored
+    No validation
+
+Suggestion: validate against profile-defined banks and warn on invalid selection.
+Bank 3
+Behavior
+
+    0 short (split?): Inconsistent [0s]
+    0 long (split toggle): Works
+    0 double (txfreq?): No voice output, terminal → unavailable
+    1 short (vfo?): Works only if switched via HamTRC
+    1 long (A/B toggle): Works
+    1 double (freq kHz): Works
+    2 short (vfob?): Works, includes audible switch
+    2 long: Unsupported
+    2 double: Works
+    3: Free / no-op
+    4 short (sync VFO A): Announces sync, but no actual effect
+    4 long (sync VFO B): A/B swap occurs
+    5 short (clar on): Works
+    5 long (clar off): Works [5sl]
+    6 short/long (PTT off/on): Works (terminal first logs rxtx?)
+    7–9: bstack → unclear behavior, no response
+
+Notes
+
+[0s] Split state tracking
+HamTRC maintains its own state unless split is toggled via the device itself. If changed on the radio, HamTRC does not reflect it reliably.
+
+Also: when split is OFF via HamTRC, the audible VFO switching during txfreq? disappears.
+
+[1s] Terminal limitation
+vfoa? / vfob? → no reply from radio.
+
+[4] Sync commands
+sync vfo x → reported as unknown on terminal.
+
+[5sl] UX suggestion
+Consider reversing semantics:
+
+    short = OFF
+    long = ON
+
+More intuitive in practice.
+Bank 6
+
+    0: repeater shift off / minus / plus → works
+    1: rptshift → works
+    2: tone → works [2]
+    3: CTCSS → needs deeper testing
+    4: DCS → also needs verification
+
+[2] Tone behavior
+Enabling tone also applies it to RX, which is not always desirable.
+Bank 9
+Behavior
+
+    A short (profile?): Works, but “okay” meaning unclear
+    A long (profile set): Works [Al]
+    B/C: next / previous → works
+    4 short (tuningspeech?): Works
+    4 long: toggle → works
+    5 short (volume?): Not assigned
+    7/8/9 short: volume presets → work [vol]
+
+Notes
+
+Documentation for Bank 9 is insufficient—currently just says “same” (apparently referencing IC-7300).
+
+[Al] Profile validation
+Would benefit from warning on invalid profile number.
+
+[vol] Volume UX
+
+    Only numeric feedback (e.g. says “2” for value 1)
+    Enter confirmation is unintuitive
+    Cannot reach lowest volume without terminal
+
+General Feedback
+
+A few broader design considerations:
+
+    Hampod has some UX patterns worth adopting (e.g. verbosity toggle).
+    When no response is received, voice feedback like “timeout” would be very useful.
+    Even the lowest volume level is still quite loud.
+
+Volume redesign suggestion
+
+    Replace fixed levels with 10-step scale (10% increments)
+    Use:
+        volume up
+        volume down
+
+More predictable and scalable.
+Input handling
+
+The key processing loop could use refinement:
+
+    If a long-press action is not defined, falling back to short press on release is confusing
+    Pressing an unmapped key should produce feedback (at least when verbosity is ON)
+
+
+That’s everything I have so far. Quite a lot of detail, but I hope it’s actionable and helps refine both functionality and UX.
+
+73, Jan

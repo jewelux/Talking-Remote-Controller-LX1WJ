@@ -1,5 +1,18 @@
 # Changelog
 
+## V3.5.8 FTDX10 and Keypad Refinement
+
+The repository is now aligned to the local `V3.5.8` firmware state.
+
+Main points:
+
+- synced the current local V3.5.8 firmware sources into `firmware/`
+- renamed the main sketch entry to `TalkingRemoteControllerLX1WJ_V3_5_8.ino`
+- updated `firmware_version.h` with `HAMTRC_FIRMWARE_VERSION` set to `V3.5.8`
+- refreshed the FTDX10 / FTDX101D / FTDX101MP CAT command notes and keypad target layout
+- updated Yaesu CAT handling, radio preferences, monitoring, speech, console, and keypad code from the local build
+- added the current V3.5.8 German operation guide and Jan's FT-897D testing note under `docs/`
+
 ## V3.5.7 Firmware and Online Update Prep
 
 The repository is now aligned to the local `V3.5.7` firmware state.

@@ -2,6 +2,7 @@
 
 #include "radio_catalog.h"
 #include "radio_mode.h"
+#include "radio_prefs.h"
 #include "radio_protocol.h"
 #include "radio_profile.h"
 #include "radio_runtime.h"
@@ -15,11 +16,27 @@
 #include "ui_speech.h"
 #include "debug_log.h"
 
+static void printKeypadStatus(const String& line);
+
 static bool isFtdx10KeypadProfile() {
   const StoredProfile& sp = currentStoredProfile();
   return sp.protocolType == PROTO_YAESU_FTDX_ASCII &&
          strcmp(sp.voiceVendor, "yaesu") == 0 &&
          strcmp(sp.voiceDigits, "10") == 0;
+}
+
+static void adjustVolumeLevel(int delta) {
+  int next = (int)g_volumeLevel + delta;
+  if (next < 1) next = 1;
+  if (next > 9) next = 9;
+  applyVolumeLevel((uint8_t)next);
+  saveVolumeToNvs((uint8_t)next);
+  printKeypadStatus(String("VOLUME ") + String(next));
+  if (g_speechEnabled) {
+    speakVolumeLevel((uint8_t)next);
+    playSilenceMs(60);
+    speakToken("ok");
+  }
 }
 
 static void reportFtdx10HiddenKeypadAction(const char* label) {
@@ -77,6 +94,7 @@ static void speakFrequencyWord() {
 
 static bool rejectFt8x7WriteWhileTx(const char* statusLabel) {
   if (currentProtocolType() != PROTO_YAESU_FT8X7) return false;
+  if (currentProfileVariantIs("ft857_897")) return false;
   if (!currentStoredProfile().caps.getRxTx) return false;
   const bool isFt817 = currentProfileVariantIs("ft817");
   uint8_t txHits = 0;
@@ -97,26 +115,20 @@ static bool rejectFt8x7WriteWhileTx(const char* statusLabel) {
 }
 
 static bool verifyKeypadFrequencyWrite(uint8_t targetVfo, uint64_t expectedHz) {
+  // FT8x7 CAT write commands are effectively write-only; immediate readback can
+  // race the radio and falsely report "no change" after a successful write.
   if (currentProtocolType() != PROTO_YAESU_FT8X7) return true;
-  delay(220);
-  uint64_t readHz = 0;
-  bool ok = false;
-  if (targetVfo == 1) ok = queryVfoFrequency(true, readHz, 900);
-  else if (targetVfo == 2) ok = queryVfoFrequency(false, readHz, 900);
-  else ok = queryFrequency(readHz, 900);
-  return ok && readHz == expectedHz;
+  (void)targetVfo;
+  (void)expectedHz;
+  return true;
 }
 
 static bool verifyKeypadModeWrite(uint8_t targetVfo, uint8_t expectedMode) {
+  // Same as frequency: trust the write result and update the local cache.
   if (currentProtocolType() != PROTO_YAESU_FT8X7) return true;
-  delay(220);
-  uint8_t readMode = 0xFF;
-  uint8_t filter = 0xFF;
-  bool ok = false;
-  if (targetVfo == 1) ok = queryVfoMode(true, readMode, filter, 900);
-  else if (targetVfo == 2) ok = queryVfoMode(false, readMode, filter, 900);
-  else ok = queryMode(readMode, 900);
-  return ok && readMode == expectedMode;
+  (void)targetVfo;
+  (void)expectedMode;
+  return true;
 }
 
 static constexpr uint16_t kValidCtcssTenths[] = {
@@ -901,25 +913,17 @@ void keypadHandleReleased(char k) {
         speakTuningSpeechState();
         return;
       case '7':
-        g_volStageLevel = 1;
-        g_volStageActive = true;
-        printKeypadCommand("BANK9 7 SHORT -> VOLUME 1");
-        printKeypadStatus("VOLUME STAGE 1");
-        if (g_speechEnabled) speakVolumeLevel(g_volStageLevel);
+        printKeypadCommand("BANK9 7 SHORT -> VOLUME DOWN");
+        adjustVolumeLevel(-1);
         return;
       case '8':
-        g_volStageLevel = 2;
-        g_volStageActive = true;
-        printKeypadCommand("BANK9 8 SHORT -> VOLUME 2");
-        printKeypadStatus("VOLUME STAGE 2");
-        if (g_speechEnabled) speakVolumeLevel(g_volStageLevel);
+        printKeypadCommand("BANK9 8 SHORT -> VOLUME UP");
+        adjustVolumeLevel(1);
         return;
       case '9':
-        g_volStageLevel = 3;
-        g_volStageActive = true;
-        printKeypadCommand("BANK9 9 SHORT -> VOLUME 3");
-        printKeypadStatus("VOLUME STAGE 3");
-        if (g_speechEnabled) speakVolumeLevel(g_volStageLevel);
+        printKeypadCommand("BANK9 9 SHORT -> VOLUME?");
+        printKeypadStatus(String("VOLUME ") + String((int)g_volumeLevel));
+        if (g_speechEnabled) speakVolumeLevel(g_volumeLevel);
         return;
       default:
         break;

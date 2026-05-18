@@ -3,7 +3,7 @@
 The Talking Remote Controller is a voice-first keypad controller for amateur radio transceivers.
 It is intended to make practical radio operation possible without relying on a display.
 
-The repository now tracks the current modular firmware line **V3.5.7**.
+The repository now tracks the current modular firmware line **V3.5.8**.
 The newest work in this state keeps the Yaesu **FTDX10 / FTDX101D / FTDX101MP** support block current and adds the HAMTRC service response used by the online updater to identify the correct COM port before flashing.
 
 ## Start Here
@@ -14,8 +14,8 @@ The newest work in this state keeps the Yaesu **FTDX10 / FTDX101D / FTDX101MP** 
 
 ## Online Update
 
-The matching HAMTRC V3.5.7 browser update is published on `lx1wj.eu`.
-The firmware answers `HAMTRC?` with an `LX1WJ-HAMTRC` signature and `V3.5.7`,
+The matching HAMTRC V3.5.8 browser update is published on `lx1wj.eu`.
+The firmware answers `HAMTRC?` with an `LX1WJ-HAMTRC` signature and `V3.5.8`,
 which lets the checked update path avoid flashing a wrong COM port.
 
 ## Current Radio Notes
@@ -29,7 +29,7 @@ which lets the checked update path avoid flashing a wrong COM port.
 
 ```text
 firmware/
-  TalkingRemoteControllerLX1WJ_V3_5_7.ino
+  TalkingRemoteControllerLX1WJ_V3_5_8.ino
   modular source files
   SDCard/*.ini radio profiles
 

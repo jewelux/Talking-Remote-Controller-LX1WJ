@@ -9,6 +9,7 @@
 #include "protocol_ops_yaesu.h"
 #include "protocol_yaesu_cat.h"
 #include "radio_profile.h"
+#include "radio_prefs.h"
 #include "radio_protocol.h"
 #include "radio_runtime.h"
 #include "radio_state.h"
@@ -564,6 +565,9 @@ static bool parseConsoleModeToken(String token, uint8_t& modeOut) {
 
 void printHelp() {
   const bool ftdx10 = isFtdx10ConsoleProfile();
+  const bool ft8x7 = currentProtocolType() == PROTO_YAESU_FT8X7;
+  const bool ft817 = ft8x7 && currentProfileVariantIs("ft817");
+  const bool ft857Family = ft8x7 && currentProfileVariantIs("ft857_897");
   Serial.println();
   Serial.println("Commands (case-insensitive):");
   Serial.println("  General:");
@@ -603,10 +607,10 @@ void printHelp() {
   Serial.println("    TUNINGSPEECH OFF | ON");
   Serial.println("    TUNINGSPEECH?");
   Serial.println("    VOICE <name>");
-  Serial.println("    VOLUME <0..3>");
+  Serial.println("    VOLUME <1..9>");
   Serial.println("    VOLUME?");
   Serial.println();
-  if (!ftdx10) {
+  if (!ftdx10 && !ft8x7) {
     Serial.println("  IC-7300 / CI-V Extensions:");
     Serial.println("    NBLEVEL <0..100>");
     Serial.println("    NBLEVEL?");
@@ -660,6 +664,29 @@ void printHelp() {
     Serial.println("    VFOB MODE <n> | VFOB MODE?");
     Serial.println();
     Serial.println("  ASCII / Yaesu Extensions:");
+  } else if (ft8x7) {
+    Serial.println("  Yaesu FT8x7:");
+    Serial.println("    RXTX?");
+    Serial.println("    SPLIT OFF | ON | TOGGLE");
+    if (ft857Family) Serial.println("    SPLIT CAL  (set ON then OFF, cache OFF)");
+    Serial.println("    SPLIT?  (FT-857/897 uses cached state when raw status is not usable)");
+    Serial.println("    PTT OFF | ON");
+    Serial.println("    SM?");
+    Serial.println("    SWR?");
+    Serial.println("    CLAR OFF | ON");
+    Serial.println("    CLAR OFFSET <8 hex digits>");
+    Serial.println("    GT? | GT FAST | SLOW | OFF");
+    Serial.println("    PA? | PA OFF | ON | TOGGLE");
+    Serial.println("    PS? | PS OFF | ON");
+    if (ft817) {
+      Serial.println("    VOL? | SQL?");
+      Serial.println("    VFO TOGGLE | A | B");
+      Serial.println("    YPOWER OFF | ON");
+    } else if (ft857Family) {
+      Serial.println("    VFO TOGGLE  (raw)");
+    }
+    Serial.println();
+    Serial.println("  Yaesu FT8x7 Diagnostics:");
   } else {
     Serial.println("  FTDX10 / hamTRC:");
     Serial.println("    LOCK OFF | ON | TOGGLE");
@@ -684,7 +711,7 @@ void printHelp() {
     Serial.println();
     Serial.println("  FTDX10 ASCII / Yaesu:");
   }
-  if (!ftdx10) {
+  if (!ftdx10 && !ft8x7) {
     Serial.println("    ALC? | VOL? | SQL?");
     Serial.println("    AGC <hex byte>");
     Serial.println("    CIVRAW? <cmd hex> [payload hex bytes]");
@@ -693,7 +720,6 @@ void printHelp() {
     Serial.println("    CLAR OFF | ON");
     Serial.println("    GT? | GT FAST | SLOW | OFF");
     Serial.println("    LOCKDOC OFF | ON");
-    Serial.println("    MEM READ RAW | MEM WRITE  (experimental)");
     Serial.println("    PA? | PA OFF | ON | TOGGLE");
     Serial.println("    PS? | PS OFF | ON");
     Serial.println("    PTT OFF | ON");
@@ -720,6 +746,33 @@ void printHelp() {
     Serial.println("    YCAT? <10 hex digits>");
     Serial.println("    YCAT1? <hex byte>");
     Serial.println("    YSCAN1 <start hex> <end hex>");
+    Serial.println("    YSNIFF <ms>");
+    Serial.println("    YSTATUS?");
+  } else if (ft8x7) {
+    Serial.println("    ALC?");
+    Serial.println("    AGC <hex byte>");
+    Serial.println("    CIVRAW? <cmd hex> [payload hex bytes]");
+    Serial.println("    CIVRAW <cmd hex> [payload hex bytes]");
+    Serial.println("    YALL?");
+    Serial.println("    YDCS <hex>");
+    Serial.println("    YRPT MINUS | PLUS | SIMPLEX");
+    Serial.println("    YRPTSHIFT <MHz>");
+    Serial.println("    YLOCKRAW OFF | ON");
+    Serial.println("    YMODEBYTE?");
+    if (ft817) Serial.println("    YFMCTX?");
+    Serial.println("    YSETMODEQ <hex byte>  (quiet write, then wait)");
+    Serial.println("    YRXSTATUS?");
+    Serial.println("    YSETMODE <hex byte>");
+    Serial.println("    YTRACE OFF | ON");
+    Serial.println("    YTMODE <name|hex>");
+    Serial.println("    YTONE <hex>");
+    Serial.println("    YTXSTATUS?");
+    Serial.println("    YVAR?");
+    Serial.println("    YCAT <10 hex digits>");
+    Serial.println("    YCAT? <10 hex digits>");
+    Serial.println("    YCAT1? <hex byte>");
+    Serial.println("    YSCAN1 <start hex> <end hex>");
+    Serial.println("    YSNIFF <ms>");
     Serial.println("    YSTATUS?");
   } else {
     Serial.println("    GT? | GT FAST | SLOW | OFF");
@@ -903,15 +956,20 @@ static bool handleConsoleToggleCommands(const String& line, const String& upper)
   }
   if (upper.startsWith("VOLUME ")) {
     int lvl = line.substring(7).toInt();
-    if (lvl < 0 || lvl > 3) {
-      Serial.println("VOLUME -> invalid (use 0..3)");
+    if (lvl < 1 || lvl > 9) {
+      Serial.println("VOLUME -> invalid (use 1..9)");
       speakError();
       return true;
     }
     applyVolumeLevel((uint8_t)lvl);
+    saveVolumeToNvs((uint8_t)lvl);
     Serial.print("OK VOLUME ");
     Serial.println(lvl);
-    if (g_speechEnabled) speakVolumeLevel((uint8_t)lvl);
+    if (g_speechEnabled) {
+      speakVolumeLevel((uint8_t)lvl);
+      playSilenceMs(60);
+      speakToken("ok");
+    }
     return true;
   }
   if (upper.startsWith("VOICE ")) { playNamedVoice(line.substring(6)); return true; }
@@ -1252,6 +1310,20 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     Serial.println(g_yaesuCatTrace ? "YTRACE ON" : "YTRACE OFF");
     return true;
   }
+  if (upper.startsWith("YSNIFF")) {
+    uint32_t windowMs = 1000;
+    String arg = line.substring(6);
+    arg.trim();
+    if (arg.length()) windowMs = (uint32_t)constrain(arg.toInt(), 1, 10000);
+    bool savedTrace = g_yaesuCatTrace;
+    g_yaesuCatTrace = true;
+    Serial.print("YSNIFF ");
+    Serial.print(windowMs);
+    Serial.println(" ms");
+    yaesuCatSniff(windowMs);
+    g_yaesuCatTrace = savedTrace;
+    return true;
+  }
 
   if (upper == "YRXSTATUS?") {
     uint8_t raw = 0;
@@ -1279,7 +1351,42 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     return true;
   }
   if (upper == "SPLIT?" && currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft857_897")) {
-    Serial.println("SPLIT? -> not reliable on FT-857/897");
+    uint8_t raw = 0;
+    if (!yaesuCatQueryTxStatusRaw(raw, 800)) {
+      Serial.println("SPLIT? -> no reply");
+      return true;
+    }
+    if (raw == 0xFF) {
+      if (g_ft8x7SplitKnown) {
+        Serial.print(g_ft8x7SplitOn ? "SPLIT ON" : "SPLIT OFF");
+        Serial.println("  (FT-857/897 cached, raw=0xFF not usable)");
+        speakTokenState("split", g_ft8x7SplitOn);
+      } else {
+        Serial.println("SPLIT? -> not reliable on FT-857/897 (raw=0xFF, cache unknown)");
+      }
+      return true;
+    }
+    const bool on = (raw & 0x20) != 0;
+    rememberSplitState(on);
+    Serial.print(on ? "SPLIT ON" : "SPLIT OFF");
+    Serial.print("  (FT-857/897 warning: not guaranteed, TX status raw=0x");
+    if (raw < 0x10) Serial.print('0');
+    Serial.print(raw, HEX);
+    Serial.println(")");
+    speakTokenState("split", on);
+    return true;
+  }
+  if (upper == "SPLIT CAL" && currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft857_897")) {
+    yaesuCatSetSplit(true);
+    delay(120);
+    yaesuCatSetSplit(false);
+    rememberSplitState(false);
+    Serial.println("SPLIT CAL -> SPLIT OFF  (FT-857/897 cache initialized)");
+    speakTokenState("split", false);
+    if (g_speechEnabled) {
+      playSilenceMs(60);
+      speakToken("ok");
+    }
     return true;
   }
   if (upper == "ALC?") {
@@ -1403,17 +1510,11 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     return true;
   }
   if (upper == "MEM WRITE") {
-    Serial.println("MEM WRITE -> experimental FT8x7 raw path; not confirmed as documented normal CAT on FT-857/897");
-    yaesuCatMemoryWrite();
+    Serial.println("MEM WRITE -> unsupported on FT8x7 CAT; command disabled to protect radio settings");
     return true;
   }
   if (upper == "MEM READ RAW") {
-    Serial.println("MEM READ RAW -> experimental FT8x7 raw path; not confirmed as documented normal CAT on FT-857/897");
-    uint8_t rsp[5] = {0};
-    if (!yaesuCatMemoryReadRaw(rsp, 800)) { Serial.println("MEM READ RAW -> no reply"); return true; }
-    Serial.print("MEM RAW: ");
-    yaesuCatPrintFrame(rsp);
-    Serial.println();
+    Serial.println("MEM READ RAW -> unsupported on FT8x7 CAT; opcode is write-only tone data, not memory read");
     return true;
   }
   if (upper.startsWith("AGC ")) {

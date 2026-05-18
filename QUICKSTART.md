@@ -1,10 +1,10 @@
 # Talking Remote Controller LX1WJ QuickStart
 
-This is the shortest technical path for the current firmware line **V3.5.7**.
+This is the shortest technical path for the current firmware line **V3.5.8**.
 
 ## Basic Setup
 
-1. Open `firmware/TalkingRemoteControllerLX1WJ_V3_5_7.ino` in Arduino IDE.
+1. Open `firmware/TalkingRemoteControllerLX1WJ_V3_5_8.ino` in Arduino IDE.
 2. Build for the intended ESP32-S3 target.
 3. Keep `voice_data.h` in the firmware folder.
 4. Copy the contents of `firmware/SDCard` to the controller SD card.
@@ -12,8 +12,8 @@ This is the shortest technical path for the current firmware line **V3.5.7**.
 
 ## Browser Update
 
-The matching online update package is published as HAMTRC V3.5.7 on `lx1wj.eu`.
-Current V3.5.7 firmware answers the updater probe `HAMTRC?` with an `LX1WJ-HAMTRC`
+The matching online update package is published as HAMTRC V3.5.8 on `lx1wj.eu`.
+Current V3.5.8 firmware answers the updater probe `HAMTRC?` with an `LX1WJ-HAMTRC`
 signature and the firmware version, so the checked update path can reject a wrong
 COM port before flashing starts.
 

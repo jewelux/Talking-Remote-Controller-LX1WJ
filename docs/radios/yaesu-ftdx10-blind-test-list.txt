@@ -1,5 +1,5 @@
 FTDX10 family blind helper list
-Current V3.5.7 assisted field-test scope
+Current V3.5.8 assisted field-test scope
 
 Profiles
 PROFILE 11 - FTDX10

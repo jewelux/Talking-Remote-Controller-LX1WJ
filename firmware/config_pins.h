@@ -3,7 +3,7 @@
 #define HAS_VOICE_voice_xiegu 1
 #define HAS_VOICE_voice_r 1
 
-#define DEFAULT_VOLUME_LEVEL 1
+#define DEFAULT_VOLUME_LEVEL 5
 #define USE_BUTTONS_KEYPAD 1
 
 #define KEYPAD_DEBOUNCE_MS 30

@@ -6,7 +6,8 @@ void serialTransportApplyProfile(const CivProfile& profile) {
   civUart1.end();
   civUart2.end();
   pinMode(CIV_TX_PIN, INPUT);
-  pinMode(RS232_TX_PIN, INPUT);
+  digitalWrite(RS232_TX_PIN, HIGH);
+  pinMode(RS232_TX_PIN, OUTPUT);
   pinMode(CAT_TX_PIN, INPUT_PULLUP);
   pinMode(CAT_RX_PIN, INPUT);
 

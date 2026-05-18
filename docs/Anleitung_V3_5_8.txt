@@ -1,5 +1,5 @@
-Talking Remote Controller LX1WJ - Anleitung V3_5_7
-Stand: 2026-05-04
+Talking Remote Controller LX1WJ - Anleitung V3_5_8
+Stand: 2026-05-18
 
 Diese Anleitung beschreibt die Bedienung ueber die 4x4-Tastatur.
 Die tatsaechlich ausgefuehrte Funktion haengt vom aktiven Profil ab. Wenn ein
@@ -36,7 +36,7 @@ doppelt
 -----------------------
 
 Beim Start wird SDCard/slots.ini geladen. Die Profile liegen als INI-Dateien
-auf der SD-Karte. In V3_5_7 sind diese Slots vorgesehen:
+auf der SD-Karte. In V3_5_8 sind diese Slots vorgesehen:
 
 1  Icom IC-7300 CI-V
 2  Icom IC-706 CI-V
@@ -74,7 +74,7 @@ Bank 9, C kurz
 3. No-SD-Fallback
 -----------------
 
-Wenn keine SD-Karte geladen wird oder das Laden fehlschlaegt, startet V3_5_7
+Wenn keine SD-Karte geladen wird oder das Laden fehlschlaegt, startet V3_5_8
 mit eingebauten Fallback-Profilen. Diese sind absichtlich begrenzt:
 
 1  Icom IC-7300 CI-V, Adresse 0x94, UART1, 9600 Baud
@@ -126,9 +126,13 @@ Profil 4 wird im No-SD-Fallback mit Bank 9, Taste 4 kurz gewaehlt.
 
 2 kurz
   TX-Frequenz abfragen: TXFREQ?
+  Hinweis FT-857/FT-897: TXFREQ ist wegen der CAT-Einschraenkungen nicht
+  immer verlaesslich verfuegbar. Wenn Split sicher AUS ist, wird die aktuelle
+  Frequenz gemeldet, sonst kommt "unavailable" bzw. error.
 
 3 kurz
   Lock abfragen: LOCK?
+  Hinweis FT-857/FT-897: Lock-Status ist nicht verlaesslich abfragbar.
 
 3 lang
   Lock umschalten.
@@ -251,45 +255,61 @@ FTDX10 Sonderfall in Bank 2:
 
 0 kurz
   Split abfragen.
+  FT-857/FT-897: Split AUS setzen.
 
 0 lang
   Split umschalten.
+  FT-857/FT-897: Split EIN setzen.
 
 0 doppelt
   TX-Frequenz abfragen.
+  FT-857/FT-897: Split kalibrieren. HamTRC setzt erst Split EIN, dann AUS
+  und merkt intern Split AUS.
 
 1 kurz
   VFO A abfragen.
 
 1 lang
   VFO A waehlen.
+  FT-857/FT-897: A/B umschalten.
 
 1 doppelt
   VFO A Frequenz setzen.
 
 2 kurz
   VFO B abfragen.
+  FT-857/FT-897: anderer VFO wird kurz abgefragt und danach wird zum
+  vorher aktiven VFO zurueckgeschaltet.
 
 2 lang
   VFO B waehlen.
+  FT-857/FT-897: nicht belegt.
 
 2 doppelt
   VFO B Frequenz setzen.
 
 4 kurz
   VFO A Mode abfragen.
+  FT-857/FT-897: aktuellen VFO nach intern gemerktem VFO A synchronisieren.
 
 4 lang
   VFO A Mode setzen.
+  FT-857/FT-897: aktuellen VFO nach intern gemerktem VFO B synchronisieren.
 
 5 kurz
   VFO B Mode abfragen.
+  FT-857/FT-897: Clarifier EIN.
 
 5 lang
   VFO B Mode setzen.
+  FT-857/FT-897: Clarifier AUS.
 
 6 kurz
   RX/TX Status abfragen.
+  FT-857/FT-897: PTT AUS.
+
+6 lang
+  FT-857/FT-897: PTT EIN.
 
 7 kurz
   Bandstack 1 abfragen.
@@ -310,6 +330,8 @@ FTDX10 Sonderfall in Bank 2:
   Bandstack 3 abrufen.
 
 FT-817/FT-857/FT-897 haben in Bank 3 teils eigene VFO/Clarifier-Funktionen.
+Beim FT-857/FT-897 ist Split-Status ueber CAT nicht sicher lesbar; HamTRC
+verwendet deshalb nach Split EIN/AUS/CAL einen internen Merker.
 FTDX10 blendet die Bandstack-Tasten 7/8/9 aus.
 
 
@@ -442,7 +464,7 @@ Bei anderen Profilen ist diese Bank reserviert oder ohne Wirkung.
 10. Bank 7 und Bank 8
 ---------------------
 
-In der aktuellen V3_5_7 sind Bank 7 und Bank 8 nicht als allgemeine
+In der aktuellen V3_5_8 sind Bank 7 und Bank 8 nicht als allgemeine
 Bedienbanken dokumentiert. Sie sind fuer Erweiterungen bzw. profilabhaengige
 Sonderfunktionen frei.
 
@@ -469,13 +491,24 @@ C kurz
   TuningSpeech ein/aus.
 
 7 kurz
-  Volume Level 1 vormerken, mit D bestaetigen.
+  Lautstaerke leiser, eine Stufe.
+
+7 lang
+  Lautstaerke leiser, zwei Stufen.
 
 8 kurz
-  Volume Level 2 vormerken, mit D bestaetigen.
+  Lautstaerke lauter, eine Stufe.
+
+8 lang
+  Lautstaerke lauter, zwei Stufen.
 
 9 kurz
-  Volume Level 3 vormerken, mit D bestaetigen.
+  Aktuelle Lautstaerke ansagen.
+
+Lautstaerke:
+  V3_5_8 verwendet Stufen 1 bis 9. Die Einstellung wird gespeichert und nach
+  dem Neustart wieder geladen. Da kein eigener Sprachclip "Volume" vorhanden
+  ist, wird bei Aenderung z.B. "5 ok" gesprochen, bei Abfrage nur "5".
 
 No-SD-Fallback:
   1 bis 6 kurz waehlt direkt die eingebauten Fallback-Profile 1 bis 6.
@@ -506,11 +539,24 @@ RFPOWER?
 RFPOWER <watt>
   RF Power setzen, wenn vom Profil unterstuetzt.
 
+VOLUME?
+  Aktuelle Lautstaerke 1 bis 9 abfragen.
+
+VOLUME <1..9>
+  Lautstaerke direkt setzen. Die Einstellung wird gespeichert.
+
 CIVRAW? <cmd hex> [payload hex bytes]
   CI-V Rohbefehl abfragen, Diagnose.
 
 CIVRAW <cmd hex> [payload hex bytes]
   CI-V Rohbefehl senden, Diagnose.
+
+YTRACE ON | OFF
+  Yaesu-CAT Diagnoseausgabe ein- oder ausschalten.
+
+YSNIFF <ms>
+  Yaesu-CAT Empfang fuer die angegebene Zeit beobachten, ohne selbst CAT zu
+  senden. Nuetzlich zur Echo- und Hardware-Diagnose.
 
 
 13. Praktische Hinweise
@@ -527,6 +573,12 @@ IC-7760:
 
 TuningSpeech:
   Immer ueber Bank 9 Taste 4 lang schaltbar, mit und ohne SD-Karte.
+
+Yaesu FT-857/FT-897:
+  FREQ?, FREQ setzen, MODE?, MODE setzen, RXTX?, PTT, Split EIN/AUS/CAL,
+  VFO A/B Abfrage und Repeater/Tone-Funktionen wurden mit FT-857 getestet.
+  Nicht alle Statuswerte sind ueber CAT sicher lesbar. Besonders Split, Lock,
+  SWR und Power-Meter koennen je nach Geraet keine verlaessliche Antwort geben.
 
 PO? gegen RFPOWER?:
   PO? ist das aktuelle Power-Meter bzw. die ausgegebene Leistung.

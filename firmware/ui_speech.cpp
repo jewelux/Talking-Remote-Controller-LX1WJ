@@ -62,11 +62,16 @@ static bool audioEnqueueSilence(uint16_t ms) {
 
 static inline float volumeLevelToGain(uint8_t lvl) {
   switch (lvl) {
-    case 0: return 0.25f;
-    case 1: return 0.45f;
-    case 2: return 0.70f;
-    case 3: return 1.00f;
-    default: return 0.70f;
+    case 1: return 0.08f;
+    case 2: return 0.12f;
+    case 3: return 0.18f;
+    case 4: return 0.27f;
+    case 5: return 0.40f;
+    case 6: return 0.55f;
+    case 7: return 0.70f;
+    case 8: return 0.85f;
+    case 9: return 1.00f;
+    default: return volumeLevelToGain(DEFAULT_VOLUME_LEVEL);
   }
 }
 
@@ -484,7 +489,8 @@ void speakOk() { speakToken("ok"); }
 void speakError() { speakToken("error"); }
 
 void applyVolumeLevel(uint8_t lvl) {
-  if (lvl > 3) lvl = 2;
+  if (lvl < 1) lvl = 1;
+  if (lvl > 9) lvl = 9;
   g_volumeLevel = lvl;
   g_speechVolume = volumeLevelToGain(lvl);
   Serial.print("[VOL] Applied level ");
@@ -495,8 +501,9 @@ void applyVolumeLevel(uint8_t lvl) {
 }
 
 void speakVolumeLevel(uint8_t lvl) {
-  uint8_t spoken = (lvl <= 3) ? (uint8_t)(lvl + 1) : 3;
-  playDigit(spoken);
+  if (lvl < 1) lvl = 1;
+  if (lvl > 9) lvl = 9;
+  playDigit(lvl);
 }
 
 static void playDigitsFromCString(const char* s) {

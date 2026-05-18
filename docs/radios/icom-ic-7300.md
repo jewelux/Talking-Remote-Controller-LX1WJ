@@ -2,7 +2,7 @@
 
 ## Overview
 
-This page documents the current `V3.5.7` support state for the **ICOM IC-7300**
+This page documents the current `V3.5.8` support state for the **ICOM IC-7300**
 inside the **Talking Remote Controller LX1WJ** project.
 
 The IC-7300 is currently one of the most complete radio profiles in the
@@ -242,6 +242,6 @@ profile is already well beyond a minimal proof of concept.
 - `Enter` refers to the keypad confirmation key `D`.
 - `double click` refers to a profile-specific double-press action where
   supported.
-- The IC-7300 profile is one of the best references for how the `V3.5.7`
+- The IC-7300 profile is one of the best references for how the `V3.5.8`
   architecture is intended to work across protocol, runtime, keypad, and SD
   card layers.

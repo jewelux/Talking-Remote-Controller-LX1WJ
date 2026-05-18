@@ -32,3 +32,20 @@ void saveTuningSpeakToNvs(bool v) {
   prefs.putBool("tuningspk", v);
   prefs.end();
 }
+
+uint8_t loadVolumeFromNvs(uint8_t fallback) {
+  Preferences prefs;
+  if (!prefs.begin("talkingrc", false)) return fallback;
+  uint8_t v = prefs.getUChar("volume", fallback);
+  prefs.end();
+  return (v >= 1 && v <= 9) ? v : fallback;
+}
+
+void saveVolumeToNvs(uint8_t level) {
+  if (level < 1) level = 1;
+  if (level > 9) level = 9;
+  Preferences prefs;
+  if (!prefs.begin("talkingrc", false)) return;
+  prefs.putUChar("volume", level);
+  prefs.end();
+}

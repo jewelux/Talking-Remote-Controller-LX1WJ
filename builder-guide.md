@@ -4,7 +4,7 @@ This guide is the short technical entry point for builders, contributors, and te
 
 ## Current Firmware Line
 
-The repository now documents and ships the modular firmware line **V3.5.7**.
+The repository now documents and ships the modular firmware line **V3.5.8**.
 The current focus is a clean first Yaesu **FTDX10 family** field-test block on top of the existing multi-radio platform.
 
 ## Builder Path
@@ -27,7 +27,7 @@ Use this repository if you need to:
 
 ## Firmware Structure
 
-`firmware/TalkingRemoteControllerLX1WJ_V3_5_7.ino` is the main sketch entry.
+`firmware/TalkingRemoteControllerLX1WJ_V3_5_8.ino` is the main sketch entry.
 The project is split into modular source files for:
 
 - protocol handling
@@ -37,12 +37,12 @@ The project is split into modular source files for:
 
 ## Online Update Notes
 
-The V3.5.7 browser update on `lx1wj.eu` uses the ESP Web Tools manifest
+The V3.5.8 browser update on `lx1wj.eu` uses the ESP Web Tools manifest
 `firmware/v3-5-7/manifest.json` and the matching factory image
 `hamtrc-v3-5-7.factory.bin`.
 
 The checked update flow first opens the selected serial port at 115200 baud and
-sends `HAMTRC?`. V3.5.7 answers with `LX1WJ-HAMTRC;protocol=1;chip=esp32;version=V3.5.7`.
+sends `HAMTRC?`. V3.5.8 answers with `LX1WJ-HAMTRC;protocol=1;chip=esp32;version=V3.5.8`.
 If that signature is not present, the website does not start flashing on that
 selected COM port.
 

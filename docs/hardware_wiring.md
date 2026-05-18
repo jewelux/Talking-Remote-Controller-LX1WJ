@@ -1,7 +1,7 @@
-# Hardware Wiring Reference (ESP32 Talking Remote Controller - V3.5.7)
+# Hardware Wiring Reference (ESP32 Talking Remote Controller - V3.5.8)
 
 This document describes the hardware wiring used by the current modular repository state based on
-`firmware/TalkingRemoteControllerLX1WJ_V3_5_7.ino`.
+`firmware/TalkingRemoteControllerLX1WJ_V3_5_8.ino`.
 
 All pin assignments listed below are taken from the current firmware files.
 
@@ -129,6 +129,6 @@ Series resistors provide basic protection and can improve signal robustness.
 
 - All interfaces share a common ground.
 - Power is typically supplied via USB to the ESP32-S3.
-- This document reflects the current V3.5.7 repository state.
+- This document reflects the current V3.5.8 repository state.
 - Future firmware versions may add profiles, interfaces, or alternative pin mappings.
 - The hardware setup is still a development and test platform rather than a finished certified product.

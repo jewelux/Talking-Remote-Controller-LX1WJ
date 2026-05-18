@@ -138,6 +138,8 @@ void applyProfile(uint8_t profileId) {
   const CivProfile& p = currentProfile();
   g_civRadioAddr = p.civAddr;
   serialTransportApplyProfile(p);
+  resetLiveRadioState();
+  g_yaesuCatTrace = false;
   if (currentProtocolType() == PROTO_ELECRAFT_ASCII) {
     delay(30);
     // Force documented default behavior so GET replies are not polluted by unsolicited auto-info.
@@ -146,7 +148,6 @@ void applyProfile(uint8_t profileId) {
     (void)asciiPacketSendCommand("K30;");
     delay(10);
   }
-  resetLiveRadioState();
 
   if (g_profileId != g_lastSavedProfile) {
     saveProfileToNvs(g_profileId);

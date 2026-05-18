@@ -1,7 +1,7 @@
 /*
   Talking Remote Controller LX1WJ - ESP32-S3 + Keypad + Speech + Multi-Radio Profiles
-  File: TalkingRemoteControllerLX1WJ_V3_5_7.ino
-  Version: V3.5.7
+  File: TalkingRemoteControllerLX1WJ_V3_5_8.ino
+  Version: V3.5.8
   Bugfixes vs V3.5:
     - FT-817: yaesuCatSelectVfoA/B() waren Stubs (return false) -> VFO-Ops schlugen lautlos fehl
     - FT-817: Split-Status las Bit2 (ALC) statt Bit5 (Split) aus dem TX-Status-Byte
@@ -16,6 +16,7 @@
 #include "radio_monitor.h"
 #include "radio_prefs.h"
 #include "radio_profile.h"
+#include "radio_protocol.h"
 #include "radio_runtime.h"
 #include "sd_slots.h"
 #include "engine_civ.h"
@@ -47,6 +48,9 @@ static void printSdBootSummary() {
 }
 
 void setup() {
+  digitalWrite(RS232_TX_PIN, HIGH);
+  pinMode(RS232_TX_PIN, OUTPUT);
+
   Serial.begin(PC_BAUD);
   Serial0.begin(PC_BAUD);
   delay(200);
@@ -58,6 +62,7 @@ void setup() {
   printSdBootSummary();
 
   initSpeech();
+  applyVolumeLevel(loadVolumeFromNvs(DEFAULT_VOLUME_LEVEL));
 
   g_profileId = loadProfileFromNvs(g_profileId);
   g_tuningSpeakEnabled = loadTuningSpeakFromNvs(true);
@@ -77,8 +82,10 @@ void setup() {
   printHelp();
   printSdBootSummary();
 
-  (void)refreshLiveFrequency();
-  (void)refreshLiveMode();
+  if (currentProtocolType() != PROTO_YAESU_FT8X7) {
+    (void)refreshLiveFrequency();
+    (void)refreshLiveMode();
+  }
 }
 
 void loop() {

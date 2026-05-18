@@ -5,6 +5,8 @@
 static void yaesuCatTraceFrame(const char* label, const uint8_t data[5]) {
   if (!g_yaesuCatTrace || !Serial) return;
   Serial.print("[YCAT] ");
+  Serial.print(millis());
+  Serial.print(" ms ");
   Serial.print(label);
   Serial.print(": ");
   yaesuCatPrintFrame(data);
@@ -14,10 +16,31 @@ static void yaesuCatTraceFrame(const char* label, const uint8_t data[5]) {
 static void yaesuCatTraceByte(const char* label, uint8_t data) {
   if (!g_yaesuCatTrace || !Serial) return;
   Serial.print("[YCAT] ");
+  Serial.print(millis());
+  Serial.print(" ms ");
   Serial.print(label);
   Serial.print(": 0x");
   if (data < 0x10) Serial.print('0');
   Serial.println(data, HEX);
+}
+
+void yaesuCatSniff(uint32_t windowMs) {
+  const uint32_t start = millis();
+  uint16_t count = 0;
+  while (millis() - start < windowMs) {
+    while (serialTransportAvailable()) {
+      const uint8_t b = (uint8_t)serialTransportRead();
+      yaesuCatTraceByte("SNIFF", b);
+      ++count;
+    }
+    delay(1);
+  }
+  if (g_yaesuCatTrace && Serial) {
+    Serial.print("[YCAT] ");
+    Serial.print(millis());
+    Serial.print(" ms SNIFF DONE bytes=");
+    Serial.println(count);
+  }
 }
 
 void yaesuCatFlushInput() {
@@ -48,7 +71,9 @@ bool yaesuCatRead5(uint8_t out[5], uint32_t timeoutMs) {
   size_t n = 0;
   while (millis() - start < timeoutMs) {
     while (serialTransportAvailable()) {
-      out[n++] = (uint8_t)serialTransportRead();
+      out[n] = (uint8_t)serialTransportRead();
+      yaesuCatTraceByte("RX", out[n]);
+      ++n;
       if (n >= 5) {
         yaesuCatTraceFrame("RX5", out);
         return true;

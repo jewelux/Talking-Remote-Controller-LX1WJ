@@ -48,6 +48,7 @@ void speakPendingFreqIfIdle() {
 void pollFrequencyIfDue() {
   if (!FREQ_POLL_ENABLE) return;
   if (!currentStoredProfile().caps.getFreq) return;
+  if (currentProtocolType() == PROTO_YAESU_FT8X7) return;
 
   const uint32_t now = millis();
   if ((int32_t)(now - g_suspendPollingUntilMs) < 0) return;

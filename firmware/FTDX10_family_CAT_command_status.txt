@@ -1,7 +1,7 @@
-FTDX10 family CAT command status for V3_5_7
+FTDX10 family CAT command status for V3_5_8
 Source basis: official Yaesu FTDX10 CAT Operation Reference Manual command list, cross-checked against current local software.
 
-CMD | Funktion | Status in V3_5_7 | Hinweis
+CMD | Funktion | Status in V3_5_8 | Hinweis
 AB | VFO-A to VFO-B | nein | keine FTDX10-Implementierung gefunden
 AC | Antenna tuner control | implementiert | AC read/on/off/tune_start im ftdx10-Profil vorhanden
 AG | AF gain | nein | keine FTDX10-Implementierung gefunden

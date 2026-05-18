@@ -2,7 +2,7 @@
 
 ## Status
 
-The FT-817 is now best understood as part of the broader Yaesu FT8x7 family support in firmware `V3.5.7`.
+The FT-817 is now best understood as part of the broader Yaesu FT8x7 family support in firmware `V3.5.8`.
 
 For the current public state, please use these documents first:
 
@@ -13,7 +13,7 @@ For the current public state, please use these documents first:
 
 This page is intentionally kept minimal so the repository does not present two conflicting descriptions of the same family.
 
-The FT-817 remains important because it is the more fully verified member of the FT8x7 CAT family, and `V3.5.7` keeps several FT8x7 control-path bugs that affected practical use.
+The FT-817 remains important because it is the more fully verified member of the FT8x7 CAT family, and `V3.5.8` keeps several FT8x7 control-path bugs that affected practical use.
 
 ## Summary
 
@@ -25,7 +25,7 @@ Current FT-817 strengths in the project include:
 - alignment with the shared FT8x7 keypad structure where practical
 - the newer FT-817 Bank 3 layout that now gives `VFOA MODE` its own direct keypad position while keeping `SYNC` and explicit active-`VFO A/B` selection
 
-Important `V3.5.7` notes:
+Important `V3.5.8` notes:
 
 - VFO A/B selection no longer fails silently in the FT8x7 path
 - split status now uses the correct TX-status bit interpretation

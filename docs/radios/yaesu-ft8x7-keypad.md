@@ -66,7 +66,7 @@ FT-817 note:
 FT-817 Bank 3 note:
 
 - The FT-817 branch currently mixes a tracked `current/other VFO` workflow with explicit `SYNC VFOA/VFOB` and explicit active-`VFO A/B` selection.
-- In the current `V3_5_7` software, `T1/T2` long and double both lead into staged frequency entry for the tracked current/other VFO, while `T3/T5` handle `VFOA MODE` and `VFOB MODE`.
+- In the current `V3_5_8` software, `T1/T2` long and double both lead into staged frequency entry for the tracked current/other VFO, while `T3/T5` handle `VFOA MODE` and `VFOB MODE`.
 - Because of that design, `T4` sync is still important after any unknown front-panel A/B change.
 
 ## Bank 6
