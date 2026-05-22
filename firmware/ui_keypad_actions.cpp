@@ -18,6 +18,44 @@
 
 static void printKeypadStatus(const String& line);
 
+static void formatHexByte(uint8_t value, char* out, size_t outSize) {
+  if (!out || outSize < 3) return;
+  snprintf(out, outSize, "%02X", (unsigned)value);
+}
+
+static void speakHexNibble(char c) {
+  if (c >= '0' && c <= '9') {
+    playDigit(c - '0');
+    return;
+  }
+  switch (c) {
+    case 'A': speakToken("a"); break;
+    case 'B': speakToken("b"); break;
+    case 'C': speakToken("c"); break;
+    case 'D': speakToken("d"); break;
+    case 'E': speakError(); break;
+    case 'F': speakToken("f"); break;
+    default: speakError(); break;
+  }
+}
+
+static void speakCivAddressValue(uint8_t addr, bool ok) {
+  if (!g_speechEnabled) return;
+  char hex[3] = "";
+  formatHexByte(addr, hex, sizeof(hex));
+  speakToken("c");
+  playSilenceMs(50);
+  speakToken("i");
+  playSilenceMs(80);
+  speakHexNibble(hex[0]);
+  playSilenceMs(50);
+  speakHexNibble(hex[1]);
+  if (ok) {
+    playSilenceMs(80);
+    speakOk();
+  }
+}
+
 static bool isFtdx10KeypadProfile() {
   const StoredProfile& sp = currentStoredProfile();
   return sp.protocolType == PROTO_YAESU_FTDX_ASCII &&
@@ -380,6 +418,8 @@ void keypadClearAll() {
   g_freqEntryTargetVfo = 0;
   g_rfPowerEntryActive = false;
   g_rfPowerEntryDigits = "";
+  g_civAddrEntryActive = false;
+  g_civAddrEntryDigits = "";
   g_bank6EntryMode = BANK6_ENTRY_NONE;
   g_bank6EntryDigits = "";
   g_modeSetActive = false;
@@ -557,6 +597,32 @@ void keypadEnter() {
     return;
   }
 
+  if (g_civAddrEntryActive) {
+    printKeypadCommand("ENTER -> CIVADDR");
+    if (!g_civAddrEntryDigits.length()) {
+      printKeypadStatus("CIVADDR -> no value");
+      if (g_speechEnabled) speakError();
+    } else {
+      int addr = g_civAddrEntryDigits.toInt();
+      StoredProfile* sp = (isValidProfileId(g_profileId) && g_slotProfiles[g_profileId - 1].valid) ? &g_slotProfiles[g_profileId - 1] : nullptr;
+      if (!sp || sp->protocolType != PROTO_CIV || addr < 0 || addr > 255) {
+        printKeypadStatus("CIVADDR -> invalid");
+        if (g_speechEnabled) speakError();
+      } else {
+        sp->civ.civAddr = (uint8_t)addr;
+        saveConnectionOverrideToNvs(g_profileId, sp->civ.civAddr, sp->civ.baud);
+        applyProfile(g_profileId);
+        char hex[3] = "";
+        formatHexByte(sp->civ.civAddr, hex, sizeof(hex));
+        printKeypadStatus(String("CI ") + hex);
+        speakCivAddressValue(sp->civ.civAddr, true);
+      }
+    }
+    g_civAddrEntryActive = false;
+    g_civAddrEntryDigits = "";
+    return;
+  }
+
   if (g_bank6EntryMode != BANK6_ENTRY_NONE) {
     if (g_bank6EntryMode == BANK6_ENTRY_OFFSET) {
       printKeypadCommand("ENTER -> RPTSHIFT");
@@ -705,6 +771,16 @@ void keypadHandleReleased(char k) {
       g_rfPowerEntryDigits += k;
       printKeypadCommand(String("RFPOWER DIGIT -> ") + String(k));
       printKeypadStatus(String("RFPOWER STAGE: ") + g_rfPowerEntryDigits + " W");
+      if (g_speechEnabled) speakDigitsAndPoint(String(k));
+    }
+    return;
+  }
+
+  if (g_civAddrEntryActive) {
+    if (k >= '0' && k <= '9' && g_civAddrEntryDigits.length() < 3) {
+      g_civAddrEntryDigits += k;
+      printKeypadCommand(String("CIVADDR DIGIT -> ") + String(k));
+      printKeypadStatus(String("CIVADDR STAGE: ") + g_civAddrEntryDigits);
       if (g_speechEnabled) speakDigitsAndPoint(String(k));
     }
     return;

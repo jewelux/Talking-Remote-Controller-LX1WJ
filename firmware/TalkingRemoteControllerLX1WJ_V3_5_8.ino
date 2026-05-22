@@ -58,6 +58,7 @@ void setup() {
 
   seedBuiltInSlots();
   g_sdProfilesLoaded = loadProfilesFromSd();
+  applyConnectionOverridesFromNvs();
   printProfileSlots();
   printSdBootSummary();
 

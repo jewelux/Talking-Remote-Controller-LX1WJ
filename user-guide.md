@@ -56,6 +56,15 @@ Mode digits:
 - `8` DIGI
 - `9` RTTYR
 
+## CI-V Connection Setup
+
+For CI-V profiles, Bank 8 can adjust the stored connection settings for the selected profile.
+
+- Bank 8, `1` short: speak the current CI-V address
+- Bank 8, `1` long, digits, `D`: set CI-V address as a decimal value from `0` to `255`
+- Bank 8, `2` short: move to the next baud rate
+- Bank 8, `2` long: move to the previous baud rate
+
 ## FTDX10 Family First Test
 
 For `FTDX10`, `FTDX101D`, and `FTDX101MP`, the current practical test path is intentionally small and clear.

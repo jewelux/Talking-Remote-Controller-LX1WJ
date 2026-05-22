@@ -86,6 +86,9 @@ static void queryBank4MonitorLevel();
 static void adjustBank4MonitorLevel(int deltaPercent);
 static void queryBank4Transceive();
 static void toggleBank4Transceive();
+static void queryBank8CivAddress();
+static void beginBank8CivAddressEntry();
+static void cycleBank8Baud(int delta);
 static void beginBank9ProfileSelect();
 static void selectNextProfile();
 static void selectPrevProfile();
@@ -1933,6 +1936,138 @@ static void queryBank6DcsDefault() {
   speakDigitsAndPoint(label);
 }
 
+static StoredProfile* mutableCurrentStoredProfile() {
+  if (!isValidProfileId(g_profileId)) return nullptr;
+  StoredProfile& sp = g_slotProfiles[g_profileId - 1];
+  return sp.valid ? &sp : nullptr;
+}
+
+static void formatHexByte(uint8_t value, char* out, size_t outSize) {
+  if (!out || outSize < 3) return;
+  snprintf(out, outSize, "%02X", (unsigned)value);
+}
+
+static void speakHexNibble(char c) {
+  if (c >= '0' && c <= '9') {
+    playDigit(c - '0');
+    return;
+  }
+  switch (c) {
+    case 'A': speakToken("a"); break;
+    case 'B': speakToken("b"); break;
+    case 'C': speakToken("c"); break;
+    case 'D': speakToken("d"); break;
+    case 'E': speakError(); break;
+    case 'F': speakToken("f"); break;
+    default: speakError(); break;
+  }
+}
+
+static void speakCivAddressValue(uint8_t addr, bool ok) {
+  if (!g_speechEnabled) return;
+  char hex[3] = "";
+  formatHexByte(addr, hex, sizeof(hex));
+  speakToken("c");
+  playSilenceMs(50);
+  speakToken("i");
+  playSilenceMs(80);
+  speakHexNibble(hex[0]);
+  playSilenceMs(50);
+  speakHexNibble(hex[1]);
+  if (ok) {
+    playSilenceMs(80);
+    speakOk();
+  }
+}
+
+static void speakBaudValue(uint32_t baud, bool ok) {
+  if (!g_speechEnabled) return;
+  speakDigitsAndPoint(String((unsigned long)baud));
+  if (ok) {
+    playSilenceMs(80);
+    speakOk();
+  }
+}
+
+static bool currentProfileAllowsCivSetup() {
+  return currentProtocolType() == PROTO_CIV;
+}
+
+static void saveAndApplyCurrentConnection() {
+  StoredProfile* sp = mutableCurrentStoredProfile();
+  if (!sp) return;
+  saveConnectionOverrideToNvs(g_profileId, sp->civ.civAddr, sp->civ.baud);
+  applyProfile(g_profileId);
+}
+
+static void queryBank8CivAddress() {
+  printKeypadCommand("BANK8 1 SHORT -> CIVADDR?");
+  if (!currentProfileAllowsCivSetup()) {
+    printKeypadStatus("CIVADDR -> unavailable");
+    if (g_speechEnabled) speakError();
+    return;
+  }
+  char hex[3] = "";
+  formatHexByte(currentProfile().civAddr, hex, sizeof(hex));
+  printKeypadStatus(String("CI ") + hex);
+  speakCivAddressValue(currentProfile().civAddr, false);
+}
+
+static void beginBank8CivAddressEntry() {
+  printKeypadCommand("BANK8 1 LONG -> CIVADDR");
+  if (!currentProfileAllowsCivSetup()) {
+    printKeypadStatus("CIVADDR -> unavailable");
+    if (g_speechEnabled) speakError();
+    return;
+  }
+  g_civAddrEntryActive = true;
+  g_civAddrEntryDigits = "";
+  printKeypadStatus("CI ADDRESS PLEASE");
+  if (g_speechEnabled) {
+    speakToken("c");
+    playSilenceMs(50);
+    speakToken("i");
+    playSilenceMs(80);
+    speakToken("please");
+  }
+}
+
+static const uint32_t kBank8BaudRates[] = {4800, 9600, 19200, 38400, 57600, 115200};
+
+static int currentBaudIndex() {
+  const uint32_t baud = currentProfile().baud;
+  int best = 0;
+  uint32_t bestDiff = 0xFFFFFFFFUL;
+  for (size_t i = 0; i < sizeof(kBank8BaudRates) / sizeof(kBank8BaudRates[0]); ++i) {
+    uint32_t candidate = kBank8BaudRates[i];
+    uint32_t diff = (baud > candidate) ? (baud - candidate) : (candidate - baud);
+    if (diff < bestDiff) {
+      best = (int)i;
+      bestDiff = diff;
+    }
+  }
+  return best;
+}
+
+static void cycleBank8Baud(int delta) {
+  printKeypadCommand(String("BANK8 2 ") + (delta > 0 ? "SHORT" : "LONG") + " -> BAUD");
+  if (!currentProfileAllowsCivSetup()) {
+    printKeypadStatus("BAUD -> unavailable");
+    if (g_speechEnabled) speakError();
+    return;
+  }
+  StoredProfile* sp = mutableCurrentStoredProfile();
+  if (!sp) return;
+  const int count = (int)(sizeof(kBank8BaudRates) / sizeof(kBank8BaudRates[0]));
+  int next = currentBaudIndex() + delta;
+  if (next < 0) next = count - 1;
+  if (next >= count) next = 0;
+  sp->civ.baud = kBank8BaudRates[next];
+  saveAndApplyCurrentConnection();
+  printKeypadStatus(String("BAUD ") + String((unsigned long)sp->civ.baud));
+  speakBaudValue(sp->civ.baud, true);
+}
+
 static bool handleDeferredShortRelease(uint8_t bank, char key) {
   if (bank == 1) {
     switch (key) {
@@ -2067,6 +2202,12 @@ static bool handleDeferredShortRelease(uint8_t bank, char key) {
       default: break;
     }
   }
+  if (bank == 8) {
+    switch (key) {
+      case '2': cycleBank8Baud(1); return true;
+      default: break;
+    }
+  }
   if (bank == 9) {
     switch (key) {
       case '1':
@@ -2178,7 +2319,7 @@ static bool handleDoubleClick(uint8_t bank, char key) {
 }
 
 static bool shouldDelayShortRelease(uint8_t bank, char key) {
-  if (g_freqEntryActive || g_modeSetActive || g_bank6EntryMode != BANK6_ENTRY_NONE) return false;
+  if (g_freqEntryActive || g_modeSetActive || g_civAddrEntryActive || g_bank6EntryMode != BANK6_ENTRY_NONE) return false;
   return (bank == 1 && (key == '1' || key == '2')) ||
          (bank == 1 && isFtdx10KeypadProfile() && key == '5') ||
          (bank == 2 && (currentProtocolType() == PROTO_CIV && (key == '4' || key == '5' || key == '6' || key == '7' || key == '9'))) ||
@@ -2186,7 +2327,8 @@ static bool shouldDelayShortRelease(uint8_t bank, char key) {
          (bank == 3 && (key == '0' || key == '1' || key == '2')) ||
          (bank == 4 && (key == '0' || key == '2')) ||
          (bank == 5 && key == '0') ||
-         (bank == 6 && (key == '0' || key == '1' || key == '2'));
+         (bank == 6 && (key == '0' || key == '1' || key == '2')) ||
+         (bank == 8 && key == '2');
 }
 
 void keypadEvent(KeypadEvent k) {
@@ -2234,6 +2376,10 @@ void keypadEvent(KeypadEvent k) {
     g_sixHoldConsumed = false;
     return;
   }
+  if (s == RELEASED && g_oneHoldConsumed && g_bank == 8 && k == '1') {
+    g_oneHoldConsumed = false;
+    return;
+  }
 
   if (g_freqEntryActive) {
     if (k == 'D' && s == RELEASED) { keypadEnter(); return; }
@@ -2246,6 +2392,16 @@ void keypadEvent(KeypadEvent k) {
   }
 
   if (g_rfPowerEntryActive) {
+    if (k == 'D' && s == RELEASED) { keypadEnter(); return; }
+    if (k == '#' && s == RELEASED) { keypadClearAll(); return; }
+    if (k >= '0' && k <= '9' && s == RELEASED) {
+      keypadHandleReleased((char)k);
+      return;
+    }
+    return;
+  }
+
+  if (g_civAddrEntryActive) {
     if (k == 'D' && s == RELEASED) { keypadEnter(); return; }
     if (k == '#' && s == RELEASED) { keypadClearAll(); return; }
     if (k >= '0' && k <= '9' && s == RELEASED) {
@@ -2722,6 +2878,25 @@ void keypadEvent(KeypadEvent k) {
     setBank5RitOffset(0);
     return;
   }
+
+  if (g_bank == 8 && k == '1' && s == HOLD) {
+    beginBank8CivAddressEntry();
+    g_oneHoldConsumed = true;
+    return;
+  }
+  if (g_bank == 8 && k == '1' && s == RELEASED && g_oneHoldConsumed) { g_oneHoldConsumed = false; return; }
+  if (g_bank == 8 && k == '1' && s == RELEASED) {
+    queryBank8CivAddress();
+    return;
+  }
+
+  if (g_bank == 8 && k == '2' && s == HOLD) {
+    cycleBank8Baud(-1);
+    g_twoHoldConsumed = true;
+    g_pendingClickActive = false;
+    return;
+  }
+  if (g_bank == 8 && k == '2' && s == RELEASED && g_twoHoldConsumed) { g_twoHoldConsumed = false; return; }
 
   if (g_bank == 9 && k == 'A' && s == HOLD) {
     beginBank9ProfileSelect();

@@ -464,9 +464,30 @@ Bei anderen Profilen ist diese Bank reserviert oder ohne Wirkung.
 10. Bank 7 und Bank 8
 ---------------------
 
-In der aktuellen V3_5_8 sind Bank 7 und Bank 8 nicht als allgemeine
-Bedienbanken dokumentiert. Sie sind fuer Erweiterungen bzw. profilabhaengige
-Sonderfunktionen frei.
+Bank 7 ist fuer Erweiterungen bzw. profilabhaengige Sonderfunktionen frei.
+
+Bank 8 ist provisorisch fuer CI-V-Verbindungseinstellungen vorgesehen:
+
+1 kurz
+  Aktuelle CI-V-Adresse ansagen. Provisorische Ansage: "C I" plus Hexwert,
+  z.B. B 2. Fuer Hex-Ziffer E wird aktuell error gesprochen, weil der
+  Sprachclip noch fehlt.
+
+1 lang
+  CI-V-Adresse setzen. Dezimalwert 0 bis 255 eingeben und mit D bestaetigen.
+  Beispiel: 178 + D speichert 0xB2. Der Wert wird nicht-fluechtig im ESP32
+  gespeichert und nach dem Neustart wieder auf das geladene Profil angewendet.
+
+2 kurz
+  Baudrate eine Stufe nach oben scrollen. Der neue Wert wird angesagt,
+  gespeichert und sofort aktiv.
+
+2 lang
+  Baudrate eine Stufe nach unten scrollen. Der neue Wert wird angesagt,
+  gespeichert und sofort aktiv.
+
+Baudrate-Liste:
+  4800, 9600, 19200, 38400, 57600, 115200.
 
 
 11. Bank 9 - System, Profile, Audio

@@ -4,7 +4,7 @@ The Talking Remote Controller is a voice-first keypad controller for amateur rad
 It is intended to make practical radio operation possible without relying on a display.
 
 The repository now tracks the current modular firmware line **V3.5.8**.
-The newest work in this state keeps the Yaesu **FTDX10 / FTDX101D / FTDX101MP** support block current and adds the HAMTRC service response used by the online updater to identify the correct COM port before flashing.
+The newest work in this state keeps the Yaesu **FTDX10 / FTDX101D / FTDX101MP** support block current, lets CI-V profiles adjust address and baud rate from Bank 8, and adds the HAMTRC service response used by the online updater to identify the correct COM port before flashing.
 
 ## Start Here
 

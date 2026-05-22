@@ -39,6 +39,8 @@ extern bool g_freqEntryIsMHz;
 extern uint8_t g_freqEntryTargetVfo;
 extern bool g_rfPowerEntryActive;
 extern String g_rfPowerEntryDigits;
+extern bool g_civAddrEntryActive;
+extern String g_civAddrEntryDigits;
 extern Bank6EntryMode g_bank6EntryMode;
 extern String g_bank6EntryDigits;
 extern bool g_volStageActive;
