@@ -1642,6 +1642,13 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     if (g_speechEnabled) speakDigitsAndPoint(hzToMHzString3(hzSet));
     return true;
   }
+  if (upper.startsWith("FREQHZ ")) {
+    uint64_t hzSet = strtoull(line.substring(7).c_str(), nullptr, 10);
+    if (hzSet == 0) { Serial.println("FREQHZ -> invalid value"); return true; }
+    if (!applyFrequencyAndTrack(hzSet, true)) { Serial.println("SET FREQ -> no reply"); return true; }
+    if (g_speechEnabled) speakDigitsAndPoint(hzToMHzString3(hzSet));
+    return true;
+  }
   if (upper.startsWith("FREQ ")) {
     uint64_t khz = strtoull(line.substring(5).c_str(), nullptr, 10);
     uint64_t hzSet = khz * 1000ULL;
@@ -2027,6 +2034,16 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     uint8_t mode = 0xFF;
     if (!parseConsoleModeToken(line.substring(10), mode) || !setVfoMode(false, mode, 1)) { Serial.println("VFOB MODE -> failed"); return true; }
     Serial.println("VFOB MODE -> command sent");
+    return true;
+  }
+  if (upper.startsWith("VFOAHZ ")) {
+    uint64_t hzSet = strtoull(line.substring(7).c_str(), nullptr, 10);
+    if (!setVfoFrequency(true, hzSet)) { Serial.println("VFOA -> failed"); return true; }
+    return true;
+  }
+  if (upper.startsWith("VFOBHZ ")) {
+    uint64_t hzSet = strtoull(line.substring(7).c_str(), nullptr, 10);
+    if (!setVfoFrequency(false, hzSet)) { Serial.println("VFOB -> failed"); return true; }
     return true;
   }
   if (upper.startsWith("VFOA ")) {

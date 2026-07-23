@@ -4,6 +4,7 @@
 #include "radio_mode.h"
 #include "radio_prefs.h"
 #include "radio_protocol.h"
+#include "radio_frequency.h"
 #include "radio_profile.h"
 #include "radio_runtime.h"
 #include "radio_state.h"
@@ -159,6 +160,38 @@ static bool verifyKeypadFrequencyWrite(uint8_t targetVfo, uint64_t expectedHz) {
   (void)targetVfo;
   (void)expectedHz;
   return true;
+}
+
+// Shared frequency writer used by keypad entry commit and the round-to-500 Hz
+// action. targetVfo: 0 = current VFO, 1 = VFO A, 2 = VFO B, 3 = other VFO (FT8x7).
+bool keypadApplyFrequencyHz(uint64_t hz, uint8_t targetVfo) {
+  bool ok = false;
+  if (isFtdx10KeypadProfile()) {
+    // Use Hz-argument console commands so sub-kHz precision survives.
+    String cmd;
+    if (targetVfo == 1) cmd = String("VFOAHZ ") + String((unsigned long long)hz);
+    else if (targetVfo == 2) cmd = String("VFOBHZ ") + String((unsigned long long)hz);
+    else cmd = String("FREQHZ ") + String((unsigned long long)hz);
+    keypadSendNow(cmd);
+    ok = true;
+  } else if (targetVfo == 1) {
+    ok = setVfoFrequency(true, hz);
+  } else if (targetVfo == 2) {
+    ok = setVfoFrequency(false, hz);
+  } else if (targetVfo == 3 && currentProtocolType() == PROTO_YAESU_FT8X7 &&
+             (currentProfileVariantIs("ft817") || currentProfileVariantIs("ft857_897"))) {
+    if (yaesuCatToggleVfo()) {
+      delay(120);
+      ok = setFrequency(hz);
+      delay(120);
+      yaesuCatToggleVfo();
+      delay(120);
+    }
+  } else {
+    ok = applyFrequencyAndTrack(hz, true);
+  }
+  if (ok && !isFtdx10KeypadProfile() && targetVfo != 3) ok = verifyKeypadFrequencyWrite(targetVfo, hz);
+  return ok;
 }
 
 static bool verifyKeypadModeWrite(uint8_t targetVfo, uint8_t expectedMode) {
@@ -414,7 +447,6 @@ void keypadClearAll() {
   g_bankStage = 0;
   g_freqEntryActive = false;
   g_freqEntryDigits = "";
-  g_freqEntryIsMHz = false;
   g_freqEntryTargetVfo = 0;
   g_rfPowerEntryActive = false;
   g_rfPowerEntryDigits = "";
@@ -513,12 +545,19 @@ void keypadEnter() {
     if (rejectFt8x7WriteWhileTx("FREQ")) {
       g_freqEntryActive = false;
       g_freqEntryDigits = "";
-      g_freqEntryIsMHz = false;
       g_freqEntryTargetVfo = 0;
       return;
     }
-    uint64_t hz = g_freqEntryIsMHz ? (uint64_t)g_freqEntryDigits.toInt() * 1000000ULL : (uint64_t)g_freqEntryDigits.toInt() * 1000ULL;
-    const uint64_t khz = hz / 1000ULL;
+    RadioFrequency parsedFreq;
+    if (!RadioFrequency::parseEntry(g_freqEntryDigits, parsedFreq)) {
+      printKeypadStatus("FREQ -> invalid");
+      if (g_speechEnabled) speakError();
+      g_freqEntryActive = false;
+      g_freqEntryDigits = "";
+      g_freqEntryTargetVfo = 0;
+      return;
+    }
+    const uint64_t hz = parsedFreq.hz();
     if (g_freqEntryTargetVfo == 1) printKeypadCommand("ENTER -> VFOA FREQ");
     else if (g_freqEntryTargetVfo == 2) printKeypadCommand("ENTER -> VFOB FREQ");
     else if (g_freqEntryTargetVfo == 3) {
@@ -534,28 +573,7 @@ void keypadEnter() {
       printKeypadCommand(String("ENTER -> VFO") + which + " FREQ");
     }
     else printKeypadCommand("ENTER -> FREQ");
-    bool ok = false;
-    if (isFtdx10KeypadProfile()) {
-      String cmd;
-      if (g_freqEntryTargetVfo == 1) cmd = String("VFOA ") + String((unsigned long long)khz);
-      else if (g_freqEntryTargetVfo == 2) cmd = String("VFOB ") + String((unsigned long long)khz);
-      else cmd = String("FREQ ") + String((unsigned long long)khz);
-      keypadSendNow(cmd);
-      ok = true;
-    } else if (g_freqEntryTargetVfo == 1) ok = setVfoFrequency(true, hz);
-    else if (g_freqEntryTargetVfo == 2) ok = setVfoFrequency(false, hz);
-    else if (g_freqEntryTargetVfo == 3 && currentProtocolType() == PROTO_YAESU_FT8X7 &&
-             (currentProfileVariantIs("ft817") || currentProfileVariantIs("ft857_897"))) {
-      if (yaesuCatToggleVfo()) {
-        delay(120);
-        ok = setFrequency(hz);
-        delay(120);
-        yaesuCatToggleVfo();
-        delay(120);
-      }
-    }
-    else ok = applyFrequencyAndTrack(hz, true);
-    if (ok && !isFtdx10KeypadProfile() && g_freqEntryTargetVfo != 3) ok = verifyKeypadFrequencyWrite(g_freqEntryTargetVfo, hz);
+    bool ok = keypadApplyFrequencyHz(hz, g_freqEntryTargetVfo);
     if (ok) {
       if (g_freqEntryTargetVfo == 1) printKeypadStatus(String("VFOA: ") + hzToMHzString3(hz) + " MHz");
       else if (g_freqEntryTargetVfo == 2) printKeypadStatus(String("VFOB: ") + hzToMHzString3(hz) + " MHz");
@@ -579,7 +597,6 @@ void keypadEnter() {
     }
     g_freqEntryActive = false;
     g_freqEntryDigits = "";
-    g_freqEntryIsMHz = false;
     g_freqEntryTargetVfo = 0;
     return;
   }
@@ -757,11 +774,26 @@ void keypadHandleReleased(char k) {
   }
 
   if (g_freqEntryActive) {
-    if (k >= '0' && k <= '9' && g_freqEntryDigits.length() < 9) {
-      g_freqEntryDigits += k;
-      printKeypadCommand(String("FREQ DIGIT -> ") + String(k));
-      printKeypadStatus(String("FREQ STAGE: ") + g_freqEntryDigits);
-      if (g_speechEnabled) speakDigitsAndPoint(String(k));
+    if (k == '*') {
+      // '*' is the decimal point: number before it is MHz, up to 5 digits after
+      // it are the fractional MHz (10 Hz step). Only one point allowed.
+      if (g_freqEntryDigits.length() > 0 && g_freqEntryDigits.indexOf('*') < 0) {
+        g_freqEntryDigits += '*';
+        printKeypadCommand("FREQ POINT -> *");
+        printKeypadStatus(String("FREQ STAGE: ") + g_freqEntryDigits);
+        if (g_speechEnabled) speakToken("point");
+      }
+      return;
+    }
+    if (k >= '0' && k <= '9') {
+      const int star = g_freqEntryDigits.indexOf('*');
+      const bool fracFull = (star >= 0) && ((int)g_freqEntryDigits.length() - star - 1 >= 5);
+      if (!fracFull && g_freqEntryDigits.length() < 12) {
+        g_freqEntryDigits += k;
+        printKeypadCommand(String("FREQ DIGIT -> ") + String(k));
+        printKeypadStatus(String("FREQ STAGE: ") + g_freqEntryDigits);
+        if (g_speechEnabled) speakDigitsAndPoint(String(k));
+      }
     }
     return;
   }

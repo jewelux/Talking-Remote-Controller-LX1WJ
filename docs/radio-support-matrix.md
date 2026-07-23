@@ -21,3 +21,7 @@ It is meant as a short engineering overview, not as a promise list.
 | Yaesu FTDX101MP | ASCII CAT | implemented | implemented | implemented | implemented | implemented | implemented | assisted field test pending | Uses the same first-block documentation as FTDX10. |
 
 CI-V profiles also support Bank 8 connection setup in `V3.5.8`: `T1` speaks or sets the CI-V address, and `T2` cycles the baud rate stored for the selected profile.
+
+Frequency handling is common to all profiles: entry, announcement and display now work to 10 Hz
+resolution via the shared `RadioFrequency` class (number = MHz, `*` = decimal point), and Bank 1
+`0` double-press rounds the current frequency to the nearest 500 Hz.
