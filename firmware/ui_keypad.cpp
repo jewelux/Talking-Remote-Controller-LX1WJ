@@ -3,6 +3,7 @@
 #include "protocol_ascii.h"
 #include "protocol_ops_yaesu.h"
 #include "radio_catalog.h"
+#include "radio_frequency.h"
 #include "radio_mode.h"
 #include "radio_profile.h"
 #include "radio_prefs.h"
@@ -39,11 +40,13 @@ static void toggleBank2FilterShape();
 static void queryBank2FilterWidth();
 static void cycleBank2FilterWidth(int delta);
 static void queryBank1RxTx();
+static void queryBank1Frequency();
 static void queryBank1TxFrequency();
 static void queryBank1Lock();
 static void toggleBank1Lock();
 static void beginBank1FrequencySet();
 static void beginBank1RfPowerSet();
+static void roundActiveFrequency500();
 static void queryBank3Split();
 static void toggleBank3Split();
 static void queryBank3TxFrequency();
@@ -973,7 +976,6 @@ static void beginBank3VfoAFrequencySet() {
     printKeypadCommand("BANK3 1 DOUBLE -> VFOA FREQ");
   }
   g_freqEntryActive = true;
-  g_freqEntryIsMHz = false;
   g_freqEntryDigits = "";
   g_freqEntryTargetVfo = (isFt8x7Ft817Keypad() || isFt8x7Ft857FamilyKeypad()) ? 0 : 1;
   if (g_speechEnabled) {
@@ -1121,7 +1123,6 @@ static void beginBank3VfoBFrequencySet() {
     printKeypadCommand(String("BANK3 2 DOUBLE -> VFO") + which + " FREQ");
   } else printKeypadCommand("BANK3 2 DOUBLE -> VFOB FREQ");
   g_freqEntryActive = true;
-  g_freqEntryIsMHz = false;
   g_freqEntryDigits = "";
   g_freqEntryTargetVfo = (isFt8x7Ft817Keypad() || isFt8x7Ft857FamilyKeypad()) ? 3 : 2;
   if (g_speechEnabled) {
@@ -1375,6 +1376,19 @@ static void queryBank1RxTx() {
   speakSimpleBinaryState(tx);
 }
 
+static void queryBank1Frequency() {
+  printKeypadCommand("BANK1 0 SHORT -> FREQ?");
+  if (isFtdx10KeypadProfile()) { keypadSendNow("FREQ?"); return; }
+  uint64_t hz = 0;
+  if (!queryFrequency(hz, 800)) {
+    printKeypadStatus("FREQ? -> no reply");
+    if (g_speechEnabled) speakError();
+    return;
+  }
+  printKeypadStatus(String("FREQ: ") + hzToMHzString3(hz) + " MHz");
+  speakQueriedFrequencyHz(hz);
+}
+
 static void queryBank1TxFrequency() {
   printKeypadCommand("BANK1 2 SHORT -> TXFREQ?");
   if (isFtdx10KeypadProfile()) {
@@ -1450,13 +1464,43 @@ static void queryBank1Lock() {
 static void beginBank1FrequencySet() {
   printKeypadCommand("BANK1 0 LONG -> FREQ");
   g_freqEntryActive = true;
-  g_freqEntryIsMHz = false;
   g_freqEntryDigits = "";
   g_freqEntryTargetVfo = 0;
   if (g_speechEnabled) {
     speakFrequencyWord();
     playSilenceMs(80);
     speakToken("please");
+  }
+}
+
+static void roundActiveFrequency500() {
+  printKeypadCommand("BANK1 0 DOUBLE -> ROUND 500 Hz");
+  g_suspendPollingUntilMs = millis() + 1400;
+  g_suppressFreqSpeakUntilMs = millis() + 2000;
+
+  uint64_t hz = 0;
+  if (!queryFrequency(hz, 800)) {
+    // Radio not responding: do not round or announce a stale value.
+    printKeypadStatus("ROUND -> no reply");
+    if (g_speechEnabled) speakError();
+    return;
+  }
+
+  const uint64_t rounded = RadioFrequency::fromHz(hz).roundedTo(500).hz();
+  // Serial monitor reports old -> new; speech reports only the new frequency.
+  if (rounded == hz) {
+    // Already on a 500 Hz boundary.
+    printKeypadStatus(String("FREQ: ") + hzToMHzString3(rounded) + " MHz (already rounded)");
+    speakQueriedFrequencyHz(rounded);
+    return;
+  }
+
+  if (keypadApplyFrequencyHz(rounded, 0)) {
+    printKeypadStatus(String("ROUND: ") + hzToMHzString3(hz) + " -> " + hzToMHzString3(rounded) + " MHz");
+    speakQueriedFrequencyHz(rounded);
+  } else {
+    printKeypadStatus(currentProtocolType() == PROTO_YAESU_FT8X7 ? "ROUND -> no change" : "ROUND -> failed");
+    if (g_speechEnabled) speakError();
   }
 }
 
@@ -2071,6 +2115,7 @@ static void cycleBank8Baud(int delta) {
 static bool handleDeferredShortRelease(uint8_t bank, char key) {
   if (bank == 1) {
     switch (key) {
+      case '0': queryBank1Frequency(); return true;
       case '1': queryBank1RxTx(); return true;
       case '2': queryBank1TxFrequency(); return true;
       case '5':
@@ -2228,6 +2273,10 @@ static bool handleDeferredShortRelease(uint8_t bank, char key) {
 }
 
 static bool handleDoubleClick(uint8_t bank, char key) {
+  if (bank == 1 && key == '0') {
+    roundActiveFrequency500();
+    return true;
+  }
   if (bank == 1 && key == '5' && isFtdx10KeypadProfile()) {
     printKeypadCommand("BANK1 5 DOUBLE -> TUNE");
     keypadSendNow("TUNE");
@@ -2320,7 +2369,7 @@ static bool handleDoubleClick(uint8_t bank, char key) {
 
 static bool shouldDelayShortRelease(uint8_t bank, char key) {
   if (g_freqEntryActive || g_modeSetActive || g_civAddrEntryActive || g_bank6EntryMode != BANK6_ENTRY_NONE) return false;
-  return (bank == 1 && (key == '1' || key == '2')) ||
+  return (bank == 1 && (key == '0' || key == '1' || key == '2')) ||
          (bank == 1 && isFtdx10KeypadProfile() && key == '5') ||
          (bank == 2 && (currentProtocolType() == PROTO_CIV && (key == '4' || key == '5' || key == '6' || key == '7' || key == '9'))) ||
          (bank == 2 && isFtdx10KeypadProfile() && (key == '4' || key == '5')) ||
@@ -2384,6 +2433,7 @@ void keypadEvent(KeypadEvent k) {
   if (g_freqEntryActive) {
     if (k == 'D' && s == RELEASED) { keypadEnter(); return; }
     if (k == '#' && s == RELEASED) { keypadClearAll(); return; }
+    if (k == '*' && s == RELEASED) { keypadHandleReleased((char)k); return; }
     if (k >= '0' && k <= '9' && s == RELEASED) {
       keypadHandleReleased((char)k);
       return;

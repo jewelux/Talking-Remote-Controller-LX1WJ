@@ -26,7 +26,6 @@ bool g_sevenHoldConsumed = false;
 bool g_eightHoldConsumed = false;
 bool g_freqEntryActive = false;
 String g_freqEntryDigits;
-bool g_freqEntryIsMHz = false;
 uint8_t g_freqEntryTargetVfo = 0;
 bool g_rfPowerEntryActive = false;
 String g_rfPowerEntryDigits;
