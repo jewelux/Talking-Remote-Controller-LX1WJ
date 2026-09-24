@@ -167,15 +167,7 @@ static bool verifyKeypadFrequencyWrite(uint8_t targetVfo, uint64_t expectedHz) {
 // action. targetVfo: 0 = current VFO, 1 = VFO A, 2 = VFO B, 3 = other VFO (FT8x7).
 bool keypadApplyFrequencyHz(uint64_t hz, uint8_t targetVfo) {
   bool ok = false;
-  if (isFtdx10KeypadProfile()) {
-    // Use Hz-argument console commands so sub-kHz precision survives.
-    String cmd;
-    if (targetVfo == 1) cmd = String("VFOAHZ ") + String((unsigned long long)hz);
-    else if (targetVfo == 2) cmd = String("VFOBHZ ") + String((unsigned long long)hz);
-    else cmd = String("FREQHZ ") + String((unsigned long long)hz);
-    keypadSendNow(cmd);
-    ok = true;
-  } else if (targetVfo == 1) {
+  if (targetVfo == 1) {
     ok = setVfoFrequency(true, hz);
   } else if (targetVfo == 2) {
     ok = setVfoFrequency(false, hz);
@@ -191,7 +183,7 @@ bool keypadApplyFrequencyHz(uint64_t hz, uint8_t targetVfo) {
   } else {
     ok = applyFrequencyAndTrack(hz, true);
   }
-  if (ok && !isFtdx10KeypadProfile() && targetVfo != 3) ok = verifyKeypadFrequencyWrite(targetVfo, hz);
+  if (ok && targetVfo != 3) ok = verifyKeypadFrequencyWrite(targetVfo, hz);
   return ok;
 }
 

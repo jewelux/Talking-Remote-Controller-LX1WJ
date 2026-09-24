@@ -12,8 +12,9 @@
 - added Bank 1 `0` double-press to round the current frequency to the nearest 500 Hz (the serial
   monitor reports old -> new; speech reports the new frequency the same way as a tuning
   announcement, without the "frequency" prefix)
-- added Hz-argument console commands `FREQHZ`, `VFOAHZ`, `VFOBHZ` so the FTDX10 keypad path keeps
-  full sub-kHz precision
+- added Hz-argument console commands `FREQHZ`, `VFOAHZ`, `VFOBHZ`
+- FTDX10 keypad frequency entry and rounding set the frequency directly instead of through console
+  commands, so the new frequency is announced once and a rejected write is reported as failed
 - tuning is announced only once the frequency is at least 100 Hz (`FREQ_SPEAK_MIN_STEP_HZ`) away
   from the last frequency the user heard or entered: a tuning announcement, a Bank 1 `0` query,
   a keypad/console frequency entry or a 500 Hz rounding
