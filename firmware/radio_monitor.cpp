@@ -8,21 +8,26 @@
 #include "radio_utils.h"
 #include "debug_log.h"
 
+static uint64_t freqDiffHz(uint64_t a, uint64_t b) {
+  return (a > b) ? (a - b) : (b - a);
+}
+
+// Small moves relative to the last announced frequency are not worth announcing.
+static bool freqDiffersEnoughToSpeak(uint64_t hz) {
+  return live.lastSpokenHz == 0 || freqDiffHz(hz, live.lastSpokenHz) >= FREQ_SPEAK_MIN_STEP_HZ;
+}
+
 void updateFreqSpeechDebounce(uint64_t newHz) {
   const uint32_t now = millis();
   if (!g_tuningSpeakEnabled) return;
   if ((int32_t)(now - g_suppressFreqSpeakUntilMs) < 0) return;
-  if (live.pendingHz != 0) {
-    uint64_t diff = (newHz > live.pendingHz) ? (newHz - live.pendingHz) : (live.pendingHz - newHz);
-    if (diff < FREQ_SPEAK_MIN_STEP_HZ) return;
-  }
   if (!live.tuning) {
     live.tuning = true;
     live.tuningStartSpokenHz = 0;
   }
   live.pendingHz = newHz;
   live.lastChangeMs = now;
-  if (g_speechEnabled && FREQ_SPEAK_START_IMMEDIATELY && live.tuningStartSpokenHz == 0 && now - live.lastSpokenMs >= FREQ_SPEAK_MIN_INTERVAL_MS) {
+  if (g_speechEnabled && FREQ_SPEAK_START_IMMEDIATELY && live.tuningStartSpokenHz == 0 && now - live.lastSpokenMs >= FREQ_SPEAK_MIN_INTERVAL_MS && freqDiffersEnoughToSpeak(newHz)) {
     live.tuningStartSpokenHz = newHz;
     live.lastSpokenHz = newHz;
     live.lastSpokenMs = now;
@@ -37,7 +42,7 @@ void speakPendingFreqIfIdle() {
   if (!live.tuning || live.pendingHz == 0) return;
   const uint32_t now = millis();
   if (now - live.lastChangeMs < FREQ_SPEAK_IDLE_MS || now - live.lastSpokenMs < FREQ_SPEAK_MIN_INTERVAL_MS) return;
-  if (live.pendingHz != live.lastSpokenHz) {
+  if (freqDiffersEnoughToSpeak(live.pendingHz)) {
     live.lastSpokenHz = live.pendingHz;
     live.lastSpokenMs = now;
     speakDigitsAndPoint(hzToMHzString3(live.pendingHz));

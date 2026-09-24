@@ -38,6 +38,10 @@ void rememberLiveFrequency(uint64_t hz, uint32_t nowMs) {
   live.lastFreqMs = nowMs;
 }
 
+void rememberAnnouncedFrequency(uint64_t hz) {
+  live.lastSpokenHz = hz;
+}
+
 void rememberLiveMode(uint8_t mode, uint32_t nowMs) {
   live.mode = mode;
   live.modeValid = true;

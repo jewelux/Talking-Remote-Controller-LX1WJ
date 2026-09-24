@@ -10,10 +10,13 @@
 - keypad frequency entry now reads a plain number as MHz with `*` as the decimal point
   (`14*1` → 14.1 MHz, `14*12345` → 14.12345 MHz), replacing the previous kHz-integer entry
 - added Bank 1 `0` double-press to round the current frequency to the nearest 500 Hz (the serial
-  monitor reports old -> new; speech reports the new frequency)
+  monitor reports old -> new; speech reports the new frequency the same way as a tuning
+  announcement, without the "frequency" prefix)
 - added Hz-argument console commands `FREQHZ`, `VFOAHZ`, `VFOBHZ` so the FTDX10 keypad path keeps
   full sub-kHz precision
-- lowered `FREQ_SPEAK_MIN_STEP_HZ` so sub-kHz changes are announced while tuning
+- tuning is announced only once the frequency is at least 100 Hz (`FREQ_SPEAK_MIN_STEP_HZ`) away
+  from the last frequency the user heard or entered: a tuning announcement, a Bank 1 `0` query,
+  a keypad/console frequency entry or a 500 Hz rounding
 
 ## V3.5.8 FTDX10 and Keypad Refinement
 

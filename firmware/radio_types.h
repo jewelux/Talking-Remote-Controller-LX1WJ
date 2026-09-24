@@ -31,7 +31,8 @@ static const uint32_t FREQ_SPEAK_IDLE_MS = 1500;
 static const bool FREQ_POLL_ENABLE = true;
 static const uint32_t FREQ_POLL_MS = 400;
 static const uint32_t FREQ_POLL_TIMEOUT_MS = 80;
-static const uint32_t FREQ_SPEAK_MIN_STEP_HZ = 10;
+// Minimum distance from the last announced frequency before tuning is announced again.
+static const uint32_t FREQ_SPEAK_MIN_STEP_HZ = 100;
 static const uint32_t FREQ_SPEAK_MIN_INTERVAL_MS = 5000;
 
 static const bool SMETER_POLL_ENABLE = false;

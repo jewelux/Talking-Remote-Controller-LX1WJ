@@ -541,6 +541,12 @@ static void speakQueriedFrequencyHz(uint64_t hz) {
   speakDigitsAndPoint(hzToMHzString3(hz));
 }
 
+// Same wording as a tuning announcement: digits only, no "frequency" prefix.
+static void speakTunedFrequencyHz(uint64_t hz) {
+  if (!g_speechEnabled) return;
+  speakDigitsAndPoint(hzToMHzString3(hz));
+}
+
 static bool isFt8x7Ft857FamilyKeypad() {
   return currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft857_897");
 }
@@ -1387,6 +1393,7 @@ static void queryBank1Frequency() {
   }
   printKeypadStatus(String("FREQ: ") + hzToMHzString3(hz) + " MHz");
   speakQueriedFrequencyHz(hz);
+  rememberAnnouncedFrequency(hz);
 }
 
 static void queryBank1TxFrequency() {
@@ -1491,13 +1498,15 @@ static void roundActiveFrequency500() {
   if (rounded == hz) {
     // Already on a 500 Hz boundary.
     printKeypadStatus(String("FREQ: ") + hzToMHzString3(rounded) + " MHz (already rounded)");
-    speakQueriedFrequencyHz(rounded);
+    speakTunedFrequencyHz(rounded);
+    rememberAnnouncedFrequency(rounded);
     return;
   }
 
   if (keypadApplyFrequencyHz(rounded, 0)) {
     printKeypadStatus(String("ROUND: ") + hzToMHzString3(hz) + " -> " + hzToMHzString3(rounded) + " MHz");
-    speakQueriedFrequencyHz(rounded);
+    speakTunedFrequencyHz(rounded);
+    rememberAnnouncedFrequency(rounded);
   } else {
     printKeypadStatus(currentProtocolType() == PROTO_YAESU_FT8X7 ? "ROUND -> no change" : "ROUND -> failed");
     if (g_speechEnabled) speakError();
