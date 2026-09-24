@@ -50,6 +50,12 @@ void speakPendingFreqIfIdle() {
   live.tuning = false;
 }
 
+void cancelPendingFreqAnnouncement() {
+  live.tuning = false;
+  live.pendingHz = 0;
+  live.tuningStartSpokenHz = 0;
+}
+
 void pollFrequencyIfDue() {
   if (!FREQ_POLL_ENABLE) return;
   if (!currentStoredProfile().caps.getFreq) return;

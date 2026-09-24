@@ -5,6 +5,7 @@
 #include "radio_catalog.h"
 #include "radio_frequency.h"
 #include "radio_mode.h"
+#include "radio_monitor.h"
 #include "radio_profile.h"
 #include "radio_prefs.h"
 #include "ui_keypad_actions.h"
@@ -25,6 +26,9 @@ bool g_keypadExecuting = false;
 bool g_suppressModePrefixOnce = false;
 static constexpr uint32_t KEYPAD_DOUBLE_CLICK_MS = 220;
 static constexpr uint32_t KEYPAD_POLL_SUSPEND_MS = 900;
+// Quiet window after a key press so a tuning announcement cannot start while the
+// key's own response (deferred by double-click detection) is being prepared.
+static constexpr uint32_t KEYPAD_PRESS_SPEECH_QUIET_MS = 1000;
 
 static void triggerBank2Tune();
 static void queryBank2NrLevel();
@@ -195,11 +199,7 @@ bool profileModeFromDigit(char digit, uint8_t& modeOut) {
 void setTuningSpeechEnabled(bool enabled) {
   g_tuningSpeakEnabled = enabled;
   saveTuningSpeakToNvs(g_tuningSpeakEnabled);
-  if (!g_tuningSpeakEnabled) {
-    live.tuning = false;
-    live.pendingHz = 0;
-    live.tuningStartSpokenHz = 0;
-  }
+  if (!g_tuningSpeakEnabled) cancelPendingFreqAnnouncement();
 }
 
 void speakBankNumber() {
@@ -296,10 +296,7 @@ static void printKeypadCommand(const String& line) {
 static void prepareKeypadSpeechResponse() {
   g_suspendPollingUntilMs = millis() + KEYPAD_POLL_SUSPEND_MS;
   g_suppressFreqSpeakUntilMs = millis() + 2000;
-  live.tuning = false;
-  live.pendingHz = 0;
-  live.tuningStartSpokenHz = 0;
-  if (g_audioPlaying) audioAbortNow();
+  cancelPendingFreqAnnouncement();
 }
 
 static bool queryDialLockReliable(bool& onOut) {
@@ -2389,9 +2386,19 @@ static bool shouldDelayShortRelease(uint8_t bank, char key) {
          (bank == 8 && key == '2');
 }
 
+// Any key press interrupts the device: the user wants the answer to this key,
+// not whatever was still being spoken or waiting to be spoken. This is the only
+// place keypad speech is interrupted; key actions compose their answer (label,
+// then value) by appending, so nothing they queue is cut off.
+static void silenceSpeechForKeyPress() {
+  audioAbortNow();
+  cancelPendingFreqAnnouncement();
+  g_suppressFreqSpeakUntilMs = millis() + KEYPAD_PRESS_SPEECH_QUIET_MS;
+}
+
 void keypadEvent(KeypadEvent k) {
   KeyState s = keypad.getState();
-  if (s == PRESSED && g_audioPlaying) audioAbortNow();
+  if (s == PRESSED) silenceSpeechForKeyPress();
 
   if (g_bankSelectActive) {
     if (k >= '1' && k <= '9' && s == RELEASED) {

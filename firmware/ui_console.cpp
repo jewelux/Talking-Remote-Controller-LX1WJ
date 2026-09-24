@@ -2624,7 +2624,9 @@ void processCommand(String line) {
   String upper = upperCopy(line);
   if (handleHamtrcServiceCommand(upper, Serial)) return;
 
-  if (g_audioPlaying) audioAbortNow();
+  // Typed input interrupts speech like a key press does. Keypad-issued commands
+  // were already interrupted at the key press and may have queued their label.
+  if (!g_keypadExecuting) audioAbortNow();
 
   if (usbConsoleReady()) {
     Serial.print("> ");

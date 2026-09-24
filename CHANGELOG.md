@@ -17,6 +17,9 @@
 - tuning is announced only once the frequency is at least 100 Hz (`FREQ_SPEAK_MIN_STEP_HZ`) away
   from the last frequency the user heard or entered: a tuning announcement, a Bank 1 `0` query,
   a keypad/console frequency entry or a 500 Hz rounding
+- any key press now stops speech in progress and cancels a pending tuning announcement, so
+  answers no longer queue up behind earlier announcements; key actions only append their
+  label and value
 
 ## V3.5.8 FTDX10 and Keypad Refinement
 

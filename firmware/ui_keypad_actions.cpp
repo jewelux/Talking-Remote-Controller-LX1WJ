@@ -2,6 +2,7 @@
 
 #include "radio_catalog.h"
 #include "radio_mode.h"
+#include "radio_monitor.h"
 #include "radio_prefs.h"
 #include "radio_protocol.h"
 #include "radio_frequency.h"
@@ -337,10 +338,7 @@ static void queryBank2Nr() {
   if (!currentStoredProfile().caps.getNr) return;
   g_suspendPollingUntilMs = millis() + 900;
   g_suppressFreqSpeakUntilMs = millis() + 2000;
-  live.tuning = false;
-  live.pendingHz = 0;
-  live.tuningStartSpokenHz = 0;
-  if (g_audioPlaying) audioAbortNow();
+  cancelPendingFreqAnnouncement();
   if (!refreshLiveNr()) {
     printKeypadStatus("NR? -> no reply");
     if (g_speechEnabled) speakError();
@@ -359,10 +357,7 @@ static void queryBank2Nb() {
   if (!currentStoredProfile().caps.getNb) return;
   g_suspendPollingUntilMs = millis() + 900;
   g_suppressFreqSpeakUntilMs = millis() + 2000;
-  live.tuning = false;
-  live.pendingHz = 0;
-  live.tuningStartSpokenHz = 0;
-  if (g_audioPlaying) audioAbortNow();
+  cancelPendingFreqAnnouncement();
   if (!refreshLiveNb()) {
     printKeypadStatus("NB? -> no reply");
     if (g_speechEnabled) speakError();
@@ -381,10 +376,7 @@ static void queryBank2Notch() {
   if (!currentStoredProfile().caps.getNotch) return;
   g_suspendPollingUntilMs = millis() + 900;
   g_suppressFreqSpeakUntilMs = millis() + 2000;
-  live.tuning = false;
-  live.pendingHz = 0;
-  live.tuningStartSpokenHz = 0;
-  if (g_audioPlaying) audioAbortNow();
+  cancelPendingFreqAnnouncement();
   if (!refreshLiveNotch()) {
     printKeypadStatus("NOTCH? -> no reply");
     if (g_speechEnabled) speakError();
@@ -498,10 +490,7 @@ void keypadSendNow(const String& cmd) {
     Serial.println(cmd);
   }
   g_suppressFreqSpeakUntilMs = millis() + 2000;
-  live.tuning = false;
-  live.pendingHz = 0;
-  live.tuningStartSpokenHz = 0;
-  if (g_audioPlaying) audioAbortNow();
+  cancelPendingFreqAnnouncement();
   g_suspendPollingUntilMs = millis() + 900;
   g_keypadExecuting = true;
   processCommand(cmd);
