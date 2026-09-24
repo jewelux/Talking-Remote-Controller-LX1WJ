@@ -18,6 +18,14 @@ void voiceTest();
 void speakProfileIdentityFromSlot(uint8_t id, bool withOk);
 void speakBootProfile();
 void audioAbortNow();
+// Speech queued between beginTuningSpeech() and endTuningSpeech() is a tuning
+// announcement: starting a new one or calling cancelTuningSpeech() drops it,
+// even mid-word, while other speech keeps playing.
+void beginTuningSpeech();
+void endTuningSpeech();
+void cancelTuningSpeech();
+bool tuningSpeechActive();
+uint32_t tuningSpeechEndedMs();
 void audioAmpOn();
 void audioAmpOff();
 void applyVolumeLevel(uint8_t lvl);

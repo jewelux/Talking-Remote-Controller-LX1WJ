@@ -21,6 +21,11 @@
 - any key press now stops speech in progress and cancels a pending tuning announcement, so
   answers no longer queue up behind earlier announcements; key actions only append their
   label and value
+- tuning announcements no longer queue up while the dial is moving: moving the dial at least
+  100 Hz away from the frequency being read out stops that readout immediately (other speech such
+  as mode or key answers keeps playing), and only the frequency where tuning stops is announced;
+  the fixed 5 s minimum interval between tuning announcements is replaced by a 500 ms gap
+  (`FREQ_SPEAK_MIN_GAP_MS`) measured from the end of the previous announcement
 
 ## V3.5.8 FTDX10 and Keypad Refinement
 

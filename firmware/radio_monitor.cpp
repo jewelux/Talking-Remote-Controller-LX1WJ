@@ -17,8 +17,27 @@ static bool freqDiffersEnoughToSpeak(uint64_t hz) {
   return live.lastSpokenHz == 0 || freqDiffHz(hz, live.lastSpokenHz) >= FREQ_SPEAK_MIN_STEP_HZ;
 }
 
+// Queues hz as a tuning announcement, replacing any tuning announcement still playing.
+static void speakTuningFrequency(uint64_t hz) {
+  live.heardBeforeHz = live.lastSpokenHz;
+  live.lastSpokenHz = hz;
+  beginTuningSpeech();
+  speakDigitsAndPoint(hzToMHzString3(hz));
+  endTuningSpeech();
+}
+
+static bool tuningSpeechGapElapsed(uint32_t now) {
+  return !tuningSpeechActive() && now - tuningSpeechEndedMs() >= FREQ_SPEAK_MIN_GAP_MS;
+}
+
 void updateFreqSpeechDebounce(uint64_t newHz) {
   const uint32_t now = millis();
+  // The dial moved away from the frequency being read out: stop the stale
+  // announcement. It was not heard, so the previous heard frequency stands.
+  if (tuningSpeechActive() && freqDiffersEnoughToSpeak(newHz)) {
+    cancelTuningSpeech();
+    live.lastSpokenHz = live.heardBeforeHz;
+  }
   if (!g_tuningSpeakEnabled) return;
   if ((int32_t)(now - g_suppressFreqSpeakUntilMs) < 0) return;
   if (!live.tuning) {
@@ -27,26 +46,19 @@ void updateFreqSpeechDebounce(uint64_t newHz) {
   }
   live.pendingHz = newHz;
   live.lastChangeMs = now;
-  if (g_speechEnabled && FREQ_SPEAK_START_IMMEDIATELY && live.tuningStartSpokenHz == 0 && now - live.lastSpokenMs >= FREQ_SPEAK_MIN_INTERVAL_MS && freqDiffersEnoughToSpeak(newHz)) {
+  if (g_speechEnabled && FREQ_SPEAK_START_IMMEDIATELY && live.tuningStartSpokenHz == 0 && tuningSpeechGapElapsed(now) && freqDiffersEnoughToSpeak(newHz)) {
     live.tuningStartSpokenHz = newHz;
-    live.lastSpokenHz = newHz;
-    live.lastSpokenMs = now;
-    speakDigitsAndPoint(hzToMHzString3(newHz));
+    speakTuningFrequency(newHz);
   }
 }
 
 void speakPendingFreqIfIdle() {
   if (!g_speechEnabled || !g_tuningSpeakEnabled) return;
-  const uint32_t now0 = millis();
-  if ((int32_t)(now0 - g_suppressFreqSpeakUntilMs) < 0) return;
-  if (!live.tuning || live.pendingHz == 0) return;
   const uint32_t now = millis();
-  if (now - live.lastChangeMs < FREQ_SPEAK_IDLE_MS || now - live.lastSpokenMs < FREQ_SPEAK_MIN_INTERVAL_MS) return;
-  if (freqDiffersEnoughToSpeak(live.pendingHz)) {
-    live.lastSpokenHz = live.pendingHz;
-    live.lastSpokenMs = now;
-    speakDigitsAndPoint(hzToMHzString3(live.pendingHz));
-  }
+  if ((int32_t)(now - g_suppressFreqSpeakUntilMs) < 0) return;
+  if (!live.tuning || live.pendingHz == 0) return;
+  if (now - live.lastChangeMs < FREQ_SPEAK_IDLE_MS || !tuningSpeechGapElapsed(now)) return;
+  if (freqDiffersEnoughToSpeak(live.pendingHz)) speakTuningFrequency(live.pendingHz);
   live.tuning = false;
 }
 

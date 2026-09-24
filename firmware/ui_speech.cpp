@@ -32,6 +32,7 @@ struct AudioItem {
   const uint8_t* data;
   size_t len;
   uint16_t silenceMs;
+  uint32_t tuningId;  // 0 for ordinary speech, otherwise the tuning announcement it belongs to
 };
 
 static const int AUDIO_QUEUE_LEN = 32;
@@ -42,21 +43,37 @@ static volatile bool g_audioAbortReq = false;
 static volatile bool g_audioAbortEnabled = true;
 volatile bool g_audioPlaying = false;
 
+// Tuning announcements are numbered so a stale one can be dropped without
+// touching other speech. Ids are issued by the main loop and increase
+// monotonically; the audio task skips any item whose id is cancelled.
+static uint32_t g_tuningSeq = 0;
+static uint32_t g_enqueueTuningId = 0;
+static bool g_tuningItemQueued = false;
+static volatile uint32_t g_tuningCancelUpTo = 0;
+static volatile uint32_t g_tuningDoneId = 0;
+static volatile uint32_t g_tuningEndMs = 0;
+static volatile uint32_t g_playingTuningId = 0;
+
+static inline bool tuningIdCancelled(uint32_t id) { return id != 0 && id <= g_tuningCancelUpTo; }
+static inline bool audioStopRequested() { return g_audioAbortReq || tuningIdCancelled(g_playingTuningId); }
+
 static inline bool audioQueueIsEmpty() { return g_aqHead == g_aqTail; }
 static void audioQueueClear() { g_aqHead = g_aqTail = 0; }
 static bool audioEnqueueClip(const uint8_t* data, size_t len) {
   if (!data || !len) return false;
   int next = (g_aqTail + 1) % AUDIO_QUEUE_LEN;
   if (next == g_aqHead) return false;
-  g_audioQ[g_aqTail] = {AUDIO_CLIP, data, len, 0};
+  g_audioQ[g_aqTail] = {AUDIO_CLIP, data, len, 0, g_enqueueTuningId};
   g_aqTail = next;
+  if (g_enqueueTuningId) g_tuningItemQueued = true;
   return true;
 }
 static bool audioEnqueueSilence(uint16_t ms) {
   int next = (g_aqTail + 1) % AUDIO_QUEUE_LEN;
   if (next == g_aqHead) return false;
-  g_audioQ[g_aqTail] = {AUDIO_SILENCE, nullptr, 0, ms};
+  g_audioQ[g_aqTail] = {AUDIO_SILENCE, nullptr, 0, ms, g_enqueueTuningId};
   g_aqTail = next;
+  if (g_enqueueTuningId) g_tuningItemQueued = true;
   return true;
 }
 
@@ -287,14 +304,36 @@ void audioAbortNow() {
   if (!g_audioAbortEnabled) return;
   g_audioAbortReq = true;
   audioQueueClear();
+  g_tuningCancelUpTo = g_tuningSeq;
 }
+
+void beginTuningSpeech() {
+  cancelTuningSpeech();
+  g_enqueueTuningId = ++g_tuningSeq;
+  g_tuningItemQueued = false;
+}
+
+void endTuningSpeech() {
+  // Nothing reached the queue (full, or speech off): the audio task will never finish it.
+  if (!g_tuningItemQueued) g_tuningDoneId = g_enqueueTuningId;
+  g_enqueueTuningId = 0;
+}
+
+void cancelTuningSpeech() { g_tuningCancelUpTo = g_tuningSeq; }
+
+bool tuningSpeechActive() {
+  const uint32_t id = g_tuningSeq;
+  return id != 0 && id > g_tuningDoneId && !tuningIdCancelled(id);
+}
+
+uint32_t tuningSpeechEndedMs() { return g_tuningEndMs; }
 
 static bool playClipProgmemBlocking(const uint8_t* data, size_t length) {
   const size_t CHUNK = 512;
   static uint8_t buffer[CHUNK];
   size_t offset = 0;
   while (offset < length) {
-    if (g_audioAbortReq) return false;
+    if (audioStopRequested()) return false;
     size_t n = length - offset;
     if (n > CHUNK) n = CHUNK;
     memcpy_P(buffer, data + offset, n);
@@ -309,7 +348,7 @@ static bool playClipProgmemBlocking(const uint8_t* data, size_t length) {
     }
     size_t written = 0;
     esp_err_t err = i2s_write(I2S_NUM_0, buffer, n, &written, pdMS_TO_TICKS(20));
-    if (g_audioAbortReq) return false;
+    if (audioStopRequested()) return false;
     if (err != ESP_OK) return false;
     if (written == 0) continue;
     offset += written;
@@ -323,7 +362,7 @@ static void playSilenceMsBlocking(int ms) {
   size_t written = 0;
   int loops = max(1, ms / 10);
   for (int i = 0; i < loops; ++i) {
-    if (g_audioAbortReq) break;
+    if (audioStopRequested()) break;
     i2s_write(I2S_NUM_0, z, sizeof(z), &written, pdMS_TO_TICKS(20));
   }
 }
@@ -353,8 +392,17 @@ static void audioTask(void* pv) {
 
     AudioItem it = g_audioQ[g_aqHead];
     g_aqHead = (g_aqHead + 1) % AUDIO_QUEUE_LEN;
-    if (it.type == AUDIO_CLIP) (void)playClipProgmemBlocking(it.data, it.len);
-    else playSilenceMsBlocking((int)it.silenceMs);
+    if (!tuningIdCancelled(it.tuningId)) {
+      g_playingTuningId = it.tuningId;
+      if (it.type == AUDIO_CLIP) (void)playClipProgmemBlocking(it.data, it.len);
+      else playSilenceMsBlocking((int)it.silenceMs);
+      g_playingTuningId = 0;
+    }
+    // A tuning announcement ends with its last queued item.
+    if (it.tuningId != 0 && (audioQueueIsEmpty() || g_audioQ[g_aqHead].tuningId != it.tuningId)) {
+      g_tuningEndMs = millis();
+      g_tuningDoneId = it.tuningId;
+    }
   }
 }
 
