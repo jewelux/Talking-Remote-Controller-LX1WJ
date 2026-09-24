@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased — FT8x7 frequency polling
+
+- re-enabled background frequency polling for the Yaesu FT-817/857/897 family (disabled in V3.5.8)
+- FT8x7 polls every 700 ms with a 300 ms timeout; other radios keep 400 ms / 80 ms
+- after 3 failed polls in a row (radio off or disconnected) polling backs off to every 3 s so the
+  blocking timeout does not starve the keypad
+- after a CAT timeout the next FT8x7 command waits for the line to go quiet, so a late reply is not
+  read as the start of the next one; commands are spaced at least 20 ms apart
+- FT8x7 frequency/mode frames with non-BCD digits or an out-of-range frequency are rejected; a
+  polled frequency change is accepted on the first reading (confirmation by two identical readings
+  is available but off)
+
 ## V3.5.8 FTDX10 and Keypad Refinement
 
 The repository is now aligned to the local `V3.5.8` firmware state.

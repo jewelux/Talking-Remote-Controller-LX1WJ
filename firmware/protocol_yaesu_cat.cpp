@@ -2,6 +2,18 @@
 
 #include "transport_serial.h"
 
+// FT-8x7 CAT has no framing: a reply that arrives after its reader timed out
+// would be read as the start of the next reply. After a timeout, the next
+// transaction waits for the line to go quiet instead of flushing instantly.
+static constexpr uint32_t YAESU_CAT_LATE_REPLY_WINDOW_MS = 300;
+static constexpr uint32_t YAESU_CAT_LINE_QUIET_MS = 30;
+// Minimum gap between two commands so the radio's CAT parser keeps up.
+static constexpr uint32_t YAESU_CAT_MIN_COMMAND_GAP_MS = 20;
+
+static bool s_lineDirty = false;
+static uint32_t s_lineDirtySinceMs = 0;
+static uint32_t s_lastTxMs = 0;
+
 static void yaesuCatTraceFrame(const char* label, const uint8_t data[5]) {
   if (!g_yaesuCatTrace || !Serial) return;
   Serial.print("[YCAT] ");
@@ -43,14 +55,42 @@ void yaesuCatSniff(uint32_t windowMs) {
   }
 }
 
+void yaesuCatMarkLineDirty() {
+  s_lineDirty = true;
+  s_lineDirtySinceMs = millis();
+}
+
+// Discards input until the line has been quiet for YAESU_CAT_LINE_QUIET_MS, bounded by
+// the end of the late-reply window.
+static void yaesuCatDrainLateReply() {
+  uint32_t lastActivityMs = millis();
+  while (millis() - s_lineDirtySinceMs < YAESU_CAT_LATE_REPLY_WINDOW_MS) {
+    if (serialTransportAvailable()) {
+      yaesuCatTraceByte("DRAIN", (uint8_t)serialTransportRead());
+      lastActivityMs = millis();
+    } else if (millis() - lastActivityMs >= YAESU_CAT_LINE_QUIET_MS) {
+      break;
+    } else {
+      delay(1);
+    }
+  }
+}
+
 void yaesuCatFlushInput() {
+  if (s_lineDirty) {
+    yaesuCatDrainLateReply();
+    s_lineDirty = false;
+  }
   serialTransportFlushInput();
 }
 
 void yaesuCatSend5(const uint8_t data[5]) {
+  const uint32_t sinceLastTxMs = millis() - s_lastTxMs;
+  if (sinceLastTxMs < YAESU_CAT_MIN_COMMAND_GAP_MS) delay(YAESU_CAT_MIN_COMMAND_GAP_MS - sinceLastTxMs);
   yaesuCatTraceFrame("TX", data);
   serialTransportWrite(data, 5);
   serialTransportFlushOutput();
+  s_lastTxMs = millis();
 }
 
 bool yaesuCatRead1(uint8_t& out, uint32_t timeoutMs) {
@@ -63,6 +103,7 @@ bool yaesuCatRead1(uint8_t& out, uint32_t timeoutMs) {
     }
     delay(1);
   }
+  yaesuCatMarkLineDirty();
   return false;
 }
 
@@ -81,6 +122,7 @@ bool yaesuCatRead5(uint8_t out[5], uint32_t timeoutMs) {
     }
     delay(1);
   }
+  yaesuCatMarkLineDirty();
   return false;
 }
 
@@ -110,6 +152,14 @@ uint64_t yaesuCatDecodeFreqHz(const uint8_t data[4]) {
     digits = digits * 100ULL + (uint64_t)(((data[i] >> 4) & 0x0F) * 10 + (data[i] & 0x0F));
   }
   return digits * 10ULL;
+}
+
+bool yaesuCatFreqFieldValid(const uint8_t data[4]) {
+  for (int i = 0; i < 4; ++i) {
+    if (((data[i] >> 4) & 0x0F) > 9 || (data[i] & 0x0F) > 9) return false;
+  }
+  const uint64_t hz = yaesuCatDecodeFreqHz(data);
+  return hz >= YAESU_CAT_MIN_FREQ_HZ && hz <= YAESU_CAT_MAX_FREQ_HZ;
 }
 
 void yaesuCatEncodeFreqHz(uint64_t hz, uint8_t out[4]) {
