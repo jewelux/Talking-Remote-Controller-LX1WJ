@@ -5,3 +5,9 @@
 Thumbs.db
 .DS_Store
 firmware/divers/
+
+# Python / Piper voice generator
+.venv/
+__pycache__/
+*.pyc
+firmware/voice_assets/piper/models/
