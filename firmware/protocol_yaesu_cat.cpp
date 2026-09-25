@@ -9,10 +9,15 @@ static constexpr uint32_t YAESU_CAT_LATE_REPLY_WINDOW_MS = 300;
 static constexpr uint32_t YAESU_CAT_LINE_QUIET_MS = 30;
 // Minimum gap between two commands so the radio's CAT parser keeps up.
 static constexpr uint32_t YAESU_CAT_MIN_COMMAND_GAP_MS = 20;
+// Opening the UART can emit a stray byte, which the radio keeps as the start of a frame until
+// the line has been quiet for a while. A command sent before that is shifted by one byte;
+// most commands start with four 0x00 bytes, so the radio executes opcode 0x00 = LOCK ON.
+static constexpr uint32_t YAESU_CAT_LINE_OPEN_QUIET_MS = 5 * YAESU_CAT_MIN_COMMAND_GAP_MS;
 
 static bool s_lineDirty = false;
 static uint32_t s_lineDirtySinceMs = 0;
-static uint32_t s_lastTxMs = 0;
+// Earliest time the next command may be sent.
+static uint32_t s_nextTxAllowedMs = 0;
 
 static void yaesuCatTraceFrame(const char* label, const uint8_t data[5]) {
   if (!g_yaesuCatTrace || !Serial) return;
@@ -84,13 +89,17 @@ void yaesuCatFlushInput() {
   serialTransportFlushInput();
 }
 
+void yaesuCatNoteLineOpened() {
+  s_nextTxAllowedMs = millis() + YAESU_CAT_LINE_OPEN_QUIET_MS;
+}
+
 void yaesuCatSend5(const uint8_t data[5]) {
-  const uint32_t sinceLastTxMs = millis() - s_lastTxMs;
-  if (sinceLastTxMs < YAESU_CAT_MIN_COMMAND_GAP_MS) delay(YAESU_CAT_MIN_COMMAND_GAP_MS - sinceLastTxMs);
+  const int32_t waitMs = (int32_t)(s_nextTxAllowedMs - millis());
+  if (waitMs > 0) delay((uint32_t)waitMs);
   yaesuCatTraceFrame("TX", data);
   serialTransportWrite(data, 5);
   serialTransportFlushOutput();
-  s_lastTxMs = millis();
+  s_nextTxAllowedMs = millis() + YAESU_CAT_MIN_COMMAND_GAP_MS;
 }
 
 bool yaesuCatRead1(uint8_t& out, uint32_t timeoutMs) {

@@ -11,6 +11,9 @@ static constexpr uint64_t YAESU_CAT_MAX_FREQ_HZ = 470000000ULL;
 void yaesuCatFlushInput();
 // Makes the next transaction wait out stray bytes (after a timeout or a misaligned frame).
 void yaesuCatMarkLineDirty();
+// Call after (re)opening the UART: holds off the next command until the radio has dropped
+// any stray byte the port emitted while opening.
+void yaesuCatNoteLineOpened();
 void yaesuCatSend5(const uint8_t data[5]);
 bool yaesuCatRead1(uint8_t& out, uint32_t timeoutMs);
 bool yaesuCatRead5(uint8_t out[5], uint32_t timeoutMs);
