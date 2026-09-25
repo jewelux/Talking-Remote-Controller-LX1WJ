@@ -13,6 +13,10 @@
   is available but off)
 - the first FT8x7 command after the CAT port is opened now keeps the same minimum gap as between
   commands
+- fixed FT-857/897 dial lock turning on when HamTRC starts with the radio already on: the RS232 TX
+  line was held low (a break) from power-up until the radio profile was applied, because the early
+  `digitalWrite(HIGH)` was ignored while the pin was not yet set up as GPIO; the radio read the end
+  of the break as a stray byte, which shifted the first poll so it was executed as LOCK ON
 
 ## V3.5.8 FTDX10 and Keypad Refinement
 

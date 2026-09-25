@@ -19,6 +19,7 @@
 #include "radio_protocol.h"
 #include "radio_runtime.h"
 #include "sd_slots.h"
+#include "transport_serial.h"
 #include "engine_civ.h"
 #include "engine_kenwood.h"
 #include "ui_console.h"
@@ -48,8 +49,7 @@ static void printSdBootSummary() {
 }
 
 void setup() {
-  digitalWrite(RS232_TX_PIN, HIGH);
-  pinMode(RS232_TX_PIN, OUTPUT);
+  serialTransportDriveTxIdle(RS232_TX_PIN, false);
 
   Serial.begin(PC_BAUD);
   Serial0.begin(PC_BAUD);
