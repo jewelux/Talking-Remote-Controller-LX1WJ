@@ -9,10 +9,6 @@ static constexpr uint32_t YAESU_CAT_LATE_REPLY_WINDOW_MS = 300;
 static constexpr uint32_t YAESU_CAT_LINE_QUIET_MS = 30;
 // Minimum gap between two commands so the radio's CAT parser keeps up.
 static constexpr uint32_t YAESU_CAT_MIN_COMMAND_GAP_MS = 20;
-// Opening the UART can emit a stray byte, which the radio keeps as the start of a frame until
-// the line has been quiet for a while. A command sent before that is shifted by one byte;
-// most commands start with four 0x00 bytes, so the radio executes opcode 0x00 = LOCK ON.
-static constexpr uint32_t YAESU_CAT_LINE_OPEN_QUIET_MS = 5 * YAESU_CAT_MIN_COMMAND_GAP_MS;
 
 static bool s_lineDirty = false;
 static uint32_t s_lineDirtySinceMs = 0;
@@ -90,7 +86,7 @@ void yaesuCatFlushInput() {
 }
 
 void yaesuCatNoteLineOpened() {
-  s_nextTxAllowedMs = millis() + YAESU_CAT_LINE_OPEN_QUIET_MS;
+  s_nextTxAllowedMs = millis() + YAESU_CAT_MIN_COMMAND_GAP_MS;
 }
 
 void yaesuCatSend5(const uint8_t data[5]) {

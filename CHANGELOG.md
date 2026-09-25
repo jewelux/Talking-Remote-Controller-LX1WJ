@@ -11,9 +11,8 @@
 - FT8x7 frequency/mode frames with non-BCD digits or an out-of-range frequency are rejected; a
   polled frequency change is accepted on the first reading (confirmation by two identical readings
   is available but off)
-- fixed FT-857/897 dial lock turning on when HamTRC starts with the radio already on: opening the
-  CAT port can emit a stray byte, which shifted the first poll so the radio read it as LOCK ON;
-  the first FT8x7 command now waits 100 ms after the port is opened
+- the first FT8x7 command after the CAT port is opened now keeps the same minimum gap as between
+  commands
 
 ## V3.5.8 FTDX10 and Keypad Refinement
 
