@@ -96,6 +96,9 @@ static const VoiceClip kVoiceClips[] = {
 #endif
   {"voice_db", voice_db, voice_db_len},
   {"voice_digi", voice_digi, voice_digi_len},
+#if defined(HAS_VOICE_voice_e)
+  {"voice_e", voice_e, voice_e_len},
+#endif
   {"voice_eight", voice_eight, voice_eight_len},
   {"voice_elecraft", voice_elecraft, voice_elecraft_len},
 #if defined(HAS_VOICE_voice_equals)
@@ -116,12 +119,21 @@ static const VoiceClip kVoiceClips[] = {
 #if defined(HAS_VOICE_voice_g)
   {"voice_g", voice_g, voice_g_len},
 #endif
+#if defined(HAS_VOICE_voice_h)
+  {"voice_h", voice_h, voice_h_len},
+#endif
   {"voice_hertz", voice_hertz, voice_hertz_len},
 #if defined(HAS_VOICE_voice_mode)
   {"voice_mode", voice_mode, voice_mode_len},
 #endif
   {"voice_i", voice_i, voice_i_len},
   {"voice_icom", voice_icom, voice_icom_len},
+#if defined(HAS_VOICE_voice_j)
+  {"voice_j", voice_j, voice_j_len},
+#endif
+#if defined(HAS_VOICE_voice_k)
+  {"voice_k", voice_k, voice_k_len},
+#endif
   {"voice_kenwood", voice_kenwood, voice_kenwood_len},
   {"voice_kilohertz", voice_kilohertz, voice_kilohertz_len},
   {"voice_l", voice_l, voice_l_len},
@@ -132,6 +144,9 @@ static const VoiceClip kVoiceClips[] = {
   {"voice_megahertz", voice_megahertz, voice_megahertz_len},
   {"voice_minus", voice_minus, voice_minus_len},
   {"voice_monitor", voice_monitor, voice_monitor_len},
+#if defined(HAS_VOICE_voice_n)
+  {"voice_n", voice_n, voice_n_len},
+#endif
   {"voice_nine", voice_nine, voice_nine_len},
 #if defined(HAS_VOICE_voice_noiseblanker)
   {"voice_noiseblanker", voice_noiseblanker, voice_noiseblanker_len},
@@ -142,6 +157,9 @@ static const VoiceClip kVoiceClips[] = {
   {"voice_notch", voice_notch, voice_notch_len},
 #if defined(HAS_VOICE_voice_notchfilter)
   {"voice_notchfilter", voice_notchfilter, voice_notchfilter_len},
+#endif
+#if defined(HAS_VOICE_voice_o)
+  {"voice_o", voice_o, voice_o_len},
 #endif
   {"voice_off", voice_off, voice_off_len},
   {"voice_ok", voice_ok, voice_ok_len},
@@ -159,6 +177,9 @@ static const VoiceClip kVoiceClips[] = {
 #if defined(HAS_VOICE_voice_ptt)
   {"voice_ptt", voice_ptt, voice_ptt_len},
 #endif
+#if defined(HAS_VOICE_voice_q)
+  {"voice_q", voice_q, voice_q_len},
+#endif
 #if defined(HAS_VOICE_voice_r)
   {"voice_r", voice_r, voice_r_len},
 #endif
@@ -170,6 +191,9 @@ static const VoiceClip kVoiceClips[] = {
 #endif
   {"voice_rtty", voice_rtty, voice_rtty_len},
   {"voice_rttyr", voice_rttyr, voice_rttyr_len},
+#if defined(HAS_VOICE_voice_rx)
+  {"voice_rx", voice_rx, voice_rx_len},
+#endif
   {"voice_s", voice_s, voice_s_len},
 #if defined(HAS_VOICE_voice_s_meter)
   {"voice_s_meter", voice_s_meter, voice_s_meter_len},
@@ -201,8 +225,14 @@ static const VoiceClip kVoiceClips[] = {
   {"voice_tune", voice_tune, voice_tune_len},
   {"voice_tuner", voice_tuner, voice_tuner_len},
   {"voice_two", voice_two, voice_two_len},
+#if defined(HAS_VOICE_voice_tx)
+  {"voice_tx", voice_tx, voice_tx_len},
+#endif
   {"voice_u", voice_u, voice_u_len},
   {"voice_usb", voice_usb, voice_usb_len},
+#if defined(HAS_VOICE_voice_v)
+  {"voice_v", voice_v, voice_v_len},
+#endif
   {"voice_vfo", voice_vfo, voice_vfo_len},
   {"voice_w", voice_w, voice_w_len},
   {"voice_watts", voice_watts, voice_watts_len},
@@ -213,6 +243,9 @@ static const VoiceClip kVoiceClips[] = {
   {"voice_yaesu", voice_yaesu, voice_yaesu_len},
 #if defined(HAS_VOICE_voice_xiegu)
   {"voice_xiegu", voice_xiegu, voice_xiegu_len},
+#endif
+#if defined(HAS_VOICE_voice_z)
+  {"voice_z", voice_z, voice_z_len},
 #endif
   {"voice_zero", voice_zero, voice_zero_len},
 };
