@@ -2401,6 +2401,9 @@ void keypadEvent(KeypadEvent k) {
   if (s == PRESSED) silenceSpeechForKeyPress();
 
   if (g_bankSelectActive) {
+    // The '*' hold that opened bank select ends here; consume its release edge
+    // so the next short '*' is not mistaken for it.
+    if (k == '*' && s == RELEASED) { g_starHoldConsumed = false; return; }
     if (k >= '1' && k <= '9' && s == RELEASED) {
       g_bankStage = (uint8_t)(k - '0');
       printKeypadCommand(String("BANK SELECT DIGIT -> ") + String(k));
