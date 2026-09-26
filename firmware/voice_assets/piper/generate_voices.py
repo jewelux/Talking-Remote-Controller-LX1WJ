@@ -29,7 +29,7 @@ from piper.download_voices import download_voice
 from scipy.signal import resample_poly
 
 HERE = Path(__file__).resolve().parent
-DEFAULT_VOICE = "en_US-lessac-high"
+DEFAULT_VOICE = "en_US-lessac-medium"
 DEFAULT_RATE = 8000  # I2S_SAMPLE_RATE in firmware/config_pins.h
 
 
@@ -81,10 +81,10 @@ def synthesize(voice: PiperVoice, text: str, syn_config: SynthesisConfig) -> tup
 
 def add_synth_args(ap: argparse.ArgumentParser) -> None:
     ap.add_argument("--length-scale", type=float, default=None, help="Speaking speed; >1 slower, <1 faster")
-    ap.add_argument("--noise-scale", type=float, default=None,
-                    help="Generator noise (voice variability; default from voice, ~0.667; 0 = most repeatable)")
-    ap.add_argument("--noise-w-scale", type=float, default=None,
-                    help="Phoneme duration noise (rhythm variability; default from voice, ~0.8; 0 = most repeatable)")
+    ap.add_argument("--noise-scale", type=float, default=0.0,
+                    help="Generator noise (voice variability; voice's own ~0.667; default 0 = repeatable)")
+    ap.add_argument("--noise-w-scale", type=float, default=0.0,
+                    help="Phoneme duration noise (rhythm variability; voice's own ~0.8; default 0 = repeatable)")
     ap.add_argument("--speaker", type=int, default=None, help="Speaker id for multi-speaker voices")
 
 

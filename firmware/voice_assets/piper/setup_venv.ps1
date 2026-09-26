@@ -1,5 +1,5 @@
 # Creates .venv with Piper TTS and downloads the default voice into models/.
-param([string]$Voice = "en_US-lessac-high")
+param([string]$Voice = "en_US-lessac-medium")
 
 $ErrorActionPreference = "Stop"
 Push-Location $PSScriptRoot

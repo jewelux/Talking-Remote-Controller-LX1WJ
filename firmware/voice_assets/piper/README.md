@@ -7,7 +7,7 @@ Output format: mono, PCM16, 8000 Hz (the firmware I2S rate), trimmed, peak-norma
 ## Setup (once)
 
 ```powershell
-.\setup_venv.ps1            # creates .venv, installs requirements, downloads en_US-lessac-high into models/
+.\setup_venv.ps1            # creates .venv, installs requirements, downloads en_US-lessac-medium into models/
 ```
 
 `.venv/` and `models/` are git-ignored.
@@ -18,11 +18,12 @@ Output format: mono, PCM16, 8000 Hz (the firmware I2S rate), trimmed, peak-norma
 .\.venv\Scripts\python generate_voices.py                 # all clips
 .\.venv\Scripts\python generate_voices.py --only cw,fm    # just some
 .\.venv\Scripts\python generate_voices.py --header        # also merge into firmware/voice_data.h
-.\.venv\Scripts\python generate_voices.py --voice en_US-lessac-medium --length-scale 1.1
+.\.venv\Scripts\python generate_voices.py --voice en_US-lessac-high --length-scale 1.1
 ```
 
-Piper output varies slightly from run to run (random noise in the model). For repeatable clips add
-`--noise-scale 0 --noise-w-scale 0` (flatter voice; `0.2` is a compromise). Same flags work in `say.py`.
+Defaults are `--noise-scale 0 --noise-w-scale 0`, so clips are repeatable from run to run but a bit flat.
+For a livelier voice raise them (the voice's own values are ~0.667 / ~0.8; `0.2` is a compromise), at the
+cost of slight run-to-run variation. Same flags work in `say.py`.
 
 Run `generate_voices.py --help` for all options (sample rate, silence, trim threshold, peak level).
 
@@ -31,7 +32,7 @@ Run `generate_voices.py --help` for all options (sample rate, silence, trim thre
 Interactive: type a phrase, hear it on the default sound device (missing voices are downloaded).
 
 ```powershell
-.\.venv\Scripts\python say.py                                       # lessac-high, native rate
+.\.venv\Scripts\python say.py                                       # lessac-medium, native rate
 .\.venv\Scripts\python say.py --voice en_US-ryan-high --rate 8000   # hear it as the firmware clip
 .\.venv\Scripts\python say.py "v f o a"                             # one-shot
 ```

@@ -58,7 +58,7 @@ y
 z
 
 # Letter abbreviations
-a m | | A.M.
+a m | | A.M
 c w
 c w r
 d b
@@ -69,21 +69,21 @@ w f m
 l s b
 u s b
 p b t
-p t t
+p t t | | p tt
 r t t y
 r t t y r
 r x
 t x
-s w r
+swr
 v f o
 
 # Core control words
 bank
+cancel
 choose
 equals
 error
 fast
-slow
 frequency
 hertz
 kilohertz
@@ -92,18 +92,21 @@ level
 lock
 minus
 mode
+not available
 off | | Off.
-ok | | okay
+ok
 on | | On.
 percent
 please
 plus
 power
-watts
+slow
 stack
 step
 thank you
 sync
+timeout
+watts
 
 # Radio operating words
 clarifier
