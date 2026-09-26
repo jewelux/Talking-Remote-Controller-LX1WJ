@@ -51,8 +51,9 @@ package on every push and pull request (download it from the run's artifacts),
 and attaches it to a GitHub Release when a `v*` tag is pushed. It contains:
 
 - `hamtrc-<version>.factory.bin`: bootloader, partition table, boot_app0 and app
-  merged for offset `0x0`, not padded, so the FAT partition is left untouched
-- `hamtrc-<version>.app.bin`: app only, for flashing at `0x10000` with esptool
+  merged for offset `0x0`, not padded, so the FAT partition is left untouched;
+  saved settings (NVS) are reset on purpose, so a new version never starts from
+  settings written by an older one
 - `manifest.json`: ESP Web Tools manifest (`ESP32-S3`, factory image at offset 0)
 - `SHA256SUMS`
 
