@@ -459,7 +459,7 @@ void keypadClearAll() {
   g_sevenHoldConsumed = false;
   g_eightHoldConsumed = false;
   printKeypadCommand("CLEAR");
-  if (g_speechEnabled) playClipProgmem(voice_ok, voice_ok_len);
+  if (g_speechEnabled) speakToken("cancel");
 }
 
 void keypadStageCommand(const String& cmd) {

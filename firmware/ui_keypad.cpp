@@ -2412,7 +2412,7 @@ void keypadEvent(KeypadEvent k) {
       return;
     }
     if (k == 'D' && s == RELEASED) { keypadEnter(); return; }
-    if (k == '#' && s == RELEASED) { g_bankSelectActive = false; g_bankStage = 0; return; }
+    if (k == '#' && s == RELEASED) { keypadClearAll(); return; }
     return;
   }
 
@@ -2427,7 +2427,7 @@ void keypadEvent(KeypadEvent k) {
       return;
     }
     if (k == 'D' && s == RELEASED) { keypadEnter(); return; }
-    if (k == '#' && s == RELEASED) { g_profileSelectActive = false; g_profileStageDigits = ""; return; }
+    if (k == '#' && s == RELEASED) { keypadClearAll(); return; }
     return;
   }
 
