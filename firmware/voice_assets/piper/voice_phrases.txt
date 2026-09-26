@@ -10,8 +10,8 @@
 
 # Digits
 zero
-one
-two
+one | | one,
+two | | two!
 three
 four
 five
