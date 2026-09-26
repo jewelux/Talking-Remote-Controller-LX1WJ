@@ -21,6 +21,7 @@ void civSend(uint8_t cmd, const uint8_t* data, size_t dataLen) {
 }
 
 bool waitReply(uint8_t expectCmd, CivDecoded& out, uint32_t timeoutMs) {
+  g_radioReplyTimedOut = false;
   uint32_t start = millis();
   uint8_t buf[96];
   while (millis() - start < timeoutMs) {
@@ -34,5 +35,6 @@ bool waitReply(uint8_t expectCmd, CivDecoded& out, uint32_t timeoutMs) {
     out = d;
     return true;
   }
+  g_radioReplyTimedOut = true;
   return false;
 }

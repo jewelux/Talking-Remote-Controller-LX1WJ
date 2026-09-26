@@ -11,10 +11,13 @@
 - all voice clips regenerated with Piper voice `en_US-lessac-medium` (was lessac-high) with both
   noise scales at 0, so regenerating gives identical clips; these are now the defaults of
   `generate_voices.py`, `say.py` and `setup_venv.ps1`
-- added voice clips "cancel", "not available" and "timeout" ("not available" and "timeout" are not
-  used by the firmware yet)
+- added voice clips "cancel", "not available" and "timeout" ("not available" is not used by the
+  firmware yet)
 - pressing `#` to cancel an input now says "cancel" instead of "ok"; cancelling bank or profile
   selection, which was silent, says "cancel" too
+- when the radio does not answer a keypad action or serial command, the device now says "timeout";
+  it used to say "error" or nothing. Failures for other reasons (unsupported, rejected) keep their
+  old behaviour
 - WFM mode is now spoken as "wfm" using its own clip; the clip was already in `voice_data.h` but
   missing from the voice table, so it was spelled out as "w f m"
 

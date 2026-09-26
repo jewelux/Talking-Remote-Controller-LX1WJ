@@ -88,6 +88,15 @@ static void printKeypadStatus(const String& line) {
   if ((bool)Serial) Serial.println(line);
 }
 
+// Radio gave no answer: say "timeout". Otherwise the failure had another cause
+// (unsupported, rejected), so the caller keeps its own handling.
+static bool reportIfTimedOut(const char* label) {
+  if (!g_radioReplyTimedOut) return false;
+  printKeypadStatus(String(label) + " -> timeout");
+  if (g_speechEnabled) speakTimeout();
+  return true;
+}
+
 static void printKeypadCommand(const String& line) {
   if ((bool)Serial) {
     Serial.print("CMD ");
@@ -332,8 +341,10 @@ static void queryBank2Nr() {
   g_suppressFreqSpeakUntilMs = millis() + 2000;
   cancelPendingFreqAnnouncement();
   if (!refreshLiveNr()) {
-    printKeypadStatus("NR? -> no reply");
-    if (g_speechEnabled) speakError();
+    if (!reportIfTimedOut("NR?")) {
+      printKeypadStatus("NR? -> no reply");
+      if (g_speechEnabled) speakError();
+    }
     return;
   }
   printKeypadStatus(live.nrOn ? "NR ON" : "NR OFF");
@@ -351,8 +362,10 @@ static void queryBank2Nb() {
   g_suppressFreqSpeakUntilMs = millis() + 2000;
   cancelPendingFreqAnnouncement();
   if (!refreshLiveNb()) {
-    printKeypadStatus("NB? -> no reply");
-    if (g_speechEnabled) speakError();
+    if (!reportIfTimedOut("NB?")) {
+      printKeypadStatus("NB? -> no reply");
+      if (g_speechEnabled) speakError();
+    }
     return;
   }
   printKeypadStatus(live.nbOn ? "NB ON" : "NB OFF");
@@ -370,8 +383,10 @@ static void queryBank2Notch() {
   g_suppressFreqSpeakUntilMs = millis() + 2000;
   cancelPendingFreqAnnouncement();
   if (!refreshLiveNotch()) {
-    printKeypadStatus("NOTCH? -> no reply");
-    if (g_speechEnabled) speakError();
+    if (!reportIfTimedOut("NOTCH?")) {
+      printKeypadStatus("NOTCH? -> no reply");
+      if (g_speechEnabled) speakError();
+    }
     return;
   }
   if (!live.notchOn) {
@@ -572,7 +587,7 @@ void keypadEnter() {
       }
       else printKeypadStatus(String("FREQ: ") + hzToMHzString3(hz) + " MHz");
       if (g_speechEnabled) speakDigitsAndPoint(hzToMHzString3(hz));
-    } else {
+    } else if (!reportIfTimedOut("FREQ")) {
       printKeypadStatus(currentProtocolType() == PROTO_YAESU_FT8X7 ? "FREQ -> no change" : "FREQ -> failed");
       if (g_speechEnabled && currentProtocolType() == PROTO_YAESU_FT8X7) speakError();
     }
@@ -704,7 +719,7 @@ void keypadEnter() {
         g_suppressModePrefixOnce = true;
         speakMode(g_modeStageMode);
       }
-    } else {
+    } else if (!reportIfTimedOut("MODE")) {
       printKeypadStatus(currentProtocolType() == PROTO_YAESU_FT8X7 ? "MODE -> no change" : "MODE -> failed");
       if (g_speechEnabled && currentProtocolType() == PROTO_YAESU_FT8X7) speakError();
     }

@@ -19,6 +19,8 @@ extern LiveState live;
 extern bool g_ft8x7SplitKnown;
 extern bool g_ft8x7SplitOn;
 extern bool g_yaesuCatTrace;
+// True when the most recent wait for a radio reply gave up without an answer.
+extern bool g_radioReplyTimedOut;
 extern volatile bool g_audioPlaying;
 extern uint8_t g_volumeLevel;
 extern bool g_keypadExecuting;

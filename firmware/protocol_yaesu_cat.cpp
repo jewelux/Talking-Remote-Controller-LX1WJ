@@ -99,6 +99,7 @@ void yaesuCatSend5(const uint8_t data[5]) {
 }
 
 bool yaesuCatRead1(uint8_t& out, uint32_t timeoutMs) {
+  g_radioReplyTimedOut = false;
   uint32_t start = millis();
   while (millis() - start < timeoutMs) {
     if (serialTransportAvailable()) {
@@ -109,10 +110,12 @@ bool yaesuCatRead1(uint8_t& out, uint32_t timeoutMs) {
     delay(1);
   }
   yaesuCatMarkLineDirty();
+  g_radioReplyTimedOut = true;
   return false;
 }
 
 bool yaesuCatRead5(uint8_t out[5], uint32_t timeoutMs) {
+  g_radioReplyTimedOut = false;
   uint32_t start = millis();
   size_t n = 0;
   while (millis() - start < timeoutMs) {
@@ -128,6 +131,7 @@ bool yaesuCatRead5(uint8_t out[5], uint32_t timeoutMs) {
     delay(1);
   }
   yaesuCatMarkLineDirty();
+  g_radioReplyTimedOut = true;
   return false;
 }
 

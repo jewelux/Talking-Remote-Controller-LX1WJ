@@ -4,6 +4,7 @@
 
 bool asciiPacketReadLine(String& out, uint32_t timeoutMs) {
   out = "";
+  g_radioReplyTimedOut = false;
   uint32_t start = millis();
   while (millis() - start < timeoutMs) {
     while (serialTransportAvailable()) {
@@ -21,7 +22,9 @@ bool asciiPacketReadLine(String& out, uint32_t timeoutMs) {
     }
     delay(1);
   }
-  return out.length() > 0;
+  if (out.length()) return true;
+  g_radioReplyTimedOut = true;
+  return false;
 }
 
 bool asciiPacketSendCommand(const char* cmd) {

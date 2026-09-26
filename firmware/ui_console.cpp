@@ -258,6 +258,19 @@ static void speakVfoFrequencyLabel(char which) {
   speakToken("frequency");
 }
 
+// Report a failed radio command. If the radio never answered, say "timeout";
+// other failures (unsupported, bad argument) stay silent as before.
+static void reportCommandFailure(const char* label, const char* reason) {
+  Serial.print(label);
+  if (g_radioReplyTimedOut) {
+    Serial.println(" -> timeout");
+    if (g_speechEnabled) speakTimeout();
+    return;
+  }
+  Serial.print(" -> ");
+  Serial.println(reason);
+}
+
 static void speakConsoleSpeechGapMarker() {
   if (!g_speechEnabled) return;
   speakError();
@@ -882,7 +895,7 @@ static bool handleConsoleProfileCommands(const String& line, const String& upper
     BandStackEntry entry;
     if (reg < 1 || reg > 3) { Serial.println("BSTACK? -> invalid register (use 1..3)"); return true; }
     if (!queryCurrentFrequencyValue(hz) || !bandCodeFromFrequency(hz, bandCode)) { Serial.println("BSTACK? -> no current band"); return true; }
-    if (!queryBandStackEntry(bandCode, (uint8_t)reg, entry, 800)) { Serial.println("BSTACK? -> no reply"); return true; }
+    if (!queryBandStackEntry(bandCode, (uint8_t)reg, entry, 800)) { reportCommandFailure("BSTACK?", "no reply"); return true; }
     Serial.print("BSTACK ");
     Serial.print(bandLabelForCode(entry.bandCode));
     Serial.print("M REG");
@@ -913,8 +926,8 @@ static bool handleConsoleProfileCommands(const String& line, const String& upper
     BandStackEntry entry;
     if (reg < 1 || reg > 3) { Serial.println("BSTACK -> invalid register (use 1..3)"); return true; }
     if (!queryCurrentFrequencyValue(hz) || !bandCodeFromFrequency(hz, bandCode)) { Serial.println("BSTACK -> no current band"); return true; }
-    if (!queryBandStackEntry(bandCode, (uint8_t)reg, entry, 800)) { Serial.println("BSTACK -> no reply"); return true; }
-    if (!setFrequency(entry.freqHz) || !setMode(entry.mode, entry.filter)) { Serial.println("BSTACK -> failed"); return true; }
+    if (!queryBandStackEntry(bandCode, (uint8_t)reg, entry, 800)) { reportCommandFailure("BSTACK", "no reply"); return true; }
+    if (!setFrequency(entry.freqHz) || !setMode(entry.mode, entry.filter)) { reportCommandFailure("BSTACK", "failed"); return true; }
     Serial.print("BSTACK ");
     Serial.print(bandLabelForCode(entry.bandCode));
     Serial.print("M REG");
@@ -1238,7 +1251,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
   if (upper == "YMODEBYTE?") {
     uint8_t modeByte = 0;
     if (!yaesuCatQueryModeRawByte(modeByte, 800)) {
-      Serial.println("YMODEBYTE? -> no reply");
+      reportCommandFailure("YMODEBYTE?", "no reply");
       return true;
     }
     Serial.print("YMODEBYTE: 0x");
@@ -1327,7 +1340,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
 
   if (upper == "YRXSTATUS?") {
     uint8_t raw = 0;
-    if (!yaesuCatQueryRxStatusRaw(raw, 800)) { Serial.println("YRXSTATUS? -> no reply"); return true; }
+    if (!yaesuCatQueryRxStatusRaw(raw, 800)) { reportCommandFailure("YRXSTATUS?", "no reply"); return true; }
     Serial.print("YRXSTATUS: 0x");
     if (raw < 0x10) Serial.print('0');
     Serial.println(raw, HEX);
@@ -1336,7 +1349,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
   if (upper == "YTXSTATUS?" || upper == "YSTATUS?") {
     uint8_t raw = 0;
     if (!yaesuCatQueryTxStatusRaw(raw, 800)) {
-      Serial.println((upper == "YSTATUS?") ? "YSTATUS? -> no reply" : "YTXSTATUS? -> no reply");
+      reportCommandFailure((upper == "YSTATUS?") ? "YSTATUS?" : "YTXSTATUS?", "no reply");
       return true;
     }
     Serial.print((upper == "YSTATUS?") ? "YSTATUS: 0x" : "YTXSTATUS: 0x");
@@ -1346,14 +1359,14 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
   }
   if (upper == "RXTX?" && currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft857_897")) {
     bool tx = false;
-    if (!queryRxTxStatus(tx, 800)) { Serial.println("RXTX? -> no reply"); return true; }
+    if (!queryRxTxStatus(tx, 800)) { reportCommandFailure("RXTX?", "no reply"); return true; }
     Serial.println(tx ? "TX" : "RX");
     return true;
   }
   if (upper == "SPLIT?" && currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft857_897")) {
     uint8_t raw = 0;
     if (!yaesuCatQueryTxStatusRaw(raw, 800)) {
-      Serial.println("SPLIT? -> no reply");
+      reportCommandFailure("SPLIT?", "no reply");
       return true;
     }
     if (raw == 0xFF) {
@@ -1391,7 +1404,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
   }
   if (upper == "ALC?") {
     int32_t raw = 0;
-    if (!yaesuCatQueryAlcRaw(raw, 800)) { Serial.println("ALC? -> no reply"); return true; }
+    if (!yaesuCatQueryAlcRaw(raw, 800)) { reportCommandFailure("ALC?", "no reply"); return true; }
     Serial.print("ALC: ");
     Serial.println(raw);
     return true;
@@ -1402,7 +1415,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
       return true;
     }
     int32_t raw = 0;
-    if (!yaesuCatQueryVolumeRaw(raw, 800)) { Serial.println("VOL? -> no reply"); return true; }
+    if (!yaesuCatQueryVolumeRaw(raw, 800)) { reportCommandFailure("VOL?", "no reply"); return true; }
     Serial.print("VOL: ");
     Serial.println(raw);
     return true;
@@ -1413,7 +1426,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
       return true;
     }
     int32_t raw = 0;
-    if (!yaesuCatQuerySquelchRaw(raw, 800)) { Serial.println("SQL? -> no reply"); return true; }
+    if (!yaesuCatQuerySquelchRaw(raw, 800)) { reportCommandFailure("SQL?", "no reply"); return true; }
     Serial.print("SQL: ");
     Serial.println(raw);
     return true;
@@ -1550,7 +1563,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
       return true;
     }
     if (!yaesuCatTransact5(cmd, rsp, 800)) {
-      Serial.println("YCAT? -> no reply");
+      reportCommandFailure("YCAT?", "no reply");
       return true;
     }
     Serial.print("YCAT RX: ");
@@ -1567,7 +1580,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, opcode};
     uint8_t rsp = 0;
     if (!yaesuCatTransact1(cmd, rsp, 800)) {
-      Serial.println("YCAT1? -> no reply");
+      reportCommandFailure("YCAT1?", "no reply");
       return true;
     }
     Serial.print("YCAT1 RX 0x");
@@ -1627,7 +1640,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     return true;
   }
   if (upper == "FREQ?") {
-    if (!refreshLiveFrequency()) { Serial.println("FREQ? -> no reply"); return true; }
+    if (!refreshLiveFrequency()) { reportCommandFailure("FREQ?", "no reply"); return true; }
     Serial.print("Query FREQ: ");
     Serial.print(hzToMHzString3(live.freqHz));
     Serial.println(" MHz");
@@ -1638,26 +1651,26 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     double mhz = line.substring(8).toDouble();
     if (mhz <= 0.0) { Serial.println("FREQMHZ -> invalid value"); return true; }
     uint64_t hzSet = (uint64_t)(mhz * 1000000.0 + 0.5);
-    if (!applyFrequencyAndTrack(hzSet, true)) { Serial.println("SET FREQ -> no reply"); return true; }
+    if (!applyFrequencyAndTrack(hzSet, true)) { reportCommandFailure("SET FREQ", "no reply"); return true; }
     if (g_speechEnabled) speakDigitsAndPoint(hzToMHzString3(hzSet));
     return true;
   }
   if (upper.startsWith("FREQHZ ")) {
     uint64_t hzSet = strtoull(line.substring(7).c_str(), nullptr, 10);
     if (hzSet == 0) { Serial.println("FREQHZ -> invalid value"); return true; }
-    if (!applyFrequencyAndTrack(hzSet, true)) { Serial.println("SET FREQ -> no reply"); return true; }
+    if (!applyFrequencyAndTrack(hzSet, true)) { reportCommandFailure("SET FREQ", "no reply"); return true; }
     if (g_speechEnabled) speakDigitsAndPoint(hzToMHzString3(hzSet));
     return true;
   }
   if (upper.startsWith("FREQ ")) {
     uint64_t khz = strtoull(line.substring(5).c_str(), nullptr, 10);
     uint64_t hzSet = khz * 1000ULL;
-    if (!applyFrequencyAndTrack(hzSet, true)) { Serial.println("SET FREQ -> no reply"); return true; }
+    if (!applyFrequencyAndTrack(hzSet, true)) { reportCommandFailure("SET FREQ", "no reply"); return true; }
     if (g_speechEnabled) speakDigitsAndPoint(hzToMHzString3(hzSet));
     return true;
   }
   if (upper == "MODE?") {
-    if (!refreshLiveMode()) { Serial.println("MODE? -> no reply"); return true; }
+    if (!refreshLiveMode()) { reportCommandFailure("MODE?", "no reply"); return true; }
     Serial.println(modeToString(live.mode));
     if (g_keypadExecuting) g_suppressModePrefixOnce = true;
     speakMode(live.mode);
@@ -1666,7 +1679,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   if (upper.startsWith("MODE ")) {
     uint8_t mode = 0xFF;
     if (!parseConsoleModeToken(line.substring(5), mode) || !applyModeAndTrack(mode, 1)) {
-      Serial.println("SET MODE -> failed");
+      reportCommandFailure("SET MODE", "failed");
       return true;
     }
     Serial.println("SET MODE -> command sent");
@@ -1678,7 +1691,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     String rsp;
     uint64_t hz = 0;
     if (!transactAsciiCommand("FB;", rsp, "FB", 800) || !parseAsciiUnsignedResponse(rsp, "FB", hz)) {
-      Serial.println("FB? -> no reply");
+      reportCommandFailure("FB?", "no reply");
       return true;
     }
     Serial.print("FB: ");
@@ -1692,7 +1705,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     uint64_t hzSet = (uint64_t)(mhz * 1000000.0 + 0.5);
     char cmd[24];
     snprintf(cmd, sizeof(cmd), "FB%011llu;", (unsigned long long)hzSet);
-    if (!asciiPacketSendCommand(cmd)) { Serial.println("SET FB -> failed"); return true; }
+    if (!asciiPacketSendCommand(cmd)) { reportCommandFailure("SET FB", "failed"); return true; }
     Serial.println("SET FB -> command sent");
     return true;
   }
@@ -1701,13 +1714,13 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     uint64_t hzSet = khz * 1000ULL;
     char cmd[24];
     snprintf(cmd, sizeof(cmd), "FB%011llu;", (unsigned long long)hzSet);
-    if (!asciiPacketSendCommand(cmd)) { Serial.println("SET FB -> failed"); return true; }
+    if (!asciiPacketSendCommand(cmd)) { reportCommandFailure("SET FB", "failed"); return true; }
     Serial.println("SET FB -> command sent");
     return true;
   }
   if (upper == "IF?") {
     String rsp;
-    if (!asciiQueryStatusLine(sp, rsp, 800)) { Serial.println("IF? -> no reply"); return true; }
+    if (!asciiQueryStatusLine(sp, rsp, 800)) { reportCommandFailure("IF?", "no reply"); return true; }
     Serial.print("IF: ");
     Serial.println(rsp);
     speakConsoleTokenOrGap("if");
@@ -1715,7 +1728,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   }
   if (upper == "ID?") {
     String rsp;
-    if (!asciiQueryIdLine(sp, rsp, 800)) { Serial.println("ID? -> no reply"); return true; }
+    if (!asciiQueryIdLine(sp, rsp, 800)) { reportCommandFailure("ID?", "no reply"); return true; }
     Serial.print("ID: ");
     printAsciiReplyPayload(rsp, sp.ascii.idReplyPrefix);
     speakConsoleTokenOrGap("id");
@@ -1723,53 +1736,53 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   }
   if (upper == "OM?") {
     String rsp;
-    if (!asciiQueryOmLine(sp, rsp, 800)) { Serial.println("OM? -> no reply"); return true; }
+    if (!asciiQueryOmLine(sp, rsp, 800)) { reportCommandFailure("OM?", "no reply"); return true; }
     Serial.print("OM: ");
     printAsciiReplyPayload(rsp, sp.ascii.omReplyPrefix);
     return true;
   }
   if (upper == "FR?") {
     String rsp;
-    if (!transactAsciiCommand("FR;", rsp, "FR", 800)) { Serial.println("FR? -> no reply"); return true; }
+    if (!transactAsciiCommand("FR;", rsp, "FR", 800)) { reportCommandFailure("FR?", "no reply"); return true; }
     Serial.print("FR: ");
     printAsciiReplyPayload(rsp, "FR");
     return true;
   }
   if (upper == "FR0") {
-    if (!asciiPacketSendCommand("FR0;")) { Serial.println("FR0 -> failed"); return true; }
+    if (!asciiPacketSendCommand("FR0;")) { reportCommandFailure("FR0", "failed"); return true; }
     Serial.println("FR0");
     return true;
   }
   if (upper == "FT?") {
     String rsp;
-    if (!transactAsciiCommand("FT;", rsp, "FT", 800)) { Serial.println("FT? -> no reply"); return true; }
+    if (!transactAsciiCommand("FT;", rsp, "FT", 800)) { reportCommandFailure("FT?", "no reply"); return true; }
     Serial.print("FT: ");
     printAsciiReplyPayload(rsp, "FT");
     return true;
   }
   if (upper == "FT A") {
-    if (!asciiPacketSendCommand("FT0;")) { Serial.println("FT A -> failed"); return true; }
+    if (!asciiPacketSendCommand("FT0;")) { reportCommandFailure("FT A", "failed"); return true; }
     Serial.println("FT A");
     return true;
   }
   if (upper == "FT B") {
-    if (!asciiPacketSendCommand("FT1;")) { Serial.println("FT B -> failed"); return true; }
+    if (!asciiPacketSendCommand("FT1;")) { reportCommandFailure("FT B", "failed"); return true; }
     Serial.println("FT B");
     return true;
   }
   if (upper == "RX") {
-    if (!asciiPacketSendCommand("RX;")) { Serial.println("RX -> failed"); return true; }
+    if (!asciiPacketSendCommand("RX;")) { reportCommandFailure("RX", "failed"); return true; }
     Serial.println("RX");
     return true;
   }
   if (upper == "TX") {
-    if (!asciiPacketSendCommand("TX;")) { Serial.println("TX -> failed"); return true; }
+    if (!asciiPacketSendCommand("TX;")) { reportCommandFailure("TX", "failed"); return true; }
     Serial.println("TX");
     return true;
   }
   if (upper == "AK?") {
     String rsp;
-    if (!transactAsciiCommand("AK;", rsp, "AK", 800)) { Serial.println("AK? -> no reply"); return true; }
+    if (!transactAsciiCommand("AK;", rsp, "AK", 800)) { reportCommandFailure("AK?", "no reply"); return true; }
     Serial.print("AK: ");
     printAsciiReplyPayload(rsp, "AK");
     return true;
@@ -1779,7 +1792,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     if (nn < 0 || nn > 99) { Serial.println("SWT -> invalid (use 00..99)"); return true; }
     char cmd[12];
     snprintf(cmd, sizeof(cmd), "SWT%02d;", nn);
-    if (!asciiPacketSendCommand(cmd)) { Serial.println("SWT -> failed"); return true; }
+    if (!asciiPacketSendCommand(cmd)) { reportCommandFailure("SWT", "failed"); return true; }
     Serial.print("SENT ");
     Serial.println(cmd);
     return true;
@@ -1789,13 +1802,13 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     if (nn < 0 || nn > 99) { Serial.println("SWH -> invalid (use 00..99)"); return true; }
     char cmd[12];
     snprintf(cmd, sizeof(cmd), "SWH%02d;", nn);
-    if (!asciiPacketSendCommand(cmd)) { Serial.println("SWH -> failed"); return true; }
+    if (!asciiPacketSendCommand(cmd)) { reportCommandFailure("SWH", "failed"); return true; }
     Serial.print("SENT ");
     Serial.println(cmd);
     return true;
   }
   if (upper == "SM?") {
-    if (!refreshLiveSmeter()) { Serial.println("SM? -> no reply"); return true; }
+    if (!refreshLiveSmeter()) { reportCommandFailure("SM?", "no reply"); return true; }
     Serial.print("SM: raw=");
     Serial.print(live.smRaw);
     Serial.print("  ");
@@ -1804,7 +1817,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     return true;
   }
   if (upper == "SWR?") {
-    if (!refreshLiveSwr()) { Serial.println("SWR? -> no reply"); return true; }
+    if (!refreshLiveSwr()) { reportCommandFailure("SWR?", "no reply"); return true; }
     float swr = swrRawToValue(live.swrRaw);
     Serial.println(swr, 2);
     if (g_speechEnabled) {
@@ -1815,7 +1828,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     return true;
   }
   if (upper == "PO?") {
-    if (!refreshLivePower()) { Serial.println("PO? -> no reply"); return true; }
+    if (!refreshLivePower()) { reportCommandFailure("PO?", "no reply"); return true; }
     Serial.println(live.powerRaw);
     if (g_speechEnabled) {
       playClipProgmem(voice_power, voice_power_len);
@@ -1825,7 +1838,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   }
   if (upper == "RFPOWER?") {
     uint16_t raw = 0;
-    if (!queryRfPowerLevel(raw, 800)) { Serial.println("RFPOWER? -> no reply"); return true; }
+    if (!queryRfPowerLevel(raw, 800)) { reportCommandFailure("RFPOWER?", "no reply"); return true; }
     const uint16_t watts = rfPowerRawToWatts(raw);
     Serial.print("RFPOWER ");
     Serial.print((int)watts);
@@ -1846,7 +1859,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
       Serial.println(" W)");
       return true;
     }
-    if (!setRfPowerLevel(rfPowerWattsToRaw(watts))) { Serial.println("RFPOWER -> failed"); return true; }
+    if (!setRfPowerLevel(rfPowerWattsToRaw(watts))) { reportCommandFailure("RFPOWER", "failed"); return true; }
     Serial.print("RFPOWER ");
     Serial.print(watts);
     Serial.println(" W");
@@ -1861,47 +1874,47 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   }
   if (upper == "TUNER?") {
     bool on = false;
-    if (!queryTuner(on, 800)) { Serial.println("TUNER? -> no reply"); return true; }
+    if (!queryTuner(on, 800)) { reportCommandFailure("TUNER?", "no reply"); return true; }
     Serial.println(on ? "TUNER ON" : "TUNER OFF");
     speakTokenState("tuner", on);
     return true;
   }
   if (upper == "TUNER ON") {
-    if (!setTuner(true)) { Serial.println("TUNER ON -> failed"); return true; }
+    if (!setTuner(true)) { reportCommandFailure("TUNER ON", "failed"); return true; }
     Serial.println("TUNER ON");
     speakTokenState("tuner", true);
     return true;
   }
   if (upper == "TUNER OFF") {
-    if (!setTuner(false)) { Serial.println("TUNER OFF -> failed"); return true; }
+    if (!setTuner(false)) { reportCommandFailure("TUNER OFF", "failed"); return true; }
     Serial.println("TUNER OFF");
     speakTokenState("tuner", false);
     return true;
   }
   if (upper == "TUNER TOGGLE") {
     bool on = false;
-    if (!queryTuner(on, 800)) { Serial.println("TUNER TOGGLE -> no reply"); return true; }
-    if (!setTuner(!on)) { Serial.println("TUNER TOGGLE -> failed"); return true; }
+    if (!queryTuner(on, 800)) { reportCommandFailure("TUNER TOGGLE", "no reply"); return true; }
+    if (!setTuner(!on)) { reportCommandFailure("TUNER TOGGLE", "failed"); return true; }
     Serial.println(!on ? "TUNER ON" : "TUNER OFF");
     speakTokenState("tuner", !on);
     return true;
   }
   if (upper == "TUNE") {
-    if (!startTune()) { Serial.println("TUNE -> failed"); return true; }
+    if (!startTune()) { reportCommandFailure("TUNE", "failed"); return true; }
     Serial.println("TUNE");
     if (g_speechEnabled) speakToken("tune");
     return true;
   }
   if (upper == "RXTX?") {
     bool tx = false;
-    if (!queryRxTxStatus(tx, 800)) { Serial.println("RXTX? -> no reply"); return true; }
+    if (!queryRxTxStatus(tx, 800)) { reportCommandFailure("RXTX?", "no reply"); return true; }
     Serial.println(tx ? "TX" : "RX");
     if (g_speechEnabled) speakToken(tx ? "tx" : "rx");
     return true;
   }
   if (upper == "TXFREQ?") {
     uint64_t hz = 0;
-    if (!queryTxFrequency(hz, 800)) { Serial.println("TXFREQ? -> no reply"); return true; }
+    if (!queryTxFrequency(hz, 800)) { reportCommandFailure("TXFREQ?", "no reply"); return true; }
     Serial.print("TXFREQ: ");
     Serial.print(hzToMHzString3(hz));
     Serial.println(" MHz");
@@ -1909,20 +1922,20 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     return true;
   }
   if (upper == "VFO A") {
-    if (!selectVfoA()) { Serial.println("VFO A -> failed"); return true; }
+    if (!selectVfoA()) { reportCommandFailure("VFO A", "failed"); return true; }
     Serial.println("VFO A");
     speakVfoLabel('A');
     return true;
   }
   if (upper == "VFO B") {
-    if (!selectVfoB()) { Serial.println("VFO B -> failed"); return true; }
+    if (!selectVfoB()) { reportCommandFailure("VFO B", "failed"); return true; }
     Serial.println("VFO B");
     speakVfoLabel('B');
     return true;
   }
   if (upper == "MAIN?") {
     uint64_t hz = 0;
-    if (!queryVfoFrequency(true, hz, 800)) { Serial.println("MAIN? -> no reply"); return true; }
+    if (!queryVfoFrequency(true, hz, 800)) { reportCommandFailure("MAIN?", "no reply"); return true; }
     Serial.print("MAIN: ");
     Serial.print(hzToMHzString3(hz));
     Serial.println(" MHz");
@@ -1931,7 +1944,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   }
   if (upper == "SUB?") {
     uint64_t hz = 0;
-    if (!queryVfoFrequency(false, hz, 800)) { Serial.println("SUB? -> no reply"); return true; }
+    if (!queryVfoFrequency(false, hz, 800)) { reportCommandFailure("SUB?", "no reply"); return true; }
     Serial.print("SUB: ");
     Serial.print(hzToMHzString3(hz));
     Serial.println(" MHz");
@@ -1941,7 +1954,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   if (upper.startsWith("MAIN MODE?")) {
     uint8_t mode = 0xFF;
     uint8_t filter = 0xFF;
-    if (!queryVfoMode(true, mode, filter, 800)) { Serial.println("MAIN MODE? -> no reply"); return true; }
+    if (!queryVfoMode(true, mode, filter, 800)) { reportCommandFailure("MAIN MODE?", "no reply"); return true; }
     Serial.print("MAIN MODE: ");
     Serial.println(modeToString(mode));
     if (g_keypadExecuting) g_suppressModePrefixOnce = true;
@@ -1951,7 +1964,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   if (upper.startsWith("SUB MODE?")) {
     uint8_t mode = 0xFF;
     uint8_t filter = 0xFF;
-    if (!queryVfoMode(false, mode, filter, 800)) { Serial.println("SUB MODE? -> no reply"); return true; }
+    if (!queryVfoMode(false, mode, filter, 800)) { reportCommandFailure("SUB MODE?", "no reply"); return true; }
     Serial.print("SUB MODE: ");
     Serial.println(modeToString(mode));
     if (g_keypadExecuting) g_suppressModePrefixOnce = true;
@@ -1960,29 +1973,29 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   }
   if (upper.startsWith("MAIN MODE ")) {
     uint8_t mode = 0xFF;
-    if (!parseConsoleModeToken(line.substring(10), mode) || !setVfoMode(true, mode, 1)) { Serial.println("MAIN MODE -> failed"); return true; }
+    if (!parseConsoleModeToken(line.substring(10), mode) || !setVfoMode(true, mode, 1)) { reportCommandFailure("MAIN MODE", "failed"); return true; }
     Serial.println("MAIN MODE -> command sent");
     return true;
   }
   if (upper.startsWith("SUB MODE ")) {
     uint8_t mode = 0xFF;
-    if (!parseConsoleModeToken(line.substring(9), mode) || !setVfoMode(false, mode, 1)) { Serial.println("SUB MODE -> failed"); return true; }
+    if (!parseConsoleModeToken(line.substring(9), mode) || !setVfoMode(false, mode, 1)) { reportCommandFailure("SUB MODE", "failed"); return true; }
     Serial.println("SUB MODE -> command sent");
     return true;
   }
   if (upper.startsWith("MAIN ")) {
     uint64_t khz = strtoull(line.substring(5).c_str(), nullptr, 10);
-    if (!setVfoFrequency(true, khz * 1000ULL)) { Serial.println("MAIN -> failed"); return true; }
+    if (!setVfoFrequency(true, khz * 1000ULL)) { reportCommandFailure("MAIN", "failed"); return true; }
     return true;
   }
   if (upper.startsWith("SUB ")) {
     uint64_t khz = strtoull(line.substring(4).c_str(), nullptr, 10);
-    if (!setVfoFrequency(false, khz * 1000ULL)) { Serial.println("SUB -> failed"); return true; }
+    if (!setVfoFrequency(false, khz * 1000ULL)) { reportCommandFailure("SUB", "failed"); return true; }
     return true;
   }
   if (upper == "VFOA?") {
     uint64_t hz = 0;
-    if (!queryVfoFrequency(true, hz, 800)) { Serial.println("VFOA? -> no reply"); return true; }
+    if (!queryVfoFrequency(true, hz, 800)) { reportCommandFailure("VFOA?", "no reply"); return true; }
     Serial.print("VFOA: ");
     Serial.print(hzToMHzString3(hz));
     Serial.println(" MHz");
@@ -1995,7 +2008,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   }
   if (upper == "VFOB?") {
     uint64_t hz = 0;
-    if (!queryVfoFrequency(false, hz, 800)) { Serial.println("VFOB? -> no reply"); return true; }
+    if (!queryVfoFrequency(false, hz, 800)) { reportCommandFailure("VFOB?", "no reply"); return true; }
     Serial.print("VFOB: ");
     Serial.print(hzToMHzString3(hz));
     Serial.println(" MHz");
@@ -2009,7 +2022,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   if (upper.startsWith("VFOA MODE?")) {
     uint8_t mode = 0xFF;
     uint8_t filter = 0xFF;
-    if (!queryVfoMode(true, mode, filter, 800)) { Serial.println("VFOA MODE? -> no reply"); return true; }
+    if (!queryVfoMode(true, mode, filter, 800)) { reportCommandFailure("VFOA MODE?", "no reply"); return true; }
     Serial.print("VFOA MODE: ");
     Serial.println(modeToString(mode));
     if (g_keypadExecuting) g_suppressModePrefixOnce = true;
@@ -2019,7 +2032,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   if (upper.startsWith("VFOB MODE?")) {
     uint8_t mode = 0xFF;
     uint8_t filter = 0xFF;
-    if (!queryVfoMode(false, mode, filter, 800)) { Serial.println("VFOB MODE? -> no reply"); return true; }
+    if (!queryVfoMode(false, mode, filter, 800)) { reportCommandFailure("VFOB MODE?", "no reply"); return true; }
     Serial.print("VFOB MODE: ");
     Serial.println(modeToString(mode));
     if (g_keypadExecuting) g_suppressModePrefixOnce = true;
@@ -2028,53 +2041,53 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   }
   if (upper.startsWith("VFOA MODE ")) {
     uint8_t mode = 0xFF;
-    if (!parseConsoleModeToken(line.substring(10), mode) || !setVfoMode(true, mode, 1)) { Serial.println("VFOA MODE -> failed"); return true; }
+    if (!parseConsoleModeToken(line.substring(10), mode) || !setVfoMode(true, mode, 1)) { reportCommandFailure("VFOA MODE", "failed"); return true; }
     Serial.println("VFOA MODE -> command sent");
     return true;
   }
   if (upper.startsWith("VFOB MODE ")) {
     uint8_t mode = 0xFF;
-    if (!parseConsoleModeToken(line.substring(10), mode) || !setVfoMode(false, mode, 1)) { Serial.println("VFOB MODE -> failed"); return true; }
+    if (!parseConsoleModeToken(line.substring(10), mode) || !setVfoMode(false, mode, 1)) { reportCommandFailure("VFOB MODE", "failed"); return true; }
     Serial.println("VFOB MODE -> command sent");
     return true;
   }
   if (upper.startsWith("VFOAHZ ")) {
     uint64_t hzSet = strtoull(line.substring(7).c_str(), nullptr, 10);
-    if (!setVfoFrequency(true, hzSet)) { Serial.println("VFOA -> failed"); return true; }
+    if (!setVfoFrequency(true, hzSet)) { reportCommandFailure("VFOA", "failed"); return true; }
     return true;
   }
   if (upper.startsWith("VFOBHZ ")) {
     uint64_t hzSet = strtoull(line.substring(7).c_str(), nullptr, 10);
-    if (!setVfoFrequency(false, hzSet)) { Serial.println("VFOB -> failed"); return true; }
+    if (!setVfoFrequency(false, hzSet)) { reportCommandFailure("VFOB", "failed"); return true; }
     return true;
   }
   if (upper.startsWith("VFOA ")) {
     uint64_t khz = strtoull(line.substring(5).c_str(), nullptr, 10);
     uint64_t hzSet = khz * 1000ULL;
-    if (!setVfoFrequency(true, hzSet)) { Serial.println("VFOA -> failed"); return true; }
+    if (!setVfoFrequency(true, hzSet)) { reportCommandFailure("VFOA", "failed"); return true; }
     return true;
   }
   if (upper.startsWith("VFOB ")) {
     uint64_t khz = strtoull(line.substring(5).c_str(), nullptr, 10);
     uint64_t hzSet = khz * 1000ULL;
-    if (!setVfoFrequency(false, hzSet)) { Serial.println("VFOB -> failed"); return true; }
+    if (!setVfoFrequency(false, hzSet)) { reportCommandFailure("VFOB", "failed"); return true; }
     return true;
   }
   if (upper == "SPLIT?") {
     bool on = false;
-    if (!querySplit(on, 800)) { Serial.println("SPLIT? -> no reply"); return true; }
+    if (!querySplit(on, 800)) { reportCommandFailure("SPLIT?", "no reply"); return true; }
     Serial.println(on ? "SPLIT ON" : "SPLIT OFF");
     speakTokenState("split", on);
     return true;
   }
   if (upper == "SPLIT ON") {
-    if (!setSplit(true)) { Serial.println("SPLIT ON -> failed"); return true; }
+    if (!setSplit(true)) { reportCommandFailure("SPLIT ON", "failed"); return true; }
     Serial.println("SPLIT ON");
     speakTokenState("split", true);
     return true;
   }
   if (upper == "SPLIT OFF") {
-    if (!setSplit(false)) { Serial.println("SPLIT OFF -> failed"); return true; }
+    if (!setSplit(false)) { reportCommandFailure("SPLIT OFF", "failed"); return true; }
     Serial.println("SPLIT OFF");
     speakTokenState("split", false);
     return true;
@@ -2082,7 +2095,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   if (upper == "RIT?") {
     bool on = false;
     int32_t offset = 0;
-    if (!queryRitEnabled(on, 800)) { Serial.println("RIT? -> no reply"); return true; }
+    if (!queryRitEnabled(on, 800)) { reportCommandFailure("RIT?", "no reply"); return true; }
     if (!queryRitOffsetHz(offset, 800)) {
       Serial.println(on ? "RIT ON" : "RIT OFF");
       speakTokenState("rit", on);
@@ -2095,13 +2108,13 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     return true;
   }
   if (upper == "RIT ON") {
-    if (!setRitEnabled(true)) { Serial.println("RIT ON -> failed"); return true; }
+    if (!setRitEnabled(true)) { reportCommandFailure("RIT ON", "failed"); return true; }
     Serial.println("RIT ON");
     speakTokenState("rit", true);
     return true;
   }
   if (upper == "RIT OFF") {
-    if (!setRitEnabled(false)) { Serial.println("RIT OFF -> failed"); return true; }
+    if (!setRitEnabled(false)) { reportCommandFailure("RIT OFF", "failed"); return true; }
     Serial.println("RIT OFF");
     speakTokenState("rit", false);
     return true;
@@ -2109,7 +2122,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   if (upper.startsWith("RIT ")) {
     int32_t hz = line.substring(4).toInt();
     if (hz < -9999 || hz > 9999) { Serial.println("RIT -> invalid (use -9999..9999 Hz)"); return true; }
-    if (!setRitOffsetHz(hz)) { Serial.println("RIT -> failed"); return true; }
+    if (!setRitOffsetHz(hz)) { reportCommandFailure("RIT", "failed"); return true; }
     Serial.print("RIT ");
     Serial.print(hz);
     Serial.println(" Hz");
@@ -2118,21 +2131,21 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   }
   if (upper == "NR?") {
     if (!sp.caps.getNr) { if (usbConsoleReady()) Serial.println("NR? -> unsupported"); return true; }
-    if (!refreshLiveNr()) { if (usbConsoleReady()) Serial.println("NR? -> no reply"); return true; }
+    if (!refreshLiveNr()) { if (usbConsoleReady()) reportCommandFailure("NR?", "no reply"); return true; }
     if (usbConsoleReady()) Serial.println(live.nrOn ? "NR ON" : "NR OFF");
     speakBinaryFeatureState(voice_noisereduction, voice_noisereduction_len, live.nrOn);
     return true;
   }
   if (upper == "NB?") {
     if (!sp.caps.getNb) { if (usbConsoleReady()) Serial.println("NB? -> unsupported"); return true; }
-    if (!refreshLiveNb()) { if (usbConsoleReady()) Serial.println("NB? -> no reply"); return true; }
+    if (!refreshLiveNb()) { if (usbConsoleReady()) reportCommandFailure("NB?", "no reply"); return true; }
     if (usbConsoleReady()) Serial.println(live.nbOn ? "NB ON" : "NB OFF");
     speakBinaryFeatureState(voice_noiseblanker, voice_noiseblanker_len, live.nbOn);
     return true;
   }
   if (upper == "PBT1?") {
     uint16_t raw = 0;
-    if (!queryPbtInner(raw, 800)) { Serial.println("PBT1? -> no reply"); return true; }
+    if (!queryPbtInner(raw, 800)) { reportCommandFailure("PBT1?", "no reply"); return true; }
     Serial.print("PBT1 ");
     Serial.print(pbtRawToOffset(raw));
     Serial.println(" step");
@@ -2141,7 +2154,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   }
   if (upper == "PBT2?") {
     uint16_t raw = 0;
-    if (!queryPbtOuter(raw, 800)) { Serial.println("PBT2? -> no reply"); return true; }
+    if (!queryPbtOuter(raw, 800)) { reportCommandFailure("PBT2?", "no reply"); return true; }
     Serial.print("PBT2 ");
     Serial.print(pbtRawToOffset(raw));
     Serial.println(" step");
@@ -2150,34 +2163,34 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   }
   if (upper == "LOCK?") {
     bool on = false;
-    if (!queryDialLock(on, 800)) { Serial.println("LOCK? -> no reply"); return true; }
+    if (!queryDialLock(on, 800)) { reportCommandFailure("LOCK?", "no reply"); return true; }
     Serial.println(on ? "LOCK ON" : "LOCK OFF");
     speakTokenState("lock", on);
     return true;
   }
   if (upper == "LOCK ON") {
-    if (!setDialLock(true)) { Serial.println("LOCK ON -> failed"); return true; }
+    if (!setDialLock(true)) { reportCommandFailure("LOCK ON", "failed"); return true; }
     Serial.println("LOCK ON");
     speakTokenState("lock", true);
     return true;
   }
   if (upper == "LOCK OFF") {
-    if (!setDialLock(false)) { Serial.println("LOCK OFF -> failed"); return true; }
+    if (!setDialLock(false)) { reportCommandFailure("LOCK OFF", "failed"); return true; }
     Serial.println("LOCK OFF");
     speakTokenState("lock", false);
     return true;
   }
   if (upper == "LOCK TOGGLE") {
     bool on = false;
-    if (!queryDialLock(on, 800)) { Serial.println("LOCK TOGGLE -> no reply"); return true; }
-    if (!setDialLock(!on)) { Serial.println("LOCK TOGGLE -> failed"); return true; }
+    if (!queryDialLock(on, 800)) { reportCommandFailure("LOCK TOGGLE", "no reply"); return true; }
+    if (!setDialLock(!on)) { reportCommandFailure("LOCK TOGGLE", "failed"); return true; }
     Serial.println(!on ? "LOCK ON" : "LOCK OFF");
     speakTokenState("lock", !on);
     return true;
   }
   if (upper == "FILSHAPE?") {
     bool soft = false;
-    if (!queryFilterShape(soft, 800)) { Serial.println("FILSHAPE? -> no reply"); return true; }
+    if (!queryFilterShape(soft, 800)) { reportCommandFailure("FILSHAPE?", "no reply"); return true; }
     Serial.println(soft ? "FILSHAPE SOFT" : "FILSHAPE SHARP");
     if (g_speechEnabled) {
       speakToken("filtershape");
@@ -2187,7 +2200,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     return true;
   }
   if (upper == "FILSHAPE SHARP") {
-    if (!setFilterShape(false)) { Serial.println("FILSHAPE SHARP -> failed"); return true; }
+    if (!setFilterShape(false)) { reportCommandFailure("FILSHAPE SHARP", "failed"); return true; }
     Serial.println("FILSHAPE SHARP");
     if (g_speechEnabled) {
       speakToken("filtershape");
@@ -2197,7 +2210,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     return true;
   }
   if (upper == "FILSHAPE SOFT") {
-    if (!setFilterShape(true)) { Serial.println("FILSHAPE SOFT -> failed"); return true; }
+    if (!setFilterShape(true)) { reportCommandFailure("FILSHAPE SOFT", "failed"); return true; }
     Serial.println("FILSHAPE SOFT");
     if (g_speechEnabled) {
       speakToken("filtershape");
@@ -2208,7 +2221,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   }
   if (upper == "FILWIDTH?") {
     uint8_t filter = 0xFF;
-    if (!queryCurrentFilterSlot(filter)) { Serial.println("FILWIDTH? -> no reply"); return true; }
+    if (!queryCurrentFilterSlot(filter)) { reportCommandFailure("FILWIDTH?", "no reply"); return true; }
     Serial.print("FILWIDTH ");
     Serial.println((int)filter);
     if (g_speechEnabled) {
@@ -2220,26 +2233,26 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   }
   if (upper == "MONITOR?") {
     bool on = false;
-    if (!queryMonitorEnabled(on, 800)) { Serial.println("MONITOR? -> no reply"); return true; }
+    if (!queryMonitorEnabled(on, 800)) { reportCommandFailure("MONITOR?", "no reply"); return true; }
     Serial.println(on ? "MONITOR ON" : "MONITOR OFF");
     if (g_speechEnabled) speakTokenState("monitor", on);
     return true;
   }
   if (upper == "MONITOR ON") {
-    if (!setMonitorEnabled(true)) { Serial.println("MONITOR ON -> failed"); return true; }
+    if (!setMonitorEnabled(true)) { reportCommandFailure("MONITOR ON", "failed"); return true; }
     Serial.println("MONITOR ON");
     if (g_speechEnabled) speakTokenState("monitor", true);
     return true;
   }
   if (upper == "MONITOR OFF") {
-    if (!setMonitorEnabled(false)) { Serial.println("MONITOR OFF -> failed"); return true; }
+    if (!setMonitorEnabled(false)) { reportCommandFailure("MONITOR OFF", "failed"); return true; }
     Serial.println("MONITOR OFF");
     if (g_speechEnabled) speakTokenState("monitor", false);
     return true;
   }
   if (upper == "MONLEVEL?") {
     uint16_t raw = 0;
-    if (!queryMonitorLevel(raw, 800)) { Serial.println("MONLEVEL? -> no reply"); return true; }
+    if (!queryMonitorLevel(raw, 800)) { reportCommandFailure("MONLEVEL?", "no reply"); return true; }
     Serial.print("MONLEVEL ");
     Serial.print((int)levelRawToPercent(raw));
     Serial.println("%");
@@ -2248,14 +2261,14 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   }
   if (upper == "TRANSCEIVE?") {
     bool on = false;
-    if (!queryTransceiveEnabled(on, 800)) { Serial.println("TRANSCEIVE? -> no reply"); return true; }
+    if (!queryTransceiveEnabled(on, 800)) { reportCommandFailure("TRANSCEIVE?", "no reply"); return true; }
     Serial.println(on ? "TRANSCEIVE ON" : "TRANSCEIVE OFF");
     if (g_speechEnabled) speakTokenState("transceiver", on);
     return true;
   }
   if (upper == "NRLEVEL?") {
     uint16_t raw = 0;
-    if (!queryNrLevel(raw, 800)) { Serial.println("NRLEVEL? -> no reply"); return true; }
+    if (!queryNrLevel(raw, 800)) { reportCommandFailure("NRLEVEL?", "no reply"); return true; }
     Serial.print("NRLEVEL ");
     Serial.print((int)levelRawToPercent(raw));
     Serial.println("%");
@@ -2265,7 +2278,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   if (upper.startsWith("NRLEVEL ")) {
     int percent = line.substring(8).toInt();
     if (percent < 0 || percent > 100) { Serial.println("NRLEVEL -> invalid (use 0..100)"); return true; }
-    if (!setNrLevel(levelPercentToRaw(percent))) { Serial.println("NRLEVEL -> failed"); return true; }
+    if (!setNrLevel(levelPercentToRaw(percent))) { reportCommandFailure("NRLEVEL", "failed"); return true; }
     Serial.print("NRLEVEL ");
     Serial.print(percent);
     Serial.println("%");
@@ -2274,7 +2287,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   }
   if (upper == "NBLEVEL?") {
     uint16_t raw = 0;
-    if (!queryNbLevel(raw, 800)) { Serial.println("NBLEVEL? -> no reply"); return true; }
+    if (!queryNbLevel(raw, 800)) { reportCommandFailure("NBLEVEL?", "no reply"); return true; }
     Serial.print("NBLEVEL ");
     Serial.print((int)levelRawToPercent(raw));
     Serial.println("%");
@@ -2290,7 +2303,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   if (upper.startsWith("NBLEVEL ")) {
     int percent = line.substring(8).toInt();
     if (percent < 0 || percent > 100) { Serial.println("NBLEVEL -> invalid (use 0..100)"); return true; }
-    if (!setNbLevel(levelPercentToRaw(percent))) { Serial.println("NBLEVEL -> failed"); return true; }
+    if (!setNbLevel(levelPercentToRaw(percent))) { reportCommandFailure("NBLEVEL", "failed"); return true; }
     Serial.print("NBLEVEL ");
     Serial.print(percent);
     Serial.println("%");
@@ -2307,7 +2320,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     String arg = upper.substring(5);
     int value = (arg == "CENTER") ? 0 : line.substring(5).toInt();
     if (arg != "CENTER" && (value < -128 || value > 127)) { Serial.println("PBT1 -> invalid (use CENTER or -128..127)"); return true; }
-    if (!setPbtInner(pbtOffsetToRaw(value))) { Serial.println("PBT1 -> failed"); return true; }
+    if (!setPbtInner(pbtOffsetToRaw(value))) { reportCommandFailure("PBT1", "failed"); return true; }
     Serial.print("PBT1 ");
     Serial.print(value);
     Serial.println(" step");
@@ -2318,7 +2331,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     String arg = upper.substring(5);
     int value = (arg == "CENTER") ? 0 : line.substring(5).toInt();
     if (arg != "CENTER" && (value < -128 || value > 127)) { Serial.println("PBT2 -> invalid (use CENTER or -128..127)"); return true; }
-    if (!setPbtOuter(pbtOffsetToRaw(value))) { Serial.println("PBT2 -> failed"); return true; }
+    if (!setPbtOuter(pbtOffsetToRaw(value))) { reportCommandFailure("PBT2", "failed"); return true; }
     Serial.print("PBT2 ");
     Serial.print(value);
     Serial.println(" step");
@@ -2330,7 +2343,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     uint8_t mode = 0xFF;
     if (filter < 1 || filter > 3) { Serial.println("FILWIDTH -> invalid (use 1..3)"); return true; }
     if (!queryCurrentModeValue(mode)) { Serial.println("FILWIDTH -> no mode"); return true; }
-    if (!setMode(mode, (uint8_t)filter)) { Serial.println("FILWIDTH -> failed"); return true; }
+    if (!setMode(mode, (uint8_t)filter)) { reportCommandFailure("FILWIDTH", "failed"); return true; }
     Serial.print("FILWIDTH ");
     Serial.println(filter);
     if (g_speechEnabled) {
@@ -2343,7 +2356,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   if (upper.startsWith("MONLEVEL ")) {
     int percent = line.substring(9).toInt();
     if (percent < 0 || percent > 100) { Serial.println("MONLEVEL -> invalid (use 0..100)"); return true; }
-    if (!setMonitorLevel(levelPercentToRaw(percent))) { Serial.println("MONLEVEL -> failed"); return true; }
+    if (!setMonitorLevel(levelPercentToRaw(percent))) { reportCommandFailure("MONLEVEL", "failed"); return true; }
     Serial.print("MONLEVEL ");
     Serial.print(percent);
     Serial.println("%");
@@ -2351,20 +2364,20 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     return true;
   }
   if (upper == "TRANSCEIVE ON") {
-    if (!setTransceiveEnabled(true)) { Serial.println("TRANSCEIVE ON -> failed"); return true; }
+    if (!setTransceiveEnabled(true)) { reportCommandFailure("TRANSCEIVE ON", "failed"); return true; }
     Serial.println("TRANSCEIVE ON");
     if (g_speechEnabled) speakTokenState("transceiver", true);
     return true;
   }
   if (upper == "TRANSCEIVE OFF") {
-    if (!setTransceiveEnabled(false)) { Serial.println("TRANSCEIVE OFF -> failed"); return true; }
+    if (!setTransceiveEnabled(false)) { reportCommandFailure("TRANSCEIVE OFF", "failed"); return true; }
     Serial.println("TRANSCEIVE OFF");
     if (g_speechEnabled) speakTokenState("transceiver", false);
     return true;
   }
   if (upper == "NOTCH?") {
     if (!sp.caps.getNotch) { if (usbConsoleReady()) Serial.println("NOTCH? -> unsupported"); return true; }
-    if (!refreshLiveNotch()) { if (usbConsoleReady()) Serial.println("NOTCH? -> no reply"); return true; }
+    if (!refreshLiveNotch()) { if (usbConsoleReady()) reportCommandFailure("NOTCH?", "no reply"); return true; }
     if (!live.notchOn) {
       if (usbConsoleReady()) Serial.println("NOTCH OFF");
       speakNotchCycleState(false, NOTCH_WIDTH_UNKNOWN);
@@ -2386,87 +2399,87 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   }
   if (upper == "NR ON") {
     if (!sp.caps.setNr) { Serial.println("NR ON -> unsupported"); return true; }
-    if (!applyNrAndTrack(true)) { Serial.println("NR ON -> failed"); return true; }
+    if (!applyNrAndTrack(true)) { reportCommandFailure("NR ON", "failed"); return true; }
     Serial.println("NR ON");
     speakBinaryFeatureState(voice_noisereduction, voice_noisereduction_len, true);
     return true;
   }
   if (upper == "NR OFF") {
     if (!sp.caps.setNr) { Serial.println("NR OFF -> unsupported"); return true; }
-    if (!applyNrAndTrack(false)) { Serial.println("NR OFF -> failed"); return true; }
+    if (!applyNrAndTrack(false)) { reportCommandFailure("NR OFF", "failed"); return true; }
     Serial.println("NR OFF");
     speakBinaryFeatureState(voice_noisereduction, voice_noisereduction_len, false);
     return true;
   }
   if (upper == "NR TOGGLE") {
     if (!sp.caps.getNr || !sp.caps.setNr) { Serial.println("NR TOGGLE -> unsupported"); return true; }
-    if (!refreshLiveNr()) { Serial.println("NR TOGGLE -> no reply"); return true; }
+    if (!refreshLiveNr()) { reportCommandFailure("NR TOGGLE", "no reply"); return true; }
     const bool next = !live.nrOn;
-    if (!applyNrAndTrack(next)) { Serial.println("NR TOGGLE -> failed"); return true; }
+    if (!applyNrAndTrack(next)) { reportCommandFailure("NR TOGGLE", "failed"); return true; }
     Serial.println(next ? "NR ON" : "NR OFF");
     speakBinaryFeatureState(voice_noisereduction, voice_noisereduction_len, next);
     return true;
   }
   if (upper == "NB ON") {
     if (!sp.caps.setNb) { Serial.println("NB ON -> unsupported"); return true; }
-    if (!applyNbAndTrack(true)) { Serial.println("NB ON -> failed"); return true; }
+    if (!applyNbAndTrack(true)) { reportCommandFailure("NB ON", "failed"); return true; }
     Serial.println("NB ON");
     speakBinaryFeatureState(voice_noiseblanker, voice_noiseblanker_len, true);
     return true;
   }
   if (upper == "NB OFF") {
     if (!sp.caps.setNb) { Serial.println("NB OFF -> unsupported"); return true; }
-    if (!applyNbAndTrack(false)) { Serial.println("NB OFF -> failed"); return true; }
+    if (!applyNbAndTrack(false)) { reportCommandFailure("NB OFF", "failed"); return true; }
     Serial.println("NB OFF");
     speakBinaryFeatureState(voice_noiseblanker, voice_noiseblanker_len, false);
     return true;
   }
   if (upper == "NB TOGGLE") {
     if (!sp.caps.getNb || !sp.caps.setNb) { Serial.println("NB TOGGLE -> unsupported"); return true; }
-    if (!refreshLiveNb()) { Serial.println("NB TOGGLE -> no reply"); return true; }
+    if (!refreshLiveNb()) { reportCommandFailure("NB TOGGLE", "no reply"); return true; }
     const bool next = !live.nbOn;
-    if (!applyNbAndTrack(next)) { Serial.println("NB TOGGLE -> failed"); return true; }
+    if (!applyNbAndTrack(next)) { reportCommandFailure("NB TOGGLE", "failed"); return true; }
     Serial.println(next ? "NB ON" : "NB OFF");
     speakBinaryFeatureState(voice_noiseblanker, voice_noiseblanker_len, next);
     return true;
   }
   if (upper == "PA?") {
     bool on = false;
-    if (!asciiQueryPreamp(sp, on, 800)) { Serial.println("PA? -> no reply"); return true; }
+    if (!asciiQueryPreamp(sp, on, 800)) { reportCommandFailure("PA?", "no reply"); return true; }
     Serial.println(on ? "PA ON" : "PA OFF");
     if (g_speechEnabled) speakTokenState("pa", on);
     return true;
   }
   if (upper == "PA ON") {
-    if (!asciiSetPreamp(sp, true)) { Serial.println("PA ON -> failed"); return true; }
+    if (!asciiSetPreamp(sp, true)) { reportCommandFailure("PA ON", "failed"); return true; }
     Serial.println("PA ON");
     if (g_speechEnabled) speakTokenState("pa", true);
     return true;
   }
   if (upper == "PA OFF") {
-    if (!asciiSetPreamp(sp, false)) { Serial.println("PA OFF -> failed"); return true; }
+    if (!asciiSetPreamp(sp, false)) { reportCommandFailure("PA OFF", "failed"); return true; }
     Serial.println("PA OFF");
     if (g_speechEnabled) speakTokenState("pa", false);
     return true;
   }
   if (upper == "PA TOGGLE") {
     bool on = false;
-    if (!asciiQueryPreamp(sp, on, 800)) { Serial.println("PA TOGGLE -> no reply"); return true; }
-    if (!asciiSetPreamp(sp, !on)) { Serial.println("PA TOGGLE -> failed"); return true; }
+    if (!asciiQueryPreamp(sp, on, 800)) { reportCommandFailure("PA TOGGLE", "no reply"); return true; }
+    if (!asciiSetPreamp(sp, !on)) { reportCommandFailure("PA TOGGLE", "failed"); return true; }
     Serial.println(!on ? "PA ON" : "PA OFF");
     if (g_speechEnabled) speakTokenState("pa", !on);
     return true;
   }
   if (upper == "GT?") {
     String rsp;
-    if (!asciiQueryAgcLine(sp, rsp, 800)) { Serial.println("GT? -> no reply"); return true; }
+    if (!asciiQueryAgcLine(sp, rsp, 800)) { reportCommandFailure("GT?", "no reply"); return true; }
     Serial.print("GT: ");
     printAsciiReplyPayload(rsp, sp.ascii.agcReplyPrefix);
     speakConsoleTokenOrGap("gt");
     return true;
   }
   if (upper == "GT FAST") {
-    if (!asciiSetAgcCommand(sp, sp.ascii.agcFastCmd)) { Serial.println("GT FAST -> failed"); return true; }
+    if (!asciiSetAgcCommand(sp, sp.ascii.agcFastCmd)) { reportCommandFailure("GT FAST", "failed"); return true; }
     Serial.println("GT FAST");
     speakConsoleTokenOrGap("gt");
     playSilenceMs(60);
@@ -2474,7 +2487,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     return true;
   }
   if (upper == "GT SLOW") {
-    if (!asciiSetAgcCommand(sp, sp.ascii.agcSlowCmd)) { Serial.println("GT SLOW -> failed"); return true; }
+    if (!asciiSetAgcCommand(sp, sp.ascii.agcSlowCmd)) { reportCommandFailure("GT SLOW", "failed"); return true; }
     Serial.println("GT SLOW");
     speakConsoleTokenOrGap("gt");
     playSilenceMs(60);
@@ -2482,78 +2495,78 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     return true;
   }
   if (upper == "GT OFF") {
-    if (!asciiSetAgcCommand(sp, sp.ascii.agcOffCmd)) { Serial.println("GT OFF -> failed"); return true; }
+    if (!asciiSetAgcCommand(sp, sp.ascii.agcOffCmd)) { reportCommandFailure("GT OFF", "failed"); return true; }
     Serial.println("GT OFF");
     if (g_speechEnabled) speakTokenState("gt", false);
     return true;
   }
   if (upper == "PS?") {
     bool on = false;
-    if (!asciiQueryPowerState(sp, on, 800)) { Serial.println("PS? -> no reply"); return true; }
+    if (!asciiQueryPowerState(sp, on, 800)) { reportCommandFailure("PS?", "no reply"); return true; }
     Serial.println(on ? "PS ON" : "PS OFF");
     if (g_speechEnabled) speakTokenState("ps", on);
     return true;
   }
   if (upper == "PS ON") {
-    if (!asciiSetPowerState(sp, true)) { Serial.println("PS ON -> failed"); return true; }
+    if (!asciiSetPowerState(sp, true)) { reportCommandFailure("PS ON", "failed"); return true; }
     Serial.println("PS ON");
     if (g_speechEnabled) speakTokenState("ps", true);
     return true;
   }
   if (upper == "PS OFF") {
-    if (!asciiSetPowerState(sp, false)) { Serial.println("PS OFF -> failed"); return true; }
+    if (!asciiSetPowerState(sp, false)) { reportCommandFailure("PS OFF", "failed"); return true; }
     Serial.println("PS OFF");
     if (g_speechEnabled) speakTokenState("ps", false);
     return true;
   }
   if (upper == "SPLIT TOGGLE") {
     bool on = false;
-    if (!querySplit(on, 800)) { Serial.println("SPLIT TOGGLE -> no reply"); return true; }
-    if (!setSplit(!on)) { Serial.println("SPLIT TOGGLE -> failed"); return true; }
+    if (!querySplit(on, 800)) { reportCommandFailure("SPLIT TOGGLE", "no reply"); return true; }
+    if (!setSplit(!on)) { reportCommandFailure("SPLIT TOGGLE", "failed"); return true; }
     Serial.println(!on ? "SPLIT ON" : "SPLIT OFF");
     speakTokenState("split", !on);
     return true;
   }
   if (upper == "NOTCH ON") {
     if (!sp.caps.setNotch) { Serial.println("NOTCH ON -> unsupported"); return true; }
-    if (!applyNotchAndTrack(true)) { Serial.println("NOTCH ON -> failed"); return true; }
+    if (!applyNotchAndTrack(true)) { reportCommandFailure("NOTCH ON", "failed"); return true; }
     Serial.println("NOTCH ON");
     speakTokenState("notch filter", true);
     return true;
   }
   if (upper == "NOTCH NAR") {
     if (currentProtocolType() != PROTO_CIV || !sp.caps.setNotch) { Serial.println("NOTCH NAR -> unsupported"); return true; }
-    if (!applyNotchAndTrack(true) || !applyNotchWidthAndTrack(NOTCH_WIDTH_NAR)) { Serial.println("NOTCH NAR -> failed"); return true; }
+    if (!applyNotchAndTrack(true) || !applyNotchWidthAndTrack(NOTCH_WIDTH_NAR)) { reportCommandFailure("NOTCH NAR", "failed"); return true; }
     Serial.println("NOTCH NAR");
     speakNotchCycleState(true, NOTCH_WIDTH_NAR);
     return true;
   }
   if (upper == "NOTCH MID") {
     if (currentProtocolType() != PROTO_CIV || !sp.caps.setNotch) { Serial.println("NOTCH MID -> unsupported"); return true; }
-    if (!applyNotchAndTrack(true) || !applyNotchWidthAndTrack(NOTCH_WIDTH_MID)) { Serial.println("NOTCH MID -> failed"); return true; }
+    if (!applyNotchAndTrack(true) || !applyNotchWidthAndTrack(NOTCH_WIDTH_MID)) { reportCommandFailure("NOTCH MID", "failed"); return true; }
     Serial.println("NOTCH MID");
     speakNotchCycleState(true, NOTCH_WIDTH_MID);
     return true;
   }
   if (upper == "NOTCH WIDE") {
     if (currentProtocolType() != PROTO_CIV || !sp.caps.setNotch) { Serial.println("NOTCH WIDE -> unsupported"); return true; }
-    if (!applyNotchAndTrack(true) || !applyNotchWidthAndTrack(NOTCH_WIDTH_WIDE)) { Serial.println("NOTCH WIDE -> failed"); return true; }
+    if (!applyNotchAndTrack(true) || !applyNotchWidthAndTrack(NOTCH_WIDTH_WIDE)) { reportCommandFailure("NOTCH WIDE", "failed"); return true; }
     Serial.println("NOTCH WIDE");
     speakNotchCycleState(true, NOTCH_WIDTH_WIDE);
     return true;
   }
   if (upper == "NOTCH OFF") {
     if (!sp.caps.setNotch) { Serial.println("NOTCH OFF -> unsupported"); return true; }
-    if (!applyNotchAndTrack(false)) { Serial.println("NOTCH OFF -> failed"); return true; }
+    if (!applyNotchAndTrack(false)) { reportCommandFailure("NOTCH OFF", "failed"); return true; }
     Serial.println("NOTCH OFF");
     speakTokenState("notch filter", false);
     return true;
   }
   if (upper == "NOTCH TOGGLE") {
     if (!sp.caps.getNotch || !sp.caps.setNotch) { Serial.println("NOTCH TOGGLE -> unsupported"); return true; }
-    if (!refreshLiveNotch()) { Serial.println("NOTCH TOGGLE -> no reply"); return true; }
+    if (!refreshLiveNotch()) { reportCommandFailure("NOTCH TOGGLE", "no reply"); return true; }
     const bool next = !live.notchOn;
-    if (!applyNotchAndTrack(next)) { Serial.println("NOTCH TOGGLE -> failed"); return true; }
+    if (!applyNotchAndTrack(next)) { reportCommandFailure("NOTCH TOGGLE", "failed"); return true; }
     Serial.println(next ? "NOTCH ON" : "NOTCH OFF");
     speakTokenState("notch filter", next);
     return true;
@@ -2622,6 +2635,8 @@ bool processHamtrcServiceCommand(String line, Print& output) {
 void processCommand(String line) {
   line.trim();
   if (!line.length()) return;
+  // A timeout left by background polling must not be blamed on this command.
+  g_radioReplyTimedOut = false;
 
   String upper = upperCopy(line);
   if (handleHamtrcServiceCommand(upper, Serial)) return;

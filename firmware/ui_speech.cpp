@@ -616,6 +616,7 @@ bool speakTokenPercent(const String& token, uint8_t percent) {
 
 void speakOk() { speakToken("ok"); }
 void speakError() { speakToken("error"); }
+void speakTimeout() { speakToken("timeout"); }
 
 void applyVolumeLevel(uint8_t lvl) {
   if (lvl < 1) lvl = 1;
