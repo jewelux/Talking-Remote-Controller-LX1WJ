@@ -31,6 +31,8 @@ voice_seven.wav
 voice_eight.wav
 voice_nine.wav
 voice_point.wav
+voice_ten.wav, voice_twenty.wav, voice_thirty.wav, voice_forty.wav, voice_fifty.wav, voice_sixty.wav
+  (S-meter dB over S9; optional, digits are spoken if missing)
 
 2. Letter clips needed for abbreviations and profile spelling
 voice_a.wav

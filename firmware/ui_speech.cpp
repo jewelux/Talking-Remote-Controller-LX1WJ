@@ -127,11 +127,17 @@ static const VoiceClip kVoiceClips[] = {
   {"voice_fast", voice_fast, voice_fast_len},
 #endif
   {"voice_five", voice_five, voice_five_len},
+#if defined(HAS_VOICE_voice_fifty)
+  {"voice_fifty", voice_fifty, voice_fifty_len},
+#endif
   {"voice_filter", voice_filter, voice_filter_len},
   {"voice_filtershape", voice_filtershape, voice_filtershape_len},
   {"voice_filterwidth", voice_filterwidth, voice_filterwidth_len},
   {"voice_fm", voice_fm, voice_fm_len},
   {"voice_four", voice_four, voice_four_len},
+#if defined(HAS_VOICE_voice_forty)
+  {"voice_forty", voice_forty, voice_forty_len},
+#endif
   {"voice_frequency", voice_frequency, voice_frequency_len},
 #if defined(HAS_VOICE_voice_g)
   {"voice_g", voice_g, voice_g_len},
@@ -218,6 +224,9 @@ static const VoiceClip kVoiceClips[] = {
   {"voice_seven", voice_seven, voice_seven_len},
   {"voice_sharp", voice_sharp, voice_sharp_len},
   {"voice_six", voice_six, voice_six_len},
+#if defined(HAS_VOICE_voice_sixty)
+  {"voice_sixty", voice_sixty, voice_sixty_len},
+#endif
 #if defined(HAS_VOICE_voice_slow)
   {"voice_slow", voice_slow, voice_slow_len},
 #endif
@@ -230,7 +239,13 @@ static const VoiceClip kVoiceClips[] = {
   {"voice_sync", voice_sync, voice_sync_len},
 #endif
   {"voice_t", voice_t, voice_t_len},
+#if defined(HAS_VOICE_voice_ten)
+  {"voice_ten", voice_ten, voice_ten_len},
+#endif
   {"voice_thankyou", voice_thankyou, voice_thankyou_len},
+#if defined(HAS_VOICE_voice_thirty)
+  {"voice_thirty", voice_thirty, voice_thirty_len},
+#endif
   {"voice_three", voice_three, voice_three_len},
 #if defined(HAS_VOICE_voice_transceive)
   {"voice_transceive", voice_transceive, voice_transceive_len},
@@ -241,6 +256,9 @@ static const VoiceClip kVoiceClips[] = {
 #endif
   {"voice_tune", voice_tune, voice_tune_len},
   {"voice_tuner", voice_tuner, voice_tuner_len},
+#if defined(HAS_VOICE_voice_twenty)
+  {"voice_twenty", voice_twenty, voice_twenty_len},
+#endif
   {"voice_two", voice_two, voice_two_len},
 #if defined(HAS_VOICE_voice_tx)
   {"voice_tx", voice_tx, voice_tx_len},
@@ -504,6 +522,13 @@ void speakDigitsAndPoint(const String& s) {
   playSilenceMs(250);
 }
 
+// Plays "ten".."sixty"; false if tens is out of range or the clip is missing.
+static bool playTens(int tens) {
+  static const char* const kTens[] = {"ten", "twenty", "thirty", "forty", "fifty", "sixty"};
+  if (tens < 1 || tens > 6) return false;
+  return speakClipToken(kTens[tens - 1]);
+}
+
 void speakSValue(const SMeterReading& reading) {
   if (!g_speechEnabled) return;
   if (!g_keypadExecuting) speakToken("s_meter");
@@ -513,7 +538,11 @@ void speakSValue(const SMeterReading& reading) {
     playSilenceMs(60);
     speakToken("plus");
     playSilenceMs(60);
-    speakDigitsAndPoint(String(reading.dbOverS9));  // ends with the trailing pause
+    if (reading.dbOverS9 % 10 == 0 && playTens(reading.dbOverS9 / 10)) {
+      playSilenceMs(250);
+    } else {
+      speakDigitsAndPoint(String(reading.dbOverS9));  // ends with the trailing pause
+    }
   } else {
     playSilenceMs(250);
   }

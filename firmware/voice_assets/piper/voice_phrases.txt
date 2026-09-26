@@ -21,6 +21,14 @@ eight
 nine
 point
 
+# Tens (S-meter dB over S9)
+ten
+twenty
+thirty
+forty
+fifty
+sixty
+
 # Letters
 a
 b
