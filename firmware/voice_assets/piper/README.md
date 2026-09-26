@@ -21,7 +21,20 @@ Output format: mono, PCM16, 8000 Hz (the firmware I2S rate), trimmed, peak-norma
 .\.venv\Scripts\python generate_voices.py --voice en_US-lessac-medium --length-scale 1.1
 ```
 
+Piper output varies slightly from run to run (random noise in the model). For repeatable clips add
+`--noise-scale 0 --noise-w-scale 0` (flatter voice; `0.2` is a compromise). Same flags work in `say.py`.
+
 Run `generate_voices.py --help` for all options (sample rate, silence, trim threshold, peak level).
+
+## Try phrases
+
+Interactive: type a phrase, hear it on the default sound device (missing voices are downloaded).
+
+```powershell
+.\.venv\Scripts\python say.py                                       # lessac-high, native rate
+.\.venv\Scripts\python say.py --voice en_US-ryan-high --rate 8000   # hear it as the firmware clip
+.\.venv\Scripts\python say.py "v f o a"                             # one-shot
+```
 
 ## Phrase list
 

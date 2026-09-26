@@ -79,6 +79,20 @@ def synthesize(voice: PiperVoice, text: str, syn_config: SynthesisConfig) -> tup
     return np.concatenate(chunks).astype(np.float32), sample_rate
 
 
+def add_synth_args(ap: argparse.ArgumentParser) -> None:
+    ap.add_argument("--length-scale", type=float, default=None, help="Speaking speed; >1 slower, <1 faster")
+    ap.add_argument("--noise-scale", type=float, default=None,
+                    help="Generator noise (voice variability; default from voice, ~0.667; 0 = most repeatable)")
+    ap.add_argument("--noise-w-scale", type=float, default=None,
+                    help="Phoneme duration noise (rhythm variability; default from voice, ~0.8; 0 = most repeatable)")
+    ap.add_argument("--speaker", type=int, default=None, help="Speaker id for multi-speaker voices")
+
+
+def make_syn_config(args: argparse.Namespace) -> SynthesisConfig:
+    return SynthesisConfig(speaker_id=args.speaker, length_scale=args.length_scale,
+                           noise_scale=args.noise_scale, noise_w_scale=args.noise_w_scale)
+
+
 def trim_silence(audio: np.ndarray, sr: int, threshold_db: float, margin_ms: float) -> np.ndarray:
     """Cut leading/trailing parts quieter than threshold_db relative to the peak."""
     peak = float(np.max(np.abs(audio))) if audio.size else 0.0
@@ -140,8 +154,7 @@ def main() -> None:
     ap.add_argument("--trail-ms", type=float, default=60.0, help="Trailing silence in ms (default: 60)")
     ap.add_argument("--trim-db", type=float, default=-40.0, help="Silence threshold relative to peak (default: -40)")
     ap.add_argument("--peak-db", type=float, default=-1.0, help="Peak level in dBFS (default: -1)")
-    ap.add_argument("--length-scale", type=float, default=None, help="Speaking speed; >1 slower, <1 faster")
-    ap.add_argument("--speaker", type=int, default=None, help="Speaker id for multi-speaker voices")
+    add_synth_args(ap)
     ap.add_argument("--header", action="store_true", help="Also merge the clips into firmware/voice_data.h")
     args = ap.parse_args()
 
@@ -155,7 +168,7 @@ def main() -> None:
 
     model = ensure_voice(args.voice, Path(args.models_dir))
     voice = PiperVoice.load(model)
-    syn_config = SynthesisConfig(speaker_id=args.speaker, length_scale=args.length_scale)
+    syn_config = make_syn_config(args)
 
     out_dir = Path(args.out).resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
