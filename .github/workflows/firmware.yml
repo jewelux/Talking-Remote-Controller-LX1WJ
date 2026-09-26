@@ -14,6 +14,14 @@ env:
   FQBN: esp32:esp32:esp32s3:FlashSize=16M,FlashMode=dio,CDCOnBoot=cdc,USBMode=hwcdc,PartitionScheme=custom
 
 jobs:
+  host-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Keypad unit tests
+        run: make -C tests/keypad
+
   build:
     runs-on: ubuntu-latest
     outputs:
@@ -93,7 +101,7 @@ jobs:
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: build
+    needs: [host-tests, build]
     runs-on: ubuntu-latest
     permissions:
       contents: write
