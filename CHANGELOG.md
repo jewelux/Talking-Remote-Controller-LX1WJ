@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased — FT8x7 S-meter
+
+- fixed the FT-817/818/857/897 S-meter always reading S0: the RX-status byte carries the meter in
+  its low nibble (S0..S9, then S9+10..+60 dB) and is now decoded per protocol; the console shows
+  e.g. `S9+20dB`
+- dB over S9 is spoken as a word ("S meter nine plus twenty") using new voice clips ten..sixty;
+  falls back to digits if a clip is missing
+
 ## Unreleased — FT8x7 frequency polling
 
 - re-enabled background frequency polling for the Yaesu FT-817/857/897 family (disabled in V3.5.8)
