@@ -22,6 +22,8 @@ void civSend(uint8_t cmd, const uint8_t* data, size_t dataLen) {
 
 bool waitReply(uint8_t expectCmd, CivDecoded& out, uint32_t timeoutMs) {
   g_radioReplyTimedOut = false;
+  // The radio answering "NG" means it rejected the command; that is not a timeout.
+  bool rejected = false;
   uint32_t start = millis();
   uint8_t buf[96];
   while (millis() - start < timeoutMs) {
@@ -31,10 +33,11 @@ bool waitReply(uint8_t expectCmd, CivDecoded& out, uint32_t timeoutMs) {
     if (!d.ok) continue;
     if (d.from != g_civRadioAddr) continue;
     if (!(d.to == CIV_CTRL_ADDR || d.to == 0x00)) continue;
+    if (d.cmd == CIV_REPLY_NG) rejected = true;
     if (d.cmd != expectCmd) continue;
     out = d;
     return true;
   }
-  g_radioReplyTimedOut = true;
+  g_radioReplyTimedOut = !rejected;
   return false;
 }

@@ -24,9 +24,8 @@
 - a key that does nothing now gives a short beep instead of silence: keys with no action on the
   current bank or profile, keys whose feature the profile's protocol lacks (e.g. on FT-8x7: NR, NB,
   notch, tuner, monitor, transceive, band stack, RIT), BANK6 on non-FT-8x7 profiles, `D` with
-  nothing to enter, and keys ignored
-  during an entry or bank/profile selection (extra digits, a second `*`, letter keys, an invalid mode
-  digit, a leading `0` in profile select)
+  nothing to enter, and keys ignored during an entry or bank/profile selection (extra digits, a
+  second `*`, letter keys, an invalid mode digit, a leading `0` in profile select)
 - WFM mode is now spoken as "wfm" using its own clip; the clip was already in `voice_data.h` but
   missing from the voice table, so it was spelled out as "w f m"
 

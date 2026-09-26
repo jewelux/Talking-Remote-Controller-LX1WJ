@@ -88,24 +88,19 @@ static void printKeypadStatus(const String& line) {
   if ((bool)Serial) Serial.println(line);
 }
 
-// Radio gave no answer: say "timeout". Otherwise the failure had another cause
-// (unsupported, rejected), so the caller keeps its own handling.
-static bool reportIfTimedOut(const char* label) {
+bool keypadReportIfTimedOut(const char* label) {
   if (!g_radioReplyTimedOut) return false;
   printKeypadStatus(String(label) + " -> timeout");
   if (g_speechEnabled) speakTimeout();
   return true;
 }
 
-// Key has no action here: short beep instead of silence.
-static void reportUnassignedKey(const String& label) {
+void keypadReportUnassigned(const String& label) {
   printKeypadStatus(label + " -> unassigned");
   playBeep();
 }
 
-// The profile has no support for the key's feature, so on this profile the key
-// does nothing: beep like an unassigned key.
-static bool reportIfUnsupported(bool supported, const char* label) {
+bool keypadReportIfUnsupported(bool supported, const char* label) {
   if (supported) return false;
   printKeypadStatus(String(label) + " -> unsupported");
   playBeep();
@@ -351,12 +346,12 @@ static void queryBank2Nr() {
     keypadSendNow("NR?");
     return;
   }
-  if (reportIfUnsupported(currentStoredProfile().caps.getNr, "NR?")) return;
+  if (keypadReportIfUnsupported(currentStoredProfile().caps.getNr, "NR?")) return;
   g_suspendPollingUntilMs = millis() + 900;
   g_suppressFreqSpeakUntilMs = millis() + 2000;
   cancelPendingFreqAnnouncement();
   if (!refreshLiveNr()) {
-    if (!reportIfTimedOut("NR?")) {
+    if (!keypadReportIfTimedOut("NR?")) {
       printKeypadStatus("NR? -> no reply");
       if (g_speechEnabled) speakError();
     }
@@ -372,12 +367,12 @@ static void queryBank2Nb() {
     keypadSendNow("NB?");
     return;
   }
-  if (reportIfUnsupported(currentStoredProfile().caps.getNb, "NB?")) return;
+  if (keypadReportIfUnsupported(currentStoredProfile().caps.getNb, "NB?")) return;
   g_suspendPollingUntilMs = millis() + 900;
   g_suppressFreqSpeakUntilMs = millis() + 2000;
   cancelPendingFreqAnnouncement();
   if (!refreshLiveNb()) {
-    if (!reportIfTimedOut("NB?")) {
+    if (!keypadReportIfTimedOut("NB?")) {
       printKeypadStatus("NB? -> no reply");
       if (g_speechEnabled) speakError();
     }
@@ -393,12 +388,12 @@ static void queryBank2Notch() {
     keypadSendNow("NOTCH?");
     return;
   }
-  if (reportIfUnsupported(currentStoredProfile().caps.getNotch, "NOTCH?")) return;
+  if (keypadReportIfUnsupported(currentStoredProfile().caps.getNotch, "NOTCH?")) return;
   g_suspendPollingUntilMs = millis() + 900;
   g_suppressFreqSpeakUntilMs = millis() + 2000;
   cancelPendingFreqAnnouncement();
   if (!refreshLiveNotch()) {
-    if (!reportIfTimedOut("NOTCH?")) {
+    if (!keypadReportIfTimedOut("NOTCH?")) {
       printKeypadStatus("NOTCH? -> no reply");
       if (g_speechEnabled) speakError();
     }
@@ -604,7 +599,7 @@ void keypadEnter() {
       }
       else printKeypadStatus(String("FREQ: ") + hzToMHzString3(hz) + " MHz");
       if (g_speechEnabled) speakDigitsAndPoint(hzToMHzString3(hz));
-    } else if (!reportIfTimedOut("FREQ")) {
+    } else if (!keypadReportIfTimedOut("FREQ")) {
       printKeypadStatus(currentProtocolType() == PROTO_YAESU_FT8X7 ? "FREQ -> no change" : "FREQ -> failed");
       if (g_speechEnabled && currentProtocolType() == PROTO_YAESU_FT8X7) speakError();
     }
@@ -736,7 +731,7 @@ void keypadEnter() {
         g_suppressModePrefixOnce = true;
         speakMode(g_modeStageMode);
       }
-    } else if (!reportIfTimedOut("MODE")) {
+    } else if (!keypadReportIfTimedOut("MODE")) {
       printKeypadStatus(currentProtocolType() == PROTO_YAESU_FT8X7 ? "MODE -> no change" : "MODE -> failed");
       if (g_speechEnabled && currentProtocolType() == PROTO_YAESU_FT8X7) speakError();
     }
@@ -761,7 +756,7 @@ void keypadEnter() {
     g_kpStagedCmd = "";
     g_kpHasStagedCmd = false;
   } else {
-    reportUnassignedKey("ENTER");
+    keypadReportUnassigned("ENTER");
   }
 }
 
@@ -799,7 +794,7 @@ void keypadHandleReleased(char k) {
         printKeypadStatus(String("FREQ STAGE: ") + g_freqEntryDigits);
         if (g_speechEnabled) speakToken("point");
       } else {
-        reportUnassignedKey("FREQ POINT");
+        keypadReportUnassigned("FREQ POINT");
       }
       return;
     }
@@ -814,7 +809,7 @@ void keypadHandleReleased(char k) {
         return;
       }
     }
-    reportUnassignedKey(String("FREQ ") + k);
+    keypadReportUnassigned(String("FREQ ") + k);
     return;
   }
 
@@ -825,7 +820,7 @@ void keypadHandleReleased(char k) {
       printKeypadStatus(String("RFPOWER STAGE: ") + g_rfPowerEntryDigits + " W");
       if (g_speechEnabled) speakDigitsAndPoint(String(k));
     } else {
-      reportUnassignedKey(String("RFPOWER ") + k);
+      keypadReportUnassigned(String("RFPOWER ") + k);
     }
     return;
   }
@@ -837,7 +832,7 @@ void keypadHandleReleased(char k) {
       printKeypadStatus(String("CIVADDR STAGE: ") + g_civAddrEntryDigits);
       if (g_speechEnabled) speakDigitsAndPoint(String(k));
     } else {
-      reportUnassignedKey(String("CIVADDR ") + k);
+      keypadReportUnassigned(String("CIVADDR ") + k);
     }
     return;
   }
@@ -859,7 +854,7 @@ void keypadHandleReleased(char k) {
       }
       if (g_speechEnabled) speakDigitsAndPoint(String(k));
     } else {
-      reportUnassignedKey(String("BANK6 ENTRY ") + k);
+      keypadReportUnassigned(String("BANK6 ENTRY ") + k);
     }
     return;
   }
@@ -1065,5 +1060,5 @@ void keypadHandleReleased(char k) {
         break;
     }
   }
-  reportUnassignedKey(String("BANK") + String((int)g_bank) + " " + k);
+  keypadReportUnassigned(String("BANK") + String((int)g_bank) + " " + k);
 }

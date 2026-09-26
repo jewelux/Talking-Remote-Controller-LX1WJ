@@ -24,6 +24,8 @@ static constexpr bool AUTO_SEND_BANK1_QUERIES = true;
 static constexpr uint8_t MAX_PROFILE_SLOTS = 24;
 static constexpr uint8_t CIV_MY_ADDR = 0xE0;
 static constexpr uint8_t CIV_CTRL_ADDR = CIV_MY_ADDR;
+// Command byte of the radio's "NG" (command rejected) reply.
+static constexpr uint8_t CIV_REPLY_NG = 0xFA;
 static constexpr uint32_t CIV_PUMP_BUDGET_MS = 3;
 
 static const bool FREQ_SPEAK_START_IMMEDIATELY = false;

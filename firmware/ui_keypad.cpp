@@ -286,30 +286,6 @@ static void printKeypadStatus(const String& line) {
   if ((bool)Serial) Serial.println(line);
 }
 
-// Radio gave no answer: say "timeout". Otherwise the failure had another cause
-// (unsupported, rejected), so the caller keeps its own handling.
-static bool reportIfTimedOut(const char* label) {
-  if (!g_radioReplyTimedOut) return false;
-  printKeypadStatus(String(label) + " -> timeout");
-  if (g_speechEnabled) speakTimeout();
-  return true;
-}
-
-// Key has no action here: short beep instead of silence.
-static void reportUnassignedKey(const String& label) {
-  printKeypadStatus(label + " -> unassigned");
-  playBeep();
-}
-
-// The protocol has no implementation of the key's feature, so on this profile
-// the key does nothing: beep like an unassigned key.
-static bool reportIfUnsupported(bool supported, const char* label) {
-  if (supported) return false;
-  printKeypadStatus(String(label) + " -> unsupported");
-  playBeep();
-  return true;
-}
-
 static void printKeypadCommand(const String& line) {
   if ((bool)Serial) {
     Serial.print("CMD ");
@@ -371,7 +347,7 @@ static void toggleBank2Nr() {
     keypadSendNow("NR TOGGLE");
     return;
   }
-  if (reportIfUnsupported(currentStoredProfile().caps.setNr, "NR")) return;
+  if (keypadReportIfUnsupported(currentStoredProfile().caps.setNr, "NR")) return;
   prepareKeypadSpeechResponse();
   if (currentProtocolType() == PROTO_KENWOOD_ASCII && String(currentProfile().name).indexOf("TS-480") >= 0) {
     String line;
@@ -396,12 +372,11 @@ static void toggleBank2Nr() {
     }
     return;
   }
-  if (!live.nrValid && !refreshLiveNr()) return;
+  if (!live.nrValid && !refreshLiveNr()) { keypadReportIfTimedOut("NR"); return; }
   bool next = !live.nrOn;
-  if (applyNrAndTrack(next)) {
-    printKeypadStatus(next ? "NR ON" : "NR OFF");
-    speakBinaryFeatureState(voice_noisereduction, voice_noisereduction_len, next);
-  }
+  if (!applyNrAndTrack(next)) { keypadReportIfTimedOut("NR"); return; }
+  printKeypadStatus(next ? "NR ON" : "NR OFF");
+  speakBinaryFeatureState(voice_noisereduction, voice_noisereduction_len, next);
 }
 
 static void toggleBank2Nb() {
@@ -410,14 +385,13 @@ static void toggleBank2Nb() {
     keypadSendNow("NB TOGGLE");
     return;
   }
-  if (reportIfUnsupported(currentStoredProfile().caps.setNb, "NB")) return;
+  if (keypadReportIfUnsupported(currentStoredProfile().caps.setNb, "NB")) return;
   prepareKeypadSpeechResponse();
-  if (!live.nbValid && !refreshLiveNb()) return;
+  if (!live.nbValid && !refreshLiveNb()) { keypadReportIfTimedOut("NB"); return; }
   bool next = !live.nbOn;
-  if (applyNbAndTrack(next)) {
-    printKeypadStatus(next ? "NB ON" : "NB OFF");
-    speakBinaryFeatureState(voice_noiseblanker, voice_noiseblanker_len, next);
-  }
+  if (!applyNbAndTrack(next)) { keypadReportIfTimedOut("NB"); return; }
+  printKeypadStatus(next ? "NB ON" : "NB OFF");
+  speakBinaryFeatureState(voice_noiseblanker, voice_noiseblanker_len, next);
 }
 
 static void toggleBank2Notch() {
@@ -426,49 +400,47 @@ static void toggleBank2Notch() {
     keypadSendNow("NOTCH TOGGLE");
     return;
   }
-  if (reportIfUnsupported(currentStoredProfile().caps.setNotch, "NOTCH")) return;
+  if (keypadReportIfUnsupported(currentStoredProfile().caps.setNotch, "NOTCH")) return;
   prepareKeypadSpeechResponse();
 
   if (currentProtocolType() != PROTO_CIV) {
-    if (!live.notchValid && !refreshLiveNotch()) return;
+    if (!live.notchValid && !refreshLiveNotch()) { keypadReportIfTimedOut("NOTCH"); return; }
     bool next = !live.notchOn;
-    if (applyNotchAndTrack(next)) {
-      printKeypadStatus(next ? "NOTCH ON" : "NOTCH OFF");
-      speakTokenState("notch filter", next);
-    }
+    if (!applyNotchAndTrack(next)) { keypadReportIfTimedOut("NOTCH"); return; }
+    printKeypadStatus(next ? "NOTCH ON" : "NOTCH OFF");
+    speakTokenState("notch filter", next);
     return;
   }
 
-  if (!live.notchValid && !refreshLiveNotch()) return;
+  if (!live.notchValid && !refreshLiveNotch()) { keypadReportIfTimedOut("NOTCH"); return; }
 
   if (!live.notchOn) {
-    if (!applyNotchAndTrack(true)) { reportIfTimedOut("NOTCH"); return; }
-    if (!applyNotchWidthAndTrack(NOTCH_WIDTH_NAR)) { reportIfTimedOut("NOTCH"); return; }
+    if (!applyNotchAndTrack(true)) { keypadReportIfTimedOut("NOTCH"); return; }
+    if (!applyNotchWidthAndTrack(NOTCH_WIDTH_NAR)) { keypadReportIfTimedOut("NOTCH"); return; }
     printKeypadStatus("NOTCH NAR");
     speakNotchCycleState(true, NOTCH_WIDTH_NAR);
     return;
   }
 
-  if (!live.notchWidthValid && !refreshLiveNotchWidth()) return;
+  if (!live.notchWidthValid && !refreshLiveNotchWidth()) { keypadReportIfTimedOut("NOTCH"); return; }
 
   if (live.notchWidth == NOTCH_WIDTH_NAR) {
-    if (!applyNotchWidthAndTrack(NOTCH_WIDTH_MID)) { reportIfTimedOut("NOTCH"); return; }
+    if (!applyNotchWidthAndTrack(NOTCH_WIDTH_MID)) { keypadReportIfTimedOut("NOTCH"); return; }
     printKeypadStatus("NOTCH MID");
     speakNotchCycleState(true, NOTCH_WIDTH_MID);
     return;
   }
 
   if (live.notchWidth == NOTCH_WIDTH_MID) {
-    if (!applyNotchWidthAndTrack(NOTCH_WIDTH_WIDE)) { reportIfTimedOut("NOTCH"); return; }
+    if (!applyNotchWidthAndTrack(NOTCH_WIDTH_WIDE)) { keypadReportIfTimedOut("NOTCH"); return; }
     printKeypadStatus("NOTCH WIDE");
     speakNotchCycleState(true, NOTCH_WIDTH_WIDE);
     return;
   }
 
-  if (applyNotchAndTrack(false)) {
-    printKeypadStatus("NOTCH OFF");
-    speakNotchCycleState(false, NOTCH_WIDTH_UNKNOWN);
-  }
+  if (!applyNotchAndTrack(false)) { keypadReportIfTimedOut("NOTCH"); return; }
+  printKeypadStatus("NOTCH OFF");
+  speakNotchCycleState(false, NOTCH_WIDTH_UNKNOWN);
 }
 
 static void triggerBank2Tune() {
@@ -489,7 +461,7 @@ static void queryBank2NrLevel() {
   printKeypadCommand("BANK2 4 SHORT -> NRLEVEL?");
   uint16_t raw = 0;
   if (!queryNrLevel(raw, 800)) {
-    if (!reportIfTimedOut("NRLEVEL?")) {
+    if (!keypadReportIfTimedOut("NRLEVEL?")) {
       printKeypadStatus("NRLEVEL? -> no reply");
       if (g_speechEnabled) speakError();
     }
@@ -503,7 +475,7 @@ static void queryBank2NrLevel() {
 static void adjustBank2NrLevel(int deltaPercent) {
   printKeypadCommand(String("BANK2 4 ") + (deltaPercent > 0 ? "LONG" : "DOUBLE") + " -> NRLEVEL");
   uint16_t raw = 0;
-  if (!queryNrLevel(raw, 800)) { reportIfTimedOut("NRLEVEL"); return; }
+  if (!queryNrLevel(raw, 800)) { keypadReportIfTimedOut("NRLEVEL"); return; }
   int percent = (int)levelRawToPercent(raw) + deltaPercent;
   if (percent < 0) percent = 0;
   if (percent > 100) percent = 100;
@@ -520,7 +492,7 @@ static void adjustBank2NrLevel(int deltaPercent) {
 
   uint16_t readBack = 0;
   if (!queryNrLevel(readBack, 800)) {
-    if (!reportIfTimedOut("NRLEVEL")) printKeypadStatus("NRLEVEL -> failed");
+    if (!keypadReportIfTimedOut("NRLEVEL")) printKeypadStatus("NRLEVEL -> failed");
     return;
   }
 
@@ -536,7 +508,7 @@ static void queryBank2NbLevel() {
   printKeypadCommand("BANK2 5 SHORT -> NBLEVEL?");
   uint16_t raw = 0;
   if (!queryNbLevel(raw, 800)) {
-    if (!reportIfTimedOut("NBLEVEL?")) {
+    if (!keypadReportIfTimedOut("NBLEVEL?")) {
       printKeypadStatus("NBLEVEL? -> no reply");
       if (g_speechEnabled) speakError();
     }
@@ -550,11 +522,11 @@ static void queryBank2NbLevel() {
 static void adjustBank2NbLevel(int deltaPercent) {
   printKeypadCommand(String("BANK2 5 ") + (deltaPercent > 0 ? "LONG" : "DOUBLE") + " -> NBLEVEL");
   uint16_t raw = 0;
-  if (!queryNbLevel(raw, 800)) { reportIfTimedOut("NBLEVEL"); return; }
+  if (!queryNbLevel(raw, 800)) { keypadReportIfTimedOut("NBLEVEL"); return; }
   int percent = (int)levelRawToPercent(raw) + deltaPercent;
   if (percent < 0) percent = 0;
   if (percent > 100) percent = 100;
-  if (!setNbLevel(levelPercentToRaw(percent))) { reportIfTimedOut("NBLEVEL"); return; }
+  if (!setNbLevel(levelPercentToRaw(percent))) { keypadReportIfTimedOut("NBLEVEL"); return; }
   printKeypadStatus(String("NBLEVEL ") + String(percent) + "%");
   speakTokenPercent("noiseblanker", (uint8_t)percent);
 }
@@ -642,16 +614,16 @@ static bool encodeDcsCode(uint16_t dcsCode, uint8_t& b0, uint8_t& b1) {
 
 static void setBank3Ft857Split(bool on) {
   printKeypadCommand(String("BANK3 FT857 -> SPLIT ") + (on ? "ON" : "OFF"));
-  if (!setSplit(on)) { reportIfTimedOut("SPLIT"); return; }
+  if (!setSplit(on)) { keypadReportIfTimedOut("SPLIT"); return; }
   printKeypadStatus(on ? "SPLIT ON" : "SPLIT OFF");
   speakTokenState("split", on);
 }
 
 static void calibrateBank3Ft857Split() {
   printKeypadCommand("BANK3 0 DOUBLE -> SPLIT CAL");
-  if (!yaesuCatSetSplit(true)) { reportIfTimedOut("SPLIT CAL"); return; }
+  if (!yaesuCatSetSplit(true)) { keypadReportIfTimedOut("SPLIT CAL"); return; }
   delay(120);
-  if (!yaesuCatSetSplit(false)) { reportIfTimedOut("SPLIT CAL"); return; }
+  if (!yaesuCatSetSplit(false)) { keypadReportIfTimedOut("SPLIT CAL"); return; }
   rememberSplitState(false);
   printKeypadStatus("SPLIT OFF");
   speakTokenState("split", false);
@@ -663,7 +635,7 @@ static void calibrateBank3Ft857Split() {
 
 static void setBank3Ft857Clar(bool on) {
   printKeypadCommand(String("BANK3 FT857 -> CLAR ") + (on ? "ON" : "OFF"));
-  if (!yaesuCatSetClarifier(on)) { reportIfTimedOut("CLAR"); return; }
+  if (!yaesuCatSetClarifier(on)) { keypadReportIfTimedOut("CLAR"); return; }
   printKeypadStatus(on ? "CLAR ON" : "CLAR OFF");
   if (g_speechEnabled) {
     speakToken("clarifier");
@@ -674,7 +646,7 @@ static void setBank3Ft857Clar(bool on) {
 
 static void setBank6Ft8x7RepeaterShift(uint8_t shiftByte, const char* label) {
   printKeypadCommand(String("BANK6 FT8X7 -> RPT ") + label);
-  if (!yaesuCatSetRepeaterShiftRaw(shiftByte)) { reportIfTimedOut("RPT"); return; }
+  if (!yaesuCatSetRepeaterShiftRaw(shiftByte)) { keypadReportIfTimedOut("RPT"); return; }
   printKeypadStatus(String("RPT ") + label);
   if (!g_speechEnabled) return;
   speakToken("repeater");
@@ -686,7 +658,7 @@ static void setBank6Ft8x7RepeaterShift(uint8_t shiftByte, const char* label) {
 
 static void setBank6Ft8x7RepeaterOffsetHz(uint64_t hz) {
   printKeypadCommand(String("BANK6 FT8X7 -> RPTSHIFT ") + hzToMHzString3(hz));
-  if (!yaesuCatSetRepeaterOffsetHzRaw(hz)) { reportIfTimedOut("RPTSHIFT"); return; }
+  if (!yaesuCatSetRepeaterOffsetHzRaw(hz)) { keypadReportIfTimedOut("RPTSHIFT"); return; }
   printKeypadStatus(String("RPTSHIFT ") + hzToMHzString3(hz) + " MHz");
   if (!g_speechEnabled) return;
   speakToken("repeater");
@@ -698,7 +670,7 @@ static void setBank6Ft8x7RepeaterOffsetHz(uint64_t hz) {
 
 static void setBank6Ft8x7ToneMode(uint8_t modeByte, const char* label) {
   printKeypadCommand(String("BANK6 FT8X7 -> TONE ") + label);
-  if (!yaesuCatSetToneDcsModeRaw(modeByte)) { reportIfTimedOut("TONE"); return; }
+  if (!yaesuCatSetToneDcsModeRaw(modeByte)) { keypadReportIfTimedOut("TONE"); return; }
   printKeypadStatus(String("TONE ") + label);
   if (!g_speechEnabled) return;
   speakToken("tone");
@@ -723,7 +695,7 @@ static void setBank6Ft8x7CtcssPreset(uint8_t b0, uint8_t b1, const char* label) 
     data[2] = b0;
     data[3] = b1;
   }
-  if (!yaesuCatSetCtcssToneRaw(data)) { reportIfTimedOut("CTCSS"); return; }
+  if (!yaesuCatSetCtcssToneRaw(data)) { keypadReportIfTimedOut("CTCSS"); return; }
   printKeypadStatus(String("CTCSS ") + label);
   live.ctcssValid = true;
   live.ctcssTenths = (uint16_t)(((uint16_t)(b0 >> 4) * 1000U) + ((uint16_t)(b0 & 0x0F) * 100U) + ((uint16_t)(b1 >> 4) * 10U) + (uint16_t)(b1 & 0x0F));
@@ -740,7 +712,7 @@ static void setBank6Ft8x7DcsPreset(uint8_t b0, uint8_t b1, const char* label) {
     data[2] = b0;
     data[3] = b1;
   }
-  if (!yaesuCatSetDcsCodeRaw(data)) { reportIfTimedOut("DCS"); return; }
+  if (!yaesuCatSetDcsCodeRaw(data)) { keypadReportIfTimedOut("DCS"); return; }
   printKeypadStatus(String("DCS ") + label);
   live.dcsValid = true;
   live.dcsCode = (uint16_t)(((uint16_t)(b0 >> 4) * 100U) + ((uint16_t)(b0 & 0x0F) * 10U) + (uint16_t)(b1 >> 4));
@@ -828,7 +800,7 @@ static void beginBank6DcsEntry() {
 
 static void setBank3Ft857Ptt(bool on) {
   printKeypadCommand(String("BANK3 FT857 -> PTT ") + (on ? "ON" : "OFF"));
-  if (!yaesuCatSetPtt(on)) { reportIfTimedOut("PTT"); return; }
+  if (!yaesuCatSetPtt(on)) { keypadReportIfTimedOut("PTT"); return; }
   printKeypadStatus(on ? "PTT ON" : "PTT OFF");
   speakToken("ptt");
   playSilenceMs(60);
@@ -846,7 +818,7 @@ static void queryBank3Split() {
     return;
   }
   bool on = false;
-  if (!querySplit(on, 800)) { reportIfTimedOut("SPLIT?"); return; }
+  if (!querySplit(on, 800)) { keypadReportIfTimedOut("SPLIT?"); return; }
   printKeypadStatus(on ? "SPLIT ON" : "SPLIT OFF");
   speakTokenState("split", on);
 }
@@ -862,8 +834,8 @@ static void toggleBank3Split() {
     return;
   }
   bool on = false;
-  if (!querySplit(on, 800)) { reportIfTimedOut("SPLIT"); return; }
-  if (!setSplit(!on)) { reportIfTimedOut("SPLIT"); return; }
+  if (!querySplit(on, 800)) { keypadReportIfTimedOut("SPLIT"); return; }
+  if (!setSplit(!on)) { keypadReportIfTimedOut("SPLIT"); return; }
   printKeypadStatus(!on ? "SPLIT ON" : "SPLIT OFF");
   speakTokenState("split", !on);
 }
@@ -917,7 +889,7 @@ static void queryBank3VfoA() {
   if (isFt8x7Ft857FamilyKeypad()) {
     ensureFt857VfoTrackingInitialized();
     uint64_t hz = 0;
-    if (!queryFrequency(hz, 800)) { reportIfTimedOut("VFOA?"); return; }
+    if (!queryFrequency(hz, 800)) { keypadReportIfTimedOut("VFOA?"); return; }
     const char which = ft857CurrentVfoLabel();
     printKeypadStatus(String("VFO") + which + ": " + hzToMHzString3(hz) + " MHz");
     if (g_speechEnabled) {
@@ -929,7 +901,7 @@ static void queryBank3VfoA() {
   }
   if (isFt8x7Ft817Keypad()) {
     uint64_t hz = 0;
-    if (!queryFrequency(hz, 800)) { reportIfTimedOut("VFOA?"); return; }
+    if (!queryFrequency(hz, 800)) { keypadReportIfTimedOut("VFOA?"); return; }
     const char which = ft817CurrentVfoLabel();
     printKeypadStatus(String("VFO") + which + ": " + hzToMHzString3(hz) + " MHz");
     if (g_speechEnabled) {
@@ -940,7 +912,7 @@ static void queryBank3VfoA() {
     return;
   }
   uint64_t hz = 0;
-  if (!queryVfoFrequency(true, hz, 800)) { reportIfTimedOut("VFOA?"); return; }
+  if (!queryVfoFrequency(true, hz, 800)) { keypadReportIfTimedOut("VFOA?"); return; }
   printKeypadStatus(String("VFOA: ") + hzToMHzString3(hz) + " MHz");
   if (g_speechEnabled) {
     speakVfoFrequencyLabel('A');
@@ -956,7 +928,7 @@ static void selectBank3VfoA() {
   if (isFt8x7Ft857FamilyKeypad()) {
     ensureFt857VfoTrackingInitialized();
     if (!guardFt8x7VfoToggleLock()) return;
-    if (!yaesuCatToggleVfo()) { reportIfTimedOut("VFO A"); return; }
+    if (!yaesuCatToggleVfo()) { keypadReportIfTimedOut("VFO A"); return; }
     rememberActiveVfo(!live.activeVfoA);
     const char which = ft857CurrentVfoLabel();
     printKeypadStatus(String("VFO") + which);
@@ -970,7 +942,7 @@ static void selectBank3VfoA() {
   if (isFt8x7Ft817Keypad()) {
     ensureFt817VfoTrackingInitialized();
     if (!guardFt8x7VfoToggleLock()) return;
-    if (!yaesuCatToggleVfo()) { reportIfTimedOut("VFO A"); return; }
+    if (!yaesuCatToggleVfo()) { keypadReportIfTimedOut("VFO A"); return; }
     if (live.activeVfoKnown) rememberActiveVfo(!live.activeVfoA);
     const char which = ft817CurrentVfoLabel();
     printKeypadStatus(String("VFO") + which);
@@ -985,7 +957,7 @@ static void selectBank3VfoA() {
     keypadSendNow("VFO A");
     return;
   }
-  if (!selectVfoA()) { reportIfTimedOut("VFO A"); return; }
+  if (!selectVfoA()) { keypadReportIfTimedOut("VFO A"); return; }
   if (currentProtocolType() == PROTO_YAESU_FT8X7) {
     printKeypadStatus("VFO A");
     if (g_speechEnabled) {
@@ -1044,15 +1016,15 @@ static void queryBank3VfoB() {
     const bool priorVfoA = live.activeVfoA;
     const char other = priorVfoA ? 'B' : 'A';
     uint64_t hz = 0;
-    if (!yaesuCatToggleVfo()) { reportIfTimedOut("VFOB?"); return; }
+    if (!yaesuCatToggleVfo()) { keypadReportIfTimedOut("VFOB?"); return; }
     rememberActiveVfo(!priorVfoA);
     delay(120);
     bool ok = queryFrequency(hz, 800);
     delay(180);
-    if (!yaesuCatToggleVfo()) { reportIfTimedOut("VFOB?"); return; }
+    if (!yaesuCatToggleVfo()) { keypadReportIfTimedOut("VFOB?"); return; }
     rememberActiveVfo(priorVfoA);
     delay(180);
-    if (!ok) return;
+    if (!ok) { keypadReportIfTimedOut("VFOB?"); return; }
     printKeypadStatus(String("VFO") + other + ": " + hzToMHzString3(hz) + " MHz");
     if (g_speechEnabled) {
       speakVfoFrequencyLabel(other);
@@ -1066,7 +1038,7 @@ static void queryBank3VfoB() {
     if (!guardFt8x7VfoToggleLock()) return;
     uint64_t hz = 0;
     bool ok = false;
-    if (!yaesuCatToggleVfo()) { reportIfTimedOut("VFOB?"); return; }
+    if (!yaesuCatToggleVfo()) { keypadReportIfTimedOut("VFOB?"); return; }
     delay(120);
     ok = queryFrequency(hz, 800);
     if (!ok) {
@@ -1076,7 +1048,7 @@ static void queryBank3VfoB() {
     delay(40);
     yaesuCatToggleVfo();
     delay(120);
-    if (!ok) return;
+    if (!ok) { keypadReportIfTimedOut("VFOB?"); return; }
     const char which = ft817OtherVfoLabel();
     printKeypadStatus(String("VFO") + which + ": " + hzToMHzString3(hz) + " MHz");
     if (g_speechEnabled) {
@@ -1087,7 +1059,7 @@ static void queryBank3VfoB() {
     return;
   }
   uint64_t hz = 0;
-  if (!queryVfoFrequency(false, hz, 800)) { reportIfTimedOut("VFOB?"); return; }
+  if (!queryVfoFrequency(false, hz, 800)) { keypadReportIfTimedOut("VFOB?"); return; }
   printKeypadStatus(String("VFOB: ") + hzToMHzString3(hz) + " MHz");
   if (g_speechEnabled) {
     speakVfoFrequencyLabel('B');
@@ -1110,9 +1082,9 @@ static void selectBank3VfoB() {
     if (!guardFt8x7VfoToggleLock()) return;
     uint64_t hz = 0;
     uint8_t mode = 0xFF;
-    if (!queryFrequency(hz, 800)) { reportIfTimedOut("VFO B"); return; }
-    if (!queryMode(mode, 800)) { reportIfTimedOut("VFO B"); return; }
-    if (!yaesuCatToggleVfo()) { reportIfTimedOut("VFO B"); return; }
+    if (!queryFrequency(hz, 800)) { keypadReportIfTimedOut("VFO B"); return; }
+    if (!queryMode(mode, 800)) { keypadReportIfTimedOut("VFO B"); return; }
+    if (!yaesuCatToggleVfo()) { keypadReportIfTimedOut("VFO B"); return; }
     delay(120);
     bool ok = setFrequency(hz);
     delay(120);
@@ -1120,7 +1092,7 @@ static void selectBank3VfoB() {
     delay(120);
     yaesuCatToggleVfo();
     delay(120);
-    if (!ok) return;
+    if (!ok) { keypadReportIfTimedOut("A=B"); return; }
     printKeypadStatus("A=B");
     if (g_speechEnabled) {
       playDigit(1);
@@ -1135,7 +1107,7 @@ static void selectBank3VfoB() {
     keypadSendNow("VFO B");
     return;
   }
-  if (!selectVfoB()) { reportIfTimedOut("VFO B"); return; }
+  if (!selectVfoB()) { keypadReportIfTimedOut("VFO B"); return; }
   if (currentProtocolType() == PROTO_YAESU_FT8X7) {
     printKeypadStatus("VFO B");
     if (g_speechEnabled) {
@@ -1180,7 +1152,7 @@ static void selectBank3Ft817ActiveVfoA() {
   ensureFt817VfoTrackingInitialized();
   if (!live.activeVfoA) {
     if (!guardFt8x7VfoToggleLock()) return;
-    if (!yaesuCatToggleVfo()) { reportIfTimedOut("VFO A ACTIVE"); return; }
+    if (!yaesuCatToggleVfo()) { keypadReportIfTimedOut("VFO A ACTIVE"); return; }
     rememberActiveVfo(true);
     delay(120);
   }
@@ -1201,7 +1173,7 @@ static void selectBank3Ft817ActiveVfoB() {
   ensureFt817VfoTrackingInitialized();
   if (live.activeVfoA) {
     if (!guardFt8x7VfoToggleLock()) return;
-    if (!yaesuCatToggleVfo()) { reportIfTimedOut("VFO B ACTIVE"); return; }
+    if (!yaesuCatToggleVfo()) { keypadReportIfTimedOut("VFO B ACTIVE"); return; }
     rememberActiveVfo(false);
     delay(120);
   }
@@ -1294,7 +1266,7 @@ static void queryBank4VfoAMode(uint8_t sourceBank) {
   }
   uint8_t mode = 0xFF;
   uint8_t filter = 0xFF;
-  if (!queryVfoMode(true, mode, filter, 800)) { reportIfTimedOut("VFOA MODE?"); return; }
+  if (!queryVfoMode(true, mode, filter, 800)) { keypadReportIfTimedOut("VFOA MODE?"); return; }
   printKeypadStatus(String("VFOA MODE: ") + modeToString(mode));
   g_suppressModePrefixOnce = true;
   speakMode(mode);
@@ -1330,7 +1302,7 @@ static void queryBank4VfoBMode(uint8_t sourceBank) {
   }
   uint8_t mode = 0xFF;
   uint8_t filter = 0xFF;
-  if (!queryVfoMode(false, mode, filter, 800)) { reportIfTimedOut("VFOB MODE?"); return; }
+  if (!queryVfoMode(false, mode, filter, 800)) { keypadReportIfTimedOut("VFOB MODE?"); return; }
   printKeypadStatus(String("VFOB MODE: ") + modeToString(mode));
   g_suppressModePrefixOnce = true;
   speakMode(mode);
@@ -1373,7 +1345,7 @@ static void queryBank3RxTx() {
     return;
   }
   bool tx = false;
-  if (!queryRxTxStatus(tx, 800)) { reportIfTimedOut("RXTX?"); return; }
+  if (!queryRxTxStatus(tx, 800)) { keypadReportIfTimedOut("RXTX?"); return; }
   printKeypadStatus(tx ? "TX" : "RX");
   if (!g_speechEnabled) return;
   speakToken("transceiver");
@@ -1409,7 +1381,7 @@ static void queryBank1RxTx() {
     return;
   }
   bool tx = false;
-  if (!queryRxTxStatus(tx, 800)) { reportIfTimedOut("RXTX?"); return; }
+  if (!queryRxTxStatus(tx, 800)) { keypadReportIfTimedOut("RXTX?"); return; }
   printKeypadStatus(tx ? "TX" : "RX");
   if (!g_speechEnabled) return;
   speakToken("transceiver");
@@ -1422,7 +1394,7 @@ static void queryBank1Frequency() {
   if (isFtdx10KeypadProfile()) { keypadSendNow("FREQ?"); return; }
   uint64_t hz = 0;
   if (!queryFrequency(hz, 800)) {
-    if (!reportIfTimedOut("FREQ?")) {
+    if (!keypadReportIfTimedOut("FREQ?")) {
       printKeypadStatus("FREQ? -> no reply");
       if (g_speechEnabled) speakError();
     }
@@ -1494,7 +1466,7 @@ static void queryBank1Lock() {
   prepareKeypadSpeechResponse();
   bool on = false;
   if (!queryDialLockReliable(on)) {
-    if (reportIfTimedOut("LOCK?")) return;
+    if (keypadReportIfTimedOut("LOCK?")) return;
     printKeypadStatus("LOCK UNKNOWN");
     if (g_speechEnabled) {
       speakToken("lock");
@@ -1527,7 +1499,7 @@ static void roundActiveFrequency500() {
   uint64_t hz = 0;
   if (!queryFrequency(hz, 800)) {
     // Radio not responding: do not round or announce a stale value.
-    if (!reportIfTimedOut("ROUND")) {
+    if (!keypadReportIfTimedOut("ROUND")) {
       printKeypadStatus("ROUND -> no reply");
       if (g_speechEnabled) speakError();
     }
@@ -1548,7 +1520,7 @@ static void roundActiveFrequency500() {
     printKeypadStatus(String("ROUND: ") + hzToMHzString3(hz) + " -> " + hzToMHzString3(rounded) + " MHz");
     speakTunedFrequencyHz(rounded);
     rememberAnnouncedFrequency(rounded);
-  } else if (!reportIfTimedOut("ROUND")) {
+  } else if (!keypadReportIfTimedOut("ROUND")) {
     printKeypadStatus(currentProtocolType() == PROTO_YAESU_FT8X7 ? "ROUND -> no change" : "ROUND -> failed");
     if (g_speechEnabled) speakError();
   }
@@ -1580,7 +1552,7 @@ static void toggleBank1Lock() {
   prepareKeypadSpeechResponse();
   bool on = false;
   if (!queryDialLockReliable(on)) {
-    if (reportIfTimedOut("LOCK?")) return;
+    if (keypadReportIfTimedOut("LOCK?")) return;
     printKeypadStatus("LOCK UNKNOWN");
     if (g_speechEnabled) {
       speakToken("lock");
@@ -1589,7 +1561,7 @@ static void toggleBank1Lock() {
     }
     return;
   }
-  if (!setDialLock(!on)) { reportIfTimedOut("LOCK"); return; }
+  if (!setDialLock(!on)) { keypadReportIfTimedOut("LOCK"); return; }
   printKeypadStatus(!on ? "LOCK ON" : "LOCK OFF");
   speakTokenState("lock", !on);
 }
@@ -1598,7 +1570,7 @@ static void queryBank2PbtInner() {
   printKeypadCommand("BANK2 6 SHORT -> PBT1?");
   uint16_t raw = 0;
   if (!queryPbtInner(raw, 800)) {
-    if (!reportIfTimedOut("PBT1?")) {
+    if (!keypadReportIfTimedOut("PBT1?")) {
       printKeypadStatus("PBT1? -> no reply");
       if (g_speechEnabled) speakError();
     }
@@ -1611,16 +1583,16 @@ static void queryBank2PbtInner() {
 static void adjustBank2PbtInner(int delta) {
   printKeypadCommand(String("BANK2 6 ") + (delta > 0 ? "LONG" : "DOUBLE") + " -> PBT1");
   uint16_t raw = 0;
-  if (!queryPbtInner(raw, 800)) { reportIfTimedOut("PBT1"); return; }
+  if (!queryPbtInner(raw, 800)) { keypadReportIfTimedOut("PBT1"); return; }
   const int next = pbtRawToOffset(raw) + delta;
-  if (!setPbtInner(pbtOffsetToRaw(next))) { reportIfTimedOut("PBT1"); return; }
+  if (!setPbtInner(pbtOffsetToRaw(next))) { keypadReportIfTimedOut("PBT1"); return; }
   queryBank2PbtInner();
 }
 
 static void queryBank2PbtOuter() {
   printKeypadCommand("BANK2 7 SHORT -> PBT2?");
   uint16_t raw = 0;
-  if (!queryPbtOuter(raw, 800)) { reportIfTimedOut("PBT2?"); return; }
+  if (!queryPbtOuter(raw, 800)) { keypadReportIfTimedOut("PBT2?"); return; }
   printKeypadStatus(String("PBT2 ") + String(pbtRawToOffset(raw)) + " step");
   speakSignedStepValue("pbt", pbtRawToOffset(raw));
 }
@@ -1628,16 +1600,16 @@ static void queryBank2PbtOuter() {
 static void adjustBank2PbtOuter(int delta) {
   printKeypadCommand(String("BANK2 7 ") + (delta > 0 ? "LONG" : "DOUBLE") + " -> PBT2");
   uint16_t raw = 0;
-  if (!queryPbtOuter(raw, 800)) { reportIfTimedOut("PBT2"); return; }
+  if (!queryPbtOuter(raw, 800)) { keypadReportIfTimedOut("PBT2"); return; }
   const int next = pbtRawToOffset(raw) + delta;
-  if (!setPbtOuter(pbtOffsetToRaw(next))) { reportIfTimedOut("PBT2"); return; }
+  if (!setPbtOuter(pbtOffsetToRaw(next))) { keypadReportIfTimedOut("PBT2"); return; }
   queryBank2PbtOuter();
 }
 
 static void queryBank2FilterShape() {
   printKeypadCommand("BANK2 8 SHORT -> FILSHAPE?");
   bool soft = false;
-  if (!queryFilterShape(soft, 800)) { reportIfTimedOut("FILSHAPE?"); return; }
+  if (!queryFilterShape(soft, 800)) { keypadReportIfTimedOut("FILSHAPE?"); return; }
   printKeypadStatus(soft ? "FILSHAPE SOFT" : "FILSHAPE SHARP");
   if (g_speechEnabled) {
     speakToken("filtershape");
@@ -1649,8 +1621,8 @@ static void queryBank2FilterShape() {
 static void toggleBank2FilterShape() {
   printKeypadCommand("BANK2 8 LONG -> FILSHAPE");
   bool soft = false;
-  if (!queryFilterShape(soft, 800)) { reportIfTimedOut("FILSHAPE"); return; }
-  if (!setFilterShape(!soft)) { reportIfTimedOut("FILSHAPE"); return; }
+  if (!queryFilterShape(soft, 800)) { keypadReportIfTimedOut("FILSHAPE"); return; }
+  if (!setFilterShape(!soft)) { keypadReportIfTimedOut("FILSHAPE"); return; }
   printKeypadStatus(!soft ? "FILSHAPE SOFT" : "FILSHAPE SHARP");
   if (g_speechEnabled) {
     speakToken("filtershape");
@@ -1662,7 +1634,7 @@ static void toggleBank2FilterShape() {
 static void queryBank2FilterWidth() {
   printKeypadCommand("BANK2 9 SHORT -> FILWIDTH?");
   uint8_t filter = 0xFF;
-  if (!queryCurrentFilterSlotForKeypad(filter)) { reportIfTimedOut("FILWIDTH?"); return; }
+  if (!queryCurrentFilterSlotForKeypad(filter)) { keypadReportIfTimedOut("FILWIDTH?"); return; }
   printKeypadStatus(String("FILWIDTH ") + String((int)filter));
   if (g_speechEnabled) {
     speakToken("filterwidth");
@@ -1675,12 +1647,12 @@ static void cycleBank2FilterWidth(int delta) {
   printKeypadCommand(String("BANK2 9 ") + (delta > 0 ? "LONG" : "DOUBLE") + " -> FILWIDTH");
   uint8_t mode = 0xFF;
   uint8_t filter = 0xFF;
-  if (!ensureActiveVfoKnownForKeypad()) { reportIfTimedOut("FILWIDTH"); return; }
-  if (!queryVfoMode(live.activeVfoA, mode, filter, 800)) { reportIfTimedOut("FILWIDTH"); return; }
+  if (!ensureActiveVfoKnownForKeypad()) { keypadReportIfTimedOut("FILWIDTH"); return; }
+  if (!queryVfoMode(live.activeVfoA, mode, filter, 800)) { keypadReportIfTimedOut("FILWIDTH"); return; }
   int next = (int)filter + delta;
   if (next < 1) next = 3;
   if (next > 3) next = 1;
-  if (!setMode(mode, (uint8_t)next)) { reportIfTimedOut("FILWIDTH"); return; }
+  if (!setMode(mode, (uint8_t)next)) { keypadReportIfTimedOut("FILWIDTH"); return; }
   printKeypadStatus(String("FILWIDTH ") + String(next));
   if (g_speechEnabled) {
     speakToken("filterwidth");
@@ -1691,13 +1663,13 @@ static void cycleBank2FilterWidth(int delta) {
 
 static void queryBank3BandStack(uint8_t reg) {
   printKeypadCommand(String("BANK3 ") + String(reg + 6) + " SHORT -> BSTACK? " + String(reg));
-  if (reportIfUnsupported(protocolSupportsBandStack(), "BSTACK?")) return;
+  if (keypadReportIfUnsupported(protocolSupportsBandStack(), "BSTACK?")) return;
   keypadSendNow(String("BSTACK? ") + String(reg));
 }
 
 static void recallBank3BandStack(uint8_t reg) {
   printKeypadCommand(String("BANK3 ") + String(reg + 6) + " LONG -> BSTACK " + String(reg));
-  if (reportIfUnsupported(protocolSupportsBandStack(), "BSTACK")) return;
+  if (keypadReportIfUnsupported(protocolSupportsBandStack(), "BSTACK")) return;
   keypadSendNow(String("BSTACK ") + String(reg));
 }
 
@@ -1707,9 +1679,9 @@ static void queryBank4Tuner() {
     keypadSendNow("TUNER?");
     return;
   }
-  if (reportIfUnsupported(protocolSupportsTuner(), "TUNER?")) return;
+  if (keypadReportIfUnsupported(protocolSupportsTuner(), "TUNER?")) return;
   bool on = false;
-  if (!queryTuner(on, 800)) { reportIfTimedOut("TUNER?"); return; }
+  if (!queryTuner(on, 800)) { keypadReportIfTimedOut("TUNER?"); return; }
   printKeypadStatus(on ? "TUNER ON" : "TUNER OFF");
   speakTokenState("tuner", on);
 }
@@ -1720,10 +1692,10 @@ static void toggleBank4Tuner() {
     keypadSendNow("TUNER TOGGLE");
     return;
   }
-  if (reportIfUnsupported(protocolSupportsTuner(), "TUNER")) return;
+  if (keypadReportIfUnsupported(protocolSupportsTuner(), "TUNER")) return;
   bool on = false;
-  if (!queryTuner(on, 800)) { reportIfTimedOut("TUNER"); return; }
-  if (!setTuner(!on)) { reportIfTimedOut("TUNER"); return; }
+  if (!queryTuner(on, 800)) { keypadReportIfTimedOut("TUNER"); return; }
+  if (!setTuner(!on)) { keypadReportIfTimedOut("TUNER"); return; }
   printKeypadStatus(!on ? "TUNER ON" : "TUNER OFF");
   speakTokenState("tuner", !on);
 }
@@ -1734,36 +1706,36 @@ static void triggerBank4Tune() {
     keypadSendNow("TUNE");
     return;
   }
-  if (reportIfUnsupported(protocolSupportsTuner(), "TUNE")) return;
-  if (!startTune()) return;
+  if (keypadReportIfUnsupported(protocolSupportsTuner(), "TUNE")) return;
+  if (!startTune()) { keypadReportIfTimedOut("TUNE"); return; }
   printKeypadStatus("TUNE");
   if (g_speechEnabled) speakToken("tune");
 }
 
 static void queryBank4Monitor() {
   printKeypadCommand("BANK4 1 SHORT -> MONITOR?");
-  if (reportIfUnsupported(protocolSupportsMonitor(), "MONITOR?")) return;
+  if (keypadReportIfUnsupported(protocolSupportsMonitor(), "MONITOR?")) return;
   bool on = false;
-  if (!queryMonitorEnabled(on, 800)) { reportIfTimedOut("MONITOR?"); return; }
+  if (!queryMonitorEnabled(on, 800)) { keypadReportIfTimedOut("MONITOR?"); return; }
   printKeypadStatus(on ? "MONITOR ON" : "MONITOR OFF");
   speakTokenState("monitor", on);
 }
 
 static void toggleBank4Monitor() {
   printKeypadCommand("BANK4 1 LONG -> MONITOR");
-  if (reportIfUnsupported(protocolSupportsMonitor(), "MONITOR")) return;
+  if (keypadReportIfUnsupported(protocolSupportsMonitor(), "MONITOR")) return;
   bool on = false;
-  if (!queryMonitorEnabled(on, 800)) { reportIfTimedOut("MONITOR"); return; }
-  if (!setMonitorEnabled(!on)) { reportIfTimedOut("MONITOR"); return; }
+  if (!queryMonitorEnabled(on, 800)) { keypadReportIfTimedOut("MONITOR"); return; }
+  if (!setMonitorEnabled(!on)) { keypadReportIfTimedOut("MONITOR"); return; }
   printKeypadStatus(!on ? "MONITOR ON" : "MONITOR OFF");
   speakTokenState("monitor", !on);
 }
 
 static void queryBank4MonitorLevel() {
   printKeypadCommand("BANK4 2 SHORT -> MONLEVEL?");
-  if (reportIfUnsupported(protocolSupportsMonitor(), "MONLEVEL?")) return;
+  if (keypadReportIfUnsupported(protocolSupportsMonitor(), "MONLEVEL?")) return;
   uint16_t raw = 0;
-  if (!queryMonitorLevel(raw, 800)) { reportIfTimedOut("MONLEVEL?"); return; }
+  if (!queryMonitorLevel(raw, 800)) { keypadReportIfTimedOut("MONLEVEL?"); return; }
   const uint8_t percent = levelRawToPercent(raw);
   printKeypadStatus(String("MONLEVEL ") + String((int)percent) + "%");
   speakFeatureValue(voice_monitor, voice_monitor_len, percent);
@@ -1771,31 +1743,31 @@ static void queryBank4MonitorLevel() {
 
 static void adjustBank4MonitorLevel(int deltaPercent) {
   printKeypadCommand(String("BANK4 2 ") + (deltaPercent > 0 ? "LONG" : "DOUBLE") + " -> MONLEVEL");
-  if (reportIfUnsupported(protocolSupportsMonitor(), "MONLEVEL")) return;
+  if (keypadReportIfUnsupported(protocolSupportsMonitor(), "MONLEVEL")) return;
   uint16_t raw = 0;
-  if (!queryMonitorLevel(raw, 800)) { reportIfTimedOut("MONLEVEL"); return; }
+  if (!queryMonitorLevel(raw, 800)) { keypadReportIfTimedOut("MONLEVEL"); return; }
   int percent = (int)levelRawToPercent(raw) + deltaPercent;
   if (percent < 0) percent = 0;
   if (percent > 100) percent = 100;
-  if (!setMonitorLevel(levelPercentToRaw(percent))) { reportIfTimedOut("MONLEVEL"); return; }
+  if (!setMonitorLevel(levelPercentToRaw(percent))) { keypadReportIfTimedOut("MONLEVEL"); return; }
   queryBank4MonitorLevel();
 }
 
 static void queryBank4Transceive() {
   printKeypadCommand("BANK4 3 SHORT -> TRANSCEIVE?");
-  if (reportIfUnsupported(protocolSupportsTransceive(), "TRANSCEIVE?")) return;
+  if (keypadReportIfUnsupported(protocolSupportsTransceive(), "TRANSCEIVE?")) return;
   bool on = false;
-  if (!queryTransceiveEnabled(on, 800)) { reportIfTimedOut("TRANSCEIVE?"); return; }
+  if (!queryTransceiveEnabled(on, 800)) { keypadReportIfTimedOut("TRANSCEIVE?"); return; }
   printKeypadStatus(on ? "TRANSCEIVE ON" : "TRANSCEIVE OFF");
   speakTokenState("transceiver", on);
 }
 
 static void toggleBank4Transceive() {
   printKeypadCommand("BANK4 3 LONG -> TRANSCEIVE");
-  if (reportIfUnsupported(protocolSupportsTransceive(), "TRANSCEIVE")) return;
+  if (keypadReportIfUnsupported(protocolSupportsTransceive(), "TRANSCEIVE")) return;
   bool on = false;
-  if (!queryTransceiveEnabled(on, 800)) { reportIfTimedOut("TRANSCEIVE"); return; }
-  if (!setTransceiveEnabled(!on)) { reportIfTimedOut("TRANSCEIVE"); return; }
+  if (!queryTransceiveEnabled(on, 800)) { keypadReportIfTimedOut("TRANSCEIVE"); return; }
+  if (!setTransceiveEnabled(!on)) { keypadReportIfTimedOut("TRANSCEIVE"); return; }
   printKeypadStatus(!on ? "TRANSCEIVE ON" : "TRANSCEIVE OFF");
   speakTokenState("transceiver", !on);
 }
@@ -1891,10 +1863,10 @@ static void speakRitOffsetValue(int32_t hz) {
 
 static void queryBank5Rit() {
   printKeypadCommand("BANK5 0 SHORT -> RIT?");
-  if (reportIfUnsupported(protocolSupportsRit(), "RIT?")) return;
+  if (keypadReportIfUnsupported(protocolSupportsRit(), "RIT?")) return;
   bool on = false;
   int32_t offset = 0;
-  if (!queryRitEnabled(on, 800)) { reportIfTimedOut("RIT?"); return; }
+  if (!queryRitEnabled(on, 800)) { keypadReportIfTimedOut("RIT?"); return; }
   if (!queryRitOffsetHz(offset, 800)) offset = 0;
   printKeypadStatus(String(on ? "RIT ON " : "RIT OFF ") + String(offset) + " Hz");
   if (!g_speechEnabled) return;
@@ -1909,10 +1881,10 @@ static void queryBank5Rit() {
 
 static void toggleBank5Rit() {
   printKeypadCommand("BANK5 0 LONG -> RIT");
-  if (reportIfUnsupported(protocolSupportsRit(), "RIT")) return;
+  if (keypadReportIfUnsupported(protocolSupportsRit(), "RIT")) return;
   bool on = false;
-  if (!queryRitEnabled(on, 800)) { reportIfTimedOut("RIT"); return; }
-  if (!setRitEnabled(!on)) { reportIfTimedOut("RIT"); return; }
+  if (!queryRitEnabled(on, 800)) { keypadReportIfTimedOut("RIT"); return; }
+  if (!setRitEnabled(!on)) { keypadReportIfTimedOut("RIT"); return; }
   printKeypadStatus(!on ? "RIT ON" : "RIT OFF");
   speakRitLabel();
   playSilenceMs(60);
@@ -1921,17 +1893,17 @@ static void toggleBank5Rit() {
 
 static void setBank5RitOffset(int32_t hz) {
   printKeypadCommand(hz == 0 ? "BANK5 0 DOUBLE / 3 SHORT -> RIT 0" : String("BANK5 RIT -> ") + String(hz) + " Hz");
-  if (reportIfUnsupported(protocolSupportsRit(), "RIT")) return;
-  if (!setRitOffsetHz(hz)) { reportIfTimedOut("RIT"); return; }
+  if (keypadReportIfUnsupported(protocolSupportsRit(), "RIT")) return;
+  if (!setRitOffsetHz(hz)) { keypadReportIfTimedOut("RIT"); return; }
   printKeypadStatus(String("RIT ") + String(hz) + " Hz");
   speakRitOffsetValue(hz);
 }
 
 static void adjustBank5Rit(int32_t deltaHz) {
   printKeypadCommand(String("BANK5 STEP -> ") + (deltaHz >= 0 ? "+" : "") + String(deltaHz) + " Hz");
-  if (reportIfUnsupported(protocolSupportsRit(), "RIT")) return;
+  if (keypadReportIfUnsupported(protocolSupportsRit(), "RIT")) return;
   int32_t offset = 0;
-  if (!queryRitOffsetHz(offset, 800)) { reportIfTimedOut("RIT"); return; }
+  if (!queryRitOffsetHz(offset, 800)) { keypadReportIfTimedOut("RIT"); return; }
   int32_t next = offset + deltaHz;
   if (next < -9999) next = -9999;
   if (next > 9999) next = 9999;
@@ -2466,12 +2438,13 @@ static void silenceSpeechForKeyPress() {
   audioAbortNow();
   cancelPendingFreqAnnouncement();
   g_suppressFreqSpeakUntilMs = millis() + KEYPAD_PRESS_SPEECH_QUIET_MS;
-  // A timeout left by background polling must not be blamed on this key.
-  g_radioReplyTimedOut = false;
 }
 
 void keypadEvent(KeypadEvent k) {
   KeyState s = keypad.getState();
+  // Actions run on release, hold or after the double-click wait, with background
+  // polling in between: a timeout it left must not be blamed on this key.
+  g_radioReplyTimedOut = false;
   if (s == PRESSED) silenceSpeechForKeyPress();
 
   if (g_bankSelectActive) {
@@ -2487,7 +2460,7 @@ void keypadEvent(KeypadEvent k) {
     }
     if (k == 'D' && s == RELEASED) { keypadEnter(); return; }
     if (k == '#' && s == RELEASED) { keypadClearAll(); return; }
-    if (s == RELEASED) reportUnassignedKey(String("BANK SELECT ") + (char)k);
+    if (s == RELEASED) keypadReportUnassigned(String("BANK SELECT ") + (char)k);
     return;
   }
 
@@ -2496,7 +2469,7 @@ void keypadEvent(KeypadEvent k) {
     if (k == 'A' && s == RELEASED && g_aHoldConsumed) { g_aHoldConsumed = false; return; }
     if (k >= '0' && k <= '9' && s == RELEASED) {
       if (g_profileStageDigits.length() >= 2 || (!g_profileStageDigits.length() && k == '0')) {
-        reportUnassignedKey(String("PROFILE ") + (char)k);
+        keypadReportUnassigned(String("PROFILE ") + (char)k);
         return;
       }
       g_profileStageDigits += (char)k;
@@ -2507,7 +2480,7 @@ void keypadEvent(KeypadEvent k) {
     }
     if (k == 'D' && s == RELEASED) { keypadEnter(); return; }
     if (k == '#' && s == RELEASED) { keypadClearAll(); return; }
-    if (s == RELEASED) reportUnassignedKey(String("PROFILE ") + (char)k);
+    if (s == RELEASED) keypadReportUnassigned(String("PROFILE ") + (char)k);
     return;
   }
 
@@ -2537,7 +2510,7 @@ void keypadEvent(KeypadEvent k) {
       keypadHandleReleased((char)k);
       return;
     }
-    if (s == RELEASED) reportUnassignedKey(String("ENTRY ") + (char)k);
+    if (s == RELEASED) keypadReportUnassigned(String("ENTRY ") + (char)k);
     return;
   }
 
@@ -2548,7 +2521,7 @@ void keypadEvent(KeypadEvent k) {
       keypadHandleReleased((char)k);
       return;
     }
-    if (s == RELEASED) reportUnassignedKey(String("ENTRY ") + (char)k);
+    if (s == RELEASED) keypadReportUnassigned(String("ENTRY ") + (char)k);
     return;
   }
 
@@ -2559,7 +2532,7 @@ void keypadEvent(KeypadEvent k) {
       keypadHandleReleased((char)k);
       return;
     }
-    if (s == RELEASED) reportUnassignedKey(String("ENTRY ") + (char)k);
+    if (s == RELEASED) keypadReportUnassigned(String("ENTRY ") + (char)k);
     return;
   }
 
@@ -2573,7 +2546,7 @@ void keypadEvent(KeypadEvent k) {
       keypadHandleReleased((char)k);
       return;
     }
-    if (s == RELEASED) reportUnassignedKey(String("ENTRY ") + (char)k);
+    if (s == RELEASED) keypadReportUnassigned(String("ENTRY ") + (char)k);
     return;
   }
 
@@ -3019,7 +2992,7 @@ void keypadEvent(KeypadEvent k) {
 
   if (g_bank == 5 && k == '3' && s == HOLD) {
     printKeypadCommand("BANK5 3 LONG -> RIT OFF");
-    if (!reportIfUnsupported(protocolSupportsRit(), "RIT") && setRitEnabled(false)) {
+    if (!keypadReportIfUnsupported(protocolSupportsRit(), "RIT") && setRitEnabled(false)) {
       printKeypadStatus("RIT OFF");
       if (g_speechEnabled) speakToken("off");
     }
@@ -3126,6 +3099,7 @@ void pollKeypadUi() {
     uint8_t bank = g_pendingClickBank;
     char key = g_pendingClickKey;
     g_pendingClickActive = false;
+    g_radioReplyTimedOut = false;
     if (!handleDeferredShortRelease(bank, key)) keypadHandleReleased(key);
   }
 }
