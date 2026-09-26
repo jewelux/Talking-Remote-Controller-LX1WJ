@@ -46,6 +46,18 @@ sends `HAMTRC?`. V3.5.8 answers with `LX1WJ-HAMTRC;protocol=1;chip=esp32;version
 If that signature is not present, the website does not start flashing on that
 selected COM port.
 
+The GitHub Actions workflow `.github/workflows/firmware.yml` builds the updater
+package on every push and pull request (download it from the run's artifacts),
+and attaches it to a GitHub Release when a `v*` tag is pushed. It contains:
+
+- `hamtrc-<version>.factory.bin`: bootloader, partition table, boot_app0 and app
+  merged for offset `0x0`, not padded, so the FAT partition is left untouched
+- `hamtrc-<version>.app.bin`: app only, for flashing at `0x10000` with esptool
+- `manifest.json`: ESP Web Tools manifest (`ESP32-S3`, factory image at offset 0)
+- `SHA256SUMS`
+
+Upload `manifest.json` and the factory image to the updater site.
+
 ## Current FTDX10 Family Scope
 
 The present documented scope is the first practical CAT block:

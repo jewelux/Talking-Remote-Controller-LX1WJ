@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased — Firmware CI
+
+- GitHub Actions workflow `.github/workflows/firmware.yml` builds the ESP32-S3 firmware on every
+  push/PR and packages `hamtrc-<version>.factory.bin` + ESP Web Tools `manifest.json` for the
+  online updater; `v*` tags attach them to a GitHub Release
+
 ## Unreleased — Voice clips
 
 - all voice clips regenerated with Piper voice `en_US-lessac-medium` (was lessac-high) with both
