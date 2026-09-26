@@ -3,7 +3,9 @@
 #include "protocol_ascii.h"
 #include "protocol_ops_yaesu.h"
 #include "radio_catalog.h"
+#include "radio_frequency.h"
 #include "radio_mode.h"
+#include "radio_monitor.h"
 #include "radio_profile.h"
 #include "radio_prefs.h"
 #include "ui_keypad_actions.h"
@@ -24,6 +26,9 @@ bool g_keypadExecuting = false;
 bool g_suppressModePrefixOnce = false;
 static constexpr uint32_t KEYPAD_DOUBLE_CLICK_MS = 220;
 static constexpr uint32_t KEYPAD_POLL_SUSPEND_MS = 900;
+// Quiet window after a key press so a tuning announcement cannot start while the
+// key's own response (deferred by double-click detection) is being prepared.
+static constexpr uint32_t KEYPAD_PRESS_SPEECH_QUIET_MS = 1000;
 
 static void triggerBank2Tune();
 static void queryBank2NrLevel();
@@ -39,11 +44,13 @@ static void toggleBank2FilterShape();
 static void queryBank2FilterWidth();
 static void cycleBank2FilterWidth(int delta);
 static void queryBank1RxTx();
+static void queryBank1Frequency();
 static void queryBank1TxFrequency();
 static void queryBank1Lock();
 static void toggleBank1Lock();
 static void beginBank1FrequencySet();
 static void beginBank1RfPowerSet();
+static void roundActiveFrequency500();
 static void queryBank3Split();
 static void toggleBank3Split();
 static void queryBank3TxFrequency();
@@ -192,11 +199,7 @@ bool profileModeFromDigit(char digit, uint8_t& modeOut) {
 void setTuningSpeechEnabled(bool enabled) {
   g_tuningSpeakEnabled = enabled;
   saveTuningSpeakToNvs(g_tuningSpeakEnabled);
-  if (!g_tuningSpeakEnabled) {
-    live.tuning = false;
-    live.pendingHz = 0;
-    live.tuningStartSpokenHz = 0;
-  }
+  if (!g_tuningSpeakEnabled) cancelPendingFreqAnnouncement();
 }
 
 void speakBankNumber() {
@@ -293,10 +296,7 @@ static void printKeypadCommand(const String& line) {
 static void prepareKeypadSpeechResponse() {
   g_suspendPollingUntilMs = millis() + KEYPAD_POLL_SUSPEND_MS;
   g_suppressFreqSpeakUntilMs = millis() + 2000;
-  live.tuning = false;
-  live.pendingHz = 0;
-  live.tuningStartSpokenHz = 0;
-  if (g_audioPlaying) audioAbortNow();
+  cancelPendingFreqAnnouncement();
 }
 
 static bool queryDialLockReliable(bool& onOut) {
@@ -535,6 +535,12 @@ static void speakQueriedFrequencyHz(uint64_t hz) {
   if (!g_speechEnabled) return;
   speakFrequencyWord();
   playSilenceMs(60);
+  speakDigitsAndPoint(hzToMHzString3(hz));
+}
+
+// Same wording as a tuning announcement: digits only, no "frequency" prefix.
+static void speakTunedFrequencyHz(uint64_t hz) {
+  if (!g_speechEnabled) return;
   speakDigitsAndPoint(hzToMHzString3(hz));
 }
 
@@ -973,7 +979,6 @@ static void beginBank3VfoAFrequencySet() {
     printKeypadCommand("BANK3 1 DOUBLE -> VFOA FREQ");
   }
   g_freqEntryActive = true;
-  g_freqEntryIsMHz = false;
   g_freqEntryDigits = "";
   g_freqEntryTargetVfo = (isFt8x7Ft817Keypad() || isFt8x7Ft857FamilyKeypad()) ? 0 : 1;
   if (g_speechEnabled) {
@@ -1121,7 +1126,6 @@ static void beginBank3VfoBFrequencySet() {
     printKeypadCommand(String("BANK3 2 DOUBLE -> VFO") + which + " FREQ");
   } else printKeypadCommand("BANK3 2 DOUBLE -> VFOB FREQ");
   g_freqEntryActive = true;
-  g_freqEntryIsMHz = false;
   g_freqEntryDigits = "";
   g_freqEntryTargetVfo = (isFt8x7Ft817Keypad() || isFt8x7Ft857FamilyKeypad()) ? 3 : 2;
   if (g_speechEnabled) {
@@ -1375,6 +1379,20 @@ static void queryBank1RxTx() {
   speakSimpleBinaryState(tx);
 }
 
+static void queryBank1Frequency() {
+  printKeypadCommand("BANK1 0 SHORT -> FREQ?");
+  if (isFtdx10KeypadProfile()) { keypadSendNow("FREQ?"); return; }
+  uint64_t hz = 0;
+  if (!queryFrequency(hz, 800)) {
+    printKeypadStatus("FREQ? -> no reply");
+    if (g_speechEnabled) speakError();
+    return;
+  }
+  printKeypadStatus(String("FREQ: ") + hzToMHzString3(hz) + " MHz");
+  speakQueriedFrequencyHz(hz);
+  rememberAnnouncedFrequency(hz);
+}
+
 static void queryBank1TxFrequency() {
   printKeypadCommand("BANK1 2 SHORT -> TXFREQ?");
   if (isFtdx10KeypadProfile()) {
@@ -1450,13 +1468,45 @@ static void queryBank1Lock() {
 static void beginBank1FrequencySet() {
   printKeypadCommand("BANK1 0 LONG -> FREQ");
   g_freqEntryActive = true;
-  g_freqEntryIsMHz = false;
   g_freqEntryDigits = "";
   g_freqEntryTargetVfo = 0;
   if (g_speechEnabled) {
     speakFrequencyWord();
     playSilenceMs(80);
     speakToken("please");
+  }
+}
+
+static void roundActiveFrequency500() {
+  printKeypadCommand("BANK1 0 DOUBLE -> ROUND 500 Hz");
+  g_suspendPollingUntilMs = millis() + 1400;
+  g_suppressFreqSpeakUntilMs = millis() + 2000;
+
+  uint64_t hz = 0;
+  if (!queryFrequency(hz, 800)) {
+    // Radio not responding: do not round or announce a stale value.
+    printKeypadStatus("ROUND -> no reply");
+    if (g_speechEnabled) speakError();
+    return;
+  }
+
+  const uint64_t rounded = RadioFrequency::fromHz(hz).roundedTo(500).hz();
+  // Serial monitor reports old -> new; speech reports only the new frequency.
+  if (rounded == hz) {
+    // Already on a 500 Hz boundary.
+    printKeypadStatus(String("FREQ: ") + hzToMHzString3(rounded) + " MHz (already rounded)");
+    speakTunedFrequencyHz(rounded);
+    rememberAnnouncedFrequency(rounded);
+    return;
+  }
+
+  if (keypadApplyFrequencyHz(rounded, 0)) {
+    printKeypadStatus(String("ROUND: ") + hzToMHzString3(hz) + " -> " + hzToMHzString3(rounded) + " MHz");
+    speakTunedFrequencyHz(rounded);
+    rememberAnnouncedFrequency(rounded);
+  } else {
+    printKeypadStatus(currentProtocolType() == PROTO_YAESU_FT8X7 ? "ROUND -> no change" : "ROUND -> failed");
+    if (g_speechEnabled) speakError();
   }
 }
 
@@ -2071,6 +2121,7 @@ static void cycleBank8Baud(int delta) {
 static bool handleDeferredShortRelease(uint8_t bank, char key) {
   if (bank == 1) {
     switch (key) {
+      case '0': queryBank1Frequency(); return true;
       case '1': queryBank1RxTx(); return true;
       case '2': queryBank1TxFrequency(); return true;
       case '5':
@@ -2228,6 +2279,10 @@ static bool handleDeferredShortRelease(uint8_t bank, char key) {
 }
 
 static bool handleDoubleClick(uint8_t bank, char key) {
+  if (bank == 1 && key == '0') {
+    roundActiveFrequency500();
+    return true;
+  }
   if (bank == 1 && key == '5' && isFtdx10KeypadProfile()) {
     printKeypadCommand("BANK1 5 DOUBLE -> TUNE");
     keypadSendNow("TUNE");
@@ -2320,7 +2375,7 @@ static bool handleDoubleClick(uint8_t bank, char key) {
 
 static bool shouldDelayShortRelease(uint8_t bank, char key) {
   if (g_freqEntryActive || g_modeSetActive || g_civAddrEntryActive || g_bank6EntryMode != BANK6_ENTRY_NONE) return false;
-  return (bank == 1 && (key == '1' || key == '2')) ||
+  return (bank == 1 && (key == '0' || key == '1' || key == '2')) ||
          (bank == 1 && isFtdx10KeypadProfile() && key == '5') ||
          (bank == 2 && (currentProtocolType() == PROTO_CIV && (key == '4' || key == '5' || key == '6' || key == '7' || key == '9'))) ||
          (bank == 2 && isFtdx10KeypadProfile() && (key == '4' || key == '5')) ||
@@ -2331,9 +2386,19 @@ static bool shouldDelayShortRelease(uint8_t bank, char key) {
          (bank == 8 && key == '2');
 }
 
+// Any key press interrupts the device: the user wants the answer to this key,
+// not whatever was still being spoken or waiting to be spoken. This is the only
+// place keypad speech is interrupted; key actions compose their answer (label,
+// then value) by appending, so nothing they queue is cut off.
+static void silenceSpeechForKeyPress() {
+  audioAbortNow();
+  cancelPendingFreqAnnouncement();
+  g_suppressFreqSpeakUntilMs = millis() + KEYPAD_PRESS_SPEECH_QUIET_MS;
+}
+
 void keypadEvent(KeypadEvent k) {
   KeyState s = keypad.getState();
-  if (s == PRESSED && g_audioPlaying) audioAbortNow();
+  if (s == PRESSED) silenceSpeechForKeyPress();
 
   if (g_bankSelectActive) {
     if (k >= '1' && k <= '9' && s == RELEASED) {
@@ -2384,6 +2449,7 @@ void keypadEvent(KeypadEvent k) {
   if (g_freqEntryActive) {
     if (k == 'D' && s == RELEASED) { keypadEnter(); return; }
     if (k == '#' && s == RELEASED) { keypadClearAll(); return; }
+    if (k == '*' && s == RELEASED) { keypadHandleReleased((char)k); return; }
     if (k >= '0' && k <= '9' && s == RELEASED) {
       keypadHandleReleased((char)k);
       return;

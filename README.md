@@ -49,13 +49,31 @@ The firmware keeps the spoken operating concept but now uses modular protocol, U
 
 ## Collaboration
 
-This project grows through practical support from radio amateurs helping with design, testing, and documentation.
+This project grows through practical collaboration between developers, testers, and radio amateurs who contribute their experience with different transceivers and accessibility requirements.
+
+### Development
+
+- Jean Weber, LX1WJ – Project initiator, hardware, firmware development, testing and documentation
+- Jan Hegr, OK1TE – Developer and collaborator, software architecture, firmware development and radio support
+
+### Testing and Support
+
+Special thanks to the radio amateurs who support the project with practical testing, accessibility feedback, radio-specific experience, and documentation:
 
 - Richard DO9RE
 - Stefan DK7STJ
 - Tom OK1ICQ
-- Jan OK1TE
 - Damian SP9QLO
+
+### Development Workflow
+
+The project uses a simple development model:
+
+- `main` contains the current stable version.
+- `development` is used to integrate and test ongoing development.
+- Larger additions and radio-specific work can be developed in separate feature branches before being merged into `development`.
+- After testing and stabilization, changes from `development` are merged into `main`.
+
 
 ## Safety
 

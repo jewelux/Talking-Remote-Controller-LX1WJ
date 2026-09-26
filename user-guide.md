@@ -27,6 +27,12 @@ Global rules:
 - `#`: cancel and leave the current entry
 - `*` short: speak the current bank
 - `*` long, then digits, then `D`: change bank
+- `*` while entering a frequency: the decimal point (see Bank 1 `0` long below)
+
+Frequencies are spoken in full: the megahertz digits, "point", then the remaining digits with
+trailing zeros dropped (always at least one decimal) — for example 7.12345 MHz is spoken "seven
+point one two three four five", 14.1 MHz is spoken "one four point one", and a whole 7 MHz is
+spoken "seven point zero".
 
 ## Two Things To Remember
 
@@ -38,7 +44,11 @@ Global rules:
 These actions are the normal starting point on many profiles:
 
 - Bank 1, `0` short: speak current frequency
-- Bank 1, `0` long, digits, `D`: set frequency in kHz
+- Bank 1, `0` long, digits, `D`: set frequency. The number is MHz and `*` is the decimal point,
+  with up to 5 digits after it (10 Hz steps): `14` `D` = 14 MHz, `14*1` `D` = 14.1 MHz,
+  `14*12345` `D` = 14.12345 MHz.
+- Bank 1, `0` double: round the current frequency to the nearest 500 Hz
+  (e.g. 7.1437 → 7.1435, 7.1438 → 7.144); the controller then speaks the new frequency
 - Bank 1, `9` short: speak mode
 - Bank 1, `9` long, mode digit, `D`: change mode
 - Bank 1, `7` short: speak S-meter if supported

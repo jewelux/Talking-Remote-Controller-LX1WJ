@@ -35,7 +35,6 @@ extern bool g_sevenHoldConsumed;
 extern bool g_eightHoldConsumed;
 extern bool g_freqEntryActive;
 extern String g_freqEntryDigits;
-extern bool g_freqEntryIsMHz;
 extern uint8_t g_freqEntryTargetVfo;
 extern bool g_rfPowerEntryActive;
 extern String g_rfPowerEntryDigits;
