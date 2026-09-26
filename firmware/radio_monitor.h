@@ -4,6 +4,8 @@
 
 void updateFreqSpeechDebounce(uint64_t newHz);
 void speakPendingFreqIfIdle();
+// Drops a tuning announcement that is waiting for the dial to go idle.
+void cancelPendingFreqAnnouncement();
 void pollFrequencyIfDue();
 void pollSMeterIfDue();
 void handleSMeterRaw(int32_t raw);

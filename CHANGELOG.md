@@ -1,5 +1,32 @@
 # Changelog
 
+## Unreleased — Frequency precision and entry
+
+- added a `RadioFrequency` class (`firmware/radio_frequency.{h,cpp}`) that owns frequency parsing,
+  formatting and rounding
+- frequency is now announced and displayed to 10 Hz resolution as `MHz` "point" fractional digits
+  with trailing zeros dropped but always at least one decimal (e.g. `7.12345`, `14.1`, `7.0`)
+  instead of being truncated to kHz; the voice dictionary is unchanged
+- keypad frequency entry now reads a plain number as MHz with `*` as the decimal point
+  (`14*1` → 14.1 MHz, `14*12345` → 14.12345 MHz), replacing the previous kHz-integer entry
+- added Bank 1 `0` double-press to round the current frequency to the nearest 500 Hz (the serial
+  monitor reports old -> new; speech reports the new frequency the same way as a tuning
+  announcement, without the "frequency" prefix)
+- added Hz-argument console commands `FREQHZ`, `VFOAHZ`, `VFOBHZ`
+- FTDX10 keypad frequency entry and rounding set the frequency directly instead of through console
+  commands, so the new frequency is announced once and a rejected write is reported as failed
+- tuning is announced only once the frequency is at least 100 Hz (`FREQ_SPEAK_MIN_STEP_HZ`) away
+  from the last frequency the user heard or entered: a tuning announcement, a Bank 1 `0` query,
+  a keypad/console frequency entry or a 500 Hz rounding
+- any key press now stops speech in progress and cancels a pending tuning announcement, so
+  answers no longer queue up behind earlier announcements; key actions only append their
+  label and value
+- tuning announcements no longer queue up while the dial is moving: moving the dial at least
+  100 Hz away from the frequency being read out stops that readout immediately (other speech such
+  as mode or key answers keeps playing), and only the frequency where tuning stops is announced;
+  the fixed 5 s minimum interval between tuning announcements is replaced by a 500 ms gap
+  (`FREQ_SPEAK_MIN_GAP_MS`) measured from the end of the previous announcement
+
 ## V3.5.8 FTDX10 and Keypad Refinement
 
 The repository is now aligned to the local `V3.5.8` firmware state.

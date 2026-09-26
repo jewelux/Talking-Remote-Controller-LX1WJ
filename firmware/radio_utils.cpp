@@ -1,5 +1,6 @@
 #include "radio_utils.h"
 
+#include "radio_frequency.h"
 #include "radio_types.h"
 
 uint64_t decodeBcdFrequencyHz(const uint8_t* bcd, size_t len) {
@@ -16,14 +17,10 @@ uint64_t decodeBcdFrequencyHz(const uint8_t* bcd, size_t len) {
 }
 
 String hzToMHzString3(uint64_t hz) {
-  uint64_t mhz = hz / 1000000ULL;
-  uint64_t khz = (hz / 1000ULL) % 1000ULL;
-  String s = String((uint32_t)mhz);
-  s += ".";
-  if (khz < 100) s += "0";
-  if (khz < 10) s += "0";
-  s += String((uint32_t)khz);
-  return s;
+  // Delegates to RadioFrequency so display and speech share one formatter.
+  // Now renders full 10 Hz resolution with trailing zeros stripped
+  // (e.g. 14123450 -> "14.12345", 14250000 -> "14.25").
+  return RadioFrequency::fromHz(hz).toString();
 }
 
 int32_t bcdDigitsToInt(const uint8_t* b, size_t n) {

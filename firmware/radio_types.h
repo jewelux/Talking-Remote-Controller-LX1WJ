@@ -31,8 +31,10 @@ static const uint32_t FREQ_SPEAK_IDLE_MS = 1500;
 static const bool FREQ_POLL_ENABLE = true;
 static const uint32_t FREQ_POLL_MS = 400;
 static const uint32_t FREQ_POLL_TIMEOUT_MS = 80;
-static const uint32_t FREQ_SPEAK_MIN_STEP_HZ = 1000;
-static const uint32_t FREQ_SPEAK_MIN_INTERVAL_MS = 5000;
+// Minimum distance from the last announced frequency before tuning is announced again.
+static const uint32_t FREQ_SPEAK_MIN_STEP_HZ = 100;
+// Minimum silence after a tuning announcement finishes before the next one starts.
+static const uint32_t FREQ_SPEAK_MIN_GAP_MS = 500;
 
 static const bool SMETER_POLL_ENABLE = false;
 static const uint32_t SMETER_POLL_MS = 350;
@@ -289,7 +291,7 @@ struct LiveState {
   uint64_t tuningStartSpokenHz = 0;
   uint32_t lastChangeMs = 0;
   uint64_t lastSpokenHz = 0;
-  uint32_t lastSpokenMs = 0;
+  uint64_t heardBeforeHz = 0;  // lastSpokenHz before the current tuning announcement
   bool modeValid = false;
   uint8_t mode = 0xFF;
   uint32_t lastModeMs = 0;
