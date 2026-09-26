@@ -396,12 +396,12 @@ uint32_t tuningSpeechEndedMs() { return g_tuningEndMs; }
 static constexpr int BEEP_FREQ_HZ = 660;
 static constexpr int BEEP_MS = 70;
 static constexpr int BEEP_FADE_MS = 5;
-static constexpr float BEEP_AMPLITUDE = 0.3f;
+static constexpr float BEEP_AMPLITUDE = 0.2f;
 // The I2S driver resumes writing into the DMA buffer the previous playback left
 // half full, and that buffer plays whenever the DMA ring reaches it, out of order
-// with the rest. Leading silence longer than one DMA buffer (256 samples) lands
-// there instead of the tone; speech clips start with silence for the same reason.
-static constexpr int BEEP_LEAD_MS = 40;
+// with the rest. At least one DMA buffer (256 samples = 32 ms) of leading silence
+// guarantees only silence lands there and the tone starts in fresh buffers.
+static constexpr int BEEP_LEAD_MS = 32;
 static constexpr int BEEP_LEAD_SAMPLES = I2S_SAMPLE_RATE * BEEP_LEAD_MS / 1000;
 static constexpr int BEEP_TONE_SAMPLES = I2S_SAMPLE_RATE * BEEP_MS / 1000;
 static int16_t s_beepPcm[BEEP_LEAD_SAMPLES + BEEP_TONE_SAMPLES];
