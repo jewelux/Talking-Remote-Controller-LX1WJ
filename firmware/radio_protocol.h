@@ -2,6 +2,14 @@
 
 #include "radio_globals.h"
 
+// Whether the current protocol implements the feature at all. When false, the
+// matching query/set functions below fail without talking to the radio.
+bool protocolSupportsTuner();
+bool protocolSupportsMonitor();
+bool protocolSupportsTransceive();
+bool protocolSupportsBandStack();
+bool protocolSupportsRit();
+
 bool queryFrequency(uint64_t& hzOut, uint32_t timeoutMs = 800);
 bool setFrequency(uint64_t hz);
 bool queryMode(uint8_t& modeOut, uint32_t timeoutMs = 800);

@@ -29,6 +29,16 @@ static bool selectYaesuFtdxVfo(const StoredProfile& sp, bool targetVfoA) {
   return true;
 }
 
+// Keep in sync with the protocol dispatch in the functions below.
+bool protocolSupportsTuner() {
+  const ProtocolType pt = currentProtocolType();
+  return pt == PROTO_CIV || pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII;
+}
+bool protocolSupportsMonitor() { return currentProtocolType() == PROTO_CIV; }
+bool protocolSupportsTransceive() { return currentProtocolType() == PROTO_CIV; }
+bool protocolSupportsBandStack() { return currentProtocolType() == PROTO_CIV; }
+bool protocolSupportsRit() { return currentProtocolType() == PROTO_CIV; }
+
 bool queryFrequency(uint64_t& hzOut, uint32_t timeoutMs) {
   ProtocolType pt = currentProtocolType();
   const StoredProfile& sp = currentStoredProfile();

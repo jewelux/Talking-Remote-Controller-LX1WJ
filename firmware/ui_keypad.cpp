@@ -295,6 +295,21 @@ static bool reportIfTimedOut(const char* label) {
   return true;
 }
 
+// Key has no action here: short beep instead of silence.
+static void reportUnassignedKey(const String& label) {
+  printKeypadStatus(label + " -> unassigned");
+  playBeep();
+}
+
+// The protocol has no implementation of the key's feature, so on this profile
+// the key does nothing: beep like an unassigned key.
+static bool reportIfUnsupported(bool supported, const char* label) {
+  if (supported) return false;
+  printKeypadStatus(String(label) + " -> unsupported");
+  playBeep();
+  return true;
+}
+
 static void printKeypadCommand(const String& line) {
   if ((bool)Serial) {
     Serial.print("CMD ");
@@ -356,7 +371,7 @@ static void toggleBank2Nr() {
     keypadSendNow("NR TOGGLE");
     return;
   }
-  if (!currentStoredProfile().caps.setNr) return;
+  if (reportIfUnsupported(currentStoredProfile().caps.setNr, "NR")) return;
   prepareKeypadSpeechResponse();
   if (currentProtocolType() == PROTO_KENWOOD_ASCII && String(currentProfile().name).indexOf("TS-480") >= 0) {
     String line;
@@ -395,7 +410,7 @@ static void toggleBank2Nb() {
     keypadSendNow("NB TOGGLE");
     return;
   }
-  if (!currentStoredProfile().caps.setNb) return;
+  if (reportIfUnsupported(currentStoredProfile().caps.setNb, "NB")) return;
   prepareKeypadSpeechResponse();
   if (!live.nbValid && !refreshLiveNb()) return;
   bool next = !live.nbOn;
@@ -411,7 +426,7 @@ static void toggleBank2Notch() {
     keypadSendNow("NOTCH TOGGLE");
     return;
   }
-  if (!currentStoredProfile().caps.setNotch) return;
+  if (reportIfUnsupported(currentStoredProfile().caps.setNotch, "NOTCH")) return;
   prepareKeypadSpeechResponse();
 
   if (currentProtocolType() != PROTO_CIV) {
@@ -762,6 +777,7 @@ static void beginBank6RepeaterOffsetEntry() {
   printKeypadCommand("BANK6 1 DOUBLE -> RPTSHIFT ENTRY");
   if (!isFt8x7Keypad()) {
     printKeypadStatus("BANK6 reserved");
+    playBeep();
     return;
   }
   g_bank6EntryMode = BANK6_ENTRY_OFFSET;
@@ -780,6 +796,7 @@ static void beginBank6CtcssEntry() {
   printKeypadCommand("BANK6 3 LONG -> CTCSS ENTRY");
   if (!isFt8x7Keypad()) {
     printKeypadStatus("BANK6 reserved");
+    playBeep();
     return;
   }
   g_bank6EntryMode = BANK6_ENTRY_CTCSS;
@@ -796,6 +813,7 @@ static void beginBank6DcsEntry() {
   printKeypadCommand("BANK6 4 LONG -> DCS ENTRY");
   if (!isFt8x7Keypad()) {
     printKeypadStatus("BANK6 reserved");
+    playBeep();
     return;
   }
   g_bank6EntryMode = BANK6_ENTRY_DCS;
@@ -1673,11 +1691,13 @@ static void cycleBank2FilterWidth(int delta) {
 
 static void queryBank3BandStack(uint8_t reg) {
   printKeypadCommand(String("BANK3 ") + String(reg + 6) + " SHORT -> BSTACK? " + String(reg));
+  if (reportIfUnsupported(protocolSupportsBandStack(), "BSTACK?")) return;
   keypadSendNow(String("BSTACK? ") + String(reg));
 }
 
 static void recallBank3BandStack(uint8_t reg) {
   printKeypadCommand(String("BANK3 ") + String(reg + 6) + " LONG -> BSTACK " + String(reg));
+  if (reportIfUnsupported(protocolSupportsBandStack(), "BSTACK")) return;
   keypadSendNow(String("BSTACK ") + String(reg));
 }
 
@@ -1687,6 +1707,7 @@ static void queryBank4Tuner() {
     keypadSendNow("TUNER?");
     return;
   }
+  if (reportIfUnsupported(protocolSupportsTuner(), "TUNER?")) return;
   bool on = false;
   if (!queryTuner(on, 800)) { reportIfTimedOut("TUNER?"); return; }
   printKeypadStatus(on ? "TUNER ON" : "TUNER OFF");
@@ -1699,6 +1720,7 @@ static void toggleBank4Tuner() {
     keypadSendNow("TUNER TOGGLE");
     return;
   }
+  if (reportIfUnsupported(protocolSupportsTuner(), "TUNER")) return;
   bool on = false;
   if (!queryTuner(on, 800)) { reportIfTimedOut("TUNER"); return; }
   if (!setTuner(!on)) { reportIfTimedOut("TUNER"); return; }
@@ -1712,6 +1734,7 @@ static void triggerBank4Tune() {
     keypadSendNow("TUNE");
     return;
   }
+  if (reportIfUnsupported(protocolSupportsTuner(), "TUNE")) return;
   if (!startTune()) return;
   printKeypadStatus("TUNE");
   if (g_speechEnabled) speakToken("tune");
@@ -1719,6 +1742,7 @@ static void triggerBank4Tune() {
 
 static void queryBank4Monitor() {
   printKeypadCommand("BANK4 1 SHORT -> MONITOR?");
+  if (reportIfUnsupported(protocolSupportsMonitor(), "MONITOR?")) return;
   bool on = false;
   if (!queryMonitorEnabled(on, 800)) { reportIfTimedOut("MONITOR?"); return; }
   printKeypadStatus(on ? "MONITOR ON" : "MONITOR OFF");
@@ -1727,6 +1751,7 @@ static void queryBank4Monitor() {
 
 static void toggleBank4Monitor() {
   printKeypadCommand("BANK4 1 LONG -> MONITOR");
+  if (reportIfUnsupported(protocolSupportsMonitor(), "MONITOR")) return;
   bool on = false;
   if (!queryMonitorEnabled(on, 800)) { reportIfTimedOut("MONITOR"); return; }
   if (!setMonitorEnabled(!on)) { reportIfTimedOut("MONITOR"); return; }
@@ -1736,6 +1761,7 @@ static void toggleBank4Monitor() {
 
 static void queryBank4MonitorLevel() {
   printKeypadCommand("BANK4 2 SHORT -> MONLEVEL?");
+  if (reportIfUnsupported(protocolSupportsMonitor(), "MONLEVEL?")) return;
   uint16_t raw = 0;
   if (!queryMonitorLevel(raw, 800)) { reportIfTimedOut("MONLEVEL?"); return; }
   const uint8_t percent = levelRawToPercent(raw);
@@ -1745,6 +1771,7 @@ static void queryBank4MonitorLevel() {
 
 static void adjustBank4MonitorLevel(int deltaPercent) {
   printKeypadCommand(String("BANK4 2 ") + (deltaPercent > 0 ? "LONG" : "DOUBLE") + " -> MONLEVEL");
+  if (reportIfUnsupported(protocolSupportsMonitor(), "MONLEVEL")) return;
   uint16_t raw = 0;
   if (!queryMonitorLevel(raw, 800)) { reportIfTimedOut("MONLEVEL"); return; }
   int percent = (int)levelRawToPercent(raw) + deltaPercent;
@@ -1756,6 +1783,7 @@ static void adjustBank4MonitorLevel(int deltaPercent) {
 
 static void queryBank4Transceive() {
   printKeypadCommand("BANK4 3 SHORT -> TRANSCEIVE?");
+  if (reportIfUnsupported(protocolSupportsTransceive(), "TRANSCEIVE?")) return;
   bool on = false;
   if (!queryTransceiveEnabled(on, 800)) { reportIfTimedOut("TRANSCEIVE?"); return; }
   printKeypadStatus(on ? "TRANSCEIVE ON" : "TRANSCEIVE OFF");
@@ -1764,6 +1792,7 @@ static void queryBank4Transceive() {
 
 static void toggleBank4Transceive() {
   printKeypadCommand("BANK4 3 LONG -> TRANSCEIVE");
+  if (reportIfUnsupported(protocolSupportsTransceive(), "TRANSCEIVE")) return;
   bool on = false;
   if (!queryTransceiveEnabled(on, 800)) { reportIfTimedOut("TRANSCEIVE"); return; }
   if (!setTransceiveEnabled(!on)) { reportIfTimedOut("TRANSCEIVE"); return; }
@@ -1862,6 +1891,7 @@ static void speakRitOffsetValue(int32_t hz) {
 
 static void queryBank5Rit() {
   printKeypadCommand("BANK5 0 SHORT -> RIT?");
+  if (reportIfUnsupported(protocolSupportsRit(), "RIT?")) return;
   bool on = false;
   int32_t offset = 0;
   if (!queryRitEnabled(on, 800)) { reportIfTimedOut("RIT?"); return; }
@@ -1879,6 +1909,7 @@ static void queryBank5Rit() {
 
 static void toggleBank5Rit() {
   printKeypadCommand("BANK5 0 LONG -> RIT");
+  if (reportIfUnsupported(protocolSupportsRit(), "RIT")) return;
   bool on = false;
   if (!queryRitEnabled(on, 800)) { reportIfTimedOut("RIT"); return; }
   if (!setRitEnabled(!on)) { reportIfTimedOut("RIT"); return; }
@@ -1890,6 +1921,7 @@ static void toggleBank5Rit() {
 
 static void setBank5RitOffset(int32_t hz) {
   printKeypadCommand(hz == 0 ? "BANK5 0 DOUBLE / 3 SHORT -> RIT 0" : String("BANK5 RIT -> ") + String(hz) + " Hz");
+  if (reportIfUnsupported(protocolSupportsRit(), "RIT")) return;
   if (!setRitOffsetHz(hz)) { reportIfTimedOut("RIT"); return; }
   printKeypadStatus(String("RIT ") + String(hz) + " Hz");
   speakRitOffsetValue(hz);
@@ -1897,6 +1929,7 @@ static void setBank5RitOffset(int32_t hz) {
 
 static void adjustBank5Rit(int32_t deltaHz) {
   printKeypadCommand(String("BANK5 STEP -> ") + (deltaHz >= 0 ? "+" : "") + String(deltaHz) + " Hz");
+  if (reportIfUnsupported(protocolSupportsRit(), "RIT")) return;
   int32_t offset = 0;
   if (!queryRitOffsetHz(offset, 800)) { reportIfTimedOut("RIT"); return; }
   int32_t next = offset + deltaHz;
@@ -1909,6 +1942,7 @@ static void queryBank6Repeater() {
   printKeypadCommand("BANK6 0 SHORT -> RPT OFF");
   if (!isFt8x7Keypad()) {
     printKeypadStatus("BANK6 reserved");
+    playBeep();
     return;
   }
   setBank6Ft8x7RepeaterShift(0x89, "OFF");
@@ -1918,6 +1952,7 @@ static void setBank6RepeaterMinus() {
   printKeypadCommand("BANK6 0 LONG -> RPT MINUS");
   if (!isFt8x7Keypad()) {
     printKeypadStatus("BANK6 reserved");
+    playBeep();
     return;
   }
   setBank6Ft8x7RepeaterShift(0x09, "MINUS");
@@ -1927,6 +1962,7 @@ static void setBank6RepeaterPlus() {
   printKeypadCommand("BANK6 0 DOUBLE -> RPT PLUS");
   if (!isFt8x7Keypad()) {
     printKeypadStatus("BANK6 reserved");
+    playBeep();
     return;
   }
   setBank6Ft8x7RepeaterShift(0x49, "PLUS");
@@ -1937,6 +1973,7 @@ static void queryBank6RepeaterOffset() {
   printKeypadCommand(String("BANK6 1 SHORT -> RPTSHIFT ") + hzToMHzString3(hz));
   if (!isFt8x7Keypad()) {
     printKeypadStatus("BANK6 reserved");
+    playBeep();
     return;
   }
   setBank6Ft8x7RepeaterOffsetHz(hz);
@@ -1947,6 +1984,7 @@ static void setBank6RepeaterOffset70cm() {
   printKeypadCommand(String("BANK6 1 LONG -> RPTSHIFT ") + hzToMHzString3(hz));
   if (!isFt8x7Keypad()) {
     printKeypadStatus("BANK6 reserved");
+    playBeep();
     return;
   }
   setBank6Ft8x7RepeaterOffsetHz(hz);
@@ -1960,6 +1998,7 @@ static void queryBank6ToneMode() {
   printKeypadCommand("BANK6 2 SHORT -> TONE OFF");
   if (!isFt8x7Keypad()) {
     printKeypadStatus("BANK6 reserved");
+    playBeep();
     return;
   }
   setBank6Ft8x7ToneMode(0x8A, "OFF");
@@ -1969,6 +2008,7 @@ static void setBank6ToneModeCtcss() {
   printKeypadCommand("BANK6 2 LONG -> TONE CTCSS");
   if (!isFt8x7Keypad()) {
     printKeypadStatus("BANK6 reserved");
+    playBeep();
     return;
   }
   setBank6Ft8x7ToneMode(0x2A, "CTCSS");
@@ -1978,6 +2018,7 @@ static void setBank6ToneModeDcs() {
   printKeypadCommand("BANK6 2 DOUBLE -> TONE DCS");
   if (!isFt8x7Keypad()) {
     printKeypadStatus("BANK6 reserved");
+    playBeep();
     return;
   }
   setBank6Ft8x7ToneMode(0x0A, "DCS");
@@ -1990,6 +2031,7 @@ static void queryBank6CtcssDefault() {
   printKeypadCommand(String("BANK6 3 SHORT -> CTCSS ") + label);
   if (!isFt8x7Keypad()) {
     printKeypadStatus("BANK6 reserved");
+    playBeep();
     return;
   }
   printKeypadStatus(String("CTCSS ") + label);
@@ -2006,6 +2048,7 @@ static void queryBank6DcsDefault() {
   printKeypadCommand(String("BANK6 4 SHORT -> DCS ") + label);
   if (!isFt8x7Keypad()) {
     printKeypadStatus("BANK6 reserved");
+    playBeep();
     return;
   }
   printKeypadStatus(String("DCS ") + label);
@@ -2444,13 +2487,18 @@ void keypadEvent(KeypadEvent k) {
     }
     if (k == 'D' && s == RELEASED) { keypadEnter(); return; }
     if (k == '#' && s == RELEASED) { keypadClearAll(); return; }
+    if (s == RELEASED) reportUnassignedKey(String("BANK SELECT ") + (char)k);
     return;
   }
 
   if (g_profileSelectActive) {
+    // The 'A' hold that opened profile select ends here.
+    if (k == 'A' && s == RELEASED && g_aHoldConsumed) { g_aHoldConsumed = false; return; }
     if (k >= '0' && k <= '9' && s == RELEASED) {
-      if (g_profileStageDigits.length() >= 2) return;
-      if (!g_profileStageDigits.length() && k == '0') return;
+      if (g_profileStageDigits.length() >= 2 || (!g_profileStageDigits.length() && k == '0')) {
+        reportUnassignedKey(String("PROFILE ") + (char)k);
+        return;
+      }
       g_profileStageDigits += (char)k;
       printKeypadCommand(String("PROFILE DIGIT -> ") + String(k));
       printKeypadStatus(String("PROFILE ") + g_profileStageDigits);
@@ -2459,6 +2507,7 @@ void keypadEvent(KeypadEvent k) {
     }
     if (k == 'D' && s == RELEASED) { keypadEnter(); return; }
     if (k == '#' && s == RELEASED) { keypadClearAll(); return; }
+    if (s == RELEASED) reportUnassignedKey(String("PROFILE ") + (char)k);
     return;
   }
 
@@ -2488,6 +2537,7 @@ void keypadEvent(KeypadEvent k) {
       keypadHandleReleased((char)k);
       return;
     }
+    if (s == RELEASED) reportUnassignedKey(String("ENTRY ") + (char)k);
     return;
   }
 
@@ -2498,6 +2548,7 @@ void keypadEvent(KeypadEvent k) {
       keypadHandleReleased((char)k);
       return;
     }
+    if (s == RELEASED) reportUnassignedKey(String("ENTRY ") + (char)k);
     return;
   }
 
@@ -2508,6 +2559,7 @@ void keypadEvent(KeypadEvent k) {
       keypadHandleReleased((char)k);
       return;
     }
+    if (s == RELEASED) reportUnassignedKey(String("ENTRY ") + (char)k);
     return;
   }
 
@@ -2521,6 +2573,7 @@ void keypadEvent(KeypadEvent k) {
       keypadHandleReleased((char)k);
       return;
     }
+    if (s == RELEASED) reportUnassignedKey(String("ENTRY ") + (char)k);
     return;
   }
 
@@ -2966,7 +3019,7 @@ void keypadEvent(KeypadEvent k) {
 
   if (g_bank == 5 && k == '3' && s == HOLD) {
     printKeypadCommand("BANK5 3 LONG -> RIT OFF");
-    if (setRitEnabled(false)) {
+    if (!reportIfUnsupported(protocolSupportsRit(), "RIT") && setRitEnabled(false)) {
       printKeypadStatus("RIT OFF");
       if (g_speechEnabled) speakToken("off");
     }

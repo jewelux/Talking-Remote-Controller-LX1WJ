@@ -97,6 +97,21 @@ static bool reportIfTimedOut(const char* label) {
   return true;
 }
 
+// Key has no action here: short beep instead of silence.
+static void reportUnassignedKey(const String& label) {
+  printKeypadStatus(label + " -> unassigned");
+  playBeep();
+}
+
+// The profile has no support for the key's feature, so on this profile the key
+// does nothing: beep like an unassigned key.
+static bool reportIfUnsupported(bool supported, const char* label) {
+  if (supported) return false;
+  printKeypadStatus(String(label) + " -> unsupported");
+  playBeep();
+  return true;
+}
+
 static void printKeypadCommand(const String& line) {
   if ((bool)Serial) {
     Serial.print("CMD ");
@@ -336,7 +351,7 @@ static void queryBank2Nr() {
     keypadSendNow("NR?");
     return;
   }
-  if (!currentStoredProfile().caps.getNr) return;
+  if (reportIfUnsupported(currentStoredProfile().caps.getNr, "NR?")) return;
   g_suspendPollingUntilMs = millis() + 900;
   g_suppressFreqSpeakUntilMs = millis() + 2000;
   cancelPendingFreqAnnouncement();
@@ -357,7 +372,7 @@ static void queryBank2Nb() {
     keypadSendNow("NB?");
     return;
   }
-  if (!currentStoredProfile().caps.getNb) return;
+  if (reportIfUnsupported(currentStoredProfile().caps.getNb, "NB?")) return;
   g_suspendPollingUntilMs = millis() + 900;
   g_suppressFreqSpeakUntilMs = millis() + 2000;
   cancelPendingFreqAnnouncement();
@@ -378,7 +393,7 @@ static void queryBank2Notch() {
     keypadSendNow("NOTCH?");
     return;
   }
-  if (!currentStoredProfile().caps.getNotch) return;
+  if (reportIfUnsupported(currentStoredProfile().caps.getNotch, "NOTCH?")) return;
   g_suspendPollingUntilMs = millis() + 900;
   g_suppressFreqSpeakUntilMs = millis() + 2000;
   cancelPendingFreqAnnouncement();
@@ -514,6 +529,7 @@ void keypadEnter() {
       speakBankNumber();
     } else {
       printKeypadStatus("BANK -> no selection");
+      playBeep();
     }
     g_bankSelectActive = false;
     g_bankStage = 0;
@@ -529,6 +545,7 @@ void keypadEnter() {
       speakCurrentProfile();
     } else {
       printKeypadStatus("PROFILE -> no selection");
+      playBeep();
     }
     g_profileSelectActive = false;
     g_profileStageDigits = "";
@@ -743,6 +760,8 @@ void keypadEnter() {
     keypadSendNow(g_kpStagedCmd);
     g_kpStagedCmd = "";
     g_kpHasStagedCmd = false;
+  } else {
+    reportUnassignedKey("ENTER");
   }
 }
 
@@ -764,6 +783,7 @@ void keypadHandleReleased(char k) {
       speakMode(g_modeStageMode);
     } else {
       printKeypadStatus("MODE DIGIT -> invalid");
+      playBeep();
     }
     g_modeSetActive = false;
     return;
@@ -778,6 +798,8 @@ void keypadHandleReleased(char k) {
         printKeypadCommand("FREQ POINT -> *");
         printKeypadStatus(String("FREQ STAGE: ") + g_freqEntryDigits);
         if (g_speechEnabled) speakToken("point");
+      } else {
+        reportUnassignedKey("FREQ POINT");
       }
       return;
     }
@@ -789,8 +811,10 @@ void keypadHandleReleased(char k) {
         printKeypadCommand(String("FREQ DIGIT -> ") + String(k));
         printKeypadStatus(String("FREQ STAGE: ") + g_freqEntryDigits);
         if (g_speechEnabled) speakDigitsAndPoint(String(k));
+        return;
       }
     }
+    reportUnassignedKey(String("FREQ ") + k);
     return;
   }
 
@@ -800,6 +824,8 @@ void keypadHandleReleased(char k) {
       printKeypadCommand(String("RFPOWER DIGIT -> ") + String(k));
       printKeypadStatus(String("RFPOWER STAGE: ") + g_rfPowerEntryDigits + " W");
       if (g_speechEnabled) speakDigitsAndPoint(String(k));
+    } else {
+      reportUnassignedKey(String("RFPOWER ") + k);
     }
     return;
   }
@@ -810,6 +836,8 @@ void keypadHandleReleased(char k) {
       printKeypadCommand(String("CIVADDR DIGIT -> ") + String(k));
       printKeypadStatus(String("CIVADDR STAGE: ") + g_civAddrEntryDigits);
       if (g_speechEnabled) speakDigitsAndPoint(String(k));
+    } else {
+      reportUnassignedKey(String("CIVADDR ") + k);
     }
     return;
   }
@@ -830,6 +858,8 @@ void keypadHandleReleased(char k) {
         printKeypadStatus(String("DCS STAGE: ") + g_bank6EntryDigits);
       }
       if (g_speechEnabled) speakDigitsAndPoint(String(k));
+    } else {
+      reportUnassignedKey(String("BANK6 ENTRY ") + k);
     }
     return;
   }
@@ -868,7 +898,7 @@ void keypadHandleReleased(char k) {
           keypadSendNow("TUNER?");
           return;
         }
-        return;
+        break;
       case '6':
         if (isFtdx10KeypadProfile()) {
           printKeypadCommand("BANK1 6 SHORT -> PA?");
@@ -879,7 +909,7 @@ void keypadHandleReleased(char k) {
           sendOrStageBank1Command("BANK1 6 SHORT", "RFPOWER?");
           return;
         }
-        return;
+        break;
       default: break;
     }
   } else if (g_bank == 2) {
@@ -902,7 +932,7 @@ void keypadHandleReleased(char k) {
           keypadSendNow("GT?");
           return;
         }
-        return;
+        break;
       case '5':
         if (currentProtocolType() == PROTO_CIV) {
           return;
@@ -912,7 +942,7 @@ void keypadHandleReleased(char k) {
           keypadSendNow("PS?");
           return;
         }
-        return;
+        break;
       case '6':
         if (currentProtocolType() == PROTO_CIV) {
           return;
@@ -922,7 +952,7 @@ void keypadHandleReleased(char k) {
           keypadSendNow("IF?");
           return;
         }
-        return;
+        break;
       case '7':
         if (currentProtocolType() == PROTO_CIV) {
           return;
@@ -932,19 +962,19 @@ void keypadHandleReleased(char k) {
           keypadSendNow("ID?");
           return;
         }
-        return;
+        break;
       case '8':
         if (currentProtocolType() == PROTO_CIV) {
           printKeypadCommand("BANK2 8 SHORT -> FILSHAPE?");
           keypadSendNow("FILSHAPE?");
           return;
         }
-        return;
+        break;
       case '9':
         if (currentProtocolType() == PROTO_CIV) {
           return;
         }
-        return;
+        break;
       default: break;
     }
   } else if (g_bank == 3) {
@@ -985,6 +1015,7 @@ void keypadHandleReleased(char k) {
           reportFtdx10HiddenKeypadAction("BANK4");
           return;
         }
+        if (!protocolSupportsMonitor()) break;
         printKeypadCommand("BANK4 1 SHORT -> MONITOR?");
         keypadSendNow("MONITOR?");
         return;
@@ -998,6 +1029,7 @@ void keypadHandleReleased(char k) {
           reportFtdx10HiddenKeypadAction("BANK4");
           return;
         }
+        if (!protocolSupportsTransceive()) break;
         printKeypadCommand("BANK4 3 SHORT -> TRANSCEIVE?");
         keypadSendNow("TRANSCEIVE?");
         return;
@@ -1033,4 +1065,5 @@ void keypadHandleReleased(char k) {
         break;
     }
   }
+  reportUnassignedKey(String("BANK") + String((int)g_bank) + " " + k);
 }

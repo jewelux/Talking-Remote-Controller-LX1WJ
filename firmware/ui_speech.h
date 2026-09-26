@@ -16,6 +16,7 @@ void speakOk();
 void speakError();
 void speakTimeout();
 void speakNotAvailable();
+void playBeep();
 void voiceTest();
 void speakProfileIdentityFromSlot(uint8_t id, bool withOk);
 void speakBootProfile();

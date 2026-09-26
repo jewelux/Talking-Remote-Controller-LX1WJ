@@ -391,6 +391,32 @@ bool tuningSpeechActive() {
 
 uint32_t tuningSpeechEndedMs() { return g_tuningEndMs; }
 
+// Short tone for key presses that do nothing. Generated once into RAM and played
+// through the clip queue, so it gets the volume, speech gate and key-press abort.
+static constexpr int BEEP_FREQ_HZ = 660;
+static constexpr int BEEP_MS = 70;
+static constexpr int BEEP_FADE_MS = 5;
+static constexpr float BEEP_AMPLITUDE = 0.3f;
+// The I2S driver resumes writing into the DMA buffer the previous playback left
+// half full, and that buffer plays whenever the DMA ring reaches it, out of order
+// with the rest. Leading silence longer than one DMA buffer (256 samples) lands
+// there instead of the tone; speech clips start with silence for the same reason.
+static constexpr int BEEP_LEAD_MS = 40;
+static constexpr int BEEP_LEAD_SAMPLES = I2S_SAMPLE_RATE * BEEP_LEAD_MS / 1000;
+static constexpr int BEEP_TONE_SAMPLES = I2S_SAMPLE_RATE * BEEP_MS / 1000;
+static int16_t s_beepPcm[BEEP_LEAD_SAMPLES + BEEP_TONE_SAMPLES];
+
+static void initBeep() {
+  const int n = BEEP_TONE_SAMPLES;
+  const int fade = I2S_SAMPLE_RATE * BEEP_FADE_MS / 1000;
+  for (int i = 0; i < n; ++i) {
+    float gain = BEEP_AMPLITUDE * 32767.0f;
+    if (i < fade) gain *= (float)i / fade;
+    else if (n - 1 - i < fade) gain *= (float)(n - 1 - i) / fade;
+    s_beepPcm[BEEP_LEAD_SAMPLES + i] = (int16_t)(gain * sinf(2.0f * (float)M_PI * BEEP_FREQ_HZ * i / I2S_SAMPLE_RATE));
+  }
+}
+
 static bool playClipProgmemBlocking(const uint8_t* data, size_t length) {
   const size_t CHUNK = 512;
   static uint8_t buffer[CHUNK];
@@ -497,6 +523,7 @@ void initSpeech() {
 
   xTaskCreatePinnedToCore(audioTask, "audioTask", 4096, nullptr, 2, nullptr, 1);
   applyVolumeLevel(DEFAULT_VOLUME_LEVEL);
+  initBeep();
 }
 
 bool playClipProgmem(const uint8_t* data, size_t length) {
@@ -618,6 +645,7 @@ void speakOk() { speakToken("ok"); }
 void speakError() { speakToken("error"); }
 void speakTimeout() { speakToken("timeout"); }
 void speakNotAvailable() { speakToken("notavailable"); }
+void playBeep() { (void)playClipProgmem((const uint8_t*)s_beepPcm, sizeof(s_beepPcm)); }
 
 void applyVolumeLevel(uint8_t lvl) {
   if (lvl < 1) lvl = 1;
