@@ -88,7 +88,24 @@ bool yaesuCatSetModeRawByte(uint8_t modeByte) {
 
 bool yaesuCatQuerySMeterRaw(const StoredProfile& sp, int32_t& rawOut, uint32_t timeoutMs) {
   if (!sp.caps.getSmeter) return false;
-  return yaesuCatQueryMeterByte(0xE7, rawOut, timeoutMs);
+  uint8_t rxStatus = 0;
+  if (!yaesuCatQueryRxStatusRaw(rxStatus, timeoutMs)) return false;
+  rawOut = rxStatus;
+  return true;
+}
+
+SMeterReading yaesuCatDecodeSMeter(uint8_t rxStatus) {
+  // RX status (0xE7): bits 7..4 are squelch/tone/discriminator flags, bits 3..0 the
+  // meter: 0x0..0x9 = S0..S9, 0xA..0xF = S9+10..S9+60 dB.
+  const uint8_t level = rxStatus & 0x0F;
+  SMeterReading reading;
+  if (level <= 9) {
+    reading.sUnits = level;
+  } else {
+    reading.sUnits = 9;
+    reading.dbOverS9 = (uint8_t)((level - 9) * 10);
+  }
+  return reading;
 }
 
 bool yaesuCatQueryPoMeterRaw(const StoredProfile& sp, int32_t& rawOut, uint32_t timeoutMs) {

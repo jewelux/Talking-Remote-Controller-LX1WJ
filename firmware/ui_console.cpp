@@ -1797,8 +1797,10 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   if (upper == "SM?") {
     if (!refreshLiveSmeter()) { Serial.println("SM? -> no reply"); return true; }
     Serial.print("SM: raw=");
-    Serial.println(live.smRaw);
-    if (g_speechEnabled) speakSValue(live.smS);
+    Serial.print(live.smRaw);
+    Serial.print("  ");
+    Serial.println(live.sm.toString());
+    if (g_speechEnabled) speakSValue(live.sm);
     return true;
   }
   if (upper == "SWR?") {

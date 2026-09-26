@@ -51,8 +51,9 @@ void rememberLiveMode(uint8_t mode, uint32_t nowMs) {
   live.lastModeMs = nowMs;
 }
 
-void rememberLiveSmeter(int32_t raw, uint32_t nowMs) {
+void rememberLiveSmeter(int32_t raw, const SMeterReading& reading, uint32_t nowMs) {
   live.smRaw = raw;
+  live.sm = reading;
   live.smValid = true;
   live.lastSmMs = nowMs;
 }

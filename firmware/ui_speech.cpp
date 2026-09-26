@@ -504,12 +504,19 @@ void speakDigitsAndPoint(const String& s) {
   playSilenceMs(250);
 }
 
-void speakSValue(uint8_t sVal) {
+void speakSValue(const SMeterReading& reading) {
   if (!g_speechEnabled) return;
   if (!g_keypadExecuting) speakToken("s_meter");
   playSilenceMs(60);
-  playDigit((int)min<uint8_t>(sVal, 9));
-  playSilenceMs(250);
+  playDigit((int)min<uint8_t>(reading.sUnits, 9));
+  if (reading.dbOverS9) {
+    playSilenceMs(60);
+    speakToken("plus");
+    playSilenceMs(60);
+    speakDigitsAndPoint(String(reading.dbOverS9));  // ends with the trailing pause
+  } else {
+    playSilenceMs(250);
+  }
 }
 
 bool speakToken(const String& token) {

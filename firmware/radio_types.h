@@ -289,6 +289,20 @@ struct BandStackEntry {
   uint8_t filter = 0xFF;
 };
 
+// S-meter reading normalised across protocols: S0..S9, then dB over S9.
+struct SMeterReading {
+  uint8_t sUnits = 0;    // 0..9
+  uint8_t dbOverS9 = 0;  // 0, 10, 20 ... (only when sUnits == 9)
+  // Linear scale in S-unit-sized steps (S9+10 = 10) for change detection.
+  uint8_t steps() const { return sUnits + dbOverS9 / 10; }
+  // "S5", "S9+20dB"
+  String toString() const {
+    String s = "S" + String(sUnits);
+    if (dbOverS9) s += "+" + String(dbOverS9) + "dB";
+    return s;
+  }
+};
+
 struct LiveState {
   bool freqValid = false;
   uint64_t freqHz = 0;
@@ -308,9 +322,9 @@ struct LiveState {
   uint32_t lastModeMs = 0;
   bool smValid = false;
   int32_t smRaw = 0;
-  uint8_t smS = 0;
+  SMeterReading sm;
   uint32_t lastSmMs = 0;
-  uint8_t lastSpokenS = 0xFF;
+  uint8_t lastSpokenSmSteps = 0xFF;
   uint32_t lastSmPollMs = 0;
   uint32_t lastSmSpokenMs = 0;
   bool powerValid = false;

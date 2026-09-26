@@ -6,6 +6,7 @@
 #include "protocol_ops_yaesu.h"
 #include "radio_protocol.h"
 #include "radio_state.h"
+#include "radio_utils.h"
 
 static bool isYaesuFtdxAsciiProfile(const StoredProfile& sp) {
   return sp.protocolType == PROTO_YAESU_FTDX_ASCII;
@@ -71,6 +72,13 @@ bool querySMeterRaw(int32_t& rawOut, uint32_t timeoutMs) {
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiQuerySMeterRaw(sp, rawOut, timeoutMs);
   if (pt == PROTO_YAESU_FT8X7) return yaesuCatQuerySMeterRaw(sp, rawOut, timeoutMs);
   return false;
+}
+
+SMeterReading sMeterFromRaw(int32_t raw) {
+  if (currentProtocolType() == PROTO_YAESU_FT8X7) return yaesuCatDecodeSMeter((uint8_t)raw);
+  SMeterReading reading;
+  reading.sUnits = smRawToS(raw);
+  return reading;
 }
 
 bool queryPoMeterRaw(int32_t& rawOut, uint32_t timeoutMs) {

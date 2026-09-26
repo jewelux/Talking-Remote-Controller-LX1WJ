@@ -3,7 +3,6 @@
 #include "engine_civ.h"
 #include "radio_protocol.h"
 #include "radio_state.h"
-#include "radio_utils.h"
 
 bool refreshLiveFrequency() {
   for (uint8_t attempt = 0; attempt < 3; ++attempt) {
@@ -38,8 +37,7 @@ bool refreshLiveMode() {
 bool refreshLiveSmeter() {
   int32_t raw = 0;
   if (!querySMeterRaw(raw)) return false;
-  rememberLiveSmeter(raw, millis());
-  live.smS = smRawToS(raw);
+  rememberLiveSmeter(raw, sMeterFromRaw(raw), millis());
   return true;
 }
 

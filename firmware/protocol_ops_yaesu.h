@@ -9,6 +9,7 @@ bool yaesuCatQueryMode(const StoredProfile& sp, uint8_t& modeOut, uint32_t timeo
 bool yaesuCatSetMode(const StoredProfile& sp, uint8_t mode);
 bool yaesuCatSetModeRawByte(uint8_t modeByte);
 bool yaesuCatQuerySMeterRaw(const StoredProfile& sp, int32_t& rawOut, uint32_t timeoutMs);
+SMeterReading yaesuCatDecodeSMeter(uint8_t rxStatus);
 bool yaesuCatQueryPoMeterRaw(const StoredProfile& sp, int32_t& rawOut, uint32_t timeoutMs);
 bool yaesuCatQuerySWRRaw(const StoredProfile& sp, int32_t& rawOut, uint32_t timeoutMs);
 bool yaesuCatQueryAlcRaw(int32_t& rawOut, uint32_t timeoutMs);

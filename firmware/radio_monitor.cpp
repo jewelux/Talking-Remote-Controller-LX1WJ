@@ -121,29 +121,23 @@ void pollFrequencyIfDue() {
 }
 
 void handleSMeterRaw(int32_t raw) {
-  rememberLiveSmeter(raw, millis());
-  live.smS = smRawToS(raw);
+  rememberLiveSmeter(raw, sMeterFromRaw(raw), millis());
   if (!g_quiet) {
     DBG_PRINT("SM: raw=");
     DBG_PRINT(raw);
-    DBG_PRINT("  est=S");
-    DBG_PRINTLN((int)live.smS);
+    DBG_PRINT("  ");
+    DBG_PRINTLN(live.sm.toString());
   }
   if (!g_speechEnabled || !SMETER_SPEAK_ENABLE) return;
   const uint32_t now = millis();
   if (now - live.lastSmSpokenMs < SMETER_SPEAK_MIN_INTERVAL_MS) return;
-  if (live.lastSpokenS == 0xFF) {
-    live.lastSpokenS = live.smS;
-    live.lastSmSpokenMs = now;
-    speakSValue(live.smS);
-    return;
-  }
-  uint8_t diff = (live.smS > live.lastSpokenS) ? (live.smS - live.lastSpokenS) : (live.lastSpokenS - live.smS);
-  if (diff >= SMETER_SPEAK_MIN_DELTA_S) {
-    live.lastSpokenS = live.smS;
-    live.lastSmSpokenMs = now;
-    speakSValue(live.smS);
-  }
+  const uint8_t steps = live.sm.steps();
+  const bool firstReading = live.lastSpokenSmSteps == 0xFF;
+  const uint8_t diff = (steps > live.lastSpokenSmSteps) ? (steps - live.lastSpokenSmSteps) : (live.lastSpokenSmSteps - steps);
+  if (!firstReading && diff < SMETER_SPEAK_MIN_DELTA_S) return;
+  live.lastSpokenSmSteps = steps;
+  live.lastSmSpokenMs = now;
+  speakSValue(live.sm);
 }
 
 void pollSMeterIfDue() {

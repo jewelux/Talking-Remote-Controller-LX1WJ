@@ -7,7 +7,7 @@ bool playClipProgmem(const uint8_t* data, size_t length);
 void playSilenceMs(int ms);
 void playDigit(int d);
 void speakDigitsAndPoint(const String& s);
-void speakSValue(uint8_t sVal);
+void speakSValue(const SMeterReading& reading);
 bool speakToken(const String& token);
 bool speakTokens(const char* const* tokens, size_t count, uint16_t gapMs = 60);
 bool speakTokenState(const String& token, bool on);

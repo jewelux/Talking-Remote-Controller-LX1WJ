@@ -7,6 +7,8 @@ bool setFrequency(uint64_t hz);
 bool queryMode(uint8_t& modeOut, uint32_t timeoutMs = 800);
 bool setMode(uint8_t mode, uint8_t filter = 1);
 bool querySMeterRaw(int32_t& rawOut, uint32_t timeoutMs = 800);
+// Converts a querySMeterRaw() value of the current protocol into S units / dB over S9.
+SMeterReading sMeterFromRaw(int32_t raw);
 bool queryPoMeterRaw(int32_t& rawOut, uint32_t timeoutMs = 800);
 bool querySWRRaw(int32_t& rawOut, uint32_t timeoutMs = 800);
 bool queryRfPowerLevel(uint16_t& valueOut, uint32_t timeoutMs = 800);
