@@ -5,6 +5,9 @@
 void resetLiveRadioState() {
   live.freqValid = false;
   live.lastFreqPollMs = 0;
+  live.freqPollFailures = 0;
+  live.freqPollCandidateValid = false;
+  live.freqPollCandidateHz = 0;
   live.tuning = false;
   live.pendingHz = 0;
   live.tuningStartSpokenHz = 0;

@@ -31,6 +31,14 @@ static const uint32_t FREQ_SPEAK_IDLE_MS = 1500;
 static const bool FREQ_POLL_ENABLE = true;
 static const uint32_t FREQ_POLL_MS = 400;
 static const uint32_t FREQ_POLL_TIMEOUT_MS = 80;
+// FT-8x7 answers slowly (5-byte frames at 4800 baud 8N2, busy CPU while tuning),
+// so it gets a longer timeout and a slower cadence to keep the loop responsive.
+static const uint32_t FREQ_POLL_MS_FT8X7 = 700;
+static const uint32_t FREQ_POLL_TIMEOUT_MS_FT8X7 = 300;
+// After this many consecutive failed polls (radio off/disconnected), poll
+// rarely so the blocking timeout does not starve keypad scanning.
+static const uint8_t FREQ_POLL_BACKOFF_AFTER_FAILURES = 3;
+static const uint32_t FREQ_POLL_BACKOFF_MS = 3000;
 // Minimum distance from the last announced frequency before tuning is announced again.
 static const uint32_t FREQ_SPEAK_MIN_STEP_HZ = 100;
 // Minimum silence after a tuning announcement finishes before the next one starts.
@@ -286,6 +294,9 @@ struct LiveState {
   uint64_t freqHz = 0;
   uint32_t lastFreqMs = 0;
   uint32_t lastFreqPollMs = 0;
+  uint8_t freqPollFailures = 0;
+  bool freqPollCandidateValid = false;
+  uint64_t freqPollCandidateHz = 0;
   bool tuning = false;
   uint64_t pendingHz = 0;
   uint64_t tuningStartSpokenHz = 0;

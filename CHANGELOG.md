@@ -1,5 +1,23 @@
 # Changelog
 
+## Unreleased — FT8x7 frequency polling
+
+- re-enabled background frequency polling for the Yaesu FT-817/857/897 family (disabled in V3.5.8)
+- FT8x7 polls every 700 ms with a 300 ms timeout; other radios keep 400 ms / 80 ms
+- after 3 failed polls in a row (radio off or disconnected) polling backs off to every 3 s so the
+  blocking timeout does not starve the keypad
+- after a CAT timeout the next FT8x7 command waits for the line to go quiet, so a late reply is not
+  read as the start of the next one; commands are spaced at least 20 ms apart
+- FT8x7 frequency/mode frames with non-BCD digits or an out-of-range frequency are rejected; a
+  polled frequency change is accepted on the first reading (confirmation by two identical readings
+  is available but off)
+- the first FT8x7 command after the CAT port is opened now keeps the same minimum gap as between
+  commands
+- fixed FT-857/897 dial lock turning on when HamTRC starts with the radio already on: the RS232 TX
+  line was held low (a break) from power-up until the radio profile was applied, because the early
+  `digitalWrite(HIGH)` was ignored while the pin was not yet set up as GPIO; the radio read the end
+  of the break as a stray byte, which shifted the first poll so it was executed as LOCK ON
+
 ## Unreleased — Frequency precision and entry
 
 - added a `RadioFrequency` class (`firmware/radio_frequency.{h,cpp}`) that owns frequency parsing,

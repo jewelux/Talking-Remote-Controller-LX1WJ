@@ -62,6 +62,36 @@ void speakPendingFreqIfIdle() {
   live.tuning = false;
 }
 
+struct FreqPollPolicy {
+  uint32_t intervalMs;
+  uint32_t timeoutMs;
+  // Accept a changed frequency only after two identical readings; guards
+  // protocols without framing against a single misaligned reply.
+  bool confirmChanges;
+};
+
+static FreqPollPolicy freqPollPolicyFor(ProtocolType pt) {
+  // The frame checks (BCD, range, quiet line) are enough on their own; set to
+  // true to require two identical readings if misread frequencies show up.
+  if (pt == PROTO_YAESU_FT8X7) return {FREQ_POLL_MS_FT8X7, FREQ_POLL_TIMEOUT_MS_FT8X7, false};
+  return {FREQ_POLL_MS, FREQ_POLL_TIMEOUT_MS, false};
+}
+
+// Returns true when hz should be accepted as the observed frequency.
+static bool confirmPolledFrequency(uint64_t hz) {
+  if (live.freqValid && hz == live.freqHz) {
+    live.freqPollCandidateValid = false;
+    return true;
+  }
+  if (live.freqPollCandidateValid && hz == live.freqPollCandidateHz) {
+    live.freqPollCandidateValid = false;
+    return true;
+  }
+  live.freqPollCandidateValid = true;
+  live.freqPollCandidateHz = hz;
+  return false;
+}
+
 void cancelPendingFreqAnnouncement() {
   live.tuning = false;
   live.pendingHz = 0;
@@ -71,15 +101,22 @@ void cancelPendingFreqAnnouncement() {
 void pollFrequencyIfDue() {
   if (!FREQ_POLL_ENABLE) return;
   if (!currentStoredProfile().caps.getFreq) return;
-  if (currentProtocolType() == PROTO_YAESU_FT8X7) return;
+
+  const FreqPollPolicy policy = freqPollPolicyFor(currentProtocolType());
+  const uint32_t intervalMs = (live.freqPollFailures >= FREQ_POLL_BACKOFF_AFTER_FAILURES) ? FREQ_POLL_BACKOFF_MS : policy.intervalMs;
 
   const uint32_t now = millis();
   if ((int32_t)(now - g_suspendPollingUntilMs) < 0) return;
-  if (now - live.lastFreqPollMs < FREQ_POLL_MS) return;
+  if (now - live.lastFreqPollMs < intervalMs) return;
   live.lastFreqPollMs = now;
 
   uint64_t hz = 0;
-  if (!queryFrequency(hz, FREQ_POLL_TIMEOUT_MS)) return;
+  if (!queryFrequency(hz, policy.timeoutMs)) {
+    if (live.freqPollFailures < 0xFF) ++live.freqPollFailures;
+    return;
+  }
+  live.freqPollFailures = 0;
+  if (policy.confirmChanges && !confirmPolledFrequency(hz)) return;
   handleObservedFrequency(hz, false);
 }
 

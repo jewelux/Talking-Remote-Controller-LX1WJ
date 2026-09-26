@@ -6,6 +6,7 @@
 #include "transport_serial.h"
 #include "ui_speech.h"
 #include "packet_ascii.h"
+#include "protocol_yaesu_cat.h"
 
 const char* protocolTypeToString(ProtocolType pt) {
   switch (pt) {
@@ -140,6 +141,7 @@ void applyProfile(uint8_t profileId) {
   serialTransportApplyProfile(p);
   resetLiveRadioState();
   g_yaesuCatTrace = false;
+  if (currentProtocolType() == PROTO_YAESU_FT8X7) yaesuCatNoteLineOpened();
   if (currentProtocolType() == PROTO_ELECRAFT_ASCII) {
     delay(30);
     // Force documented default behavior so GET replies are not polluted by unsolicited auto-info.

@@ -25,6 +25,10 @@ bool yaesuCatQueryFrequency(const StoredProfile& sp, uint64_t& hzOut, uint32_t t
   const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, 0x03};
   uint8_t rsp[5] = {0};
   if (!yaesuCatTransact5(cmd, rsp, timeoutMs)) return false;
+  if (!yaesuCatFreqFieldValid(rsp)) {
+    yaesuCatMarkLineDirty();
+    return false;
+  }
   hzOut = yaesuCatDecodeFreqHz(rsp);
   return true;
 }
@@ -55,6 +59,11 @@ bool yaesuCatQueryMode(const StoredProfile& sp, uint8_t& modeOut, uint32_t timeo
   const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, 0x03};
   uint8_t rsp[5] = {0};
   if (!yaesuCatTransact5(cmd, rsp, timeoutMs)) return false;
+  // The mode byte shares its frame with the frequency; a bad frequency field means the frame is misaligned.
+  if (!yaesuCatFreqFieldValid(rsp)) {
+    yaesuCatMarkLineDirty();
+    return false;
+  }
   String code = byteToUpperHex((uint8_t)(rsp[4] & 0x7F));
   return profileInternalModeForCode(sp, code, modeOut);
 }

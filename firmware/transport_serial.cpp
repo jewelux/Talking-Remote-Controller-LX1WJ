@@ -2,12 +2,20 @@
 
 #include "radio_catalog.h"
 
+void serialTransportDriveTxIdle(int pin, bool invert) {
+  // digitalWrite() is ignored until pinMode() has claimed the pin as GPIO, and pinMode(OUTPUT)
+  // drives the output register's current level, which is 0 after reset. Claim the pin as an input
+  // pulled to the idle level first, so the level can be set before the output is enabled.
+  pinMode(pin, invert ? INPUT_PULLDOWN : INPUT_PULLUP);
+  digitalWrite(pin, invert ? LOW : HIGH);
+  pinMode(pin, OUTPUT);
+}
+
 void serialTransportApplyProfile(const CivProfile& profile) {
   civUart1.end();
   civUart2.end();
   pinMode(CIV_TX_PIN, INPUT);
-  digitalWrite(RS232_TX_PIN, HIGH);
-  pinMode(RS232_TX_PIN, OUTPUT);
+  serialTransportDriveTxIdle(RS232_TX_PIN, false);
   pinMode(CAT_TX_PIN, INPUT_PULLUP);
   pinMode(CAT_RX_PIN, INPUT);
 
@@ -15,8 +23,7 @@ void serialTransportApplyProfile(const CivProfile& profile) {
   g_civSerial->end();
   const uint32_t serialConfig = (currentProtocolType() == PROTO_YAESU_FT8X7) ? SERIAL_8N2 : SERIAL_8N1;
   if (currentProtocolType() == PROTO_YAESU_FT8X7) {
-    digitalWrite(profile.txPin, profile.txInvert ? LOW : HIGH);
-    pinMode(profile.txPin, OUTPUT);
+    serialTransportDriveTxIdle(profile.txPin, profile.txInvert);
     delay(5);
   }
   g_civSerial->begin(profile.baud, serialConfig, profile.rxPin, profile.txPin);
