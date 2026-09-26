@@ -14,56 +14,10 @@
 #include "ui_console.h"
 #include "ui_console_support.h"
 #include "ui_keypad.h"
+#include "ui_keypad_common.h"
 #include "ui_keypad_state.h"
 #include "ui_speech.h"
 #include "debug_log.h"
-
-static void printKeypadStatus(const String& line);
-
-static void formatHexByte(uint8_t value, char* out, size_t outSize) {
-  if (!out || outSize < 3) return;
-  snprintf(out, outSize, "%02X", (unsigned)value);
-}
-
-static void speakHexNibble(char c) {
-  if (c >= '0' && c <= '9') {
-    playDigit(c - '0');
-    return;
-  }
-  switch (c) {
-    case 'A': speakToken("a"); break;
-    case 'B': speakToken("b"); break;
-    case 'C': speakToken("c"); break;
-    case 'D': speakToken("d"); break;
-    case 'E': speakError(); break;
-    case 'F': speakToken("f"); break;
-    default: speakError(); break;
-  }
-}
-
-static void speakCivAddressValue(uint8_t addr, bool ok) {
-  if (!g_speechEnabled) return;
-  char hex[3] = "";
-  formatHexByte(addr, hex, sizeof(hex));
-  speakToken("c");
-  playSilenceMs(50);
-  speakToken("i");
-  playSilenceMs(80);
-  speakHexNibble(hex[0]);
-  playSilenceMs(50);
-  speakHexNibble(hex[1]);
-  if (ok) {
-    playSilenceMs(80);
-    speakOk();
-  }
-}
-
-static bool isFtdx10KeypadProfile() {
-  const StoredProfile& sp = currentStoredProfile();
-  return sp.protocolType == PROTO_YAESU_FTDX_ASCII &&
-         strcmp(sp.voiceVendor, "yaesu") == 0 &&
-         strcmp(sp.voiceDigits, "10") == 0;
-}
 
 static void adjustVolumeLevel(int delta) {
   int next = (int)g_volumeLevel + delta;
@@ -77,78 +31,6 @@ static void adjustVolumeLevel(int delta) {
     playSilenceMs(60);
     speakToken("ok");
   }
-}
-
-static void reportFtdx10HiddenKeypadAction(const char* label) {
-  if ((bool)Serial) Serial.println(String(label) + " hidden on FTDX10");
-  if (g_speechEnabled) speakNotAvailable();
-}
-
-static void printKeypadStatus(const String& line) {
-  if ((bool)Serial) Serial.println(line);
-}
-
-bool keypadReportIfTimedOut(const char* label) {
-  if (!g_radioReplyTimedOut) return false;
-  printKeypadStatus(String(label) + " -> timeout");
-  if (g_speechEnabled) speakTimeout();
-  return true;
-}
-
-void keypadReportUnassigned(const String& label) {
-  printKeypadStatus(label + " -> unassigned");
-  playBeep();
-}
-
-bool keypadReportIfUnsupported(bool supported, const char* label) {
-  if (supported) return false;
-  printKeypadStatus(String(label) + " -> unsupported");
-  playBeep();
-  return true;
-}
-
-static void printKeypadCommand(const String& line) {
-  if ((bool)Serial) {
-    Serial.print("CMD ");
-    Serial.println(line);
-  }
-}
-
-static char ft817CurrentVfoLabelForKeypad() {
-  if (currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft817") && !live.activeVfoKnown) {
-    rememberActiveVfo(true);
-  }
-  if (!(currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft817") && live.activeVfoKnown)) return '?';
-  return live.activeVfoA ? 'A' : 'B';
-}
-
-static char ft817OtherVfoLabelForKeypad() {
-  if (currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft817") && !live.activeVfoKnown) {
-    rememberActiveVfo(true);
-  }
-  if (!(currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft817") && live.activeVfoKnown)) return '?';
-  return live.activeVfoA ? 'B' : 'A';
-}
-
-static char ft857CurrentVfoLabelForKeypad() {
-  if (currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft857_897") && !live.activeVfoKnown) {
-    rememberActiveVfo(true);
-  }
-  if (!(currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft857_897") && live.activeVfoKnown)) return '?';
-  return live.activeVfoA ? 'A' : 'B';
-}
-
-static char ft857OtherVfoLabelForKeypad() {
-  if (currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft857_897") && !live.activeVfoKnown) {
-    rememberActiveVfo(true);
-  }
-  if (!(currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft857_897") && live.activeVfoKnown)) return '?';
-  return live.activeVfoA ? 'B' : 'A';
-}
-
-static void speakFrequencyWord() {
-  if (!g_speechEnabled) return;
-  speakToken("frequency");
 }
 
 static bool rejectFt8x7WriteWhileTx(const char* statusLabel) {
@@ -257,34 +139,6 @@ static void speakRepeaterOffsetHz(uint64_t hz) {
   speakDigitsAndPoint(hzToMHzString3(hz));
 }
 
-static void formatCtcssTenthsLabel(uint16_t toneTenths, char* out, size_t outSize) {
-  if (!out || outSize < 2) return;
-  snprintf(out, outSize, "%u.%u", (unsigned)(toneTenths / 10), (unsigned)(toneTenths % 10));
-}
-
-static bool encodeCtcssTenths(uint16_t toneTenths, uint8_t& b0, uint8_t& b1) {
-  if (toneTenths > 9999) return false;
-  uint16_t value = toneTenths;
-  uint8_t d1 = (uint8_t)(value % 10); value /= 10;
-  uint8_t d10 = (uint8_t)(value % 10); value /= 10;
-  uint8_t d100 = (uint8_t)(value % 10); value /= 10;
-  uint8_t d1000 = (uint8_t)(value % 10);
-  b0 = (uint8_t)((d1000 << 4) | d100);
-  b1 = (uint8_t)((d10 << 4) | d1);
-  return true;
-}
-
-static bool encodeDcsCode(uint16_t dcsCode, uint8_t& b0, uint8_t& b1) {
-  if (dcsCode > 999) return false;
-  uint16_t value = dcsCode;
-  uint8_t d1 = (uint8_t)(value % 10); value /= 10;
-  uint8_t d10 = (uint8_t)(value % 10); value /= 10;
-  uint8_t d100 = (uint8_t)(value % 10);
-  b0 = d100;
-  b1 = (uint8_t)((d10 << 4) | d1);
-  return true;
-}
-
 static bool applyCtcssTenths(uint16_t toneTenths) {
   if (!isValidCtcssTenths(toneTenths)) return false;
   uint8_t b0 = 0;
@@ -315,29 +169,6 @@ static bool applyDcsCode(uint16_t dcsCode) {
   live.dcsValid = true;
   live.dcsCode = dcsCode;
   return true;
-}
-
-static void speakBinaryFeatureState(const uint8_t* featureData, size_t featureLen, bool on) {
-  if (!g_speechEnabled) return;
-  playClipProgmem(featureData, featureLen);
-  playSilenceMs(60);
-  playClipProgmem(on ? voice_on : voice_off, on ? voice_on_len : voice_off_len);
-}
-
-static void speakNotchCycleState(bool on, NotchWidth width) {
-  if (!g_speechEnabled) return;
-  speakToken("notch filter");
-  playSilenceMs(60);
-  if (!on) {
-    speakToken("off");
-    return;
-  }
-  switch (width) {
-    case NOTCH_WIDTH_NAR: playDigit(1); break;
-    case NOTCH_WIDTH_MID: playDigit(2); break;
-    case NOTCH_WIDTH_WIDE: playDigit(3); break;
-    default: speakToken("on"); break;
-  }
 }
 
 static void queryBank2Nr() {
@@ -569,15 +400,10 @@ void keypadEnter() {
     if (g_freqEntryTargetVfo == 1) printKeypadCommand("ENTER -> VFOA FREQ");
     else if (g_freqEntryTargetVfo == 2) printKeypadCommand("ENTER -> VFOB FREQ");
     else if (g_freqEntryTargetVfo == 3) {
-      char which = '?';
-      if (currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft817")) which = ft817OtherVfoLabelForKeypad();
-      else if (currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft857_897")) which = ft857OtherVfoLabelForKeypad();
+      const char which = ft8x7OtherVfoLabel();
       printKeypadCommand(String("ENTER -> VFO") + which + " FREQ");
-    } else if (currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft817")) {
-      const char which = ft817CurrentVfoLabelForKeypad();
-      printKeypadCommand(String("ENTER -> VFO") + which + " FREQ");
-    } else if (currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft857_897")) {
-      const char which = ft857CurrentVfoLabelForKeypad();
+    } else if (isFt8x7Ft817Keypad() || isFt8x7Ft857FamilyKeypad()) {
+      const char which = ft8x7CurrentVfoLabel();
       printKeypadCommand(String("ENTER -> VFO") + which + " FREQ");
     }
     else printKeypadCommand("ENTER -> FREQ");
@@ -586,15 +412,10 @@ void keypadEnter() {
       if (g_freqEntryTargetVfo == 1) printKeypadStatus(String("VFOA: ") + hzToMHzString3(hz) + " MHz");
       else if (g_freqEntryTargetVfo == 2) printKeypadStatus(String("VFOB: ") + hzToMHzString3(hz) + " MHz");
       else if (g_freqEntryTargetVfo == 3) {
-        char which = '?';
-        if (currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft817")) which = ft817OtherVfoLabelForKeypad();
-        else if (currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft857_897")) which = ft857OtherVfoLabelForKeypad();
+        const char which = ft8x7OtherVfoLabel();
         printKeypadStatus(String("VFO") + which + ": " + hzToMHzString3(hz) + " MHz");
-      } else if (currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft817")) {
-        const char which = ft817CurrentVfoLabelForKeypad();
-        printKeypadStatus(String("VFO") + which + ": " + hzToMHzString3(hz) + " MHz");
-      } else if (currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft857_897")) {
-        const char which = ft857CurrentVfoLabelForKeypad();
+      } else if (isFt8x7Ft817Keypad() || isFt8x7Ft857FamilyKeypad()) {
+        const char which = ft8x7CurrentVfoLabel();
         printKeypadStatus(String("VFO") + which + ": " + hzToMHzString3(hz) + " MHz");
       }
       else printKeypadStatus(String("FREQ: ") + hzToMHzString3(hz) + " MHz");
@@ -976,7 +797,7 @@ void keypadHandleReleased(char k) {
     switch (k) {
       case '7':
         if (isFtdx10KeypadProfile()) {
-          reportFtdx10HiddenKeypadAction("BANK3 BSTACK");
+          reportFtdx10HiddenKey("BANK3 BSTACK");
           return;
         }
         printKeypadCommand("BANK3 7 SHORT -> BSTACK? 1");
@@ -984,7 +805,7 @@ void keypadHandleReleased(char k) {
         return;
       case '8':
         if (isFtdx10KeypadProfile()) {
-          reportFtdx10HiddenKeypadAction("BANK3 BSTACK");
+          reportFtdx10HiddenKey("BANK3 BSTACK");
           return;
         }
         printKeypadCommand("BANK3 8 SHORT -> BSTACK? 2");
@@ -992,7 +813,7 @@ void keypadHandleReleased(char k) {
         return;
       case '9':
         if (isFtdx10KeypadProfile()) {
-          reportFtdx10HiddenKeypadAction("BANK3 BSTACK");
+          reportFtdx10HiddenKey("BANK3 BSTACK");
           return;
         }
         printKeypadCommand("BANK3 9 SHORT -> BSTACK? 3");
@@ -1007,7 +828,7 @@ void keypadHandleReleased(char k) {
         return;
       case '1':
         if (isFtdx10KeypadProfile()) {
-          reportFtdx10HiddenKeypadAction("BANK4");
+          reportFtdx10HiddenKey("BANK4");
           return;
         }
         if (!protocolSupportsMonitor()) break;
@@ -1016,12 +837,12 @@ void keypadHandleReleased(char k) {
         return;
       case '2':
         if (isFtdx10KeypadProfile()) {
-          reportFtdx10HiddenKeypadAction("BANK4");
+          reportFtdx10HiddenKey("BANK4");
         }
         return;
       case '3':
         if (isFtdx10KeypadProfile()) {
-          reportFtdx10HiddenKeypadAction("BANK4");
+          reportFtdx10HiddenKey("BANK4");
           return;
         }
         if (!protocolSupportsTransceive()) break;

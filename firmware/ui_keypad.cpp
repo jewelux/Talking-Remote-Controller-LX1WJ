@@ -9,6 +9,7 @@
 #include "radio_profile.h"
 #include "radio_prefs.h"
 #include "ui_keypad_actions.h"
+#include "ui_keypad_common.h"
 #include "ui_keypad_state.h"
 #include "radio_runtime.h"
 #include "radio_state.h"
@@ -106,7 +107,6 @@ static bool selectBank9DirectProfile(char key);
 static bool handleDeferredShortRelease(uint8_t bank, char key);
 static bool handleDoubleClick(uint8_t bank, char key);
 static bool shouldDelayShortRelease(uint8_t bank, char key);
-static void printKeypadStatus(const String& line);
 
 static void speakBankPlease() {
   if (!g_speechEnabled) return;
@@ -120,11 +120,6 @@ static void speakChoosePlease() {
   speakToken("choose");
   playSilenceMs(60);
   speakToken("please");
-}
-
-static void speakFrequencyWord() {
-  if (!g_speechEnabled) return;
-  speakToken("frequency");
 }
 
 void speakTuningSpeechState() {
@@ -144,26 +139,6 @@ static void speakVfoFrequencyLabel(char which) {
   else if (which == 'B') speakToken("b");
   playSilenceMs(60);
   speakFrequencyWord();
-}
-
-static char ft817CurrentVfoLabel() {
-  if (!live.activeVfoKnown) return '?';
-  return live.activeVfoA ? 'A' : 'B';
-}
-
-static char ft817OtherVfoLabel() {
-  if (!live.activeVfoKnown) return '?';
-  return live.activeVfoA ? 'B' : 'A';
-}
-
-static char ft857CurrentVfoLabel() {
-  if (!live.activeVfoKnown) return '?';
-  return live.activeVfoA ? 'A' : 'B';
-}
-
-static char ft857OtherVfoLabel() {
-  if (!live.activeVfoKnown) return '?';
-  return live.activeVfoA ? 'B' : 'A';
 }
 
 static bool guardFt8x7VfoToggleLock() {
@@ -209,41 +184,6 @@ void speakBankNumber() {
   if (g_bank >= 1 && g_bank <= 9) playDigit(g_bank);
 }
 
-static void speakBinaryFeatureState(const uint8_t* featureData, size_t featureLen, bool on) {
-  if (!g_speechEnabled) return;
-  playClipProgmem(featureData, featureLen);
-  playSilenceMs(60);
-  playClipProgmem(on ? voice_on : voice_off, on ? voice_on_len : voice_off_len);
-}
-
-static bool isFtdx10KeypadProfile() {
-  const StoredProfile& sp = currentStoredProfile();
-  return sp.protocolType == PROTO_YAESU_FTDX_ASCII &&
-         strcmp(sp.voiceVendor, "yaesu") == 0 &&
-         strcmp(sp.voiceDigits, "10") == 0;
-}
-
-static void reportFtdx10HiddenKey(const char* label) {
-  printKeypadStatus(String(label) + " hidden on FTDX10");
-  if (g_speechEnabled) speakNotAvailable();
-}
-
-static void speakNotchCycleState(bool on, NotchWidth width) {
-  if (!g_speechEnabled) return;
-  speakToken("notch filter");
-  playSilenceMs(60);
-  if (!on) {
-    speakToken("off");
-    return;
-  }
-  switch (width) {
-    case NOTCH_WIDTH_NAR: playDigit(1); break;
-    case NOTCH_WIDTH_MID: playDigit(2); break;
-    case NOTCH_WIDTH_WIDE: playDigit(3); break;
-    default: speakToken("on"); break;
-  }
-}
-
 static void speakNrLevel(int level) {
   if (!g_speechEnabled) return;
   playClipProgmem(voice_noisereduction, voice_noisereduction_len);
@@ -280,17 +220,6 @@ static uint16_t pbtOffsetToRaw(int offset) {
   if (offset < -128) offset = -128;
   if (offset > 127) offset = 127;
   return (uint16_t)(offset + 128);
-}
-
-static void printKeypadStatus(const String& line) {
-  if ((bool)Serial) Serial.println(line);
-}
-
-static void printKeypadCommand(const String& line) {
-  if ((bool)Serial) {
-    Serial.print("CMD ");
-    Serial.println(line);
-  }
 }
 
 static void prepareKeypadSpeechResponse() {
@@ -544,33 +473,6 @@ static void speakTunedFrequencyHz(uint64_t hz) {
   speakDigitsAndPoint(hzToMHzString3(hz));
 }
 
-static bool isFt8x7Ft857FamilyKeypad() {
-  return currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft857_897");
-}
-
-static bool isFt8x7Ft817Keypad() {
-  return currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft817");
-}
-
-static bool isFt8x7Keypad() {
-  return currentProtocolType() == PROTO_YAESU_FT8X7;
-}
-
-static void ensureFt817VfoTrackingInitialized() {
-  if (isFt8x7Ft817Keypad() && !live.activeVfoKnown) {
-    // The FT-817 keypad workflow treats the starting point as VFO A until
-    // we have toggled or queried enough to track A/B locally.
-    rememberActiveVfo(true);
-  }
-}
-
-static void ensureFt857VfoTrackingInitialized() {
-  if (isFt8x7Ft857FamilyKeypad() && !live.activeVfoKnown) {
-    // FT-857/897 Bank 3 now tracks A/B locally from an assumed VFO A start.
-    rememberActiveVfo(true);
-  }
-}
-
 static uint32_t currentFt8x7RepeaterOffsetHz(uint8_t index) {
   if (index >= 2) return 0;
   return currentStoredProfile().ft8x7Bank6.repeaterOffsetsHz[index];
@@ -582,34 +484,6 @@ static uint16_t currentFt8x7DefaultCtcssTenths() {
 
 static uint16_t currentFt8x7DefaultDcsCode() {
   return currentStoredProfile().ft8x7Bank6.dcsDefaultCode;
-}
-
-static void formatCtcssTenthsLabel(uint16_t toneTenths, char* out, size_t outSize) {
-  if (!out || outSize < 2) return;
-  snprintf(out, outSize, "%u.%u", (unsigned)(toneTenths / 10), (unsigned)(toneTenths % 10));
-}
-
-static bool encodeCtcssTenths(uint16_t toneTenths, uint8_t& b0, uint8_t& b1) {
-  if (toneTenths > 9999) return false;
-  uint16_t value = toneTenths;
-  uint8_t d1 = (uint8_t)(value % 10); value /= 10;
-  uint8_t d10 = (uint8_t)(value % 10); value /= 10;
-  uint8_t d100 = (uint8_t)(value % 10); value /= 10;
-  uint8_t d1000 = (uint8_t)(value % 10);
-  b0 = (uint8_t)((d1000 << 4) | d100);
-  b1 = (uint8_t)((d10 << 4) | d1);
-  return true;
-}
-
-static bool encodeDcsCode(uint16_t dcsCode, uint8_t& b0, uint8_t& b1) {
-  if (dcsCode > 999) return false;
-  uint16_t value = dcsCode;
-  uint8_t d1 = (uint8_t)(value % 10); value /= 10;
-  uint8_t d10 = (uint8_t)(value % 10); value /= 10;
-  uint8_t d100 = (uint8_t)(value % 10);
-  b0 = d100;
-  b1 = (uint8_t)((d10 << 4) | d1);
-  return true;
 }
 
 static void setBank3Ft857Split(bool on) {
@@ -871,13 +745,13 @@ static void queryBank3TxFrequency() {
 
 static void queryBank3VfoA() {
   if (isFt8x7Ft817Keypad()) {
-    ensureFt817VfoTrackingInitialized();
-    const char which = ft817CurrentVfoLabel();
+    ensureFt8x7VfoTrackingInitialized();
+    const char which = ft8x7CurrentVfoLabel();
     if (which == 'A' || which == 'B') printKeypadCommand(String("BANK3 1 SHORT -> VFO") + which + "?");
     else printKeypadCommand("BANK3 1 SHORT -> VFO?");
   } else if (isFt8x7Ft857FamilyKeypad()) {
-    ensureFt857VfoTrackingInitialized();
-    const char which = ft857CurrentVfoLabel();
+    ensureFt8x7VfoTrackingInitialized();
+    const char which = ft8x7CurrentVfoLabel();
     printKeypadCommand(String("BANK3 1 SHORT -> VFO") + which + "?");
   } else {
     printKeypadCommand("BANK3 1 SHORT -> VFOA?");
@@ -887,10 +761,10 @@ static void queryBank3VfoA() {
     return;
   }
   if (isFt8x7Ft857FamilyKeypad()) {
-    ensureFt857VfoTrackingInitialized();
+    ensureFt8x7VfoTrackingInitialized();
     uint64_t hz = 0;
     if (!queryFrequency(hz, 800)) { keypadReportIfTimedOut("VFOA?"); return; }
-    const char which = ft857CurrentVfoLabel();
+    const char which = ft8x7CurrentVfoLabel();
     printKeypadStatus(String("VFO") + which + ": " + hzToMHzString3(hz) + " MHz");
     if (g_speechEnabled) {
       speakVfoFrequencyLabel(which);
@@ -902,7 +776,7 @@ static void queryBank3VfoA() {
   if (isFt8x7Ft817Keypad()) {
     uint64_t hz = 0;
     if (!queryFrequency(hz, 800)) { keypadReportIfTimedOut("VFOA?"); return; }
-    const char which = ft817CurrentVfoLabel();
+    const char which = ft8x7CurrentVfoLabel();
     printKeypadStatus(String("VFO") + which + ": " + hzToMHzString3(hz) + " MHz");
     if (g_speechEnabled) {
       speakVfoFrequencyLabel(which);
@@ -926,11 +800,11 @@ static void selectBank3VfoA() {
   else printKeypadCommand("BANK3 1 LONG -> VFO A");
   g_suppressFreqSpeakUntilMs = millis() + 1500;
   if (isFt8x7Ft857FamilyKeypad()) {
-    ensureFt857VfoTrackingInitialized();
+    ensureFt8x7VfoTrackingInitialized();
     if (!guardFt8x7VfoToggleLock()) return;
     if (!yaesuCatToggleVfo()) { keypadReportIfTimedOut("VFO A"); return; }
     rememberActiveVfo(!live.activeVfoA);
-    const char which = ft857CurrentVfoLabel();
+    const char which = ft8x7CurrentVfoLabel();
     printKeypadStatus(String("VFO") + which);
     if (g_speechEnabled) {
       speakToken("vfo");
@@ -940,11 +814,11 @@ static void selectBank3VfoA() {
     return;
   }
   if (isFt8x7Ft817Keypad()) {
-    ensureFt817VfoTrackingInitialized();
+    ensureFt8x7VfoTrackingInitialized();
     if (!guardFt8x7VfoToggleLock()) return;
     if (!yaesuCatToggleVfo()) { keypadReportIfTimedOut("VFO A"); return; }
     if (live.activeVfoKnown) rememberActiveVfo(!live.activeVfoA);
-    const char which = ft817CurrentVfoLabel();
+    const char which = ft8x7CurrentVfoLabel();
     printKeypadStatus(String("VFO") + which);
     if (g_speechEnabled) {
       speakToken("vfo");
@@ -972,13 +846,13 @@ static void selectBank3VfoA() {
 
 static void beginBank3VfoAFrequencySet() {
   if (isFt8x7Ft817Keypad()) {
-    ensureFt817VfoTrackingInitialized();
-    const char which = ft817CurrentVfoLabel();
+    ensureFt8x7VfoTrackingInitialized();
+    const char which = ft8x7CurrentVfoLabel();
     if (which == 'A' || which == 'B') printKeypadCommand(String("BANK3 1 DOUBLE -> VFO") + which + " FREQ");
     else printKeypadCommand("BANK3 1 DOUBLE -> VFO CURRENT FREQ");
   } else if (isFt8x7Ft857FamilyKeypad()) {
-    ensureFt857VfoTrackingInitialized();
-    const char which = ft857CurrentVfoLabel();
+    ensureFt8x7VfoTrackingInitialized();
+    const char which = ft8x7CurrentVfoLabel();
     printKeypadCommand(String("BANK3 1 DOUBLE -> VFO") + which + " FREQ");
   } else {
     printKeypadCommand("BANK3 1 DOUBLE -> VFOA FREQ");
@@ -987,7 +861,7 @@ static void beginBank3VfoAFrequencySet() {
   g_freqEntryDigits = "";
   g_freqEntryTargetVfo = (isFt8x7Ft817Keypad() || isFt8x7Ft857FamilyKeypad()) ? 0 : 1;
   if (g_speechEnabled) {
-    const char which = isFt8x7Ft817Keypad() ? ft817CurrentVfoLabel() : (isFt8x7Ft857FamilyKeypad() ? ft857CurrentVfoLabel() : '?');
+    const char which = ft8x7CurrentVfoLabel();
     if (which == 'A' || which == 'B') speakVfoFrequencyLabel(which);
     else speakFrequencyWord();
     playSilenceMs(80);
@@ -997,13 +871,13 @@ static void beginBank3VfoAFrequencySet() {
 
 static void queryBank3VfoB() {
   if (isFt8x7Ft817Keypad()) {
-    ensureFt817VfoTrackingInitialized();
-    const char which = ft817OtherVfoLabel();
+    ensureFt8x7VfoTrackingInitialized();
+    const char which = ft8x7OtherVfoLabel();
     if (which == 'A' || which == 'B') printKeypadCommand(String("BANK3 2 SHORT -> VFO") + which + "?");
     else printKeypadCommand("BANK3 2 SHORT -> VFO OTHER?");
   } else if (isFt8x7Ft857FamilyKeypad()) {
-    ensureFt857VfoTrackingInitialized();
-    const char which = ft857OtherVfoLabel();
+    ensureFt8x7VfoTrackingInitialized();
+    const char which = ft8x7OtherVfoLabel();
     printKeypadCommand(String("BANK3 2 SHORT -> VFO") + which + "?");
   } else printKeypadCommand("BANK3 2 SHORT -> VFOB?");
   if (isFtdx10KeypadProfile()) {
@@ -1011,7 +885,7 @@ static void queryBank3VfoB() {
     return;
   }
   if (isFt8x7Ft857FamilyKeypad()) {
-    ensureFt857VfoTrackingInitialized();
+    ensureFt8x7VfoTrackingInitialized();
     if (!guardFt8x7VfoToggleLock()) return;
     const bool priorVfoA = live.activeVfoA;
     const char other = priorVfoA ? 'B' : 'A';
@@ -1034,7 +908,7 @@ static void queryBank3VfoB() {
     return;
   }
   if (isFt8x7Ft817Keypad()) {
-    ensureFt817VfoTrackingInitialized();
+    ensureFt8x7VfoTrackingInitialized();
     if (!guardFt8x7VfoToggleLock()) return;
     uint64_t hz = 0;
     bool ok = false;
@@ -1049,7 +923,7 @@ static void queryBank3VfoB() {
     yaesuCatToggleVfo();
     delay(120);
     if (!ok) { keypadReportIfTimedOut("VFOB?"); return; }
-    const char which = ft817OtherVfoLabel();
+    const char which = ft8x7OtherVfoLabel();
     printKeypadStatus(String("VFO") + which + ": " + hzToMHzString3(hz) + " MHz");
     if (g_speechEnabled) {
       speakVfoFrequencyLabel(which);
@@ -1078,7 +952,7 @@ static void selectBank3VfoB() {
     return;
   }
   if (isFt8x7Ft817Keypad()) {
-    ensureFt817VfoTrackingInitialized();
+    ensureFt8x7VfoTrackingInitialized();
     if (!guardFt8x7VfoToggleLock()) return;
     uint64_t hz = 0;
     uint8_t mode = 0xFF;
@@ -1122,20 +996,20 @@ static void selectBank3VfoB() {
 
 static void beginBank3VfoBFrequencySet() {
   if (isFt8x7Ft817Keypad()) {
-    ensureFt817VfoTrackingInitialized();
-    const char which = ft817OtherVfoLabel();
+    ensureFt8x7VfoTrackingInitialized();
+    const char which = ft8x7OtherVfoLabel();
     if (which == 'A' || which == 'B') printKeypadCommand(String("BANK3 2 DOUBLE -> VFO") + which + " FREQ");
     else printKeypadCommand("BANK3 2 DOUBLE -> VFO OTHER FREQ");
   } else if (isFt8x7Ft857FamilyKeypad()) {
-    ensureFt857VfoTrackingInitialized();
-    const char which = ft857OtherVfoLabel();
+    ensureFt8x7VfoTrackingInitialized();
+    const char which = ft8x7OtherVfoLabel();
     printKeypadCommand(String("BANK3 2 DOUBLE -> VFO") + which + " FREQ");
   } else printKeypadCommand("BANK3 2 DOUBLE -> VFOB FREQ");
   g_freqEntryActive = true;
   g_freqEntryDigits = "";
   g_freqEntryTargetVfo = (isFt8x7Ft817Keypad() || isFt8x7Ft857FamilyKeypad()) ? 3 : 2;
   if (g_speechEnabled) {
-    const char which = isFt8x7Ft817Keypad() ? ft817OtherVfoLabel() : (isFt8x7Ft857FamilyKeypad() ? ft857OtherVfoLabel() : '?');
+    const char which = ft8x7OtherVfoLabel();
     if (which == 'A' || which == 'B') speakVfoFrequencyLabel(which);
     else speakFrequencyWord();
     playSilenceMs(80);
@@ -1149,7 +1023,7 @@ static void selectBank3Ft817ActiveVfoA() {
     queryBank3RxTx();
     return;
   }
-  ensureFt817VfoTrackingInitialized();
+  ensureFt8x7VfoTrackingInitialized();
   if (!live.activeVfoA) {
     if (!guardFt8x7VfoToggleLock()) return;
     if (!yaesuCatToggleVfo()) { keypadReportIfTimedOut("VFO A ACTIVE"); return; }
@@ -1170,7 +1044,7 @@ static void selectBank3Ft817ActiveVfoB() {
     queryBank3RxTx();
     return;
   }
-  ensureFt817VfoTrackingInitialized();
+  ensureFt8x7VfoTrackingInitialized();
   if (live.activeVfoA) {
     if (!guardFt8x7VfoToggleLock()) return;
     if (!yaesuCatToggleVfo()) { keypadReportIfTimedOut("VFO B ACTIVE"); return; }
@@ -2034,44 +1908,6 @@ static StoredProfile* mutableCurrentStoredProfile() {
   if (!isValidProfileId(g_profileId)) return nullptr;
   StoredProfile& sp = g_slotProfiles[g_profileId - 1];
   return sp.valid ? &sp : nullptr;
-}
-
-static void formatHexByte(uint8_t value, char* out, size_t outSize) {
-  if (!out || outSize < 3) return;
-  snprintf(out, outSize, "%02X", (unsigned)value);
-}
-
-static void speakHexNibble(char c) {
-  if (c >= '0' && c <= '9') {
-    playDigit(c - '0');
-    return;
-  }
-  switch (c) {
-    case 'A': speakToken("a"); break;
-    case 'B': speakToken("b"); break;
-    case 'C': speakToken("c"); break;
-    case 'D': speakToken("d"); break;
-    case 'E': speakError(); break;
-    case 'F': speakToken("f"); break;
-    default: speakError(); break;
-  }
-}
-
-static void speakCivAddressValue(uint8_t addr, bool ok) {
-  if (!g_speechEnabled) return;
-  char hex[3] = "";
-  formatHexByte(addr, hex, sizeof(hex));
-  speakToken("c");
-  playSilenceMs(50);
-  speakToken("i");
-  playSilenceMs(80);
-  speakHexNibble(hex[0]);
-  playSilenceMs(50);
-  speakHexNibble(hex[1]);
-  if (ok) {
-    playSilenceMs(80);
-    speakOk();
-  }
 }
 
 static void speakBaudValue(uint32_t baud, bool ok) {
