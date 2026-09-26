@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased — Voice clips
+
+- all voice clips regenerated with Piper voice `en_US-lessac-medium` (was lessac-high) with both
+  noise scales at 0, so regenerating gives identical clips; these are now the defaults of
+  `generate_voices.py`, `say.py` and `setup_venv.ps1`
+- added voice clips "cancel", "not available" and "timeout" (not used by the firmware yet)
+- WFM mode is now spoken as "wfm" using its own clip; the clip was already in `voice_data.h` but
+  missing from the voice table, so it was spelled out as "w f m"
+
 ## Unreleased — FT8x7 S-meter
 
 - fixed the FT-817/818/857/897 S-meter always reading S0: the RX-status byte carries the meter in
