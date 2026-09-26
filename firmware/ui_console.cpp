@@ -271,6 +271,12 @@ static void reportCommandFailure(const char* label, const char* reason) {
   Serial.println(reason);
 }
 
+// Report a command the radio or profile cannot do, and say "not available".
+static void reportNotAvailable(const char* message) {
+  Serial.println(message);
+  if (g_speechEnabled) speakNotAvailable();
+}
+
 static void speakConsoleSpeechGapMarker() {
   if (!g_speechEnabled) return;
   speakError();
@@ -506,47 +512,47 @@ static bool isFtdx10ConsoleProfile() {
 static bool handleFtdx10BlockedConsoleCommand(const String& upper) {
   if (!isFtdx10ConsoleProfile()) return false;
   if (upper == "MONITOR?" || upper == "MONITOR ON" || upper == "MONITOR OFF") {
-    Serial.println("MONITOR -> hidden on FTDX10 (no clean Yaesu path here)");
+    reportNotAvailable("MONITOR -> hidden on FTDX10 (no clean Yaesu path here)");
     return true;
   }
   if (upper == "MONLEVEL?" || upper.startsWith("MONLEVEL ")) {
-    Serial.println("MONLEVEL -> hidden on FTDX10 (no clean Yaesu path here)");
+    reportNotAvailable("MONLEVEL -> hidden on FTDX10 (no clean Yaesu path here)");
     return true;
   }
   if (upper == "TRANSCEIVE?" || upper == "TRANSCEIVE ON" || upper == "TRANSCEIVE OFF") {
-    Serial.println("TRANSCEIVE -> hidden on FTDX10 (no clean Yaesu path here)");
+    reportNotAvailable("TRANSCEIVE -> hidden on FTDX10 (no clean Yaesu path here)");
     return true;
   }
   if (upper == "PBT1?" || upper.startsWith("PBT1 ")) {
-    Serial.println("PBT1 -> hidden on FTDX10 (use documented Yaesu CAT later)");
+    reportNotAvailable("PBT1 -> hidden on FTDX10 (use documented Yaesu CAT later)");
     return true;
   }
   if (upper == "PBT2?" || upper.startsWith("PBT2 ")) {
-    Serial.println("PBT2 -> hidden on FTDX10 (use documented Yaesu CAT later)");
+    reportNotAvailable("PBT2 -> hidden on FTDX10 (use documented Yaesu CAT later)");
     return true;
   }
   if (upper == "FILSHAPE?" || upper == "FILSHAPE SHARP" || upper == "FILSHAPE SOFT") {
-    Serial.println("FILSHAPE -> hidden on FTDX10 (use documented Yaesu CAT later)");
+    reportNotAvailable("FILSHAPE -> hidden on FTDX10 (use documented Yaesu CAT later)");
     return true;
   }
   if (upper == "FILWIDTH?" || upper.startsWith("FILWIDTH ")) {
-    Serial.println("FILWIDTH -> hidden on FTDX10 (use documented Yaesu CAT later)");
+    reportNotAvailable("FILWIDTH -> hidden on FTDX10 (use documented Yaesu CAT later)");
     return true;
   }
   if (upper == "RIT?" || upper == "RIT ON" || upper == "RIT OFF" || upper.startsWith("RIT ")) {
-    Serial.println("RIT -> hidden on FTDX10 (no clean Yaesu path here)");
+    reportNotAvailable("RIT -> hidden on FTDX10 (no clean Yaesu path here)");
     return true;
   }
   if (upper == "NBLEVEL?" || upper.startsWith("NBLEVEL ")) {
-    Serial.println("NBLEVEL -> hidden on FTDX10 (no clean Yaesu path here)");
+    reportNotAvailable("NBLEVEL -> hidden on FTDX10 (no clean Yaesu path here)");
     return true;
   }
   if (upper == "NRLEVEL?" || upper.startsWith("NRLEVEL ")) {
-    Serial.println("NRLEVEL -> hidden on FTDX10 (no clean Yaesu path here)");
+    reportNotAvailable("NRLEVEL -> hidden on FTDX10 (no clean Yaesu path here)");
     return true;
   }
   if (upper == "NOTCH NAR" || upper == "NOTCH MID" || upper == "NOTCH WIDE") {
-    Serial.println("NOTCH width -> hidden on FTDX10 (only clean ON/OFF path is exposed)");
+    reportNotAvailable("NOTCH width -> hidden on FTDX10 (only clean ON/OFF path is exposed)");
     return true;
   }
   return false;
@@ -886,7 +892,7 @@ static bool handleConsoleProfileCommands(const String& line, const String& upper
   }
   if (upper.startsWith("BSTACK? ")) {
     if (isFtdx10ConsoleProfile()) {
-      Serial.println("BSTACK? -> hidden on FTDX10 (hamTRC internal, not Yaesu CAT)");
+      reportNotAvailable("BSTACK? -> hidden on FTDX10 (hamTRC internal, not Yaesu CAT)");
       return true;
     }
     int reg = line.substring(8).toInt();
@@ -917,7 +923,7 @@ static bool handleConsoleProfileCommands(const String& line, const String& upper
   }
   if (upper.startsWith("BSTACK ")) {
     if (isFtdx10ConsoleProfile()) {
-      Serial.println("BSTACK -> hidden on FTDX10 (hamTRC internal, not Yaesu CAT)");
+      reportNotAvailable("BSTACK -> hidden on FTDX10 (hamTRC internal, not Yaesu CAT)");
       return true;
     }
     int reg = line.substring(7).toInt();
@@ -1411,7 +1417,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
   }
   if (upper == "VOL?") {
     if (currentProfileVariantIs("ft857_897")) {
-      Serial.println("VOL? -> unsupported on verified FT-857/897 path");
+      reportNotAvailable("VOL? -> unsupported on verified FT-857/897 path");
       return true;
     }
     int32_t raw = 0;
@@ -1422,7 +1428,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
   }
   if (upper == "SQL?") {
     if (currentProfileVariantIs("ft857_897")) {
-      Serial.println("SQL? -> unsupported on verified FT-857/897 path");
+      reportNotAvailable("SQL? -> unsupported on verified FT-857/897 path");
       return true;
     }
     int32_t raw = 0;
@@ -1523,11 +1529,11 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     return true;
   }
   if (upper == "MEM WRITE") {
-    Serial.println("MEM WRITE -> unsupported on FT8x7 CAT; command disabled to protect radio settings");
+    reportNotAvailable("MEM WRITE -> unsupported on FT8x7 CAT; command disabled to protect radio settings");
     return true;
   }
   if (upper == "MEM READ RAW") {
-    Serial.println("MEM READ RAW -> unsupported on FT8x7 CAT; opcode is write-only tone data, not memory read");
+    reportNotAvailable("MEM READ RAW -> unsupported on FT8x7 CAT; opcode is write-only tone data, not memory read");
     return true;
   }
   if (upper.startsWith("AGC ")) {
@@ -2130,15 +2136,15 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     return true;
   }
   if (upper == "NR?") {
-    if (!sp.caps.getNr) { if (usbConsoleReady()) Serial.println("NR? -> unsupported"); return true; }
-    if (!refreshLiveNr()) { if (usbConsoleReady()) reportCommandFailure("NR?", "no reply"); return true; }
+    if (!sp.caps.getNr) { reportNotAvailable("NR? -> unsupported"); return true; }
+    if (!refreshLiveNr()) { reportCommandFailure("NR?", "no reply"); return true; }
     if (usbConsoleReady()) Serial.println(live.nrOn ? "NR ON" : "NR OFF");
     speakBinaryFeatureState(voice_noisereduction, voice_noisereduction_len, live.nrOn);
     return true;
   }
   if (upper == "NB?") {
-    if (!sp.caps.getNb) { if (usbConsoleReady()) Serial.println("NB? -> unsupported"); return true; }
-    if (!refreshLiveNb()) { if (usbConsoleReady()) reportCommandFailure("NB?", "no reply"); return true; }
+    if (!sp.caps.getNb) { reportNotAvailable("NB? -> unsupported"); return true; }
+    if (!refreshLiveNb()) { reportCommandFailure("NB?", "no reply"); return true; }
     if (usbConsoleReady()) Serial.println(live.nbOn ? "NB ON" : "NB OFF");
     speakBinaryFeatureState(voice_noiseblanker, voice_noiseblanker_len, live.nbOn);
     return true;
@@ -2376,8 +2382,8 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     return true;
   }
   if (upper == "NOTCH?") {
-    if (!sp.caps.getNotch) { if (usbConsoleReady()) Serial.println("NOTCH? -> unsupported"); return true; }
-    if (!refreshLiveNotch()) { if (usbConsoleReady()) reportCommandFailure("NOTCH?", "no reply"); return true; }
+    if (!sp.caps.getNotch) { reportNotAvailable("NOTCH? -> unsupported"); return true; }
+    if (!refreshLiveNotch()) { reportCommandFailure("NOTCH?", "no reply"); return true; }
     if (!live.notchOn) {
       if (usbConsoleReady()) Serial.println("NOTCH OFF");
       speakNotchCycleState(false, NOTCH_WIDTH_UNKNOWN);
@@ -2398,21 +2404,21 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     return true;
   }
   if (upper == "NR ON") {
-    if (!sp.caps.setNr) { Serial.println("NR ON -> unsupported"); return true; }
+    if (!sp.caps.setNr) { reportNotAvailable("NR ON -> unsupported"); return true; }
     if (!applyNrAndTrack(true)) { reportCommandFailure("NR ON", "failed"); return true; }
     Serial.println("NR ON");
     speakBinaryFeatureState(voice_noisereduction, voice_noisereduction_len, true);
     return true;
   }
   if (upper == "NR OFF") {
-    if (!sp.caps.setNr) { Serial.println("NR OFF -> unsupported"); return true; }
+    if (!sp.caps.setNr) { reportNotAvailable("NR OFF -> unsupported"); return true; }
     if (!applyNrAndTrack(false)) { reportCommandFailure("NR OFF", "failed"); return true; }
     Serial.println("NR OFF");
     speakBinaryFeatureState(voice_noisereduction, voice_noisereduction_len, false);
     return true;
   }
   if (upper == "NR TOGGLE") {
-    if (!sp.caps.getNr || !sp.caps.setNr) { Serial.println("NR TOGGLE -> unsupported"); return true; }
+    if (!sp.caps.getNr || !sp.caps.setNr) { reportNotAvailable("NR TOGGLE -> unsupported"); return true; }
     if (!refreshLiveNr()) { reportCommandFailure("NR TOGGLE", "no reply"); return true; }
     const bool next = !live.nrOn;
     if (!applyNrAndTrack(next)) { reportCommandFailure("NR TOGGLE", "failed"); return true; }
@@ -2421,21 +2427,21 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     return true;
   }
   if (upper == "NB ON") {
-    if (!sp.caps.setNb) { Serial.println("NB ON -> unsupported"); return true; }
+    if (!sp.caps.setNb) { reportNotAvailable("NB ON -> unsupported"); return true; }
     if (!applyNbAndTrack(true)) { reportCommandFailure("NB ON", "failed"); return true; }
     Serial.println("NB ON");
     speakBinaryFeatureState(voice_noiseblanker, voice_noiseblanker_len, true);
     return true;
   }
   if (upper == "NB OFF") {
-    if (!sp.caps.setNb) { Serial.println("NB OFF -> unsupported"); return true; }
+    if (!sp.caps.setNb) { reportNotAvailable("NB OFF -> unsupported"); return true; }
     if (!applyNbAndTrack(false)) { reportCommandFailure("NB OFF", "failed"); return true; }
     Serial.println("NB OFF");
     speakBinaryFeatureState(voice_noiseblanker, voice_noiseblanker_len, false);
     return true;
   }
   if (upper == "NB TOGGLE") {
-    if (!sp.caps.getNb || !sp.caps.setNb) { Serial.println("NB TOGGLE -> unsupported"); return true; }
+    if (!sp.caps.getNb || !sp.caps.setNb) { reportNotAvailable("NB TOGGLE -> unsupported"); return true; }
     if (!refreshLiveNb()) { reportCommandFailure("NB TOGGLE", "no reply"); return true; }
     const bool next = !live.nbOn;
     if (!applyNbAndTrack(next)) { reportCommandFailure("NB TOGGLE", "failed"); return true; }
@@ -2528,42 +2534,42 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     return true;
   }
   if (upper == "NOTCH ON") {
-    if (!sp.caps.setNotch) { Serial.println("NOTCH ON -> unsupported"); return true; }
+    if (!sp.caps.setNotch) { reportNotAvailable("NOTCH ON -> unsupported"); return true; }
     if (!applyNotchAndTrack(true)) { reportCommandFailure("NOTCH ON", "failed"); return true; }
     Serial.println("NOTCH ON");
     speakTokenState("notch filter", true);
     return true;
   }
   if (upper == "NOTCH NAR") {
-    if (currentProtocolType() != PROTO_CIV || !sp.caps.setNotch) { Serial.println("NOTCH NAR -> unsupported"); return true; }
+    if (currentProtocolType() != PROTO_CIV || !sp.caps.setNotch) { reportNotAvailable("NOTCH NAR -> unsupported"); return true; }
     if (!applyNotchAndTrack(true) || !applyNotchWidthAndTrack(NOTCH_WIDTH_NAR)) { reportCommandFailure("NOTCH NAR", "failed"); return true; }
     Serial.println("NOTCH NAR");
     speakNotchCycleState(true, NOTCH_WIDTH_NAR);
     return true;
   }
   if (upper == "NOTCH MID") {
-    if (currentProtocolType() != PROTO_CIV || !sp.caps.setNotch) { Serial.println("NOTCH MID -> unsupported"); return true; }
+    if (currentProtocolType() != PROTO_CIV || !sp.caps.setNotch) { reportNotAvailable("NOTCH MID -> unsupported"); return true; }
     if (!applyNotchAndTrack(true) || !applyNotchWidthAndTrack(NOTCH_WIDTH_MID)) { reportCommandFailure("NOTCH MID", "failed"); return true; }
     Serial.println("NOTCH MID");
     speakNotchCycleState(true, NOTCH_WIDTH_MID);
     return true;
   }
   if (upper == "NOTCH WIDE") {
-    if (currentProtocolType() != PROTO_CIV || !sp.caps.setNotch) { Serial.println("NOTCH WIDE -> unsupported"); return true; }
+    if (currentProtocolType() != PROTO_CIV || !sp.caps.setNotch) { reportNotAvailable("NOTCH WIDE -> unsupported"); return true; }
     if (!applyNotchAndTrack(true) || !applyNotchWidthAndTrack(NOTCH_WIDTH_WIDE)) { reportCommandFailure("NOTCH WIDE", "failed"); return true; }
     Serial.println("NOTCH WIDE");
     speakNotchCycleState(true, NOTCH_WIDTH_WIDE);
     return true;
   }
   if (upper == "NOTCH OFF") {
-    if (!sp.caps.setNotch) { Serial.println("NOTCH OFF -> unsupported"); return true; }
+    if (!sp.caps.setNotch) { reportNotAvailable("NOTCH OFF -> unsupported"); return true; }
     if (!applyNotchAndTrack(false)) { reportCommandFailure("NOTCH OFF", "failed"); return true; }
     Serial.println("NOTCH OFF");
     speakTokenState("notch filter", false);
     return true;
   }
   if (upper == "NOTCH TOGGLE") {
-    if (!sp.caps.getNotch || !sp.caps.setNotch) { Serial.println("NOTCH TOGGLE -> unsupported"); return true; }
+    if (!sp.caps.getNotch || !sp.caps.setNotch) { reportNotAvailable("NOTCH TOGGLE -> unsupported"); return true; }
     if (!refreshLiveNotch()) { reportCommandFailure("NOTCH TOGGLE", "no reply"); return true; }
     const bool next = !live.notchOn;
     if (!applyNotchAndTrack(next)) { reportCommandFailure("NOTCH TOGGLE", "failed"); return true; }

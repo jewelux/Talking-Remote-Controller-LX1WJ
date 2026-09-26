@@ -81,7 +81,7 @@ static void adjustVolumeLevel(int delta) {
 
 static void reportFtdx10HiddenKeypadAction(const char* label) {
   if ((bool)Serial) Serial.println(String(label) + " hidden on FTDX10");
-  if (g_speechEnabled) speakError();
+  if (g_speechEnabled) speakNotAvailable();
 }
 
 static void printKeypadStatus(const String& line) {

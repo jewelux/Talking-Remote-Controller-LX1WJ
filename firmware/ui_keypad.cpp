@@ -225,7 +225,7 @@ static bool isFtdx10KeypadProfile() {
 
 static void reportFtdx10HiddenKey(const char* label) {
   printKeypadStatus(String(label) + " hidden on FTDX10");
-  if (g_speechEnabled) speakError();
+  if (g_speechEnabled) speakNotAvailable();
 }
 
 static void speakNotchCycleState(bool on, NotchWidth width) {
@@ -858,6 +858,7 @@ static void queryBank3TxFrequency() {
   }
   if (isFt8x7Ft857FamilyKeypad()) {
     printKeypadStatus("TXFREQ unavailable");
+    if (g_speechEnabled) speakNotAvailable();
     return;
   }
   uint64_t hz = 0;
@@ -869,6 +870,7 @@ static void queryBank3TxFrequency() {
         speakQueriedFrequencyHz(hz);
       } else {
         printKeypadStatus("TXFREQ -> unavailable");
+        if (g_speechEnabled) speakNotAvailable();
       }
     }
     return;
@@ -1082,6 +1084,7 @@ static void selectBank3VfoB() {
   g_suppressFreqSpeakUntilMs = millis() + 1500;
   if (isFt8x7Ft857FamilyKeypad()) {
     printKeypadStatus("VFO B unsupported");
+    if (g_speechEnabled) speakNotAvailable();
     return;
   }
   if (isFt8x7Ft817Keypad()) {
@@ -1268,6 +1271,7 @@ static void queryBank4VfoAMode(uint8_t sourceBank) {
   }
   if (isFt8x7Ft857FamilyKeypad()) {
     printKeypadStatus("VFOA MODE unsupported");
+    if (g_speechEnabled) speakNotAvailable();
     return;
   }
   uint8_t mode = 0xFF;
@@ -1282,6 +1286,7 @@ static void beginBank4VfoAModeSet(uint8_t sourceBank) {
   printKeypadCommand(String("BANK") + String((int)sourceBank) + (sourceBank == 3 ? " 4" : " 1") + " LONG -> VFOA MODE");
   if (isFt8x7Ft857FamilyKeypad()) {
     printKeypadStatus("VFOA MODE unsupported");
+    if (g_speechEnabled) speakNotAvailable();
     return;
   }
   g_modeSetActive = true;
@@ -1302,6 +1307,7 @@ static void queryBank4VfoBMode(uint8_t sourceBank) {
   }
   if (isFt8x7Ft857FamilyKeypad()) {
     printKeypadStatus("VFOB MODE unsupported");
+    if (g_speechEnabled) speakNotAvailable();
     return;
   }
   uint8_t mode = 0xFF;
@@ -1316,6 +1322,7 @@ static void beginBank4VfoBModeSet(uint8_t sourceBank) {
   printKeypadCommand(String("BANK") + String((int)sourceBank) + (sourceBank == 3 ? " 5" : " 2") + " LONG -> VFOB MODE");
   if (isFt8x7Ft857FamilyKeypad()) {
     printKeypadStatus("VFOB MODE unsupported");
+    if (g_speechEnabled) speakNotAvailable();
     return;
   }
   g_modeSetActive = true;
@@ -1339,7 +1346,7 @@ static void queryBank3RxTx() {
     if (g_speechEnabled) {
       speakToken("transceiver");
       playSilenceMs(60);
-      speakError();
+      speakNotAvailable();
     }
     return;
   }
@@ -1379,7 +1386,7 @@ static void queryBank1RxTx() {
     if (g_speechEnabled) {
       speakToken("transceiver");
       playSilenceMs(60);
-      speakError();
+      speakNotAvailable();
     }
     return;
   }
@@ -1421,7 +1428,7 @@ static void queryBank1TxFrequency() {
       speakQueriedFrequencyHz(hz);
     } else {
       printKeypadStatus("TXFREQ unavailable on FT-857/897");
-      if (g_speechEnabled) speakError();
+      if (g_speechEnabled) speakNotAvailable();
     }
     return;
   }
@@ -1451,6 +1458,7 @@ static void queryBank1TxFrequency() {
         speakQueriedFrequencyHz(hz);
       } else {
         printKeypadStatus("TXFREQ -> unavailable");
+        if (g_speechEnabled) speakNotAvailable();
       }
     }
     return;
@@ -1531,7 +1539,7 @@ static void roundActiveFrequency500() {
 static void beginBank1RfPowerSet() {
   if (currentProtocolType() != PROTO_CIV || !currentStoredProfile().caps.setRfPower) {
     printKeypadStatus("RFPOWER -> unavailable");
-    if (g_speechEnabled) speakError();
+    if (g_speechEnabled) speakNotAvailable();
     return;
   }
   printKeypadCommand("BANK1 6 LONG -> RFPOWER");
@@ -1825,7 +1833,7 @@ static bool selectBank9DirectProfile(char key) {
   if (!storedProfileForId(slot)) {
     printKeypadCommand(String("BANK9 ") + key + " SHORT -> PROFILE");
     printKeypadStatus(String("PROFILE ") + String((int)slot) + " EMPTY");
-    if (g_speechEnabled) speakError();
+    if (g_speechEnabled) speakNotAvailable();
     return true;
   }
   printKeypadCommand(String("BANK9 ") + key + " SHORT -> PROFILE " + String((int)slot));
@@ -2075,7 +2083,7 @@ static void queryBank8CivAddress() {
   printKeypadCommand("BANK8 1 SHORT -> CIVADDR?");
   if (!currentProfileAllowsCivSetup()) {
     printKeypadStatus("CIVADDR -> unavailable");
-    if (g_speechEnabled) speakError();
+    if (g_speechEnabled) speakNotAvailable();
     return;
   }
   char hex[3] = "";
@@ -2088,7 +2096,7 @@ static void beginBank8CivAddressEntry() {
   printKeypadCommand("BANK8 1 LONG -> CIVADDR");
   if (!currentProfileAllowsCivSetup()) {
     printKeypadStatus("CIVADDR -> unavailable");
-    if (g_speechEnabled) speakError();
+    if (g_speechEnabled) speakNotAvailable();
     return;
   }
   g_civAddrEntryActive = true;
@@ -2124,7 +2132,7 @@ static void cycleBank8Baud(int delta) {
   printKeypadCommand(String("BANK8 2 ") + (delta > 0 ? "SHORT" : "LONG") + " -> BAUD");
   if (!currentProfileAllowsCivSetup()) {
     printKeypadStatus("BAUD -> unavailable");
-    if (g_speechEnabled) speakError();
+    if (g_speechEnabled) speakNotAvailable();
     return;
   }
   StoredProfile* sp = mutableCurrentStoredProfile();

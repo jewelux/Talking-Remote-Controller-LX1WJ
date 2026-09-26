@@ -11,13 +11,16 @@
 - all voice clips regenerated with Piper voice `en_US-lessac-medium` (was lessac-high) with both
   noise scales at 0, so regenerating gives identical clips; these are now the defaults of
   `generate_voices.py`, `say.py` and `setup_venv.ps1`
-- added voice clips "cancel", "not available" and "timeout" ("not available" is not used by the
-  firmware yet)
+- added voice clips "cancel", "not available" and "timeout"
 - pressing `#` to cancel an input now says "cancel" instead of "ok"; cancelling bank or profile
   selection, which was silent, says "cancel" too
 - when the radio does not answer a keypad action or serial command, the device now says "timeout";
   it used to say "error" or nothing. Failures for other reasons (unsupported, rejected) keep their
   old behaviour
+- features the radio or profile cannot provide now say "not available": keys hidden on FTDX10, RF
+  power set, TX frequency and VFO B / VFO mode on FT-857/897, RX/TX state on FT-817, CI-V address and
+  baud setup, an empty profile slot, and serial commands answered "unsupported" or "hidden on
+  FTDX10". Before, these said "error" or nothing
 - WFM mode is now spoken as "wfm" using its own clip; the clip was already in `voice_data.h` but
   missing from the voice table, so it was spelled out as "w f m"
 

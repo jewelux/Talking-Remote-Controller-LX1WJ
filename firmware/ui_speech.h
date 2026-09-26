@@ -15,6 +15,7 @@ bool speakTokenPercent(const String& token, uint8_t percent);
 void speakOk();
 void speakError();
 void speakTimeout();
+void speakNotAvailable();
 void voiceTest();
 void speakProfileIdentityFromSlot(uint8_t id, bool withOk);
 void speakBootProfile();
