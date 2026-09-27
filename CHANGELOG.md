@@ -73,6 +73,8 @@
   disconnected, polling slows down so the keypad stays responsive
 - FT-817/818/857/897: fixed the S-meter always reading S0
 - FT-857/897: fixed the dial lock turning on when HamTRC starts with the radio already on
+- FT-817/818/857/897: RTTY and RTTY-R beep in mode select and are not listed by `MODE LIST`, since
+  these radios have no such mode. Before, RTTY-R switched the radio to FM and RTTY sent WFM
 - FT-817: Bank 3 `1` long toggles VFO A/B and `2` long copies the active VFO to the other (A=B)
 - TS-480: `NR 0`, `NR 1` and `NR 2` set the NR level, and the Bank 2 `1` key and `NR?` say it
   ("noise reduction two") instead of only on or off
