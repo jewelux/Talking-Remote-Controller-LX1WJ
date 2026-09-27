@@ -102,8 +102,9 @@ class KeypadInputListener {
   // to Normal. For bank select the new bank is already set.
   virtual void onCommit(InputMode mode, const char* digits, TargetVfo targetVfo) = 0;
 
-  // A key typed during mode select. Gives the feedback (a beep when it picks no
-  // mode) and returns true with mode set when the key picks a mode.
+  // A key typed during mode select. When it picks a mode: gives the feedback
+  // and returns true with mode set. Otherwise returns false with no feedback;
+  // the key is rejected like a digit an entry does not take ("MODE SELECT 0").
   virtual bool onModeDigit(char key, uint8_t& mode) = 0;
   // Enter in mode select once a mode is picked: apply it. The mode is already
   // back to Normal.

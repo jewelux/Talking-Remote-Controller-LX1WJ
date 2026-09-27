@@ -254,16 +254,13 @@ void keypadEntryCommit(InputMode mode, const char* digits, TargetVfo targetVfo) 
   }
 }
 
+// A key that picks no mode is rejected by the state machine.
 bool keypadModeDigit(char key, uint8_t& mode) {
-  printKeypadCommand(String("MODE DIGIT -> ") + String(key));
   // A digit the profile has no mode code for still picks its mode, as before.
   mode = 0xFF;
   (void)profileModeFromDigit(key, mode);
-  if (mode == 0xFF) {
-    printKeypadStatus("MODE DIGIT -> invalid");
-    playBeep();
-    return false;
-  }
+  if (mode == 0xFF) return false;
+  printKeypadCommand(String("MODE DIGIT -> ") + String(key));
   g_suppressModePrefixOnce = true;
   printKeypadStatus(String("MODE STAGE: ") + modeToString(mode));
   speakMode(mode);

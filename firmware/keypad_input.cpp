@@ -223,7 +223,12 @@ void KeypadInput::releasedNormal(char key, uint32_t nowMs) {
 // Enter applies it. Any other key beeps and the mode stays; only '#' cancels.
 void KeypadInput::releasedModeSelect(char key) {
   uint8_t mode = 0;
-  if (listener_.onModeDigit(key, mode)) stagedMode_ = mode;
+  if (listener_.onModeDigit(key, mode)) {
+    stagedMode_ = mode;
+    return;
+  }
+  const char label[2] = {key, '\0'};
+  reportRejected("MODE SELECT", label);
 }
 
 // Bank select, profile select and the entries: a digit the entry takes, or

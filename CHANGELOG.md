@@ -51,6 +51,9 @@
   `KeypadInput` now names the running key (`keypadActiveKey()`, was `keymapActiveKey()`).
   `onUnassigned` is `onRejected`, and the entry target VFO is `enum class TargetVfo` (was the
   `KEYPAD_VFO_*` constants and raw 0–3). No behaviour change
+- a key that picks no mode in mode select is rejected like a digit an entry does not take: the
+  status line is `MODE SELECT 0 -> unassigned` (was `MODE DIGIT -> invalid`, after a
+  `CMD MODE DIGIT -> 0` line that is now printed only for a key that picks a mode). Same beep
 - NR, NB and notch are one operation each (`firmware/radio_features.{h,cpp}`) that the Bank 2
   keys `1`–`3` and the console's `NR`, `NB` and `NOTCH` commands both call; both print and say the
   result the same way (`ui_features.{h,cpp}`). What changes:

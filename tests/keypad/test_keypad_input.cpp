@@ -90,10 +90,10 @@ struct Fake : KeypadInputListener {
                   std::to_string((int)targetVfo));
   }
   bool onModeDigit(char key, uint8_t &mode) override {
-    const bool ok = key != '\0' && validModeDigits.find(key) != std::string::npos;
-    log.push_back(std::string("mode digit ") + key + (ok ? "" : " invalid"));
-    if (ok) mode = (uint8_t)(key - '0');
-    return ok;
+    if (key == '\0' || validModeDigits.find(key) == std::string::npos) return false;
+    log.push_back(std::string("mode digit ") + key);
+    mode = (uint8_t)(key - '0');
+    return true;
   }
   void onModeCommit(uint8_t mode, TargetVfo targetVfo) override {
     log.push_back("mode commit " + std::to_string(mode) + " vfo" +
@@ -839,8 +839,8 @@ TEST(input_staged_mode_is_modal) {
   tap(in, '1');
   tap(in, 'D');
   CHECK_EQ(in.mode(), InputMode::Normal);
-  CHECK_LOG(f, "mode digit 2", "mode digit 7 invalid", "mode digit 0 invalid",
-            "mode digit * invalid", "mode digit 1", "mode commit 1 vfo2");
+  CHECK_LOG(f, "mode digit 2", "rejected MODE SELECT 7", "rejected MODE SELECT 0",
+            "rejected MODE SELECT *", "mode digit 1", "mode commit 1 vfo2");
 }
 
 // --- Mode select -----------------------------------------------------------------------
@@ -870,7 +870,7 @@ TEST(input_mode_select_invalid_key_keeps_it_active) {
   CHECK_EQ(in.mode(), InputMode::ModeSelect);
   tap(in, '2');
   tap(in, 'D');
-  CHECK_LOG(f, "mode digit 7 invalid", "mode digit A invalid", "mode digit * invalid",
+  CHECK_LOG(f, "rejected MODE SELECT 7", "rejected MODE SELECT A", "rejected MODE SELECT *",
             "mode digit 2", "mode commit 2 vfo2");
 }
 
@@ -907,7 +907,7 @@ TEST(input_mode_select_target_vfo_is_not_reused) {
   in.beginModeSelect(TargetVfo::Current);
   tap(in, '5');
   tap(in, 'D');
-  CHECK_LOG(f, "mode digit 0 invalid", "clear", "mode digit 5", "mode commit 5 vfo0");
+  CHECK_LOG(f, "rejected MODE SELECT 0", "clear", "mode digit 5", "mode commit 5 vfo0");
 }
 
 // F1: every key is the mode digit, even one with a short action on the bank
@@ -936,7 +936,7 @@ TEST(input_mode_select_ignores_holds) {
   hold(in, '2');
   CHECK(in.stagedModeActive());
   CHECK_EQ(in.bank(), 1);
-  CHECK_LOG(f, "mode digit 0 invalid", "mode digit * invalid", "mode digit 2");
+  CHECK_LOG(f, "rejected MODE SELECT 0", "rejected MODE SELECT *", "mode digit 2");
 }
 
 // Fixed by construction: the picked mode is part of mode select, so a new mode
