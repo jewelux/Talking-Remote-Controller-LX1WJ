@@ -18,10 +18,13 @@
   `KeypadLayout` (generic, CI-V, FTDX10, FT-8x7, FT-817, FT-857/897) and the bank actions no
   longer check which radio they run on. The radio branches inside actions became their own
   actions, and the FTDX10 console-command keys are listed in the keymap. Branches no key could
-  reach were removed: the FT-817 Bank 3 `2` long "A=B" copy and `1` long A/B toggle, and the
-  FT-857/897 Bank 1 `2` TX frequency read by toggling the VFO (all replaced earlier by the
-  documented layout), plus FT-857/897 and FT-817 fallbacks in Bank 3 actions those radios never
-  reach. The host tests gained an "FT-8x7 without variant" family
+  reach were removed: the FT-857/897 Bank 1 `2` TX frequency read by toggling the VFO (replaced
+  earlier by the "not available" answer while split is on), plus FT-857/897 and FT-817 fallbacks
+  in Bank 3 actions those radios never reach. The host tests gained an "FT-8x7 without variant"
+  family
+- FT-817 Bank 3 `1` long toggles VFO A/B and `2` long copies the active VFO's frequency and mode
+  to the other (A=B, spoken "a equals b") again; both had become unreachable when the long press
+  was given the same frequency entry as the double press. New console command `VFO A=B` (FT-817)
 - Bank 6 on radios other than the FT-8x7 family is now empty like any unassigned key
   ("BANK6 k -> unassigned" beep, a hold beeps at the hold time); before, each key beeped
   "BANK6 reserved", and `0`-`2` first waited for a double press

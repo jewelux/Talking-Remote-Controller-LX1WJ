@@ -74,7 +74,8 @@ void beginBank3Ft8x7CurrentVfoFrequencySet();
 void beginBank3Ft8x7OtherVfoFrequencySet();
 void queryBank3Ft817OtherVfo();
 void queryBank3Ft857OtherVfo();
-void toggleBank3Ft857Vfo();             // "BANK3 1 LONG -> A/B"
+void toggleBank3Ft8x7Vfo();             // "BANK3 1 LONG -> A/B"
+void copyBank3Ft817VfoToOther();         // "BANK3 2 LONG -> A=B"
 void reportBank3Ft857VfoBUnsupported();  // "BANK3 2 LONG -> VFO B", "not available"
 void queryBank3VfoAMode(char key);     // key: the Bank 3 key pressed (3 on FT-817, 4 elsewhere)
 void beginBank3VfoAModeSet(char key);

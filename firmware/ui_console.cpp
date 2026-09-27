@@ -685,6 +685,7 @@ void printHelp() {
     if (ft817) {
       Serial.println("    VOL? | SQL?");
       Serial.println("    VFO TOGGLE | A | B");
+      Serial.println("    VFO A=B  (copy the active VFO to the other)");
       Serial.println("    YPOWER OFF | ON");
     } else if (ft857Family) {
       Serial.println("    VFO TOGGLE  (raw)");
@@ -1595,6 +1596,22 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
   if (upper == "VFO TOGGLE") {
     yaesuCatToggleVfo();
     Serial.println("VFO TOGGLE");
+    return true;
+  }
+  if (upper == "VFO A=B") {
+    if (!currentProfileVariantIs("ft817")) {
+      Serial.println("VFO A=B -> enabled only for FT-817");
+      return true;
+    }
+    if (!ft8x7CopyActiveVfoToOther()) { reportCommandFailure("VFO A=B", "failed"); return true; }
+    Serial.println("A=B");
+    if (g_speechEnabled) {
+      speakToken("a");
+      playSilenceMs(60);
+      speakToken("equals");
+      playSilenceMs(60);
+      speakToken("b");
+    }
     return true;
   }
   if (upper == "VFO A") {

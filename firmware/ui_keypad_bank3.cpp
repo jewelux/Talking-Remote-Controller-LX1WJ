@@ -136,7 +136,7 @@ void selectBank3VfoA() {
   queryBank3VfoA();
 }
 
-void toggleBank3Ft857Vfo() {
+void toggleBank3Ft8x7Vfo() {
   printKeypadCommand("BANK3 1 LONG -> A/B");
   g_suppressFreqSpeakUntilMs = millis() + 1500;
   ensureFt8x7VfoTrackingInitialized();
@@ -252,6 +252,22 @@ void selectBank3VfoB() {
     return;
   }
   queryBank3VfoB();
+}
+
+void copyBank3Ft817VfoToOther() {
+  printKeypadCommand("BANK3 2 LONG -> A=B");
+  g_suppressFreqSpeakUntilMs = millis() + 1500;
+  ensureFt8x7VfoTrackingInitialized();
+  if (!guardFt8x7VfoToggleLock()) return;
+  if (!ft8x7CopyActiveVfoToOther()) { keypadReportIfTimedOut("A=B"); return; }
+  printKeypadStatus("A=B");
+  if (g_speechEnabled) {
+    speakToken("a");
+    playSilenceMs(60);
+    speakToken("equals");
+    playSilenceMs(60);
+    speakToken("b");
+  }
 }
 
 void reportBank3Ft857VfoBUnsupported() {

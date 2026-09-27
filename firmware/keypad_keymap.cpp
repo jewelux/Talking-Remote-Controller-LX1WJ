@@ -189,12 +189,8 @@ bool bank3(const KeypadTraits& t, Gesture g, char key) {
       }
       return run(g, queryBank3Split, toggleBank3Split, queryBank3TxFrequency);
     case '1':
-      if (t.layout == L::Ft817) {
-        return run(g, queryBank3Ft8x7CurrentVfo, beginBank3Ft8x7CurrentVfoFrequencySet,
-                   beginBank3Ft8x7CurrentVfoFrequencySet);
-      }
-      if (t.layout == L::Ft857) {
-        return run(g, queryBank3Ft8x7CurrentVfo, toggleBank3Ft857Vfo, beginBank3Ft8x7CurrentVfoFrequencySet);
+      if (t.layout == L::Ft817 || t.layout == L::Ft857) {
+        return run(g, queryBank3Ft8x7CurrentVfo, toggleBank3Ft8x7Vfo, beginBank3Ft8x7CurrentVfoFrequencySet);
       }
       if (t.layout == L::Ftdx10) {
         return run(g, SEND("BANK3 1 SHORT -> VFOA?", "VFOA?"), SEND("BANK3 1 LONG -> VFO A", "VFO A"),
@@ -203,8 +199,7 @@ bool bank3(const KeypadTraits& t, Gesture g, char key) {
       return run(g, queryBank3VfoA, selectBank3VfoA, beginBank3VfoAFrequencySet);
     case '2':
       if (t.layout == L::Ft817) {
-        return run(g, queryBank3Ft817OtherVfo, beginBank3Ft8x7OtherVfoFrequencySet,
-                   beginBank3Ft8x7OtherVfoFrequencySet);
+        return run(g, queryBank3Ft817OtherVfo, copyBank3Ft817VfoToOther, beginBank3Ft8x7OtherVfoFrequencySet);
       }
       if (t.layout == L::Ft857) {
         return run(g, queryBank3Ft857OtherVfo, reportBank3Ft857VfoBUnsupported,

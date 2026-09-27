@@ -502,6 +502,23 @@ bool setVfoMode(bool targetVfoA, uint8_t mode, uint8_t filter) {
   return false;
 }
 
+bool ft8x7CopyActiveVfoToOther() {
+  if (currentProtocolType() != PROTO_YAESU_FT8X7) return false;
+  uint64_t hz = 0;
+  uint8_t mode = 0xFF;
+  if (!queryFrequency(hz, 800)) return false;
+  if (!queryMode(mode, 800)) return false;
+  if (!yaesuCatToggleVfo()) return false;
+  delay(120);
+  bool ok = setFrequency(hz);
+  delay(120);
+  if (ok) ok = setMode(mode, 1);
+  delay(120);
+  yaesuCatToggleVfo();
+  delay(120);
+  return ok;
+}
+
 bool querySplit(bool& onOut, uint32_t timeoutMs) {
   ProtocolType pt = currentProtocolType();
   const StoredProfile& sp = currentStoredProfile();
