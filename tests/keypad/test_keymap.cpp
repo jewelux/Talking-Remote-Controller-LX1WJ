@@ -229,45 +229,12 @@ TEST(keymap_double_click_matches_expectations) {
 
 namespace {
 
-// Keys the old keypadEvent() handled on release before it took the mode digit.
-bool legacyModeSelectShortKey(uint16_t family, uint8_t bank, char key) {
-  switch (bank) {
-    case 3: return key >= '6' && key <= '9';
-    case 5: return key >= '1' && key <= '5';
-    case 6: return key == '3' || key == '4';
-    case 8: return key == '1';
-    case 9: return key == 'B' || key == 'C' || (family == LIGHT && key >= '1' && key <= '9');
-    default: return false;
-  }
-}
-
 // Holds the old keypadEvent() guarded with !g_modeSetActive.
 bool legacyModeSelectGuardedHold(uint16_t family, uint8_t bank, char key) {
   return bank == 3 && ((key >= '1' && key <= '5') || (key == '6' && family == FT817));
 }
 
 }  // namespace
-
-TEST(keymap_mode_select_short_runs_legacy_keys_only) {
-  forEachKey([](const Family &f, const KeypadTraits &t, uint8_t bank, char key) {
-    const char *expected = legacyModeSelectShortKey(f.bit, bank, key)
-                               ? lookup(f.bit, bank, key).shortAction
-                               : "unassigned";
-    checkOutcome(f, bank, key, "mode-select short",
-                 outcome(keymapModeSelectShort, t, bank, key, "unassigned"), expected);
-  });
-}
-
-TEST(keymap_mode_select_short_examples) {
-  // F1: Bank 3 '7' is a band-stack query, not the mode digit 7.
-  g_calls.clear();
-  CHECK(keymapModeSelectShort(traitsFor(IC7300), 3, '7'));
-  CHECK_EQ(g_calls, "queryBank3BandStack(1)");
-  // Bank 1 digits are mode digits.
-  g_calls.clear();
-  CHECK(!keymapModeSelectShort(traitsFor(IC7300), 1, '1'));
-  CHECK(g_calls.empty());
-}
 
 TEST(keymap_mode_select_hold_runs_unguarded_holds) {
   forEachKey([](const Family &f, const KeypadTraits &t, uint8_t bank, char key) {

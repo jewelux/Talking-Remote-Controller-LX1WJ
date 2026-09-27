@@ -52,10 +52,6 @@ class KeypadInputListener {
   // True when a short press of the key waits for a possible double click.
   virtual bool wantsDoubleClick(uint8_t bank, char key) = 0;
 
-  // LEGACY(F1): during mode select, run the key's short action instead of
-  // taking it as a mode digit when the old dispatcher did (Bank 3 keys 6-9 and
-  // others). Returns true when it did.
-  virtual bool runModeSelectShort(uint8_t bank, char key) = 0;
   // LEGACY(F2): during mode select, holds still run their long actions, except
   // the ones the old dispatcher guarded. Returns true when one ran.
   virtual bool runModeSelectHold(uint8_t bank, char key) = 0;

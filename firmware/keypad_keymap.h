@@ -28,10 +28,6 @@ bool keymapDoubleClick(const KeypadTraits& traits, uint8_t bank, char key);
 // True when a short press of the key waits for a possible double click.
 bool keymapWantsDoubleClick(const KeypadTraits& traits, uint8_t bank, char key);
 
-// LEGACY(F1): during mode select, these keys run their short action instead of
-// being taken as the mode digit, because the old dispatcher handled them
-// first. Returns true when the key is one of them and its action ran.
-bool keymapModeSelectShort(const KeypadTraits& traits, uint8_t bank, char key);
 // LEGACY(F2): during mode select, holds run their long actions, except Bank 3
 // keys the old dispatcher guarded ('1'-'5', and '6' on the FT-817).
 bool keymapModeSelectHold(const KeypadTraits& traits, uint8_t bank, char key);

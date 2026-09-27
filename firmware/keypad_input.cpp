@@ -143,7 +143,6 @@ void KeypadInput::releasedNormal(char key, uint32_t nowMs) {
 // Mode select takes the next key as the mode digit. There is no double-click
 // wait.
 void KeypadInput::releasedModeSelect(char key) {
-  if (listener_.runModeSelectShort(bank_, key)) return;  // LEGACY(F1)
   modeSelect_ = false;
   uint8_t mode = 0;
   if (listener_.onModeDigit(key, mode)) {

@@ -264,24 +264,6 @@ bool keymapWantsDoubleClick(const KeypadTraits& traits, uint8_t bank, char key) 
   return dispatch(traits, bank, key, Gesture::WantsDoubleClick);
 }
 
-// The old keypadEvent() ran these release handlers before it got to the mode
-// digit.
-bool keymapModeSelectShort(const KeypadTraits& traits, uint8_t bank, char key) {
-  bool runsShort = false;
-  switch (bank) {
-    case 3: runsShort = key >= '6' && key <= '9'; break;
-    case 5: runsShort = key >= '1' && key <= '5'; break;
-    case 6: runsShort = key == '3' || key == '4'; break;
-    case 8: runsShort = key == '1'; break;
-    case 9:
-      runsShort = key == 'B' || key == 'C' ||
-                  (traits.lightIcomFallback && key >= '1' && key <= '9');
-      break;
-    default: break;
-  }
-  return runsShort && keymapShort(traits, bank, key);
-}
-
 bool keymapModeSelectHold(const KeypadTraits& traits, uint8_t bank, char key) {
   if (bank == 3 && ((key >= '1' && key <= '5') || (key == '6' && traits.ft817))) return false;
   return keymapHold(traits, bank, key);

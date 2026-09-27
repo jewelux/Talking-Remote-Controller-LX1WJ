@@ -37,7 +37,7 @@ struct Fake : KeypadInputListener {
   int pressedActivity = 0;
 
   std::set<std::string> holds, shorts, doubles, waits;
-  std::set<std::string> modeSelectShorts, modeSelectHolds;
+  std::set<std::string> modeSelectHolds;
   std::map<std::string, std::function<void()>> hooks;  // "hold 1 0" -> hook
   std::string validModeDigits = "123456789";
   bool hasStagedCommand = false;
@@ -62,9 +62,6 @@ struct Fake : KeypadInputListener {
     return run("double", doubles, bank, key);
   }
   bool wantsDoubleClick(uint8_t bank, char key) override { return waits.count(keyId(bank, key)); }
-  bool runModeSelectShort(uint8_t bank, char key) override {
-    return run("modeSelectShort", modeSelectShorts, bank, key);
-  }
   bool runModeSelectHold(uint8_t bank, char key) override {
     return run("modeSelectHold", modeSelectHolds, bank, key);
   }
@@ -734,19 +731,18 @@ TEST(input_mode_select_enter_applies_earlier_staged_mode) {
   CHECK_LOG(f, "mode digit 3", "mode commit 3 vfo0");
 }
 
-// LEGACY(F1): some keys run their short action instead of picking a mode.
-TEST(input_mode_select_legacy_short_passthrough) {
+// F1: every key is the mode digit, even one with a short action on the bank
+// (Bank 3 '7' is a band-stack query).
+TEST(input_mode_select_key_is_mode_digit_not_short_action) {
   Fake f;
-  f.modeSelectShorts = {"3 7"};
   f.shorts = {"3 7"};
   KeypadInput in(f);
   in.setBank(3);
   in.beginModeSelect(KEYPAD_VFO_A);
   tap(in, '7');
-  CHECK(in.modeSelectActive());
-  tap(in, '6');
   CHECK(!in.modeSelectActive());
-  CHECK_LOG(f, "modeSelectShort 3 7", "mode digit 6");
+  CHECK(in.stagedModeActive());
+  CHECK_LOG(f, "mode digit 7");
 }
 
 // LEGACY(F2): holds during mode select go to the mode-select hold hook, which

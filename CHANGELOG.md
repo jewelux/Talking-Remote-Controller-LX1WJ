@@ -14,6 +14,10 @@
 - fixed Bank 1 `9` long mode select applying the mode to VFO A or B when an earlier Bank 3 VFO mode
   select had ended on an invalid digit; it now always sets the current VFO's mode
 - pressing `#` while another key is held no longer runs that key's short action on its release
+- fixed mode select from Bank 3 (`3`/`4`/`5` long): digits `6`–`9` ran the bank's RX/TX, band stack
+  or VFO actions instead of picking the mode. The same applied to other keys with a short action
+  on the current bank (Bank 5 `1`–`5`, Bank 6 `3`/`4`, Bank 8 `1`, Bank 9 `B`/`C`). Every key is
+  now taken as the mode digit
 
 ## Unreleased — Firmware CI
 

@@ -127,7 +127,6 @@ class KeypadUiListener : public KeypadInputListener {
   bool runShort(uint8_t bank, char key) override { return keymapShort(traits_, bank, key); }
   bool runDoubleClick(uint8_t bank, char key) override { return keymapDoubleClick(traits_, bank, key); }
   bool wantsDoubleClick(uint8_t bank, char key) override { return keymapWantsDoubleClick(traits_, bank, key); }
-  bool runModeSelectShort(uint8_t bank, char key) override { return keymapModeSelectShort(traits_, bank, key); }
   bool runModeSelectHold(uint8_t bank, char key) override { return keymapModeSelectHold(traits_, bank, key); }
 
   void onBankQuery(uint8_t bank) override {
