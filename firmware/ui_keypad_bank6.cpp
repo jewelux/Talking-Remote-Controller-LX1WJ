@@ -63,11 +63,6 @@ static void setBank6Ft8x7ToneMode(uint8_t modeByte, const char* label) {
 
 void beginBank6RepeaterOffsetEntry() {
   printKeypadCommand("BANK6 1 DOUBLE -> RPTSHIFT ENTRY");
-  if (!isFt8x7Keypad()) {
-    printKeypadStatus("BANK6 reserved");
-    playBeep();
-    return;
-  }
   keypadInput().beginEntry(InputMode::RptOffsetEntry);
   printKeypadStatus("RPTSHIFT KHZ PLEASE");
   if (g_speechEnabled) {
@@ -81,11 +76,6 @@ void beginBank6RepeaterOffsetEntry() {
 
 void beginBank6CtcssEntry() {
   printKeypadCommand("BANK6 3 LONG -> CTCSS ENTRY");
-  if (!isFt8x7Keypad()) {
-    printKeypadStatus("BANK6 reserved");
-    playBeep();
-    return;
-  }
   keypadInput().beginEntry(InputMode::CtcssEntry);
   printKeypadStatus("CTCSS PLEASE");
   if (g_speechEnabled) {
@@ -97,11 +87,6 @@ void beginBank6CtcssEntry() {
 
 void beginBank6DcsEntry() {
   printKeypadCommand("BANK6 4 LONG -> DCS ENTRY");
-  if (!isFt8x7Keypad()) {
-    printKeypadStatus("BANK6 reserved");
-    playBeep();
-    return;
-  }
   keypadInput().beginEntry(InputMode::DcsEntry);
   printKeypadStatus("DCS PLEASE");
   if (g_speechEnabled) {
@@ -113,31 +98,16 @@ void beginBank6DcsEntry() {
 
 void setBank6RepeaterOff() {
   printKeypadCommand("BANK6 0 SHORT -> RPT OFF");
-  if (!isFt8x7Keypad()) {
-    printKeypadStatus("BANK6 reserved");
-    playBeep();
-    return;
-  }
   setBank6Ft8x7RepeaterShift(0x89, "OFF");
 }
 
 void setBank6RepeaterMinus() {
   printKeypadCommand("BANK6 0 LONG -> RPT MINUS");
-  if (!isFt8x7Keypad()) {
-    printKeypadStatus("BANK6 reserved");
-    playBeep();
-    return;
-  }
   setBank6Ft8x7RepeaterShift(0x09, "MINUS");
 }
 
 void setBank6RepeaterPlus() {
   printKeypadCommand("BANK6 0 DOUBLE -> RPT PLUS");
-  if (!isFt8x7Keypad()) {
-    printKeypadStatus("BANK6 reserved");
-    playBeep();
-    return;
-  }
   setBank6Ft8x7RepeaterShift(0x49, "PLUS");
 }
 
@@ -145,41 +115,21 @@ void setBank6RepeaterOffsetPreset(uint8_t preset) {
   const uint32_t hz = currentFt8x7RepeaterOffsetHz(preset - 1);
   printKeypadCommand(String("BANK6 1 ") + (preset == 1 ? "SHORT" : "LONG") + " -> RPTSHIFT " +
                      hzToMHzString3(hz));
-  if (!isFt8x7Keypad()) {
-    printKeypadStatus("BANK6 reserved");
-    playBeep();
-    return;
-  }
   setBank6Ft8x7RepeaterOffsetHz(hz);
 }
 
 void setBank6ToneOff() {
   printKeypadCommand("BANK6 2 SHORT -> TONE OFF");
-  if (!isFt8x7Keypad()) {
-    printKeypadStatus("BANK6 reserved");
-    playBeep();
-    return;
-  }
   setBank6Ft8x7ToneMode(0x8A, "OFF");
 }
 
 void setBank6ToneModeCtcss() {
   printKeypadCommand("BANK6 2 LONG -> TONE CTCSS");
-  if (!isFt8x7Keypad()) {
-    printKeypadStatus("BANK6 reserved");
-    playBeep();
-    return;
-  }
   setBank6Ft8x7ToneMode(0x2A, "CTCSS");
 }
 
 void setBank6ToneModeDcs() {
   printKeypadCommand("BANK6 2 DOUBLE -> TONE DCS");
-  if (!isFt8x7Keypad()) {
-    printKeypadStatus("BANK6 reserved");
-    playBeep();
-    return;
-  }
   setBank6Ft8x7ToneMode(0x0A, "DCS");
 }
 
@@ -188,11 +138,6 @@ void queryBank6CtcssDefault() {
   uint16_t toneTenths = live.ctcssValid ? live.ctcssTenths : currentFt8x7DefaultCtcssTenths();
   formatCtcssTenthsLabel(toneTenths, label, sizeof(label));
   printKeypadCommand(String("BANK6 3 SHORT -> CTCSS ") + label);
-  if (!isFt8x7Keypad()) {
-    printKeypadStatus("BANK6 reserved");
-    playBeep();
-    return;
-  }
   printKeypadStatus(String("CTCSS ") + label);
   if (!g_speechEnabled) return;
   speakToken("ctcss");
@@ -205,11 +150,6 @@ void queryBank6DcsDefault() {
   const uint16_t dcsCode = live.dcsValid ? live.dcsCode : currentFt8x7DefaultDcsCode();
   snprintf(label, sizeof(label), "%03u", (unsigned)dcsCode);
   printKeypadCommand(String("BANK6 4 SHORT -> DCS ") + label);
-  if (!isFt8x7Keypad()) {
-    printKeypadStatus("BANK6 reserved");
-    playBeep();
-    return;
-  }
   printKeypadStatus(String("DCS ") + label);
   if (!g_speechEnabled) return;
   speakToken("dcs");

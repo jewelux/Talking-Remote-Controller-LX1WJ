@@ -1,5 +1,6 @@
 #pragma once
 
+#include "keypad_actions.h"
 #include "keypad_input.h"
 #include "radio_globals.h"
 
@@ -13,8 +14,6 @@ KeypadInput& keypadInput();
 void keypadSendNow(const String& cmd);
 // Keeps cmd for the next Enter.
 void keypadStageCommand(const String& cmd);
-// "CMD <label>", then keypadSendNow(cmd).
-void sendKeypadCommand(const char* label, const char* cmd);
 void speakKeypadCommandWord(const String& cmd);
 
 // Entries and selections (ui_keypad_entry.cpp), called by the state machine.
@@ -54,8 +53,9 @@ bool keypadReportIfUnsupported(bool supported, const char* label);
 // The key is hidden on the FTDX10 layout: say "not available".
 void reportFtdx10HiddenKey(const char* label);
 
+// The radio checks behind KeypadTraits::layout. Bank actions do not use them:
+// the keymap already picked the action for the radio.
 bool isFtdx10KeypadProfile();
-bool isFt8x7Keypad();
 bool isFt8x7Ft817Keypad();
 bool isFt8x7Ft857FamilyKeypad();
 

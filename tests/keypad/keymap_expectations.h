@@ -15,10 +15,11 @@ constexpr uint16_t FTDX10 = 1u << 4;
 constexpr uint16_t FT891 = 1u << 5;
 constexpr uint16_t FT817 = 1u << 6;
 constexpr uint16_t FT857 = 1u << 7;
+constexpr uint16_t FT8X7_OTHER = 1u << 8;
 
-constexpr uint16_t ALL = IC7300 | IC706 | LIGHT | TS480 | FTDX10 | FT891 | FT817 | FT857;
+constexpr uint16_t ALL = IC7300 | IC706 | LIGHT | TS480 | FTDX10 | FT891 | FT817 | FT857 | FT8X7_OTHER;
 constexpr uint16_t CIV = IC7300 | IC706 | LIGHT;
-constexpr uint16_t FT8X7 = FT817 | FT857;
+constexpr uint16_t FT8X7 = FT817 | FT857 | FT8X7_OTHER;
 
 constexpr uint16_t NOT(uint16_t families) { return ALL & ~families; }
 
@@ -30,6 +31,7 @@ struct Family {
 inline constexpr Family kFamilies[] = {
     {IC7300, "IC-7300"}, {IC706, "IC-706"}, {LIGHT, "light-Icom"}, {TS480, "TS-480"},
     {FTDX10, "FTDX10"},  {FT891, "FT-891"}, {FT817, "FT-817"},     {FT857, "FT-857/897"},
+    {FT8X7_OTHER, "FT-8x7 other"},
 };
 
 // Bank keys the keymap handles; '*', '#' and 'D' belong to the state machine.

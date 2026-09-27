@@ -14,6 +14,18 @@
   `ui_keypad_bank1..9.cpp` and the entries to `ui_keypad_entry.cpp`. Host unit tests in
   `tests/keypad` (`make -C tests/keypad`) cover the state machine and every key of every bank for
   each radio family, and run in CI
+- the keymap alone decides what a key does on each radio: `KeypadTraits` names one
+  `KeypadLayout` (generic, CI-V, FTDX10, FT-8x7, FT-817, FT-857/897) and the bank actions no
+  longer check which radio they run on. The radio branches inside actions became their own
+  actions, and the FTDX10 console-command keys are listed in the keymap. Branches no key could
+  reach were removed: the FT-817 Bank 3 `2` long "A=B" copy and `1` long A/B toggle, and the
+  FT-857/897 Bank 1 `2` TX frequency read by toggling the VFO (all replaced earlier by the
+  documented layout), plus FT-857/897 and FT-817 fallbacks in Bank 3 actions those radios never
+  reach. The host tests gained an "FT-8x7 without variant" family
+- Bank 6 on radios other than the FT-8x7 family is now empty like any unassigned key
+  ("BANK6 k -> unassigned" beep, a hold beeps at the hold time); before, each key beeped
+  "BANK6 reserved", and `0`-`2` first waited for a double press
+- FT-857/897 Bank 3 `6` short (PTT off) no longer prints the "BANK3 6 SHORT -> RXTX?" line first
 - fixed `1`/`2` being ignored after a Bank 3 VFO A/B mode select (`3`/`4`/`5` long): the next
   press, e.g. mode digit 1 (LSB), was swallowed
 - fixed FT-817 Bank 3 `1`/`2` long: releasing the held digit typed it into the new frequency entry,

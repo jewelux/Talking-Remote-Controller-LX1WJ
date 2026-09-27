@@ -27,14 +27,15 @@ void record(const char *fmt, ...) {
 
 KeypadTraits traitsFor(uint16_t family) {
   KeypadTraits t;
-  t.civ = (family & CIV) != 0;
-  t.ftdx10 = family == FTDX10;
-  t.ft817 = family == FT817;
-  t.ft857Family = family == FT857;
+  if (family & CIV) t.layout = KeypadLayout::Civ;
+  else if (family == FTDX10) t.layout = KeypadLayout::Ftdx10;
+  else if (family == FT817) t.layout = KeypadLayout::Ft817;
+  else if (family == FT857) t.layout = KeypadLayout::Ft857;
+  else if (family == FT8X7_OTHER) t.layout = KeypadLayout::Ft8x7;
   t.lightIcomFallback = family == LIGHT;
   // Monitor and transceive are PROTO_CIV only (radio_protocol.cpp).
-  t.supportsMonitor = t.civ;
-  t.supportsTransceive = t.civ;
+  t.supportsMonitor = (family & CIV) != 0;
+  t.supportsTransceive = (family & CIV) != 0;
   t.canGetRfPower = family == IC7300 || family == LIGHT;
   return t;
 }
@@ -71,11 +72,15 @@ void forEachKey(Fn fn) {
 
 // ---- Recording stub for keypad_actions.h ----
 
+void sendKeypadCommand(const char *, const char *cmd) { record("send(%s)", cmd); }
+
 void queryBank1Frequency() { record("queryBank1Frequency"); }
 void beginBank1FrequencySet() { record("beginBank1FrequencySet"); }
 void roundActiveFrequency(uint32_t hz) { record("roundActiveFrequency(%u)", (unsigned)hz); }
 void queryBank1RxTx() { record("queryBank1RxTx"); }
+void reportBank1Ft817RxTxUnreliable() { record("reportBank1Ft817RxTxUnreliable"); }
 void queryBank1TxFrequency() { record("queryBank1TxFrequency"); }
+void queryBank1Ft857TxFrequency() { record("queryBank1Ft857TxFrequency"); }
 void queryBank1Lock() { record("queryBank1Lock"); }
 void toggleBank1Lock() { record("toggleBank1Lock"); }
 void queryBank1Power() { record("queryBank1Power"); }
@@ -85,11 +90,6 @@ void queryBank1Smeter() { record("queryBank1Smeter"); }
 void queryBank1Swr() { record("queryBank1Swr"); }
 void queryBank1Mode() { record("queryBank1Mode"); }
 void beginBank1ModeSelect() { record("beginBank1ModeSelect"); }
-void ftdx10QueryTuner() { record("ftdx10QueryTuner"); }
-void ftdx10ToggleTuner() { record("ftdx10ToggleTuner"); }
-void ftdx10Tune() { record("ftdx10Tune"); }
-void ftdx10QueryPreamp() { record("ftdx10QueryPreamp"); }
-void ftdx10TogglePreamp() { record("ftdx10TogglePreamp"); }
 
 void queryBank2Nr() { record("queryBank2Nr"); }
 void toggleBank2Nr() { record("toggleBank2Nr"); }
@@ -105,22 +105,14 @@ void queryBank2PbtInner() { record("queryBank2PbtInner"); }
 void adjustBank2PbtInner(int d) { record("adjustBank2PbtInner(%d)", d); }
 void queryBank2PbtOuter() { record("queryBank2PbtOuter"); }
 void adjustBank2PbtOuter(int d) { record("adjustBank2PbtOuter(%d)", d); }
-void sendBank2FilterShapeQuery() { record("sendBank2FilterShapeQuery"); }
 void toggleBank2FilterShape() { record("toggleBank2FilterShape"); }
 void queryBank2FilterWidth() { record("queryBank2FilterWidth"); }
 void cycleBank2FilterWidth(int d) { record("cycleBank2FilterWidth(%d)", d); }
-void ftdx10QueryAgc() { record("ftdx10QueryAgc"); }
-void ftdx10AgcFast() { record("ftdx10AgcFast"); }
-void ftdx10AgcSlow() { record("ftdx10AgcSlow"); }
-void ftdx10QueryPowerState() { record("ftdx10QueryPowerState"); }
-void ftdx10PowerOff() { record("ftdx10PowerOff"); }
-void ftdx10PowerOn() { record("ftdx10PowerOn"); }
-void ftdx10QueryInfo() { record("ftdx10QueryInfo"); }
-void ftdx10QueryId() { record("ftdx10QueryId"); }
 
 void queryBank3Split() { record("queryBank3Split"); }
 void toggleBank3Split() { record("toggleBank3Split"); }
 void queryBank3TxFrequency() { record("queryBank3TxFrequency"); }
+void setBank3Ft857Split(bool on) { record("setBank3Ft857Split(%s)", on ? "true" : "false"); }
 void calibrateBank3Ft857Split() { record("calibrateBank3Ft857Split"); }
 void queryBank3VfoA() { record("queryBank3VfoA"); }
 void selectBank3VfoA() { record("selectBank3VfoA"); }
@@ -128,6 +120,13 @@ void beginBank3VfoAFrequencySet() { record("beginBank3VfoAFrequencySet"); }
 void queryBank3VfoB() { record("queryBank3VfoB"); }
 void selectBank3VfoB() { record("selectBank3VfoB"); }
 void beginBank3VfoBFrequencySet() { record("beginBank3VfoBFrequencySet"); }
+void queryBank3Ft8x7CurrentVfo() { record("queryBank3Ft8x7CurrentVfo"); }
+void beginBank3Ft8x7CurrentVfoFrequencySet() { record("beginBank3Ft8x7CurrentVfoFrequencySet"); }
+void beginBank3Ft8x7OtherVfoFrequencySet() { record("beginBank3Ft8x7OtherVfoFrequencySet"); }
+void queryBank3Ft817OtherVfo() { record("queryBank3Ft817OtherVfo"); }
+void queryBank3Ft857OtherVfo() { record("queryBank3Ft857OtherVfo"); }
+void toggleBank3Ft857Vfo() { record("toggleBank3Ft857Vfo"); }
+void reportBank3Ft857VfoBUnsupported() { record("reportBank3Ft857VfoBUnsupported"); }
 void queryBank3VfoAMode(char key) { record("queryBank3VfoAMode(%c)", key); }
 void beginBank3VfoAModeSet(char key) { record("beginBank3VfoAModeSet(%c)", key); }
 void queryBank3VfoBMode() { record("queryBank3VfoBMode"); }
@@ -145,11 +144,9 @@ void recallBank3BandStack(uint8_t r) { record("recallBank3BandStack(%u)", r); }
 void queryBank4Tuner() { record("queryBank4Tuner"); }
 void toggleBank4Tuner() { record("toggleBank4Tuner"); }
 void triggerBank4Tune() { record("triggerBank4Tune"); }
-void sendBank4MonitorQuery() { record("sendBank4MonitorQuery"); }
 void toggleBank4Monitor() { record("toggleBank4Monitor"); }
 void queryBank4MonitorLevel() { record("queryBank4MonitorLevel"); }
 void adjustBank4MonitorLevel(int d) { record("adjustBank4MonitorLevel(%d)", d); }
-void sendBank4TransceiveQuery() { record("sendBank4TransceiveQuery"); }
 void toggleBank4Transceive() { record("toggleBank4Transceive"); }
 
 void queryBank5Rit() { record("queryBank5Rit"); }

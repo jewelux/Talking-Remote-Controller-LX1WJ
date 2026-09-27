@@ -51,10 +51,6 @@ bool isFtdx10KeypadProfile() {
          strcmp(sp.voiceDigits, "10") == 0;
 }
 
-bool isFt8x7Keypad() {
-  return currentProtocolType() == PROTO_YAESU_FT8X7;
-}
-
 bool isFt8x7Ft817Keypad() {
   return currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft817");
 }

@@ -1,7 +1,6 @@
 // Bank 1 keypad actions: frequency, lock, power, meters and mode.
 #include "ui_keypad_bank.h"
 #include "engine_civ.h"
-#include "protocol_ops_yaesu.h"
 #include "radio_frequency.h"
 #include "radio_state.h"
 #include "radio_utils.h"
@@ -37,19 +36,6 @@ static void speakTunedFrequencyHz(uint64_t hz) {
 
 void queryBank1RxTx() {
   printKeypadCommand("BANK1 1 SHORT -> RXTX?");
-  if (isFtdx10KeypadProfile()) {
-    keypadSendNow("RXTX?");
-    return;
-  }
-  if (isFt8x7Ft817Keypad()) {
-    printKeypadStatus("RXTX unreliable");
-    if (g_speechEnabled) {
-      speakToken("transceiver");
-      playSilenceMs(60);
-      speakNotAvailable();
-    }
-    return;
-  }
   bool tx = false;
   if (!queryRxTxStatus(tx, 800)) { keypadReportIfTimedOut("RXTX?"); return; }
   printKeypadStatus(tx ? "TX" : "RX");
@@ -59,9 +45,18 @@ void queryBank1RxTx() {
   speakSimpleBinaryState(tx);
 }
 
+void reportBank1Ft817RxTxUnreliable() {
+  printKeypadCommand("BANK1 1 SHORT -> RXTX?");
+  printKeypadStatus("RXTX unreliable");
+  if (g_speechEnabled) {
+    speakToken("transceiver");
+    playSilenceMs(60);
+    speakNotAvailable();
+  }
+}
+
 void queryBank1Frequency() {
   printKeypadCommand("BANK1 0 SHORT -> FREQ?");
-  if (isFtdx10KeypadProfile()) { keypadSendNow("FREQ?"); return; }
   uint64_t hz = 0;
   if (!queryFrequency(hz, 800)) {
     if (!keypadReportIfTimedOut("FREQ?")) {
@@ -77,42 +72,10 @@ void queryBank1Frequency() {
 
 void queryBank1TxFrequency() {
   printKeypadCommand("BANK1 2 SHORT -> TXFREQ?");
-  if (isFtdx10KeypadProfile()) {
-    keypadSendNow("TXFREQ?");
-    return;
-  }
-  if (isFt8x7Ft857FamilyKeypad()) {
-    uint64_t hz = 0;
-    if (g_ft8x7SplitKnown && !g_ft8x7SplitOn && queryFrequency(hz, 800)) {
-      printKeypadStatus(String("TXFREQ: ") + hzToMHzString3(hz) + " MHz");
-      speakQueriedFrequencyHz(hz);
-    } else {
-      printKeypadStatus("TXFREQ unavailable on FT-857/897");
-      if (g_speechEnabled) speakNotAvailable();
-    }
-    return;
-  }
   uint64_t hz = 0;
   if (!queryTxFrequency(hz, 800)) {
+    // FT-8x7 without a TX frequency reply: say the frequency instead.
     if (currentProtocolType() == PROTO_YAESU_FT8X7) {
-      if (isFt8x7Ft857FamilyKeypad()) {
-        bool splitOn = false;
-        if (querySplit(splitOn, 800) && splitOn) {
-          if (!guardFt8x7VfoToggleLock()) return;
-          if (yaesuCatToggleVfo()) {
-            delay(120);
-            bool ok = queryFrequency(hz, 800);
-            delay(40);
-            yaesuCatToggleVfo();
-            delay(120);
-            if (ok) {
-              printKeypadStatus(String("TXFREQ: ") + hzToMHzString3(hz) + " MHz");
-              speakQueriedFrequencyHz(hz);
-              return;
-            }
-          }
-        }
-      }
       if (queryFrequency(hz, 800)) {
         printKeypadStatus(String("TXFREQ: ") + hzToMHzString3(hz) + " MHz");
         speakQueriedFrequencyHz(hz);
@@ -127,12 +90,20 @@ void queryBank1TxFrequency() {
   speakQueriedFrequencyHz(hz);
 }
 
+void queryBank1Ft857TxFrequency() {
+  printKeypadCommand("BANK1 2 SHORT -> TXFREQ?");
+  uint64_t hz = 0;
+  if (g_ft8x7SplitKnown && !g_ft8x7SplitOn && queryFrequency(hz, 800)) {
+    printKeypadStatus(String("TXFREQ: ") + hzToMHzString3(hz) + " MHz");
+    speakQueriedFrequencyHz(hz);
+  } else {
+    printKeypadStatus("TXFREQ unavailable on FT-857/897");
+    if (g_speechEnabled) speakNotAvailable();
+  }
+}
+
 void queryBank1Lock() {
   printKeypadCommand("BANK1 3 SHORT -> LOCK?");
-  if (isFtdx10KeypadProfile()) {
-    keypadSendNow("LOCK?");
-    return;
-  }
   prepareKeypadSpeechResponse();
   bool on = false;
   if (!queryDialLockReliable(on)) {
@@ -195,7 +166,7 @@ void roundActiveFrequency(uint32_t stepHz) {
 }
 
 void beginBank1RfPowerSet() {
-  if (currentProtocolType() != PROTO_CIV || !currentStoredProfile().caps.setRfPower) {
+  if (!currentStoredProfile().caps.setRfPower) {
     printKeypadStatus("RFPOWER -> unavailable");
     if (g_speechEnabled) speakNotAvailable();
     return;
@@ -212,10 +183,6 @@ void beginBank1RfPowerSet() {
 
 void toggleBank1Lock() {
   printKeypadCommand("BANK1 3 LONG -> LOCK");
-  if (isFtdx10KeypadProfile()) {
-    keypadSendNow("LOCK TOGGLE");
-    return;
-  }
   prepareKeypadSpeechResponse();
   bool on = false;
   if (!queryDialLockReliable(on)) {
@@ -265,13 +232,3 @@ void beginBank1ModeSelect() {
     speakToken("please");
   }
 }
-
-void ftdx10QueryTuner() { sendKeypadCommand("BANK1 5 SHORT -> TUNER?", "TUNER?"); }
-
-void ftdx10ToggleTuner() { sendKeypadCommand("BANK1 5 LONG -> TUNER TOGGLE", "TUNER TOGGLE"); }
-
-void ftdx10Tune() { sendKeypadCommand("BANK1 5 DOUBLE -> TUNE", "TUNE"); }
-
-void ftdx10QueryPreamp() { sendKeypadCommand("BANK1 6 SHORT -> PA?", "PA?"); }
-
-void ftdx10TogglePreamp() { sendKeypadCommand("BANK1 6 LONG -> PA TOGGLE", "PA TOGGLE"); }

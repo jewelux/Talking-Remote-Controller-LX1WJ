@@ -71,10 +71,11 @@ static void silenceSpeechForKeyPress() {
 
 static KeypadTraits currentKeypadTraits() {
   KeypadTraits t;
-  t.civ = currentProtocolType() == PROTO_CIV;
-  t.ftdx10 = isFtdx10KeypadProfile();
-  t.ft817 = isFt8x7Ft817Keypad();
-  t.ft857Family = isFt8x7Ft857FamilyKeypad();
+  if (isFtdx10KeypadProfile()) t.layout = KeypadLayout::Ftdx10;
+  else if (isFt8x7Ft817Keypad()) t.layout = KeypadLayout::Ft817;
+  else if (isFt8x7Ft857FamilyKeypad()) t.layout = KeypadLayout::Ft857;
+  else if (currentProtocolType() == PROTO_YAESU_FT8X7) t.layout = KeypadLayout::Ft8x7;
+  else if (currentProtocolType() == PROTO_CIV) t.layout = KeypadLayout::Civ;
   t.lightIcomFallback = lightIcomFallbackActive();
   t.supportsMonitor = protocolSupportsMonitor();
   t.supportsTransceive = protocolSupportsTransceive();

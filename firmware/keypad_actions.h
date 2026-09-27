@@ -7,16 +7,26 @@
 // link it against a recording stub. The firmware implements these in the
 // ui_keypad_bankN.cpp files.
 //
+// The keymap picks the action for the radio's layout; an action does not check
+// which radio it runs on. Actions named after a radio (ft857, Ft8x7, ...) are
+// that radio's variant of a key.
+//
 // Names that are not an older function's name stand for code that used to be
 // inline in the dispatchers. Their serial output stays the same; the comment
 // gives the command label and the command.
+
+// ---- Any bank ----
+// "CMD <label>", then the console command cmd. Most FTDX10 keys are one.
+void sendKeypadCommand(const char* label, const char* cmd);
 
 // ---- Bank 1 ----
 void queryBank1Frequency();
 void beginBank1FrequencySet();
 void roundActiveFrequency(uint32_t stepHz);
 void queryBank1RxTx();
+void reportBank1Ft817RxTxUnreliable();  // FT-817: "RXTX unreliable", "transceiver not available"
 void queryBank1TxFrequency();
+void queryBank1Ft857TxFrequency();  // FT-857/897: the frequency when split is off, else "not available"
 void queryBank1Lock();
 void toggleBank1Lock();
 void queryBank1Power();    // sendOrStageBank1Command("BANK1 4 SHORT", "PO?")
@@ -26,11 +36,6 @@ void queryBank1Smeter();   // sendOrStageBank1Command("BANK1 7 SHORT", "SM?")
 void queryBank1Swr();      // sendOrStageBank1Command("BANK1 8 SHORT", "SWR?")
 void queryBank1Mode();     // sendOrStageBank1Command("BANK1 9 SHORT", "MODE?", true)
 void beginBank1ModeSelect();  // "BANK1 9 LONG -> MODE", mode select, "mode please"
-void ftdx10QueryTuner();    // "BANK1 5 SHORT -> TUNER?"       TUNER?
-void ftdx10ToggleTuner();   // "BANK1 5 LONG -> TUNER TOGGLE"  TUNER TOGGLE
-void ftdx10Tune();          // "BANK1 5 DOUBLE -> TUNE"        TUNE
-void ftdx10QueryPreamp();   // "BANK1 6 SHORT -> PA?"          PA?
-void ftdx10TogglePreamp();  // "BANK1 6 LONG -> PA TOGGLE"     PA TOGGLE
 
 // ---- Bank 2 ----
 void queryBank2Nr();
@@ -47,23 +52,15 @@ void queryBank2PbtInner();
 void adjustBank2PbtInner(int delta);
 void queryBank2PbtOuter();
 void adjustBank2PbtOuter(int delta);
-void sendBank2FilterShapeQuery();  // "BANK2 8 SHORT -> FILSHAPE?"  FILSHAPE?
 void toggleBank2FilterShape();
 void queryBank2FilterWidth();
 void cycleBank2FilterWidth(int delta);
-void ftdx10QueryAgc();         // "BANK2 4 SHORT -> GT?"      GT?
-void ftdx10AgcFast();          // "BANK2 4 LONG -> GT FAST"   GT FAST
-void ftdx10AgcSlow();          // "BANK2 4 DOUBLE -> GT SLOW" GT SLOW
-void ftdx10QueryPowerState();  // "BANK2 5 SHORT -> PS?"      PS?
-void ftdx10PowerOff();         // "BANK2 5 LONG -> PS OFF"    PS OFF
-void ftdx10PowerOn();          // "BANK2 5 DOUBLE -> PS ON"   PS ON
-void ftdx10QueryInfo();        // "BANK2 6 SHORT -> IF?"      IF?
-void ftdx10QueryId();          // "BANK2 7 SHORT -> ID?"      ID?
 
 // ---- Bank 3 ----
 void queryBank3Split();
 void toggleBank3Split();
 void queryBank3TxFrequency();
+void setBank3Ft857Split(bool on);
 void calibrateBank3Ft857Split();
 void queryBank3VfoA();
 void selectBank3VfoA();
@@ -71,6 +68,14 @@ void beginBank3VfoAFrequencySet();
 void queryBank3VfoB();
 void selectBank3VfoB();
 void beginBank3VfoBFrequencySet();
+// FT-817, FT-857/897: the tracked current and other VFO.
+void queryBank3Ft8x7CurrentVfo();
+void beginBank3Ft8x7CurrentVfoFrequencySet();
+void beginBank3Ft8x7OtherVfoFrequencySet();
+void queryBank3Ft817OtherVfo();
+void queryBank3Ft857OtherVfo();
+void toggleBank3Ft857Vfo();             // "BANK3 1 LONG -> A/B"
+void reportBank3Ft857VfoBUnsupported();  // "BANK3 2 LONG -> VFO B", "not available"
 void queryBank3VfoAMode(char key);     // key: the Bank 3 key pressed (3 on FT-817, 4 elsewhere)
 void beginBank3VfoAModeSet(char key);
 void queryBank3VfoBMode();
@@ -90,11 +95,9 @@ void recallBank3BandStack(uint8_t reg);
 void queryBank4Tuner();
 void toggleBank4Tuner();
 void triggerBank4Tune();
-void sendBank4MonitorQuery();     // "BANK4 1 SHORT -> MONITOR?"     MONITOR?
 void toggleBank4Monitor();
 void queryBank4MonitorLevel();
 void adjustBank4MonitorLevel(int deltaPercent);
-void sendBank4TransceiveQuery();  // "BANK4 3 SHORT -> TRANSCEIVE?"  TRANSCEIVE?
 void toggleBank4Transceive();
 
 // ---- Bank 5 ----

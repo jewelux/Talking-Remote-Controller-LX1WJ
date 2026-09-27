@@ -3,10 +3,6 @@
 
 void queryBank4Tuner() {
   printKeypadCommand("BANK4 0 SHORT -> TUNER?");
-  if (isFtdx10KeypadProfile()) {
-    keypadSendNow("TUNER?");
-    return;
-  }
   if (keypadReportIfUnsupported(protocolSupportsTuner(), "TUNER?")) return;
   bool on = false;
   if (!queryTuner(on, 800)) { keypadReportIfTimedOut("TUNER?"); return; }
@@ -16,10 +12,6 @@ void queryBank4Tuner() {
 
 void toggleBank4Tuner() {
   printKeypadCommand("BANK4 0 LONG -> TUNER");
-  if (isFtdx10KeypadProfile()) {
-    keypadSendNow("TUNER TOGGLE");
-    return;
-  }
   if (keypadReportIfUnsupported(protocolSupportsTuner(), "TUNER")) return;
   bool on = false;
   if (!queryTuner(on, 800)) { keypadReportIfTimedOut("TUNER"); return; }
@@ -30,17 +22,11 @@ void toggleBank4Tuner() {
 
 void triggerBank4Tune() {
   printKeypadCommand("BANK4 0 DOUBLE -> TUNE");
-  if (isFtdx10KeypadProfile()) {
-    keypadSendNow("TUNE");
-    return;
-  }
   if (keypadReportIfUnsupported(protocolSupportsTuner(), "TUNE")) return;
   if (!startTune()) { keypadReportIfTimedOut("TUNE"); return; }
   printKeypadStatus("TUNE");
   if (g_speechEnabled) speakToken("tune");
 }
-
-void sendBank4MonitorQuery() { sendKeypadCommand("BANK4 1 SHORT -> MONITOR?", "MONITOR?"); }
 
 void toggleBank4Monitor() {
   printKeypadCommand("BANK4 1 LONG -> MONITOR");
@@ -73,8 +59,6 @@ void adjustBank4MonitorLevel(int deltaPercent) {
   if (!setMonitorLevel(levelPercentToRaw(percent))) { keypadReportIfTimedOut("MONLEVEL"); return; }
   queryBank4MonitorLevel();
 }
-
-void sendBank4TransceiveQuery() { sendKeypadCommand("BANK4 3 SHORT -> TRANSCEIVE?", "TRANSCEIVE?"); }
 
 void toggleBank4Transceive() {
   printKeypadCommand("BANK4 3 LONG -> TRANSCEIVE");

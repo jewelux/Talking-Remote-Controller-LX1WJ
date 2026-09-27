@@ -41,10 +41,6 @@ static void speakSignedStepValue(const String& label, int value) {
 
 void queryBank2Nr() {
   printKeypadCommand("BANK2 1 SHORT -> NR?");
-  if (isFtdx10KeypadProfile()) {
-    keypadSendNow("NR?");
-    return;
-  }
   if (keypadReportIfUnsupported(currentStoredProfile().caps.getNr, "NR?")) return;
   g_suspendPollingUntilMs = millis() + 900;
   g_suppressFreqSpeakUntilMs = millis() + 2000;
@@ -62,10 +58,6 @@ void queryBank2Nr() {
 
 void queryBank2Nb() {
   printKeypadCommand("BANK2 2 SHORT -> NB?");
-  if (isFtdx10KeypadProfile()) {
-    keypadSendNow("NB?");
-    return;
-  }
   if (keypadReportIfUnsupported(currentStoredProfile().caps.getNb, "NB?")) return;
   g_suspendPollingUntilMs = millis() + 900;
   g_suppressFreqSpeakUntilMs = millis() + 2000;
@@ -83,10 +75,6 @@ void queryBank2Nb() {
 
 void queryBank2Notch() {
   printKeypadCommand("BANK2 3 SHORT -> NOTCH?");
-  if (isFtdx10KeypadProfile()) {
-    keypadSendNow("NOTCH?");
-    return;
-  }
   if (keypadReportIfUnsupported(currentStoredProfile().caps.getNotch, "NOTCH?")) return;
   g_suspendPollingUntilMs = millis() + 900;
   g_suppressFreqSpeakUntilMs = millis() + 2000;
@@ -116,10 +104,6 @@ void queryBank2Notch() {
 
 void toggleBank2Nr() {
   printKeypadCommand("BANK2 1 LONG -> NR");
-  if (isFtdx10KeypadProfile()) {
-    keypadSendNow("NR TOGGLE");
-    return;
-  }
   if (keypadReportIfUnsupported(currentStoredProfile().caps.setNr, "NR")) return;
   prepareKeypadSpeechResponse();
   if (currentProtocolType() == PROTO_KENWOOD_ASCII && String(currentProfile().name).indexOf("TS-480") >= 0) {
@@ -154,10 +138,6 @@ void toggleBank2Nr() {
 
 void toggleBank2Nb() {
   printKeypadCommand("BANK2 2 LONG -> NB");
-  if (isFtdx10KeypadProfile()) {
-    keypadSendNow("NB TOGGLE");
-    return;
-  }
   if (keypadReportIfUnsupported(currentStoredProfile().caps.setNb, "NB")) return;
   prepareKeypadSpeechResponse();
   if (!live.nbValid && !refreshLiveNb()) { keypadReportIfTimedOut("NB"); return; }
@@ -169,10 +149,6 @@ void toggleBank2Nb() {
 
 void toggleBank2Notch() {
   printKeypadCommand("BANK2 3 LONG -> NOTCH");
-  if (isFtdx10KeypadProfile()) {
-    keypadSendNow("NOTCH TOGGLE");
-    return;
-  }
   if (keypadReportIfUnsupported(currentStoredProfile().caps.setNotch, "NOTCH")) return;
   prepareKeypadSpeechResponse();
 
@@ -342,8 +318,6 @@ void adjustBank2PbtOuter(int delta) {
   queryBank2PbtOuter();
 }
 
-void sendBank2FilterShapeQuery() { sendKeypadCommand("BANK2 8 SHORT -> FILSHAPE?", "FILSHAPE?"); }
-
 void toggleBank2FilterShape() {
   printKeypadCommand("BANK2 8 LONG -> FILSHAPE");
   bool soft = false;
@@ -386,19 +360,3 @@ void cycleBank2FilterWidth(int delta) {
     playDigit((uint8_t)next);
   }
 }
-
-void ftdx10QueryAgc() { sendKeypadCommand("BANK2 4 SHORT -> GT?", "GT?"); }
-
-void ftdx10AgcFast() { sendKeypadCommand("BANK2 4 LONG -> GT FAST", "GT FAST"); }
-
-void ftdx10AgcSlow() { sendKeypadCommand("BANK2 4 DOUBLE -> GT SLOW", "GT SLOW"); }
-
-void ftdx10QueryPowerState() { sendKeypadCommand("BANK2 5 SHORT -> PS?", "PS?"); }
-
-void ftdx10PowerOff() { sendKeypadCommand("BANK2 5 LONG -> PS OFF", "PS OFF"); }
-
-void ftdx10PowerOn() { sendKeypadCommand("BANK2 5 DOUBLE -> PS ON", "PS ON"); }
-
-void ftdx10QueryInfo() { sendKeypadCommand("BANK2 6 SHORT -> IF?", "IF?"); }
-
-void ftdx10QueryId() { sendKeypadCommand("BANK2 7 SHORT -> ID?", "ID?"); }
