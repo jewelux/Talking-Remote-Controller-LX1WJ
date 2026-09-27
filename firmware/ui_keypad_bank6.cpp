@@ -18,7 +18,7 @@ static uint16_t currentFt8x7DefaultDcsCode() {
 }
 
 static void setBank6Ft8x7RepeaterShift(uint8_t shiftByte, const char* label) {
-  printKeypadCommand(String("BANK6 FT8X7 -> RPT ") + label);
+  printKeypadAction(String("RPT ") + label);
   if (!yaesuCatSetRepeaterShiftRaw(shiftByte)) { keypadReportIfTimedOut("RPT"); return; }
   printKeypadStatus(String("RPT ") + label);
   if (!g_speechEnabled) return;
@@ -30,7 +30,7 @@ static void setBank6Ft8x7RepeaterShift(uint8_t shiftByte, const char* label) {
 }
 
 static void setBank6Ft8x7RepeaterOffsetHz(uint64_t hz) {
-  printKeypadCommand(String("BANK6 FT8X7 -> RPTSHIFT ") + hzToMHzString3(hz));
+  printKeypadAction(String("RPTSHIFT ") + hzToMHzString3(hz));
   if (!yaesuCatSetRepeaterOffsetHzRaw(hz)) { keypadReportIfTimedOut("RPTSHIFT"); return; }
   printKeypadStatus(String("RPTSHIFT ") + hzToMHzString3(hz) + " MHz");
   if (!g_speechEnabled) return;
@@ -42,7 +42,7 @@ static void setBank6Ft8x7RepeaterOffsetHz(uint64_t hz) {
 }
 
 static void setBank6Ft8x7ToneMode(uint8_t modeByte, const char* label) {
-  printKeypadCommand(String("BANK6 FT8X7 -> TONE ") + label);
+  printKeypadAction(String("TONE ") + label);
   if (!yaesuCatSetToneDcsModeRaw(modeByte)) { keypadReportIfTimedOut("TONE"); return; }
   printKeypadStatus(String("TONE ") + label);
   if (!g_speechEnabled) return;
@@ -62,7 +62,7 @@ static void setBank6Ft8x7ToneMode(uint8_t modeByte, const char* label) {
 }
 
 void beginBank6RepeaterOffsetEntry() {
-  printKeypadCommand("BANK6 1 DOUBLE -> RPTSHIFT ENTRY");
+  printKeypadAction("RPTSHIFT ENTRY");
   keypadInput().beginEntry(InputMode::RptOffsetEntry);
   printKeypadStatus("RPTSHIFT KHZ PLEASE");
   if (g_speechEnabled) {
@@ -75,7 +75,7 @@ void beginBank6RepeaterOffsetEntry() {
 }
 
 void beginBank6CtcssEntry() {
-  printKeypadCommand("BANK6 3 LONG -> CTCSS ENTRY");
+  printKeypadAction("CTCSS ENTRY");
   keypadInput().beginEntry(InputMode::CtcssEntry);
   printKeypadStatus("CTCSS PLEASE");
   if (g_speechEnabled) {
@@ -86,7 +86,7 @@ void beginBank6CtcssEntry() {
 }
 
 void beginBank6DcsEntry() {
-  printKeypadCommand("BANK6 4 LONG -> DCS ENTRY");
+  printKeypadAction("DCS ENTRY");
   keypadInput().beginEntry(InputMode::DcsEntry);
   printKeypadStatus("DCS PLEASE");
   if (g_speechEnabled) {
@@ -97,39 +97,30 @@ void beginBank6DcsEntry() {
 }
 
 void setBank6RepeaterOff() {
-  printKeypadCommand("BANK6 0 SHORT -> RPT OFF");
   setBank6Ft8x7RepeaterShift(0x89, "OFF");
 }
 
 void setBank6RepeaterMinus() {
-  printKeypadCommand("BANK6 0 LONG -> RPT MINUS");
   setBank6Ft8x7RepeaterShift(0x09, "MINUS");
 }
 
 void setBank6RepeaterPlus() {
-  printKeypadCommand("BANK6 0 DOUBLE -> RPT PLUS");
   setBank6Ft8x7RepeaterShift(0x49, "PLUS");
 }
 
 void setBank6RepeaterOffsetPreset(uint8_t preset) {
-  const uint32_t hz = currentFt8x7RepeaterOffsetHz(preset - 1);
-  printKeypadCommand(String("BANK6 1 ") + (preset == 1 ? "SHORT" : "LONG") + " -> RPTSHIFT " +
-                     hzToMHzString3(hz));
-  setBank6Ft8x7RepeaterOffsetHz(hz);
+  setBank6Ft8x7RepeaterOffsetHz(currentFt8x7RepeaterOffsetHz(preset - 1));
 }
 
 void setBank6ToneOff() {
-  printKeypadCommand("BANK6 2 SHORT -> TONE OFF");
   setBank6Ft8x7ToneMode(0x8A, "OFF");
 }
 
 void setBank6ToneModeCtcss() {
-  printKeypadCommand("BANK6 2 LONG -> TONE CTCSS");
   setBank6Ft8x7ToneMode(0x2A, "CTCSS");
 }
 
 void setBank6ToneModeDcs() {
-  printKeypadCommand("BANK6 2 DOUBLE -> TONE DCS");
   setBank6Ft8x7ToneMode(0x0A, "DCS");
 }
 
@@ -137,7 +128,7 @@ void queryBank6CtcssDefault() {
   char label[12] = "";
   uint16_t toneTenths = live.ctcssValid ? live.ctcssTenths : currentFt8x7DefaultCtcssTenths();
   formatCtcssTenthsLabel(toneTenths, label, sizeof(label));
-  printKeypadCommand(String("BANK6 3 SHORT -> CTCSS ") + label);
+  printKeypadAction(String("CTCSS ") + label);
   printKeypadStatus(String("CTCSS ") + label);
   if (!g_speechEnabled) return;
   speakToken("ctcss");
@@ -149,7 +140,7 @@ void queryBank6DcsDefault() {
   char label[8] = "";
   const uint16_t dcsCode = live.dcsValid ? live.dcsCode : currentFt8x7DefaultDcsCode();
   snprintf(label, sizeof(label), "%03u", (unsigned)dcsCode);
-  printKeypadCommand(String("BANK6 4 SHORT -> DCS ") + label);
+  printKeypadAction(String("DCS ") + label);
   printKeypadStatus(String("DCS ") + label);
   if (!g_speechEnabled) return;
   speakToken("dcs");

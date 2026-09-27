@@ -2,7 +2,7 @@
 #include "ui_keypad_bank.h"
 
 void queryBank4Tuner() {
-  printKeypadCommand("BANK4 0 SHORT -> TUNER?");
+  printKeypadAction("TUNER?");
   if (keypadReportIfUnsupported(protocolSupportsTuner(), "TUNER?")) return;
   bool on = false;
   if (!queryTuner(on, 800)) { keypadReportIfTimedOut("TUNER?"); return; }
@@ -11,7 +11,7 @@ void queryBank4Tuner() {
 }
 
 void toggleBank4Tuner() {
-  printKeypadCommand("BANK4 0 LONG -> TUNER");
+  printKeypadAction("TUNER");
   if (keypadReportIfUnsupported(protocolSupportsTuner(), "TUNER")) return;
   bool on = false;
   if (!queryTuner(on, 800)) { keypadReportIfTimedOut("TUNER"); return; }
@@ -21,7 +21,7 @@ void toggleBank4Tuner() {
 }
 
 void triggerBank4Tune() {
-  printKeypadCommand("BANK4 0 DOUBLE -> TUNE");
+  printKeypadAction("TUNE");
   if (keypadReportIfUnsupported(protocolSupportsTuner(), "TUNE")) return;
   if (!startTune()) { keypadReportIfTimedOut("TUNE"); return; }
   printKeypadStatus("TUNE");
@@ -29,7 +29,7 @@ void triggerBank4Tune() {
 }
 
 void toggleBank4Monitor() {
-  printKeypadCommand("BANK4 1 LONG -> MONITOR");
+  printKeypadAction("MONITOR");
   if (keypadReportIfUnsupported(protocolSupportsMonitor(), "MONITOR")) return;
   bool on = false;
   if (!queryMonitorEnabled(on, 800)) { keypadReportIfTimedOut("MONITOR"); return; }
@@ -39,7 +39,7 @@ void toggleBank4Monitor() {
 }
 
 void queryBank4MonitorLevel() {
-  printKeypadCommand("BANK4 2 SHORT -> MONLEVEL?");
+  printKeypadAction("MONLEVEL?");
   if (keypadReportIfUnsupported(protocolSupportsMonitor(), "MONLEVEL?")) return;
   uint16_t raw = 0;
   if (!queryMonitorLevel(raw, 800)) { keypadReportIfTimedOut("MONLEVEL?"); return; }
@@ -49,7 +49,7 @@ void queryBank4MonitorLevel() {
 }
 
 void adjustBank4MonitorLevel(int deltaPercent) {
-  printKeypadCommand(String("BANK4 2 ") + (deltaPercent > 0 ? "LONG" : "DOUBLE") + " -> MONLEVEL");
+  printKeypadAction("MONLEVEL");
   if (keypadReportIfUnsupported(protocolSupportsMonitor(), "MONLEVEL")) return;
   uint16_t raw = 0;
   if (!queryMonitorLevel(raw, 800)) { keypadReportIfTimedOut("MONLEVEL"); return; }
@@ -61,7 +61,7 @@ void adjustBank4MonitorLevel(int deltaPercent) {
 }
 
 void toggleBank4Transceive() {
-  printKeypadCommand("BANK4 3 LONG -> TRANSCEIVE");
+  printKeypadAction("TRANSCEIVE");
   if (keypadReportIfUnsupported(protocolSupportsTransceive(), "TRANSCEIVE")) return;
   bool on = false;
   if (!queryTransceiveEnabled(on, 800)) { keypadReportIfTimedOut("TRANSCEIVE"); return; }

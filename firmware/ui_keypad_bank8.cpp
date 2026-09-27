@@ -16,7 +16,7 @@ static bool currentProfileAllowsCivSetup() {
 }
 
 void queryBank8CivAddress() {
-  printKeypadCommand("BANK8 1 SHORT -> CIVADDR?");
+  printKeypadAction("CIVADDR?");
   if (!currentProfileAllowsCivSetup()) {
     printKeypadStatus("CIVADDR -> unavailable");
     if (g_speechEnabled) speakNotAvailable();
@@ -29,7 +29,7 @@ void queryBank8CivAddress() {
 }
 
 void beginBank8CivAddressEntry() {
-  printKeypadCommand("BANK8 1 LONG -> CIVADDR");
+  printKeypadAction("CIVADDR");
   if (!currentProfileAllowsCivSetup()) {
     printKeypadStatus("CIVADDR -> unavailable");
     if (g_speechEnabled) speakNotAvailable();
@@ -62,7 +62,7 @@ static int currentBaudIndex() {
 }
 
 void cycleBank8Baud(int delta) {
-  printKeypadCommand(String("BANK8 2 ") + (delta > 0 ? "SHORT" : "LONG") + " -> BAUD");
+  printKeypadAction("BAUD");
   if (!currentProfileAllowsCivSetup()) {
     printKeypadStatus("BAUD -> unavailable");
     if (g_speechEnabled) speakNotAvailable();

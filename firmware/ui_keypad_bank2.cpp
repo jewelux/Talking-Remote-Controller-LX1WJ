@@ -40,7 +40,7 @@ static void speakSignedStepValue(const String& label, int value) {
 }
 
 void queryBank2Nr() {
-  printKeypadCommand("BANK2 1 SHORT -> NR?");
+  printKeypadAction("NR?");
   if (keypadReportIfUnsupported(currentStoredProfile().caps.getNr, "NR?")) return;
   g_suspendPollingUntilMs = millis() + 900;
   g_suppressFreqSpeakUntilMs = millis() + 2000;
@@ -57,7 +57,7 @@ void queryBank2Nr() {
 }
 
 void queryBank2Nb() {
-  printKeypadCommand("BANK2 2 SHORT -> NB?");
+  printKeypadAction("NB?");
   if (keypadReportIfUnsupported(currentStoredProfile().caps.getNb, "NB?")) return;
   g_suspendPollingUntilMs = millis() + 900;
   g_suppressFreqSpeakUntilMs = millis() + 2000;
@@ -74,7 +74,7 @@ void queryBank2Nb() {
 }
 
 void queryBank2Notch() {
-  printKeypadCommand("BANK2 3 SHORT -> NOTCH?");
+  printKeypadAction("NOTCH?");
   if (keypadReportIfUnsupported(currentStoredProfile().caps.getNotch, "NOTCH?")) return;
   g_suspendPollingUntilMs = millis() + 900;
   g_suppressFreqSpeakUntilMs = millis() + 2000;
@@ -103,7 +103,7 @@ void queryBank2Notch() {
 }
 
 void toggleBank2Nr() {
-  printKeypadCommand("BANK2 1 LONG -> NR");
+  printKeypadAction("NR");
   if (keypadReportIfUnsupported(currentStoredProfile().caps.setNr, "NR")) return;
   prepareKeypadSpeechResponse();
   if (currentProtocolType() == PROTO_KENWOOD_ASCII && String(currentProfile().name).indexOf("TS-480") >= 0) {
@@ -137,7 +137,7 @@ void toggleBank2Nr() {
 }
 
 void toggleBank2Nb() {
-  printKeypadCommand("BANK2 2 LONG -> NB");
+  printKeypadAction("NB");
   if (keypadReportIfUnsupported(currentStoredProfile().caps.setNb, "NB")) return;
   prepareKeypadSpeechResponse();
   if (!live.nbValid && !refreshLiveNb()) { keypadReportIfTimedOut("NB"); return; }
@@ -148,7 +148,7 @@ void toggleBank2Nb() {
 }
 
 void toggleBank2Notch() {
-  printKeypadCommand("BANK2 3 LONG -> NOTCH");
+  printKeypadAction("NOTCH");
   if (keypadReportIfUnsupported(currentStoredProfile().caps.setNotch, "NOTCH")) return;
   prepareKeypadSpeechResponse();
 
@@ -193,7 +193,7 @@ void toggleBank2Notch() {
 }
 
 void queryBank2NrLevel() {
-  printKeypadCommand("BANK2 4 SHORT -> NRLEVEL?");
+  printKeypadAction("NRLEVEL?");
   uint16_t raw = 0;
   if (!queryNrLevel(raw, 800)) {
     if (!keypadReportIfTimedOut("NRLEVEL?")) {
@@ -208,7 +208,7 @@ void queryBank2NrLevel() {
 }
 
 void adjustBank2NrLevel(int deltaPercent) {
-  printKeypadCommand(String("BANK2 4 ") + (deltaPercent > 0 ? "LONG" : "DOUBLE") + " -> NRLEVEL");
+  printKeypadAction("NRLEVEL");
   uint16_t raw = 0;
   if (!queryNrLevel(raw, 800)) { keypadReportIfTimedOut("NRLEVEL"); return; }
   int percent = (int)levelRawToPercent(raw) + deltaPercent;
@@ -240,7 +240,7 @@ void adjustBank2NrLevel(int deltaPercent) {
 }
 
 void queryBank2NbLevel() {
-  printKeypadCommand("BANK2 5 SHORT -> NBLEVEL?");
+  printKeypadAction("NBLEVEL?");
   uint16_t raw = 0;
   if (!queryNbLevel(raw, 800)) {
     if (!keypadReportIfTimedOut("NBLEVEL?")) {
@@ -255,7 +255,7 @@ void queryBank2NbLevel() {
 }
 
 void adjustBank2NbLevel(int deltaPercent) {
-  printKeypadCommand(String("BANK2 5 ") + (deltaPercent > 0 ? "LONG" : "DOUBLE") + " -> NBLEVEL");
+  printKeypadAction("NBLEVEL");
   uint16_t raw = 0;
   if (!queryNbLevel(raw, 800)) { keypadReportIfTimedOut("NBLEVEL"); return; }
   int percent = (int)levelRawToPercent(raw) + deltaPercent;
@@ -279,7 +279,7 @@ static bool queryCurrentFilterSlotForKeypad(uint8_t& filterOut) {
 }
 
 void queryBank2PbtInner() {
-  printKeypadCommand("BANK2 6 SHORT -> PBT1?");
+  printKeypadAction("PBT1?");
   uint16_t raw = 0;
   if (!queryPbtInner(raw, 800)) {
     if (!keypadReportIfTimedOut("PBT1?")) {
@@ -293,7 +293,7 @@ void queryBank2PbtInner() {
 }
 
 void adjustBank2PbtInner(int delta) {
-  printKeypadCommand(String("BANK2 6 ") + (delta > 0 ? "LONG" : "DOUBLE") + " -> PBT1");
+  printKeypadAction("PBT1");
   uint16_t raw = 0;
   if (!queryPbtInner(raw, 800)) { keypadReportIfTimedOut("PBT1"); return; }
   const int next = pbtRawToOffset(raw) + delta;
@@ -302,7 +302,7 @@ void adjustBank2PbtInner(int delta) {
 }
 
 void queryBank2PbtOuter() {
-  printKeypadCommand("BANK2 7 SHORT -> PBT2?");
+  printKeypadAction("PBT2?");
   uint16_t raw = 0;
   if (!queryPbtOuter(raw, 800)) { keypadReportIfTimedOut("PBT2?"); return; }
   printKeypadStatus(String("PBT2 ") + String(pbtRawToOffset(raw)) + " step");
@@ -310,7 +310,7 @@ void queryBank2PbtOuter() {
 }
 
 void adjustBank2PbtOuter(int delta) {
-  printKeypadCommand(String("BANK2 7 ") + (delta > 0 ? "LONG" : "DOUBLE") + " -> PBT2");
+  printKeypadAction("PBT2");
   uint16_t raw = 0;
   if (!queryPbtOuter(raw, 800)) { keypadReportIfTimedOut("PBT2"); return; }
   const int next = pbtRawToOffset(raw) + delta;
@@ -319,7 +319,7 @@ void adjustBank2PbtOuter(int delta) {
 }
 
 void toggleBank2FilterShape() {
-  printKeypadCommand("BANK2 8 LONG -> FILSHAPE");
+  printKeypadAction("FILSHAPE");
   bool soft = false;
   if (!queryFilterShape(soft, 800)) { keypadReportIfTimedOut("FILSHAPE"); return; }
   if (!setFilterShape(!soft)) { keypadReportIfTimedOut("FILSHAPE"); return; }
@@ -332,7 +332,7 @@ void toggleBank2FilterShape() {
 }
 
 void queryBank2FilterWidth() {
-  printKeypadCommand("BANK2 9 SHORT -> FILWIDTH?");
+  printKeypadAction("FILWIDTH?");
   uint8_t filter = 0xFF;
   if (!queryCurrentFilterSlotForKeypad(filter)) { keypadReportIfTimedOut("FILWIDTH?"); return; }
   printKeypadStatus(String("FILWIDTH ") + String((int)filter));
@@ -344,7 +344,7 @@ void queryBank2FilterWidth() {
 }
 
 void cycleBank2FilterWidth(int delta) {
-  printKeypadCommand(String("BANK2 9 ") + (delta > 0 ? "LONG" : "DOUBLE") + " -> FILWIDTH");
+  printKeypadAction("FILWIDTH");
   uint8_t mode = 0xFF;
   uint8_t filter = 0xFF;
   if (!ensureActiveVfoKnownForKeypad()) { keypadReportIfTimedOut("FILWIDTH"); return; }

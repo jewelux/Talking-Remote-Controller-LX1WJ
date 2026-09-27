@@ -30,13 +30,13 @@ void setTuningSpeechEnabled(bool enabled) {
 
 void beginBank9ProfileSelect() {
   keypadInput().beginProfileSelect();
-  printKeypadCommand("BANK9 A LONG -> PROFILE SELECT");
+  printKeypadAction("PROFILE SELECT");
   printKeypadStatus("CHOOSE PLEASE");
   speakChoosePlease();
 }
 
 void selectNextProfile() {
-  printKeypadCommand("BANK9 B SHORT -> PROFILE NEXT");
+  printKeypadAction("PROFILE NEXT");
   uint8_t next = findAdjacentValidProfile(1);
   applyProfile(next);
   printKeypadStatus(String("PROFILE ") + String((int)next));
@@ -44,7 +44,7 @@ void selectNextProfile() {
 }
 
 void selectPrevProfile() {
-  printKeypadCommand("BANK9 C SHORT -> PROFILE PREV");
+  printKeypadAction("PROFILE PREV");
   uint8_t prev = findAdjacentValidProfile(-1);
   applyProfile(prev);
   printKeypadStatus(String("PROFILE ") + String((int)prev));
@@ -52,26 +52,20 @@ void selectPrevProfile() {
 }
 
 void queryBank9TuningSpeech() {
-  printKeypadCommand("BANK9 4 SHORT -> TUNINGSPEECH?");
+  printKeypadAction("TUNINGSPEECH?");
   printKeypadStatus(String("TUNINGSPEECH ") + (g_tuningSpeakEnabled ? "ON" : "OFF"));
   speakTuningSpeechState();
 }
 
 void toggleBank9TuningSpeech() {
-  printKeypadCommand("BANK9 4 LONG -> TUNINGSPEECH");
+  printKeypadAction("TUNINGSPEECH");
   setTuningSpeechEnabled(!g_tuningSpeakEnabled);
   printKeypadStatus(String("TUNINGSPEECH ") + (g_tuningSpeakEnabled ? "ON" : "OFF"));
   speakTuningSpeechState();
 }
 
 void adjustBank9Volume(int delta) {
-  switch (delta) {
-    case -1: printKeypadCommand("BANK9 7 SHORT -> VOLUME DOWN"); break;
-    case 1: printKeypadCommand("BANK9 8 SHORT -> VOLUME UP"); break;
-    case -2: printKeypadCommand("BANK9 7 LONG -> VOLUME DOWN FAST"); break;
-    case 2: printKeypadCommand("BANK9 8 LONG -> VOLUME UP FAST"); break;
-    default: break;
-  }
+  printKeypadAction(String(delta < 0 ? "VOLUME DOWN" : "VOLUME UP") + (delta < -1 || delta > 1 ? " FAST" : ""));
   int next = (int)g_volumeLevel + delta;
   if (next < 1) next = 1;
   if (next > 9) next = 9;
@@ -86,13 +80,13 @@ void adjustBank9Volume(int delta) {
 }
 
 void queryBank9Volume() {
-  printKeypadCommand("BANK9 9 SHORT -> VOLUME?");
+  printKeypadAction("VOLUME?");
   printKeypadStatus(String("VOLUME ") + String((int)g_volumeLevel));
   if (g_speechEnabled) speakVolumeLevel(g_volumeLevel);
 }
 
 void queryBank9Profile() {
-  printKeypadCommand("BANK9 A SHORT -> PROFILE?");
+  printKeypadAction("PROFILE?");
   printKeypadStatus("PROFILE CURRENT");
   speakCurrentProfile();
 }
@@ -102,12 +96,12 @@ bool selectBank9DirectProfile(char key) {
   if (key < '1' || key > '9') return false;
   const uint8_t slot = (uint8_t)(key - '0');
   if (!storedProfileForId(slot)) {
-    printKeypadCommand(String("BANK9 ") + key + " SHORT -> PROFILE");
+    printKeypadAction("PROFILE");
     printKeypadStatus(String("PROFILE ") + String((int)slot) + " EMPTY");
     if (g_speechEnabled) speakNotAvailable();
     return true;
   }
-  printKeypadCommand(String("BANK9 ") + key + " SHORT -> PROFILE " + String((int)slot));
+  printKeypadAction(String("PROFILE ") + String((int)slot));
   applyProfile(slot);
   printKeypadStatus(String("PROFILE ") + String((int)slot));
   speakCurrentProfile();

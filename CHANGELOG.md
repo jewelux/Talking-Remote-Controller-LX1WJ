@@ -22,6 +22,15 @@
   earlier by the "not available" answer while split is on), plus FT-857/897 and FT-817 fallbacks
   in Bank 3 actions those radios never reach. The host tests gained an "FT-8x7 without variant"
   family
+- the serial `CMD` line of a bank key now always names the key and gesture that ran it, taken from
+  the keymap (`CMD BANK3 2 LONG -> A=B`); the actions no longer spell out their key. Lines that
+  used a placeholder name the real key now: `BANK3 FT857 -> SPLIT ON` becomes `BANK3 0 LONG ->
+  SPLIT ON`, `BANK6 FT8X7 -> RPT OFF` becomes `BANK6 0 SHORT -> RPT OFF` (printed once, not
+  twice), `BANK5 STEP -> +10 Hz` becomes `BANK5 2 SHORT -> RIT STEP +10 Hz`, and a hidden FTDX10
+  key reports e.g. `BANK4 1 SHORT hidden on FTDX10`. A follow-up query inside an action (e.g. the
+  VFO A read after VFO A select) now shows the key that was pressed instead of the query's own key.
+  An FTDX10 key that sends a console command prints the command itself (`LOCK TOGGLE`, was
+  `LOCK`; likewise NR, NB, NOTCH, SPLIT and Bank 4 TUNER)
 - FT-817 Bank 3 `1` long toggles VFO A/B and `2` long copies the active VFO's frequency and mode
   to the other (A=B, spoken "a equals b") again; both had become unreachable when the long press
   was given the same frequency entry as the double press. New console command `VFO A=B` (FT-817)

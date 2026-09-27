@@ -11,13 +11,13 @@
 // which radio it runs on. Actions named after a radio (ft857, Ft8x7, ...) are
 // that radio's variant of a key.
 //
-// Names that are not an older function's name stand for code that used to be
-// inline in the dispatchers. Their serial output stays the same; the comment
-// gives the command label and the command.
+// An action's serial trace names what it does, not the key: printKeypadAction
+// prefixes the key the keymap is running (keymapActiveKey()), so one action can
+// sit on any key. The comments give that trace.
 
 // ---- Any bank ----
-// "CMD <label>", then the console command cmd. Most FTDX10 keys are one.
-void sendKeypadCommand(const char* label, const char* cmd);
+// "CMD <key> -> <cmd>", then the console command cmd. Most FTDX10 keys are one.
+void sendKeypadCommand(const char* cmd);
 
 // ---- Bank 1 ----
 void queryBank1Frequency();
@@ -29,13 +29,13 @@ void queryBank1TxFrequency();
 void queryBank1Ft857TxFrequency();  // FT-857/897: the frequency when split is off, else "not available"
 void queryBank1Lock();
 void toggleBank1Lock();
-void queryBank1Power();    // sendOrStageBank1Command("BANK1 4 SHORT", "PO?")
-void queryBank1RfPower();  // sendOrStageBank1Command("BANK1 6 SHORT", "RFPOWER?")
+void queryBank1Power();    // "PO?", sent or staged
+void queryBank1RfPower();  // "RFPOWER?", sent or staged
 void beginBank1RfPowerSet();
-void queryBank1Smeter();   // sendOrStageBank1Command("BANK1 7 SHORT", "SM?")
-void queryBank1Swr();      // sendOrStageBank1Command("BANK1 8 SHORT", "SWR?")
-void queryBank1Mode();     // sendOrStageBank1Command("BANK1 9 SHORT", "MODE?", true)
-void beginBank1ModeSelect();  // "BANK1 9 LONG -> MODE", mode select, "mode please"
+void queryBank1Smeter();   // "SM?", sent or staged
+void queryBank1Swr();      // "SWR?", sent or staged
+void queryBank1Mode();     // "MODE?", sent or staged
+void beginBank1ModeSelect();  // "MODE", mode select, "mode please"
 
 // ---- Bank 2 ----
 void queryBank2Nr();
@@ -74,11 +74,11 @@ void beginBank3Ft8x7CurrentVfoFrequencySet();
 void beginBank3Ft8x7OtherVfoFrequencySet();
 void queryBank3Ft817OtherVfo();
 void queryBank3Ft857OtherVfo();
-void toggleBank3Ft8x7Vfo();             // "BANK3 1 LONG -> A/B"
-void copyBank3Ft817VfoToOther();         // "BANK3 2 LONG -> A=B"
-void reportBank3Ft857VfoBUnsupported();  // "BANK3 2 LONG -> VFO B", "not available"
-void queryBank3VfoAMode(char key);     // key: the Bank 3 key pressed (3 on FT-817, 4 elsewhere)
-void beginBank3VfoAModeSet(char key);
+void toggleBank3Ft8x7Vfo();             // "A/B"
+void copyBank3Ft817VfoToOther();         // "A=B"
+void reportBank3Ft857VfoBUnsupported();  // "VFO B", "not available"
+void queryBank3VfoAMode();
+void beginBank3VfoAModeSet();
 void queryBank3VfoBMode();
 void beginBank3VfoBModeSet();
 // FT-817, FT-857/897: tell the VFO tracking that VFO A/B is active.
@@ -106,7 +106,7 @@ void queryBank5Rit();
 void toggleBank5Rit();
 void setBank5RitOffset(int32_t hz);
 void adjustBank5Rit(int32_t deltaHz);
-void setBank5RitOff();  // "BANK5 3 LONG -> RIT OFF", RIT off or "RIT -> unsupported"
+void setBank5RitOff();  // "RIT OFF", RIT off or "RIT -> unsupported"
 
 // ---- Bank 6 ----
 void setBank6RepeaterOff();
@@ -135,14 +135,14 @@ void cycleBank8Baud(int delta);
 bool selectBank9DirectProfile(char key);
 void queryBank9TuningSpeech();
 void toggleBank9TuningSpeech();
-// -1/1: "BANK9 7/8 SHORT -> VOLUME DOWN/UP"; -2/2: "... LONG -> VOLUME DOWN/UP FAST".
+// -1/1: "VOLUME DOWN/UP"; -2/2: "VOLUME DOWN/UP FAST".
 void adjustBank9Volume(int delta);
-void queryBank9Volume();   // "BANK9 9 SHORT -> VOLUME?", speaks the volume
-void queryBank9Profile();  // "BANK9 A SHORT -> PROFILE?", speaks the profile
+void queryBank9Volume();   // "VOLUME?", speaks the volume
+void queryBank9Profile();  // "PROFILE?", speaks the profile
 void beginBank9ProfileSelect();
 void selectNextProfile();
 void selectPrevProfile();
 
 // ---- FTDX10 ----
-// A key the FTDX10 layout hides: "<label> hidden on FTDX10", "not available".
-void reportFtdx10HiddenKey(const char* label);
+// A key the FTDX10 layout hides: "<key> hidden on FTDX10", "not available".
+void reportFtdx10HiddenKey();

@@ -72,7 +72,7 @@ void forEachKey(Fn fn) {
 
 // ---- Recording stub for keypad_actions.h ----
 
-void sendKeypadCommand(const char *, const char *cmd) { record("send(%s)", cmd); }
+void sendKeypadCommand(const char *cmd) { record("send(%s)", cmd); }
 
 void queryBank1Frequency() { record("queryBank1Frequency"); }
 void beginBank1FrequencySet() { record("beginBank1FrequencySet"); }
@@ -128,8 +128,8 @@ void queryBank3Ft857OtherVfo() { record("queryBank3Ft857OtherVfo"); }
 void toggleBank3Ft8x7Vfo() { record("toggleBank3Ft8x7Vfo"); }
 void copyBank3Ft817VfoToOther() { record("copyBank3Ft817VfoToOther"); }
 void reportBank3Ft857VfoBUnsupported() { record("reportBank3Ft857VfoBUnsupported"); }
-void queryBank3VfoAMode(char key) { record("queryBank3VfoAMode(%c)", key); }
-void beginBank3VfoAModeSet(char key) { record("beginBank3VfoAModeSet(%c)", key); }
+void queryBank3VfoAMode() { record("queryBank3VfoAMode"); }
+void beginBank3VfoAModeSet() { record("beginBank3VfoAModeSet"); }
 void queryBank3VfoBMode() { record("queryBank3VfoBMode"); }
 void beginBank3VfoBModeSet() { record("beginBank3VfoBModeSet"); }
 void syncBank3VfoA() { record("syncBank3VfoA"); }
@@ -186,7 +186,8 @@ void beginBank9ProfileSelect() { record("beginBank9ProfileSelect"); }
 void selectNextProfile() { record("selectNextProfile"); }
 void selectPrevProfile() { record("selectPrevProfile"); }
 
-void reportFtdx10HiddenKey(const char *label) { record("reportFtdx10HiddenKey(%s)", label); }
+// Records the key the keymap names while it runs the action.
+void reportFtdx10HiddenKey() { record("reportFtdx10HiddenKey(%s)", keymapActiveKey()); }
 
 // ---- Tests ----
 
@@ -239,4 +240,15 @@ TEST(keymap_ignores_state_machine_keys_and_other_banks) {
   CHECK(!keymapShort(t, 7, '1'));
   CHECK(!keymapShort(t, 10, '1'));
   CHECK(g_calls.empty());
+}
+
+TEST(keymap_names_the_key_only_while_an_action_runs) {
+  const KeypadTraits t = traitsFor(FTDX10);
+  CHECK(keymapActiveKey() == nullptr);
+  g_calls.clear();
+  CHECK(keymapDoubleClick(t, 4, '2'));
+  CHECK(g_calls == "reportFtdx10HiddenKey(BANK4 2 DOUBLE)");
+  CHECK(keymapActiveKey() == nullptr);
+  CHECK(!keymapShort(t, 7, '1'));
+  CHECK(keymapActiveKey() == nullptr);
 }

@@ -17,14 +17,14 @@ static void speakVfoFrequencyLabel(char which) {
 }
 
 void setBank3Ft857Split(bool on) {
-  printKeypadCommand(String("BANK3 FT857 -> SPLIT ") + (on ? "ON" : "OFF"));
+  printKeypadAction(String("SPLIT ") + (on ? "ON" : "OFF"));
   if (!setSplit(on)) { keypadReportIfTimedOut("SPLIT"); return; }
   printKeypadStatus(on ? "SPLIT ON" : "SPLIT OFF");
   speakTokenState("split", on);
 }
 
 void calibrateBank3Ft857Split() {
-  printKeypadCommand("BANK3 0 DOUBLE -> SPLIT CAL");
+  printKeypadAction("SPLIT CAL");
   if (!yaesuCatSetSplit(true)) { keypadReportIfTimedOut("SPLIT CAL"); return; }
   delay(120);
   if (!yaesuCatSetSplit(false)) { keypadReportIfTimedOut("SPLIT CAL"); return; }
@@ -38,7 +38,7 @@ void calibrateBank3Ft857Split() {
 }
 
 void setBank3Ft857Clar(bool on) {
-  printKeypadCommand(String("BANK3 FT857 -> CLAR ") + (on ? "ON" : "OFF"));
+  printKeypadAction(String("CLAR ") + (on ? "ON" : "OFF"));
   if (!yaesuCatSetClarifier(on)) { keypadReportIfTimedOut("CLAR"); return; }
   printKeypadStatus(on ? "CLAR ON" : "CLAR OFF");
   if (g_speechEnabled) {
@@ -49,7 +49,7 @@ void setBank3Ft857Clar(bool on) {
 }
 
 void setBank3Ft857Ptt(bool on) {
-  printKeypadCommand(String("BANK3 FT857 -> PTT ") + (on ? "ON" : "OFF"));
+  printKeypadAction(String("PTT ") + (on ? "ON" : "OFF"));
   if (!yaesuCatSetPtt(on)) { keypadReportIfTimedOut("PTT"); return; }
   printKeypadStatus(on ? "PTT ON" : "PTT OFF");
   speakToken("ptt");
@@ -58,7 +58,7 @@ void setBank3Ft857Ptt(bool on) {
 }
 
 void queryBank3Split() {
-  printKeypadCommand("BANK3 0 SHORT -> SPLIT?");
+  printKeypadAction("SPLIT?");
   bool on = false;
   if (!querySplit(on, 800)) { keypadReportIfTimedOut("SPLIT?"); return; }
   printKeypadStatus(on ? "SPLIT ON" : "SPLIT OFF");
@@ -66,7 +66,7 @@ void queryBank3Split() {
 }
 
 void toggleBank3Split() {
-  printKeypadCommand("BANK3 0 LONG -> SPLIT");
+  printKeypadAction("SPLIT");
   bool on = false;
   if (!querySplit(on, 800)) { keypadReportIfTimedOut("SPLIT"); return; }
   if (!setSplit(!on)) { keypadReportIfTimedOut("SPLIT"); return; }
@@ -75,7 +75,7 @@ void toggleBank3Split() {
 }
 
 void queryBank3TxFrequency() {
-  printKeypadCommand("BANK3 0 DOUBLE -> TXFREQ?");
+  printKeypadAction("TXFREQ?");
   uint64_t hz = 0;
   if (!queryTxFrequency(hz, 800)) {
     if (currentProtocolType() == PROTO_YAESU_FT8X7) {
@@ -95,7 +95,7 @@ void queryBank3TxFrequency() {
 }
 
 void queryBank3VfoA() {
-  printKeypadCommand("BANK3 1 SHORT -> VFOA?");
+  printKeypadAction("VFOA?");
   uint64_t hz = 0;
   if (!queryVfoFrequency(true, hz, 800)) { keypadReportIfTimedOut("VFOA?"); return; }
   printKeypadStatus(String("VFOA: ") + hzToMHzString3(hz) + " MHz");
@@ -109,7 +109,7 @@ void queryBank3VfoA() {
 void queryBank3Ft8x7CurrentVfo() {
   ensureFt8x7VfoTrackingInitialized();
   const char which = ft8x7CurrentVfoLabel();
-  printKeypadCommand(String("BANK3 1 SHORT -> VFO") + which + "?");
+  printKeypadAction(String("VFO") + which + "?");
   uint64_t hz = 0;
   if (!queryFrequency(hz, 800)) { keypadReportIfTimedOut("VFOA?"); return; }
   printKeypadStatus(String("VFO") + which + ": " + hzToMHzString3(hz) + " MHz");
@@ -121,7 +121,7 @@ void queryBank3Ft8x7CurrentVfo() {
 }
 
 void selectBank3VfoA() {
-  printKeypadCommand("BANK3 1 LONG -> VFO A");
+  printKeypadAction("VFO A");
   g_suppressFreqSpeakUntilMs = millis() + 1500;
   if (!selectVfoA()) { keypadReportIfTimedOut("VFO A"); return; }
   if (currentProtocolType() == PROTO_YAESU_FT8X7) {
@@ -137,7 +137,7 @@ void selectBank3VfoA() {
 }
 
 void toggleBank3Ft8x7Vfo() {
-  printKeypadCommand("BANK3 1 LONG -> A/B");
+  printKeypadAction("A/B");
   g_suppressFreqSpeakUntilMs = millis() + 1500;
   ensureFt8x7VfoTrackingInitialized();
   if (!guardFt8x7VfoToggleLock()) return;
@@ -153,7 +153,7 @@ void toggleBank3Ft8x7Vfo() {
 }
 
 void beginBank3VfoAFrequencySet() {
-  printKeypadCommand("BANK3 1 DOUBLE -> VFOA FREQ");
+  printKeypadAction("VFOA FREQ");
   keypadInput().beginEntry(InputMode::FreqEntry, KEYPAD_VFO_A);
   if (g_speechEnabled) {
     speakFrequencyWord();
@@ -165,7 +165,7 @@ void beginBank3VfoAFrequencySet() {
 void beginBank3Ft8x7CurrentVfoFrequencySet() {
   ensureFt8x7VfoTrackingInitialized();
   const char which = ft8x7CurrentVfoLabel();
-  printKeypadCommand(String("BANK3 1 DOUBLE -> VFO") + which + " FREQ");
+  printKeypadAction(String("VFO") + which + " FREQ");
   keypadInput().beginEntry(InputMode::FreqEntry, KEYPAD_VFO_CURRENT);
   if (g_speechEnabled) {
     speakVfoFrequencyLabel(which);
@@ -175,7 +175,7 @@ void beginBank3Ft8x7CurrentVfoFrequencySet() {
 }
 
 void queryBank3VfoB() {
-  printKeypadCommand("BANK3 2 SHORT -> VFOB?");
+  printKeypadAction("VFOB?");
   uint64_t hz = 0;
   if (!queryVfoFrequency(false, hz, 800)) { keypadReportIfTimedOut("VFOB?"); return; }
   printKeypadStatus(String("VFOB: ") + hzToMHzString3(hz) + " MHz");
@@ -189,7 +189,7 @@ void queryBank3VfoB() {
 // Switches to the other VFO, reads it and switches back.
 void queryBank3Ft857OtherVfo() {
   ensureFt8x7VfoTrackingInitialized();
-  printKeypadCommand(String("BANK3 2 SHORT -> VFO") + ft8x7OtherVfoLabel() + "?");
+  printKeypadAction(String("VFO") + ft8x7OtherVfoLabel() + "?");
   if (!guardFt8x7VfoToggleLock()) return;
   const bool priorVfoA = live.activeVfoA;
   const char other = priorVfoA ? 'B' : 'A';
@@ -214,7 +214,7 @@ void queryBank3Ft857OtherVfo() {
 // Switches to the other VFO, reads it (one retry) and switches back.
 void queryBank3Ft817OtherVfo() {
   ensureFt8x7VfoTrackingInitialized();
-  printKeypadCommand(String("BANK3 2 SHORT -> VFO") + ft8x7OtherVfoLabel() + "?");
+  printKeypadAction(String("VFO") + ft8x7OtherVfoLabel() + "?");
   if (!guardFt8x7VfoToggleLock()) return;
   uint64_t hz = 0;
   bool ok = false;
@@ -239,7 +239,7 @@ void queryBank3Ft817OtherVfo() {
 }
 
 void selectBank3VfoB() {
-  printKeypadCommand("BANK3 2 LONG -> VFO B");
+  printKeypadAction("VFO B");
   g_suppressFreqSpeakUntilMs = millis() + 1500;
   if (!selectVfoB()) { keypadReportIfTimedOut("VFO B"); return; }
   if (currentProtocolType() == PROTO_YAESU_FT8X7) {
@@ -255,7 +255,7 @@ void selectBank3VfoB() {
 }
 
 void copyBank3Ft817VfoToOther() {
-  printKeypadCommand("BANK3 2 LONG -> A=B");
+  printKeypadAction("A=B");
   g_suppressFreqSpeakUntilMs = millis() + 1500;
   ensureFt8x7VfoTrackingInitialized();
   if (!guardFt8x7VfoToggleLock()) return;
@@ -271,13 +271,13 @@ void copyBank3Ft817VfoToOther() {
 }
 
 void reportBank3Ft857VfoBUnsupported() {
-  printKeypadCommand("BANK3 2 LONG -> VFO B");
+  printKeypadAction("VFO B");
   printKeypadStatus("VFO B unsupported");
   if (g_speechEnabled) speakNotAvailable();
 }
 
 void beginBank3VfoBFrequencySet() {
-  printKeypadCommand("BANK3 2 DOUBLE -> VFOB FREQ");
+  printKeypadAction("VFOB FREQ");
   keypadInput().beginEntry(InputMode::FreqEntry, KEYPAD_VFO_B);
   if (g_speechEnabled) {
     speakFrequencyWord();
@@ -289,7 +289,7 @@ void beginBank3VfoBFrequencySet() {
 void beginBank3Ft8x7OtherVfoFrequencySet() {
   ensureFt8x7VfoTrackingInitialized();
   const char which = ft8x7OtherVfoLabel();
-  printKeypadCommand(String("BANK3 2 DOUBLE -> VFO") + which + " FREQ");
+  printKeypadAction(String("VFO") + which + " FREQ");
   keypadInput().beginEntry(InputMode::FreqEntry, KEYPAD_VFO_OTHER);
   if (g_speechEnabled) {
     speakVfoFrequencyLabel(which);
@@ -299,7 +299,7 @@ void beginBank3Ft8x7OtherVfoFrequencySet() {
 }
 
 void selectBank3Ft817ActiveVfoA() {
-  printKeypadCommand("BANK3 6 SHORT -> VFO A ACTIVE");
+  printKeypadAction("VFO A ACTIVE");
   ensureFt8x7VfoTrackingInitialized();
   if (!live.activeVfoA) {
     if (!guardFt8x7VfoToggleLock()) return;
@@ -316,7 +316,7 @@ void selectBank3Ft817ActiveVfoA() {
 }
 
 void selectBank3Ft817ActiveVfoB() {
-  printKeypadCommand("BANK3 6 LONG -> VFO B ACTIVE");
+  printKeypadAction("VFO B ACTIVE");
   ensureFt8x7VfoTrackingInitialized();
   if (live.activeVfoA) {
     if (!guardFt8x7VfoToggleLock()) return;
@@ -333,7 +333,7 @@ void selectBank3Ft817ActiveVfoB() {
 }
 
 void syncBank3VfoA() {
-  printKeypadCommand("BANK3 4 SHORT -> SYNC VFO A");
+  printKeypadAction("SYNC VFO A");
   rememberActiveVfo(true);
   printKeypadStatus("SYNC VFOA");
   if (g_speechEnabled) {
@@ -346,7 +346,7 @@ void syncBank3VfoA() {
 }
 
 void syncBank3VfoB() {
-  printKeypadCommand("BANK3 4 LONG -> SYNC VFO B");
+  printKeypadAction("SYNC VFO B");
   rememberActiveVfo(false);
   printKeypadStatus("SYNC VFOB");
   if (g_speechEnabled) {
@@ -358,8 +358,8 @@ void syncBank3VfoB() {
   }
 }
 
-void queryBank3VfoAMode(char key) {
-  printKeypadCommand(String("BANK3 ") + key + " SHORT -> VFOA MODE?");
+void queryBank3VfoAMode() {
+  printKeypadAction("VFOA MODE?");
   uint8_t mode = 0xFF;
   uint8_t filter = 0xFF;
   if (!queryVfoMode(true, mode, filter, 800)) { keypadReportIfTimedOut("VFOA MODE?"); return; }
@@ -368,8 +368,8 @@ void queryBank3VfoAMode(char key) {
   speakMode(mode);
 }
 
-void beginBank3VfoAModeSet(char key) {
-  printKeypadCommand(String("BANK3 ") + key + " LONG -> VFOA MODE");
+void beginBank3VfoAModeSet() {
+  printKeypadAction("VFOA MODE");
   keypadInput().beginModeSelect(KEYPAD_VFO_A);
   if (g_speechEnabled) {
     speakToken("mode");
@@ -379,7 +379,7 @@ void beginBank3VfoAModeSet(char key) {
 }
 
 void queryBank3VfoBMode() {
-  printKeypadCommand("BANK3 5 SHORT -> VFOB MODE?");
+  printKeypadAction("VFOB MODE?");
   uint8_t mode = 0xFF;
   uint8_t filter = 0xFF;
   if (!queryVfoMode(false, mode, filter, 800)) { keypadReportIfTimedOut("VFOB MODE?"); return; }
@@ -389,7 +389,7 @@ void queryBank3VfoBMode() {
 }
 
 void beginBank3VfoBModeSet() {
-  printKeypadCommand("BANK3 5 LONG -> VFOB MODE");
+  printKeypadAction("VFOB MODE");
   keypadInput().beginModeSelect(KEYPAD_VFO_B);
   if (g_speechEnabled) {
     speakToken("mode");
@@ -399,7 +399,7 @@ void beginBank3VfoBModeSet() {
 }
 
 void queryBank3RxTx() {
-  printKeypadCommand("BANK3 6 SHORT -> RXTX?");
+  printKeypadAction("RXTX?");
   bool tx = false;
   if (!queryRxTxStatus(tx, 800)) { keypadReportIfTimedOut("RXTX?"); return; }
   printKeypadStatus(tx ? "TX" : "RX");
@@ -410,13 +410,13 @@ void queryBank3RxTx() {
 }
 
 void queryBank3BandStack(uint8_t reg) {
-  printKeypadCommand(String("BANK3 ") + String(reg + 6) + " SHORT -> BSTACK? " + String(reg));
+  printKeypadAction(String("BSTACK? ") + String(reg));
   if (keypadReportIfUnsupported(protocolSupportsBandStack(), "BSTACK?")) return;
   keypadSendNow(String("BSTACK? ") + String(reg));
 }
 
 void recallBank3BandStack(uint8_t reg) {
-  printKeypadCommand(String("BANK3 ") + String(reg + 6) + " LONG -> BSTACK " + String(reg));
+  printKeypadAction(String("BSTACK ") + String(reg));
   if (keypadReportIfUnsupported(protocolSupportsBandStack(), "BSTACK")) return;
   keypadSendNow(String("BSTACK ") + String(reg));
 }

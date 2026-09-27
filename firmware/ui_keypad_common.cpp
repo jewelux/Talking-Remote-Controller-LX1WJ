@@ -1,5 +1,6 @@
 #include "ui_keypad_common.h"
 
+#include "keypad_keymap.h"
 #include "radio_catalog.h"
 #include "radio_monitor.h"
 #include "radio_state.h"
@@ -18,6 +19,11 @@ void printKeypadCommand(const String& line) {
     Serial.print("CMD ");
     Serial.println(line);
   }
+}
+
+void printKeypadAction(const String& what) {
+  const char* key = keymapActiveKey();
+  printKeypadCommand(key ? String(key) + " -> " + what : what);
 }
 
 bool keypadReportIfTimedOut(const char* label) {
@@ -39,8 +45,9 @@ bool keypadReportIfUnsupported(bool supported, const char* label) {
   return true;
 }
 
-void reportFtdx10HiddenKey(const char* label) {
-  printKeypadStatus(String(label) + " hidden on FTDX10");
+void reportFtdx10HiddenKey() {
+  const char* key = keymapActiveKey();
+  printKeypadStatus(String(key ? key : "KEY") + " hidden on FTDX10");
   if (g_speechEnabled) speakNotAvailable();
 }
 
@@ -208,7 +215,7 @@ void speakKeypadCommandWord(const String& cmd) {
   else if (cmd == "NOTCH?") speakToken("notch filter");
 }
 
-void sendKeypadCommand(const char* label, const char* cmd) {
-  printKeypadCommand(label);
+void sendKeypadCommand(const char* cmd) {
+  printKeypadAction(cmd);
   keypadSendNow(cmd);
 }

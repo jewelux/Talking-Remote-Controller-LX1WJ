@@ -46,28 +46,30 @@
 // (radio_protocol.cpp), so they follow the family and need no trait of their own.
 //
 // Actions are named after the existing function where one exists, with its
-// arguments. Inline code in the old dispatchers gets a name here; the serial
-// output must stay the same:
-//   queryBank1Power         sendOrStageBank1Command("BANK1 4 SHORT", "PO?")
-//   queryBank1Smeter        sendOrStageBank1Command("BANK1 7 SHORT", "SM?")
-//   queryBank1Swr           sendOrStageBank1Command("BANK1 8 SHORT", "SWR?")
-//   queryBank1Mode          sendOrStageBank1Command("BANK1 9 SHORT", "MODE?", true)
-//   queryBank1RfPower       sendOrStageBank1Command("BANK1 6 SHORT", "RFPOWER?")
-//   beginBank1ModeSelect    "BANK1 9 LONG -> MODE", mode select, "mode please"
-//   send(CMD)               sendKeypadCommand("BANKn k GESTURE -> ...", CMD): the
-//                           console command CMD. Most FTDX10 keys; the old code
-//                           had these inline or as ftdx10*() / send*Query().
-//   setBank5RitOff          "BANK5 3 LONG -> RIT OFF", RIT off or "unsupported"
-//   queryBank9Profile       "BANK9 A SHORT -> PROFILE?", speaks the profile
-//   queryBank9Volume        "BANK9 9 SHORT -> VOLUME?", speaks the volume
-//   adjustBank9Volume(-1/1) "BANK9 7/8 SHORT -> VOLUME DOWN/UP" + adjustVolumeLevel
-//   adjustBank9Volume(-2/2) "BANK9 7/8 LONG -> VOLUME DOWN/UP FAST" + adjustBank9Volume
-//   reportFtdx10HiddenKey   also stands for reportFtdx10HiddenKeypadAction (same output)
+// arguments. Inline code in the old dispatchers gets a name here:
+//   queryBank1Power         sendOrStageBank1Command("PO?")
+//   queryBank1Smeter        sendOrStageBank1Command("SM?")
+//   queryBank1Swr           sendOrStageBank1Command("SWR?")
+//   queryBank1Mode          sendOrStageBank1Command("MODE?", true)
+//   queryBank1RfPower       sendOrStageBank1Command("RFPOWER?")
+//   beginBank1ModeSelect    "MODE", mode select, "mode please"
+//   send(CMD)               sendKeypadCommand(CMD): the console command
+//                           CMD. Most FTDX10 keys; the old code had these
+//                           inline or as ftdx10*() / send*Query().
+//   setBank5RitOff          "RIT OFF", RIT off or "unsupported"
+//   queryBank9Profile       "PROFILE?", speaks the profile
+//   queryBank9Volume        "VOLUME?", speaks the volume
+//   adjustBank9Volume(-1/1) "VOLUME DOWN/UP" + adjustVolumeLevel
+//   adjustBank9Volume(-2/2) "VOLUME DOWN/UP FAST" + adjustBank9Volume
+//   reportFtdx10HiddenKey(K) also stands for reportFtdx10HiddenKeypadAction;
+//                           K is the key the keymap names (keymapActiveKey())
+//
+// The serial trace of an action starts with the key the keymap names, e.g.
+// "CMD BANK3 2 LONG -> A=B"; the actions no longer spell out their key.
 //
 // After the refactor the actions stopped checking the radio: each radio branch
 // inside an action became its own action picked here, named after the radio
-// (e.g. queryBank3Ft857OtherVfo was the FT-857 branch of queryBank3VfoB). The
-// serial output stays the same.
+// (e.g. queryBank3Ft857OtherVfo was the FT-857 branch of queryBank3VfoB).
 //
 // Dead branches found while building this table (no key sequence reaches them):
 //   keypadHandleReleased: bank 1 '0' '1' '2', bank 2 CIV '4'-'7' '9',
@@ -120,10 +122,10 @@ KEYMAP_ROW(CIV,             2, '7', "queryBank2PbtOuter",    "adjustBank2PbtOute
 KEYMAP_ROW(FTDX10,          2, '7', "send(ID?)",             "none",                   "-")
 KEYMAP_ROW(NOT(CIV | FTDX10), 2, '7', "unassigned",          "none",                   "-")
 KEYMAP_ROW(CIV,             2, '8', "send(FILSHAPE?)",       "toggleBank2FilterShape", "-")
-KEYMAP_ROW(FTDX10,          2, '8', "reportFtdx10HiddenKey(BANK2 8)", "none",          "-")  // fixed: was unassigned
+KEYMAP_ROW(FTDX10,          2, '8', "reportFtdx10HiddenKey(BANK2 8 SHORT)", "none",          "-")  // fixed: was unassigned
 KEYMAP_ROW(NOT(CIV | FTDX10), 2, '8', "unassigned",          "none",                   "-")
 KEYMAP_ROW(CIV,             2, '9', "queryBank2FilterWidth", "cycleBank2FilterWidth(1)", "cycleBank2FilterWidth(-1)")
-KEYMAP_ROW(FTDX10,          2, '9', "reportFtdx10HiddenKey(BANK2 9)", "none",          "-")  // fixed: was unassigned
+KEYMAP_ROW(FTDX10,          2, '9', "reportFtdx10HiddenKey(BANK2 9 SHORT)", "none",          "-")  // fixed: was unassigned
 KEYMAP_ROW(NOT(CIV | FTDX10), 2, '9', "unassigned",          "none",                   "-")
 
 // ---- Bank 3 ----------------------------------------------------------------
@@ -140,11 +142,11 @@ KEYMAP_ROW(FT817,           3, '2', "queryBank3Ft817OtherVfo", "copyBank3Ft817Vf
 KEYMAP_ROW(FT857,           3, '2', "queryBank3Ft857OtherVfo", "reportBank3Ft857VfoBUnsupported", "beginBank3Ft8x7OtherVfoFrequencySet")
 KEYMAP_ROW(FTDX10,          3, '2', "send(VFOB?)",           "send(VFO B)",            "beginBank3VfoBFrequencySet")
 KEYMAP_ROW(NOT(FT817 | FT857 | FTDX10), 3, '2', "queryBank3VfoB", "selectBank3VfoB",   "beginBank3VfoBFrequencySet")
-KEYMAP_ROW(FT817,           3, '3', "queryBank3VfoAMode(3)", "beginBank3VfoAModeSet(3)", "-")
+KEYMAP_ROW(FT817,           3, '3', "queryBank3VfoAMode", "beginBank3VfoAModeSet", "-")
 KEYMAP_ROW(NOT(FT817),      3, '3', "unassigned",            "none",                   "-")
 KEYMAP_ROW(FT817 | FT857,   3, '4', "syncBank3VfoA",         "syncBank3VfoB",          "-")
-KEYMAP_ROW(FTDX10,          3, '4', "send(VFOA MODE?)",      "beginBank3VfoAModeSet(4)", "-")
-KEYMAP_ROW(NOT(FT817 | FT857 | FTDX10), 3, '4', "queryBank3VfoAMode(4)", "beginBank3VfoAModeSet(4)", "-")
+KEYMAP_ROW(FTDX10,          3, '4', "send(VFOA MODE?)",      "beginBank3VfoAModeSet", "-")
+KEYMAP_ROW(NOT(FT817 | FT857 | FTDX10), 3, '4', "queryBank3VfoAMode", "beginBank3VfoAModeSet", "-")
 KEYMAP_ROW(FT857,           3, '5', "setBank3Ft857Clar(true)", "setBank3Ft857Clar(false)", "-")
 KEYMAP_ROW(FTDX10,          3, '5', "send(VFOB MODE?)",      "beginBank3VfoBModeSet",  "-")
 KEYMAP_ROW(NOT(FT857 | FTDX10), 3, '5', "queryBank3VfoBMode", "beginBank3VfoBModeSet", "-")
@@ -152,22 +154,22 @@ KEYMAP_ROW(FT817,           3, '6', "selectBank3Ft817ActiveVfoA", "selectBank3Ft
 KEYMAP_ROW(FT857,           3, '6', "setBank3Ft857Ptt(false)", "setBank3Ft857Ptt(true)", "-")
 KEYMAP_ROW(FTDX10,          3, '6', "send(RXTX?)",           "none",                   "-")
 KEYMAP_ROW(NOT(FT817 | FT857 | FTDX10), 3, '6', "queryBank3RxTx", "none",              "-")
-KEYMAP_ROW(FTDX10,          3, '7', "queryBank3BandStack(1)", "reportFtdx10HiddenKey(BANK3 BSTACK)", "-")
+KEYMAP_ROW(FTDX10,          3, '7', "queryBank3BandStack(1)", "reportFtdx10HiddenKey(BANK3 7 LONG)", "-")
 KEYMAP_ROW(NOT(FTDX10),     3, '7', "queryBank3BandStack(1)", "recallBank3BandStack(1)", "-")
-KEYMAP_ROW(FTDX10,          3, '8', "queryBank3BandStack(2)", "reportFtdx10HiddenKey(BANK3 BSTACK)", "-")
+KEYMAP_ROW(FTDX10,          3, '8', "queryBank3BandStack(2)", "reportFtdx10HiddenKey(BANK3 8 LONG)", "-")
 KEYMAP_ROW(NOT(FTDX10),     3, '8', "queryBank3BandStack(2)", "recallBank3BandStack(2)", "-")
-KEYMAP_ROW(FTDX10,          3, '9', "queryBank3BandStack(3)", "reportFtdx10HiddenKey(BANK3 BSTACK)", "-")
+KEYMAP_ROW(FTDX10,          3, '9', "queryBank3BandStack(3)", "reportFtdx10HiddenKey(BANK3 9 LONG)", "-")
 KEYMAP_ROW(NOT(FTDX10),     3, '9', "queryBank3BandStack(3)", "recallBank3BandStack(3)", "-")
 
 // ---- Bank 4 ----------------------------------------------------------------
 KEYMAP_ROW(FTDX10,          4, '0', "send(TUNER?)",          "send(TUNER TOGGLE)",     "send(TUNE)")
 KEYMAP_ROW(NOT(FTDX10),     4, '0', "queryBank4Tuner",       "toggleBank4Tuner",       "triggerBank4Tune")
-KEYMAP_ROW(FTDX10,          4, '1', "reportFtdx10HiddenKey(BANK4)", "reportFtdx10HiddenKey(BANK4)", "-")
+KEYMAP_ROW(FTDX10,          4, '1', "reportFtdx10HiddenKey(BANK4 1 SHORT)", "reportFtdx10HiddenKey(BANK4 1 LONG)", "-")
 KEYMAP_ROW(CIV,             4, '1', "send(MONITOR?)",        "toggleBank4Monitor",     "-")
 KEYMAP_ROW(NOT(CIV | FTDX10), 4, '1', "unassigned",          "toggleBank4Monitor",     "-")
-KEYMAP_ROW(FTDX10,          4, '2', "reportFtdx10HiddenKey(BANK4)", "reportFtdx10HiddenKey(BANK4)", "reportFtdx10HiddenKey(BANK4)")
+KEYMAP_ROW(FTDX10,          4, '2', "reportFtdx10HiddenKey(BANK4 2 SHORT)", "reportFtdx10HiddenKey(BANK4 2 LONG)", "reportFtdx10HiddenKey(BANK4 2 DOUBLE)")
 KEYMAP_ROW(NOT(FTDX10),     4, '2', "queryBank4MonitorLevel", "adjustBank4MonitorLevel(10)", "adjustBank4MonitorLevel(-10)")
-KEYMAP_ROW(FTDX10,          4, '3', "reportFtdx10HiddenKey(BANK4)", "reportFtdx10HiddenKey(BANK4)", "-")
+KEYMAP_ROW(FTDX10,          4, '3', "reportFtdx10HiddenKey(BANK4 3 SHORT)", "reportFtdx10HiddenKey(BANK4 3 LONG)", "-")
 KEYMAP_ROW(CIV,             4, '3', "send(TRANSCEIVE?)",     "toggleBank4Transceive",  "-")
 KEYMAP_ROW(NOT(CIV | FTDX10), 4, '3', "unassigned",          "toggleBank4Transceive",  "-")
 

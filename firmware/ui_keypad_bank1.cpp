@@ -35,7 +35,7 @@ static void speakTunedFrequencyHz(uint64_t hz) {
 }
 
 void queryBank1RxTx() {
-  printKeypadCommand("BANK1 1 SHORT -> RXTX?");
+  printKeypadAction("RXTX?");
   bool tx = false;
   if (!queryRxTxStatus(tx, 800)) { keypadReportIfTimedOut("RXTX?"); return; }
   printKeypadStatus(tx ? "TX" : "RX");
@@ -46,7 +46,7 @@ void queryBank1RxTx() {
 }
 
 void reportBank1Ft817RxTxUnreliable() {
-  printKeypadCommand("BANK1 1 SHORT -> RXTX?");
+  printKeypadAction("RXTX?");
   printKeypadStatus("RXTX unreliable");
   if (g_speechEnabled) {
     speakToken("transceiver");
@@ -56,7 +56,7 @@ void reportBank1Ft817RxTxUnreliable() {
 }
 
 void queryBank1Frequency() {
-  printKeypadCommand("BANK1 0 SHORT -> FREQ?");
+  printKeypadAction("FREQ?");
   uint64_t hz = 0;
   if (!queryFrequency(hz, 800)) {
     if (!keypadReportIfTimedOut("FREQ?")) {
@@ -71,7 +71,7 @@ void queryBank1Frequency() {
 }
 
 void queryBank1TxFrequency() {
-  printKeypadCommand("BANK1 2 SHORT -> TXFREQ?");
+  printKeypadAction("TXFREQ?");
   uint64_t hz = 0;
   if (!queryTxFrequency(hz, 800)) {
     // FT-8x7 without a TX frequency reply: say the frequency instead.
@@ -91,7 +91,7 @@ void queryBank1TxFrequency() {
 }
 
 void queryBank1Ft857TxFrequency() {
-  printKeypadCommand("BANK1 2 SHORT -> TXFREQ?");
+  printKeypadAction("TXFREQ?");
   uint64_t hz = 0;
   if (g_ft8x7SplitKnown && !g_ft8x7SplitOn && queryFrequency(hz, 800)) {
     printKeypadStatus(String("TXFREQ: ") + hzToMHzString3(hz) + " MHz");
@@ -103,7 +103,7 @@ void queryBank1Ft857TxFrequency() {
 }
 
 void queryBank1Lock() {
-  printKeypadCommand("BANK1 3 SHORT -> LOCK?");
+  printKeypadAction("LOCK?");
   prepareKeypadSpeechResponse();
   bool on = false;
   if (!queryDialLockReliable(on)) {
@@ -121,7 +121,7 @@ void queryBank1Lock() {
 }
 
 void beginBank1FrequencySet() {
-  printKeypadCommand("BANK1 0 LONG -> FREQ");
+  printKeypadAction("FREQ");
   keypadInput().beginEntry(InputMode::FreqEntry, KEYPAD_VFO_CURRENT);
   if (g_speechEnabled) {
     speakFrequencyWord();
@@ -131,7 +131,7 @@ void beginBank1FrequencySet() {
 }
 
 void roundActiveFrequency(uint32_t stepHz) {
-  printKeypadCommand(String("BANK1 0 DOUBLE -> ROUND ") + String((unsigned long)stepHz) + " Hz");
+  printKeypadAction(String("ROUND ") + String((unsigned long)stepHz) + " Hz");
   g_suspendPollingUntilMs = millis() + 1400;
   g_suppressFreqSpeakUntilMs = millis() + 2000;
 
@@ -171,7 +171,7 @@ void beginBank1RfPowerSet() {
     if (g_speechEnabled) speakNotAvailable();
     return;
   }
-  printKeypadCommand("BANK1 6 LONG -> RFPOWER");
+  printKeypadAction("RFPOWER");
   keypadInput().beginEntry(InputMode::RfPowerEntry);
   printKeypadStatus("POWER PLEASE");
   if (g_speechEnabled) {
@@ -182,7 +182,7 @@ void beginBank1RfPowerSet() {
 }
 
 void toggleBank1Lock() {
-  printKeypadCommand("BANK1 3 LONG -> LOCK");
+  printKeypadAction("LOCK");
   prepareKeypadSpeechResponse();
   bool on = false;
   if (!queryDialLockReliable(on)) {
@@ -200,8 +200,8 @@ void toggleBank1Lock() {
   speakTokenState("lock", !on);
 }
 
-static void sendOrStageBank1Command(const String& keyLabel, const String& cmd, bool suppressModePrefix = false) {
-  printKeypadCommand(keyLabel + " -> " + cmd);
+static void sendOrStageBank1Command(const String& cmd, bool suppressModePrefix = false) {
+  printKeypadAction(cmd);
   if (AUTO_SEND_BANK1_QUERIES) {
     speakKeypadCommandWord(cmd);
     playSilenceMs(60);
@@ -212,19 +212,19 @@ static void sendOrStageBank1Command(const String& keyLabel, const String& cmd, b
   }
 }
 
-void queryBank1Power() { sendOrStageBank1Command("BANK1 4 SHORT", "PO?"); }
+void queryBank1Power() { sendOrStageBank1Command("PO?"); }
 
-void queryBank1RfPower() { sendOrStageBank1Command("BANK1 6 SHORT", "RFPOWER?"); }
+void queryBank1RfPower() { sendOrStageBank1Command("RFPOWER?"); }
 
-void queryBank1Smeter() { sendOrStageBank1Command("BANK1 7 SHORT", "SM?"); }
+void queryBank1Smeter() { sendOrStageBank1Command("SM?"); }
 
-void queryBank1Swr() { sendOrStageBank1Command("BANK1 8 SHORT", "SWR?"); }
+void queryBank1Swr() { sendOrStageBank1Command("SWR?"); }
 
-void queryBank1Mode() { sendOrStageBank1Command("BANK1 9 SHORT", "MODE?", true); }
+void queryBank1Mode() { sendOrStageBank1Command("MODE?", true); }
 
 void beginBank1ModeSelect() {
   keypadInput().beginModeSelect(KEYPAD_VFO_CURRENT);
-  printKeypadCommand("BANK1 9 LONG -> MODE");
+  printKeypadAction("MODE");
   printKeypadStatus("MODE PLEASE");
   if (g_speechEnabled) {
     speakToken("mode");

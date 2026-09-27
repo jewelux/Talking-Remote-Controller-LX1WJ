@@ -38,8 +38,11 @@ uint8_t levelRawToPercent(uint16_t raw);
 uint16_t levelPercentToRaw(int percent);
 
 void printKeypadStatus(const String& line);
-// Serial "CMD <line>" trace of a keypad action.
+// Serial "CMD <line>" trace.
 void printKeypadCommand(const String& line);
+// Serial trace of a bank key action: "CMD <key> -> <what>", the key being
+// keymapActiveKey() (e.g. "BANK3 2 LONG"). Just "CMD <what>" outside the keymap.
+void printKeypadAction(const String& what);
 
 // Keypad feedback. Each prints a status line and gives the matching audio cue.
 // Radio gave no answer: say "timeout" and return true. Otherwise return false, so
@@ -51,7 +54,7 @@ void keypadReportUnassigned(const String& label);
 // an unassigned key and return true.
 bool keypadReportIfUnsupported(bool supported, const char* label);
 // The key is hidden on the FTDX10 layout: say "not available".
-void reportFtdx10HiddenKey(const char* label);
+void reportFtdx10HiddenKey();
 
 // The radio checks behind KeypadTraits::layout. Bank actions do not use them:
 // the keymap already picked the action for the radio.
