@@ -29,7 +29,7 @@ void setTuningSpeechEnabled(bool enabled) {
 }
 
 void beginBank9ProfileSelect() {
-  keypadInput().beginProfileSelect();
+  keypadBeginProfileSelect();
   printKeypadAction("PROFILE SELECT");
   printKeypadStatus("CHOOSE PLEASE");
   speakChoosePlease();

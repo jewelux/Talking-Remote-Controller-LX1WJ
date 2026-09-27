@@ -35,7 +35,7 @@ void beginBank8CivAddressEntry() {
     if (g_speechEnabled) speakNotAvailable();
     return;
   }
-  keypadInput().beginEntry(InputMode::CivAddrEntry);
+  keypadBeginEntry(InputMode::CivAddrEntry);
   printKeypadStatus("CI ADDRESS PLEASE");
   if (g_speechEnabled) {
     speakToken("c");

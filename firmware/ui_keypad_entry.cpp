@@ -114,7 +114,7 @@ void keypadEntryDigit(const EntrySpec& entry, char key, const char* digits) {
 
 static void commitBank() {
   printKeypadCommand("ENTER -> BANK");
-  printKeypadStatus(String("BANK ") + String((int)keypadInput().bank()));
+  printKeypadStatus(String("BANK ") + String((int)uiGetBank()));
   speakBankNumber();
 }
 

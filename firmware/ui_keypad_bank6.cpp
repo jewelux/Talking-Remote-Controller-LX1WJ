@@ -63,7 +63,7 @@ static void setBank6Ft8x7ToneMode(uint8_t modeByte, const char* label) {
 
 void beginBank6RepeaterOffsetEntry() {
   printKeypadAction("RPTSHIFT ENTRY");
-  keypadInput().beginEntry(InputMode::RptOffsetEntry);
+  keypadBeginEntry(InputMode::RptOffsetEntry);
   printKeypadStatus("RPTSHIFT KHZ PLEASE");
   if (g_speechEnabled) {
     speakToken("repeater");
@@ -76,7 +76,7 @@ void beginBank6RepeaterOffsetEntry() {
 
 void beginBank6CtcssEntry() {
   printKeypadAction("CTCSS ENTRY");
-  keypadInput().beginEntry(InputMode::CtcssEntry);
+  keypadBeginEntry(InputMode::CtcssEntry);
   printKeypadStatus("CTCSS PLEASE");
   if (g_speechEnabled) {
     speakToken("ctcss");
@@ -87,7 +87,7 @@ void beginBank6CtcssEntry() {
 
 void beginBank6DcsEntry() {
   printKeypadAction("DCS ENTRY");
-  keypadInput().beginEntry(InputMode::DcsEntry);
+  keypadBeginEntry(InputMode::DcsEntry);
   printKeypadStatus("DCS PLEASE");
   if (g_speechEnabled) {
     speakToken("dcs");

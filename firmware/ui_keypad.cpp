@@ -48,7 +48,7 @@ bool profileModeFromDigit(char digit, uint8_t& modeOut) {
 
 void speakBankNumber() {
   if (!g_speechEnabled) return;
-  const uint8_t bank = keypadInput().bank();
+  const uint8_t bank = uiGetBank();
   speakToken("bank");
   playSilenceMs(60);
   if (bank >= 1 && bank <= 9) playDigit(bank);
@@ -90,19 +90,6 @@ void keypadSendNow(const String& cmd) {
   processCommand(cmd);
   g_keypadExecuting = false;
   g_suspendPollingUntilMs = millis() + 900;
-}
-
-void keypadStageCommand(const String& cmd) {
-  keypadInput().stageCommand(cmd.c_str());
-  if ((bool)Serial) {
-    Serial.print("CMD STAGE ");
-    Serial.println(cmd);
-  }
-  if (g_speechEnabled) {
-    speakKeypadCommandWord(cmd);
-    playSilenceMs(60);
-    speakToken("ok");
-  }
 }
 
 namespace {
@@ -177,8 +164,29 @@ void keypadEvent(KeypadEvent k) {
 
 }  // namespace
 
-KeypadInput& keypadInput() {
-  return s_input;
+void keypadStageCommand(const String& cmd) {
+  s_input.stageCommand(cmd.c_str());
+  if ((bool)Serial) {
+    Serial.print("CMD STAGE ");
+    Serial.println(cmd);
+  }
+  if (g_speechEnabled) {
+    speakKeypadCommandWord(cmd);
+    playSilenceMs(60);
+    speakToken("ok");
+  }
+}
+
+void keypadBeginEntry(InputMode mode, uint8_t targetVfo) {
+  s_input.beginEntry(mode, targetVfo);
+}
+
+void keypadBeginModeSelect(uint8_t targetVfo) {
+  s_input.beginModeSelect(targetVfo);
+}
+
+void keypadBeginProfileSelect() {
+  s_input.beginProfileSelect();
 }
 
 void initKeypadUi() {

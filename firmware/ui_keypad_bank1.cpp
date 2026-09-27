@@ -122,7 +122,7 @@ void queryBank1Lock() {
 
 void beginBank1FrequencySet() {
   printKeypadAction("FREQ");
-  keypadInput().beginEntry(InputMode::FreqEntry, KEYPAD_VFO_CURRENT);
+  keypadBeginEntry(InputMode::FreqEntry, KEYPAD_VFO_CURRENT);
   if (g_speechEnabled) {
     speakFrequencyWord();
     playSilenceMs(80);
@@ -172,7 +172,7 @@ void beginBank1RfPowerSet() {
     return;
   }
   printKeypadAction("RFPOWER");
-  keypadInput().beginEntry(InputMode::RfPowerEntry);
+  keypadBeginEntry(InputMode::RfPowerEntry);
   printKeypadStatus("POWER PLEASE");
   if (g_speechEnabled) {
     speakToken("power");
@@ -223,7 +223,7 @@ void queryBank1Swr() { sendOrStageBank1Command("SWR?"); }
 void queryBank1Mode() { sendOrStageBank1Command("MODE?", true); }
 
 void beginBank1ModeSelect() {
-  keypadInput().beginModeSelect(KEYPAD_VFO_CURRENT);
+  keypadBeginModeSelect(KEYPAD_VFO_CURRENT);
   printKeypadAction("MODE");
   printKeypadStatus("MODE PLEASE");
   if (g_speechEnabled) {

@@ -6,9 +6,11 @@
 
 // Helpers shared by the keypad UI files.
 
-// The keypad state machine (ui_keypad.cpp). Actions call it to start an entry,
-// mode select or profile select.
-KeypadInput& keypadInput();
+// What an action may ask of the keypad state machine (ui_keypad.cpp): the keys
+// after it go to an entry, mode select or profile select.
+void keypadBeginEntry(InputMode mode, uint8_t targetVfo = KEYPAD_VFO_CURRENT);
+void keypadBeginModeSelect(uint8_t targetVfo);
+void keypadBeginProfileSelect();
 
 // Runs a console command for a key, with the keypad's polling and speech holds.
 void keypadSendNow(const String& cmd);

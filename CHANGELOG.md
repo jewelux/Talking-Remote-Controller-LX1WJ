@@ -41,6 +41,9 @@
   lives in `KeypadInput` next to the staged mode, instead of in statics in `ui_keypad.cpp` that
   the state machine asked about through the listener; behaviour is unchanged and host tests now
   cover it
+- bank actions no longer get the whole keypad state machine through a global `keypadInput()`;
+  they can only start an entry, mode select or profile select (`keypadBeginEntry`,
+  `keypadBeginModeSelect`, `keypadBeginProfileSelect`), and read the bank through `uiGetBank()`
 - FT-817 Bank 3 `1` long toggles VFO A/B and `2` long copies the active VFO's frequency and mode
   to the other (A=B, spoken "a equals b") again; both had become unreachable when the long press
   was given the same frequency entry as the double press. New console command `VFO A=B` (FT-817)
