@@ -318,7 +318,7 @@ void KeypadInput::enter() {
 
 void KeypadInput::commitEntry() {
   const InputMode mode = mode_;
-  const DigitBuffer<13> digits = digits_;
+  const decltype(digits_) digits = digits_;
   const TargetVfo targetVfo = entryVfo_;
   if (mode == InputMode::BankSelect) bank_ = (uint8_t)(digits.c_str()[0] - '0');
   mode_ = InputMode::Normal;
