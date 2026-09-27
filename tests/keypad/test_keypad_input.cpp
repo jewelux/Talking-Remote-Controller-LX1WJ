@@ -340,7 +340,48 @@ TEST(input_double_without_action_restarts_wait_and_runs_short_once) {
   CHECK_LOG(f, "short 8 2");
 }
 
-TEST(input_handled_hold_cancels_waiting_short) {
+TEST(input_hold_of_waiting_key_replaces_its_short) {
+  Fake f;
+  f.waits = {"4 0"};
+  f.shorts = {"4 0"};
+  f.holds = {"4 0"};
+  KeypadInput in(f);
+  in.setBank(4);
+  tap(in, '0', 1000);
+  hold(in, '0', 1100);
+  in.poll(2000);
+  CHECK_LOG(f, "hold 4 0");
+}
+
+TEST(input_unassigned_hold_of_waiting_key_keeps_its_short) {
+  Fake f;
+  f.waits = {"4 0"};
+  f.shorts = {"4 0"};
+  KeypadInput in(f);
+  in.setBank(4);
+  tap(in, '0', 1000);
+  in.onKey('0', KeyGesture::Pressed, 1100);
+  in.onKey('0', KeyGesture::Held, 1100);
+  in.poll(2000);
+  CHECK_LOG(f, "unassigned BANK4 0 LONG", "short 4 0");
+}
+
+// A waiting short answers before any later key, never after it.
+TEST(input_waiting_short_runs_before_other_key) {
+  Fake f;
+  f.waits = {"1 0"};
+  f.shorts = {"1 0", "1 7"};
+  KeypadInput in(f);
+  tap(in, '0', 1000);
+  in.onKey('7', KeyGesture::Pressed, 1100);
+  CHECK_LOG(f, "short 1 0");
+  CHECK(!in.doubleClickPending());
+  in.onKey('7', KeyGesture::Released, 1150);
+  in.poll(1300);
+  CHECK_LOG(f, "short 1 7");
+}
+
+TEST(input_waiting_short_runs_before_other_key_hold) {
   Fake f;
   f.waits = {"4 0"};
   f.shorts = {"4 0"};
@@ -350,10 +391,10 @@ TEST(input_handled_hold_cancels_waiting_short) {
   tap(in, '0', 1000);
   hold(in, '2', 1100);
   in.poll(2000);
-  CHECK_LOG(f, "hold 4 2");
+  CHECK_LOG(f, "short 4 0", "hold 4 2");
 }
 
-TEST(input_unassigned_hold_keeps_waiting_short) {
+TEST(input_waiting_short_runs_before_unassigned_hold) {
   Fake f;
   f.waits = {"4 0"};
   f.shorts = {"4 0"};
@@ -363,31 +404,59 @@ TEST(input_unassigned_hold_keeps_waiting_short) {
   in.onKey('7', KeyGesture::Pressed, 1100);
   in.onKey('7', KeyGesture::Held, 1100);
   in.poll(2000);
-  CHECK_LOG(f, "unassigned BANK4 7 LONG", "short 4 0");
+  CHECK_LOG(f, "short 4 0", "unassigned BANK4 7 LONG");
 }
 
-TEST(input_other_key_during_wait_runs_first) {
-  Fake f;
-  f.waits = {"1 0"};
-  f.shorts = {"1 0", "1 7"};
-  KeypadInput in(f);
-  tap(in, '0', 1000);
-  tap(in, '7', 1100);
-  in.poll(1300);
-  CHECK_LOG(f, "short 1 7", "short 1 0");
-}
-
-// Kept from the old dispatcher: a second waiting key replaces the first, which
-// is dropped.
-TEST(input_other_waiting_key_replaces_waiting_key) {
+TEST(input_waiting_short_runs_before_other_waiting_key) {
   Fake f;
   f.waits = {"1 0", "1 1"};
   f.shorts = {"1 0", "1 1"};
   KeypadInput in(f);
   tap(in, '0', 1000);
   tap(in, '1', 1100);
+  CHECK_LOG(f, "short 1 0");
+  CHECK(in.doubleClickPending());
   in.poll(1400);
   CHECK_LOG(f, "short 1 1");
+}
+
+TEST(input_waiting_short_runs_before_star_and_enter) {
+  Fake f;
+  f.waits = {"1 0"};
+  f.shorts = {"1 0"};
+  f.stagedCommand = true;
+  KeypadInput in(f);
+  tap(in, '0', 1000);
+  tap(in, '*', 1100);
+  tap(in, '0', 1400);
+  tap(in, 'D', 1500);
+  in.poll(2000);
+  CHECK_LOG(f, "short 1 0", "bank? 1", "short 1 0", "staged command");
+}
+
+TEST(input_waiting_short_runs_before_bank_select) {
+  Fake f;
+  f.waits = {"1 0"};
+  f.shorts = {"1 0"};
+  KeypadInput in(f);
+  tap(in, '0', 1000);
+  hold(in, '*', 1100);
+  CHECK_LOG(f, "short 1 0", "bank please");
+}
+
+// The main loop may not have polled since the wait ran out: the next key runs
+// the waiting short first, even the same key.
+TEST(input_expired_wait_runs_before_same_key_without_poll) {
+  Fake f;
+  f.waits = {"1 0"};
+  f.shorts = {"1 0"};
+  f.doubles = {"1 0"};
+  KeypadInput in(f);
+  tap(in, '0', 1000);
+  tap(in, '0', 1000 + KeypadInput::kDoubleClickMs + 1);
+  CHECK_LOG(f, "short 1 0");
+  in.poll(2000);
+  CHECK_LOG(f, "short 1 0");
 }
 
 TEST(input_double_click_needs_same_bank) {
@@ -400,7 +469,7 @@ TEST(input_double_click_needs_same_bank) {
   in.setBank(3);
   tap(in, '0', 1100);
   in.poll(1400);
-  CHECK_LOG(f, "short 3 0");
+  CHECK_LOG(f, "short 1 0", "short 3 0");
 }
 
 TEST(input_deferred_short_without_action_is_unassigned) {

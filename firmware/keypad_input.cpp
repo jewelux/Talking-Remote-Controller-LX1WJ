@@ -34,6 +34,13 @@ bool KeypadInput::HoldTracker::release(char key) {
 
 void KeypadInput::onKey(char key, KeyGesture gesture, uint32_t nowMs) {
   listener_.onActivity(gesture == KeyGesture::Pressed);
+  // A short waiting for a double click answers before any later key: when its
+  // wait is over, or when another key goes down. '#' cancels it instead.
+  poll(nowMs);
+  if (gesture == KeyGesture::Pressed && pending_.active && key != '#' &&
+      (key != pending_.key || bank_ != pending_.bank)) {
+    runPending();
+  }
   if (gesture == KeyGesture::Held) {
     held(key);
     return;
@@ -75,6 +82,10 @@ void KeypadInput::onKey(char key, KeyGesture gesture, uint32_t nowMs) {
 
 void KeypadInput::poll(uint32_t nowMs) {
   if (!pending_.active || (uint32_t)(nowMs - pending_.atMs) <= kDoubleClickMs) return;
+  runPending();
+}
+
+void KeypadInput::runPending() {
   pending_.active = false;
   listener_.onActivity(false);
   runShortOrUnassigned(pending_.bank, pending_.key);
@@ -128,10 +139,13 @@ void KeypadInput::held(char key) {
     handled = listener_.runHold(bank_, key);
   }
   if (handled) {
+    // Only the waiting key itself can still be waiting here: its long action
+    // replaces its short.
     pending_.active = false;
     return;
   }
-  // The beep is no action: a short still waiting for a double click stays.
+  // The beep is no action: the key's short still waiting for a double click
+  // stays.
   char label[24];
   if (g) {
     snprintf(label, sizeof(label), "%s LONG", g->name);
@@ -148,8 +162,7 @@ void KeypadInput::releasedNormal(char key, uint32_t nowMs) {
     if (listener_.runDoubleClick(bank_, key)) return;
   }
   if (listener_.wantsDoubleClick(bank_, key)) {
-    // A key that waits replaces any other key still waiting; that one is
-    // dropped, as before the state machine.
+    // Any other key still waiting has run when this key went down.
     pending_.active = true;
     pending_.bank = bank_;
     pending_.key = key;

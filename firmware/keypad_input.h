@@ -142,6 +142,7 @@ class KeypadInput {
   void sayBank();
   void beginBankSelect();
   void held(char key);
+  void runPending();
   void releasedNormal(char key, uint32_t nowMs);
   void releasedModeSelect(char key);
   void releasedBankSelect(char key);
