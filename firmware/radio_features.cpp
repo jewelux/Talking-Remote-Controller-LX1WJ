@@ -4,6 +4,7 @@
 #include "radio_catalog.h"
 #include "radio_globals.h"
 #include "radio_runtime.h"
+#include "radio_state.h"
 
 // A radio exchange that went wrong: a timeout when the radio said nothing.
 static FeatureStatus failure(FeatureStatus status) {
@@ -16,8 +17,51 @@ static bool isTs480() {
 
 // ---- Noise reduction ----
 
+// The TS-480 NR has two levels, which the plain on/off commands cannot reach.
+static constexpr uint8_t kTs480NrLevels = 2;
+
+static bool ts480ReadNrLevel(uint8_t& level) {
+  const StoredProfile& sp = currentStoredProfile();
+  String line;
+  if (!transactAsciiCommand(sp.ascii.nrGet, line, sp.ascii.nrReplyPrefix, 800)) return false;
+  int start = (int)strlen(sp.ascii.nrReplyPrefix);
+  int semi = line.indexOf(';', start);
+  if (semi < 0) semi = line.length();
+  String value = line.substring(start, semi);
+  value.trim();
+  const int parsed = value.toInt();
+  level = parsed <= 0 ? 0 : parsed >= kTs480NrLevels ? kTs480NrLevels : (uint8_t)parsed;
+  return true;
+}
+
+static FeatureStatus ts480WriteNrLevel(uint8_t level, NrState& out) {
+  char cmd[] = "NR0;";
+  cmd[2] = (char)('0' + level);
+  if (!asciiPacketSendCommand(cmd)) return failure(FeatureStatus::Failed);
+  rememberLiveNr(level != 0, millis());
+  out.on = level != 0;
+  out.level = level;
+  return FeatureStatus::Ok;
+}
+
+// Steps off -> 1 -> 2 -> off from the level the radio reports (to 1 when it
+// does not answer).
+static FeatureStatus ts480NrStep(NrState& out) {
+  uint8_t level = 0;
+  (void)ts480ReadNrLevel(level);
+  return ts480WriteNrLevel(level >= kTs480NrLevels ? 0 : level + 1, out);
+}
+
 FeatureStatus nrQuery(NrState& out) {
   if (!currentStoredProfile().caps.getNr) return FeatureStatus::Unsupported;
+  if (isTs480()) {
+    uint8_t level = 0;
+    if (!ts480ReadNrLevel(level)) return failure(FeatureStatus::NoReply);
+    rememberLiveNr(level != 0, millis());
+    out.on = level != 0;
+    out.level = level;
+    return FeatureStatus::Ok;
+  }
   if (!refreshLiveNr()) return failure(FeatureStatus::NoReply);
   out.on = live.nrOn;
   out.level = 0;
@@ -30,29 +74,13 @@ FeatureStatus nrSet(bool on) {
   return FeatureStatus::Ok;
 }
 
-// The TS-480 NR has two levels: read the level (1 when that fails), step it.
-static FeatureStatus ts480NrStep(NrState& out) {
-  const StoredProfile& sp = currentStoredProfile();
-  String line;
-  int nextLevel = 1;
-  if (transactAsciiCommand(sp.ascii.nrGet, line, sp.ascii.nrReplyPrefix, 800)) {
-    int start = (int)strlen(sp.ascii.nrReplyPrefix);
-    int semi = line.indexOf(';', start);
-    if (semi < 0) semi = line.length();
-    String value = line.substring(start, semi);
-    value.trim();
-    int currentLevel = value.toInt();
-    if (currentLevel <= 0) nextLevel = 1;
-    else if (currentLevel == 1) nextLevel = 2;
-    else nextLevel = 0;
-  }
-  const char* cmd = (nextLevel == 0) ? "NR0;" : (nextLevel == 1) ? "NR1;" : "NR2;";
-  if (!asciiPacketSendCommand(cmd)) return failure(FeatureStatus::Failed);
-  live.nrOn = nextLevel != 0;
-  live.nrValid = true;
-  out.on = live.nrOn;
-  out.level = (uint8_t)nextLevel;
-  return FeatureStatus::Ok;
+uint8_t nrLevelCount() {
+  return isTs480() ? kTs480NrLevels : 0;
+}
+
+FeatureStatus nrSetLevel(uint8_t level, NrState& out) {
+  if (!currentStoredProfile().caps.setNr || nrLevelCount() == 0 || level > nrLevelCount()) return FeatureStatus::Unsupported;
+  return ts480WriteNrLevel(level, out);
 }
 
 FeatureStatus nrToggle(NrState& out) {

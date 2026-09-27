@@ -298,7 +298,8 @@ static void printNotchState(const NotchState& state) {
   speakNotchState(state);
 }
 
-// NR, NB and NOTCH: the same operations as the Bank 2 keys.
+// NR, NB and NOTCH: the same operations as the Bank 2 keys. NR <n> sets a
+// level on radios that have them (TS-480: NR 0, NR 1, NR 2).
 static bool handleConsoleFeatureCommand(const String& upper) {
   const char* label = upper.c_str();
   if (upper == "NR?" || upper == "NR TOGGLE") {
@@ -310,6 +311,18 @@ static bool handleConsoleFeatureCommand(const String& upper) {
     NrState state;
     state.on = upper == "NR ON";
     if (!reportFeatureFailure(nrSet(state.on), label)) printNrState(state);
+    return true;
+  }
+  if (upper.startsWith("NR ") && upper.length() == 4 && isDigit(upper[3])) {
+    const uint8_t level = (uint8_t)(upper[3] - '0');
+    if (nrLevelCount() > 0 && level > nrLevelCount()) {
+      Serial.print("NR -> invalid (use 0..");
+      Serial.print((int)nrLevelCount());
+      Serial.println(")");
+      return true;
+    }
+    NrState state;
+    if (!reportFeatureFailure(nrSetLevel(level, state), label)) printNrState(state);
     return true;
   }
   if (upper == "NB?" || upper == "NB TOGGLE") {

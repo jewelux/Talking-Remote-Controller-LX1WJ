@@ -55,6 +55,9 @@
     sound); it was silent unless the radio timed out
   - on the FTDX10 these keys run the same actions as on the other radios instead of sending
     the console command, so the trace is `CMD BANK2 1 SHORT -> NR?` with no `CMD SEND` line
+  - console `NR 0`, `NR 1` and `NR 2` set the TS-480 NR level directly (other radios answer
+    "unsupported"), and `NR?` and the Bank 2 `1` key on the TS-480 now give the level: "NR 2",
+    spoken "noise reduction two" (they said only on or off)
   - the firmware is about 35 KB smaller: the NR and NB answers are spoken by token, so fewer
     files carry their own copy of those clips
 - FT-817 Bank 3 `1` long toggles VFO A/B and `2` long copies the active VFO's frequency and mode

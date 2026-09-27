@@ -22,8 +22,14 @@ struct NrState {
   uint8_t level = 0;
 };
 
+// On the TS-480 it gives the level too.
 FeatureStatus nrQuery(NrState& out);
 FeatureStatus nrSet(bool on);
+// How many NR levels the radio has beyond on/off: 2 on the TS-480, else 0.
+uint8_t nrLevelCount();
+// Sets the NR level, 0 being off. Unsupported on a radio without levels and
+// for a level above nrLevelCount().
+FeatureStatus nrSetLevel(uint8_t level, NrState& out);
 // On, off; on the TS-480 off -> 1 -> 2 -> off. Starts from the tracked state
 // when it is known, else reads it.
 FeatureStatus nrToggle(NrState& out);
