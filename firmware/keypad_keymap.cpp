@@ -85,15 +85,9 @@ bool bank2(const KeypadTraits& t, Gesture g, char key) {
   const bool civ = t.layout == L::Civ;
   const bool ftdx10 = t.layout == L::Ftdx10;
   switch (key) {
-    case '1':
-      if (ftdx10) return run(g, SEND("NR?"), SEND("NR TOGGLE"));
-      return run(g, queryBank2Nr, toggleBank2Nr);
-    case '2':
-      if (ftdx10) return run(g, SEND("NB?"), SEND("NB TOGGLE"));
-      return run(g, queryBank2Nb, toggleBank2Nb);
-    case '3':
-      if (ftdx10) return run(g, SEND("NOTCH?"), SEND("NOTCH TOGGLE"));
-      return run(g, queryBank2Notch, toggleBank2Notch);
+    case '1': return run(g, queryBank2Nr, toggleBank2Nr);
+    case '2': return run(g, queryBank2Nb, toggleBank2Nb);
+    case '3': return run(g, queryBank2Notch, toggleBank2Notch);
     case '4':
       if (civ) {
         return run(g, queryBank2NrLevel, [] { adjustBank2NrLevel(10); },

@@ -17,6 +17,7 @@
 #include "radio_utils.h"
 #include "sd_slots.h"
 #include "transport_serial.h"
+#include "ui_features.h"
 #include "ui_speech.h"
 #include "ui_console_support.h"
 #include "ui_keypad.h"
@@ -259,6 +260,87 @@ static void reportCommandFailure(const char* label, const char* reason) {
 static void reportNotAvailable(const char* message) {
   Serial.println(message);
   if (g_speechEnabled) speakNotAvailable();
+}
+
+// A shared feature operation (radio_features.h) that did not succeed: print
+// why, with the speech the other console commands give. Ok: false.
+static bool reportFeatureFailure(FeatureStatus status, const char* label) {
+  switch (status) {
+    case FeatureStatus::Ok: return false;
+    case FeatureStatus::Unsupported:
+      reportNotAvailable((String(label) + " -> unsupported").c_str());
+      return true;
+    case FeatureStatus::Timeout:
+      Serial.print(label);
+      Serial.println(" -> timeout");
+      if (g_speechEnabled) speakTimeout();
+      return true;
+    default:
+      Serial.print(label);
+      Serial.print(" -> ");
+      Serial.println(featureStatusText(status));
+      return true;
+  }
+}
+
+static void printNrState(const NrState& state) {
+  Serial.println(nrStateText(state));
+  speakNrState(state);
+}
+
+static void printNbState(bool on) {
+  Serial.println(nbStateText(on));
+  speakNbState(on);
+}
+
+static void printNotchState(const NotchState& state) {
+  Serial.println(notchStateText(state));
+  speakNotchState(state);
+}
+
+// NR, NB and NOTCH: the same operations as the Bank 2 keys.
+static bool handleConsoleFeatureCommand(const String& upper) {
+  const char* label = upper.c_str();
+  if (upper == "NR?" || upper == "NR TOGGLE") {
+    NrState state;
+    if (!reportFeatureFailure(upper == "NR?" ? nrQuery(state) : nrToggle(state), label)) printNrState(state);
+    return true;
+  }
+  if (upper == "NR ON" || upper == "NR OFF") {
+    NrState state;
+    state.on = upper == "NR ON";
+    if (!reportFeatureFailure(nrSet(state.on), label)) printNrState(state);
+    return true;
+  }
+  if (upper == "NB?" || upper == "NB TOGGLE") {
+    bool on = false;
+    if (!reportFeatureFailure(upper == "NB?" ? nbQuery(on) : nbToggle(on), label)) printNbState(on);
+    return true;
+  }
+  if (upper == "NB ON" || upper == "NB OFF") {
+    const bool on = upper == "NB ON";
+    if (!reportFeatureFailure(nbSet(on), label)) printNbState(on);
+    return true;
+  }
+  if (upper == "NOTCH?" || upper == "NOTCH TOGGLE") {
+    NotchState state;
+    if (!reportFeatureFailure(upper == "NOTCH?" ? notchQuery(state) : notchToggle(state), label)) printNotchState(state);
+    return true;
+  }
+  if (upper == "NOTCH ON" || upper == "NOTCH OFF") {
+    NotchState state;
+    state.on = upper == "NOTCH ON";
+    if (!reportFeatureFailure(notchSet(state.on), label)) printNotchState(state);
+    return true;
+  }
+  if (upper == "NOTCH NAR" || upper == "NOTCH MID" || upper == "NOTCH WIDE") {
+    NotchState state;
+    state.on = true;
+    state.width = upper == "NOTCH NAR" ? NOTCH_WIDTH_NAR : upper == "NOTCH MID" ? NOTCH_WIDTH_MID : NOTCH_WIDTH_WIDE;
+    if (!reportFeatureFailure(notchSetWidth(state.width), label)) printNotchState(state);
+    return true;
+  }
+  return false;
 }
 
 static void speakConsoleSpeechGapMarker() {
@@ -2462,20 +2544,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     speakRitStateAndOffset(true, hz);
     return true;
   }
-  if (upper == "NR?") {
-    if (!sp.caps.getNr) { reportNotAvailable("NR? -> unsupported"); return true; }
-    if (!refreshLiveNr()) { reportCommandFailure("NR?", "no reply"); return true; }
-    if (usbConsoleReady()) Serial.println(live.nrOn ? "NR ON" : "NR OFF");
-    speakBinaryFeatureState(voice_noisereduction, voice_noisereduction_len, live.nrOn);
-    return true;
-  }
-  if (upper == "NB?") {
-    if (!sp.caps.getNb) { reportNotAvailable("NB? -> unsupported"); return true; }
-    if (!refreshLiveNb()) { reportCommandFailure("NB?", "no reply"); return true; }
-    if (usbConsoleReady()) Serial.println(live.nbOn ? "NB ON" : "NB OFF");
-    speakBinaryFeatureState(voice_noiseblanker, voice_noiseblanker_len, live.nbOn);
-    return true;
-  }
+  if (handleConsoleFeatureCommand(upper)) return true;
   if (upper == "PBT1?") {
     uint16_t raw = 0;
     if (!queryPbtInner(raw, 800)) { reportCommandFailure("PBT1?", "no reply"); return true; }
@@ -2708,74 +2777,6 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     if (g_speechEnabled) speakTokenState("transceiver", false);
     return true;
   }
-  if (upper == "NOTCH?") {
-    if (!sp.caps.getNotch) { reportNotAvailable("NOTCH? -> unsupported"); return true; }
-    if (!refreshLiveNotch()) { reportCommandFailure("NOTCH?", "no reply"); return true; }
-    if (!live.notchOn) {
-      if (usbConsoleReady()) Serial.println("NOTCH OFF");
-      speakNotchCycleState(false, NOTCH_WIDTH_UNKNOWN);
-      return true;
-    }
-    if (live.notchWidthValid) {
-      if (usbConsoleReady()) {
-        if (live.notchWidth == NOTCH_WIDTH_NAR) Serial.println("NOTCH NAR");
-        else if (live.notchWidth == NOTCH_WIDTH_MID) Serial.println("NOTCH MID");
-        else if (live.notchWidth == NOTCH_WIDTH_WIDE) Serial.println("NOTCH WIDE");
-        else Serial.println("NOTCH ON");
-      }
-      speakNotchCycleState(true, live.notchWidth);
-      return true;
-    }
-    if (usbConsoleReady()) Serial.println("NOTCH ON");
-    speakTokenState("notch filter", true);
-    return true;
-  }
-  if (upper == "NR ON") {
-    if (!sp.caps.setNr) { reportNotAvailable("NR ON -> unsupported"); return true; }
-    if (!applyNrAndTrack(true)) { reportCommandFailure("NR ON", "failed"); return true; }
-    Serial.println("NR ON");
-    speakBinaryFeatureState(voice_noisereduction, voice_noisereduction_len, true);
-    return true;
-  }
-  if (upper == "NR OFF") {
-    if (!sp.caps.setNr) { reportNotAvailable("NR OFF -> unsupported"); return true; }
-    if (!applyNrAndTrack(false)) { reportCommandFailure("NR OFF", "failed"); return true; }
-    Serial.println("NR OFF");
-    speakBinaryFeatureState(voice_noisereduction, voice_noisereduction_len, false);
-    return true;
-  }
-  if (upper == "NR TOGGLE") {
-    if (!sp.caps.getNr || !sp.caps.setNr) { reportNotAvailable("NR TOGGLE -> unsupported"); return true; }
-    if (!refreshLiveNr()) { reportCommandFailure("NR TOGGLE", "no reply"); return true; }
-    const bool next = !live.nrOn;
-    if (!applyNrAndTrack(next)) { reportCommandFailure("NR TOGGLE", "failed"); return true; }
-    Serial.println(next ? "NR ON" : "NR OFF");
-    speakBinaryFeatureState(voice_noisereduction, voice_noisereduction_len, next);
-    return true;
-  }
-  if (upper == "NB ON") {
-    if (!sp.caps.setNb) { reportNotAvailable("NB ON -> unsupported"); return true; }
-    if (!applyNbAndTrack(true)) { reportCommandFailure("NB ON", "failed"); return true; }
-    Serial.println("NB ON");
-    speakBinaryFeatureState(voice_noiseblanker, voice_noiseblanker_len, true);
-    return true;
-  }
-  if (upper == "NB OFF") {
-    if (!sp.caps.setNb) { reportNotAvailable("NB OFF -> unsupported"); return true; }
-    if (!applyNbAndTrack(false)) { reportCommandFailure("NB OFF", "failed"); return true; }
-    Serial.println("NB OFF");
-    speakBinaryFeatureState(voice_noiseblanker, voice_noiseblanker_len, false);
-    return true;
-  }
-  if (upper == "NB TOGGLE") {
-    if (!sp.caps.getNb || !sp.caps.setNb) { reportNotAvailable("NB TOGGLE -> unsupported"); return true; }
-    if (!refreshLiveNb()) { reportCommandFailure("NB TOGGLE", "no reply"); return true; }
-    const bool next = !live.nbOn;
-    if (!applyNbAndTrack(next)) { reportCommandFailure("NB TOGGLE", "failed"); return true; }
-    Serial.println(next ? "NB ON" : "NB OFF");
-    speakBinaryFeatureState(voice_noiseblanker, voice_noiseblanker_len, next);
-    return true;
-  }
   if (upper == "PA?") {
     bool on = false;
     if (!asciiQueryPreamp(sp, on, 800)) { reportCommandFailure("PA?", "no reply"); return true; }
@@ -2858,50 +2859,6 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     if (!setSplit(!on)) { reportCommandFailure("SPLIT TOGGLE", "failed"); return true; }
     Serial.println(!on ? "SPLIT ON" : "SPLIT OFF");
     speakTokenState("split", !on);
-    return true;
-  }
-  if (upper == "NOTCH ON") {
-    if (!sp.caps.setNotch) { reportNotAvailable("NOTCH ON -> unsupported"); return true; }
-    if (!applyNotchAndTrack(true)) { reportCommandFailure("NOTCH ON", "failed"); return true; }
-    Serial.println("NOTCH ON");
-    speakTokenState("notch filter", true);
-    return true;
-  }
-  if (upper == "NOTCH NAR") {
-    if (currentProtocolType() != PROTO_CIV || !sp.caps.setNotch) { reportNotAvailable("NOTCH NAR -> unsupported"); return true; }
-    if (!applyNotchAndTrack(true) || !applyNotchWidthAndTrack(NOTCH_WIDTH_NAR)) { reportCommandFailure("NOTCH NAR", "failed"); return true; }
-    Serial.println("NOTCH NAR");
-    speakNotchCycleState(true, NOTCH_WIDTH_NAR);
-    return true;
-  }
-  if (upper == "NOTCH MID") {
-    if (currentProtocolType() != PROTO_CIV || !sp.caps.setNotch) { reportNotAvailable("NOTCH MID -> unsupported"); return true; }
-    if (!applyNotchAndTrack(true) || !applyNotchWidthAndTrack(NOTCH_WIDTH_MID)) { reportCommandFailure("NOTCH MID", "failed"); return true; }
-    Serial.println("NOTCH MID");
-    speakNotchCycleState(true, NOTCH_WIDTH_MID);
-    return true;
-  }
-  if (upper == "NOTCH WIDE") {
-    if (currentProtocolType() != PROTO_CIV || !sp.caps.setNotch) { reportNotAvailable("NOTCH WIDE -> unsupported"); return true; }
-    if (!applyNotchAndTrack(true) || !applyNotchWidthAndTrack(NOTCH_WIDTH_WIDE)) { reportCommandFailure("NOTCH WIDE", "failed"); return true; }
-    Serial.println("NOTCH WIDE");
-    speakNotchCycleState(true, NOTCH_WIDTH_WIDE);
-    return true;
-  }
-  if (upper == "NOTCH OFF") {
-    if (!sp.caps.setNotch) { reportNotAvailable("NOTCH OFF -> unsupported"); return true; }
-    if (!applyNotchAndTrack(false)) { reportCommandFailure("NOTCH OFF", "failed"); return true; }
-    Serial.println("NOTCH OFF");
-    speakTokenState("notch filter", false);
-    return true;
-  }
-  if (upper == "NOTCH TOGGLE") {
-    if (!sp.caps.getNotch || !sp.caps.setNotch) { reportNotAvailable("NOTCH TOGGLE -> unsupported"); return true; }
-    if (!refreshLiveNotch()) { reportCommandFailure("NOTCH TOGGLE", "no reply"); return true; }
-    const bool next = !live.notchOn;
-    if (!applyNotchAndTrack(next)) { reportCommandFailure("NOTCH TOGGLE", "failed"); return true; }
-    Serial.println(next ? "NOTCH ON" : "NOTCH OFF");
-    speakTokenState("notch filter", next);
     return true;
   }
   return false;

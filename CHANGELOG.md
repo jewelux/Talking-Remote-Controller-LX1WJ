@@ -44,6 +44,19 @@
 - bank actions no longer get the whole keypad state machine through a global `keypadInput()`;
   they can only start an entry, mode select or profile select (`keypadBeginEntry`,
   `keypadBeginModeSelect`, `keypadBeginProfileSelect`), and read the bank through `uiGetBank()`
+- NR, NB and notch are one operation each (`firmware/radio_features.{h,cpp}`) that the Bank 2
+  keys `1`–`3` and the console's `NR`, `NB` and `NOTCH` commands both call; both print and say the
+  result the same way (`ui_features.{h,cpp}`). What changes:
+  - console `NR TOGGLE` on the TS-480 steps off → 1 → 2 → off like the key (it only switched
+    on and off), and `NOTCH TOGGLE` on CI-V steps off → NAR → MID → WIDE → off like the key
+  - console toggles start from the tracked state when it is known, like the keys, and only need
+    the profile to be able to set the feature
+  - a key toggle the radio rejects or does not answer now says so (status line and error
+    sound); it was silent unless the radio timed out
+  - on the FTDX10 these keys run the same actions as on the other radios instead of sending
+    the console command, so the trace is `CMD BANK2 1 SHORT -> NR?` with no `CMD SEND` line
+  - the firmware is about 35 KB smaller: the NR and NB answers are spoken by token, so fewer
+    files carry their own copy of those clips
 - FT-817 Bank 3 `1` long toggles VFO A/B and `2` long copies the active VFO's frequency and mode
   to the other (A=B, spoken "a equals b") again; both had become unreachable when the long press
   was given the same frequency entry as the double press. New console command `VFO A=B` (FT-817)

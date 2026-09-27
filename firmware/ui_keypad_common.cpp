@@ -1,4 +1,5 @@
 #include "ui_keypad_common.h"
+#include "ui_features.h"
 
 #include "keypad_keymap.h"
 #include "radio_catalog.h"
@@ -31,6 +32,21 @@ bool keypadReportIfTimedOut(const char* label) {
   printKeypadStatus(String(label) + " -> timeout");
   if (g_speechEnabled) speakTimeout();
   return true;
+}
+
+bool keypadReportFeatureFailure(FeatureStatus status, const char* label) {
+  switch (status) {
+    case FeatureStatus::Ok: return false;
+    case FeatureStatus::Unsupported: return keypadReportIfUnsupported(false, label);
+    case FeatureStatus::Timeout:
+      printKeypadStatus(String(label) + " -> timeout");
+      if (g_speechEnabled) speakTimeout();
+      return true;
+    default:
+      printKeypadStatus(String(label) + " -> " + featureStatusText(status));
+      if (g_speechEnabled) speakError();
+      return true;
+  }
 }
 
 void keypadReportUnassigned(const String& label) {

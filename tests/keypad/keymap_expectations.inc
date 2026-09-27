@@ -103,12 +103,9 @@ KEYMAP_ROW(ALL,             1, '8', "queryBank1Swr",         "none",            
 KEYMAP_ROW(ALL,             1, '9', "queryBank1Mode",        "beginBank1ModeSelect",   "-")
 
 // ---- Bank 2 ----------------------------------------------------------------
-KEYMAP_ROW(FTDX10,          2, '1', "send(NR?)",             "send(NR TOGGLE)",        "-")
-KEYMAP_ROW(NOT(FTDX10),     2, '1', "queryBank2Nr",          "toggleBank2Nr",          "-")
-KEYMAP_ROW(FTDX10,          2, '2', "send(NB?)",             "send(NB TOGGLE)",        "-")
-KEYMAP_ROW(NOT(FTDX10),     2, '2', "queryBank2Nb",          "toggleBank2Nb",          "-")
-KEYMAP_ROW(FTDX10,          2, '3', "send(NOTCH?)",          "send(NOTCH TOGGLE)",     "-")
-KEYMAP_ROW(NOT(FTDX10),     2, '3', "queryBank2Notch",       "toggleBank2Notch",       "-")
+KEYMAP_ROW(ALL,             2, '1', "queryBank2Nr",          "toggleBank2Nr",          "-")
+KEYMAP_ROW(ALL,             2, '2', "queryBank2Nb",          "toggleBank2Nb",          "-")
+KEYMAP_ROW(ALL,             2, '3', "queryBank2Notch",       "toggleBank2Notch",       "-")
 KEYMAP_ROW(CIV,             2, '4', "queryBank2NrLevel",     "adjustBank2NrLevel(10)", "adjustBank2NrLevel(-10)")
 KEYMAP_ROW(FTDX10,          2, '4', "send(GT?)",             "send(GT FAST)",          "send(GT SLOW)")
 KEYMAP_ROW(NOT(CIV | FTDX10), 2, '4', "unassigned",          "none",                   "-")

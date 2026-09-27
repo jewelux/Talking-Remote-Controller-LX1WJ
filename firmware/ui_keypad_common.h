@@ -2,6 +2,7 @@
 
 #include "keypad_actions.h"
 #include "keypad_input.h"
+#include "radio_features.h"
 #include "radio_globals.h"
 
 // Helpers shared by the keypad UI files.
@@ -50,6 +51,9 @@ void printKeypadAction(const String& what);
 // Radio gave no answer: say "timeout" and return true. Otherwise return false, so
 // the caller keeps its own handling of the failure (unsupported, rejected).
 bool keypadReportIfTimedOut(const char* label);
+// A shared feature operation did not succeed: beep when unsupported, say
+// "timeout" or give the error sound otherwise, and return true. Ok: false.
+bool keypadReportFeatureFailure(FeatureStatus status, const char* label);
 // The key has no action here: short beep.
 void keypadReportUnassigned(const String& label);
 // When supported is false the key's feature is missing on this profile: beep like

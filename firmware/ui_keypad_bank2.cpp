@@ -1,18 +1,7 @@
 // Bank 2 keypad actions: noise reduction, noise blanker, notch, PBT and filter.
 #include "ui_keypad_bank.h"
-#include "packet_ascii.h"
-#include "protocol_ascii.h"
+#include "ui_features.h"
 #include "radio_monitor.h"
-#include "radio_runtime.h"
-
-static void speakNrLevel(int level) {
-  if (!g_speechEnabled) return;
-  playClipProgmem(voice_noisereduction, voice_noisereduction_len);
-  playSilenceMs(60);
-  if (level <= 0) playClipProgmem(voice_off, voice_off_len);
-  else if (level == 1) playClipProgmem(voice_one, voice_one_len);
-  else playClipProgmem(voice_two, voice_two_len);
-}
 
 static int pbtRawToOffset(uint16_t raw) {
   if (raw > 255) raw = 255;
@@ -41,155 +30,56 @@ static void speakSignedStepValue(const String& label, int value) {
 
 void queryBank2Nr() {
   printKeypadAction("NR?");
-  if (keypadReportIfUnsupported(currentStoredProfile().caps.getNr, "NR?")) return;
-  g_suspendPollingUntilMs = millis() + 900;
-  g_suppressFreqSpeakUntilMs = millis() + 2000;
-  cancelPendingFreqAnnouncement();
-  if (!refreshLiveNr()) {
-    if (!keypadReportIfTimedOut("NR?")) {
-      printKeypadStatus("NR? -> no reply");
-      if (g_speechEnabled) speakError();
-    }
-    return;
-  }
-  printKeypadStatus(live.nrOn ? "NR ON" : "NR OFF");
-  speakBinaryFeatureState(voice_noisereduction, voice_noisereduction_len, live.nrOn);
+  prepareKeypadSpeechResponse();
+  NrState state;
+  if (keypadReportFeatureFailure(nrQuery(state), "NR?")) return;
+  printKeypadStatus(nrStateText(state));
+  speakNrState(state);
 }
 
 void queryBank2Nb() {
   printKeypadAction("NB?");
-  if (keypadReportIfUnsupported(currentStoredProfile().caps.getNb, "NB?")) return;
-  g_suspendPollingUntilMs = millis() + 900;
-  g_suppressFreqSpeakUntilMs = millis() + 2000;
-  cancelPendingFreqAnnouncement();
-  if (!refreshLiveNb()) {
-    if (!keypadReportIfTimedOut("NB?")) {
-      printKeypadStatus("NB? -> no reply");
-      if (g_speechEnabled) speakError();
-    }
-    return;
-  }
-  printKeypadStatus(live.nbOn ? "NB ON" : "NB OFF");
-  speakBinaryFeatureState(voice_noiseblanker, voice_noiseblanker_len, live.nbOn);
+  prepareKeypadSpeechResponse();
+  bool on = false;
+  if (keypadReportFeatureFailure(nbQuery(on), "NB?")) return;
+  printKeypadStatus(nbStateText(on));
+  speakNbState(on);
 }
 
 void queryBank2Notch() {
   printKeypadAction("NOTCH?");
-  if (keypadReportIfUnsupported(currentStoredProfile().caps.getNotch, "NOTCH?")) return;
-  g_suspendPollingUntilMs = millis() + 900;
-  g_suppressFreqSpeakUntilMs = millis() + 2000;
-  cancelPendingFreqAnnouncement();
-  if (!refreshLiveNotch()) {
-    if (!keypadReportIfTimedOut("NOTCH?")) {
-      printKeypadStatus("NOTCH? -> no reply");
-      if (g_speechEnabled) speakError();
-    }
-    return;
-  }
-  if (!live.notchOn) {
-    printKeypadStatus("NOTCH OFF");
-    speakNotchCycleState(false, NOTCH_WIDTH_UNKNOWN);
-    return;
-  }
-  if (live.notchWidthValid) {
-    if (live.notchWidth == NOTCH_WIDTH_NAR) printKeypadStatus("NOTCH NAR");
-    else if (live.notchWidth == NOTCH_WIDTH_MID) printKeypadStatus("NOTCH MID");
-    else if (live.notchWidth == NOTCH_WIDTH_WIDE) printKeypadStatus("NOTCH WIDE");
-    speakNotchCycleState(true, live.notchWidth);
-    return;
-  }
-  printKeypadStatus("NOTCH ON");
-  speakTokenState("notch filter", true);
+  prepareKeypadSpeechResponse();
+  NotchState state;
+  if (keypadReportFeatureFailure(notchQuery(state), "NOTCH?")) return;
+  printKeypadStatus(notchStateText(state));
+  speakNotchState(state);
 }
 
 void toggleBank2Nr() {
   printKeypadAction("NR");
-  if (keypadReportIfUnsupported(currentStoredProfile().caps.setNr, "NR")) return;
   prepareKeypadSpeechResponse();
-  if (currentProtocolType() == PROTO_KENWOOD_ASCII && String(currentProfile().name).indexOf("TS-480") >= 0) {
-    String line;
-    int nextLevel = 1;
-    if (transactAsciiCommand(currentStoredProfile().ascii.nrGet, line, currentStoredProfile().ascii.nrReplyPrefix, 800)) {
-      int start = (int)strlen(currentStoredProfile().ascii.nrReplyPrefix);
-      int semi = line.indexOf(';', start);
-      if (semi < 0) semi = line.length();
-      String value = line.substring(start, semi);
-      value.trim();
-      int currentLevel = value.toInt();
-      if (currentLevel <= 0) nextLevel = 1;
-      else if (currentLevel == 1) nextLevel = 2;
-      else nextLevel = 0;
-    }
-    const char* cmd = (nextLevel == 0) ? "NR0;" : (nextLevel == 1) ? "NR1;" : "NR2;";
-    if (asciiPacketSendCommand(cmd)) {
-      live.nrOn = nextLevel != 0;
-      live.nrValid = true;
-      printKeypadStatus(nextLevel == 0 ? "NR OFF" : (nextLevel == 1 ? "NR 1" : "NR 2"));
-      speakNrLevel(nextLevel);
-    }
-    return;
-  }
-  if (!live.nrValid && !refreshLiveNr()) { keypadReportIfTimedOut("NR"); return; }
-  bool next = !live.nrOn;
-  if (!applyNrAndTrack(next)) { keypadReportIfTimedOut("NR"); return; }
-  printKeypadStatus(next ? "NR ON" : "NR OFF");
-  speakBinaryFeatureState(voice_noisereduction, voice_noisereduction_len, next);
+  NrState state;
+  if (keypadReportFeatureFailure(nrToggle(state), "NR")) return;
+  printKeypadStatus(nrStateText(state));
+  speakNrState(state);
 }
 
 void toggleBank2Nb() {
   printKeypadAction("NB");
-  if (keypadReportIfUnsupported(currentStoredProfile().caps.setNb, "NB")) return;
   prepareKeypadSpeechResponse();
-  if (!live.nbValid && !refreshLiveNb()) { keypadReportIfTimedOut("NB"); return; }
-  bool next = !live.nbOn;
-  if (!applyNbAndTrack(next)) { keypadReportIfTimedOut("NB"); return; }
-  printKeypadStatus(next ? "NB ON" : "NB OFF");
-  speakBinaryFeatureState(voice_noiseblanker, voice_noiseblanker_len, next);
+  bool on = false;
+  if (keypadReportFeatureFailure(nbToggle(on), "NB")) return;
+  printKeypadStatus(nbStateText(on));
+  speakNbState(on);
 }
 
 void toggleBank2Notch() {
   printKeypadAction("NOTCH");
-  if (keypadReportIfUnsupported(currentStoredProfile().caps.setNotch, "NOTCH")) return;
   prepareKeypadSpeechResponse();
-
-  if (currentProtocolType() != PROTO_CIV) {
-    if (!live.notchValid && !refreshLiveNotch()) { keypadReportIfTimedOut("NOTCH"); return; }
-    bool next = !live.notchOn;
-    if (!applyNotchAndTrack(next)) { keypadReportIfTimedOut("NOTCH"); return; }
-    printKeypadStatus(next ? "NOTCH ON" : "NOTCH OFF");
-    speakTokenState("notch filter", next);
-    return;
-  }
-
-  if (!live.notchValid && !refreshLiveNotch()) { keypadReportIfTimedOut("NOTCH"); return; }
-
-  if (!live.notchOn) {
-    if (!applyNotchAndTrack(true)) { keypadReportIfTimedOut("NOTCH"); return; }
-    if (!applyNotchWidthAndTrack(NOTCH_WIDTH_NAR)) { keypadReportIfTimedOut("NOTCH"); return; }
-    printKeypadStatus("NOTCH NAR");
-    speakNotchCycleState(true, NOTCH_WIDTH_NAR);
-    return;
-  }
-
-  if (!live.notchWidthValid && !refreshLiveNotchWidth()) { keypadReportIfTimedOut("NOTCH"); return; }
-
-  if (live.notchWidth == NOTCH_WIDTH_NAR) {
-    if (!applyNotchWidthAndTrack(NOTCH_WIDTH_MID)) { keypadReportIfTimedOut("NOTCH"); return; }
-    printKeypadStatus("NOTCH MID");
-    speakNotchCycleState(true, NOTCH_WIDTH_MID);
-    return;
-  }
-
-  if (live.notchWidth == NOTCH_WIDTH_MID) {
-    if (!applyNotchWidthAndTrack(NOTCH_WIDTH_WIDE)) { keypadReportIfTimedOut("NOTCH"); return; }
-    printKeypadStatus("NOTCH WIDE");
-    speakNotchCycleState(true, NOTCH_WIDTH_WIDE);
-    return;
-  }
-
-  if (!applyNotchAndTrack(false)) { keypadReportIfTimedOut("NOTCH"); return; }
-  printKeypadStatus("NOTCH OFF");
-  speakNotchCycleState(false, NOTCH_WIDTH_UNKNOWN);
+  NotchState state;
+  if (keypadReportFeatureFailure(notchToggle(state), "NOTCH")) return;
+  printKeypadStatus(notchStateText(state));
+  speakNotchState(state);
 }
 
 void queryBank2NrLevel() {
