@@ -122,7 +122,7 @@ void queryBank1Lock() {
 
 void beginBank1FrequencySet() {
   printKeypadAction("FREQ");
-  keypadBeginEntry(InputMode::FreqEntry, KEYPAD_VFO_CURRENT);
+  keypadBeginEntry(InputMode::FreqEntry, TargetVfo::Current);
   if (g_speechEnabled) {
     speakFrequencyWord();
     playSilenceMs(80);
@@ -155,7 +155,7 @@ void roundActiveFrequency(uint32_t stepHz) {
     return;
   }
 
-  if (keypadApplyFrequencyHz(rounded, 0)) {
+  if (keypadApplyFrequencyHz(rounded, TargetVfo::Current)) {
     printKeypadStatus(String("ROUND: ") + hzToMHzString3(hz) + " -> " + hzToMHzString3(rounded) + " MHz");
     speakTunedFrequencyHz(rounded);
     rememberAnnouncedFrequency(rounded);
@@ -223,7 +223,7 @@ void queryBank1Swr() { sendOrStageBank1Command("SWR?"); }
 void queryBank1Mode() { sendOrStageBank1Command("MODE?", true); }
 
 void beginBank1ModeSelect() {
-  keypadBeginModeSelect(KEYPAD_VFO_CURRENT);
+  keypadBeginModeSelect(TargetVfo::Current);
   printKeypadAction("MODE");
   printKeypadStatus("MODE PLEASE");
   if (g_speechEnabled) {

@@ -1,7 +1,6 @@
 #include "ui_keypad_common.h"
 #include "ui_features.h"
 
-#include "keypad_keymap.h"
 #include "radio_catalog.h"
 #include "radio_monitor.h"
 #include "radio_state.h"
@@ -23,7 +22,7 @@ void printKeypadCommand(const String& line) {
 }
 
 void printKeypadAction(const String& what) {
-  const char* key = keymapActiveKey();
+  const char* key = keypadActiveKey();
   printKeypadCommand(key ? String(key) + " -> " + what : what);
 }
 
@@ -62,7 +61,7 @@ bool keypadReportIfUnsupported(bool supported, const char* label) {
 }
 
 void reportFtdx10HiddenKey() {
-  const char* key = keymapActiveKey();
+  const char* key = keypadActiveKey();
   printKeypadStatus(String(key ? key : "KEY") + " hidden on FTDX10");
   if (g_speechEnabled) speakNotAvailable();
 }

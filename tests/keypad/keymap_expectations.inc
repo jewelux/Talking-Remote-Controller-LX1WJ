@@ -62,7 +62,7 @@
 //   adjustBank9Volume(-1/1) "VOLUME DOWN/UP" + adjustVolumeLevel
 //   adjustBank9Volume(-2/2) "VOLUME DOWN/UP FAST" + adjustBank9Volume
 //   reportFtdx10HiddenKey(K) also stands for reportFtdx10HiddenKeypadAction;
-//                           K is the key the keymap names (keymapActiveKey())
+//                           K is the key the action is bound to (keypadActiveKey())
 //
 // The serial trace of an action starts with the key the keymap names, e.g.
 // "CMD BANK3 2 LONG -> A=B"; the actions no longer spell out their key.

@@ -102,13 +102,11 @@ class KeypadUiListener : public KeypadInputListener {
     // this key.
     g_radioReplyTimedOut = false;
     if (pressed) silenceSpeechForKeyPress();
-    traits_ = currentKeypadTraits();
   }
 
-  bool runHold(uint8_t bank, char key) override { return keymapHold(traits_, bank, key); }
-  bool runShort(uint8_t bank, char key) override { return keymapShort(traits_, bank, key); }
-  bool runDoubleClick(uint8_t bank, char key) override { return keymapDoubleClick(traits_, bank, key); }
-  bool wantsDoubleClick(uint8_t bank, char key) override { return keymapWantsDoubleClick(traits_, bank, key); }
+  KeyBinding keyBinding(uint8_t bank, char key) override {
+    return keymapLookup(currentKeypadTraits(), bank, key);
+  }
 
   void onBankQuery(uint8_t bank) override {
     printKeypadCommand("* SHORT -> BANK?");
@@ -126,14 +124,14 @@ class KeypadUiListener : public KeypadInputListener {
     keypadEntryDigit(entry, key, digits);
   }
 
-  void onUnassigned(const char* label) override { keypadReportUnassigned(label); }
+  void onRejected(const char* label) override { keypadReportUnassigned(label); }
 
-  void onCommit(InputMode mode, const char* digits, uint8_t targetVfo) override {
+  void onCommit(InputMode mode, const char* digits, TargetVfo targetVfo) override {
     keypadEntryCommit(mode, digits, targetVfo);
   }
 
   bool onModeDigit(char key, uint8_t& mode) override { return keypadModeDigit(key, mode); }
-  void onModeCommit(uint8_t mode, uint8_t targetVfo) override { keypadModeCommit(mode, targetVfo); }
+  void onModeCommit(uint8_t mode, TargetVfo targetVfo) override { keypadModeCommit(mode, targetVfo); }
 
   void onStagedCommandSend(const char* cmd) override { keypadSendNow(cmd); }
 
@@ -141,9 +139,6 @@ class KeypadUiListener : public KeypadInputListener {
     printKeypadCommand("CLEAR");
     if (g_speechEnabled) speakToken("cancel");
   }
-
- private:
-  KeypadTraits traits_;
 };
 
 KeypadUiListener s_listener;
@@ -177,11 +172,11 @@ void keypadStageCommand(const String& cmd) {
   }
 }
 
-void keypadBeginEntry(InputMode mode, uint8_t targetVfo) {
+void keypadBeginEntry(InputMode mode, TargetVfo targetVfo) {
   s_input.beginEntry(mode, targetVfo);
 }
 
-void keypadBeginModeSelect(uint8_t targetVfo) {
+void keypadBeginModeSelect(TargetVfo targetVfo) {
   s_input.beginModeSelect(targetVfo);
 }
 

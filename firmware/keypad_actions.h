@@ -12,7 +12,7 @@
 // that radio's variant of a key.
 //
 // An action's serial trace names what it does, not the key: printKeypadAction
-// prefixes the key the keymap is running (keymapActiveKey()), so one action can
+// prefixes the key being run (keypadActiveKey()), so one action can
 // sit on any key. The comments give that trace.
 
 // ---- Any bank ----
@@ -130,9 +130,9 @@ void beginBank8CivAddressEntry();
 void cycleBank8Baud(int delta);
 
 // ---- Bank 9 ----
-// Light-Icom fallback: key '1'-'9' picks that built-in profile. Returns false
-// when the fallback is not active.
-bool selectBank9DirectProfile(char key);
+// Light-Icom fallback: key '1'-'9' picks that built-in profile. The keymap
+// binds it only while the fallback is active.
+void selectBank9DirectProfile(char key);
 void queryBank9TuningSpeech();
 void toggleBank9TuningSpeech();
 // -1/1: "VOLUME DOWN/UP"; -2/2: "VOLUME DOWN/UP FAST".

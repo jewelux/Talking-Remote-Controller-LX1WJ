@@ -2,8 +2,10 @@
 
 #include <stdint.h>
 
+#include "keypad_input.h"
+
 // What each bank key does, per radio: the keypad layout as code. Pure C++ with
-// no Arduino.h; the actions it runs are declared in keypad_actions.h. The host
+// no Arduino.h; the actions it binds are declared in keypad_actions.h. The host
 // tests (tests/keypad) check it against the characterization matrix.
 //
 // Bank keys are '0'-'9' and 'A'-'C'. '*', 'D' and '#' belong to KeypadInput.
@@ -19,8 +21,8 @@ enum class KeypadLayout : uint8_t {
   Ft857,    // FT8X7 variant "ft857_897" (FT-857, FT-897)
 };
 
-// What the keymap depends on. The glue fills this in once per key event from
-// the active profile.
+// What the keymap depends on. The glue fills this in from the active profile
+// each time it looks up a key.
 struct KeypadTraits {
   KeypadLayout layout = KeypadLayout::Generic;
   bool lightIcomFallback = false;   // lightIcomFallbackActive()
@@ -29,15 +31,6 @@ struct KeypadTraits {
   bool canGetRfPower = false;       // currentStoredProfile().caps.getRfPower
 };
 
-// Each returns true when the key has an action for the gesture and it ran.
-bool keymapShort(const KeypadTraits& traits, uint8_t bank, char key);
-bool keymapHold(const KeypadTraits& traits, uint8_t bank, char key);
-bool keymapDoubleClick(const KeypadTraits& traits, uint8_t bank, char key);
-// True when a short press of the key waits for a possible double click.
-bool keymapWantsDoubleClick(const KeypadTraits& traits, uint8_t bank, char key);
-
-// While the keymap runs an action: the key and gesture, e.g. "BANK3 2 LONG".
-// nullptr otherwise. The actions' serial trace starts with it, so an action
-// does not spell out which key runs it.
-const char* keymapActiveKey();
-
+// What key does on bank for this radio. An empty binding for keys the keymap
+// does not handle, including '*', 'D' and '#'.
+KeyBinding keymapLookup(const KeypadTraits& traits, uint8_t bank, char key);

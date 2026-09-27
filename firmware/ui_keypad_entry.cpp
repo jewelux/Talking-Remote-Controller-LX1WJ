@@ -38,7 +38,7 @@ static bool rejectFt8x7WriteWhileTx(const char* statusLabel) {
   return true;
 }
 
-static bool verifyKeypadFrequencyWrite(uint8_t targetVfo, uint64_t expectedHz) {
+static bool verifyKeypadFrequencyWrite(TargetVfo targetVfo, uint64_t expectedHz) {
   // FT8x7 CAT write commands are effectively write-only; immediate readback can
   // race the radio and falsely report "no change" after a successful write.
   if (currentProtocolType() != PROTO_YAESU_FT8X7) return true;
@@ -48,14 +48,14 @@ static bool verifyKeypadFrequencyWrite(uint8_t targetVfo, uint64_t expectedHz) {
 }
 
 // Shared frequency writer used by keypad entry commit and the round-to-500 Hz
-// action. targetVfo: 0 = current VFO, 1 = VFO A, 2 = VFO B, 3 = other VFO (FT8x7).
-bool keypadApplyFrequencyHz(uint64_t hz, uint8_t targetVfo) {
+// action.
+bool keypadApplyFrequencyHz(uint64_t hz, TargetVfo targetVfo) {
   bool ok = false;
-  if (targetVfo == 1) {
+  if (targetVfo == TargetVfo::A) {
     ok = setVfoFrequency(true, hz);
-  } else if (targetVfo == 2) {
+  } else if (targetVfo == TargetVfo::B) {
     ok = setVfoFrequency(false, hz);
-  } else if (targetVfo == 3 && currentProtocolType() == PROTO_YAESU_FT8X7 &&
+  } else if (targetVfo == TargetVfo::Other && currentProtocolType() == PROTO_YAESU_FT8X7 &&
              (currentProfileVariantIs("ft817") || currentProfileVariantIs("ft857_897"))) {
     if (yaesuCatToggleVfo()) {
       delay(120);
@@ -67,11 +67,11 @@ bool keypadApplyFrequencyHz(uint64_t hz, uint8_t targetVfo) {
   } else {
     ok = applyFrequencyAndTrack(hz, true);
   }
-  if (ok && targetVfo != 3) ok = verifyKeypadFrequencyWrite(targetVfo, hz);
+  if (ok && targetVfo != TargetVfo::Other) ok = verifyKeypadFrequencyWrite(targetVfo, hz);
   return ok;
 }
 
-static bool verifyKeypadModeWrite(uint8_t targetVfo, uint8_t expectedMode) {
+static bool verifyKeypadModeWrite(TargetVfo targetVfo, uint8_t expectedMode) {
   // Same as frequency: trust the write result and update the local cache.
   if (currentProtocolType() != PROTO_YAESU_FT8X7) return true;
   (void)targetVfo;
@@ -131,7 +131,7 @@ static void commitProfile(const char* digits) {
   }
 }
 
-static void commitFrequency(const char* digits, uint8_t targetVfo) {
+static void commitFrequency(const char* digits, TargetVfo targetVfo) {
   g_suspendPollingUntilMs = millis() + 1400;
   g_suppressFreqSpeakUntilMs = millis() + 2000;
   if (rejectFt8x7WriteWhileTx("FREQ")) return;
@@ -142,9 +142,9 @@ static void commitFrequency(const char* digits, uint8_t targetVfo) {
     return;
   }
   const uint64_t hz = parsedFreq.hz();
-  if (targetVfo == KEYPAD_VFO_A) printKeypadCommand("ENTER -> VFOA FREQ");
-  else if (targetVfo == KEYPAD_VFO_B) printKeypadCommand("ENTER -> VFOB FREQ");
-  else if (targetVfo == KEYPAD_VFO_OTHER) {
+  if (targetVfo == TargetVfo::A) printKeypadCommand("ENTER -> VFOA FREQ");
+  else if (targetVfo == TargetVfo::B) printKeypadCommand("ENTER -> VFOB FREQ");
+  else if (targetVfo == TargetVfo::Other) {
     const char which = ft8x7OtherVfoLabel();
     printKeypadCommand(String("ENTER -> VFO") + which + " FREQ");
   } else if (isFt8x7Ft817Keypad() || isFt8x7Ft857FamilyKeypad()) {
@@ -154,9 +154,9 @@ static void commitFrequency(const char* digits, uint8_t targetVfo) {
   else printKeypadCommand("ENTER -> FREQ");
   bool ok = keypadApplyFrequencyHz(hz, targetVfo);
   if (ok) {
-    if (targetVfo == KEYPAD_VFO_A) printKeypadStatus(String("VFOA: ") + hzToMHzString3(hz) + " MHz");
-    else if (targetVfo == KEYPAD_VFO_B) printKeypadStatus(String("VFOB: ") + hzToMHzString3(hz) + " MHz");
-    else if (targetVfo == KEYPAD_VFO_OTHER) {
+    if (targetVfo == TargetVfo::A) printKeypadStatus(String("VFOA: ") + hzToMHzString3(hz) + " MHz");
+    else if (targetVfo == TargetVfo::B) printKeypadStatus(String("VFOB: ") + hzToMHzString3(hz) + " MHz");
+    else if (targetVfo == TargetVfo::Other) {
       const char which = ft8x7OtherVfoLabel();
       printKeypadStatus(String("VFO") + which + ": " + hzToMHzString3(hz) + " MHz");
     } else if (isFt8x7Ft817Keypad() || isFt8x7Ft857FamilyKeypad()) {
@@ -239,7 +239,7 @@ static void commitDcs(const char* digits) {
   }
 }
 
-void keypadEntryCommit(InputMode mode, const char* digits, uint8_t targetVfo) {
+void keypadEntryCommit(InputMode mode, const char* digits, TargetVfo targetVfo) {
   switch (mode) {
     case InputMode::BankSelect: commitBank(); return;
     case InputMode::ProfileSelect: commitProfile(digits); return;
@@ -270,28 +270,28 @@ bool keypadModeDigit(char key, uint8_t& mode) {
   return true;
 }
 
-void keypadModeCommit(uint8_t mode, uint8_t targetVfo) {
+void keypadModeCommit(uint8_t mode, TargetVfo targetVfo) {
   g_suspendPollingUntilMs = millis() + 1400;
   g_suppressFreqSpeakUntilMs = millis() + 2000;
   if (rejectFt8x7WriteWhileTx("MODE")) return;
-  if (targetVfo == KEYPAD_VFO_A) printKeypadCommand("ENTER -> VFOA MODE");
-  else if (targetVfo == KEYPAD_VFO_B) printKeypadCommand("ENTER -> VFOB MODE");
+  if (targetVfo == TargetVfo::A) printKeypadCommand("ENTER -> VFOA MODE");
+  else if (targetVfo == TargetVfo::B) printKeypadCommand("ENTER -> VFOB MODE");
   else printKeypadCommand("ENTER -> MODE");
   bool ok = false;
   if (isFtdx10KeypadProfile()) {
     String cmd;
-    if (targetVfo == KEYPAD_VFO_A) cmd = String("VFOA MODE ") + modeToString(mode);
-    else if (targetVfo == KEYPAD_VFO_B) cmd = String("VFOB MODE ") + modeToString(mode);
+    if (targetVfo == TargetVfo::A) cmd = String("VFOA MODE ") + modeToString(mode);
+    else if (targetVfo == TargetVfo::B) cmd = String("VFOB MODE ") + modeToString(mode);
     else cmd = String("MODE ") + modeToString(mode);
     keypadSendNow(cmd);
     ok = true;
-  } else if (targetVfo == KEYPAD_VFO_A) ok = setVfoMode(true, mode, 1);
-  else if (targetVfo == KEYPAD_VFO_B) ok = setVfoMode(false, mode, 1);
+  } else if (targetVfo == TargetVfo::A) ok = setVfoMode(true, mode, 1);
+  else if (targetVfo == TargetVfo::B) ok = setVfoMode(false, mode, 1);
   else ok = applyModeAndTrack(mode, 1);
   if (ok && !isFtdx10KeypadProfile()) ok = verifyKeypadModeWrite(targetVfo, mode);
   if (ok) {
-    if (targetVfo == KEYPAD_VFO_A) printKeypadStatus(String("VFOA MODE: ") + modeToString(mode));
-    else if (targetVfo == KEYPAD_VFO_B) printKeypadStatus(String("VFOB MODE: ") + modeToString(mode));
+    if (targetVfo == TargetVfo::A) printKeypadStatus(String("VFOA MODE: ") + modeToString(mode));
+    else if (targetVfo == TargetVfo::B) printKeypadStatus(String("VFOB MODE: ") + modeToString(mode));
     else printKeypadStatus(String("MODE: ") + modeToString(mode));
     if (g_speechEnabled) {
       g_suppressModePrefixOnce = true;

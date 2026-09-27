@@ -91,19 +91,17 @@ void queryBank9Profile() {
   speakCurrentProfile();
 }
 
-bool selectBank9DirectProfile(char key) {
-  if (!lightIcomFallbackActive()) return false;
-  if (key < '1' || key > '9') return false;
+void selectBank9DirectProfile(char key) {
+  if (key < '1' || key > '9') return;
   const uint8_t slot = (uint8_t)(key - '0');
   if (!storedProfileForId(slot)) {
     printKeypadAction("PROFILE");
     printKeypadStatus(String("PROFILE ") + String((int)slot) + " EMPTY");
     if (g_speechEnabled) speakNotAvailable();
-    return true;
+    return;
   }
   printKeypadAction(String("PROFILE ") + String((int)slot));
   applyProfile(slot);
   printKeypadStatus(String("PROFILE ") + String((int)slot));
   speakCurrentProfile();
-  return true;
 }

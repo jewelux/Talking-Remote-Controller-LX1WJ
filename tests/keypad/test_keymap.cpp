@@ -14,6 +14,9 @@ using namespace keymap_expect;
 namespace {
 
 std::string g_calls;
+// The key and gesture outcome() runs, as KeypadInput names it for
+// keypadActiveKey(): "BANK2 8 SHORT".
+char g_key[20] = "";
 
 void record(const char *fmt, ...) {
   char buf[64];
@@ -40,14 +43,20 @@ KeypadTraits traitsFor(uint16_t family) {
   return t;
 }
 
-// Runs one keymap call and returns what it did: the recorded actions, or
-// sentinel when it reported that the key has no action.
-std::string outcome(bool (*fn)(const KeypadTraits &, uint8_t, char), const KeypadTraits &t,
-                    uint8_t bank, char key, const char *sentinel) {
+// Runs one bound action and returns what it did: the recorded actions, or
+// sentinel when the key has no action for the gesture.
+std::string outcome(KeyAction action, uint8_t bank, char key, const char *gesture,
+                    const char *sentinel) {
   g_calls.clear();
-  const bool ran = fn(t, bank, key);
-  if (!ran) return g_calls.empty() ? sentinel : "(false after " + g_calls + ")";
-  return g_calls.empty() ? "(true, nothing ran)" : g_calls;
+  if (!action) return sentinel;
+  snprintf(g_key, sizeof(g_key), "BANK%u %c %s", (unsigned)bank, key, gesture);
+  action();
+  g_key[0] = '\0';
+  return g_calls.empty() ? "(bound, nothing ran)" : g_calls;
+}
+
+bool isEmpty(const KeyBinding &b) {
+  return !b.shortAction && !b.holdAction && !b.doubleAction && !b.waitsForDouble;
 }
 
 void checkOutcome(const Family &f, uint8_t bank, char key, const char *gesture,
@@ -173,10 +182,7 @@ void queryBank8CivAddress() { record("queryBank8CivAddress"); }
 void beginBank8CivAddressEntry() { record("beginBank8CivAddressEntry"); }
 void cycleBank8Baud(int d) { record("cycleBank8Baud(%d)", d); }
 
-bool selectBank9DirectProfile(char key) {
-  record("selectBank9DirectProfile(%c)", key);
-  return true;
-}
+void selectBank9DirectProfile(char key) { record("selectBank9DirectProfile(%c)", key); }
 void queryBank9TuningSpeech() { record("queryBank9TuningSpeech"); }
 void toggleBank9TuningSpeech() { record("toggleBank9TuningSpeech"); }
 void adjustBank9Volume(int d) { record("adjustBank9Volume(%d)", d); }
@@ -186,21 +192,23 @@ void beginBank9ProfileSelect() { record("beginBank9ProfileSelect"); }
 void selectNextProfile() { record("selectNextProfile"); }
 void selectPrevProfile() { record("selectPrevProfile"); }
 
-// Records the key the keymap names while it runs the action.
-void reportFtdx10HiddenKey() { record("reportFtdx10HiddenKey(%s)", keymapActiveKey()); }
+// Records the key the action is bound to.
+void reportFtdx10HiddenKey() { record("reportFtdx10HiddenKey(%s)", g_key); }
 
 // ---- Tests ----
 
 TEST(keymap_short_matches_expectations) {
   forEachKey([](const Family &f, const KeypadTraits &t, uint8_t bank, char key) {
-    checkOutcome(f, bank, key, "short", outcome(keymapShort, t, bank, key, "unassigned"),
+    const KeyAction action = keymapLookup(t, bank, key).shortAction;
+    checkOutcome(f, bank, key, "short", outcome(action, bank, key, "SHORT", "unassigned"),
                  lookup(f.bit, bank, key).shortAction);
   });
 }
 
 TEST(keymap_hold_matches_expectations) {
   forEachKey([](const Family &f, const KeypadTraits &t, uint8_t bank, char key) {
-    checkOutcome(f, bank, key, "long", outcome(keymapHold, t, bank, key, "none"),
+    const KeyAction action = keymapLookup(t, bank, key).holdAction;
+    checkOutcome(f, bank, key, "long", outcome(action, bank, key, "LONG", "none"),
                  lookup(f.bit, bank, key).longAction);
   });
 }
@@ -210,45 +218,31 @@ TEST(keymap_double_click_matches_expectations) {
     const char *expected = lookup(f.bit, bank, key).doubleAction;
     const bool waits = strcmp(expected, "-") != 0;
     g_calls.clear();
-    const bool wants = keymapWantsDoubleClick(t, bank, key);
+    const KeyBinding b = keymapLookup(t, bank, key);
     CHECK(g_calls.empty());
-    if (wants != waits) {
-      fprintf(stderr, "  %s bank %u key %c: wantsDoubleClick %d, expected %d\n", f.name, bank,
-              key, wants, waits);
+    if (b.waitsForDouble != waits) {
+      fprintf(stderr, "  %s bank %u key %c: waitsForDouble %d, expected %d\n", f.name, bank,
+              key, b.waitsForDouble, waits);
       ++::test::g_checkFailures;
     }
     // A key that does not wait never gets a double click, so it has no action.
+    if (b.doubleAction && !b.waitsForDouble) {
+      fprintf(stderr, "  %s bank %u key %c: double action without the wait\n", f.name, bank, key);
+      ++::test::g_checkFailures;
+    }
     checkOutcome(f, bank, key, "double",
-                 outcome(keymapDoubleClick, t, bank, key, waits ? "none" : "-"), expected);
+                 outcome(b.doubleAction, bank, key, "DOUBLE", waits ? "none" : "-"), expected);
   });
 }
 
 TEST(keymap_ignores_state_machine_keys_and_other_banks) {
   const KeypadTraits t = traitsFor(IC7300);
+  g_calls.clear();
   for (const char *k = "*#D"; *k; ++k) {
-    for (uint8_t bank = 0; bank <= 10; ++bank) {
-      g_calls.clear();
-      CHECK(!keymapShort(t, bank, *k));
-      CHECK(!keymapHold(t, bank, *k));
-      CHECK(!keymapDoubleClick(t, bank, *k));
-      CHECK(!keymapWantsDoubleClick(t, bank, *k));
-      CHECK(g_calls.empty());
-    }
+    for (uint8_t bank = 0; bank <= 10; ++bank) CHECK(isEmpty(keymapLookup(t, bank, *k)));
   }
-  g_calls.clear();
-  CHECK(!keymapShort(t, 0, '1'));
-  CHECK(!keymapShort(t, 7, '1'));
-  CHECK(!keymapShort(t, 10, '1'));
+  CHECK(isEmpty(keymapLookup(t, 0, '1')));
+  CHECK(isEmpty(keymapLookup(t, 7, '1')));
+  CHECK(isEmpty(keymapLookup(t, 10, '1')));
   CHECK(g_calls.empty());
-}
-
-TEST(keymap_names_the_key_only_while_an_action_runs) {
-  const KeypadTraits t = traitsFor(FTDX10);
-  CHECK(keymapActiveKey() == nullptr);
-  g_calls.clear();
-  CHECK(keymapDoubleClick(t, 4, '2'));
-  CHECK(g_calls == "reportFtdx10HiddenKey(BANK4 2 DOUBLE)");
-  CHECK(keymapActiveKey() == nullptr);
-  CHECK(!keymapShort(t, 7, '1'));
-  CHECK(keymapActiveKey() == nullptr);
 }

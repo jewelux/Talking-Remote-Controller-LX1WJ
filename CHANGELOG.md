@@ -44,6 +44,13 @@
 - bank actions no longer get the whole keypad state machine through a global `keypadInput()`;
   they can only start an entry, mode select or profile select (`keypadBeginEntry`,
   `keypadBeginModeSelect`, `keypadBeginProfileSelect`), and read the bank through `uiGetBank()`
+- the keymap is a lookup: `keymapLookup()` returns a `KeyBinding` (short, hold and double-click
+  action, and whether a short press waits for a double click), and `KeypadInput` runs the action
+  itself. The listener's four keymap calls became one `keyBinding()`, which reads the radio's
+  traits when it looks up the key instead of relying on `onActivity` to refresh them first.
+  `KeypadInput` now names the running key (`keypadActiveKey()`, was `keymapActiveKey()`).
+  `onUnassigned` is `onRejected`, and the entry target VFO is `enum class TargetVfo` (was the
+  `KEYPAD_VFO_*` constants and raw 0–3). No behaviour change
 - NR, NB and notch are one operation each (`firmware/radio_features.{h,cpp}`) that the Bank 2
   keys `1`–`3` and the console's `NR`, `NB` and `NOTCH` commands both call; both print and say the
   result the same way (`ui_features.{h,cpp}`). What changes:

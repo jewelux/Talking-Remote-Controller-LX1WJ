@@ -154,7 +154,7 @@ void toggleBank3Ft8x7Vfo() {
 
 void beginBank3VfoAFrequencySet() {
   printKeypadAction("VFOA FREQ");
-  keypadBeginEntry(InputMode::FreqEntry, KEYPAD_VFO_A);
+  keypadBeginEntry(InputMode::FreqEntry, TargetVfo::A);
   if (g_speechEnabled) {
     speakFrequencyWord();
     playSilenceMs(80);
@@ -166,7 +166,7 @@ void beginBank3Ft8x7CurrentVfoFrequencySet() {
   ensureFt8x7VfoTrackingInitialized();
   const char which = ft8x7CurrentVfoLabel();
   printKeypadAction(String("VFO") + which + " FREQ");
-  keypadBeginEntry(InputMode::FreqEntry, KEYPAD_VFO_CURRENT);
+  keypadBeginEntry(InputMode::FreqEntry, TargetVfo::Current);
   if (g_speechEnabled) {
     speakVfoFrequencyLabel(which);
     playSilenceMs(80);
@@ -278,7 +278,7 @@ void reportBank3Ft857VfoBUnsupported() {
 
 void beginBank3VfoBFrequencySet() {
   printKeypadAction("VFOB FREQ");
-  keypadBeginEntry(InputMode::FreqEntry, KEYPAD_VFO_B);
+  keypadBeginEntry(InputMode::FreqEntry, TargetVfo::B);
   if (g_speechEnabled) {
     speakFrequencyWord();
     playSilenceMs(80);
@@ -290,7 +290,7 @@ void beginBank3Ft8x7OtherVfoFrequencySet() {
   ensureFt8x7VfoTrackingInitialized();
   const char which = ft8x7OtherVfoLabel();
   printKeypadAction(String("VFO") + which + " FREQ");
-  keypadBeginEntry(InputMode::FreqEntry, KEYPAD_VFO_OTHER);
+  keypadBeginEntry(InputMode::FreqEntry, TargetVfo::Other);
   if (g_speechEnabled) {
     speakVfoFrequencyLabel(which);
     playSilenceMs(80);
@@ -370,7 +370,7 @@ void queryBank3VfoAMode() {
 
 void beginBank3VfoAModeSet() {
   printKeypadAction("VFOA MODE");
-  keypadBeginModeSelect(KEYPAD_VFO_A);
+  keypadBeginModeSelect(TargetVfo::A);
   if (g_speechEnabled) {
     speakToken("mode");
     playSilenceMs(80);
@@ -390,7 +390,7 @@ void queryBank3VfoBMode() {
 
 void beginBank3VfoBModeSet() {
   printKeypadAction("VFOB MODE");
-  keypadBeginModeSelect(KEYPAD_VFO_B);
+  keypadBeginModeSelect(TargetVfo::B);
   if (g_speechEnabled) {
     speakToken("mode");
     playSilenceMs(80);

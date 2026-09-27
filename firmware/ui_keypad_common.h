@@ -9,8 +9,8 @@
 
 // What an action may ask of the keypad state machine (ui_keypad.cpp): the keys
 // after it go to an entry, mode select or profile select.
-void keypadBeginEntry(InputMode mode, uint8_t targetVfo = KEYPAD_VFO_CURRENT);
-void keypadBeginModeSelect(uint8_t targetVfo);
+void keypadBeginEntry(InputMode mode, TargetVfo targetVfo = TargetVfo::Current);
+void keypadBeginModeSelect(TargetVfo targetVfo);
 void keypadBeginProfileSelect();
 
 // Runs a console command for a key, with the keypad's polling and speech holds.
@@ -21,12 +21,11 @@ void speakKeypadCommandWord(const String& cmd);
 
 // Entries and selections (ui_keypad_entry.cpp), called by the state machine.
 void keypadEntryDigit(const EntrySpec& entry, char key, const char* digits);
-void keypadEntryCommit(InputMode mode, const char* digits, uint8_t targetVfo);
+void keypadEntryCommit(InputMode mode, const char* digits, TargetVfo targetVfo);
 bool keypadModeDigit(char key, uint8_t& mode);
-void keypadModeCommit(uint8_t mode, uint8_t targetVfo);
+void keypadModeCommit(uint8_t mode, TargetVfo targetVfo);
 // Shared frequency writer for entry commit and the round-to-500 Hz action.
-// targetVfo is one of the KEYPAD_VFO_* values.
-bool keypadApplyFrequencyHz(uint64_t hz, uint8_t targetVfo);
+bool keypadApplyFrequencyHz(uint64_t hz, TargetVfo targetVfo);
 
 // No SD card profiles: Bank 9 digits pick the built-in light-Icom profiles.
 bool lightIcomFallbackActive();
@@ -44,7 +43,7 @@ void printKeypadStatus(const String& line);
 // Serial "CMD <line>" trace.
 void printKeypadCommand(const String& line);
 // Serial trace of a bank key action: "CMD <key> -> <what>", the key being
-// keymapActiveKey() (e.g. "BANK3 2 LONG"). Just "CMD <what>" outside the keymap.
+// keypadActiveKey() (e.g. "BANK3 2 LONG"). Just "CMD <what>" outside a key action.
 void printKeypadAction(const String& what);
 
 // Keypad feedback. Each prints a status line and gives the matching audio cue.

@@ -16,6 +16,18 @@ int holdBit(char key) {
 
 bool isDigit(char key) { return key >= '0' && key <= '9'; }
 
+// The key keypadActiveKey() reports; empty while no action runs.
+char g_activeKey[20] = "";
+
+// Names the key in g_activeKey while one action runs.
+class ActiveKey {
+ public:
+  ActiveKey(uint8_t bank, char key, const char* gesture) {
+    snprintf(g_activeKey, sizeof(g_activeKey), "BANK%u %c %s", (unsigned)bank, key, gesture);
+  }
+  ~ActiveKey() { g_activeKey[0] = '\0'; }
+};
+
 // Bank select keeps the last digit typed; profile select takes up to two.
 // The frequency took a point even after 12 digits in the old code, so the
 // point does not check maxLen.
@@ -32,6 +44,8 @@ constexpr EntrySpec kEntries[] = {
 };
 
 }  // namespace
+
+const char* keypadActiveKey() { return g_activeKey[0] ? g_activeKey : nullptr; }
 
 const EntrySpec* keypadEntrySpec(InputMode mode) {
   for (const EntrySpec& e : kEntries) {
@@ -110,16 +124,16 @@ void KeypadInput::poll(uint32_t nowMs) {
 void KeypadInput::runPending() {
   pending_.active = false;
   listener_.onActivity(false);
-  runShortOrUnassigned(pending_.bank, pending_.key);
+  runShortOrReject(listener_.keyBinding(pending_.bank, pending_.key), pending_.bank, pending_.key);
 }
 
-void KeypadInput::beginEntry(InputMode mode, uint8_t targetVfo) {
+void KeypadInput::beginEntry(InputMode mode, TargetVfo targetVfo) {
   mode_ = mode;
   digits_.clear();
   entryVfo_ = targetVfo;
 }
 
-void KeypadInput::beginModeSelect(uint8_t targetVfo) {
+void KeypadInput::beginModeSelect(TargetVfo targetVfo) {
   beginEntry(InputMode::ModeSelect, targetVfo);
   stagedMode_ = kNoMode;
 }
@@ -163,7 +177,9 @@ void KeypadInput::held(char key) {
     handled = g->onHold != nullptr;
     if (handled) (this->*g->onHold)();
   } else {
-    handled = listener_.runHold(bank_, key);
+    const KeyAction action = listener_.keyBinding(bank_, key).holdAction;
+    handled = action != nullptr;
+    if (handled) runAction(action, bank_, key, "LONG");
   }
   if (handled) {
     // Only the waiting key itself can still be waiting here: its long action
@@ -179,16 +195,20 @@ void KeypadInput::held(char key) {
   } else {
     snprintf(label, sizeof(label), "BANK%u %c LONG", (unsigned)bank_, key);
   }
-  listener_.onUnassigned(label);
+  listener_.onRejected(label);
 }
 
 void KeypadInput::releasedNormal(char key, uint32_t nowMs) {
+  const KeyBinding binding = listener_.keyBinding(bank_, key);
   if (pending_.active && pending_.bank == bank_ && pending_.key == key &&
       (uint32_t)(nowMs - pending_.atMs) <= kDoubleClickMs) {
     pending_.active = false;
-    if (listener_.runDoubleClick(bank_, key)) return;
+    if (binding.doubleAction) {
+      runAction(binding.doubleAction, bank_, key, "DOUBLE");
+      return;
+    }
   }
-  if (listener_.wantsDoubleClick(bank_, key)) {
+  if (binding.waitsForDouble) {
     // Any other key still waiting has run when this key went down.
     pending_.active = true;
     pending_.bank = bank_;
@@ -196,7 +216,7 @@ void KeypadInput::releasedNormal(char key, uint32_t nowMs) {
     pending_.atMs = nowMs;
     return;
   }
-  runShortOrUnassigned(bank_, key);
+  runShortOrReject(binding, bank_, key);
 }
 
 // Mode select takes a key that picks a mode; another one replaces it, and
@@ -215,13 +235,13 @@ void KeypadInput::releasedEntry(const EntrySpec& entry, char key) {
       digits_.push(key);
       listener_.onDigitAccepted(entry, key, digits_.c_str());
     } else {
-      reportUnassigned(entry.name, "POINT");
+      reportRejected(entry.name, "POINT");
     }
     return;
   }
   if (!takesDigit(entry, key)) {
     const char label[2] = {key, '\0'};
-    reportUnassigned(entry.name, label);
+    reportRejected(entry.name, label);
     return;
   }
   if (digits_.length() >= entry.maxLen) digits_.clear();  // replaces
@@ -246,7 +266,7 @@ bool KeypadInput::takesDigit(const EntrySpec& entry, char key) const {
 void KeypadInput::enter() {
   if (mode_ == InputMode::Normal) {
     if (!hasStagedCommand()) {
-      listener_.onUnassigned("ENTER");
+      listener_.onRejected("ENTER");
       return;
     }
     char cmd[sizeof(stagedCommand_)];
@@ -257,27 +277,27 @@ void KeypadInput::enter() {
   }
   if (mode_ == InputMode::ModeSelect) {
     if (stagedMode_ == kNoMode) {
-      reportUnassigned("MODE SELECT", "D");
+      reportRejected("MODE SELECT", "D");
       return;
     }
-    const uint8_t targetVfo = entryVfo_;
+    const TargetVfo targetVfo = entryVfo_;
     mode_ = InputMode::Normal;
-    entryVfo_ = KEYPAD_VFO_CURRENT;
+    entryVfo_ = TargetVfo::Current;
     listener_.onModeCommit(stagedMode_, targetVfo);
     return;
   }
 
   if (digits_.empty()) {
-    reportUnassigned(keypadEntrySpec(mode_)->name, "D");
+    reportRejected(keypadEntrySpec(mode_)->name, "D");
     return;
   }
   const InputMode mode = mode_;
   const DigitBuffer<13> digits = digits_;
-  const uint8_t targetVfo = entryVfo_;
+  const TargetVfo targetVfo = entryVfo_;
   if (mode == InputMode::BankSelect) bank_ = (uint8_t)(digits.c_str()[0] - '0');
   mode_ = InputMode::Normal;
   digits_.clear();
-  entryVfo_ = KEYPAD_VFO_CURRENT;
+  entryVfo_ = TargetVfo::Current;
   listener_.onCommit(mode, digits.c_str(), targetVfo);
 }
 
@@ -286,26 +306,34 @@ void KeypadInput::enter() {
 // hold, so their release stays swallowed.
 void KeypadInput::clearAll() {
   if (mode_ == InputMode::Normal && !pending_.active && !hasStagedCommand()) {
-    listener_.onUnassigned("CLEAR");
+    listener_.onRejected("CLEAR");
     return;
   }
   mode_ = InputMode::Normal;
   digits_.clear();
-  entryVfo_ = KEYPAD_VFO_CURRENT;
+  entryVfo_ = TargetVfo::Current;
   stagedCommand_[0] = '\0';
   pending_.active = false;
   listener_.onClear();
 }
 
-void KeypadInput::runShortOrUnassigned(uint8_t bank, char key) {
-  if (listener_.runShort(bank, key)) return;
-  char label[16];
-  snprintf(label, sizeof(label), "BANK%u %c", (unsigned)bank, key);
-  listener_.onUnassigned(label);
+void KeypadInput::runAction(KeyAction action, uint8_t bank, char key, const char* gesture) {
+  ActiveKey named(bank, key, gesture);
+  action();
 }
 
-void KeypadInput::reportUnassigned(const char* mode, const char* what) {
+void KeypadInput::runShortOrReject(const KeyBinding& binding, uint8_t bank, char key) {
+  if (binding.shortAction) {
+    runAction(binding.shortAction, bank, key, "SHORT");
+    return;
+  }
+  char label[16];
+  snprintf(label, sizeof(label), "BANK%u %c", (unsigned)bank, key);
+  listener_.onRejected(label);
+}
+
+void KeypadInput::reportRejected(const char* mode, const char* what) {
   char label[24];
   snprintf(label, sizeof(label), "%s %s", mode, what);
-  listener_.onUnassigned(label);
+  listener_.onRejected(label);
 }
