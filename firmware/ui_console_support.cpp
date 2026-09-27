@@ -1,37 +1,22 @@
 #include "ui_console_support.h"
 
-#include "protocol_ascii.h"
 #include "radio_catalog.h"
 #include "radio_mode.h"
 #include "radio_profile.h"
+#include "radio_protocol.h"
 #include "radio_utils.h"
 #include "ui_keypad.h"
 
+// Lists what mode select accepts: the mode digits the current profile can set.
 void printModeList() {
-  const StoredProfile& sp = currentStoredProfile();
-  struct ModeDigitMap {
-    char digit;
-    uint8_t mode;
-  };
-  static const ModeDigitMap kModeDigits[] = {
-    {'1', 0x00},
-    {'2', 0x01},
-    {'3', 0x03},
-    {'4', 0x02},
-    {'5', 0x05},
-    {'6', 0x11},
-    {'7', 0x04},
-    {'8', 0x07},
-    {'9', 0x08},
-  };
   Serial.println("MODE LIST:");
-  for (const auto& it : kModeDigits) {
-    String code;
-    if (!profileModeCodeForInternal(sp, it.mode, code)) continue;
+  for (char digit = '1'; digit <= '9'; ++digit) {
+    uint8_t mode = 0;
+    if (!modeFromDigit(digit, mode) || !canSetMode(mode)) continue;
     Serial.print("  ");
-    Serial.print(it.digit);
+    Serial.print(digit);
     Serial.print(" = ");
-    Serial.println(modeToString(it.mode));
+    Serial.println(modeToString(mode));
   }
 }
 
