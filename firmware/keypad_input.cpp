@@ -5,7 +5,7 @@
 
 namespace {
 
-// Bit positions for the hold tracker.
+// Bit positions for the swallowed keys.
 constexpr char kTrackedKeys[] = "0123456789ABCD*#";
 
 int holdBit(char key) {
@@ -54,12 +54,17 @@ const EntrySpec* keypadEntrySpec(InputMode mode) {
   return nullptr;
 }
 
-void KeypadInput::HoldTracker::set(char key) {
+void KeypadInput::SwallowedKeys::set(char key) {
   const int bit = holdBit(key);
   if (bit >= 0) bits_ |= (uint16_t)(1u << bit);
 }
 
-bool KeypadInput::HoldTracker::release(char key) {
+bool KeypadInput::SwallowedKeys::has(char key) const {
+  const int bit = holdBit(key);
+  return bit >= 0 && (bits_ & (uint16_t)(1u << bit)) != 0;
+}
+
+bool KeypadInput::SwallowedKeys::release(char key) {
   const int bit = holdBit(key);
   if (bit < 0) return false;
   const uint16_t mask = (uint16_t)(1u << bit);
@@ -77,6 +82,11 @@ void KeypadInput::onKey(char key, KeyGesture gesture, uint32_t nowMs) {
       (key != pending_.key || bank_ != pending_.bank)) {
     runPending();
   }
+  if (gesture == KeyGesture::Pressed) {
+    // Normal mode waits for the release: it tells short, long and double apart.
+    if (mode_ != InputMode::Normal) pressedInMode(key);
+    return;
+  }
   if (gesture == KeyGesture::Held) {
     held(key);
     return;
@@ -86,34 +96,39 @@ void KeypadInput::onKey(char key, KeyGesture gesture, uint32_t nowMs) {
   // The '*' hold that opened bank select ends here. Its release is silent even
   // when the hold was not tracked.
   if (mode_ == InputMode::BankSelect && key == '*') {
-    holds_.release(key);
+    swallowed_.release(key);
     return;
   }
-  // The release that ends a handled hold is not a short press.
-  if (holds_.release(key)) return;
+  // The release that ends a handled hold, or a press an entry took, is not a
+  // short press.
+  if (swallowed_.release(key)) return;
+  // A key that went down in Normal mode before another key opened an entry
+  // was never typed into it.
+  if (mode_ != InputMode::Normal) return;
 
   if (const GlobalKey* g = globalKey(key)) {
     (this->*g->onShort)();
     return;
   }
-  switch (mode_) {
-    case InputMode::Normal:
-      releasedNormal(key, nowMs);
-      return;
-    case InputMode::ModeSelect:
-      releasedModeSelect(key);
-      return;
-    case InputMode::BankSelect:
-    case InputMode::ProfileSelect:
-    case InputMode::FreqEntry:
-    case InputMode::RfPowerEntry:
-    case InputMode::CivAddrEntry:
-    case InputMode::RptOffsetEntry:
-    case InputMode::CtcssEntry:
-    case InputMode::DcsEntry:
-      releasedEntry(*keypadEntrySpec(mode_), key);
-      return;
+  releasedNormal(key, nowMs);
+}
+
+// Bank, profile and mode select and the entries have no long or double
+// action, so their keys act as soon as they go down. The hold and release
+// that follow do nothing, even once the key has ended the mode.
+void KeypadInput::pressedInMode(char key) {
+  swallowed_.set(key);
+  // The '*' that opened bank select, pressed again: silent.
+  if (mode_ == InputMode::BankSelect && key == '*') return;
+  if (const GlobalKey* g = globalKey(key)) {
+    (this->*g->onShort)();
+    return;
   }
+  if (mode_ == InputMode::ModeSelect) {
+    pressedModeSelect(key);
+    return;
+  }
+  pressedEntry(*keypadEntrySpec(mode_), key);
 }
 
 void KeypadInput::poll(uint32_t nowMs) {
@@ -166,11 +181,12 @@ void KeypadInput::beginBankSelect() {
 }
 
 // Bank, profile and mode select and the entries ignore holds; their keys act on
-// release. In Normal mode a key with no long action beeps now, and its release
-// is swallowed like after a long action.
+// press. So does a key whose press one of them took, even when that press
+// ended the mode. In Normal mode a key with no long action beeps now, and its
+// release is swallowed like after a long action.
 void KeypadInput::held(char key) {
-  if (mode_ != InputMode::Normal) return;
-  holds_.set(key);
+  if (mode_ != InputMode::Normal || swallowed_.has(key)) return;
+  swallowed_.set(key);
   const GlobalKey* g = globalKey(key);
   bool handled;
   if (g) {
@@ -221,7 +237,7 @@ void KeypadInput::releasedNormal(char key, uint32_t nowMs) {
 
 // Mode select takes a key that picks a mode; another one replaces it, and
 // Enter applies it. Any other key beeps and the mode stays; only '#' cancels.
-void KeypadInput::releasedModeSelect(char key) {
+void KeypadInput::pressedModeSelect(char key) {
   uint8_t mode = 0;
   if (listener_.onModeDigit(key, mode)) {
     stagedMode_ = mode;
@@ -233,7 +249,7 @@ void KeypadInput::releasedModeSelect(char key) {
 
 // Bank select, profile select and the entries: a digit the entry takes, or
 // the frequency point. Any other key beeps and the entry stays.
-void KeypadInput::releasedEntry(const EntrySpec& entry, char key) {
+void KeypadInput::pressedEntry(const EntrySpec& entry, char key) {
   if (key == '*' && entry.maxFraction > 0) {
     // One point only, and not first.
     if (!digits_.empty() && digits_.indexOf('*') < 0) {
@@ -313,7 +329,7 @@ void KeypadInput::commitEntry() {
 
 // Clear ('#') cancels every mode, entry, staged mode, staged command and
 // waiting double click, and beeps when there is none. Keys still held keep their
-// hold, so their release stays swallowed.
+// swallowed release.
 void KeypadInput::clearAll() {
   if (mode_ == InputMode::Normal && !pending_.active && !hasStagedCommand()) {
     listener_.onRejected("CLEAR");

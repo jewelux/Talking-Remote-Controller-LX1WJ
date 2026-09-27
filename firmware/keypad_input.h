@@ -7,7 +7,8 @@
 
 // Keypad input state machine. It decides what each key event means: which
 // mode is active, which digits an entry takes, when a release is swallowed
-// after a hold, and when a short press waits for a double click. Everything it
+// (after a hold, or after a press an entry took), and when a short press waits
+// for a double click. Everything it
 // decides goes out through KeypadInputListener. Pure C++ with no Arduino.h, so
 // it runs in the host unit tests (tests/keypad).
 //
@@ -153,10 +154,12 @@ class KeypadInput {
   static constexpr size_t kMaxStagedCommand = 23;
 
  private:
-  // Keys whose hold was handled. Their release is swallowed.
-  class HoldTracker {
+  // Keys whose release is swallowed: their hold was handled, or their press
+  // was taken by bank, profile or mode select or an entry.
+  class SwallowedKeys {
    public:
     void set(char key);
+    bool has(char key) const;
     // Clears key's bit. Returns true when it was set.
     bool release(char key);
 
@@ -188,8 +191,9 @@ class KeypadInput {
   void held(char key);
   void runPending();
   void releasedNormal(char key, uint32_t nowMs);
-  void releasedModeSelect(char key);
-  void releasedEntry(const EntrySpec& entry, char key);
+  void pressedInMode(char key);
+  void pressedModeSelect(char key);
+  void pressedEntry(const EntrySpec& entry, char key);
   bool takesDigit(const EntrySpec& entry, char key) const;
   void enter();
   void commitEntry();
@@ -212,6 +216,6 @@ class KeypadInput {
   uint8_t stagedMode_ = kNoMode;
   // The command waiting for Enter in Normal mode, or empty.
   char stagedCommand_[kMaxStagedCommand + 1] = "";
-  HoldTracker holds_;
+  SwallowedKeys swallowed_;
   DoubleClick pending_;
 };

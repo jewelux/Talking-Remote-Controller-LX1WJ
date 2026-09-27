@@ -109,8 +109,11 @@
   ("BANKn k LONG -> unassigned") and the release does nothing. Before, the release ran the key's
   short action, or beeped only then when it had none
 - holding `D` or `#` beeps the same way ("ENTER LONG" / "CLEAR LONG") and the release does
-  nothing; before, the release entered or cleared. In entries and bank, profile and mode select,
-  holds are still ignored and the release acts
+  nothing; before, the release entered or cleared
+- in entries and bank, profile and mode select a key (digit, point, `D`, `#`) acts as soon as it
+  is pressed instead of on its release; holding it and releasing it do nothing more, also when
+  the key ended the entry or selection (e.g. a held bank select digit runs no long action on the
+  new bank)
 - `#` with nothing to cancel (no entry, selection, staged command or waiting key) beeps
   ("CLEAR -> unassigned") instead of saying "cancel"
 - `D` with nothing typed or chosen beeps and the entry or selection stays, the same in every

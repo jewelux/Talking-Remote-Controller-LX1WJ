@@ -540,7 +540,7 @@ TEST(input_bank_select_commits_on_the_digit) {
   CHECK_LOG(f, "rejected BANK5 3");
 }
 
-// A digit released while '*' is still down commits; the '*' release after it
+// A digit pressed while '*' is still down commits; the '*' release after it
 // is swallowed.
 TEST(input_bank_select_digit_during_the_star_hold) {
   Fake f;
@@ -574,7 +574,7 @@ TEST(input_bank_select_rejects_other_keys) {
   hold(in, '*');
   typeKeys(in, "0A");
   tap(in, '*');  // silent in bank select
-  hold(in, '3');  // holds are ignored, the release is a digit
+  hold(in, '3');  // holds are ignored, the press is a digit
   CHECK_EQ(in.mode(), InputMode::Normal);
   CHECK_EQ(in.bank(), 3);
   CHECK_LOG(f, "bank please", "rejected BANK SELECT 0", "rejected BANK SELECT A",
@@ -717,6 +717,70 @@ TEST(input_entry_ignores_holds) {
   hold(in, '*');
   CHECK_EQ(in.mode(), InputMode::FreqEntry);
   CHECK_LOG(f, "digit FreqEntry 5 5", "digit FreqEntry * 5*");
+}
+
+// Entries and selections take a key as it goes down, not when it comes up.
+TEST(input_entry_takes_the_key_on_press) {
+  Fake f;
+  KeypadInput in(f);
+  in.beginEntry(InputMode::FreqEntry);
+  in.onKey('1', KeyGesture::Pressed, 0);
+  CHECK_LOG(f, "digit FreqEntry 1 1");
+  in.onKey('1', KeyGesture::Released, 0);
+  CHECK_LOG(f);
+  in.beginModeSelect(TargetVfo::Current);
+  in.onKey('2', KeyGesture::Pressed, 0);
+  CHECK(in.stagedModeActive());
+  CHECK_LOG(f, "mode digit 2");
+}
+
+// A key that ends the mode on its press does nothing more in Normal mode: its
+// hold runs no long action and beeps no "LONG", its release no short.
+TEST(input_key_that_ends_the_mode_is_silent_until_released) {
+  Fake f;
+  f.shorts = {"5 5", "1 7"};
+  f.holds = {"5 5"};
+  KeypadInput in(f);
+  hold(in, '*');
+  f.take();
+  in.onKey('5', KeyGesture::Pressed, 0);
+  CHECK_EQ(in.mode(), InputMode::Normal);
+  CHECK_EQ(in.bank(), 5);
+  CHECK_LOG(f, "commit BankSelect [5] vfo0");
+  in.onKey('5', KeyGesture::Held, 0);
+  in.onKey('5', KeyGesture::Released, 0);
+  CHECK_LOG(f);
+
+  in.beginEntry(InputMode::FreqEntry);
+  tap(in, '7');
+  f.take();
+  hold(in, 'D');
+  CHECK_EQ(in.mode(), InputMode::Normal);
+  CHECK_LOG(f, "commit FreqEntry [7] vfo0");
+
+  in.beginEntry(InputMode::FreqEntry);
+  hold(in, '#');
+  CHECK_EQ(in.mode(), InputMode::Normal);
+  CHECK_LOG(f, "clear");
+
+  // The next press of the same key is a Normal-mode key again.
+  tap(in, '5');
+  CHECK_LOG(f, "short 5 5");
+}
+
+// A key that went down in Normal mode and comes up in an entry another key
+// opened was never typed into it.
+TEST(input_release_of_a_key_pressed_before_the_entry_is_ignored) {
+  Fake f;
+  f.shorts = {"1 1"};
+  KeypadInput in(f);
+  f.hooks["short 1 1"] = [&] { in.beginEntry(InputMode::FreqEntry); };
+  in.onKey('4', KeyGesture::Pressed, 0);
+  tap(in, '1');
+  in.onKey('4', KeyGesture::Released, 0);
+  CHECK_EQ(in.mode(), InputMode::FreqEntry);
+  CHECK_EQ(std::string(in.digits()), std::string());
+  CHECK_LOG(f, "short 1 1");
 }
 
 TEST(input_entry_starts_empty_each_time) {
@@ -938,7 +1002,7 @@ TEST(input_mode_select_key_is_mode_digit_not_short_action) {
 }
 
 // F2: holds during mode select run no long action and do not open bank select;
-// the release is the mode digit.
+// the press is the mode digit.
 TEST(input_mode_select_ignores_holds) {
   Fake f;
   f.holds = {"1 0", "1 2"};
