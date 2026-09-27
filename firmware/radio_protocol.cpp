@@ -75,6 +75,20 @@ bool setMode(uint8_t mode, uint8_t filter) {
   return false;
 }
 
+bool canSetMode(uint8_t mode) {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (!sp.caps.setMode) return false;
+  // CI-V sends the mode as it is; the others need the profile's code for it.
+  if (pt == PROTO_CIV) return true;
+  String code;
+  if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) {
+    return sp.ascii.modeSetFormat[0] && profileModeCodeForInternal(sp, mode, code);
+  }
+  if (pt == PROTO_YAESU_FT8X7) return profileModeCodeForInternal(sp, mode, code);
+  return false;
+}
+
 bool querySMeterRaw(int32_t& rawOut, uint32_t timeoutMs) {
   ProtocolType pt = currentProtocolType();
   const StoredProfile& sp = currentStoredProfile();

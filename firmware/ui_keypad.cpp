@@ -4,7 +4,6 @@
 #include "ui_keypad.h"
 #include "keypad_input.h"
 #include "keypad_keymap.h"
-#include "protocol_ascii.h"
 #include "radio_catalog.h"
 #include "radio_monitor.h"
 #include "radio_profile.h"
@@ -29,7 +28,7 @@ static void speakBankPlease() {
   speakToken("please");
 }
 
-bool profileModeFromDigit(char digit, uint8_t& modeOut) {
+bool modeFromDigit(char digit, uint8_t& modeOut) {
   switch (digit) {
     case '1': modeOut = 0x00; break;
     case '2': modeOut = 0x01; break;
@@ -42,8 +41,7 @@ bool profileModeFromDigit(char digit, uint8_t& modeOut) {
     case '9': modeOut = 0x08; break;
     default: return false;
   }
-  String code;
-  return profileModeCodeForInternal(currentStoredProfile(), modeOut, code);
+  return true;
 }
 
 void speakBankNumber() {

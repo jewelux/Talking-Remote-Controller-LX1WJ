@@ -11,10 +11,11 @@
   `D` is no longer needed
 - mode select ("mode please") takes every key as a mode digit, also keys that do something else on
   the current bank (e.g. Bank 3 `6`–`9`), and holding a key does not run its long action. A key
-  that picks no mode beeps and mode select stays. The picked mode waits for `D` to apply it; another
-  mode digit replaces it, `#` cancels it and any other key beeps. Before, an invalid digit ended
-  mode select, keys ran their bank actions, and a picked mode left behind could be applied by a
-  later `D`, e.g. at the end of a frequency entry
+  that picks no mode, or a mode the radio profile cannot set, beeps and mode select stays. The
+  picked mode waits for `D` to apply it; another mode digit replaces it, `#` cancels it and any
+  other key beeps. Before, an invalid digit ended mode select, keys ran their bank actions, a
+  mode the profile cannot set was spoken as picked and then failed silently, and a picked mode left
+  behind could be applied by a later `D`, e.g. at the end of a frequency entry
 - fixed mode select: `1`/`2` were ignored after a Bank 3 VFO A/B mode select (`3`/`4`/`5` long), and
   Bank 1 `9` long could set VFO A or B instead of the current VFO
 - `D` with nothing typed or chosen beeps and the entry or selection stays. Before, some entries said

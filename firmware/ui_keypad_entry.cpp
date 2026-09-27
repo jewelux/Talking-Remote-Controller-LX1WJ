@@ -251,12 +251,10 @@ void keypadEntryCommit(InputMode mode, const char* digits, TargetVfo targetVfo) 
   }
 }
 
-// A key that picks no mode is rejected by the state machine.
+// A key that picks no mode, or a mode the profile cannot set, is rejected by
+// the state machine.
 bool keypadModeDigit(char key, uint8_t& mode) {
-  // A digit the profile has no mode code for still picks its mode, as before.
-  mode = 0xFF;
-  (void)profileModeFromDigit(key, mode);
-  if (mode == 0xFF) return false;
+  if (!modeFromDigit(key, mode) || !canSetMode(mode)) return false;
   printKeypadCommand(String("MODE DIGIT -> ") + String(key));
   g_suppressModePrefixOnce = true;
   printKeypadStatus(String("MODE STAGE: ") + modeToString(mode));

@@ -635,11 +635,7 @@ static bool parseConsoleModeToken(String token, uint8_t& modeOut) {
   token.trim();
   if (!token.length()) return false;
 
-  if (token.length() == 1) {
-    modeOut = 0xFF;
-    (void)profileModeFromDigit(token[0], modeOut);
-    if (modeOut != 0xFF) return true;
-  }
+  if (token.length() == 1 && modeFromDigit(token[0], modeOut)) return true;
 
   String upper = upperCopy(token);
   if (upper == "LSB") { modeOut = 0x00; return true; }
