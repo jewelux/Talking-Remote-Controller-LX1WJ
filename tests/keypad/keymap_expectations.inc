@@ -17,6 +17,9 @@
 //           "none" = the key waits, but has no double action: a quick second
 //           press restarts the wait and the short action then runs once.
 //
+// Rows marked "fixed" were changed on purpose after the refactor; the comment
+// says what the old code did.
+//
 // Each (family, bank, key) is covered by at most one row. A key that no row
 // covers is short "unassigned", long "none", double "-". Every key that does
 // something for any family has rows covering all families. Bank 7 is empty.
@@ -112,9 +115,11 @@ KEYMAP_ROW(CIV,             2, '7', "queryBank2PbtOuter",    "adjustBank2PbtOute
 KEYMAP_ROW(FTDX10,          2, '7', "ftdx10QueryId",         "none",                   "-")
 KEYMAP_ROW(NOT(CIV | FTDX10), 2, '7', "unassigned",          "none",                   "-")
 KEYMAP_ROW(CIV,             2, '8', "sendBank2FilterShapeQuery", "toggleBank2FilterShape", "-")
-KEYMAP_ROW(NOT(CIV),        2, '8', "unassigned",            "none",                   "-")  // FTDX10: F4
+KEYMAP_ROW(FTDX10,          2, '8', "reportFtdx10HiddenKey(BANK2 8)", "none",          "-")  // fixed: was unassigned
+KEYMAP_ROW(NOT(CIV | FTDX10), 2, '8', "unassigned",          "none",                   "-")
 KEYMAP_ROW(CIV,             2, '9', "queryBank2FilterWidth", "cycleBank2FilterWidth(1)", "cycleBank2FilterWidth(-1)")
-KEYMAP_ROW(NOT(CIV),        2, '9', "unassigned",            "none",                   "-")  // FTDX10: F4
+KEYMAP_ROW(FTDX10,          2, '9', "reportFtdx10HiddenKey(BANK2 9)", "none",          "-")  // fixed: was unassigned
+KEYMAP_ROW(NOT(CIV | FTDX10), 2, '9', "unassigned",          "none",                   "-")
 
 // ---- Bank 3 ----------------------------------------------------------------
 KEYMAP_ROW(FT857,           3, '0', "queryBank3Split",       "toggleBank3Split",       "calibrateBank3Ft857Split")

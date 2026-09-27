@@ -36,6 +36,8 @@ bool run(Gesture g, Action shortAction, Action holdAction = nullptr,
   return true;
 }
 
+void ftdx10HiddenBank2Key8() { reportFtdx10HiddenKey("BANK2 8"); }
+void ftdx10HiddenBank2Key9() { reportFtdx10HiddenKey("BANK2 9"); }
 void ftdx10HiddenBank4() { reportFtdx10HiddenKey("BANK4"); }
 
 bool bank1(const KeypadTraits& t, Gesture g, char key) {
@@ -94,12 +96,14 @@ bool bank2(const KeypadTraits& t, Gesture g, char key) {
       return false;
     case '8':
       if (t.civ) return run(g, sendBank2FilterShapeQuery, toggleBank2FilterShape);
+      if (t.ftdx10) return run(g, ftdx10HiddenBank2Key8);
       return false;
     case '9':
       if (t.civ) {
         return run(g, queryBank2FilterWidth, [] { cycleBank2FilterWidth(1); },
                    [] { cycleBank2FilterWidth(-1); });
       }
+      if (t.ftdx10) return run(g, ftdx10HiddenBank2Key9);
       return false;
     default: return false;
   }

@@ -28,6 +28,8 @@
   digit replaces it; any other key beeps. Before, the other keys kept working and the staged mode
   stayed behind, so a later `D`, e.g. one pressed after finishing a frequency entry, applied the
   old mode
+- FTDX10: Bank 2 `8` and `9` now say "not available" like the other keys hidden on FTDX10,
+  instead of the "unassigned" beep
 
 ## Unreleased — Firmware CI
 
