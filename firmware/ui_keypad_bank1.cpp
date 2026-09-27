@@ -1,25 +1,10 @@
 // Bank 1 keypad actions: frequency, lock, power, meters and mode.
-#include "keypad_actions.h"
-#include "debug_log.h"
+#include "ui_keypad_bank.h"
 #include "engine_civ.h"
-#include "packet_ascii.h"
-#include "protocol_ascii.h"
 #include "protocol_ops_yaesu.h"
-#include "radio_catalog.h"
 #include "radio_frequency.h"
-#include "radio_mode.h"
-#include "radio_monitor.h"
-#include "radio_profile.h"
-#include "radio_prefs.h"
-#include "radio_protocol.h"
-#include "radio_runtime.h"
 #include "radio_state.h"
 #include "radio_utils.h"
-#include "sd_slots.h"
-#include "ui_console_support.h"
-#include "ui_keypad.h"
-#include "ui_keypad_common.h"
-#include "ui_speech.h"
 
 static bool queryDialLockReliable(bool& onOut) {
   if (currentProtocolType() == PROTO_YAESU_FT8X7) {
