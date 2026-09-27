@@ -199,6 +199,7 @@ void keypadEntryDigit(InputMode mode, char key, const char* digits) {
       break;
     case InputMode::Normal:
     case InputMode::ModeSelect:
+    case InputMode::ModeStaged:
       return;
   }
   if (g_speechEnabled) speakDigitsAndPoint(String(key));
@@ -361,7 +362,8 @@ void keypadEntryCommit(InputMode mode, const char* digits, uint8_t targetVfo) {
     case InputMode::CtcssEntry: commitCtcss(digits); return;
     case InputMode::DcsEntry: commitDcs(digits); return;
     case InputMode::Normal:
-    case InputMode::ModeSelect: return;
+    case InputMode::ModeSelect:
+    case InputMode::ModeStaged: return;
   }
 }
 

@@ -60,6 +60,7 @@ void KeypadInput::onKey(char key, KeyGesture gesture, uint32_t nowMs) {
       releasedProfileSelect(key);
       return;
     case InputMode::ModeSelect:
+    case InputMode::ModeStaged:
       releasedModeSelect(key);
       return;
     default:
@@ -136,24 +137,26 @@ void KeypadInput::releasedNormal(char key, uint32_t nowMs) {
   runShortOrUnassigned(bank_, key);
 }
 
-// Mode select takes the next key that picks a mode and stages it for Enter.
-// Any other key beeps and mode select stays active; '#' cancels it.
+// Mode select takes a key that picks a mode and stages it; Enter applies the
+// staged mode, and another mode digit replaces it. Any other key beeps and the
+// mode stays; only '#' cancels.
 void KeypadInput::releasedModeSelect(char key) {
   if (key == '#') {
     clearAll();
     return;
   }
   if (key == 'D') {
-    reportUnassigned("MODE SELECT ", key);
+    if (mode_ == InputMode::ModeStaged) {
+      enter();
+    } else {
+      reportUnassigned("MODE SELECT ", key);
+    }
     return;
   }
   uint8_t mode = 0;
   if (!listener_.onModeDigit(key, mode)) return;
-  staged_.active = true;
-  staged_.mode = mode;
-  staged_.targetVfo = entryVfo_;
-  mode_ = InputMode::Normal;
-  entryVfo_ = KEYPAD_VFO_CURRENT;
+  mode_ = InputMode::ModeStaged;
+  stagedMode_ = mode;
 }
 
 void KeypadInput::releasedBankSelect(char key) {
@@ -260,17 +263,18 @@ bool KeypadInput::entryTakesDigit() const {
   }
 }
 
-// Enter ('D'). Entries and selections commit; in Normal mode a staged mode is
-// applied, then a staged command is sent.
+// Enter ('D'). Entries and selections commit; in Normal mode a staged command
+// is sent.
 void KeypadInput::enter() {
   if (mode_ == InputMode::Normal) {
-    if (staged_.active) {
-      const StagedMode staged = staged_;
-      staged_ = StagedMode();
-      listener_.onModeCommit(staged.mode, staged.targetVfo);
-      return;
-    }
     if (!listener_.sendStagedCommand()) listener_.onUnassigned("ENTER");
+    return;
+  }
+  if (mode_ == InputMode::ModeStaged) {
+    const uint8_t targetVfo = entryVfo_;
+    mode_ = InputMode::Normal;
+    entryVfo_ = KEYPAD_VFO_CURRENT;
+    listener_.onModeCommit(stagedMode_, targetVfo);
     return;
   }
 
@@ -290,7 +294,6 @@ void KeypadInput::clearAll() {
   mode_ = InputMode::Normal;
   digits_.clear();
   entryVfo_ = KEYPAD_VFO_CURRENT;
-  staged_ = StagedMode();
   pending_.active = false;
   listener_.onClear();
 }

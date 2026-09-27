@@ -24,6 +24,10 @@
   stays active. Before, an invalid digit ended mode select (and dropped a mode staged earlier),
   `*` said or selected the bank, and `D` could apply an earlier staged mode or send a staged
   command
+- a mode picked in mode select now waits for `D` to apply it or `#` to cancel it. Another mode
+  digit replaces it; any other key beeps. Before, the other keys kept working and the staged mode
+  stayed behind, so a later `D`, e.g. one pressed after finishing a frequency entry, applied the
+  old mode
 
 ## Unreleased — Firmware CI
 

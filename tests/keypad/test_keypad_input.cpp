@@ -19,6 +19,7 @@ const char *modeName(InputMode m) {
     case InputMode::BankSelect: return "BankSelect";
     case InputMode::ProfileSelect: return "ProfileSelect";
     case InputMode::ModeSelect: return "ModeSelect";
+    case InputMode::ModeStaged: return "ModeStaged";
     case InputMode::FreqEntry: return "FreqEntry";
     case InputMode::RfPowerEntry: return "RfPowerEntry";
     case InputMode::CivAddrEntry: return "CivAddrEntry";
@@ -608,19 +609,16 @@ TEST(input_clear_leaves_every_mode) {
   }
 }
 
-TEST(input_clear_cancels_mode_select_staged_mode_and_waiting_short) {
+TEST(input_clear_cancels_staged_mode_and_waiting_short) {
   Fake f;
   f.waits = {"1 0"};
   f.shorts = {"1 0"};
   KeypadInput in(f);
   in.beginModeSelect(KEYPAD_VFO_A);
   tap(in, '3');
-  in.beginModeSelect(KEYPAD_VFO_B);
   CHECK(in.stagedModeActive());
-  CHECK(in.modeSelectActive());
   tap(in, '#');
-  CHECK(!in.stagedModeActive());
-  CHECK(!in.modeSelectActive());
+  CHECK_EQ(in.mode(), InputMode::Normal);
   tap(in, '0', 1000);
   tap(in, '#', 1100);
   in.poll(2000);
@@ -641,15 +639,26 @@ TEST(input_enter_in_normal_mode_routes_staged_mode_then_staged_command) {
                         "unassigned ENTER");
 }
 
-TEST(input_enter_in_entry_does_not_apply_staged_mode) {
+// F3: a staged mode is modal until Enter applies it or '#' cancels it. Keys
+// run no short or long action; a mode digit replaces the staged mode, and any
+// other key beeps.
+TEST(input_staged_mode_is_modal) {
   Fake f;
+  f.validModeDigits = "12";
+  f.shorts = {"1 7"};
+  f.holds = {"1 0"};
   KeypadInput in(f);
-  in.beginModeSelect(KEYPAD_VFO_CURRENT);
+  in.beginModeSelect(KEYPAD_VFO_B);
   tap(in, '2');
-  in.beginEntry(InputMode::CivAddrEntry);
-  typeKeys(in, "9D");
-  CHECK(in.stagedModeActive());
-  CHECK_LOG(f, "mode digit 2", "digit CivAddrEntry 9 9", "commit CivAddrEntry [9] vfo0");
+  tap(in, '7');
+  hold(in, '0');
+  hold(in, '*');
+  CHECK_EQ(in.mode(), InputMode::ModeStaged);
+  tap(in, '1');
+  tap(in, 'D');
+  CHECK_EQ(in.mode(), InputMode::Normal);
+  CHECK_LOG(f, "mode digit 2", "mode digit 7 invalid", "mode digit 0 invalid",
+            "mode digit * invalid", "mode digit 1", "mode commit 1 vfo2");
 }
 
 // --- Mode select -----------------------------------------------------------------------
