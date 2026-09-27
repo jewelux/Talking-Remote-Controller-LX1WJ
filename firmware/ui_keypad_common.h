@@ -1,8 +1,42 @@
 #pragma once
 
+#include "keypad_input.h"
 #include "radio_globals.h"
 
 // Helpers shared by the keypad UI files.
+
+// The keypad state machine (ui_keypad.cpp). Actions call it to start an entry,
+// mode select or profile select.
+KeypadInput& keypadInput();
+
+// Runs a console command for a key, with the keypad's polling and speech holds.
+void keypadSendNow(const String& cmd);
+// Keeps cmd for the next Enter.
+void keypadStageCommand(const String& cmd);
+// "CMD <label>", then keypadSendNow(cmd).
+void sendKeypadCommand(const char* label, const char* cmd);
+void speakKeypadCommandWord(const String& cmd);
+
+// Entries and selections (ui_keypad_entry.cpp), called by the state machine.
+void keypadEntryDigit(InputMode mode, char key, const char* digits);
+void keypadEntryCommit(InputMode mode, const char* digits, uint8_t targetVfo);
+bool keypadModeDigit(char key, uint8_t& mode);
+void keypadModeCommit(uint8_t mode, uint8_t targetVfo);
+// Shared frequency writer for entry commit and the round-to-500 Hz action.
+// targetVfo is one of the KEYPAD_VFO_* values.
+bool keypadApplyFrequencyHz(uint64_t hz, uint8_t targetVfo);
+
+// No SD card profiles: Bank 9 digits pick the built-in light-Icom profiles.
+bool lightIcomFallbackActive();
+// Holds polling and tuning speech while a key's answer is prepared.
+void prepareKeypadSpeechResponse();
+// FT-8x7 with the dial lock on: say "lock on" and return false.
+bool guardFt8x7VfoToggleLock();
+void speakSimpleBinaryState(bool on);
+void speakQueriedFrequencyHz(uint64_t hz);
+void speakFeatureValue(const uint8_t* featureData, size_t featureLen, uint8_t value);
+uint8_t levelRawToPercent(uint16_t raw);
+uint16_t levelPercentToRaw(int percent);
 
 void printKeypadStatus(const String& line);
 // Serial "CMD <line>" trace of a keypad action.

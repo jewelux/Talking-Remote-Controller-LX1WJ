@@ -1,8 +1,13 @@
 #include "ui_keypad_common.h"
 
 #include "radio_catalog.h"
+#include "radio_monitor.h"
 #include "radio_state.h"
+#include "radio_utils.h"
+#include "sd_slots.h"
 #include "ui_speech.h"
+
+static constexpr uint32_t KEYPAD_POLL_SUSPEND_MS = 900;
 
 void printKeypadStatus(const String& line) {
   if ((bool)Serial) Serial.println(line);
@@ -170,4 +175,67 @@ void speakNotchCycleState(bool on, NotchWidth width) {
     case NOTCH_WIDTH_WIDE: playDigit(3); break;
     default: speakToken("on"); break;
   }
+}
+
+void prepareKeypadSpeechResponse() {
+  g_suspendPollingUntilMs = millis() + KEYPAD_POLL_SUSPEND_MS;
+  g_suppressFreqSpeakUntilMs = millis() + 2000;
+  cancelPendingFreqAnnouncement();
+}
+
+bool guardFt8x7VfoToggleLock() {
+  if (currentProtocolType() != PROTO_YAESU_FT8X7) return true;
+  if (!live.lockKnown || !live.lockOn) return true;
+  printKeypadStatus("LOCK ON");
+  if (g_speechEnabled) speakTokenState("lock", true);
+  return false;
+}
+
+void speakSimpleBinaryState(bool on) {
+  if (!g_speechEnabled) return;
+  playClipProgmem(on ? voice_on : voice_off, on ? voice_on_len : voice_off_len);
+}
+
+void speakQueriedFrequencyHz(uint64_t hz) {
+  if (!g_speechEnabled) return;
+  speakFrequencyWord();
+  playSilenceMs(60);
+  speakDigitsAndPoint(hzToMHzString3(hz));
+}
+
+uint8_t levelRawToPercent(uint16_t raw) {
+  if (raw >= 255) return 100;
+  return (uint8_t)((raw * 100U + 127U) / 255U);
+}
+
+uint16_t levelPercentToRaw(int percent) {
+  if (percent < 0) percent = 0;
+  if (percent > 100) percent = 100;
+  return (uint16_t)((percent * 255 + 50) / 100);
+}
+
+void speakFeatureValue(const uint8_t* featureData, size_t featureLen, uint8_t value) {
+  if (!g_speechEnabled) return;
+  playClipProgmem(featureData, featureLen);
+  playSilenceMs(60);
+  speakDigitsAndPoint(String((int)value));
+}
+
+bool lightIcomFallbackActive() {
+  return getLastSdLoadStatus() != SD_LOAD_OK;
+}
+
+void speakKeypadCommandWord(const String& cmd) {
+  if (!g_speechEnabled) return;
+  if (cmd == "FREQ?") speakFrequencyWord();
+  else if (cmd == "MODE?") speakToken("mode");
+  else if (cmd == "SM?") speakToken("s_meter");
+  else if (cmd == "SWR?") speakToken("swr");
+  else if (cmd == "RFPOWER?") speakToken("power");
+  else if (cmd == "NOTCH?") speakToken("notch filter");
+}
+
+void sendKeypadCommand(const char* label, const char* cmd) {
+  printKeypadCommand(label);
+  keypadSendNow(cmd);
 }
