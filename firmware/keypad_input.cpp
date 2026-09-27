@@ -49,6 +49,10 @@ void KeypadInput::onKey(char key, KeyGesture gesture, uint32_t nowMs) {
   // The release that ends a handled hold is not a short press.
   if (holds_.release(key)) return;
 
+  if (const GlobalKey* g = globalKey(key)) {
+    (this->*g->onShort)();
+    return;
+  }
   switch (mode_) {
     case InputMode::Normal:
       releasedNormal(key, nowMs);
@@ -86,16 +90,40 @@ void KeypadInput::beginModeSelect(uint8_t targetVfo) {
   beginEntry(InputMode::ModeSelect, targetVfo);
 }
 
+// The keys that belong to the state machine rather than the keymap, the same
+// on every bank, or nullptr. A key that works in Normal mode only is input for
+// the other modes and is not global there.
+const KeypadInput::GlobalKey* KeypadInput::globalKey(char key) const {
+  static const GlobalKey kKeys[] = {
+      {'*', true, &KeypadInput::sayBank, &KeypadInput::beginBankSelect},
+      {'D', false, &KeypadInput::enter, nullptr},
+      {'#', false, &KeypadInput::clearAll, nullptr},
+  };
+  for (const GlobalKey& g : kKeys) {
+    if (g.key == key && (!g.normalOnly || mode_ == InputMode::Normal)) return &g;
+  }
+  return nullptr;
+}
+
+void KeypadInput::sayBank() { listener_.onBankQuery(bank_); }
+
+void KeypadInput::beginBankSelect() {
+  mode_ = InputMode::BankSelect;
+  digits_.clear();
+  listener_.onBankSelectStart();
+}
+
 // Bank, profile and mode select and the entries ignore holds; their keys act on
-// release. 'D' and '#' act on release in Normal mode too. A bank key with no
-// long action beeps now, and its release is swallowed like after a long action.
+// release. A global key with no long action acts on release in Normal mode too.
+// A bank key with no long action beeps now, and its release is swallowed like
+// after a long action.
 void KeypadInput::held(char key) {
-  if (mode_ != InputMode::Normal || key == 'D' || key == '#') return;
+  if (mode_ != InputMode::Normal) return;
+  const GlobalKey* g = globalKey(key);
+  if (g && !g->onHold) return;
   holds_.set(key);
-  if (key == '*') {
-    mode_ = InputMode::BankSelect;
-    digits_.clear();
-    listener_.onBankSelectStart();
+  if (g) {
+    (this->*g->onHold)();
   } else if (!listener_.runHold(bank_, key)) {
     // The beep is no action: a short still waiting for a double click stays.
     char label[24];
@@ -107,18 +135,6 @@ void KeypadInput::held(char key) {
 }
 
 void KeypadInput::releasedNormal(char key, uint32_t nowMs) {
-  if (key == 'D') {
-    enter();
-    return;
-  }
-  if (key == '#') {
-    clearAll();
-    return;
-  }
-  if (key == '*') {
-    listener_.onBankQuery(bank_);
-    return;
-  }
   if (pending_.active && pending_.bank == bank_ && pending_.key == key &&
       (uint32_t)(nowMs - pending_.atMs) <= kDoubleClickMs) {
     pending_.active = false;
@@ -140,18 +156,6 @@ void KeypadInput::releasedNormal(char key, uint32_t nowMs) {
 // staged mode, and another mode digit replaces it. Any other key beeps and the
 // mode stays; only '#' cancels.
 void KeypadInput::releasedModeSelect(char key) {
-  if (key == '#') {
-    clearAll();
-    return;
-  }
-  if (key == 'D') {
-    if (mode_ == InputMode::ModeStaged) {
-      enter();
-    } else {
-      reportUnassigned("MODE SELECT ", key);
-    }
-    return;
-  }
   uint8_t mode = 0;
   if (!listener_.onModeDigit(key, mode)) return;
   mode_ = InputMode::ModeStaged;
@@ -163,14 +167,6 @@ void KeypadInput::releasedBankSelect(char key) {
     digits_.clear();
     digits_.push(key);
     listener_.onDigitAccepted(mode_, key, digits_.c_str());
-    return;
-  }
-  if (key == 'D') {
-    enter();
-    return;
-  }
-  if (key == '#') {
-    clearAll();
     return;
   }
   reportUnassigned("BANK SELECT ", key);
@@ -186,26 +182,10 @@ void KeypadInput::releasedProfileSelect(char key) {
     listener_.onDigitAccepted(mode_, key, digits_.c_str());
     return;
   }
-  if (key == 'D') {
-    enter();
-    return;
-  }
-  if (key == '#') {
-    clearAll();
-    return;
-  }
   reportUnassigned("PROFILE ", key);
 }
 
 void KeypadInput::releasedEntry(char key) {
-  if (key == 'D') {
-    enter();
-    return;
-  }
-  if (key == '#') {
-    clearAll();
-    return;
-  }
   if (mode_ == InputMode::FreqEntry && key == '*') {
     // '*' is the decimal point: one only, and not first.
     if (!digits_.empty() && digits_.indexOf('*') < 0) {
@@ -263,10 +243,14 @@ bool KeypadInput::entryTakesDigit() const {
 }
 
 // Enter ('D'). Entries and selections commit; in Normal mode a staged command
-// is sent.
+// is sent. Mode select needs a mode first.
 void KeypadInput::enter() {
   if (mode_ == InputMode::Normal) {
     if (!listener_.sendStagedCommand()) listener_.onUnassigned("ENTER");
+    return;
+  }
+  if (mode_ == InputMode::ModeSelect) {
+    reportUnassigned("MODE SELECT ", 'D');
     return;
   }
   if (mode_ == InputMode::ModeStaged) {

@@ -119,6 +119,14 @@ class KeypadInput {
     uint16_t bits_ = 0;
   };
 
+  // A key that belongs to the state machine: the same on every bank.
+  struct GlobalKey {
+    char key;
+    bool normalOnly;  // the other modes take the key as their input
+    void (KeypadInput::*onShort)();
+    void (KeypadInput::*onHold)();  // nullptr: the release acts as a short press
+  };
+
   struct DoubleClick {
     bool active = false;
     uint8_t bank = 0;
@@ -126,6 +134,9 @@ class KeypadInput {
     uint32_t atMs = 0;
   };
 
+  const GlobalKey* globalKey(char key) const;
+  void sayBank();
+  void beginBankSelect();
   void held(char key);
   void releasedNormal(char key, uint32_t nowMs);
   void releasedModeSelect(char key);
