@@ -81,4 +81,3 @@ void speakCivAddressValue(uint8_t addr, bool ok);
 void formatCtcssTenthsLabel(uint16_t toneTenths, char* out, size_t outSize);
 
 void speakFrequencyWord();
-void speakNotchCycleState(bool on, NotchWidth width);

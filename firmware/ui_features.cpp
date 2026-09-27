@@ -1,5 +1,4 @@
 #include "ui_features.h"
-#include "ui_keypad_common.h"  // speakNotchCycleState
 #include "ui_speech.h"
 
 const char* featureStatusText(FeatureStatus status) {
@@ -49,6 +48,19 @@ String notchStateText(const NotchState& state) {
   }
 }
 
+// The width as its number: 1 NAR, 2 MID, 3 WIDE.
 void speakNotchState(const NotchState& state) {
-  speakNotchCycleState(state.on, state.width);
+  if (!g_speechEnabled) return;
+  speakToken("notch filter");
+  playSilenceMs(60);
+  if (!state.on) {
+    speakToken("off");
+    return;
+  }
+  switch (state.width) {
+    case NOTCH_WIDTH_NAR: playDigit(1); break;
+    case NOTCH_WIDTH_MID: playDigit(2); break;
+    case NOTCH_WIDTH_WIDE: playDigit(3); break;
+    default: speakToken("on"); break;
+  }
 }

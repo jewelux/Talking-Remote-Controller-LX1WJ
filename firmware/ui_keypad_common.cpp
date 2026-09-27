@@ -149,22 +149,6 @@ void speakFrequencyWord() {
   speakToken("frequency");
 }
 
-void speakNotchCycleState(bool on, NotchWidth width) {
-  if (!g_speechEnabled) return;
-  speakToken("notch filter");
-  playSilenceMs(60);
-  if (!on) {
-    speakToken("off");
-    return;
-  }
-  switch (width) {
-    case NOTCH_WIDTH_NAR: playDigit(1); break;
-    case NOTCH_WIDTH_MID: playDigit(2); break;
-    case NOTCH_WIDTH_WIDE: playDigit(3); break;
-    default: speakToken("on"); break;
-  }
-}
-
 void prepareKeypadSpeechResponse() {
   g_suspendPollingUntilMs = millis() + KEYPAD_POLL_SUSPEND_MS;
   g_suppressFreqSpeakUntilMs = millis() + 2000;
