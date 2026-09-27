@@ -11,7 +11,7 @@ FIRMWARE := ../../firmware
 CPPFLAGS := -I. -I$(FIRMWARE)
 
 # Pure firmware sources under test. They must not include Arduino.h.
-FIRMWARE_SRCS := keypad_input.cpp
+FIRMWARE_SRCS := keypad_input.cpp keypad_keymap.cpp
 
 TEST_SRCS := $(wildcard *.cpp)
 BUILD := build
