@@ -684,19 +684,35 @@ TEST(input_entry_starts_empty_each_time) {
                         "commit RfPowerEntry [7] vfo0");
 }
 
-TEST(input_enter_with_nothing_typed_cancels) {
-  const InputMode modes[] = {InputMode::FreqEntry, InputMode::RfPowerEntry,
-                             InputMode::CivAddrEntry, InputMode::RptOffsetEntry,
-                             InputMode::CtcssEntry, InputMode::DcsEntry,
-                             InputMode::ProfileSelect};
-  for (InputMode mode : modes) {
+// Like bank and mode select: Enter with nothing typed beeps and the entry
+// stays; only '#' cancels.
+TEST(input_enter_with_nothing_typed_is_unassigned_and_stays) {
+  struct Case {
+    InputMode mode;
+    const char *label;
+  };
+  const Case cases[] = {
+      {InputMode::FreqEntry, "FREQ D"},
+      {InputMode::RfPowerEntry, "RFPOWER D"},
+      {InputMode::CivAddrEntry, "CIVADDR D"},
+      {InputMode::RptOffsetEntry, "BANK6 ENTRY D"},
+      {InputMode::CtcssEntry, "BANK6 ENTRY D"},
+      {InputMode::DcsEntry, "BANK6 ENTRY D"},
+      {InputMode::ProfileSelect, "PROFILE D"},
+  };
+  for (const Case &c : cases) {
     Fake f;
     KeypadInput in(f);
-    in.beginEntry(mode, KEYPAD_VFO_B);
+    in.beginEntry(c.mode, KEYPAD_VFO_B);
     tap(in, 'D');
-    CHECK_LOG(f, "clear");
+    CHECK_LOG(f, std::string("unassigned ") + c.label);
+    CHECK_EQ(in.mode(), c.mode);
+    CHECK_EQ(in.entryTargetVfo(), KEYPAD_VFO_B);
+    tap(in, '2');
+    tap(in, 'D');
+    CHECK_LOG(f, std::string("digit ") + modeName(c.mode) + " 2 2",
+              std::string("commit ") + modeName(c.mode) + " [2] vfo2");
     CHECK_EQ(in.mode(), InputMode::Normal);
-    CHECK_EQ(in.entryTargetVfo(), KEYPAD_VFO_CURRENT);
   }
 }
 

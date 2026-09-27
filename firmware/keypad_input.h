@@ -63,8 +63,8 @@ class KeypadInputListener {
   // The key does nothing here: "<label> -> unassigned" and the beep.
   virtual void onUnassigned(const char* label) = 0;
   // Enter in bank select, profile select or an entry, with at least one digit
-  // typed (with none, bank select beeps and stays, the others cancel like '#'). The mode is already back to
-  // Normal. For bank select the new bank is already set.
+  // typed (with none, Enter beeps and the mode stays). The mode is already back
+  // to Normal. For bank select the new bank is already set.
   virtual void onCommit(InputMode mode, const char* digits, uint8_t targetVfo) = 0;
 
   // A key typed during mode select or with a staged mode. Gives the feedback
@@ -149,6 +149,7 @@ class KeypadInput {
   void releasedProfileSelect(char key);
   void releasedEntry(char key);
   bool entryTakesDigit() const;
+  const char* modeLabel() const;
   void enter();
   void clearAll();
   void runShortOrUnassigned(uint8_t bank, char key);

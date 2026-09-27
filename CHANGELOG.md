@@ -47,11 +47,10 @@
   holds are still ignored and the release acts
 - `#` with nothing to cancel (no entry, selection, staged command or waiting key) beeps
   ("CLEAR -> unassigned") instead of saying "cancel"
-- `D` with nothing typed in an entry or in profile select cancels like `#` and says "cancel";
-  before, frequency, RF power and CI-V address entry said "error", repeater offset, CTCSS and DCS
-  entry failed silently, and profile select beeped "no selection"
-- `D` in bank select with no bank chosen beeps and bank select stays, like mode select; before, it
-  ended bank select with a "no selection" beep
+- `D` with nothing typed or chosen beeps and the entry or selection stays, the same in every
+  entry and in bank, profile and mode select; only `#` cancels. Before, frequency, RF power and
+  CI-V address entry said "error" and ended, repeater offset, CTCSS and DCS entry failed silently,
+  and bank and profile select ended with a "no selection" beep
 - choosing a profile number with no stored profile in profile select says "not available" instead
   of beeping
 - FTDX10: Bank 2 `8` and `9` now say "not available" like the other keys hidden on FTDX10,

@@ -225,20 +225,25 @@ void KeypadInput::releasedEntry(char key) {
     listener_.onDigitAccepted(mode_, key, digits_.c_str());
     return;
   }
+  reportUnassigned(modeLabel(), key);
+}
+
+// Prefix of the beep label for a key the current mode rejects.
+const char* KeypadInput::modeLabel() const {
   switch (mode_) {
-    case InputMode::FreqEntry:
-      reportUnassigned("FREQ ", key);
-      return;
-    case InputMode::RfPowerEntry:
-      reportUnassigned("RFPOWER ", key);
-      return;
-    case InputMode::CivAddrEntry:
-      reportUnassigned("CIVADDR ", key);
-      return;
-    default:
-      reportUnassigned("BANK6 ENTRY ", key);
-      return;
+    case InputMode::Normal: return "";
+    case InputMode::BankSelect: return "BANK SELECT ";
+    case InputMode::ProfileSelect: return "PROFILE ";
+    case InputMode::ModeSelect:
+    case InputMode::ModeStaged: return "MODE SELECT ";
+    case InputMode::FreqEntry: return "FREQ ";
+    case InputMode::RfPowerEntry: return "RFPOWER ";
+    case InputMode::CivAddrEntry: return "CIVADDR ";
+    case InputMode::RptOffsetEntry:
+    case InputMode::CtcssEntry:
+    case InputMode::DcsEntry: return "BANK6 ENTRY ";
   }
+  return "";
 }
 
 bool KeypadInput::entryTakesDigit() const {
@@ -263,15 +268,11 @@ bool KeypadInput::entryTakesDigit() const {
 }
 
 // Enter ('D'). Entries and selections commit; in Normal mode a staged command
-// is sent. Mode and bank select need a mode or bank first. In an entry or
-// profile select, Enter with nothing typed cancels like Clear.
+// is sent. With no mode, bank or digit chosen yet, Enter beeps and the mode
+// stays: only Clear cancels.
 void KeypadInput::enter() {
   if (mode_ == InputMode::Normal) {
     if (!listener_.sendStagedCommand()) listener_.onUnassigned("ENTER");
-    return;
-  }
-  if (mode_ == InputMode::ModeSelect) {
-    reportUnassigned("MODE SELECT ", 'D');
     return;
   }
   if (mode_ == InputMode::ModeStaged) {
@@ -282,12 +283,9 @@ void KeypadInput::enter() {
     return;
   }
 
-  if (mode_ == InputMode::BankSelect && digits_.empty()) {
-    reportUnassigned("BANK SELECT ", 'D');
-    return;
-  }
+  // Mode select takes no digits, so it always gets here.
   if (digits_.empty()) {
-    clearAll();
+    reportUnassigned(modeLabel(), 'D');
     return;
   }
   const InputMode mode = mode_;
