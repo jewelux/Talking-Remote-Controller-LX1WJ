@@ -128,8 +128,8 @@ void beginBank3VfoAFrequencySet() { record("beginBank3VfoAFrequencySet"); }
 void queryBank3VfoB() { record("queryBank3VfoB"); }
 void selectBank3VfoB() { record("selectBank3VfoB"); }
 void beginBank3VfoBFrequencySet() { record("beginBank3VfoBFrequencySet"); }
-void queryBank3VfoAMode() { record("queryBank3VfoAMode"); }
-void beginBank3VfoAModeSet() { record("beginBank3VfoAModeSet"); }
+void queryBank3VfoAMode(char key) { record("queryBank3VfoAMode(%c)", key); }
+void beginBank3VfoAModeSet(char key) { record("beginBank3VfoAModeSet(%c)", key); }
 void queryBank3VfoBMode() { record("queryBank3VfoBMode"); }
 void beginBank3VfoBModeSet() { record("beginBank3VfoBModeSet"); }
 void syncBank3VfoA() { record("syncBank3VfoA"); }

@@ -476,8 +476,8 @@ void syncBank3VfoB() {
   }
 }
 
-void queryBank3VfoAMode() {
-  printKeypadCommand("BANK3 4 SHORT -> VFOA MODE?");
+void queryBank3VfoAMode(char key) {
+  printKeypadCommand(String("BANK3 ") + key + " SHORT -> VFOA MODE?");
   if (isFtdx10KeypadProfile()) {
     keypadSendNow("VFOA MODE?");
     return;
@@ -495,8 +495,8 @@ void queryBank3VfoAMode() {
   speakMode(mode);
 }
 
-void beginBank3VfoAModeSet() {
-  printKeypadCommand("BANK3 4 LONG -> VFOA MODE");
+void beginBank3VfoAModeSet(char key) {
+  printKeypadCommand(String("BANK3 ") + key + " LONG -> VFOA MODE");
   if (isFt8x7Ft857FamilyKeypad()) {
     printKeypadStatus("VFOA MODE unsupported");
     if (g_speechEnabled) speakNotAvailable();

@@ -71,8 +71,8 @@ void beginBank3VfoAFrequencySet();
 void queryBank3VfoB();
 void selectBank3VfoB();
 void beginBank3VfoBFrequencySet();
-void queryBank3VfoAMode();
-void beginBank3VfoAModeSet();
+void queryBank3VfoAMode(char key);     // key: the Bank 3 key pressed (3 on FT-817, 4 elsewhere)
+void beginBank3VfoAModeSet(char key);
 void queryBank3VfoBMode();
 void beginBank3VfoBModeSet();
 // FT-817, FT-857/897: tell the VFO tracking that VFO A/B is active.

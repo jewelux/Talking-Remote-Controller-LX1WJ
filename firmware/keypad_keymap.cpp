@@ -143,12 +143,12 @@ bool bank3(const KeypadTraits& t, Gesture g, char key) {
       return run(g, queryBank3VfoB, selectBank3VfoB, beginBank3VfoBFrequencySet);
     case '3':
       if (t.ft817) {
-        return run(g, queryBank3VfoAMode, beginBank3VfoAModeSet);
+        return run(g, [] { queryBank3VfoAMode('3'); }, [] { beginBank3VfoAModeSet('3'); });
       }
       return false;
     case '4':
       if (t.ft817 || t.ft857Family) return run(g, syncBank3VfoA, syncBank3VfoB);
-      return run(g, queryBank3VfoAMode, beginBank3VfoAModeSet);
+      return run(g, [] { queryBank3VfoAMode('4'); }, [] { beginBank3VfoAModeSet('4'); });
     case '5':
       if (t.ft857Family) {
         return run(g, [] { setBank3Ft857Clar(true); }, [] { setBank3Ft857Clar(false); });
