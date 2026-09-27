@@ -35,6 +35,9 @@
   digit replaces it; any other key beeps. Before, the other keys kept working and the staged mode
   stayed behind, so a later `D`, e.g. one pressed after finishing a frequency entry, applied the
   old mode
+- holding a bank key that has no long action now beeps once the hold time is reached
+  ("BANKn k LONG -> unassigned") and the release does nothing. Before, the release ran the key's
+  short action, or beeped only then when it had none
 - FTDX10: Bank 2 `8` and `9` now say "not available" like the other keys hidden on FTDX10,
   instead of the "unassigned" beep
 

@@ -10,7 +10,9 @@
 //           "unassigned" = the "BANKn k -> unassigned" beep.
 //   long    action run when the key is held (HOLD event). The release after it
 //           is swallowed. "none" = nothing handles the hold, so the release
-//           runs the short action as if it were a short press.
+//           ran the short action as if it were a short press. The state
+//           machine now beeps "BANKn k LONG -> unassigned" at the hold and
+//           swallows the release instead.
 //   double  "-" = the key does not wait for a double click; its short action
 //           runs on release. Otherwise the short action is deferred by 220 ms
 //           and this is the action for a second press within 220 ms.

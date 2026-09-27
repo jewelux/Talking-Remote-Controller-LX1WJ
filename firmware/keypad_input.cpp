@@ -87,24 +87,23 @@ void KeypadInput::beginModeSelect(uint8_t targetVfo) {
 }
 
 // Bank, profile and mode select and the entries ignore holds; their keys act on
-// release.
+// release. 'D' and '#' act on release in Normal mode too. A bank key with no
+// long action beeps now, and its release is swallowed like after a long action.
 void KeypadInput::held(char key) {
-  if (mode_ != InputMode::Normal) return;
-  bool handled = false;
+  if (mode_ != InputMode::Normal || key == 'D' || key == '#') return;
+  holds_.set(key);
   if (key == '*') {
     mode_ = InputMode::BankSelect;
     digits_.clear();
     listener_.onBankSelectStart();
-    handled = true;
-  } else if (key == 'D' || key == '#') {
-    handled = false;
-  } else {
-    handled = listener_.runHold(bank_, key);
+  } else if (!listener_.runHold(bank_, key)) {
+    // The beep is no action: a short still waiting for a double click stays.
+    char label[24];
+    snprintf(label, sizeof(label), "BANK%u %c LONG", (unsigned)bank_, key);
+    listener_.onUnassigned(label);
+    return;
   }
-  if (handled) {
-    holds_.set(key);
-    pending_.active = false;
-  }
+  pending_.active = false;
 }
 
 void KeypadInput::releasedNormal(char key, uint32_t nowMs) {

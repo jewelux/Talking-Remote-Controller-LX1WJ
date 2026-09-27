@@ -204,19 +204,25 @@ TEST(input_hold_runs_long_action_and_swallows_release) {
   CHECK_LOG(f, "short 2 1");
 }
 
-TEST(input_hold_without_long_action_runs_short_on_release) {
+TEST(input_hold_without_long_action_is_unassigned_and_swallows_release) {
   Fake f;
   f.shorts = {"1 7"};
   KeypadInput in(f);
-  hold(in, '7');
+  in.onKey('7', KeyGesture::Pressed, 0);
+  in.onKey('7', KeyGesture::Held, 0);
+  CHECK_LOG(f, "unassigned BANK1 7 LONG");
+  in.onKey('7', KeyGesture::Released, 0);
+  CHECK_LOG(f);
+  // Only that one release is swallowed.
+  tap(in, '7');
   CHECK_LOG(f, "short 1 7");
 }
 
-TEST(input_hold_without_any_action_is_unassigned_on_release) {
+TEST(input_hold_without_any_action_is_unassigned_at_hold) {
   Fake f;
   KeypadInput in(f);
   hold(in, 'C');
-  CHECK_LOG(f, "unassigned BANK1 C");
+  CHECK_LOG(f, "unassigned BANK1 C LONG");
 }
 
 // Fixed by construction: FT-817 Bank 3 '1' long used to type its own release
@@ -332,7 +338,7 @@ TEST(input_handled_hold_cancels_waiting_short) {
   CHECK_LOG(f, "hold 4 2");
 }
 
-TEST(input_unhandled_hold_keeps_waiting_short) {
+TEST(input_unassigned_hold_keeps_waiting_short) {
   Fake f;
   f.waits = {"4 0"};
   f.shorts = {"4 0"};
@@ -342,7 +348,7 @@ TEST(input_unhandled_hold_keeps_waiting_short) {
   in.onKey('7', KeyGesture::Pressed, 1100);
   in.onKey('7', KeyGesture::Held, 1100);
   in.poll(2000);
-  CHECK_LOG(f, "short 4 0");
+  CHECK_LOG(f, "unassigned BANK4 7 LONG", "short 4 0");
 }
 
 TEST(input_other_key_during_wait_runs_first) {
