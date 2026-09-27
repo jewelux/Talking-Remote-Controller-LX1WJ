@@ -3,6 +3,7 @@
 #include "keypad_input.h"
 #include "test_runner.h"
 
+#include <cstring>
 #include <functional>
 #include <map>
 #include <set>
@@ -40,7 +41,6 @@ struct Fake : KeypadInputListener {
   std::set<std::string> holds, shorts, doubles, waits;
   std::map<std::string, std::function<void()>> hooks;  // "hold 1 0" -> hook
   std::string validModeDigits = "123456789";
-  bool stagedCommand = false;
 
   bool run(const char *gesture, const std::set<std::string> &keys, uint8_t bank, char key) {
     const std::string id = keyId(bank, key);
@@ -83,13 +83,9 @@ struct Fake : KeypadInputListener {
   void onModeCommit(uint8_t mode, uint8_t targetVfo) override {
     log.push_back("mode commit " + std::to_string(mode) + " vfo" + std::to_string(targetVfo));
   }
-  bool sendStagedCommand() override {
-    if (!stagedCommand) return false;
-    stagedCommand = false;
-    log.push_back("staged command");
-    return true;
+  void onStagedCommandSend(const char *cmd) override {
+    log.push_back(std::string("send staged ") + cmd);
   }
-  bool hasStagedCommand() override { return stagedCommand; }
   void onClear() override { log.push_back("clear"); }
 
   // The log since the last call, then cleared.
@@ -258,12 +254,12 @@ TEST(input_clear_keeps_hold_of_key_still_down) {
 
 TEST(input_hold_of_d_and_hash_is_unassigned_and_swallows_release) {
   Fake f;
-  f.stagedCommand = true;
   KeypadInput in(f);
+  in.stageCommand("PO?");
   hold(in, 'D');
   hold(in, '#');
   CHECK_LOG(f, "unassigned ENTER LONG", "unassigned CLEAR LONG");
-  CHECK(f.stagedCommand);
+  CHECK(in.hasStagedCommand());
 }
 
 TEST(input_hold_of_d_and_hash_in_entry_acts_on_release) {
@@ -423,14 +419,14 @@ TEST(input_waiting_short_runs_before_star_and_enter) {
   Fake f;
   f.waits = {"1 0"};
   f.shorts = {"1 0"};
-  f.stagedCommand = true;
   KeypadInput in(f);
+  in.stageCommand("SM?");
   tap(in, '0', 1000);
   tap(in, '*', 1100);
   tap(in, '0', 1400);
   tap(in, 'D', 1500);
   in.poll(2000);
-  CHECK_LOG(f, "short 1 0", "bank? 1", "short 1 0", "staged command");
+  CHECK_LOG(f, "short 1 0", "bank? 1", "short 1 0", "send staged SM?");
 }
 
 TEST(input_waiting_short_runs_before_bank_select) {
@@ -727,14 +723,15 @@ TEST(input_clear_cancels_staged_command_or_waiting_short) {
   Fake f;
   f.waits = {"1 0"};
   f.shorts = {"1 0"};
-  f.stagedCommand = true;
   KeypadInput in(f);
+  in.stageCommand("SWR?");
   tap(in, '#');
-  f.stagedCommand = false;
+  CHECK(!in.hasStagedCommand());
   tap(in, '0', 1000);
   tap(in, '#', 1100);
   in.poll(2000);
-  CHECK_LOG(f, "clear", "clear");
+  tap(in, 'D');
+  CHECK_LOG(f, "clear", "clear", "unassigned ENTER");
 }
 
 // --- Clear and Enter routing ----------------------------------------------------------
@@ -777,13 +774,13 @@ TEST(input_clear_cancels_staged_mode_and_waiting_short) {
 TEST(input_enter_in_normal_mode_routes_staged_mode_then_staged_command) {
   Fake f;
   KeypadInput in(f);
-  f.stagedCommand = true;
+  in.stageCommand("MODE?");
   in.beginModeSelect(KEYPAD_VFO_B);
   tap(in, '4');
   tap(in, 'D');
   tap(in, 'D');
   tap(in, 'D');
-  CHECK_LOG(f, "mode digit 4", "mode commit 4 vfo2", "staged command",
+  CHECK_LOG(f, "mode digit 4", "mode commit 4 vfo2", "send staged MODE?",
                         "unassigned ENTER");
 }
 
@@ -843,13 +840,13 @@ TEST(input_mode_select_invalid_key_keeps_it_active) {
 
 TEST(input_mode_select_enter_beeps_and_keeps_it_active) {
   Fake f;
-  f.stagedCommand = true;
   KeypadInput in(f);
+  in.stageCommand("PO?");
   in.beginModeSelect(KEYPAD_VFO_CURRENT);
   tap(in, 'D');
   CHECK_EQ(in.mode(), InputMode::ModeSelect);
   CHECK(!in.stagedModeActive());
-  CHECK(f.stagedCommand);
+  CHECK(in.hasStagedCommand());
   CHECK_LOG(f, "unassigned MODE SELECT D");
 }
 
@@ -937,4 +934,35 @@ TEST(input_every_entry_mode_has_its_rules) {
   }
   CHECK(keypadEntrySpec(InputMode::Normal) == nullptr);
   CHECK(keypadEntrySpec(InputMode::ModeSelect) == nullptr);
+}
+
+// --- Staged command --------------------------------------------------------------------
+
+TEST(input_staged_command_is_replaced_and_sent_once) {
+  Fake f;
+  KeypadInput in(f);
+  in.stageCommand("PO?");
+  in.stageCommand("SWR?");
+  CHECK_EQ(in.stagedCommand(), "SWR?");
+  tap(in, 'D');
+  CHECK(!in.hasStagedCommand());
+  tap(in, 'D');
+  CHECK_LOG(f, "send staged SWR?", "unassigned ENTER");
+}
+
+// An entry keeps the staged command: Enter commits the entry first.
+TEST(input_staged_command_waits_through_an_entry) {
+  Fake f;
+  KeypadInput in(f);
+  in.stageCommand("PO?");
+  in.beginEntry(InputMode::RfPowerEntry);
+  typeKeys(in, "5DD");
+  CHECK_LOG(f, "digit RfPowerEntry 5 5", "commit RfPowerEntry [5] vfo0", "send staged PO?");
+}
+
+TEST(input_staged_command_is_cut_to_its_maximum) {
+  Fake f;
+  KeypadInput in(f);
+  in.stageCommand("0123456789012345678901234567");
+  CHECK_EQ(strlen(in.stagedCommand()), KeypadInput::kMaxStagedCommand);
 }

@@ -88,11 +88,9 @@ class KeypadInputListener {
   // Enter in mode select once a mode is picked: apply it. The mode is already
   // back to Normal.
   virtual void onModeCommit(uint8_t mode, uint8_t targetVfo) = 0;
-  // Enter in Normal mode. Sends the staged command and
-  // returns true, or returns false when there is none.
-  virtual bool sendStagedCommand() = 0;
-  // True when a staged command waits for Enter.
-  virtual bool hasStagedCommand() = 0;
+  // Enter in Normal mode with a staged command: send it. It is already
+  // unstaged.
+  virtual void onStagedCommandSend(const char* cmd) = 0;
 
   // '#': everything was cancelled. With nothing to cancel, '#' gives
   // onUnassigned("CLEAR") instead.
@@ -114,6 +112,9 @@ class KeypadInput {
   void beginEntry(InputMode mode, uint8_t targetVfo = KEYPAD_VFO_CURRENT);
   void beginProfileSelect() { beginEntry(InputMode::ProfileSelect); }
   void beginModeSelect(uint8_t targetVfo);
+  // Keeps cmd for Enter in Normal mode, replacing any staged command. '#'
+  // drops it. cmd is copied, up to kMaxStagedCommand characters.
+  void stageCommand(const char* cmd);
 
   uint8_t bank() const { return bank_; }
   void setBank(uint8_t bank) { bank_ = bank; }
@@ -124,6 +125,10 @@ class KeypadInput {
   // Mode select with a mode picked, waiting for Enter.
   bool stagedModeActive() const { return mode_ == InputMode::ModeSelect && stagedMode_ != kNoMode; }
   bool doubleClickPending() const { return pending_.active; }
+  bool hasStagedCommand() const { return stagedCommand_[0] != '\0'; }
+  const char* stagedCommand() const { return stagedCommand_; }
+
+  static constexpr size_t kMaxStagedCommand = 23;
 
  private:
   // Keys whose hold was handled. Their release is swallowed.
@@ -180,6 +185,8 @@ class KeypadInput {
   uint8_t entryVfo_ = KEYPAD_VFO_CURRENT;
   // The mode picked in mode select, or kNoMode.
   uint8_t stagedMode_ = kNoMode;
+  // The command waiting for Enter in Normal mode, or empty.
+  char stagedCommand_[kMaxStagedCommand + 1] = "";
   HoldTracker holds_;
   DoubleClick pending_;
 };

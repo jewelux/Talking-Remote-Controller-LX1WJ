@@ -37,6 +37,10 @@
   row and its commit. Mode select is one mode with an optional picked mode (`ModeStaged` is
   gone). The beep for a key an entry rejects now names the entry: `FREQ A` (was `ENTRY A`),
   `RPTSHIFT 9` / `CTCSS D` / `DCS D` (was `BANK6 ENTRY ...`)
+- the staged command (a Bank 1 query kept for Enter when `AUTO_SEND_BANK1_QUERIES` is off) now
+  lives in `KeypadInput` next to the staged mode, instead of in statics in `ui_keypad.cpp` that
+  the state machine asked about through the listener; behaviour is unchanged and host tests now
+  cover it
 - FT-817 Bank 3 `1` long toggles VFO A/B and `2` long copies the active VFO's frequency and mode
   to the other (A=B, spoken "a equals b") again; both had become unreachable when the long press
   was given the same frequency entry as the double press. New console command `VFO A=B` (FT-817)

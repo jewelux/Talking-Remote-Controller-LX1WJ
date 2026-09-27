@@ -124,6 +124,10 @@ void KeypadInput::beginModeSelect(uint8_t targetVfo) {
   stagedMode_ = kNoMode;
 }
 
+void KeypadInput::stageCommand(const char* cmd) {
+  snprintf(stagedCommand_, sizeof(stagedCommand_), "%s", cmd ? cmd : "");
+}
+
 // The keys that belong to the state machine rather than the keymap, the same
 // on every bank, or nullptr. A key that works in Normal mode only is input for
 // the other modes and is not global there.
@@ -241,7 +245,14 @@ bool KeypadInput::takesDigit(const EntrySpec& entry, char key) const {
 // stays: only Clear cancels.
 void KeypadInput::enter() {
   if (mode_ == InputMode::Normal) {
-    if (!listener_.sendStagedCommand()) listener_.onUnassigned("ENTER");
+    if (!hasStagedCommand()) {
+      listener_.onUnassigned("ENTER");
+      return;
+    }
+    char cmd[sizeof(stagedCommand_)];
+    memcpy(cmd, stagedCommand_, sizeof(cmd));
+    stagedCommand_[0] = '\0';
+    listener_.onStagedCommandSend(cmd);
     return;
   }
   if (mode_ == InputMode::ModeSelect) {
@@ -274,13 +285,14 @@ void KeypadInput::enter() {
 // waiting double click, and beeps when there is none. Keys still held keep their
 // hold, so their release stays swallowed.
 void KeypadInput::clearAll() {
-  if (mode_ == InputMode::Normal && !pending_.active && !listener_.hasStagedCommand()) {
+  if (mode_ == InputMode::Normal && !pending_.active && !hasStagedCommand()) {
     listener_.onUnassigned("CLEAR");
     return;
   }
   mode_ = InputMode::Normal;
   digits_.clear();
   entryVfo_ = KEYPAD_VFO_CURRENT;
+  stagedCommand_[0] = '\0';
   pending_.active = false;
   listener_.onClear();
 }

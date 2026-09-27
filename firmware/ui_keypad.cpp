@@ -22,11 +22,6 @@ bool g_suppressModePrefixOnce = false;
 // key's own response (deferred by double-click detection) is being prepared.
 static constexpr uint32_t KEYPAD_PRESS_SPEECH_QUIET_MS = 1000;
 
-// Command staged by a Bank 1 query when AUTO_SEND_BANK1_QUERIES is off; Enter
-// sends it.
-static String s_stagedCommand;
-static bool s_hasStagedCommand = false;
-
 static void speakBankPlease() {
   if (!g_speechEnabled) return;
   speakToken("bank");
@@ -98,8 +93,7 @@ void keypadSendNow(const String& cmd) {
 }
 
 void keypadStageCommand(const String& cmd) {
-  s_stagedCommand = cmd;
-  s_hasStagedCommand = true;
+  keypadInput().stageCommand(cmd.c_str());
   if ((bool)Serial) {
     Serial.print("CMD STAGE ");
     Serial.println(cmd);
@@ -154,19 +148,9 @@ class KeypadUiListener : public KeypadInputListener {
   bool onModeDigit(char key, uint8_t& mode) override { return keypadModeDigit(key, mode); }
   void onModeCommit(uint8_t mode, uint8_t targetVfo) override { keypadModeCommit(mode, targetVfo); }
 
-  bool sendStagedCommand() override {
-    if (!s_hasStagedCommand) return false;
-    keypadSendNow(s_stagedCommand);
-    s_stagedCommand = "";
-    s_hasStagedCommand = false;
-    return true;
-  }
-
-  bool hasStagedCommand() override { return s_hasStagedCommand; }
+  void onStagedCommandSend(const char* cmd) override { keypadSendNow(cmd); }
 
   void onClear() override {
-    s_stagedCommand = "";
-    s_hasStagedCommand = false;
     printKeypadCommand("CLEAR");
     if (g_speechEnabled) speakToken("cancel");
   }
