@@ -71,14 +71,13 @@ void beginBank3VfoAFrequencySet();
 void queryBank3VfoB();
 void selectBank3VfoB();
 void beginBank3VfoBFrequencySet();
-void queryBank4VfoAMode(uint8_t sourceBank);
-void beginBank4VfoAModeSet(uint8_t sourceBank);
-void queryBank4VfoBMode(uint8_t sourceBank);
-void beginBank4VfoBModeSet(uint8_t sourceBank);
-void syncBank3Ft817VfoA();
-void syncBank3Ft817VfoB();
-void syncBank3Ft857VfoA();
-void syncBank3Ft857VfoB();
+void queryBank3VfoAMode();
+void beginBank3VfoAModeSet();
+void queryBank3VfoBMode();
+void beginBank3VfoBModeSet();
+// FT-817, FT-857/897: tell the VFO tracking that VFO A/B is active.
+void syncBank3VfoA();
+void syncBank3VfoB();
 void setBank3Ft857Clar(bool on);
 void selectBank3Ft817ActiveVfoA();
 void selectBank3Ft817ActiveVfoB();
@@ -106,13 +105,14 @@ void adjustBank5Rit(int32_t deltaHz);
 void setBank5RitOff();  // "BANK5 3 LONG -> RIT OFF", RIT off or "RIT -> unsupported"
 
 // ---- Bank 6 ----
-void queryBank6Repeater();
+void setBank6RepeaterOff();
 void setBank6RepeaterMinus();
 void setBank6RepeaterPlus();
-void queryBank6RepeaterOffset();
-void setBank6RepeaterOffset70cm();
-void setBank6RepeaterOffset10m();
-void queryBank6ToneMode();
+// The profile's rpt_offset_1 and rpt_offset_2 (default 600 kHz and 7.6 MHz).
+void setBank6RepeaterOffset1();
+void setBank6RepeaterOffset2();
+void beginBank6RepeaterOffsetEntry();
+void setBank6ToneOff();
 void setBank6ToneModeCtcss();
 void setBank6ToneModeDcs();
 void queryBank6CtcssDefault();
@@ -140,5 +140,5 @@ void selectNextProfile();
 void selectPrevProfile();
 
 // ---- FTDX10 ----
-// A key the FTDX10 layout hides. Same output as reportFtdx10HiddenKeypadAction.
+// A key the FTDX10 layout hides: "<label> hidden on FTDX10", "not available".
 void reportFtdx10HiddenKey(const char* label);

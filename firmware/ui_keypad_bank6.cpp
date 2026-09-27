@@ -78,7 +78,7 @@ static void setBank6Ft8x7ToneMode(uint8_t modeByte, const char* label) {
   }
 }
 
-static void beginBank6RepeaterOffsetEntry() {
+void beginBank6RepeaterOffsetEntry() {
   printKeypadCommand("BANK6 1 DOUBLE -> RPTSHIFT ENTRY");
   if (!isFt8x7Keypad()) {
     printKeypadStatus("BANK6 reserved");
@@ -128,7 +128,7 @@ void beginBank6DcsEntry() {
   }
 }
 
-void queryBank6Repeater() {
+void setBank6RepeaterOff() {
   printKeypadCommand("BANK6 0 SHORT -> RPT OFF");
   if (!isFt8x7Keypad()) {
     printKeypadStatus("BANK6 reserved");
@@ -158,7 +158,7 @@ void setBank6RepeaterPlus() {
   setBank6Ft8x7RepeaterShift(0x49, "PLUS");
 }
 
-void queryBank6RepeaterOffset() {
+void setBank6RepeaterOffset1() {
   const uint32_t hz = currentFt8x7RepeaterOffsetHz(0);
   printKeypadCommand(String("BANK6 1 SHORT -> RPTSHIFT ") + hzToMHzString3(hz));
   if (!isFt8x7Keypad()) {
@@ -169,7 +169,7 @@ void queryBank6RepeaterOffset() {
   setBank6Ft8x7RepeaterOffsetHz(hz);
 }
 
-void setBank6RepeaterOffset70cm() {
+void setBank6RepeaterOffset2() {
   const uint32_t hz = currentFt8x7RepeaterOffsetHz(1);
   printKeypadCommand(String("BANK6 1 LONG -> RPTSHIFT ") + hzToMHzString3(hz));
   if (!isFt8x7Keypad()) {
@@ -180,11 +180,7 @@ void setBank6RepeaterOffset70cm() {
   setBank6Ft8x7RepeaterOffsetHz(hz);
 }
 
-void setBank6RepeaterOffset10m() {
-  beginBank6RepeaterOffsetEntry();
-}
-
-void queryBank6ToneMode() {
+void setBank6ToneOff() {
   printKeypadCommand("BANK6 2 SHORT -> TONE OFF");
   if (!isFt8x7Keypad()) {
     printKeypadStatus("BANK6 reserved");

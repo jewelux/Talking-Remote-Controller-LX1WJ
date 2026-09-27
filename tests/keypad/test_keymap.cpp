@@ -128,14 +128,12 @@ void beginBank3VfoAFrequencySet() { record("beginBank3VfoAFrequencySet"); }
 void queryBank3VfoB() { record("queryBank3VfoB"); }
 void selectBank3VfoB() { record("selectBank3VfoB"); }
 void beginBank3VfoBFrequencySet() { record("beginBank3VfoBFrequencySet"); }
-void queryBank4VfoAMode(uint8_t b) { record("queryBank4VfoAMode(%u)", b); }
-void beginBank4VfoAModeSet(uint8_t b) { record("beginBank4VfoAModeSet(%u)", b); }
-void queryBank4VfoBMode(uint8_t b) { record("queryBank4VfoBMode(%u)", b); }
-void beginBank4VfoBModeSet(uint8_t b) { record("beginBank4VfoBModeSet(%u)", b); }
-void syncBank3Ft817VfoA() { record("syncBank3Ft817VfoA"); }
-void syncBank3Ft817VfoB() { record("syncBank3Ft817VfoB"); }
-void syncBank3Ft857VfoA() { record("syncBank3Ft857VfoA"); }
-void syncBank3Ft857VfoB() { record("syncBank3Ft857VfoB"); }
+void queryBank3VfoAMode() { record("queryBank3VfoAMode"); }
+void beginBank3VfoAModeSet() { record("beginBank3VfoAModeSet"); }
+void queryBank3VfoBMode() { record("queryBank3VfoBMode"); }
+void beginBank3VfoBModeSet() { record("beginBank3VfoBModeSet"); }
+void syncBank3VfoA() { record("syncBank3VfoA"); }
+void syncBank3VfoB() { record("syncBank3VfoB"); }
 void setBank3Ft857Clar(bool on) { record("setBank3Ft857Clar(%s)", on ? "true" : "false"); }
 void selectBank3Ft817ActiveVfoA() { record("selectBank3Ft817ActiveVfoA"); }
 void selectBank3Ft817ActiveVfoB() { record("selectBank3Ft817ActiveVfoB"); }
@@ -160,13 +158,13 @@ void setBank5RitOffset(int32_t hz) { record("setBank5RitOffset(%d)", (int)hz); }
 void adjustBank5Rit(int32_t d) { record("adjustBank5Rit(%d)", (int)d); }
 void setBank5RitOff() { record("setBank5RitOff"); }
 
-void queryBank6Repeater() { record("queryBank6Repeater"); }
+void setBank6RepeaterOff() { record("setBank6RepeaterOff"); }
 void setBank6RepeaterMinus() { record("setBank6RepeaterMinus"); }
 void setBank6RepeaterPlus() { record("setBank6RepeaterPlus"); }
-void queryBank6RepeaterOffset() { record("queryBank6RepeaterOffset"); }
-void setBank6RepeaterOffset70cm() { record("setBank6RepeaterOffset70cm"); }
-void setBank6RepeaterOffset10m() { record("setBank6RepeaterOffset10m"); }
-void queryBank6ToneMode() { record("queryBank6ToneMode"); }
+void setBank6RepeaterOffset1() { record("setBank6RepeaterOffset1"); }
+void setBank6RepeaterOffset2() { record("setBank6RepeaterOffset2"); }
+void beginBank6RepeaterOffsetEntry() { record("beginBank6RepeaterOffsetEntry"); }
+void setBank6ToneOff() { record("setBank6ToneOff"); }
 void setBank6ToneModeCtcss() { record("setBank6ToneModeCtcss"); }
 void setBank6ToneModeDcs() { record("setBank6ToneModeDcs"); }
 void queryBank6CtcssDefault() { record("queryBank6CtcssDefault"); }

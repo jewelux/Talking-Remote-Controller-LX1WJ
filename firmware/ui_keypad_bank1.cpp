@@ -290,7 +290,3 @@ void ftdx10Tune() { sendKeypadCommand("BANK1 5 DOUBLE -> TUNE", "TUNE"); }
 void ftdx10QueryPreamp() { sendKeypadCommand("BANK1 6 SHORT -> PA?", "PA?"); }
 
 void ftdx10TogglePreamp() { sendKeypadCommand("BANK1 6 LONG -> PA TOGGLE", "PA TOGGLE"); }
-
-void keypadQueryBank1Lock() {
-  queryBank1Lock();
-}

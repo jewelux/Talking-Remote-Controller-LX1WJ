@@ -450,12 +450,8 @@ void selectBank3Ft817ActiveVfoB() {
   }
 }
 
-void syncBank3Ft817VfoA() {
+void syncBank3VfoA() {
   printKeypadCommand("BANK3 4 SHORT -> SYNC VFO A");
-  if (!isFt8x7Ft817Keypad()) {
-    queryBank4VfoAMode(3);
-    return;
-  }
   rememberActiveVfo(true);
   printKeypadStatus("SYNC VFOA");
   if (g_speechEnabled) {
@@ -467,12 +463,8 @@ void syncBank3Ft817VfoA() {
   }
 }
 
-void syncBank3Ft817VfoB() {
+void syncBank3VfoB() {
   printKeypadCommand("BANK3 4 LONG -> SYNC VFO B");
-  if (!isFt8x7Ft817Keypad()) {
-    beginBank4VfoAModeSet(3);
-    return;
-  }
   rememberActiveVfo(false);
   printKeypadStatus("SYNC VFOB");
   if (g_speechEnabled) {
@@ -484,42 +476,8 @@ void syncBank3Ft817VfoB() {
   }
 }
 
-void syncBank3Ft857VfoA() {
-  printKeypadCommand("BANK3 4 SHORT -> SYNC VFO A");
-  if (!isFt8x7Ft857FamilyKeypad()) {
-    queryBank4VfoAMode(3);
-    return;
-  }
-  rememberActiveVfo(true);
-  printKeypadStatus("SYNC VFOA");
-  if (g_speechEnabled) {
-    speakToken("sync");
-    playSilenceMs(60);
-    speakToken("vfo");
-    playSilenceMs(60);
-    speakToken("a");
-  }
-}
-
-void syncBank3Ft857VfoB() {
-  printKeypadCommand("BANK3 4 LONG -> SYNC VFO B");
-  if (!isFt8x7Ft857FamilyKeypad()) {
-    beginBank4VfoAModeSet(3);
-    return;
-  }
-  rememberActiveVfo(false);
-  printKeypadStatus("SYNC VFOB");
-  if (g_speechEnabled) {
-    speakToken("sync");
-    playSilenceMs(60);
-    speakToken("vfo");
-    playSilenceMs(60);
-    speakToken("b");
-  }
-}
-
-void queryBank4VfoAMode(uint8_t sourceBank) {
-  printKeypadCommand(String("BANK") + String((int)sourceBank) + (sourceBank == 3 ? " 4" : " 1") + " SHORT -> VFOA MODE?");
+void queryBank3VfoAMode() {
+  printKeypadCommand("BANK3 4 SHORT -> VFOA MODE?");
   if (isFtdx10KeypadProfile()) {
     keypadSendNow("VFOA MODE?");
     return;
@@ -537,8 +495,8 @@ void queryBank4VfoAMode(uint8_t sourceBank) {
   speakMode(mode);
 }
 
-void beginBank4VfoAModeSet(uint8_t sourceBank) {
-  printKeypadCommand(String("BANK") + String((int)sourceBank) + (sourceBank == 3 ? " 4" : " 1") + " LONG -> VFOA MODE");
+void beginBank3VfoAModeSet() {
+  printKeypadCommand("BANK3 4 LONG -> VFOA MODE");
   if (isFt8x7Ft857FamilyKeypad()) {
     printKeypadStatus("VFOA MODE unsupported");
     if (g_speechEnabled) speakNotAvailable();
@@ -552,8 +510,8 @@ void beginBank4VfoAModeSet(uint8_t sourceBank) {
   }
 }
 
-void queryBank4VfoBMode(uint8_t sourceBank) {
-  printKeypadCommand(String("BANK") + String((int)sourceBank) + (sourceBank == 3 ? " 5" : " 2") + " SHORT -> VFOB MODE?");
+void queryBank3VfoBMode() {
+  printKeypadCommand("BANK3 5 SHORT -> VFOB MODE?");
   if (isFtdx10KeypadProfile()) {
     keypadSendNow("VFOB MODE?");
     return;
@@ -571,8 +529,8 @@ void queryBank4VfoBMode(uint8_t sourceBank) {
   speakMode(mode);
 }
 
-void beginBank4VfoBModeSet(uint8_t sourceBank) {
-  printKeypadCommand(String("BANK") + String((int)sourceBank) + (sourceBank == 3 ? " 5" : " 2") + " LONG -> VFOB MODE");
+void beginBank3VfoBModeSet() {
+  printKeypadCommand("BANK3 5 LONG -> VFOB MODE");
   if (isFt8x7Ft857FamilyKeypad()) {
     printKeypadStatus("VFOB MODE unsupported");
     if (g_speechEnabled) speakNotAvailable();

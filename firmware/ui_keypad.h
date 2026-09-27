@@ -8,6 +8,5 @@ bool profileModeFromDigit(char digit, uint8_t& modeOut);
 void setTuningSpeechEnabled(bool enabled);
 void speakTuningSpeechState();
 void speakBankNumber();
-void keypadQueryBank1Lock();
 void initKeypadUi();
 void pollKeypadUi();

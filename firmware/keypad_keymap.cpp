@@ -143,18 +143,17 @@ bool bank3(const KeypadTraits& t, Gesture g, char key) {
       return run(g, queryBank3VfoB, selectBank3VfoB, beginBank3VfoBFrequencySet);
     case '3':
       if (t.ft817) {
-        return run(g, [] { queryBank4VfoAMode(3); }, [] { beginBank4VfoAModeSet(3); });
+        return run(g, queryBank3VfoAMode, beginBank3VfoAModeSet);
       }
       return false;
     case '4':
-      if (t.ft817) return run(g, syncBank3Ft817VfoA, syncBank3Ft817VfoB);
-      if (t.ft857Family) return run(g, syncBank3Ft857VfoA, syncBank3Ft857VfoB);
-      return run(g, [] { queryBank4VfoAMode(3); }, [] { beginBank4VfoAModeSet(3); });
+      if (t.ft817 || t.ft857Family) return run(g, syncBank3VfoA, syncBank3VfoB);
+      return run(g, queryBank3VfoAMode, beginBank3VfoAModeSet);
     case '5':
       if (t.ft857Family) {
         return run(g, [] { setBank3Ft857Clar(true); }, [] { setBank3Ft857Clar(false); });
       }
-      return run(g, [] { queryBank4VfoBMode(3); }, [] { beginBank4VfoBModeSet(3); });
+      return run(g, queryBank3VfoBMode, beginBank3VfoBModeSet);
     case '6':
       if (t.ft817) return run(g, selectBank3Ft817ActiveVfoA, selectBank3Ft817ActiveVfoB);
       if (t.ft857Family) return run(g, queryBank3RxTx, [] { setBank3Ft857Ptt(true); });
@@ -198,11 +197,11 @@ bool bank5(Gesture g, char key) {
 
 bool bank6(Gesture g, char key) {
   switch (key) {
-    case '0': return run(g, queryBank6Repeater, setBank6RepeaterMinus, setBank6RepeaterPlus);
+    case '0': return run(g, setBank6RepeaterOff, setBank6RepeaterMinus, setBank6RepeaterPlus);
     case '1':
-      return run(g, queryBank6RepeaterOffset, setBank6RepeaterOffset70cm,
-                 setBank6RepeaterOffset10m);
-    case '2': return run(g, queryBank6ToneMode, setBank6ToneModeCtcss, setBank6ToneModeDcs);
+      return run(g, setBank6RepeaterOffset1, setBank6RepeaterOffset2,
+                 beginBank6RepeaterOffsetEntry);
+    case '2': return run(g, setBank6ToneOff, setBank6ToneModeCtcss, setBank6ToneModeDcs);
     case '3': return run(g, queryBank6CtcssDefault, beginBank6CtcssEntry);
     case '4': return run(g, queryBank6DcsDefault, beginBank6DcsEntry);
     default: return false;
