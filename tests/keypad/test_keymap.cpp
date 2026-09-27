@@ -227,39 +227,6 @@ TEST(keymap_double_click_matches_expectations) {
   });
 }
 
-namespace {
-
-// Holds the old keypadEvent() guarded with !g_modeSetActive.
-bool legacyModeSelectGuardedHold(uint16_t family, uint8_t bank, char key) {
-  return bank == 3 && ((key >= '1' && key <= '5') || (key == '6' && family == FT817));
-}
-
-}  // namespace
-
-TEST(keymap_mode_select_hold_runs_unguarded_holds) {
-  forEachKey([](const Family &f, const KeypadTraits &t, uint8_t bank, char key) {
-    const char *expected = legacyModeSelectGuardedHold(f.bit, bank, key)
-                               ? "none"
-                               : lookup(f.bit, bank, key).longAction;
-    checkOutcome(f, bank, key, "mode-select long",
-                 outcome(keymapModeSelectHold, t, bank, key, "none"), expected);
-  });
-}
-
-TEST(keymap_mode_select_hold_examples) {
-  // F2: Bank 1 '0' long still starts a frequency entry.
-  g_calls.clear();
-  CHECK(keymapModeSelectHold(traitsFor(FT817), 1, '0'));
-  CHECK_EQ(g_calls, "beginBank1FrequencySet");
-  // FT-857 Bank 3 '6' long (PTT) is not guarded; FT-817's is.
-  g_calls.clear();
-  CHECK(keymapModeSelectHold(traitsFor(FT857), 3, '6'));
-  CHECK_EQ(g_calls, "setBank3Ft857Ptt(true)");
-  g_calls.clear();
-  CHECK(!keymapModeSelectHold(traitsFor(FT817), 3, '6'));
-  CHECK(g_calls.empty());
-}
-
 TEST(keymap_ignores_state_machine_keys_and_other_banks) {
   const KeypadTraits t = traitsFor(IC7300);
   for (const char *k = "*#D"; *k; ++k) {

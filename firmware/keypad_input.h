@@ -14,12 +14,13 @@
 // Keys: '0'-'9' and 'A'-'C' are bank keys and go to the keymap through the
 // listener. '*' (bank), 'D' (Enter) and '#' (Clear) belong to the state machine.
 
-// Exactly one mode is active. Mode select and the staged mode are separate
-// sub-state on top of Normal (see modeSelectActive, stagedModeActive).
+// Exactly one mode is active. The staged mode is separate sub-state on top of
+// Normal (see stagedModeActive).
 enum class InputMode : uint8_t {
   Normal,
   BankSelect,
   ProfileSelect,
+  ModeSelect,
   FreqEntry,
   RfPowerEntry,
   CivAddrEntry,
@@ -52,10 +53,6 @@ class KeypadInputListener {
   // True when a short press of the key waits for a possible double click.
   virtual bool wantsDoubleClick(uint8_t bank, char key) = 0;
 
-  // LEGACY(F2): during mode select, holds still run their long actions, except
-  // the ones the old dispatcher guarded. Returns true when one ran.
-  virtual bool runModeSelectHold(uint8_t bank, char key) = 0;
-
   // '*' short: say the current bank.
   virtual void onBankQuery(uint8_t bank) = 0;
   // '*' hold: bank select started.
@@ -70,8 +67,8 @@ class KeypadInputListener {
   // when no bank was chosen.
   virtual void onCommit(InputMode mode, const char* digits, uint8_t targetVfo) = 0;
 
-  // A key typed during mode select. Gives the feedback and returns true with
-  // mode set when the key picks a mode.
+  // A key typed during mode select. Gives the feedback (a beep when it picks no
+  // mode) and returns true with mode set when the key picks a mode.
   virtual bool onModeDigit(char key, uint8_t& mode) = 0;
   // Enter with a staged mode: apply it.
   virtual void onModeCommit(uint8_t mode, uint8_t targetVfo) = 0;
@@ -105,7 +102,7 @@ class KeypadInput {
   InputMode mode() const { return mode_; }
   const char* digits() const { return digits_.c_str(); }
   uint8_t entryTargetVfo() const { return entryVfo_; }
-  bool modeSelectActive() const { return modeSelect_; }
+  bool modeSelectActive() const { return mode_ == InputMode::ModeSelect; }
   bool stagedModeActive() const { return staged_.active; }
   bool doubleClickPending() const { return pending_.active; }
 
@@ -152,9 +149,8 @@ class KeypadInput {
   // The longest entry is a frequency: 12 characters, plus a point the old code
   // accepted even after them.
   DigitBuffer<13> digits_;
+  // Target VFO of a frequency entry or mode select.
   uint8_t entryVfo_ = KEYPAD_VFO_CURRENT;
-  bool modeSelect_ = false;
-  uint8_t modeSelectVfo_ = KEYPAD_VFO_CURRENT;
   StagedMode staged_;
   HoldTracker holds_;
   DoubleClick pending_;

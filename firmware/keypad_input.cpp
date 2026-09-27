@@ -59,6 +59,9 @@ void KeypadInput::onKey(char key, KeyGesture gesture, uint32_t nowMs) {
     case InputMode::ProfileSelect:
       releasedProfileSelect(key);
       return;
+    case InputMode::ModeSelect:
+      releasedModeSelect(key);
+      return;
     default:
       releasedEntry(key);
       return;
@@ -79,11 +82,10 @@ void KeypadInput::beginEntry(InputMode mode, uint8_t targetVfo) {
 }
 
 void KeypadInput::beginModeSelect(uint8_t targetVfo) {
-  modeSelect_ = true;
-  modeSelectVfo_ = targetVfo;
+  beginEntry(InputMode::ModeSelect, targetVfo);
 }
 
-// Bank select, profile select and the entries ignore holds; their keys act on
+// Bank, profile and mode select and the entries ignore holds; their keys act on
 // release.
 void KeypadInput::held(char key) {
   if (mode_ != InputMode::Normal) return;
@@ -95,8 +97,6 @@ void KeypadInput::held(char key) {
     handled = true;
   } else if (key == 'D' || key == '#') {
     handled = false;
-  } else if (modeSelect_) {
-    handled = listener_.runModeSelectHold(bank_, key);  // LEGACY(F2)
   } else {
     handled = listener_.runHold(bank_, key);
   }
@@ -119,10 +119,6 @@ void KeypadInput::releasedNormal(char key, uint32_t nowMs) {
     listener_.onBankQuery(bank_);
     return;
   }
-  if (modeSelect_) {
-    releasedModeSelect(key);
-    return;
-  }
   if (pending_.active && pending_.bank == bank_ && pending_.key == key &&
       (uint32_t)(nowMs - pending_.atMs) <= kDoubleClickMs) {
     pending_.active = false;
@@ -140,20 +136,24 @@ void KeypadInput::releasedNormal(char key, uint32_t nowMs) {
   runShortOrUnassigned(bank_, key);
 }
 
-// Mode select takes the next key as the mode digit. There is no double-click
-// wait.
+// Mode select takes the next key that picks a mode and stages it for Enter.
+// Any other key beeps and mode select stays active; '#' cancels it.
 void KeypadInput::releasedModeSelect(char key) {
-  modeSelect_ = false;
-  uint8_t mode = 0;
-  if (listener_.onModeDigit(key, mode)) {
-    staged_.active = true;
-    staged_.mode = mode;
-    staged_.targetVfo = modeSelectVfo_;
-  } else {
-    // An invalid digit also drops a mode staged earlier.
-    staged_.active = false;
+  if (key == '#') {
+    clearAll();
+    return;
   }
-  modeSelectVfo_ = KEYPAD_VFO_CURRENT;
+  if (key == 'D') {
+    reportUnassigned("MODE SELECT ", key);
+    return;
+  }
+  uint8_t mode = 0;
+  if (!listener_.onModeDigit(key, mode)) return;
+  staged_.active = true;
+  staged_.mode = mode;
+  staged_.targetVfo = entryVfo_;
+  mode_ = InputMode::Normal;
+  entryVfo_ = KEYPAD_VFO_CURRENT;
 }
 
 void KeypadInput::releasedBankSelect(char key) {
@@ -290,8 +290,6 @@ void KeypadInput::clearAll() {
   mode_ = InputMode::Normal;
   digits_.clear();
   entryVfo_ = KEYPAD_VFO_CURRENT;
-  modeSelect_ = false;
-  modeSelectVfo_ = KEYPAD_VFO_CURRENT;
   staged_ = StagedMode();
   pending_.active = false;
   listener_.onClear();

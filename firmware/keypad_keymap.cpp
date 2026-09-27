@@ -263,8 +263,3 @@ bool keymapDoubleClick(const KeypadTraits& traits, uint8_t bank, char key) {
 bool keymapWantsDoubleClick(const KeypadTraits& traits, uint8_t bank, char key) {
   return dispatch(traits, bank, key, Gesture::WantsDoubleClick);
 }
-
-bool keymapModeSelectHold(const KeypadTraits& traits, uint8_t bank, char key) {
-  if (bank == 3 && ((key >= '1' && key <= '5') || (key == '6' && traits.ft817))) return false;
-  return keymapHold(traits, bank, key);
-}

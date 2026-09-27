@@ -18,6 +18,12 @@
   or VFO actions instead of picking the mode. The same applied to other keys with a short action
   on the current bank (Bank 5 `1`–`5`, Bank 6 `3`/`4`, Bank 8 `1`, Bank 9 `B`/`C`). Every key is
   now taken as the mode digit
+- mode select ("mode please") now waits for a mode digit and only `#` cancels it. Holding a key no
+  longer runs its long action there (e.g. Bank 1 `0` long started a frequency entry whose first
+  digit was then taken as the mode). A key that picks no mode, `*` or `D` beeps and mode select
+  stays active. Before, an invalid digit ended mode select (and dropped a mode staged earlier),
+  `*` said or selected the bank, and `D` could apply an earlier staged mode or send a staged
+  command
 
 ## Unreleased — Firmware CI
 

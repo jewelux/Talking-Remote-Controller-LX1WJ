@@ -198,6 +198,7 @@ void keypadEntryDigit(InputMode mode, char key, const char* digits) {
       printKeypadStatus(String("DCS STAGE: ") + digits);
       break;
     case InputMode::Normal:
+    case InputMode::ModeSelect:
       return;
   }
   if (g_speechEnabled) speakDigitsAndPoint(String(key));
@@ -359,7 +360,8 @@ void keypadEntryCommit(InputMode mode, const char* digits, uint8_t targetVfo) {
     case InputMode::RptOffsetEntry: commitRepeaterOffset(digits); return;
     case InputMode::CtcssEntry: commitCtcss(digits); return;
     case InputMode::DcsEntry: commitDcs(digits); return;
-    case InputMode::Normal: return;
+    case InputMode::Normal:
+    case InputMode::ModeSelect: return;
   }
 }
 

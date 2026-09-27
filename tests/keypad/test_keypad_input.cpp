@@ -18,6 +18,7 @@ const char *modeName(InputMode m) {
     case InputMode::Normal: return "Normal";
     case InputMode::BankSelect: return "BankSelect";
     case InputMode::ProfileSelect: return "ProfileSelect";
+    case InputMode::ModeSelect: return "ModeSelect";
     case InputMode::FreqEntry: return "FreqEntry";
     case InputMode::RfPowerEntry: return "RfPowerEntry";
     case InputMode::CivAddrEntry: return "CivAddrEntry";
@@ -37,7 +38,6 @@ struct Fake : KeypadInputListener {
   int pressedActivity = 0;
 
   std::set<std::string> holds, shorts, doubles, waits;
-  std::set<std::string> modeSelectHolds;
   std::map<std::string, std::function<void()>> hooks;  // "hold 1 0" -> hook
   std::string validModeDigits = "123456789";
   bool hasStagedCommand = false;
@@ -62,9 +62,6 @@ struct Fake : KeypadInputListener {
     return run("double", doubles, bank, key);
   }
   bool wantsDoubleClick(uint8_t bank, char key) override { return waits.count(keyId(bank, key)); }
-  bool runModeSelectHold(uint8_t bank, char key) override {
-    return run("modeSelectHold", modeSelectHolds, bank, key);
-  }
   void onBankQuery(uint8_t bank) override { log.push_back("bank? " + std::to_string(bank)); }
   void onBankSelectStart() override { log.push_back("bank please"); }
   void onDigitAccepted(InputMode mode, char key, const char *digits) override {
@@ -672,27 +669,41 @@ TEST(input_mode_select_stages_mode_for_target_vfo) {
   CHECK_LOG(f, "mode digit 1", "mode commit 1 vfo1");
 }
 
-TEST(input_mode_select_invalid_digit_drops_staged_mode) {
+// F2: mode select is modal. A key that picks no mode beeps (the listener gives
+// the feedback) and mode select stays active; only '#' cancels it.
+TEST(input_mode_select_invalid_key_keeps_it_active) {
   Fake f;
   f.validModeDigits = "12";
   KeypadInput in(f);
-  in.beginModeSelect(KEYPAD_VFO_CURRENT);
+  in.beginModeSelect(KEYPAD_VFO_B);
+  typeKeys(in, "7A*");
+  CHECK_EQ(in.mode(), InputMode::ModeSelect);
   tap(in, '2');
-  in.beginModeSelect(KEYPAD_VFO_CURRENT);
-  tap(in, '7');
   CHECK(!in.modeSelectActive());
-  CHECK(!in.stagedModeActive());
   tap(in, 'D');
-  CHECK_LOG(f, "mode digit 2", "mode digit 7 invalid", "unassigned ENTER");
+  CHECK_LOG(f, "mode digit 7 invalid", "mode digit A invalid", "mode digit * invalid",
+            "mode digit 2", "mode commit 2 vfo2");
 }
 
-TEST(input_mode_select_non_digit_is_invalid_mode_digit) {
+TEST(input_mode_select_enter_beeps_and_keeps_it_active) {
   Fake f;
+  f.hasStagedCommand = true;
   KeypadInput in(f);
   in.beginModeSelect(KEYPAD_VFO_CURRENT);
-  tap(in, 'A');
-  CHECK(!in.modeSelectActive());
-  CHECK_LOG(f, "mode digit A invalid");
+  tap(in, 'D');
+  CHECK(in.modeSelectActive());
+  CHECK(f.hasStagedCommand);
+  CHECK_LOG(f, "unassigned MODE SELECT D");
+}
+
+TEST(input_mode_select_clear_cancels_it) {
+  Fake f;
+  KeypadInput in(f);
+  in.beginModeSelect(KEYPAD_VFO_A);
+  tap(in, '#');
+  CHECK_EQ(in.mode(), InputMode::Normal);
+  CHECK(!in.stagedModeActive());
+  CHECK_LOG(f, "clear");
 }
 
 // Fixed by construction: a mode select started without a VFO used to reuse the
@@ -702,33 +713,11 @@ TEST(input_mode_select_target_vfo_is_not_reused) {
   f.validModeDigits = "5";
   KeypadInput in(f);
   in.beginModeSelect(KEYPAD_VFO_A);
-  tap(in, '0');
+  typeKeys(in, "0#");
   in.beginModeSelect(KEYPAD_VFO_CURRENT);
   tap(in, '5');
   tap(in, 'D');
-  CHECK_LOG(f, "mode digit 0 invalid", "mode digit 5", "mode commit 5 vfo0");
-}
-
-TEST(input_mode_select_star_and_enter_keep_it_active) {
-  Fake f;
-  KeypadInput in(f);
-  in.beginModeSelect(KEYPAD_VFO_CURRENT);
-  tap(in, '*');
-  tap(in, 'D');
-  CHECK(in.modeSelectActive());
-  CHECK_LOG(f, "bank? 1", "unassigned ENTER");
-}
-
-// Staged mode is not modal yet (F3): Enter during a later mode select applies it.
-TEST(input_mode_select_enter_applies_earlier_staged_mode) {
-  Fake f;
-  KeypadInput in(f);
-  in.beginModeSelect(KEYPAD_VFO_CURRENT);
-  tap(in, '3');
-  in.beginModeSelect(KEYPAD_VFO_CURRENT);
-  tap(in, 'D');
-  CHECK(in.modeSelectActive());
-  CHECK_LOG(f, "mode digit 3", "mode commit 3 vfo0");
+  CHECK_LOG(f, "mode digit 0 invalid", "clear", "mode digit 5", "mode commit 5 vfo0");
 }
 
 // F1: every key is the mode digit, even one with a short action on the bank
@@ -745,33 +734,19 @@ TEST(input_mode_select_key_is_mode_digit_not_short_action) {
   CHECK_LOG(f, "mode digit 7");
 }
 
-// LEGACY(F2): holds during mode select go to the mode-select hold hook, which
-// keeps mode select active; an unhandled hold's release is the mode digit.
-TEST(input_mode_select_legacy_holds) {
+// F2: holds during mode select run no long action and do not open bank select;
+// the release is the mode digit.
+TEST(input_mode_select_ignores_holds) {
   Fake f;
-  f.modeSelectHolds = {"1 0"};
   f.holds = {"1 0", "1 2"};
   KeypadInput in(f);
-  f.hooks["modeSelectHold 1 0"] = [&] { in.beginEntry(InputMode::FreqEntry); };
   in.beginModeSelect(KEYPAD_VFO_CURRENT);
   hold(in, '0');
-  CHECK_EQ(in.mode(), InputMode::FreqEntry);
-  CHECK(in.modeSelectActive());
-  typeKeys(in, "7D");
-  CHECK(in.modeSelectActive());
+  hold(in, '*');
+  CHECK_EQ(in.mode(), InputMode::ModeSelect);
   hold(in, '2');
   CHECK(!in.modeSelectActive());
-  CHECK_LOG(f, "modeSelectHold 1 0", "digit FreqEntry 7 7", "commit FreqEntry [7] vfo0",
-                        "mode digit 2");
-}
-
-TEST(input_mode_select_star_hold_opens_bank_select_and_keeps_mode_select) {
-  Fake f;
-  KeypadInput in(f);
-  in.beginModeSelect(KEYPAD_VFO_CURRENT);
-  hold(in, '*');
-  typeKeys(in, "2D");
-  CHECK_EQ(in.bank(), 2);
-  CHECK(in.modeSelectActive());
-  CHECK_LOG(f, "bank please", "digit BankSelect 2 2", "commit BankSelect [2] vfo0");
+  CHECK(in.stagedModeActive());
+  CHECK_EQ(in.bank(), 1);
+  CHECK_LOG(f, "mode digit 0 invalid", "mode digit * invalid", "mode digit 2");
 }
