@@ -88,54 +88,28 @@ static void speakRepeaterOffsetHz(uint64_t hz) {
   speakDigitsAndPoint(hzToMHzString3(hz));
 }
 
-void keypadEntryDigit(InputMode mode, char key, const char* digits) {
-  switch (mode) {
+void keypadEntryDigit(const EntrySpec& entry, char key, const char* digits) {
+  if (key == '*') {
+    printKeypadCommand(String(entry.name) + " POINT -> *");
+    printKeypadStatus(String(entry.name) + " STAGE: " + digits);
+    if (g_speechEnabled) speakToken("point");
+    return;
+  }
+  printKeypadCommand(String(entry.name) + " DIGIT -> " + String(key));
+  switch (entry.mode) {
     case InputMode::BankSelect:
-      printKeypadCommand(String("BANK SELECT DIGIT -> ") + String(key));
       printKeypadStatus(String("BANK ") + String((int)(key - '0')));
       if (g_speechEnabled) playDigit((uint8_t)(key - '0'));
       return;
     case InputMode::ProfileSelect:
-      printKeypadCommand(String("PROFILE DIGIT -> ") + String(key));
       printKeypadStatus(String("PROFILE ") + digits);
       if (g_speechEnabled) playDigit((uint8_t)(key - '0'));
       return;
-    case InputMode::FreqEntry:
-      if (key == '*') {
-        printKeypadCommand("FREQ POINT -> *");
-        printKeypadStatus(String("FREQ STAGE: ") + digits);
-        if (g_speechEnabled) speakToken("point");
-        return;
-      }
-      printKeypadCommand(String("FREQ DIGIT -> ") + String(key));
-      printKeypadStatus(String("FREQ STAGE: ") + digits);
-      break;
-    case InputMode::RfPowerEntry:
-      printKeypadCommand(String("RFPOWER DIGIT -> ") + String(key));
-      printKeypadStatus(String("RFPOWER STAGE: ") + digits + " W");
-      break;
-    case InputMode::CivAddrEntry:
-      printKeypadCommand(String("CIVADDR DIGIT -> ") + String(key));
-      printKeypadStatus(String("CIVADDR STAGE: ") + digits);
-      break;
-    case InputMode::RptOffsetEntry:
-      printKeypadCommand(String("RPTSHIFT DIGIT -> ") + String(key));
-      printKeypadStatus(String("RPTSHIFT STAGE: ") + digits + " kHz");
-      break;
-    case InputMode::CtcssEntry:
-      printKeypadCommand(String("CTCSS DIGIT -> ") + String(key));
-      printKeypadStatus(String("CTCSS STAGE: ") + digits);
-      break;
-    case InputMode::DcsEntry:
-      printKeypadCommand(String("DCS DIGIT -> ") + String(key));
-      printKeypadStatus(String("DCS STAGE: ") + digits);
-      break;
-    case InputMode::Normal:
-    case InputMode::ModeSelect:
-    case InputMode::ModeStaged:
+    default:
+      printKeypadStatus(String(entry.name) + " STAGE: " + digits + entry.unit);
+      if (g_speechEnabled) speakDigitsAndPoint(String(key));
       return;
   }
-  if (g_speechEnabled) speakDigitsAndPoint(String(key));
 }
 
 static void commitBank() {
@@ -276,14 +250,13 @@ void keypadEntryCommit(InputMode mode, const char* digits, uint8_t targetVfo) {
     case InputMode::CtcssEntry: commitCtcss(digits); return;
     case InputMode::DcsEntry: commitDcs(digits); return;
     case InputMode::Normal:
-    case InputMode::ModeSelect:
-    case InputMode::ModeStaged: return;
+    case InputMode::ModeSelect: return;
   }
 }
 
 bool keypadModeDigit(char key, uint8_t& mode) {
   printKeypadCommand(String("MODE DIGIT -> ") + String(key));
-  // A digit the profile has no mode code for still stages its mode, as before.
+  // A digit the profile has no mode code for still picks its mode, as before.
   mode = 0xFF;
   (void)profileModeFromDigit(key, mode);
   if (mode == 0xFF) {

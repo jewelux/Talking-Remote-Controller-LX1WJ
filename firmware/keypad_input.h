@@ -14,13 +14,13 @@
 // Keys: '0'-'9' and 'A'-'C' are bank keys and go to the keymap through the
 // listener. '*' (bank), 'D' (Enter) and '#' (Clear) belong to the state machine.
 
-// Exactly one mode is active.
+// Exactly one mode is active. Bank select, profile select and the entries
+// take digits by the rules of their EntrySpec.
 enum class InputMode : uint8_t {
   Normal,
   BankSelect,
   ProfileSelect,
-  ModeSelect,
-  ModeStaged,  // a mode was picked in mode select and waits for Enter
+  ModeSelect,  // a mode key, validated by the listener; Enter applies it
   FreqEntry,
   RfPowerEntry,
   CivAddrEntry,
@@ -29,10 +29,25 @@ enum class InputMode : uint8_t {
   DcsEntry,
 };
 
+// How bank select, profile select or an entry takes digits. One row per mode
+// in keypad_input.cpp; a new entry is an InputMode, a row there and its commit.
+struct EntrySpec {
+  InputMode mode;
+  const char* name;     // label of its beeps and trace: "<name> 5", "<name> D"
+  uint8_t maxLen;       // characters, a point included
+  bool replaces;        // when full, a digit starts it over instead of beeping
+  bool leadingZero;     // '0' may be the first digit
+  uint8_t maxFraction;  // digits after the '*' point; 0 = takes no point
+  const char* unit;     // shown after the digits while typing
+};
+
+// The rules of mode, or nullptr for Normal and ModeSelect.
+const EntrySpec* keypadEntrySpec(InputMode mode);
+
 // Keypad library KeyState, without the Arduino types.
 enum class KeyGesture : uint8_t { Pressed, Held, Released, Idle };
 
-// Target VFO for a frequency entry, mode select and staged mode.
+// Target VFO for a frequency entry and mode select.
 constexpr uint8_t KEYPAD_VFO_CURRENT = 0;
 constexpr uint8_t KEYPAD_VFO_A = 1;
 constexpr uint8_t KEYPAD_VFO_B = 2;
@@ -58,8 +73,8 @@ class KeypadInputListener {
   // '*' hold: bank select started.
   virtual void onBankSelectStart() = 0;
 
-  // A digit (or the frequency point) was taken into the entry of mode.
-  virtual void onDigitAccepted(InputMode mode, char key, const char* digits) = 0;
+  // A digit (or the frequency point) was taken into entry.
+  virtual void onDigitAccepted(const EntrySpec& entry, char key, const char* digits) = 0;
   // The key does nothing here: "<label> -> unassigned" and the beep.
   virtual void onUnassigned(const char* label) = 0;
   // Enter in bank select, profile select or an entry, with at least one digit
@@ -67,11 +82,11 @@ class KeypadInputListener {
   // to Normal. For bank select the new bank is already set.
   virtual void onCommit(InputMode mode, const char* digits, uint8_t targetVfo) = 0;
 
-  // A key typed during mode select or with a staged mode. Gives the feedback
-  // (a beep when it picks no mode) and returns true with mode set when the key
-  // picks a mode.
+  // A key typed during mode select. Gives the feedback (a beep when it picks no
+  // mode) and returns true with mode set when the key picks a mode.
   virtual bool onModeDigit(char key, uint8_t& mode) = 0;
-  // Enter in ModeStaged: apply the mode.
+  // Enter in mode select once a mode is picked: apply it. The mode is already
+  // back to Normal.
   virtual void onModeCommit(uint8_t mode, uint8_t targetVfo) = 0;
   // Enter in Normal mode. Sends the staged command and
   // returns true, or returns false when there is none.
@@ -106,8 +121,8 @@ class KeypadInput {
   InputMode mode() const { return mode_; }
   const char* digits() const { return digits_.c_str(); }
   uint8_t entryTargetVfo() const { return entryVfo_; }
-  bool modeSelectActive() const { return mode_ == InputMode::ModeSelect; }
-  bool stagedModeActive() const { return mode_ == InputMode::ModeStaged; }
+  // Mode select with a mode picked, waiting for Enter.
+  bool stagedModeActive() const { return mode_ == InputMode::ModeSelect && stagedMode_ != kNoMode; }
   bool doubleClickPending() const { return pending_.active; }
 
  private:
@@ -131,6 +146,8 @@ class KeypadInput {
     void (KeypadInput::*onHold)();  // nullptr: no long action
   };
 
+  static constexpr uint8_t kNoMode = 0xFF;
+
   struct DoubleClick {
     bool active = false;
     uint8_t bank = 0;
@@ -145,15 +162,13 @@ class KeypadInput {
   void runPending();
   void releasedNormal(char key, uint32_t nowMs);
   void releasedModeSelect(char key);
-  void releasedBankSelect(char key);
-  void releasedProfileSelect(char key);
-  void releasedEntry(char key);
-  bool entryTakesDigit() const;
-  const char* modeLabel() const;
+  void releasedEntry(const EntrySpec& entry, char key);
+  bool takesDigit(const EntrySpec& entry, char key) const;
   void enter();
   void clearAll();
   void runShortOrUnassigned(uint8_t bank, char key);
-  void reportUnassigned(const char* prefix, char key);
+  // "<mode> <what>" to onUnassigned, e.g. "FREQ 6".
+  void reportUnassigned(const char* mode, const char* what);
 
   KeypadInputListener& listener_;
   uint8_t bank_ = 1;
@@ -161,9 +176,10 @@ class KeypadInput {
   // The longest entry is a frequency: 12 characters, plus a point the old code
   // accepted even after them.
   DigitBuffer<13> digits_;
-  // Target VFO of a frequency entry, mode select and staged mode.
+  // Target VFO of a frequency entry and mode select.
   uint8_t entryVfo_ = KEYPAD_VFO_CURRENT;
-  uint8_t stagedMode_ = 0;
+  // The mode picked in mode select, or kNoMode.
+  uint8_t stagedMode_ = kNoMode;
   HoldTracker holds_;
   DoubleClick pending_;
 };

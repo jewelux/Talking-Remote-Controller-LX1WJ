@@ -141,8 +141,8 @@ class KeypadUiListener : public KeypadInputListener {
     speakBankPlease();
   }
 
-  void onDigitAccepted(InputMode mode, char key, const char* digits) override {
-    keypadEntryDigit(mode, key, digits);
+  void onDigitAccepted(const EntrySpec& entry, char key, const char* digits) override {
+    keypadEntryDigit(entry, key, digits);
   }
 
   void onUnassigned(const char* label) override { keypadReportUnassigned(label); }

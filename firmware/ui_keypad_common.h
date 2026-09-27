@@ -17,7 +17,7 @@ void keypadStageCommand(const String& cmd);
 void speakKeypadCommandWord(const String& cmd);
 
 // Entries and selections (ui_keypad_entry.cpp), called by the state machine.
-void keypadEntryDigit(InputMode mode, char key, const char* digits);
+void keypadEntryDigit(const EntrySpec& entry, char key, const char* digits);
 void keypadEntryCommit(InputMode mode, const char* digits, uint8_t targetVfo);
 bool keypadModeDigit(char key, uint8_t& mode);
 void keypadModeCommit(uint8_t mode, uint8_t targetVfo);

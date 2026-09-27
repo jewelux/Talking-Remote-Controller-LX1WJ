@@ -16,7 +16,29 @@ int holdBit(char key) {
 
 bool isDigit(char key) { return key >= '0' && key <= '9'; }
 
+// Bank select keeps the last digit typed; profile select takes up to two.
+// The frequency took a point even after 12 digits in the old code, so the
+// point does not check maxLen.
+constexpr EntrySpec kEntries[] = {
+    // mode                     name           len  replaces zero  fraction unit
+    {InputMode::BankSelect,     "BANK SELECT", 1,   true,    false, 0,      ""},
+    {InputMode::ProfileSelect,  "PROFILE",     2,   false,   false, 0,      ""},
+    {InputMode::FreqEntry,      "FREQ",        12,  false,   true,  5,      ""},
+    {InputMode::RfPowerEntry,   "RFPOWER",     3,   false,   true,  0,      " W"},
+    {InputMode::CivAddrEntry,   "CIVADDR",     3,   false,   true,  0,      ""},
+    {InputMode::RptOffsetEntry, "RPTSHIFT",    4,   false,   true,  0,      " kHz"},
+    {InputMode::CtcssEntry,     "CTCSS",       4,   false,   true,  0,      ""},
+    {InputMode::DcsEntry,       "DCS",         3,   false,   true,  0,      ""},
+};
+
 }  // namespace
+
+const EntrySpec* keypadEntrySpec(InputMode mode) {
+  for (const EntrySpec& e : kEntries) {
+    if (e.mode == mode) return &e;
+  }
+  return nullptr;
+}
 
 void KeypadInput::HoldTracker::set(char key) {
   const int bit = holdBit(key);
@@ -64,18 +86,18 @@ void KeypadInput::onKey(char key, KeyGesture gesture, uint32_t nowMs) {
     case InputMode::Normal:
       releasedNormal(key, nowMs);
       return;
-    case InputMode::BankSelect:
-      releasedBankSelect(key);
-      return;
-    case InputMode::ProfileSelect:
-      releasedProfileSelect(key);
-      return;
     case InputMode::ModeSelect:
-    case InputMode::ModeStaged:
       releasedModeSelect(key);
       return;
-    default:
-      releasedEntry(key);
+    case InputMode::BankSelect:
+    case InputMode::ProfileSelect:
+    case InputMode::FreqEntry:
+    case InputMode::RfPowerEntry:
+    case InputMode::CivAddrEntry:
+    case InputMode::RptOffsetEntry:
+    case InputMode::CtcssEntry:
+    case InputMode::DcsEntry:
+      releasedEntry(*keypadEntrySpec(mode_), key);
       return;
   }
 }
@@ -99,6 +121,7 @@ void KeypadInput::beginEntry(InputMode mode, uint8_t targetVfo) {
 
 void KeypadInput::beginModeSelect(uint8_t targetVfo) {
   beginEntry(InputMode::ModeSelect, targetVfo);
+  stagedMode_ = kNoMode;
 }
 
 // The keys that belong to the state machine rather than the keymap, the same
@@ -172,99 +195,45 @@ void KeypadInput::releasedNormal(char key, uint32_t nowMs) {
   runShortOrUnassigned(bank_, key);
 }
 
-// Mode select takes a key that picks a mode and stages it; Enter applies the
-// staged mode, and another mode digit replaces it. Any other key beeps and the
-// mode stays; only '#' cancels.
+// Mode select takes a key that picks a mode; another one replaces it, and
+// Enter applies it. Any other key beeps and the mode stays; only '#' cancels.
 void KeypadInput::releasedModeSelect(char key) {
   uint8_t mode = 0;
-  if (!listener_.onModeDigit(key, mode)) return;
-  mode_ = InputMode::ModeStaged;
-  stagedMode_ = mode;
+  if (listener_.onModeDigit(key, mode)) stagedMode_ = mode;
 }
 
-void KeypadInput::releasedBankSelect(char key) {
-  if (key >= '1' && key <= '9') {
-    digits_.clear();
-    digits_.push(key);
-    listener_.onDigitAccepted(mode_, key, digits_.c_str());
-    return;
-  }
-  reportUnassigned("BANK SELECT ", key);
-}
-
-void KeypadInput::releasedProfileSelect(char key) {
-  if (isDigit(key)) {
-    if (digits_.length() >= 2 || (digits_.empty() && key == '0')) {
-      reportUnassigned("PROFILE ", key);
-      return;
-    }
-    digits_.push(key);
-    listener_.onDigitAccepted(mode_, key, digits_.c_str());
-    return;
-  }
-  reportUnassigned("PROFILE ", key);
-}
-
-void KeypadInput::releasedEntry(char key) {
-  if (mode_ == InputMode::FreqEntry && key == '*') {
-    // '*' is the decimal point: one only, and not first.
+// Bank select, profile select and the entries: a digit the entry takes, or
+// the frequency point. Any other key beeps and the entry stays.
+void KeypadInput::releasedEntry(const EntrySpec& entry, char key) {
+  if (key == '*' && entry.maxFraction > 0) {
+    // One point only, and not first.
     if (!digits_.empty() && digits_.indexOf('*') < 0) {
       digits_.push(key);
-      listener_.onDigitAccepted(mode_, key, digits_.c_str());
+      listener_.onDigitAccepted(entry, key, digits_.c_str());
     } else {
-      listener_.onUnassigned("FREQ POINT");
+      reportUnassigned(entry.name, "POINT");
     }
     return;
   }
-  if (!isDigit(key)) {
-    reportUnassigned("ENTRY ", key);
+  if (!takesDigit(entry, key)) {
+    const char label[2] = {key, '\0'};
+    reportUnassigned(entry.name, label);
     return;
   }
-  if (entryTakesDigit()) {
-    digits_.push(key);
-    listener_.onDigitAccepted(mode_, key, digits_.c_str());
-    return;
-  }
-  reportUnassigned(modeLabel(), key);
+  if (digits_.length() >= entry.maxLen) digits_.clear();  // replaces
+  digits_.push(key);
+  listener_.onDigitAccepted(entry, key, digits_.c_str());
 }
 
-// Prefix of the beep label for a key the current mode rejects.
-const char* KeypadInput::modeLabel() const {
-  switch (mode_) {
-    case InputMode::Normal: return "";
-    case InputMode::BankSelect: return "BANK SELECT ";
-    case InputMode::ProfileSelect: return "PROFILE ";
-    case InputMode::ModeSelect:
-    case InputMode::ModeStaged: return "MODE SELECT ";
-    case InputMode::FreqEntry: return "FREQ ";
-    case InputMode::RfPowerEntry: return "RFPOWER ";
-    case InputMode::CivAddrEntry: return "CIVADDR ";
-    case InputMode::RptOffsetEntry:
-    case InputMode::CtcssEntry:
-    case InputMode::DcsEntry: return "BANK6 ENTRY ";
-  }
-  return "";
-}
-
-bool KeypadInput::entryTakesDigit() const {
+bool KeypadInput::takesDigit(const EntrySpec& entry, char key) const {
+  if (!isDigit(key)) return false;
   const size_t len = digits_.length();
-  switch (mode_) {
-    case InputMode::FreqEntry: {
-      // Up to 12 characters, and up to 5 digits after the point.
-      const int point = digits_.indexOf('*');
-      const bool fractionFull = point >= 0 && (int)len - point - 1 >= 5;
-      return !fractionFull && len < 12;
-    }
-    case InputMode::RfPowerEntry:
-    case InputMode::CivAddrEntry:
-    case InputMode::DcsEntry:
-      return len < 3;
-    case InputMode::RptOffsetEntry:
-    case InputMode::CtcssEntry:
-      return len < 4;
-    default:
-      return false;
-  }
+  const bool full = len >= entry.maxLen;
+  if (full && !entry.replaces) return false;
+  // A full entry that replaces starts over with this digit.
+  if ((len == 0 || full) && key == '0' && !entry.leadingZero) return false;
+  const int point = digits_.indexOf('*');
+  return point < 0 || (int)len - point - 1 < entry.maxFraction;
 }
 
 // Enter ('D'). Entries and selections commit; in Normal mode a staged command
@@ -275,7 +244,11 @@ void KeypadInput::enter() {
     if (!listener_.sendStagedCommand()) listener_.onUnassigned("ENTER");
     return;
   }
-  if (mode_ == InputMode::ModeStaged) {
+  if (mode_ == InputMode::ModeSelect) {
+    if (stagedMode_ == kNoMode) {
+      reportUnassigned("MODE SELECT", "D");
+      return;
+    }
     const uint8_t targetVfo = entryVfo_;
     mode_ = InputMode::Normal;
     entryVfo_ = KEYPAD_VFO_CURRENT;
@@ -283,9 +256,8 @@ void KeypadInput::enter() {
     return;
   }
 
-  // Mode select takes no digits, so it always gets here.
   if (digits_.empty()) {
-    reportUnassigned(modeLabel(), 'D');
+    reportUnassigned(keypadEntrySpec(mode_)->name, "D");
     return;
   }
   const InputMode mode = mode_;
@@ -320,8 +292,8 @@ void KeypadInput::runShortOrUnassigned(uint8_t bank, char key) {
   listener_.onUnassigned(label);
 }
 
-void KeypadInput::reportUnassigned(const char* prefix, char key) {
+void KeypadInput::reportUnassigned(const char* mode, const char* what) {
   char label[24];
-  snprintf(label, sizeof(label), "%s%c", prefix, key);
+  snprintf(label, sizeof(label), "%s %s", mode, what);
   listener_.onUnassigned(label);
 }

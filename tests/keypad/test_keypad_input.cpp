@@ -19,7 +19,6 @@ const char *modeName(InputMode m) {
     case InputMode::BankSelect: return "BankSelect";
     case InputMode::ProfileSelect: return "ProfileSelect";
     case InputMode::ModeSelect: return "ModeSelect";
-    case InputMode::ModeStaged: return "ModeStaged";
     case InputMode::FreqEntry: return "FreqEntry";
     case InputMode::RfPowerEntry: return "RfPowerEntry";
     case InputMode::CivAddrEntry: return "CivAddrEntry";
@@ -65,8 +64,8 @@ struct Fake : KeypadInputListener {
   bool wantsDoubleClick(uint8_t bank, char key) override { return waits.count(keyId(bank, key)); }
   void onBankQuery(uint8_t bank) override { log.push_back("bank? " + std::to_string(bank)); }
   void onBankSelectStart() override { log.push_back("bank please"); }
-  void onDigitAccepted(InputMode mode, char key, const char *digits) override {
-    log.push_back(std::string("digit ") + modeName(mode) + " " + key + " " + digits);
+  void onDigitAccepted(const EntrySpec &entry, char key, const char *digits) override {
+    log.push_back(std::string("digit ") + modeName(entry.mode) + " " + key + " " + digits);
   }
   void onUnassigned(const char *label) override {
     log.push_back(std::string("unassigned ") + label);
@@ -590,7 +589,7 @@ TEST(input_frequency_entry_point_rules) {
                         "digit FreqEntry 5 14*12345", "unassigned FREQ 6");
   typeKeys(in, "AD");
   CHECK_EQ(in.mode(), InputMode::Normal);
-  CHECK_LOG(f, "unassigned ENTRY A", "commit FreqEntry [14*12345] vfo2");
+  CHECK_LOG(f, "unassigned FREQ A", "commit FreqEntry [14*12345] vfo2");
 }
 
 TEST(input_frequency_entry_length_limit) {
@@ -625,7 +624,7 @@ TEST(input_rf_power_entry_limits) {
   typeKeys(in, "1004*BD");
   CHECK_LOG(f, "digit RfPowerEntry 1 1", "digit RfPowerEntry 0 10",
                         "digit RfPowerEntry 0 100", "unassigned RFPOWER 4",
-                        "unassigned ENTRY *", "unassigned ENTRY B",
+                        "unassigned RFPOWER *", "unassigned RFPOWER B",
                         "commit RfPowerEntry [100] vfo0");
 }
 
@@ -636,18 +635,19 @@ TEST(input_civ_address_entry_limits) {
   typeKeys(in, "1488*D");
   CHECK_LOG(f, "digit CivAddrEntry 1 1", "digit CivAddrEntry 4 14",
                         "digit CivAddrEntry 8 148", "unassigned CIVADDR 8",
-                        "unassigned ENTRY *", "commit CivAddrEntry [148] vfo0");
+                        "unassigned CIVADDR *", "commit CivAddrEntry [148] vfo0");
 }
 
 TEST(input_bank6_entry_limits) {
   struct Case {
     InputMode mode;
     const char *accepted;
+    const char *name;
   };
   const Case cases[] = {
-      {InputMode::RptOffsetEntry, "5000"},
-      {InputMode::CtcssEntry, "1318"},
-      {InputMode::DcsEntry, "023"},
+      {InputMode::RptOffsetEntry, "5000", "RPTSHIFT"},
+      {InputMode::CtcssEntry, "1318", "CTCSS"},
+      {InputMode::DcsEntry, "023", "DCS"},
   };
   for (const Case &c : cases) {
     Fake f;
@@ -656,7 +656,7 @@ TEST(input_bank6_entry_limits) {
     typeKeys(in, c.accepted);
     f.take();
     typeKeys(in, "9*");
-    CHECK_LOG(f, "unassigned BANK6 ENTRY 9", "unassigned ENTRY *");
+    CHECK_LOG(f, std::string("unassigned ") + c.name + " 9", std::string("unassigned ") + c.name + " *");
     tap(in, 'D');
     CHECK_LOG(f, std::string("commit ") + modeName(c.mode) + " [" + c.accepted + "] vfo0");
   }
@@ -695,9 +695,9 @@ TEST(input_enter_with_nothing_typed_is_unassigned_and_stays) {
       {InputMode::FreqEntry, "FREQ D"},
       {InputMode::RfPowerEntry, "RFPOWER D"},
       {InputMode::CivAddrEntry, "CIVADDR D"},
-      {InputMode::RptOffsetEntry, "BANK6 ENTRY D"},
-      {InputMode::CtcssEntry, "BANK6 ENTRY D"},
-      {InputMode::DcsEntry, "BANK6 ENTRY D"},
+      {InputMode::RptOffsetEntry, "RPTSHIFT D"},
+      {InputMode::CtcssEntry, "CTCSS D"},
+      {InputMode::DcsEntry, "DCS D"},
       {InputMode::ProfileSelect, "PROFILE D"},
   };
   for (const Case &c : cases) {
@@ -801,7 +801,8 @@ TEST(input_staged_mode_is_modal) {
   tap(in, '7');
   hold(in, '0');
   hold(in, '*');
-  CHECK_EQ(in.mode(), InputMode::ModeStaged);
+  CHECK_EQ(in.mode(), InputMode::ModeSelect);
+  CHECK(in.stagedModeActive());
   tap(in, '1');
   tap(in, 'D');
   CHECK_EQ(in.mode(), InputMode::Normal);
@@ -818,7 +819,6 @@ TEST(input_mode_select_stages_mode_for_target_vfo) {
   in.setBank(3);
   in.beginModeSelect(KEYPAD_VFO_A);
   tap(in, '1', 1000);  // no double-click wait during mode select
-  CHECK(!in.modeSelectActive());
   CHECK(in.stagedModeActive());
   CHECK(!in.doubleClickPending());
   tap(in, 'D');
@@ -836,7 +836,6 @@ TEST(input_mode_select_invalid_key_keeps_it_active) {
   typeKeys(in, "7A*");
   CHECK_EQ(in.mode(), InputMode::ModeSelect);
   tap(in, '2');
-  CHECK(!in.modeSelectActive());
   tap(in, 'D');
   CHECK_LOG(f, "mode digit 7 invalid", "mode digit A invalid", "mode digit * invalid",
             "mode digit 2", "mode commit 2 vfo2");
@@ -848,7 +847,8 @@ TEST(input_mode_select_enter_beeps_and_keeps_it_active) {
   KeypadInput in(f);
   in.beginModeSelect(KEYPAD_VFO_CURRENT);
   tap(in, 'D');
-  CHECK(in.modeSelectActive());
+  CHECK_EQ(in.mode(), InputMode::ModeSelect);
+  CHECK(!in.stagedModeActive());
   CHECK(f.stagedCommand);
   CHECK_LOG(f, "unassigned MODE SELECT D");
 }
@@ -886,7 +886,6 @@ TEST(input_mode_select_key_is_mode_digit_not_short_action) {
   in.setBank(3);
   in.beginModeSelect(KEYPAD_VFO_A);
   tap(in, '7');
-  CHECK(!in.modeSelectActive());
   CHECK(in.stagedModeActive());
   CHECK_LOG(f, "mode digit 7");
 }
@@ -902,8 +901,40 @@ TEST(input_mode_select_ignores_holds) {
   hold(in, '*');
   CHECK_EQ(in.mode(), InputMode::ModeSelect);
   hold(in, '2');
-  CHECK(!in.modeSelectActive());
   CHECK(in.stagedModeActive());
   CHECK_EQ(in.bank(), 1);
   CHECK_LOG(f, "mode digit 0 invalid", "mode digit * invalid", "mode digit 2");
+}
+
+// Fixed by construction: the picked mode is part of mode select, so a new mode
+// select starts with none.
+TEST(input_mode_select_does_not_keep_an_earlier_pick) {
+  Fake f;
+  KeypadInput in(f);
+  in.beginModeSelect(KEYPAD_VFO_A);
+  typeKeys(in, "3#");
+  in.beginModeSelect(KEYPAD_VFO_A);
+  CHECK(!in.stagedModeActive());
+  tap(in, 'D');
+  CHECK_EQ(in.mode(), InputMode::ModeSelect);
+  CHECK_LOG(f, "mode digit 3", "clear", "unassigned MODE SELECT D");
+}
+
+// --- Entry table -----------------------------------------------------------------------
+
+TEST(input_every_entry_mode_has_its_rules) {
+  const InputMode entries[] = {InputMode::BankSelect,     InputMode::ProfileSelect,
+                               InputMode::FreqEntry,      InputMode::RfPowerEntry,
+                               InputMode::CivAddrEntry,   InputMode::RptOffsetEntry,
+                               InputMode::CtcssEntry,     InputMode::DcsEntry};
+  for (InputMode m : entries) {
+    const EntrySpec *e = keypadEntrySpec(m);
+    CHECK(e != nullptr);
+    if (!e) continue;
+    CHECK_EQ(e->mode, m);
+    // The digit buffer holds the longest entry plus the frequency point.
+    CHECK(e->maxLen >= 1 && e->maxLen <= 12);
+  }
+  CHECK(keypadEntrySpec(InputMode::Normal) == nullptr);
+  CHECK(keypadEntrySpec(InputMode::ModeSelect) == nullptr);
 }

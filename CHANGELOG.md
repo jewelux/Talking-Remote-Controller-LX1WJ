@@ -31,6 +31,12 @@
   VFO A read after VFO A select) now shows the key that was pressed instead of the query's own key.
   An FTDX10 key that sends a console command prints the command itself (`LOCK TOGGLE`, was
   `LOCK`; likewise NR, NB, NOTCH, SPLIT and Bank 4 TUNER)
+- one table in `keypad_input.cpp` (`EntrySpec`) holds the digit rules of bank select, profile
+  select and every entry: label, length, whether a digit replaces a full entry, leading zero,
+  digits after the point and the unit shown while typing. A new entry is an `InputMode`, a table
+  row and its commit. Mode select is one mode with an optional picked mode (`ModeStaged` is
+  gone). The beep for a key an entry rejects now names the entry: `FREQ A` (was `ENTRY A`),
+  `RPTSHIFT 9` / `CTCSS D` / `DCS D` (was `BANK6 ENTRY ...`)
 - FT-817 Bank 3 `1` long toggles VFO A/B and `2` long copies the active VFO's frequency and mode
   to the other (A=B, spoken "a equals b") again; both had become unreachable when the long press
   was given the same frequency entry as the double press. New console command `VFO A=B` (FT-817)
