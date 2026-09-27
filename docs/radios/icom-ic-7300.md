@@ -149,7 +149,7 @@ The current keypad concept uses radio-specific banks with:
 
 | Command family | Commands | Bank / keys |
 |---|---|---|
-| Status | `FREQ?`, `FREQ <kHz>`, `ROUND 500` | Bank 1: `0` short / `0` long / `0` double click |
+| Status | `FREQ?`, `FREQ <MHz>`, `ROUND 500` | Bank 1: `0` short / `0` long / `0` double click |
 | Status | `RXTX?` | Bank 1: `1` short |
 | Status | `TXFREQ?` | Bank 1: `2` short |
 | Status | `LOCK?`, `LOCK ON/OFF` | Bank 1: `3` short / `3` long |
@@ -211,11 +211,12 @@ The current keypad concept uses radio-specific banks with:
 |---|---|---|
 | Profile / System | Speak current profile | Bank 9: `A` short |
 | Profile / System | Start profile selection | Bank 9: `A` long, then `1..9`, then `Enter` |
-| Profile / System | `PROFILE NEXT` | Bank 9: `1` short |
-| Profile / System | `PROFILE PREV` | Bank 9: `2` short |
+| Profile / System | `PROFILE NEXT` | Bank 9: `B` short |
+| Profile / System | `PROFILE PREV` | Bank 9: `C` short |
 | Profile / System | `TUNINGSPEECH?`, `TUNINGSPEECH TOGGLE` | Bank 9: `4` short / `4` long |
-| Profile / System | `VOLUME?` | Bank 9: `5` short |
-| Profile / System | `VOLUME 1/2/3` | Bank 9: `7` short, `8` short, `9` short, then `Enter` |
+| Profile / System | `VOLUME DOWN / DOWN FAST` | Bank 9: `7` short / `7` long |
+| Profile / System | `VOLUME UP / UP FAST` | Bank 9: `8` short / `8` long |
+| Profile / System | `VOLUME?` | Bank 9: `9` short |
 
 ---
 
@@ -246,6 +247,7 @@ profile is already well beyond a minimal proof of concept.
 ## Notes
 
 - `Enter` refers to the keypad confirmation key `D`.
+- In frequency entry `*` is the decimal point: `14*074`, then `Enter`, tunes to 14.074 MHz.
 - `double click` refers to a profile-specific double-press action where
   supported.
 - The IC-7300 profile is one of the best references for how the `V3.5.8`
