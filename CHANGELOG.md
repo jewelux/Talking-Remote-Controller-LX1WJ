@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased — Keypad state machine
+
+- keypad input is now one state machine (`firmware/keypad_input.{h,cpp}`) with a declarative
+  keymap per bank (`firmware/keypad_keymap.cpp`); the bank actions moved to
+  `ui_keypad_bank1..9.cpp` and the entries to `ui_keypad_entry.cpp`. Host unit tests in
+  `tests/keypad` (`make -C tests/keypad`) cover the state machine and every key of every bank for
+  each radio family, and run in CI
+- fixed `1`/`2` being ignored after a Bank 3 VFO A/B mode select (`3`/`4`/`5` long): the next
+  press, e.g. mode digit 1 (LSB), was swallowed
+- fixed FT-817 Bank 3 `1`/`2` long: releasing the held digit typed it into the new frequency entry,
+  and a later short `1`/`2` did nothing
+- fixed Bank 1 `9` long mode select applying the mode to VFO A or B when an earlier Bank 3 VFO mode
+  select had ended on an invalid digit; it now always sets the current VFO's mode
+- pressing `#` while another key is held no longer runs that key's short action on its release
+
 ## Unreleased — Firmware CI
 
 - GitHub Actions workflow `.github/workflows/firmware.yml` builds the ESP32-S3 firmware on every
