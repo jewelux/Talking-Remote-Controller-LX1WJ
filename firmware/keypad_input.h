@@ -62,9 +62,9 @@ class KeypadInputListener {
   virtual void onDigitAccepted(InputMode mode, char key, const char* digits) = 0;
   // The key does nothing here: "<label> -> unassigned" and the beep.
   virtual void onUnassigned(const char* label) = 0;
-  // Enter in bank select, profile select or an entry. The mode is already back
-  // to Normal. For bank select the new bank is already set; digits is empty
-  // when no bank was chosen.
+  // Enter in bank select, profile select or an entry, with at least one digit
+  // typed (with none, bank select beeps and stays, the others cancel like '#'). The mode is already back to
+  // Normal. For bank select the new bank is already set.
   virtual void onCommit(InputMode mode, const char* digits, uint8_t targetVfo) = 0;
 
   // A key typed during mode select or with a staged mode. Gives the feedback
@@ -76,8 +76,11 @@ class KeypadInputListener {
   // Enter in Normal mode. Sends the staged command and
   // returns true, or returns false when there is none.
   virtual bool sendStagedCommand() = 0;
+  // True when a staged command waits for Enter.
+  virtual bool hasStagedCommand() = 0;
 
-  // '#': everything was cancelled.
+  // '#': everything was cancelled. With nothing to cancel, '#' gives
+  // onUnassigned("CLEAR") instead.
   virtual void onClear() = 0;
 };
 
@@ -122,9 +125,10 @@ class KeypadInput {
   // A key that belongs to the state machine: the same on every bank.
   struct GlobalKey {
     char key;
+    const char* name;  // for the beep of a long press without an action
     bool normalOnly;  // the other modes take the key as their input
     void (KeypadInput::*onShort)();
-    void (KeypadInput::*onHold)();  // nullptr: the release acts as a short press
+    void (KeypadInput::*onHold)();  // nullptr: no long action
   };
 
   struct DoubleClick {

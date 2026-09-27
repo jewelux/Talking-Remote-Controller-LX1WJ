@@ -95,9 +95,9 @@ void KeypadInput::beginModeSelect(uint8_t targetVfo) {
 // the other modes and is not global there.
 const KeypadInput::GlobalKey* KeypadInput::globalKey(char key) const {
   static const GlobalKey kKeys[] = {
-      {'*', true, &KeypadInput::sayBank, &KeypadInput::beginBankSelect},
-      {'D', false, &KeypadInput::enter, nullptr},
-      {'#', false, &KeypadInput::clearAll, nullptr},
+      {'*', "BANK", true, &KeypadInput::sayBank, &KeypadInput::beginBankSelect},
+      {'D', "ENTER", false, &KeypadInput::enter, nullptr},
+      {'#', "CLEAR", false, &KeypadInput::clearAll, nullptr},
   };
   for (const GlobalKey& g : kKeys) {
     if (g.key == key && (!g.normalOnly || mode_ == InputMode::Normal)) return &g;
@@ -114,24 +114,31 @@ void KeypadInput::beginBankSelect() {
 }
 
 // Bank, profile and mode select and the entries ignore holds; their keys act on
-// release. A global key with no long action acts on release in Normal mode too.
-// A bank key with no long action beeps now, and its release is swallowed like
-// after a long action.
+// release. In Normal mode a key with no long action beeps now, and its release
+// is swallowed like after a long action.
 void KeypadInput::held(char key) {
   if (mode_ != InputMode::Normal) return;
-  const GlobalKey* g = globalKey(key);
-  if (g && !g->onHold) return;
   holds_.set(key);
+  const GlobalKey* g = globalKey(key);
+  bool handled;
   if (g) {
-    (this->*g->onHold)();
-  } else if (!listener_.runHold(bank_, key)) {
-    // The beep is no action: a short still waiting for a double click stays.
-    char label[24];
-    snprintf(label, sizeof(label), "BANK%u %c LONG", (unsigned)bank_, key);
-    listener_.onUnassigned(label);
+    handled = g->onHold != nullptr;
+    if (handled) (this->*g->onHold)();
+  } else {
+    handled = listener_.runHold(bank_, key);
+  }
+  if (handled) {
+    pending_.active = false;
     return;
   }
-  pending_.active = false;
+  // The beep is no action: a short still waiting for a double click stays.
+  char label[24];
+  if (g) {
+    snprintf(label, sizeof(label), "%s LONG", g->name);
+  } else {
+    snprintf(label, sizeof(label), "BANK%u %c LONG", (unsigned)bank_, key);
+  }
+  listener_.onUnassigned(label);
 }
 
 void KeypadInput::releasedNormal(char key, uint32_t nowMs) {
@@ -243,7 +250,8 @@ bool KeypadInput::entryTakesDigit() const {
 }
 
 // Enter ('D'). Entries and selections commit; in Normal mode a staged command
-// is sent. Mode select needs a mode first.
+// is sent. Mode and bank select need a mode or bank first. In an entry or
+// profile select, Enter with nothing typed cancels like Clear.
 void KeypadInput::enter() {
   if (mode_ == InputMode::Normal) {
     if (!listener_.sendStagedCommand()) listener_.onUnassigned("ENTER");
@@ -261,19 +269,32 @@ void KeypadInput::enter() {
     return;
   }
 
+  if (mode_ == InputMode::BankSelect && digits_.empty()) {
+    reportUnassigned("BANK SELECT ", 'D');
+    return;
+  }
+  if (digits_.empty()) {
+    clearAll();
+    return;
+  }
   const InputMode mode = mode_;
   const DigitBuffer<13> digits = digits_;
   const uint8_t targetVfo = entryVfo_;
-  if (mode == InputMode::BankSelect && !digits.empty()) bank_ = (uint8_t)(digits.c_str()[0] - '0');
+  if (mode == InputMode::BankSelect) bank_ = (uint8_t)(digits.c_str()[0] - '0');
   mode_ = InputMode::Normal;
   digits_.clear();
   entryVfo_ = KEYPAD_VFO_CURRENT;
   listener_.onCommit(mode, digits.c_str(), targetVfo);
 }
 
-// Clear ('#') cancels every mode, entry, staged mode and waiting double click.
-// Keys still held keep their hold, so their release stays swallowed.
+// Clear ('#') cancels every mode, entry, staged mode, staged command and
+// waiting double click, and beeps when there is none. Keys still held keep their
+// hold, so their release stays swallowed.
 void KeypadInput::clearAll() {
+  if (mode_ == InputMode::Normal && !pending_.active && !listener_.hasStagedCommand()) {
+    listener_.onUnassigned("CLEAR");
+    return;
+  }
   mode_ = InputMode::Normal;
   digits_.clear();
   entryVfo_ = KEYPAD_VFO_CURRENT;

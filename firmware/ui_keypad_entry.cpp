@@ -138,15 +138,10 @@ void keypadEntryDigit(InputMode mode, char key, const char* digits) {
   if (g_speechEnabled) speakDigitsAndPoint(String(key));
 }
 
-static void commitBank(const char* digits) {
+static void commitBank() {
   printKeypadCommand("ENTER -> BANK");
-  if (digits[0]) {
-    printKeypadStatus(String("BANK ") + String((int)keypadInput().bank()));
-    speakBankNumber();
-  } else {
-    printKeypadStatus("BANK -> no selection");
-    playBeep();
-  }
+  printKeypadStatus(String("BANK ") + String((int)keypadInput().bank()));
+  speakBankNumber();
 }
 
 static void commitProfile(const char* digits) {
@@ -157,8 +152,8 @@ static void commitProfile(const char* digits) {
     printKeypadStatus(String("PROFILE ") + String(slot));
     speakCurrentProfile();
   } else {
-    printKeypadStatus("PROFILE -> no selection");
-    playBeep();
+    printKeypadStatus("PROFILE -> not available");
+    if (g_speechEnabled) speakNotAvailable();
   }
 }
 
@@ -204,21 +199,11 @@ static void commitFrequency(const char* digits, uint8_t targetVfo) {
 
 static void commitRfPower(const char* digits) {
   printKeypadCommand("ENTER -> RFPOWER");
-  if (!digits[0]) {
-    printKeypadStatus("RFPOWER -> no value");
-    if (g_speechEnabled) speakError();
-  } else {
-    keypadSendNow(String("RFPOWER ") + digits);
-  }
+  keypadSendNow(String("RFPOWER ") + digits);
 }
 
 static void commitCivAddress(const char* digits) {
   printKeypadCommand("ENTER -> CIVADDR");
-  if (!digits[0]) {
-    printKeypadStatus("CIVADDR -> no value");
-    if (g_speechEnabled) speakError();
-    return;
-  }
   int addr = atoi(digits);
   if (addr < 0 || addr > 255 || !setCurrentCivConnection((uint8_t)addr, currentProfile().baud)) {
     printKeypadStatus("CIVADDR -> invalid");
@@ -282,7 +267,7 @@ static void commitDcs(const char* digits) {
 
 void keypadEntryCommit(InputMode mode, const char* digits, uint8_t targetVfo) {
   switch (mode) {
-    case InputMode::BankSelect: commitBank(digits); return;
+    case InputMode::BankSelect: commitBank(); return;
     case InputMode::ProfileSelect: commitProfile(digits); return;
     case InputMode::FreqEntry: commitFrequency(digits, targetVfo); return;
     case InputMode::RfPowerEntry: commitRfPower(digits); return;

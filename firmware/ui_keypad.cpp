@@ -161,6 +161,8 @@ class KeypadUiListener : public KeypadInputListener {
     return true;
   }
 
+  bool hasStagedCommand() override { return s_hasStagedCommand; }
+
   void onClear() override {
     s_stagedCommand = "";
     s_hasStagedCommand = false;

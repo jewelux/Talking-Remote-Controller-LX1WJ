@@ -41,7 +41,7 @@ struct Fake : KeypadInputListener {
   std::set<std::string> holds, shorts, doubles, waits;
   std::map<std::string, std::function<void()>> hooks;  // "hold 1 0" -> hook
   std::string validModeDigits = "123456789";
-  bool hasStagedCommand = false;
+  bool stagedCommand = false;
 
   bool run(const char *gesture, const std::set<std::string> &keys, uint8_t bank, char key) {
     const std::string id = keyId(bank, key);
@@ -85,11 +85,12 @@ struct Fake : KeypadInputListener {
     log.push_back("mode commit " + std::to_string(mode) + " vfo" + std::to_string(targetVfo));
   }
   bool sendStagedCommand() override {
-    if (!hasStagedCommand) return false;
-    hasStagedCommand = false;
+    if (!stagedCommand) return false;
+    stagedCommand = false;
     log.push_back("staged command");
     return true;
   }
+  bool hasStagedCommand() override { return stagedCommand; }
   void onClear() override { log.push_back("clear"); }
 
   // The log since the last call, then cleared.
@@ -248,6 +249,7 @@ TEST(input_clear_keeps_hold_of_key_still_down) {
   f.holds = {"1 3"};
   f.shorts = {"1 3"};
   KeypadInput in(f);
+  f.hooks["hold 1 3"] = [&] { in.beginEntry(InputMode::FreqEntry); };
   in.onKey('3', KeyGesture::Pressed, 0);
   in.onKey('3', KeyGesture::Held, 0);
   tap(in, '#');
@@ -255,12 +257,25 @@ TEST(input_clear_keeps_hold_of_key_still_down) {
   CHECK_LOG(f, "hold 1 3", "clear");
 }
 
-TEST(input_hold_of_d_and_hash_does_nothing_and_release_still_acts) {
+TEST(input_hold_of_d_and_hash_is_unassigned_and_swallows_release) {
   Fake f;
+  f.stagedCommand = true;
   KeypadInput in(f);
   hold(in, 'D');
   hold(in, '#');
-  CHECK_LOG(f, "unassigned ENTER", "clear");
+  CHECK_LOG(f, "unassigned ENTER LONG", "unassigned CLEAR LONG");
+  CHECK(f.stagedCommand);
+}
+
+TEST(input_hold_of_d_and_hash_in_entry_acts_on_release) {
+  Fake f;
+  KeypadInput in(f);
+  in.beginEntry(InputMode::RfPowerEntry);
+  typeKeys(in, "5");
+  hold(in, 'D');
+  in.beginEntry(InputMode::RfPowerEntry);
+  hold(in, '#');
+  CHECK_LOG(f, "digit RfPowerEntry 5 5", "commit RfPowerEntry [5] vfo0", "clear");
 }
 
 // --- Double click ------------------------------------------------------------
@@ -425,14 +440,18 @@ TEST(input_bank_select_takes_last_digit_and_commits) {
   CHECK_LOG(f, "bank? 5");
 }
 
-TEST(input_bank_select_without_digit_keeps_bank) {
+TEST(input_bank_select_without_digit_is_unassigned_and_stays) {
   Fake f;
   KeypadInput in(f);
   in.setBank(2);
   hold(in, '*');
   tap(in, 'D');
   CHECK_EQ(in.bank(), 2);
-  CHECK_LOG(f, "bank please", "commit BankSelect [] vfo0");
+  CHECK_EQ(in.mode(), InputMode::BankSelect);
+  typeKeys(in, "4D");
+  CHECK_EQ(in.bank(), 4);
+  CHECK_LOG(f, "bank please", "unassigned BANK SELECT D", "digit BankSelect 4 4",
+                        "commit BankSelect [4] vfo0");
 }
 
 TEST(input_bank_select_rejects_other_keys) {
@@ -591,8 +610,46 @@ TEST(input_entry_starts_empty_each_time) {
   in.beginEntry(InputMode::RfPowerEntry);
   typeKeys(in, "5#");
   in.beginEntry(InputMode::RfPowerEntry);
-  tap(in, 'D');
-  CHECK_LOG(f, "digit RfPowerEntry 5 5", "clear", "commit RfPowerEntry [] vfo0");
+  typeKeys(in, "7D");
+  CHECK_LOG(f, "digit RfPowerEntry 5 5", "clear", "digit RfPowerEntry 7 7",
+                        "commit RfPowerEntry [7] vfo0");
+}
+
+TEST(input_enter_with_nothing_typed_cancels) {
+  const InputMode modes[] = {InputMode::FreqEntry, InputMode::RfPowerEntry,
+                             InputMode::CivAddrEntry, InputMode::RptOffsetEntry,
+                             InputMode::CtcssEntry, InputMode::DcsEntry,
+                             InputMode::ProfileSelect};
+  for (InputMode mode : modes) {
+    Fake f;
+    KeypadInput in(f);
+    in.beginEntry(mode, KEYPAD_VFO_B);
+    tap(in, 'D');
+    CHECK_LOG(f, "clear");
+    CHECK_EQ(in.mode(), InputMode::Normal);
+    CHECK_EQ(in.entryTargetVfo(), KEYPAD_VFO_CURRENT);
+  }
+}
+
+TEST(input_clear_with_nothing_to_cancel_is_unassigned) {
+  Fake f;
+  KeypadInput in(f);
+  tap(in, '#');
+  CHECK_LOG(f, "unassigned CLEAR");
+}
+
+TEST(input_clear_cancels_staged_command_or_waiting_short) {
+  Fake f;
+  f.waits = {"1 0"};
+  f.shorts = {"1 0"};
+  f.stagedCommand = true;
+  KeypadInput in(f);
+  tap(in, '#');
+  f.stagedCommand = false;
+  tap(in, '0', 1000);
+  tap(in, '#', 1100);
+  in.poll(2000);
+  CHECK_LOG(f, "clear", "clear");
 }
 
 // --- Clear and Enter routing ----------------------------------------------------------
@@ -635,7 +692,7 @@ TEST(input_clear_cancels_staged_mode_and_waiting_short) {
 TEST(input_enter_in_normal_mode_routes_staged_mode_then_staged_command) {
   Fake f;
   KeypadInput in(f);
-  f.hasStagedCommand = true;
+  f.stagedCommand = true;
   in.beginModeSelect(KEYPAD_VFO_B);
   tap(in, '4');
   tap(in, 'D');
@@ -702,12 +759,12 @@ TEST(input_mode_select_invalid_key_keeps_it_active) {
 
 TEST(input_mode_select_enter_beeps_and_keeps_it_active) {
   Fake f;
-  f.hasStagedCommand = true;
+  f.stagedCommand = true;
   KeypadInput in(f);
   in.beginModeSelect(KEYPAD_VFO_CURRENT);
   tap(in, 'D');
   CHECK(in.modeSelectActive());
-  CHECK(f.hasStagedCommand);
+  CHECK(f.stagedCommand);
   CHECK_LOG(f, "unassigned MODE SELECT D");
 }
 

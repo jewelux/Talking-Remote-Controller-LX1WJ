@@ -38,6 +38,18 @@
 - holding a bank key that has no long action now beeps once the hold time is reached
   ("BANKn k LONG -> unassigned") and the release does nothing. Before, the release ran the key's
   short action, or beeped only then when it had none
+- holding `D` or `#` beeps the same way ("ENTER LONG" / "CLEAR LONG") and the release does
+  nothing; before, the release entered or cleared. In entries and bank, profile and mode select,
+  holds are still ignored and the release acts
+- `#` with nothing to cancel (no entry, selection, staged command or waiting key) beeps
+  ("CLEAR -> unassigned") instead of saying "cancel"
+- `D` with nothing typed in an entry or in profile select cancels like `#` and says "cancel";
+  before, frequency, RF power and CI-V address entry said "error", repeater offset, CTCSS and DCS
+  entry failed silently, and profile select beeped "no selection"
+- `D` in bank select with no bank chosen beeps and bank select stays, like mode select; before, it
+  ended bank select with a "no selection" beep
+- choosing a profile number with no stored profile in profile select says "not available" instead
+  of beeping
 - FTDX10: Bank 2 `8` and `9` now say "not available" like the other keys hidden on FTDX10,
   instead of the "unassigned" beep
 
