@@ -109,9 +109,10 @@ void queryBank3VfoA() {
 void queryBank3Ft8x7CurrentVfo() {
   ensureFt8x7VfoTrackingInitialized();
   const char which = ft8x7CurrentVfoLabel();
-  printKeypadAction(String("VFO") + which + "?");
+  const String label = String("VFO") + which + "?";
+  printKeypadAction(label);
   uint64_t hz = 0;
-  if (!queryFrequency(hz, 800)) { keypadReportIfTimedOut("VFOA?"); return; }
+  if (!queryFrequency(hz, 800)) { keypadReportIfTimedOut(label.c_str()); return; }
   printKeypadStatus(String("VFO") + which + ": " + hzToMHzString3(hz) + " MHz");
   if (g_speechEnabled) {
     speakVfoFrequencyLabel(which);
@@ -189,20 +190,21 @@ void queryBank3VfoB() {
 // Switches to the other VFO, reads it and switches back.
 void queryBank3Ft857OtherVfo() {
   ensureFt8x7VfoTrackingInitialized();
-  printKeypadAction(String("VFO") + ft8x7OtherVfoLabel() + "?");
+  const char other = ft8x7OtherVfoLabel();
+  const String label = String("VFO") + other + "?";
+  printKeypadAction(label);
   if (!guardFt8x7VfoToggleLock()) return;
   const bool priorVfoA = live.activeVfoA;
-  const char other = priorVfoA ? 'B' : 'A';
   uint64_t hz = 0;
-  if (!yaesuCatToggleVfo()) { keypadReportIfTimedOut("VFOB?"); return; }
+  if (!yaesuCatToggleVfo()) { keypadReportIfTimedOut(label.c_str()); return; }
   rememberActiveVfo(!priorVfoA);
   delay(120);
   bool ok = queryFrequency(hz, 800);
   delay(180);
-  if (!yaesuCatToggleVfo()) { keypadReportIfTimedOut("VFOB?"); return; }
+  if (!yaesuCatToggleVfo()) { keypadReportIfTimedOut(label.c_str()); return; }
   rememberActiveVfo(priorVfoA);
   delay(180);
-  if (!ok) { keypadReportIfTimedOut("VFOB?"); return; }
+  if (!ok) { keypadReportIfTimedOut(label.c_str()); return; }
   printKeypadStatus(String("VFO") + other + ": " + hzToMHzString3(hz) + " MHz");
   if (g_speechEnabled) {
     speakVfoFrequencyLabel(other);
@@ -214,11 +216,13 @@ void queryBank3Ft857OtherVfo() {
 // Switches to the other VFO, reads it (one retry) and switches back.
 void queryBank3Ft817OtherVfo() {
   ensureFt8x7VfoTrackingInitialized();
-  printKeypadAction(String("VFO") + ft8x7OtherVfoLabel() + "?");
+  const char other = ft8x7OtherVfoLabel();
+  const String label = String("VFO") + other + "?";
+  printKeypadAction(label);
   if (!guardFt8x7VfoToggleLock()) return;
   uint64_t hz = 0;
   bool ok = false;
-  if (!yaesuCatToggleVfo()) { keypadReportIfTimedOut("VFOB?"); return; }
+  if (!yaesuCatToggleVfo()) { keypadReportIfTimedOut(label.c_str()); return; }
   delay(120);
   ok = queryFrequency(hz, 800);
   if (!ok) {
@@ -228,11 +232,10 @@ void queryBank3Ft817OtherVfo() {
   delay(40);
   yaesuCatToggleVfo();
   delay(120);
-  if (!ok) { keypadReportIfTimedOut("VFOB?"); return; }
-  const char which = ft8x7OtherVfoLabel();
-  printKeypadStatus(String("VFO") + which + ": " + hzToMHzString3(hz) + " MHz");
+  if (!ok) { keypadReportIfTimedOut(label.c_str()); return; }
+  printKeypadStatus(String("VFO") + other + ": " + hzToMHzString3(hz) + " MHz");
   if (g_speechEnabled) {
-    speakVfoFrequencyLabel(which);
+    speakVfoFrequencyLabel(other);
     playSilenceMs(60);
     speakDigitsAndPoint(hzToMHzString3(hz));
   }
