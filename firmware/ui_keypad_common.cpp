@@ -126,29 +126,6 @@ void formatCtcssTenthsLabel(uint16_t toneTenths, char* out, size_t outSize) {
   snprintf(out, outSize, "%u.%u", (unsigned)(toneTenths / 10), (unsigned)(toneTenths % 10));
 }
 
-bool encodeCtcssTenths(uint16_t toneTenths, uint8_t& b0, uint8_t& b1) {
-  if (toneTenths > 9999) return false;
-  uint16_t value = toneTenths;
-  uint8_t d1 = (uint8_t)(value % 10); value /= 10;
-  uint8_t d10 = (uint8_t)(value % 10); value /= 10;
-  uint8_t d100 = (uint8_t)(value % 10); value /= 10;
-  uint8_t d1000 = (uint8_t)(value % 10);
-  b0 = (uint8_t)((d1000 << 4) | d100);
-  b1 = (uint8_t)((d10 << 4) | d1);
-  return true;
-}
-
-bool encodeDcsCode(uint16_t dcsCode, uint8_t& b0, uint8_t& b1) {
-  if (dcsCode > 999) return false;
-  uint16_t value = dcsCode;
-  uint8_t d1 = (uint8_t)(value % 10); value /= 10;
-  uint8_t d10 = (uint8_t)(value % 10); value /= 10;
-  uint8_t d100 = (uint8_t)(value % 10);
-  b0 = d100;
-  b1 = (uint8_t)((d10 << 4) | d1);
-  return true;
-}
-
 void speakFrequencyWord() {
   if (!g_speechEnabled) return;
   speakToken("frequency");

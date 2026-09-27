@@ -6,3 +6,11 @@ const char* protocolTypeToString(ProtocolType pt);
 void printActiveProfileDetails();
 void applyProfile(uint8_t profileId);
 void speakCurrentProfile();
+
+// CI-V baud rates the connection setup offers, slowest first.
+extern const uint32_t kCivBaudRates[];
+extern const size_t kCivBaudRateCount;
+// Sets the CI-V address and baud of the current profile, saves them as its
+// connection override and reapplies the profile. False when the current profile
+// is not a CI-V one.
+bool setCurrentCivConnection(uint8_t civAddr, uint32_t baud);

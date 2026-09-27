@@ -2,6 +2,7 @@
 
 #include "protocol_ascii.h"
 #include "protocol_yaesu_cat.h"
+#include "radio_catalog.h"
 #include "radio_protocol.h"
 #include "radio_state.h"
 
@@ -274,4 +275,79 @@ bool yaesuCatSetCtcssToneRaw(const uint8_t data[4]) {
 bool yaesuCatSetDcsCodeRaw(const uint8_t data[4]) {
   const uint8_t cmd[5] = {data[0], data[1], data[2], data[3], 0x0C};
   return yaesuCatSendWriteOnly(cmd);
+}
+
+static constexpr uint16_t kValidCtcssTenths[] = {
+  670, 693, 719, 744, 770, 797, 825, 854, 885, 915,
+  948, 974, 1000, 1035, 1072, 1109, 1148, 1188, 1230, 1273,
+  1318, 1365, 1413, 1462, 1514, 1567, 1598, 1622, 1655, 1679,
+  1713, 1738, 1773, 1799, 1835, 1862, 1899, 1928, 1966, 1995,
+  2035, 2065, 2107, 2181, 2257, 2291, 2336, 2418, 2503, 2541
+};
+
+static constexpr uint16_t kValidDcsCodes[] = {
+  23, 25, 26, 31, 32, 36, 43, 47, 51, 53, 54, 65, 71, 72, 73,
+  74, 114, 115, 116, 122, 125, 131, 132, 134, 143, 145, 152, 155, 156, 162,
+  165, 172, 174, 205, 212, 223, 225, 226, 243, 244, 245, 246, 251, 252, 255,
+  261, 263, 265, 266, 271, 274, 306, 311, 315, 325, 331, 332, 343, 346, 351,
+  356, 364, 365, 371, 411, 412, 413, 423, 431, 432, 445, 446, 452, 454, 455,
+  462, 464, 465, 466, 503, 506, 516, 523, 526, 532, 546, 565, 606, 612, 624,
+  627, 631, 632, 654, 662, 664, 703, 712, 723, 731, 732, 734, 743, 754
+};
+
+template <size_t N>
+static bool containsU16(const uint16_t (&values)[N], uint16_t needle) {
+  for (size_t i = 0; i < N; ++i) {
+    if (values[i] == needle) return true;
+  }
+  return false;
+}
+
+bool yaesuCtcssTenthsValid(uint16_t toneTenths) {
+  return containsU16(kValidCtcssTenths, toneTenths);
+}
+
+bool yaesuDcsCodeValid(uint16_t dcsCode) {
+  return containsU16(kValidDcsCodes, dcsCode);
+}
+
+// BCD pair: CTCSS 88.5 Hz (885) -> 08 85; DCS 023 -> 00 23.
+static void encodeToneBcd(uint16_t value, uint8_t& b0, uint8_t& b1) {
+  const uint8_t d1 = (uint8_t)(value % 10); value /= 10;
+  const uint8_t d10 = (uint8_t)(value % 10); value /= 10;
+  const uint8_t d100 = (uint8_t)(value % 10); value /= 10;
+  const uint8_t d1000 = (uint8_t)(value % 10);
+  b0 = (uint8_t)((d1000 << 4) | d100);
+  b1 = (uint8_t)((d10 << 4) | d1);
+}
+
+// FT-857/897 take separate TX and RX values; the FT-817 takes one.
+static void fillToneData(uint16_t value, uint8_t data[4]) {
+  encodeToneBcd(value, data[0], data[1]);
+  data[2] = 0x00;
+  data[3] = 0x00;
+  if (currentProfileVariantIs("ft857_897")) {
+    data[2] = data[0];
+    data[3] = data[1];
+  }
+}
+
+bool yaesuCatSetCtcssTenths(uint16_t toneTenths) {
+  if (!yaesuCtcssTenthsValid(toneTenths)) return false;
+  uint8_t data[4];
+  fillToneData(toneTenths, data);
+  if (!yaesuCatSetCtcssToneRaw(data)) return false;
+  live.ctcssValid = true;
+  live.ctcssTenths = toneTenths;
+  return true;
+}
+
+bool yaesuCatSetDcsCode(uint16_t dcsCode) {
+  if (!yaesuDcsCodeValid(dcsCode)) return false;
+  uint8_t data[4];
+  fillToneData(dcsCode, data);
+  if (!yaesuCatSetDcsCodeRaw(data)) return false;
+  live.dcsValid = true;
+  live.dcsCode = dcsCode;
+  return true;
 }

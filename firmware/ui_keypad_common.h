@@ -71,9 +71,6 @@ void speakHexNibble(char c);
 void speakCivAddressValue(uint8_t addr, bool ok);
 
 void formatCtcssTenthsLabel(uint16_t toneTenths, char* out, size_t outSize);
-// BCD encoding for the FT-8x7 CAT tone and DCS commands.
-bool encodeCtcssTenths(uint16_t toneTenths, uint8_t& b0, uint8_t& b1);
-bool encodeDcsCode(uint16_t dcsCode, uint8_t& b0, uint8_t& b1);
 
 void speakFrequencyWord();
 void speakBinaryFeatureState(const uint8_t* featureData, size_t featureLen, bool on);

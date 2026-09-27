@@ -42,7 +42,7 @@ void ftdx10HiddenBank4() { reportFtdx10HiddenKey("BANK4"); }
 
 bool bank1(const KeypadTraits& t, Gesture g, char key) {
   switch (key) {
-    case '0': return run(g, queryBank1Frequency, beginBank1FrequencySet, roundActiveFrequency500);
+    case '0': return run(g, queryBank1Frequency, beginBank1FrequencySet, [] { roundActiveFrequency(500); });
     case '1': return run(g, queryBank1RxTx, nullptr, waitOnly);
     case '2': return run(g, queryBank1TxFrequency, nullptr, waitOnly);
     case '3': return run(g, queryBank1Lock, toggleBank1Lock);
@@ -199,8 +199,8 @@ bool bank6(Gesture g, char key) {
   switch (key) {
     case '0': return run(g, setBank6RepeaterOff, setBank6RepeaterMinus, setBank6RepeaterPlus);
     case '1':
-      return run(g, setBank6RepeaterOffset1, setBank6RepeaterOffset2,
-                 beginBank6RepeaterOffsetEntry);
+      return run(g, [] { setBank6RepeaterOffsetPreset(1); },
+                 [] { setBank6RepeaterOffsetPreset(2); }, beginBank6RepeaterOffsetEntry);
     case '2': return run(g, setBank6ToneOff, setBank6ToneModeCtcss, setBank6ToneModeDcs);
     case '3': return run(g, queryBank6CtcssDefault, beginBank6CtcssEntry);
     case '4': return run(g, queryBank6DcsDefault, beginBank6DcsEntry);

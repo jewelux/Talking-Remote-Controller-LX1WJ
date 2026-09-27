@@ -2,6 +2,13 @@
 
 ## Unreleased — Keypad state machine
 
+- console commands for what only the keypad could do, taking the keypad's fixed value as an
+  argument: `ROUND [<Hz>]` (Bank 1 `0` double rounds to 500 Hz); `NRLEVEL`, `NBLEVEL`,
+  `MONLEVEL`, `PBT1`, `PBT2`, `RIT` and `VOLUME STEP <+-n>`; `FILWIDTH NEXT | PREV`; `TOGGLE` for
+  `MONITOR`, `TRANSCEIVE`, `RIT`, `FILSHAPE` and `TUNINGSPEECH`; `CIVADDR? | <hex>` and
+  `BAUD? | <rate>` (CI-V); on FT-8x7 `CTCSS? | <Hz>`, `DCS? | <code>` and `VFO SYNC A | B`
+- `BANK <n>`, `BANK NEXT` and `BANK PREV` on the console now cover banks 1–9 like the keypad
+  (they stopped at 3)
 - keypad input is now one state machine (`firmware/keypad_input.{h,cpp}`) with a declarative
   keymap per bank (`firmware/keypad_keymap.cpp`); the bank actions moved to
   `ui_keypad_bank1..9.cpp` and the entries to `ui_keypad_entry.cpp`. Host unit tests in

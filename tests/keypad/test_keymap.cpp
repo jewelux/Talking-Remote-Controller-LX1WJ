@@ -73,7 +73,7 @@ void forEachKey(Fn fn) {
 
 void queryBank1Frequency() { record("queryBank1Frequency"); }
 void beginBank1FrequencySet() { record("beginBank1FrequencySet"); }
-void roundActiveFrequency500() { record("roundActiveFrequency500"); }
+void roundActiveFrequency(uint32_t hz) { record("roundActiveFrequency(%u)", (unsigned)hz); }
 void queryBank1RxTx() { record("queryBank1RxTx"); }
 void queryBank1TxFrequency() { record("queryBank1TxFrequency"); }
 void queryBank1Lock() { record("queryBank1Lock"); }
@@ -161,8 +161,7 @@ void setBank5RitOff() { record("setBank5RitOff"); }
 void setBank6RepeaterOff() { record("setBank6RepeaterOff"); }
 void setBank6RepeaterMinus() { record("setBank6RepeaterMinus"); }
 void setBank6RepeaterPlus() { record("setBank6RepeaterPlus"); }
-void setBank6RepeaterOffset1() { record("setBank6RepeaterOffset1"); }
-void setBank6RepeaterOffset2() { record("setBank6RepeaterOffset2"); }
+void setBank6RepeaterOffsetPreset(uint8_t p) { record("setBank6RepeaterOffsetPreset(%u)", (unsigned)p); }
 void beginBank6RepeaterOffsetEntry() { record("beginBank6RepeaterOffsetEntry"); }
 void setBank6ToneOff() { record("setBank6ToneOff"); }
 void setBank6ToneModeCtcss() { record("setBank6ToneModeCtcss"); }

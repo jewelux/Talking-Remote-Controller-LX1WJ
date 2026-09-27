@@ -6,7 +6,6 @@
 #include "radio_frequency.h"
 #include "radio_mode.h"
 #include "radio_monitor.h"
-#include "radio_prefs.h"
 #include "radio_profile.h"
 #include "radio_protocol.h"
 #include "radio_runtime.h"
@@ -80,40 +79,6 @@ static bool verifyKeypadModeWrite(uint8_t targetVfo, uint8_t expectedMode) {
   return true;
 }
 
-static constexpr uint16_t kValidCtcssTenths[] = {
-  670, 693, 719, 744, 770, 797, 825, 854, 885, 915,
-  948, 974, 1000, 1035, 1072, 1109, 1148, 1188, 1230, 1273,
-  1318, 1365, 1413, 1462, 1514, 1567, 1598, 1622, 1655, 1679,
-  1713, 1738, 1773, 1799, 1835, 1862, 1899, 1928, 1966, 1995,
-  2035, 2065, 2107, 2181, 2257, 2291, 2336, 2418, 2503, 2541
-};
-
-static constexpr uint16_t kValidDcsCodes[] = {
-  23, 25, 26, 31, 32, 36, 43, 47, 51, 53, 54, 65, 71, 72, 73,
-  74, 114, 115, 116, 122, 125, 131, 132, 134, 143, 145, 152, 155, 156, 162,
-  165, 172, 174, 205, 212, 223, 225, 226, 243, 244, 245, 246, 251, 252, 255,
-  261, 263, 265, 266, 271, 274, 306, 311, 315, 325, 331, 332, 343, 346, 351,
-  356, 364, 365, 371, 411, 412, 413, 423, 431, 432, 445, 446, 452, 454, 455,
-  462, 464, 465, 466, 503, 506, 516, 523, 526, 532, 546, 565, 606, 612, 624,
-  627, 631, 632, 654, 662, 664, 703, 712, 723, 731, 732, 734, 743, 754
-};
-
-template <size_t N>
-static bool containsU16(const uint16_t (&values)[N], uint16_t needle) {
-  for (size_t i = 0; i < N; ++i) {
-    if (values[i] == needle) return true;
-  }
-  return false;
-}
-
-static bool isValidCtcssTenths(uint16_t toneTenths) {
-  return containsU16(kValidCtcssTenths, toneTenths);
-}
-
-static bool isValidDcsCode(uint16_t dcsCode) {
-  return containsU16(kValidDcsCodes, dcsCode);
-}
-
 static void speakRepeaterOffsetHz(uint64_t hz) {
   if (!g_speechEnabled) return;
   speakToken("repeater");
@@ -121,38 +86,6 @@ static void speakRepeaterOffsetHz(uint64_t hz) {
   speakFrequencyWord();
   playSilenceMs(60);
   speakDigitsAndPoint(hzToMHzString3(hz));
-}
-
-static bool applyCtcssTenths(uint16_t toneTenths) {
-  if (!isValidCtcssTenths(toneTenths)) return false;
-  uint8_t b0 = 0;
-  uint8_t b1 = 0;
-  if (!encodeCtcssTenths(toneTenths, b0, b1)) return false;
-  uint8_t data[4] = {b0, b1, 0x00, 0x00};
-  if (currentProfileVariantIs("ft857_897")) {
-    data[2] = b0;
-    data[3] = b1;
-  }
-  if (!yaesuCatSetCtcssToneRaw(data)) return false;
-  live.ctcssValid = true;
-  live.ctcssTenths = toneTenths;
-  return true;
-}
-
-static bool applyDcsCode(uint16_t dcsCode) {
-  if (!isValidDcsCode(dcsCode)) return false;
-  uint8_t b0 = 0;
-  uint8_t b1 = 0;
-  if (!encodeDcsCode(dcsCode, b0, b1)) return false;
-  uint8_t data[4] = {b0, b1, 0x00, 0x00};
-  if (currentProfileVariantIs("ft857_897")) {
-    data[2] = b0;
-    data[3] = b1;
-  }
-  if (!yaesuCatSetDcsCodeRaw(data)) return false;
-  live.dcsValid = true;
-  live.dcsCode = dcsCode;
-  return true;
 }
 
 void keypadEntryDigit(InputMode mode, char key, const char* digits) {
@@ -287,19 +220,15 @@ static void commitCivAddress(const char* digits) {
     return;
   }
   int addr = atoi(digits);
-  StoredProfile* sp = (isValidProfileId(g_profileId) && g_slotProfiles[g_profileId - 1].valid) ? &g_slotProfiles[g_profileId - 1] : nullptr;
-  if (!sp || sp->protocolType != PROTO_CIV || addr < 0 || addr > 255) {
+  if (addr < 0 || addr > 255 || !setCurrentCivConnection((uint8_t)addr, currentProfile().baud)) {
     printKeypadStatus("CIVADDR -> invalid");
     if (g_speechEnabled) speakError();
     return;
   }
-  sp->civ.civAddr = (uint8_t)addr;
-  saveConnectionOverrideToNvs(g_profileId, sp->civ.civAddr, sp->civ.baud);
-  applyProfile(g_profileId);
   char hex[3] = "";
-  formatHexByte(sp->civ.civAddr, hex, sizeof(hex));
+  formatHexByte((uint8_t)addr, hex, sizeof(hex));
   printKeypadStatus(String("CI ") + hex);
-  speakCivAddressValue(sp->civ.civAddr, true);
+  speakCivAddressValue((uint8_t)addr, true);
 }
 
 static void commitRepeaterOffset(const char* digits) {
@@ -318,14 +247,14 @@ static void commitCtcss(const char* digits) {
   uint16_t toneTenths = (uint16_t)atoi(digits);
   char label[12] = "";
   formatCtcssTenthsLabel(toneTenths, label, sizeof(label));
-  if (toneTenths > 0 && applyCtcssTenths(toneTenths)) {
+  if (toneTenths > 0 && yaesuCatSetCtcssTenths(toneTenths)) {
     printKeypadStatus(String("CTCSS ") + label);
     if (g_speechEnabled) {
       speakToken("ctcss");
       playSilenceMs(60);
       speakDigitsAndPoint(label);
     }
-  } else if (!isValidCtcssTenths(toneTenths)) {
+  } else if (!yaesuCtcssTenthsValid(toneTenths)) {
     printKeypadStatus("CTCSS -> invalid");
   } else {
     printKeypadStatus("CTCSS -> failed");
@@ -337,14 +266,14 @@ static void commitDcs(const char* digits) {
   uint16_t dcsCode = (uint16_t)atoi(digits);
   char label[8] = "";
   snprintf(label, sizeof(label), "%03u", (unsigned)dcsCode);
-  if (applyDcsCode(dcsCode)) {
+  if (yaesuCatSetDcsCode(dcsCode)) {
     printKeypadStatus(String("DCS ") + label);
     if (g_speechEnabled) {
       speakToken("dcs");
       playSilenceMs(60);
       speakDigitsAndPoint(label);
     }
-  } else if (!isValidDcsCode(dcsCode)) {
+  } else if (!yaesuDcsCodeValid(dcsCode)) {
     printKeypadStatus("DCS -> invalid");
   } else {
     printKeypadStatus("DCS -> failed");

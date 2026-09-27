@@ -14,7 +14,7 @@
 // ---- Bank 1 ----
 void queryBank1Frequency();
 void beginBank1FrequencySet();
-void roundActiveFrequency500();
+void roundActiveFrequency(uint32_t stepHz);
 void queryBank1RxTx();
 void queryBank1TxFrequency();
 void queryBank1Lock();
@@ -108,9 +108,9 @@ void setBank5RitOff();  // "BANK5 3 LONG -> RIT OFF", RIT off or "RIT -> unsuppo
 void setBank6RepeaterOff();
 void setBank6RepeaterMinus();
 void setBank6RepeaterPlus();
-// The profile's rpt_offset_1 and rpt_offset_2 (default 600 kHz and 7.6 MHz).
-void setBank6RepeaterOffset1();
-void setBank6RepeaterOffset2();
+// preset 1 or 2: the profile's rpt_offset_1 or rpt_offset_2 (default 600 kHz
+// and 7.6 MHz).
+void setBank6RepeaterOffsetPreset(uint8_t preset);
 void beginBank6RepeaterOffsetEntry();
 void setBank6ToneOff();
 void setBank6ToneModeCtcss();

@@ -89,19 +89,20 @@ Important note:
 - `PO?`
 - `RXTX?`
 - `TXFREQ?`
+- `ROUND`, `ROUND <Hz>` (round the frequency to a step, default 500 Hz)
 
 ### Receive / DSP
 
 - `NR?`, `NR ON`, `NR OFF`
-- `NRLEVEL?`, `NRLEVEL <0..100>`
+- `NRLEVEL?`, `NRLEVEL <0..100>`, `NRLEVEL STEP <+-n>`
 - `NB?`, `NB ON`, `NB OFF`
-- `NBLEVEL?`, `NBLEVEL <0..100>`
+- `NBLEVEL?`, `NBLEVEL <0..100>`, `NBLEVEL STEP <+-n>`
 - `NOTCH?`, `NOTCH ON`, `NOTCH OFF`
 - `NOTCH NAR`, `NOTCH MID`, `NOTCH WIDE`
-- `PBT1?`, `PBT1 <-128..127>`, `PBT1 CENTER`
-- `PBT2?`, `PBT2 <-128..127>`, `PBT2 CENTER`
-- `FILSHAPE?`, `FILSHAPE SHARP`, `FILSHAPE SOFT`
-- `FILWIDTH?`, `FILWIDTH <1..3>`
+- `PBT1?`, `PBT1 <-128..127>`, `PBT1 CENTER`, `PBT1 STEP <+-n>`
+- `PBT2?`, `PBT2 <-128..127>`, `PBT2 CENTER`, `PBT2 STEP <+-n>`
+- `FILSHAPE?`, `FILSHAPE SHARP`, `FILSHAPE SOFT`, `FILSHAPE TOGGLE`
+- `FILWIDTH?`, `FILWIDTH <1..3>`, `FILWIDTH NEXT`, `FILWIDTH PREV`
 
 ### VFO / Split / Bandstack
 
@@ -118,16 +119,21 @@ Important note:
 
 - `TUNER?`, `TUNER ON`, `TUNER OFF`
 - `TUNE`
-- `MONITOR?`, `MONITOR ON`, `MONITOR OFF`
-- `MONLEVEL?`, `MONLEVEL <0..100>`
-- `TRANSCEIVE?`, `TRANSCEIVE ON`, `TRANSCEIVE OFF`
+- `MONITOR?`, `MONITOR ON`, `MONITOR OFF`, `MONITOR TOGGLE`
+- `MONLEVEL?`, `MONLEVEL <0..100>`, `MONLEVEL STEP <+-n>`
+- `TRANSCEIVE?`, `TRANSCEIVE ON`, `TRANSCEIVE OFF`, `TRANSCEIVE TOGGLE`
 - `LOCK?`, `LOCK ON`, `LOCK OFF`
 
 ### Fine Tuning
 
 - `RIT?`
-- `RIT ON`, `RIT OFF`
-- `RIT <Hz>`
+- `RIT ON`, `RIT OFF`, `RIT TOGGLE`
+- `RIT <Hz>`, `RIT STEP <+-Hz>`
+
+### Connection
+
+- `CIVADDR?`, `CIVADDR <hex>`
+- `BAUD?`, `BAUD <rate>` (4800, 9600, 19200, 38400, 57600, 115200)
 
 ---
 
@@ -143,7 +149,7 @@ The current keypad concept uses radio-specific banks with:
 
 | Command family | Commands | Bank / keys |
 |---|---|---|
-| Status | `FREQ?` | Bank 1: `0` short |
+| Status | `FREQ?`, `FREQ <kHz>`, `ROUND 500` | Bank 1: `0` short / `0` long / `0` double click |
 | Status | `RXTX?` | Bank 1: `1` short |
 | Status | `TXFREQ?` | Bank 1: `2` short |
 | Status | `LOCK?`, `LOCK ON/OFF` | Bank 1: `3` short / `3` long |
@@ -159,12 +165,12 @@ The current keypad concept uses radio-specific banks with:
 | Receive / DSP | `NR?`, `NR ON/OFF` | Bank 2: `1` short / `1` long |
 | Receive / DSP | `NB?`, `NB ON/OFF` | Bank 2: `2` short / `2` long |
 | Receive / DSP | `NOTCH?`, `NOTCH ON/OFF`, `NOTCH NAR/MID/WIDE` | Bank 2: `3` short / `3` long |
-| Receive / DSP | `NRLEVEL?`, `NRLEVEL +/-` | Bank 2: `4` short / `4` long / `4` double click |
-| Receive / DSP | `NBLEVEL?`, `NBLEVEL +/-` | Bank 2: `5` short / `5` long / `5` double click |
-| Receive / DSP | `PBT1?`, `PBT1 +/-` | Bank 2: `6` short / `6` long / `6` double click |
-| Receive / DSP | `PBT2?`, `PBT2 +/-` | Bank 2: `7` short / `7` long / `7` double click |
-| Receive / DSP | `FILSHAPE?`, `FILSHAPE SHARP/SOFT` | Bank 2: `8` short / `8` long |
-| Receive / DSP | `FILWIDTH?`, `FILWIDTH forward/back` | Bank 2: `9` short / `9` long / `9` double click |
+| Receive / DSP | `NRLEVEL?`, `NRLEVEL STEP 10/-10` | Bank 2: `4` short / `4` long / `4` double click |
+| Receive / DSP | `NBLEVEL?`, `NBLEVEL STEP 10/-10` | Bank 2: `5` short / `5` long / `5` double click |
+| Receive / DSP | `PBT1?`, `PBT1 STEP 10/-10` | Bank 2: `6` short / `6` long / `6` double click |
+| Receive / DSP | `PBT2?`, `PBT2 STEP 10/-10` | Bank 2: `7` short / `7` long / `7` double click |
+| Receive / DSP | `FILSHAPE?`, `FILSHAPE TOGGLE` | Bank 2: `8` short / `8` long |
+| Receive / DSP | `FILWIDTH?`, `FILWIDTH NEXT/PREV` | Bank 2: `9` short / `9` long / `9` double click |
 
 ### Bank 3 - VFO / Split / Bandstack
 
@@ -184,20 +190,20 @@ The current keypad concept uses radio-specific banks with:
 | Command family | Commands | Bank / keys |
 |---|---|---|
 | TX / Monitor / Antenna | `TUNER?`, `TUNER ON/OFF`, `TUNE` | Bank 4: `0` short / `0` long / `0` double click |
-| TX / Monitor / Antenna | `MONITOR?`, `MONITOR ON/OFF` | Bank 4: `1` short / `1` long |
-| TX / Monitor / Antenna | `MONLEVEL?`, `MONLEVEL +/-` | Bank 4: `2` short / `2` long / `2` double click |
-| TX / Monitor / Antenna | `TRANSCEIVE?`, `TRANSCEIVE ON/OFF` | Bank 4: `3` short / `3` long |
+| TX / Monitor / Antenna | `MONITOR?`, `MONITOR TOGGLE` | Bank 4: `1` short / `1` long |
+| TX / Monitor / Antenna | `MONLEVEL?`, `MONLEVEL STEP 10/-10` | Bank 4: `2` short / `2` long / `2` double click |
+| TX / Monitor / Antenna | `TRANSCEIVE?`, `TRANSCEIVE TOGGLE` | Bank 4: `3` short / `3` long |
 
 ### Bank 5 - Fine Tuning / RIT
 
 | Command family | Commands | Bank / keys |
 |---|---|---|
-| Fine tuning / RIT | `RIT?`, `RIT ON/OFF`, `RIT 0` | Bank 5: `0` short / `0` long / `0` double click |
-| Fine tuning / RIT | `RIT -10`, `RIT -100` | Bank 5: `1` short / `1` long |
-| Fine tuning / RIT | `RIT +10`, `RIT +100` | Bank 5: `2` short / `2` long |
+| Fine tuning / RIT | `RIT?`, `RIT TOGGLE`, `RIT 0` | Bank 5: `0` short / `0` long / `0` double click |
+| Fine tuning / RIT | `RIT STEP -10`, `RIT STEP -100` | Bank 5: `1` short / `1` long |
+| Fine tuning / RIT | `RIT STEP 10`, `RIT STEP 100` | Bank 5: `2` short / `2` long |
 | Fine tuning / RIT | `RIT 0`, `RIT OFF` | Bank 5: `3` short / `3` long |
-| Fine tuning / RIT | `RIT -1`, `RIT -500` | Bank 5: `4` short / `4` long |
-| Fine tuning / RIT | `RIT +1`, `RIT +500` | Bank 5: `5` short / `5` long |
+| Fine tuning / RIT | `RIT STEP -1`, `RIT STEP -500` | Bank 5: `4` short / `4` long |
+| Fine tuning / RIT | `RIT STEP 1`, `RIT STEP 500` | Bank 5: `5` short / `5` long |
 
 ### Bank 9 - Profile / System
 
@@ -207,7 +213,7 @@ The current keypad concept uses radio-specific banks with:
 | Profile / System | Start profile selection | Bank 9: `A` long, then `1..9`, then `Enter` |
 | Profile / System | `PROFILE NEXT` | Bank 9: `1` short |
 | Profile / System | `PROFILE PREV` | Bank 9: `2` short |
-| Profile / System | `TUNINGSPEECH?`, `TUNINGSPEECH ON/OFF` | Bank 9: `4` short / `4` long |
+| Profile / System | `TUNINGSPEECH?`, `TUNINGSPEECH TOGGLE` | Bank 9: `4` short / `4` long |
 | Profile / System | `VOLUME?` | Bank 9: `5` short |
 | Profile / System | `VOLUME 1/2/3` | Bank 9: `7` short, `8` short, `9` short, then `Enter` |
 

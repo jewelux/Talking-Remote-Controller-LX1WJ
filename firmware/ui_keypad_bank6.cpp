@@ -141,20 +141,10 @@ void setBank6RepeaterPlus() {
   setBank6Ft8x7RepeaterShift(0x49, "PLUS");
 }
 
-void setBank6RepeaterOffset1() {
-  const uint32_t hz = currentFt8x7RepeaterOffsetHz(0);
-  printKeypadCommand(String("BANK6 1 SHORT -> RPTSHIFT ") + hzToMHzString3(hz));
-  if (!isFt8x7Keypad()) {
-    printKeypadStatus("BANK6 reserved");
-    playBeep();
-    return;
-  }
-  setBank6Ft8x7RepeaterOffsetHz(hz);
-}
-
-void setBank6RepeaterOffset2() {
-  const uint32_t hz = currentFt8x7RepeaterOffsetHz(1);
-  printKeypadCommand(String("BANK6 1 LONG -> RPTSHIFT ") + hzToMHzString3(hz));
+void setBank6RepeaterOffsetPreset(uint8_t preset) {
+  const uint32_t hz = currentFt8x7RepeaterOffsetHz(preset - 1);
+  printKeypadCommand(String("BANK6 1 ") + (preset == 1 ? "SHORT" : "LONG") + " -> RPTSHIFT " +
+                     hzToMHzString3(hz));
   if (!isFt8x7Keypad()) {
     printKeypadStatus("BANK6 reserved");
     playBeep();

@@ -159,8 +159,8 @@ void beginBank1FrequencySet() {
   }
 }
 
-void roundActiveFrequency500() {
-  printKeypadCommand("BANK1 0 DOUBLE -> ROUND 500 Hz");
+void roundActiveFrequency(uint32_t stepHz) {
+  printKeypadCommand(String("BANK1 0 DOUBLE -> ROUND ") + String((unsigned long)stepHz) + " Hz");
   g_suspendPollingUntilMs = millis() + 1400;
   g_suppressFreqSpeakUntilMs = millis() + 2000;
 
@@ -174,10 +174,10 @@ void roundActiveFrequency500() {
     return;
   }
 
-  const uint64_t rounded = RadioFrequency::fromHz(hz).roundedTo(500).hz();
+  const uint64_t rounded = RadioFrequency::fromHz(hz).roundedTo(stepHz).hz();
   // Serial monitor reports old -> new; speech reports only the new frequency.
   if (rounded == hz) {
-    // Already on a 500 Hz boundary.
+    // Already on a step boundary.
     printKeypadStatus(String("FREQ: ") + hzToMHzString3(rounded) + " MHz (already rounded)");
     speakTunedFrequencyHz(rounded);
     rememberAnnouncedFrequency(rounded);

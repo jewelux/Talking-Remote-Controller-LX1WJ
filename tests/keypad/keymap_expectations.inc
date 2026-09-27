@@ -83,7 +83,7 @@
 //     queryBank4Transceive. queryBank2FilterShape has no caller at all.
 
 // ---- Bank 1 ----------------------------------------------------------------
-KEYMAP_ROW(ALL,             1, '0', "queryBank1Frequency",   "beginBank1FrequencySet", "roundActiveFrequency500")
+KEYMAP_ROW(ALL,             1, '0', "queryBank1Frequency",   "beginBank1FrequencySet", "roundActiveFrequency(500)")
 KEYMAP_ROW(ALL,             1, '1', "queryBank1RxTx",        "none",                   "none")
 KEYMAP_ROW(ALL,             1, '2', "queryBank1TxFrequency", "none",                   "none")
 KEYMAP_ROW(ALL,             1, '3', "queryBank1Lock",        "toggleBank1Lock",        "-")
@@ -165,7 +165,7 @@ KEYMAP_ROW(ALL,             5, '5', "adjustBank5Rit(1)",     "adjustBank5Rit(500
 
 // ---- Bank 6 ----------------------------------------------------------------
 KEYMAP_ROW(ALL,             6, '0', "setBank6RepeaterOff",   "setBank6RepeaterMinus",  "setBank6RepeaterPlus")
-KEYMAP_ROW(ALL,             6, '1', "setBank6RepeaterOffset1", "setBank6RepeaterOffset2", "beginBank6RepeaterOffsetEntry")
+KEYMAP_ROW(ALL,             6, '1', "setBank6RepeaterOffsetPreset(1)", "setBank6RepeaterOffsetPreset(2)", "beginBank6RepeaterOffsetEntry")
 KEYMAP_ROW(ALL,             6, '2', "setBank6ToneOff",       "setBank6ToneModeCtcss",  "setBank6ToneModeDcs")
 KEYMAP_ROW(ALL,             6, '3', "queryBank6CtcssDefault", "beginBank6CtcssEntry",  "-")
 KEYMAP_ROW(ALL,             6, '4', "queryBank6DcsDefault",  "beginBank6DcsEntry",     "-")
