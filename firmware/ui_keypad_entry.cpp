@@ -38,17 +38,10 @@ static bool rejectFt8x7WriteWhileTx(const char* statusLabel) {
   return true;
 }
 
-static bool verifyKeypadFrequencyWrite(TargetVfo targetVfo, uint64_t expectedHz) {
-  // FT8x7 CAT write commands are effectively write-only; immediate readback can
-  // race the radio and falsely report "no change" after a successful write.
-  if (currentProtocolType() != PROTO_YAESU_FT8X7) return true;
-  (void)targetVfo;
-  (void)expectedHz;
-  return true;
-}
-
 // Shared frequency writer used by keypad entry commit and the round-to-500 Hz
-// action.
+// action. The write is not read back: FT8x7 CAT writes are effectively
+// write-only, and an immediate readback can race the radio and falsely report
+// "no change" after a successful write.
 bool keypadApplyFrequencyHz(uint64_t hz, TargetVfo targetVfo) {
   bool ok = false;
   if (targetVfo == TargetVfo::A) {
@@ -67,16 +60,7 @@ bool keypadApplyFrequencyHz(uint64_t hz, TargetVfo targetVfo) {
   } else {
     ok = applyFrequencyAndTrack(hz, true);
   }
-  if (ok && targetVfo != TargetVfo::Other) ok = verifyKeypadFrequencyWrite(targetVfo, hz);
   return ok;
-}
-
-static bool verifyKeypadModeWrite(TargetVfo targetVfo, uint8_t expectedMode) {
-  // Same as frequency: trust the write result and update the local cache.
-  if (currentProtocolType() != PROTO_YAESU_FT8X7) return true;
-  (void)targetVfo;
-  (void)expectedMode;
-  return true;
 }
 
 static void speakRepeaterOffsetHz(uint64_t hz) {
@@ -280,7 +264,6 @@ void keypadModeCommit(uint8_t mode, TargetVfo targetVfo) {
   } else if (targetVfo == TargetVfo::A) ok = setVfoMode(true, mode, 1);
   else if (targetVfo == TargetVfo::B) ok = setVfoMode(false, mode, 1);
   else ok = applyModeAndTrack(mode, 1);
-  if (ok && !isFtdx10KeypadProfile()) ok = verifyKeypadModeWrite(targetVfo, mode);
   if (ok) {
     if (targetVfo == TargetVfo::A) printKeypadStatus(String("VFOA MODE: ") + modeToString(mode));
     else if (targetVfo == TargetVfo::B) printKeypadStatus(String("VFOB MODE: ") + modeToString(mode));

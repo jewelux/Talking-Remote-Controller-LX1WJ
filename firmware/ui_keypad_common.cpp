@@ -149,13 +149,6 @@ void speakFrequencyWord() {
   speakToken("frequency");
 }
 
-void speakBinaryFeatureState(const uint8_t* featureData, size_t featureLen, bool on) {
-  if (!g_speechEnabled) return;
-  playClipProgmem(featureData, featureLen);
-  playSilenceMs(60);
-  playClipProgmem(on ? voice_on : voice_off, on ? voice_on_len : voice_off_len);
-}
-
 void speakNotchCycleState(bool on, NotchWidth width) {
   if (!g_speechEnabled) return;
   speakToken("notch filter");
