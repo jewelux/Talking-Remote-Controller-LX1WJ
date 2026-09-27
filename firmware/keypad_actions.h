@@ -8,8 +8,10 @@
 // ui_keypad_bankN.cpp files.
 //
 // The keymap picks the action for the radio's layout; an action does not check
-// which radio it runs on. Actions named after a radio (ft857, Ft8x7, ...) are
-// that radio's variant of a key.
+// the layout again. It may still work around what the protocol cannot do, e.g.
+// the FT-8x7 CAT has no TX frequency or dial lock reply, and Bank 8 needs
+// CI-V. Actions named after a radio (ft857, Ft8x7, ...) are that radio's
+// variant of a key.
 //
 // An action's serial trace names what it does, not the key: printKeypadAction
 // prefixes the key being run (keypadActiveKey()), so one action can

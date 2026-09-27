@@ -11,7 +11,8 @@
 // Bank keys are '0'-'9' and 'A'-'C'. '*', 'D' and '#' belong to KeypadInput.
 
 // The keypad layout a radio gets. Exactly one applies; the keymap picks each
-// key's action from it, and the actions do not check the radio again.
+// key's action from it, and the actions do not check the layout again (see
+// keypad_actions.h).
 enum class KeypadLayout : uint8_t {
   Generic,  // no radio-specific keys: Kenwood ASCII, FTDX ASCII other than FTDX10
   Civ,      // PROTO_CIV
