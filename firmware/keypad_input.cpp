@@ -28,19 +28,19 @@ class ActiveKey {
   ~ActiveKey() { g_activeKey[0] = '\0'; }
 };
 
-// Bank select keeps the last digit typed; profile select takes up to two.
+// Bank select commits on its one digit; profile select takes up to two.
 // The frequency took a point even after 12 digits in the old code, so the
 // point does not check maxLen.
 constexpr EntrySpec kEntries[] = {
-    // mode                     name           len  replaces zero  fraction unit
-    {InputMode::BankSelect,     "BANK SELECT", 1,   true,    false, 0,      ""},
-    {InputMode::ProfileSelect,  "PROFILE",     2,   false,   false, 0,      ""},
-    {InputMode::FreqEntry,      "FREQ",        12,  false,   true,  5,      ""},
-    {InputMode::RfPowerEntry,   "RFPOWER",     3,   false,   true,  0,      " W"},
-    {InputMode::CivAddrEntry,   "CIVADDR",     3,   false,   true,  0,      ""},
-    {InputMode::RptOffsetEntry, "RPTSHIFT",    4,   false,   true,  0,      " kHz"},
-    {InputMode::CtcssEntry,     "CTCSS",       4,   false,   true,  0,      ""},
-    {InputMode::DcsEntry,       "DCS",         3,   false,   true,  0,      ""},
+    // mode                     name           len  commits zero  fraction unit
+    {InputMode::BankSelect,     "BANK SELECT", 1,   true,   false, 0,      ""},
+    {InputMode::ProfileSelect,  "PROFILE",     2,   false,  false, 0,      ""},
+    {InputMode::FreqEntry,      "FREQ",        12,  false,  true,  5,      ""},
+    {InputMode::RfPowerEntry,   "RFPOWER",     3,   false,  true,  0,      " W"},
+    {InputMode::CivAddrEntry,   "CIVADDR",     3,   false,  true,  0,      ""},
+    {InputMode::RptOffsetEntry, "RPTSHIFT",    4,   false,  true,  0,      " kHz"},
+    {InputMode::CtcssEntry,     "CTCSS",       4,   false,  true,  0,      ""},
+    {InputMode::DcsEntry,       "DCS",         3,   false,  true,  0,      ""},
 };
 
 }  // namespace
@@ -249,18 +249,19 @@ void KeypadInput::releasedEntry(const EntrySpec& entry, char key) {
     reportRejected(entry.name, label);
     return;
   }
-  if (digits_.length() >= entry.maxLen) digits_.clear();  // replaces
   digits_.push(key);
+  if (entry.commitsWhenFull && digits_.length() >= entry.maxLen) {
+    commitEntry();
+    return;
+  }
   listener_.onDigitAccepted(entry, key, digits_.c_str());
 }
 
 bool KeypadInput::takesDigit(const EntrySpec& entry, char key) const {
   if (!isDigit(key)) return false;
   const size_t len = digits_.length();
-  const bool full = len >= entry.maxLen;
-  if (full && !entry.replaces) return false;
-  // A full entry that replaces starts over with this digit.
-  if ((len == 0 || full) && key == '0' && !entry.leadingZero) return false;
+  if (len >= entry.maxLen) return false;
+  if (len == 0 && key == '0' && !entry.leadingZero) return false;
   const int point = digits_.indexOf('*');
   return point < 0 || (int)len - point - 1 < entry.maxFraction;
 }
@@ -296,6 +297,10 @@ void KeypadInput::enter() {
     reportRejected(keypadEntrySpec(mode_)->name, "D");
     return;
   }
+  commitEntry();
+}
+
+void KeypadInput::commitEntry() {
   const InputMode mode = mode_;
   const DigitBuffer<13> digits = digits_;
   const TargetVfo targetVfo = entryVfo_;

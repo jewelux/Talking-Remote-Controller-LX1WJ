@@ -14,7 +14,8 @@ kommt keine Antwort oder "error".
   Aktuelle Bank ansagen.
 
 * lang
-  Bank-Auswahl starten. Danach Taste 1 bis 9 druecken und mit D bestaetigen.
+  Bank-Auswahl starten. Danach Taste 1 bis 9 druecken; die Bank wechselt sofort,
+  ohne D. # bricht ab.
 
 D
   Eingabe bestaetigen, z.B. Frequenz, Mode, Profil, RF Power, Bank6-Eingaben.

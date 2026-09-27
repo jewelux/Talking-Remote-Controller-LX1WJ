@@ -97,10 +97,6 @@ void keypadEntryDigit(const EntrySpec& entry, char key, const char* digits) {
   }
   printKeypadCommand(String(entry.name) + " DIGIT -> " + String(key));
   switch (entry.mode) {
-    case InputMode::BankSelect:
-      printKeypadStatus(String("BANK ") + String((int)(key - '0')));
-      if (g_speechEnabled) playDigit((uint8_t)(key - '0'));
-      return;
     case InputMode::ProfileSelect:
       printKeypadStatus(String("PROFILE ") + digits);
       if (g_speechEnabled) playDigit((uint8_t)(key - '0'));
@@ -112,8 +108,9 @@ void keypadEntryDigit(const EntrySpec& entry, char key, const char* digits) {
   }
 }
 
+// Bank select commits on its digit, without Enter.
 static void commitBank() {
-  printKeypadCommand("ENTER -> BANK");
+  printKeypadCommand(String("BANK SELECT DIGIT -> ") + String((int)uiGetBank()));
   printKeypadStatus(String("BANK ") + String((int)uiGetBank()));
   speakBankNumber();
 }

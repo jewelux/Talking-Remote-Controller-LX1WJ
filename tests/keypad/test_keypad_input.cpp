@@ -523,24 +523,38 @@ TEST(input_star_short_says_bank) {
   CHECK_LOG(f, "bank? 6");
 }
 
-TEST(input_bank_select_takes_last_digit_and_commits) {
+TEST(input_bank_select_commits_on_the_digit) {
   Fake f;
   KeypadInput in(f);
   hold(in, '*');
   CHECK_EQ(in.mode(), InputMode::BankSelect);
-  typeKeys(in, "35");
-  CHECK_EQ(in.bank(), 1);
-  tap(in, 'D');
+  tap(in, '5');
   CHECK_EQ(in.mode(), InputMode::Normal);
   CHECK_EQ(in.bank(), 5);
-  CHECK_LOG(f, "bank please", "digit BankSelect 3 3", "digit BankSelect 5 5",
-                        "commit BankSelect [5] vfo0");
+  CHECK_LOG(f, "bank please", "commit BankSelect [5] vfo0");
   // The next short '*' is not mistaken for the release of the hold.
   tap(in, '*');
   CHECK_LOG(f, "bank? 5");
+  // The next digit is a bank key again.
+  tap(in, '3');
+  CHECK_LOG(f, "rejected BANK5 3");
 }
 
-TEST(input_bank_select_without_digit_is_unassigned_and_stays) {
+// A digit released while '*' is still down commits; the '*' release after it
+// is swallowed.
+TEST(input_bank_select_digit_during_the_star_hold) {
+  Fake f;
+  KeypadInput in(f);
+  in.onKey('*', KeyGesture::Pressed, 0);
+  in.onKey('*', KeyGesture::Held, 0);
+  tap(in, '4');
+  in.onKey('*', KeyGesture::Released, 0);
+  CHECK_EQ(in.mode(), InputMode::Normal);
+  CHECK_EQ(in.bank(), 4);
+  CHECK_LOG(f, "bank please", "commit BankSelect [4] vfo0");
+}
+
+TEST(input_bank_select_enter_is_unassigned_and_stays) {
   Fake f;
   KeypadInput in(f);
   in.setBank(2);
@@ -548,10 +562,9 @@ TEST(input_bank_select_without_digit_is_unassigned_and_stays) {
   tap(in, 'D');
   CHECK_EQ(in.bank(), 2);
   CHECK_EQ(in.mode(), InputMode::BankSelect);
-  typeKeys(in, "4D");
+  tap(in, '4');
   CHECK_EQ(in.bank(), 4);
-  CHECK_LOG(f, "bank please", "rejected BANK SELECT D", "digit BankSelect 4 4",
-                        "commit BankSelect [4] vfo0");
+  CHECK_LOG(f, "bank please", "rejected BANK SELECT D", "commit BankSelect [4] vfo0");
 }
 
 TEST(input_bank_select_rejects_other_keys) {
@@ -562,19 +575,20 @@ TEST(input_bank_select_rejects_other_keys) {
   typeKeys(in, "0A");
   tap(in, '*');  // silent in bank select
   hold(in, '3');  // holds are ignored, the release is a digit
-  CHECK_EQ(in.mode(), InputMode::BankSelect);
+  CHECK_EQ(in.mode(), InputMode::Normal);
+  CHECK_EQ(in.bank(), 3);
   CHECK_LOG(f, "bank please", "rejected BANK SELECT 0", "rejected BANK SELECT A",
-                        "digit BankSelect 3 3");
+                        "commit BankSelect [3] vfo0");
 }
 
 TEST(input_bank_select_clear) {
   Fake f;
   KeypadInput in(f);
   hold(in, '*');
-  typeKeys(in, "4#");
+  tap(in, '#');
   CHECK_EQ(in.mode(), InputMode::Normal);
   CHECK_EQ(in.bank(), 1);
-  CHECK_LOG(f, "bank please", "digit BankSelect 4 4", "clear");
+  CHECK_LOG(f, "bank please", "clear");
 }
 
 // --- Profile select --------------------------------------------------------------

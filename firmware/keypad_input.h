@@ -35,7 +35,7 @@ struct EntrySpec {
   InputMode mode;
   const char* name;     // label of its beeps and trace: "<name> 5", "<name> D"
   uint8_t maxLen;       // characters, a point included
-  bool replaces;        // when full, a digit starts it over instead of beeping
+  bool commitsWhenFull; // the last digit commits it, without Enter
   bool leadingZero;     // '0' may be the first digit
   uint8_t maxFraction;  // digits after the '*' point; 0 = takes no point
   const char* unit;     // shown after the digits while typing
@@ -97,9 +97,10 @@ class KeypadInputListener {
   // take, Enter with nothing picked, '#' with nothing to cancel. "<label> ->
   // unassigned" and the beep.
   virtual void onRejected(const char* label) = 0;
-  // Enter in bank select, profile select or an entry, with at least one digit
-  // typed (with none, Enter beeps and the mode stays). The mode is already back
-  // to Normal. For bank select the new bank is already set.
+  // Enter in profile select or an entry, with at least one digit typed (with
+  // none, Enter beeps and the mode stays), or the digit that fills an entry
+  // that commits when full: bank select commits on its digit. The mode is
+  // already back to Normal. For bank select the new bank is already set.
   virtual void onCommit(InputMode mode, const char* digits, TargetVfo targetVfo) = 0;
 
   // A key typed during mode select. When it picks a mode: gives the feedback
@@ -191,6 +192,7 @@ class KeypadInput {
   void releasedEntry(const EntrySpec& entry, char key);
   bool takesDigit(const EntrySpec& entry, char key) const;
   void enter();
+  void commitEntry();
   void clearAll();
   // Runs action with keypadActiveKey() naming it, e.g. "BANK3 2 LONG".
   void runAction(KeyAction action, uint8_t bank, char key, const char* gesture);

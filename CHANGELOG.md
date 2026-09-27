@@ -54,6 +54,9 @@
 - a key that picks no mode in mode select is rejected like a digit an entry does not take: the
   status line is `MODE SELECT 0 -> unassigned` (was `MODE DIGIT -> invalid`, after a
   `CMD MODE DIGIT -> 0` line that is now printed only for a key that picks a mode). Same beep
+- bank select (`*` long) switches to the bank as soon as its digit `1`–`9` is pressed; `D` is no
+  longer needed and beeps there like `D` with nothing typed. The bank number is said once
+  (`CMD BANK SELECT DIGIT -> 5`, then `BANK 5`), not first as the digit and again on `D`
 - NR, NB and notch are one operation each (`firmware/radio_features.{h,cpp}`) that the Bank 2
   keys `1`–`3` and the console's `NR`, `NB` and `NOTCH` commands both call; both print and say the
   result the same way (`ui_features.{h,cpp}`). What changes:
