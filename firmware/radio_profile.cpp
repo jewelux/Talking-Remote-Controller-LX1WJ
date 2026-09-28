@@ -177,3 +177,17 @@ void applyProfile(uint8_t profileId) {
 void speakCurrentProfile() {
   speakProfileIdentityFromSlot(g_profileId, true);
 }
+
+const uint32_t kCivBaudRates[] = {4800, 9600, 19200, 38400, 57600, 115200};
+const size_t kCivBaudRateCount = sizeof(kCivBaudRates) / sizeof(kCivBaudRates[0]);
+
+bool setCurrentCivConnection(uint8_t civAddr, uint32_t baud) {
+  if (!isValidProfileId(g_profileId)) return false;
+  StoredProfile& sp = g_slotProfiles[g_profileId - 1];
+  if (!sp.valid || sp.protocolType != PROTO_CIV) return false;
+  sp.civ.civAddr = civAddr;
+  sp.civ.baud = baud;
+  saveConnectionOverrideToNvs(g_profileId, civAddr, baud);
+  applyProfile(g_profileId);
+  return true;
+}

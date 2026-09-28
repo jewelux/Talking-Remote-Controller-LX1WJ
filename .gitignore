@@ -11,3 +11,6 @@ firmware/divers/
 __pycache__/
 *.pyc
 firmware/voice_assets/piper/models/
+
+# Host unit tests
+tests/keypad/build/

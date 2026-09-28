@@ -26,7 +26,7 @@ Global rules:
 - `D`: confirm
 - `#`: cancel and leave the current entry
 - `*` short: speak the current bank
-- `*` long, then digits, then `D`: change bank
+- `*` long, then a digit `1`–`9`: change to that bank at once
 - `*` while entering a frequency: the decimal point (see Bank 1 `0` long below)
 
 Frequencies are spoken in full: the megahertz digits, "point", then the remaining digits with
@@ -83,10 +83,11 @@ Use these keypad functions first:
 
 - Bank 1, `0` short or long: read or set frequency
 - Bank 1, `3` short or long: read or toggle lock
+- Bank 1, `4` short: power meter
 - Bank 1, `5` short, long, or double: tuner query, tuner toggle, tune
 - Bank 1, `6` short or long: preamp query or toggle
 - Bank 1, `7` short: S-meter
-- Bank 1, `8` short: power meter
+- Bank 1, `8` short: SWR
 - Bank 1, `9` short or long: read or set mode
 - Bank 2, `1`, `2`, `3` short or long: NR, NB, notch query or toggle
 - Bank 2, `4` short, long, or double: AGC query, fast, slow
@@ -96,9 +97,9 @@ Use these keypad functions first:
 - Bank 3, `0` short or long: split query or toggle
 - Bank 3, `1` short or long: VFO-A frequency or select VFO-A
 - Bank 3, `2` short or long: VFO-B frequency or select VFO-B
-- Bank 3, `3` short: RX or TX state
 - Bank 3, `4` short or long: VFO-A mode read or set
 - Bank 3, `5` short or long: VFO-B mode read or set
+- Bank 3, `6` short: RX or TX state
 
 Keep the first field test simple:
 
@@ -116,7 +117,8 @@ Keep the first field test simple:
 - Press `#` to cancel the current action.
 - Ask the current frequency again with Bank 1, `0` short.
 - Ask the current bank again with `*` short.
-- If a function is not implemented for the active profile, the controller should simply not offer a useful action there.
+- A key with nothing to do on the active profile gives a short beep. Some say "not available"
+  instead, for example keys hidden on FTDX10.
 
 ## More Help
 

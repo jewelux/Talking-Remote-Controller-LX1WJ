@@ -74,6 +74,8 @@ The project uses a simple development model:
 - Larger additions and radio-specific work can be developed in separate feature branches before being merged into `development`.
 - After testing and stabilization, changes from `development` are merged into `main`.
 
+New contributors: start with the [Developer Cookbook](docs/developer-cookbook.md), which covers the architecture, how to add a key, feature or radio, and the project conventions.
+
 
 ## Safety
 

@@ -35,6 +35,18 @@ static uint16_t parseIniTenths(const String& s, uint16_t fallback = 0) {
   return (uint16_t)(whole * 10 + frac);
 }
 
+static void clearProfileModeCodes(StoredProfile& sp) {
+  sp.ascii.modeLsb[0] = '\0';
+  sp.ascii.modeUsb[0] = '\0';
+  sp.ascii.modeAm[0] = '\0';
+  sp.ascii.modeCw[0] = '\0';
+  sp.ascii.modeRtty[0] = '\0';
+  sp.ascii.modeFm[0] = '\0';
+  sp.ascii.modeCwr[0] = '\0';
+  sp.ascii.modeRttyR[0] = '\0';
+  sp.ascii.modeDigi[0] = '\0';
+}
+
 static bool parseIniBool(const String& s, bool fallback = false) {
   String t = s;
   t.trim();
@@ -72,6 +84,8 @@ bool loadSingleProfileIni(const String& path, StoredProfile& out) {
       section = line.substring(1, line.length() - 1);
       section.trim();
       section.toLowerCase();
+      // [modes] lists every mode the radio has; a mode left out must not keep a default code.
+      if (section == "modes") clearProfileModeCodes(sp);
       continue;
     }
 

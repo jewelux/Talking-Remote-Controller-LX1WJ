@@ -35,3 +35,9 @@ bool yaesuCatSetClarifierOffsetRaw(const uint8_t data[4]);
 bool yaesuCatSetToneDcsModeRaw(uint8_t modeByte);
 bool yaesuCatSetCtcssToneRaw(const uint8_t data[4]);
 bool yaesuCatSetDcsCodeRaw(const uint8_t data[4]);
+// FT-8x7 CTCSS tone in tenths of Hz (885 = 88.5 Hz) and DCS code (23 = 023).
+// Only the standard values are valid. A write updates the live tone cache.
+bool yaesuCtcssTenthsValid(uint16_t toneTenths);
+bool yaesuDcsCodeValid(uint16_t dcsCode);
+bool yaesuCatSetCtcssTenths(uint16_t toneTenths);
+bool yaesuCatSetDcsCode(uint16_t dcsCode);

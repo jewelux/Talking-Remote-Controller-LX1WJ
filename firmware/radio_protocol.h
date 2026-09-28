@@ -14,6 +14,9 @@ bool queryFrequency(uint64_t& hzOut, uint32_t timeoutMs = 800);
 bool setFrequency(uint64_t hz);
 bool queryMode(uint8_t& modeOut, uint32_t timeoutMs = 800);
 bool setMode(uint8_t mode, uint8_t filter = 1);
+// Whether setMode() can set mode on the current profile, without asking the
+// radio.
+bool canSetMode(uint8_t mode);
 bool querySMeterRaw(int32_t& rawOut, uint32_t timeoutMs = 800);
 // Converts a querySMeterRaw() value of the current protocol into S units / dB over S9.
 SMeterReading sMeterFromRaw(int32_t raw);
@@ -61,6 +64,9 @@ bool queryVfoFrequency(bool targetVfoA, uint64_t& hzOut, uint32_t timeoutMs = 80
 bool setVfoFrequency(bool targetVfoA, uint64_t hz);
 bool queryVfoMode(bool targetVfoA, uint8_t& modeOut, uint8_t& filterOut, uint32_t timeoutMs = 800);
 bool setVfoMode(bool targetVfoA, uint8_t mode, uint8_t filter = 1);
+// FT-8x7: the radio's A=B. Copies the active VFO's frequency and mode to the
+// other VFO by switching to it and back; the active VFO stays active.
+bool ft8x7CopyActiveVfoToOther();
 bool querySplit(bool& onOut, uint32_t timeoutMs = 800);
 bool setSplit(bool on);
 bool queryRitEnabled(bool& onOut, uint32_t timeoutMs = 800);

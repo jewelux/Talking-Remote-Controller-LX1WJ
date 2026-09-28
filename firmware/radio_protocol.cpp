@@ -75,6 +75,20 @@ bool setMode(uint8_t mode, uint8_t filter) {
   return false;
 }
 
+bool canSetMode(uint8_t mode) {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (!sp.caps.setMode) return false;
+  // CI-V sends the mode as it is; the others need the profile's code for it.
+  if (pt == PROTO_CIV) return true;
+  String code;
+  if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) {
+    return sp.ascii.modeSetFormat[0] && profileModeCodeForInternal(sp, mode, code);
+  }
+  if (pt == PROTO_YAESU_FT8X7) return profileModeCodeForInternal(sp, mode, code);
+  return false;
+}
+
 bool querySMeterRaw(int32_t& rawOut, uint32_t timeoutMs) {
   ProtocolType pt = currentProtocolType();
   const StoredProfile& sp = currentStoredProfile();
@@ -500,6 +514,23 @@ bool setVfoMode(bool targetVfoA, uint8_t mode, uint8_t filter) {
     return setMode(mode, filter);
   }
   return false;
+}
+
+bool ft8x7CopyActiveVfoToOther() {
+  if (currentProtocolType() != PROTO_YAESU_FT8X7) return false;
+  uint64_t hz = 0;
+  uint8_t mode = 0xFF;
+  if (!queryFrequency(hz, 800)) return false;
+  if (!queryMode(mode, 800)) return false;
+  if (!yaesuCatToggleVfo()) return false;
+  delay(120);
+  bool ok = setFrequency(hz);
+  delay(120);
+  if (ok) ok = setMode(mode, 1);
+  delay(120);
+  yaesuCatToggleVfo();
+  delay(120);
+  return ok;
 }
 
 bool querySplit(bool& onOut, uint32_t timeoutMs) {

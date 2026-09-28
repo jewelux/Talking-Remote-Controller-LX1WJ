@@ -1,6 +1,7 @@
 #include "ui_console.h"
 
 #include "radio_catalog.h"
+#include "radio_frequency.h"
 #include "radio_mode.h"
 #include "packet_ascii.h"
 #include "protocol_ascii.h"
@@ -16,28 +17,12 @@
 #include "radio_utils.h"
 #include "sd_slots.h"
 #include "transport_serial.h"
+#include "ui_features.h"
 #include "ui_speech.h"
 #include "ui_console_support.h"
 #include "ui_keypad.h"
+#include "ui_keypad_common.h"
 #include "firmware_version.h"
-
-static void speakBinaryFeatureState(const uint8_t* featureData, size_t featureLen, bool on) {
-  if (!g_speechEnabled) return;
-  playClipProgmem(featureData, featureLen);
-  playSilenceMs(60);
-  playClipProgmem(on ? voice_on : voice_off, on ? voice_on_len : voice_off_len);
-}
-
-static uint8_t levelRawToPercent(uint16_t raw) {
-  if (raw >= 255) return 100;
-  return (uint8_t)((raw * 100U + 127U) / 255U);
-}
-
-static uint16_t levelPercentToRaw(int percent) {
-  if (percent < 0) percent = 0;
-  if (percent > 100) percent = 100;
-  return (uint16_t)((percent * 255 + 50) / 100);
-}
 
 static uint16_t rfPowerRawToWatts(uint16_t raw) {
   const uint16_t maxWatts = currentStoredProfile().rfPowerMaxWatts ? currentStoredProfile().rfPowerMaxWatts : 100;
@@ -277,6 +262,100 @@ static void reportNotAvailable(const char* message) {
   if (g_speechEnabled) speakNotAvailable();
 }
 
+// A shared feature operation (radio_features.h) that did not succeed: print
+// why, with the speech the other console commands give. Ok: false.
+static bool reportFeatureFailure(FeatureStatus status, const char* label) {
+  switch (status) {
+    case FeatureStatus::Ok: return false;
+    case FeatureStatus::Unsupported:
+      reportNotAvailable((String(label) + " -> unsupported").c_str());
+      return true;
+    case FeatureStatus::Timeout:
+      Serial.print(label);
+      Serial.println(" -> timeout");
+      if (g_speechEnabled) speakTimeout();
+      return true;
+    default:
+      Serial.print(label);
+      Serial.print(" -> ");
+      Serial.println(featureStatusText(status));
+      return true;
+  }
+}
+
+static void printNrState(const NrState& state) {
+  Serial.println(nrStateText(state));
+  speakNrState(state);
+}
+
+static void printNbState(bool on) {
+  Serial.println(nbStateText(on));
+  speakNbState(on);
+}
+
+static void printNotchState(const NotchState& state) {
+  Serial.println(notchStateText(state));
+  speakNotchState(state);
+}
+
+// NR, NB and NOTCH: the same operations as the Bank 2 keys. NR <n> sets a
+// level on radios that have them (TS-480: NR 0, NR 1, NR 2).
+static bool handleConsoleFeatureCommand(const String& upper) {
+  const char* label = upper.c_str();
+  if (upper == "NR?" || upper == "NR TOGGLE") {
+    NrState state;
+    if (!reportFeatureFailure(upper == "NR?" ? nrQuery(state) : nrToggle(state), label)) printNrState(state);
+    return true;
+  }
+  if (upper == "NR ON" || upper == "NR OFF") {
+    NrState state;
+    state.on = upper == "NR ON";
+    if (!reportFeatureFailure(nrSet(state.on), label)) printNrState(state);
+    return true;
+  }
+  if (upper.startsWith("NR ") && upper.length() == 4 && isDigit(upper[3])) {
+    const uint8_t level = (uint8_t)(upper[3] - '0');
+    if (nrLevelCount() > 0 && level > nrLevelCount()) {
+      Serial.print("NR -> invalid (use 0..");
+      Serial.print((int)nrLevelCount());
+      Serial.println(")");
+      return true;
+    }
+    NrState state;
+    if (!reportFeatureFailure(nrSetLevel(level, state), label)) printNrState(state);
+    return true;
+  }
+  if (upper == "NB?" || upper == "NB TOGGLE") {
+    bool on = false;
+    if (!reportFeatureFailure(upper == "NB?" ? nbQuery(on) : nbToggle(on), label)) printNbState(on);
+    return true;
+  }
+  if (upper == "NB ON" || upper == "NB OFF") {
+    const bool on = upper == "NB ON";
+    if (!reportFeatureFailure(nbSet(on), label)) printNbState(on);
+    return true;
+  }
+  if (upper == "NOTCH?" || upper == "NOTCH TOGGLE") {
+    NotchState state;
+    if (!reportFeatureFailure(upper == "NOTCH?" ? notchQuery(state) : notchToggle(state), label)) printNotchState(state);
+    return true;
+  }
+  if (upper == "NOTCH ON" || upper == "NOTCH OFF") {
+    NotchState state;
+    state.on = upper == "NOTCH ON";
+    if (!reportFeatureFailure(notchSet(state.on), label)) printNotchState(state);
+    return true;
+  }
+  if (upper == "NOTCH NAR" || upper == "NOTCH MID" || upper == "NOTCH WIDE") {
+    NotchState state;
+    state.on = true;
+    state.width = upper == "NOTCH NAR" ? NOTCH_WIDTH_NAR : upper == "NOTCH MID" ? NOTCH_WIDTH_MID : NOTCH_WIDTH_WIDE;
+    if (!reportFeatureFailure(notchSetWidth(state.width), label)) printNotchState(state);
+    return true;
+  }
+  return false;
+}
+
 static void speakConsoleSpeechGapMarker() {
   if (!g_speechEnabled) return;
   speakError();
@@ -307,34 +386,6 @@ static void speakRitStateAndOffset(bool on, int32_t offset) {
   speakToken("hertz");
 }
 
-static void speakFeatureValue(const uint8_t* featureData, size_t featureLen, uint8_t value) {
-  if (!g_speechEnabled) return;
-  playClipProgmem(featureData, featureLen);
-  playSilenceMs(60);
-  speakDigitsAndPoint(String((int)value));
-}
-
-static void speakNotchCycleState(bool on, NotchWidth width) {
-  if (!g_speechEnabled) return;
-  speakToken("notch filter");
-  playSilenceMs(60);
-  if (!on) {
-    speakToken("off");
-    return;
-  }
-  switch (width) {
-    case NOTCH_WIDTH_NAR: playDigit(1); break;
-    case NOTCH_WIDTH_MID: playDigit(2); break;
-    case NOTCH_WIDTH_WIDE: playDigit(3); break;
-    default: speakToken("on"); break;
-  }
-}
-
-static void speakSimpleBinaryState(bool on) {
-  if (!g_speechEnabled) return;
-  playClipProgmem(on ? voice_on : voice_off, on ? voice_on_len : voice_off_len);
-}
-
 static void speakSignedStepValue(const String& label, int value) {
   if (!g_speechEnabled) return;
   speakToken(label);
@@ -347,6 +398,26 @@ static void speakSignedStepValue(const String& label, int value) {
   speakDigitsAndPoint(String(value));
   playSilenceMs(60);
   speakToken("step");
+}
+
+// "<prefix><n>" with n an optional sign and digits, e.g. "RIT STEP -100".
+static bool parseStepArg(const String& line, const String& upper, const char* prefix, int32_t& stepOut) {
+  if (!upper.startsWith(prefix)) return false;
+  String arg = line.substring(strlen(prefix));
+  arg.trim();
+  const int first = (arg.startsWith("+") || arg.startsWith("-")) ? 1 : 0;
+  if ((int)arg.length() <= first) return false;
+  for (int i = first; i < (int)arg.length(); ++i) {
+    if (!isDigit(arg[i])) return false;
+  }
+  stepOut = arg.toInt();
+  return true;
+}
+
+static int32_t clampInt32(int32_t value, int32_t lo, int32_t hi) {
+  if (value < lo) return lo;
+  if (value > hi) return hi;
+  return value;
 }
 
 static void speakBandStackLabel(uint8_t reg) {
@@ -511,7 +582,7 @@ static bool isFtdx10ConsoleProfile() {
 
 static bool handleFtdx10BlockedConsoleCommand(const String& upper) {
   if (!isFtdx10ConsoleProfile()) return false;
-  if (upper == "MONITOR?" || upper == "MONITOR ON" || upper == "MONITOR OFF") {
+  if (upper == "MONITOR?" || upper == "MONITOR ON" || upper == "MONITOR OFF" || upper == "MONITOR TOGGLE") {
     reportNotAvailable("MONITOR -> hidden on FTDX10 (no clean Yaesu path here)");
     return true;
   }
@@ -519,7 +590,8 @@ static bool handleFtdx10BlockedConsoleCommand(const String& upper) {
     reportNotAvailable("MONLEVEL -> hidden on FTDX10 (no clean Yaesu path here)");
     return true;
   }
-  if (upper == "TRANSCEIVE?" || upper == "TRANSCEIVE ON" || upper == "TRANSCEIVE OFF") {
+  if (upper == "TRANSCEIVE?" || upper == "TRANSCEIVE ON" || upper == "TRANSCEIVE OFF" ||
+      upper == "TRANSCEIVE TOGGLE") {
     reportNotAvailable("TRANSCEIVE -> hidden on FTDX10 (no clean Yaesu path here)");
     return true;
   }
@@ -531,7 +603,8 @@ static bool handleFtdx10BlockedConsoleCommand(const String& upper) {
     reportNotAvailable("PBT2 -> hidden on FTDX10 (use documented Yaesu CAT later)");
     return true;
   }
-  if (upper == "FILSHAPE?" || upper == "FILSHAPE SHARP" || upper == "FILSHAPE SOFT") {
+  if (upper == "FILSHAPE?" || upper == "FILSHAPE SHARP" || upper == "FILSHAPE SOFT" ||
+      upper == "FILSHAPE TOGGLE") {
     reportNotAvailable("FILSHAPE -> hidden on FTDX10 (use documented Yaesu CAT later)");
     return true;
   }
@@ -562,11 +635,7 @@ static bool parseConsoleModeToken(String token, uint8_t& modeOut) {
   token.trim();
   if (!token.length()) return false;
 
-  if (token.length() == 1) {
-    modeOut = 0xFF;
-    (void)profileModeFromDigit(token[0], modeOut);
-    if (modeOut != 0xFF) return true;
-  }
+  if (token.length() == 1 && modeFromDigit(token[0], modeOut)) return true;
 
   String upper = upperCopy(token);
   if (upper == "LSB") { modeOut = 0x00; return true; }
@@ -592,6 +661,7 @@ void printHelp() {
   Serial.println("  General:");
   Serial.println("    AK?");
   Serial.println("    BANK?");
+  Serial.println("    BANK <1..9>");
   Serial.println("    BANK NEXT | PREV");
   if (!ftdx10) {
     Serial.println("    BSTACK <1..3>  (hamTRC internal)");
@@ -615,6 +685,7 @@ void printHelp() {
   Serial.println("    PROFILE?");
   Serial.println("    QUIET OFF | QUIET ON");
   Serial.println("    QUIET?");
+  Serial.println("    ROUND [<Hz>]  (round the frequency, default 500 Hz)");
   Serial.println("    RX | TX");
   Serial.println("    SAY <digits>");
   Serial.println("    SLOTS?");
@@ -623,51 +694,53 @@ void printHelp() {
   Serial.println("    STATUS?");
   Serial.println("    SWT <nn> | SWH <nn>");
   Serial.println("    TEST");
-  Serial.println("    TUNINGSPEECH OFF | ON");
+  Serial.println("    TUNINGSPEECH OFF | ON | TOGGLE");
   Serial.println("    TUNINGSPEECH?");
   Serial.println("    VOICE <name>");
-  Serial.println("    VOLUME <1..9>");
+  Serial.println("    VOLUME <1..9> | VOLUME STEP <+-n>");
   Serial.println("    VOLUME?");
   Serial.println();
   if (!ftdx10 && !ft8x7) {
     Serial.println("  IC-7300 / CI-V Extensions:");
-    Serial.println("    NBLEVEL <0..100>");
+    Serial.println("    BAUD <rate> | BAUD?");
+    Serial.println("    CIVADDR <hex> | CIVADDR?");
+    Serial.println("    NBLEVEL <0..100> | NBLEVEL STEP <+-n>");
     Serial.println("    NBLEVEL?");
     Serial.println("    NB OFF | ON | TOGGLE");
     Serial.println("    NB?");
-    Serial.println("    FILSHAPE SHARP | SOFT");
+    Serial.println("    FILSHAPE SHARP | SOFT | TOGGLE");
     Serial.println("    FILSHAPE?");
-    Serial.println("    FILWIDTH <1..3>");
+    Serial.println("    FILWIDTH <1..3> | NEXT | PREV");
     Serial.println("    FILWIDTH?");
     Serial.println("    LOCK OFF | ON | TOGGLE");
     Serial.println("    LOCK?");
-    Serial.println("    MONITOR OFF | ON");
+    Serial.println("    MONITOR OFF | ON | TOGGLE");
     Serial.println("    MONITOR?");
-    Serial.println("    MONLEVEL <0..100>");
+    Serial.println("    MONLEVEL <0..100> | MONLEVEL STEP <+-n>");
     Serial.println("    MONLEVEL?");
     Serial.println("    NOTCH MID | NAR | WIDE");
     Serial.println("    NOTCH OFF | ON | TOGGLE");
     Serial.println("    NOTCH?");
-    Serial.println("    NRLEVEL <0..100>");
+    Serial.println("    NRLEVEL <0..100> | NRLEVEL STEP <+-n>");
     Serial.println("    NRLEVEL?");
     Serial.println("    NR OFF | ON | TOGGLE");
     Serial.println("    NR?");
-    Serial.println("    PBT1 <-128..127> | CENTER");
+    Serial.println("    PBT1 <-128..127> | CENTER | STEP <+-n>");
     Serial.println("    PBT1?");
-    Serial.println("    PBT2 <-128..127> | CENTER");
+    Serial.println("    PBT2 <-128..127> | CENTER | STEP <+-n>");
     Serial.println("    PBT2?");
     Serial.print("    RFPOWER <0..");
     Serial.print((int)(currentStoredProfile().rfPowerMaxWatts ? currentStoredProfile().rfPowerMaxWatts : 100));
     Serial.println(" W>");
     Serial.println("    RFPOWER?");
-    Serial.println("    RIT <Hz>");
-    Serial.println("    RIT OFF | ON");
+    Serial.println("    RIT <Hz> | RIT STEP <+-Hz>");
+    Serial.println("    RIT OFF | ON | TOGGLE");
     Serial.println("    RIT?");
     Serial.println("    RXTX?");
     Serial.println("    SPLIT OFF | ON | TOGGLE");
     Serial.println("    SPLIT?");
     Serial.println("    TUNE");
-    Serial.println("    TRANSCEIVE OFF | ON");
+    Serial.println("    TRANSCEIVE OFF | ON | TOGGLE");
     Serial.println("    TRANSCEIVE?");
     Serial.println("    TUNER OFF | ON");
     Serial.println("    TUNER? | TUNER OFF | ON | TOGGLE");
@@ -694,12 +767,16 @@ void printHelp() {
     Serial.println("    SWR?");
     Serial.println("    CLAR OFF | ON");
     Serial.println("    CLAR OFFSET <8 hex digits>");
+    Serial.println("    CTCSS <Hz> | CTCSS?");
+    Serial.println("    DCS <code> | DCS?");
     Serial.println("    GT? | GT FAST | SLOW | OFF");
     Serial.println("    PA? | PA OFF | ON | TOGGLE");
     Serial.println("    PS? | PS OFF | ON");
+    if (ft817 || ft857Family) Serial.println("    VFO SYNC A | B  (set the tracked VFO)");
     if (ft817) {
       Serial.println("    VOL? | SQL?");
       Serial.println("    VFO TOGGLE | A | B");
+      Serial.println("    VFO A=B  (copy the active VFO to the other)");
       Serial.println("    YPOWER OFF | ON");
     } else if (ft857Family) {
       Serial.println("    VFO TOGGLE  (raw)");
@@ -956,6 +1033,72 @@ static bool handleConsoleProfileCommands(const String& line, const String& upper
   return false;
 }
 
+static void printCivAddress(const char* prefix, uint8_t addr) {
+  char hex[3] = "";
+  formatHexByte(addr, hex, sizeof(hex));
+  Serial.print(prefix);
+  Serial.println(hex);
+}
+
+// CI-V address and baud of the current profile, saved as its connection override.
+static bool handleConsoleConnectionCommands(const String& line, const String& upper) {
+  const bool civAddrCmd = upper == "CIVADDR?" || upper.startsWith("CIVADDR ");
+  const bool baudCmd = upper == "BAUD?" || upper.startsWith("BAUD ");
+  if (!civAddrCmd && !baudCmd) return false;
+  if (currentProtocolType() != PROTO_CIV) {
+    reportNotAvailable(civAddrCmd ? "CIVADDR -> CI-V profile required" : "BAUD -> CI-V profile required");
+    return true;
+  }
+  const CivProfile& p = currentProfile();
+  if (upper == "CIVADDR?") {
+    printCivAddress("CIVADDR ", p.civAddr);
+    speakCivAddressValue(p.civAddr, false);
+    return true;
+  }
+  if (civAddrCmd) {
+    String arg = line.substring(8);
+    arg.trim();
+    uint8_t addr = 0;
+    if (!parseHexByteString(arg, addr)) {
+      Serial.println("CIVADDR -> use a hex byte, e.g. CIVADDR 94");
+      return true;
+    }
+    setCurrentCivConnection(addr, p.baud);
+    printCivAddress("OK CIVADDR ", addr);
+    speakCivAddressValue(addr, true);
+    return true;
+  }
+  if (upper == "BAUD?") {
+    Serial.print("BAUD ");
+    Serial.println((unsigned long)p.baud);
+    if (g_speechEnabled) speakDigitsAndPoint(String((unsigned long)p.baud));
+    return true;
+  }
+  const uint32_t baud = (uint32_t)line.substring(5).toInt();
+  bool supported = false;
+  for (size_t i = 0; i < kCivBaudRateCount; ++i) {
+    if (kCivBaudRates[i] == baud) supported = true;
+  }
+  if (!supported) {
+    Serial.print("BAUD -> invalid (use");
+    for (size_t i = 0; i < kCivBaudRateCount; ++i) {
+      Serial.print(i ? ", " : " ");
+      Serial.print((unsigned long)kCivBaudRates[i]);
+    }
+    Serial.println(")");
+    return true;
+  }
+  setCurrentCivConnection(p.civAddr, baud);
+  Serial.print("OK BAUD ");
+  Serial.println((unsigned long)baud);
+  if (g_speechEnabled) {
+    speakDigitsAndPoint(String((unsigned long)baud));
+    playSilenceMs(80);
+    speakOk();
+  }
+  return true;
+}
+
 static bool handleConsoleToggleCommands(const String& line, const String& upper) {
   if (upper == "QUIET ON") { g_quiet = true; Serial.println("OK QUIET ON"); return true; }
   if (upper == "QUIET OFF") { g_quiet = false; Serial.println("OK QUIET OFF"); return true; }
@@ -971,6 +1114,30 @@ static bool handleConsoleToggleCommands(const String& line, const String& upper)
     setTuningSpeechEnabled(false);
     Serial.println("OK TUNINGSPEECH OFF");
     speakTuningSpeechState();
+    return true;
+  }
+  if (upper == "TUNINGSPEECH TOGGLE") {
+    setTuningSpeechEnabled(!g_tuningSpeakEnabled);
+    Serial.println(g_tuningSpeakEnabled ? "OK TUNINGSPEECH ON" : "OK TUNINGSPEECH OFF");
+    speakTuningSpeechState();
+    return true;
+  }
+  if (upper.startsWith("VOLUME STEP")) {
+    int32_t step = 0;
+    if (!parseStepArg(line, upper, "VOLUME STEP ", step)) {
+      Serial.println("VOLUME STEP -> use a signed step, e.g. VOLUME STEP -1");
+      return true;
+    }
+    const uint8_t lvl = (uint8_t)clampInt32((int32_t)g_volumeLevel + step, 1, 9);
+    applyVolumeLevel(lvl);
+    saveVolumeToNvs(lvl);
+    Serial.print("OK VOLUME ");
+    Serial.println((int)lvl);
+    if (g_speechEnabled) {
+      speakVolumeLevel(lvl);
+      playSilenceMs(60);
+      speakToken("ok");
+    }
     return true;
   }
   if (upper.startsWith("VOLUME ")) {
@@ -1174,6 +1341,86 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     const uint8_t frame[5] = {data[0], data[1], data[2], data[3], 0x0B};
     yaesuCatPrintFrame(frame);
     Serial.println();
+    return true;
+  }
+
+  if (upper == "CTCSS?") {
+    const uint16_t toneTenths =
+        live.ctcssValid ? live.ctcssTenths : currentStoredProfile().ft8x7Bank6.ctcssDefaultTenths;
+    char label[12] = "";
+    formatCtcssTenthsLabel(toneTenths, label, sizeof(label));
+    Serial.print("CTCSS ");
+    Serial.print(label);
+    Serial.println(live.ctcssValid ? " Hz (last set)" : " Hz (profile default)");
+    if (g_speechEnabled) {
+      speakToken("ctcss");
+      playSilenceMs(60);
+      speakDigitsAndPoint(label);
+    }
+    return true;
+  }
+  if (upper.startsWith("CTCSS ")) {
+    const float hz = line.substring(6).toFloat();
+    const uint16_t toneTenths = (uint16_t)(hz * 10.0f + 0.5f);
+    if (!yaesuCtcssTenthsValid(toneTenths)) {
+      Serial.println("CTCSS -> invalid (use a standard tone in Hz, e.g. 88.5)");
+      return true;
+    }
+    if (!yaesuCatSetCtcssTenths(toneTenths)) { reportCommandFailure("CTCSS", "failed"); return true; }
+    char label[12] = "";
+    formatCtcssTenthsLabel(toneTenths, label, sizeof(label));
+    Serial.print("CTCSS ");
+    Serial.print(label);
+    Serial.println(" Hz");
+    if (g_speechEnabled) {
+      speakToken("ctcss");
+      playSilenceMs(60);
+      speakDigitsAndPoint(label);
+    }
+    return true;
+  }
+  if (upper == "DCS?") {
+    const uint16_t dcsCode = live.dcsValid ? live.dcsCode : currentStoredProfile().ft8x7Bank6.dcsDefaultCode;
+    char label[8] = "";
+    snprintf(label, sizeof(label), "%03u", (unsigned)dcsCode);
+    Serial.print("DCS ");
+    Serial.print(label);
+    Serial.println(live.dcsValid ? " (last set)" : " (profile default)");
+    if (g_speechEnabled) {
+      speakToken("dcs");
+      playSilenceMs(60);
+      speakDigitsAndPoint(label);
+    }
+    return true;
+  }
+  if (upper.startsWith("DCS ")) {
+    const uint16_t dcsCode = (uint16_t)line.substring(4).toInt();
+    if (!yaesuDcsCodeValid(dcsCode)) {
+      Serial.println("DCS -> invalid (use a standard code, e.g. 023)");
+      return true;
+    }
+    if (!yaesuCatSetDcsCode(dcsCode)) { reportCommandFailure("DCS", "failed"); return true; }
+    char label[8] = "";
+    snprintf(label, sizeof(label), "%03u", (unsigned)dcsCode);
+    Serial.print("DCS ");
+    Serial.println(label);
+    if (g_speechEnabled) {
+      speakToken("dcs");
+      playSilenceMs(60);
+      speakDigitsAndPoint(label);
+    }
+    return true;
+  }
+  // The FT-8x7 cannot report the active VFO; this corrects the local tracking.
+  if (upper == "VFO SYNC A" || upper == "VFO SYNC B") {
+    const bool vfoA = upper == "VFO SYNC A";
+    rememberActiveVfo(vfoA);
+    Serial.println(vfoA ? "SYNC VFOA" : "SYNC VFOB");
+    if (g_speechEnabled) {
+      speakToken("sync");
+      playSilenceMs(60);
+      speakVfoLabel(vfoA ? 'A' : 'B');
+    }
     return true;
   }
 
@@ -1442,6 +1689,22 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     Serial.println("VFO TOGGLE");
     return true;
   }
+  if (upper == "VFO A=B") {
+    if (!currentProfileVariantIs("ft817")) {
+      Serial.println("VFO A=B -> enabled only for FT-817");
+      return true;
+    }
+    if (!ft8x7CopyActiveVfoToOther()) { reportCommandFailure("VFO A=B", "failed"); return true; }
+    Serial.println("A=B");
+    if (g_speechEnabled) {
+      speakToken("a");
+      playSilenceMs(60);
+      speakToken("equals");
+      playSilenceMs(60);
+      speakToken("b");
+    }
+    return true;
+  }
   if (upper == "VFO A") {
     if (!currentProfileVariantIs("ft817")) {
       Serial.println("VFO A -> raw FT8x7 VFO select is currently enabled only for FT-817");
@@ -1630,6 +1893,161 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
         Serial.println(rsp, HEX);
       }
       delay(10);
+    }
+    return true;
+  }
+  return false;
+}
+
+// Relative and toggle forms of radio settings: what a keypad key does with a
+// fixed step, here with the step as an argument.
+static bool handleConsoleAdjustCommands(const String& line, const String& upper) {
+  int32_t step = 0;
+  if (upper == "ROUND" || upper.startsWith("ROUND ")) {
+    uint32_t stepHz = 500;
+    if (upper != "ROUND") {
+      if (!parseStepArg(line, upper, "ROUND ", step) || step < 1 || step > 1000000) {
+        Serial.println("ROUND -> invalid (use 1..1000000 Hz)");
+        return true;
+      }
+      stepHz = (uint32_t)step;
+    }
+    uint64_t hz = 0;
+    if (!queryFrequency(hz, 800)) { reportCommandFailure("ROUND", "no reply"); return true; }
+    const uint64_t rounded = RadioFrequency::fromHz(hz).roundedTo(stepHz).hz();
+    if (rounded != hz && !applyFrequencyAndTrack(rounded, true)) { reportCommandFailure("ROUND", "failed"); return true; }
+    Serial.print("ROUND: ");
+    Serial.print(hzToMHzString3(hz));
+    Serial.print(" -> ");
+    Serial.print(hzToMHzString3(rounded));
+    Serial.println(" MHz");
+    if (g_speechEnabled) speakDigitsAndPoint(hzToMHzString3(rounded));
+    rememberAnnouncedFrequency(rounded);
+    return true;
+  }
+  if (upper.startsWith("NRLEVEL STEP")) {
+    if (!parseStepArg(line, upper, "NRLEVEL STEP ", step)) { Serial.println("NRLEVEL STEP -> use a signed percent, e.g. NRLEVEL STEP 10"); return true; }
+    uint16_t raw = 0;
+    if (!queryNrLevel(raw, 800)) { reportCommandFailure("NRLEVEL STEP", "no reply"); return true; }
+    const int percent = (int)clampInt32((int32_t)levelRawToPercent(raw) + step, 0, 100);
+    bool wrote = setNrLevel(levelPercentToRaw(percent));
+    if (!wrote) {
+      // Some radios take the level only while NR is on.
+      bool nrOn = false;
+      if (queryNr(nrOn, 800) && !nrOn && setNr(true)) wrote = setNrLevel(levelPercentToRaw(percent));
+    }
+    if (!wrote) { reportCommandFailure("NRLEVEL STEP", "failed"); return true; }
+    Serial.print("NRLEVEL ");
+    Serial.print(percent);
+    Serial.println("%");
+    speakFeatureValue(voice_noisereduction, voice_noisereduction_len, (uint8_t)percent);
+    return true;
+  }
+  if (upper.startsWith("NBLEVEL STEP")) {
+    if (!parseStepArg(line, upper, "NBLEVEL STEP ", step)) { Serial.println("NBLEVEL STEP -> use a signed percent, e.g. NBLEVEL STEP 10"); return true; }
+    uint16_t raw = 0;
+    if (!queryNbLevel(raw, 800)) { reportCommandFailure("NBLEVEL STEP", "no reply"); return true; }
+    const int percent = (int)clampInt32((int32_t)levelRawToPercent(raw) + step, 0, 100);
+    if (!setNbLevel(levelPercentToRaw(percent))) { reportCommandFailure("NBLEVEL STEP", "failed"); return true; }
+    Serial.print("NBLEVEL ");
+    Serial.print(percent);
+    Serial.println("%");
+    speakTokenPercent("noiseblanker", (uint8_t)percent);
+    return true;
+  }
+  if (upper.startsWith("MONLEVEL STEP")) {
+    if (!parseStepArg(line, upper, "MONLEVEL STEP ", step)) { Serial.println("MONLEVEL STEP -> use a signed percent, e.g. MONLEVEL STEP 10"); return true; }
+    uint16_t raw = 0;
+    if (!queryMonitorLevel(raw, 800)) { reportCommandFailure("MONLEVEL STEP", "no reply"); return true; }
+    const int percent = (int)clampInt32((int32_t)levelRawToPercent(raw) + step, 0, 100);
+    if (!setMonitorLevel(levelPercentToRaw(percent))) { reportCommandFailure("MONLEVEL STEP", "failed"); return true; }
+    Serial.print("MONLEVEL ");
+    Serial.print(percent);
+    Serial.println("%");
+    speakFeatureValue(voice_monitor, voice_monitor_len, (uint8_t)percent);
+    return true;
+  }
+  const bool pbt1Step = upper.startsWith("PBT1 STEP");
+  if (pbt1Step || upper.startsWith("PBT2 STEP")) {
+    const char* label = pbt1Step ? "PBT1" : "PBT2";
+    if (!parseStepArg(line, upper, pbt1Step ? "PBT1 STEP " : "PBT2 STEP ", step)) {
+      Serial.print(label);
+      Serial.println(" STEP -> use a signed step, e.g. STEP -10");
+      return true;
+    }
+    uint16_t raw = 0;
+    if (!(pbt1Step ? queryPbtInner(raw, 800) : queryPbtOuter(raw, 800))) { reportCommandFailure(label, "no reply"); return true; }
+    const int value = (int)clampInt32((int32_t)pbtRawToOffset(raw) + step, -128, 127);
+    if (!(pbt1Step ? setPbtInner(pbtOffsetToRaw(value)) : setPbtOuter(pbtOffsetToRaw(value)))) { reportCommandFailure(label, "failed"); return true; }
+    Serial.print(label);
+    Serial.print(' ');
+    Serial.print(value);
+    Serial.println(" step");
+    speakSignedStepValue("pbt", value);
+    return true;
+  }
+  if (upper.startsWith("RIT STEP")) {
+    if (!parseStepArg(line, upper, "RIT STEP ", step)) { Serial.println("RIT STEP -> use signed Hz, e.g. RIT STEP -100"); return true; }
+    int32_t offset = 0;
+    if (!queryRitOffsetHz(offset, 800)) { reportCommandFailure("RIT STEP", "no reply"); return true; }
+    const int32_t hz = clampInt32(offset + step, -9999, 9999);
+    if (!setRitOffsetHz(hz)) { reportCommandFailure("RIT STEP", "failed"); return true; }
+    Serial.print("RIT ");
+    Serial.print(hz);
+    Serial.println(" Hz");
+    speakRitStateAndOffset(true, hz);
+    return true;
+  }
+  if (upper == "RIT TOGGLE") {
+    bool on = false;
+    if (!queryRitEnabled(on, 800)) { reportCommandFailure("RIT TOGGLE", "no reply"); return true; }
+    if (!setRitEnabled(!on)) { reportCommandFailure("RIT TOGGLE", "failed"); return true; }
+    Serial.println(!on ? "RIT ON" : "RIT OFF");
+    speakTokenState("rit", !on);
+    return true;
+  }
+  if (upper == "MONITOR TOGGLE") {
+    bool on = false;
+    if (!queryMonitorEnabled(on, 800)) { reportCommandFailure("MONITOR TOGGLE", "no reply"); return true; }
+    if (!setMonitorEnabled(!on)) { reportCommandFailure("MONITOR TOGGLE", "failed"); return true; }
+    Serial.println(!on ? "MONITOR ON" : "MONITOR OFF");
+    if (g_speechEnabled) speakTokenState("monitor", !on);
+    return true;
+  }
+  if (upper == "TRANSCEIVE TOGGLE") {
+    bool on = false;
+    if (!queryTransceiveEnabled(on, 800)) { reportCommandFailure("TRANSCEIVE TOGGLE", "no reply"); return true; }
+    if (!setTransceiveEnabled(!on)) { reportCommandFailure("TRANSCEIVE TOGGLE", "failed"); return true; }
+    Serial.println(!on ? "TRANSCEIVE ON" : "TRANSCEIVE OFF");
+    if (g_speechEnabled) speakTokenState("transceiver", !on);
+    return true;
+  }
+  if (upper == "FILSHAPE TOGGLE") {
+    bool soft = false;
+    if (!queryFilterShape(soft, 800)) { reportCommandFailure("FILSHAPE TOGGLE", "no reply"); return true; }
+    if (!setFilterShape(!soft)) { reportCommandFailure("FILSHAPE TOGGLE", "failed"); return true; }
+    Serial.println(!soft ? "FILSHAPE SOFT" : "FILSHAPE SHARP");
+    if (g_speechEnabled) {
+      speakToken("filtershape");
+      playSilenceMs(60);
+      speakToken(!soft ? "soft" : "sharp");
+    }
+    return true;
+  }
+  if (upper == "FILWIDTH NEXT" || upper == "FILWIDTH PREV") {
+    uint8_t mode = 0xFF;
+    uint8_t filter = 0xFF;
+    if (!queryCurrentFilterSlot(filter) || !queryCurrentModeValue(mode)) { reportCommandFailure("FILWIDTH", "no reply"); return true; }
+    int next = (int)filter + (upper == "FILWIDTH NEXT" ? 1 : -1);
+    if (next < 1) next = 3;
+    if (next > 3) next = 1;
+    if (!setMode(mode, (uint8_t)next)) { reportCommandFailure("FILWIDTH", "failed"); return true; }
+    Serial.print("FILWIDTH ");
+    Serial.println(next);
+    if (g_speechEnabled) {
+      speakToken("filterwidth");
+      playSilenceMs(60);
+      playDigit((uint8_t)next);
     }
     return true;
   }
@@ -2135,20 +2553,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     speakRitStateAndOffset(true, hz);
     return true;
   }
-  if (upper == "NR?") {
-    if (!sp.caps.getNr) { reportNotAvailable("NR? -> unsupported"); return true; }
-    if (!refreshLiveNr()) { reportCommandFailure("NR?", "no reply"); return true; }
-    if (usbConsoleReady()) Serial.println(live.nrOn ? "NR ON" : "NR OFF");
-    speakBinaryFeatureState(voice_noisereduction, voice_noisereduction_len, live.nrOn);
-    return true;
-  }
-  if (upper == "NB?") {
-    if (!sp.caps.getNb) { reportNotAvailable("NB? -> unsupported"); return true; }
-    if (!refreshLiveNb()) { reportCommandFailure("NB?", "no reply"); return true; }
-    if (usbConsoleReady()) Serial.println(live.nbOn ? "NB ON" : "NB OFF");
-    speakBinaryFeatureState(voice_noiseblanker, voice_noiseblanker_len, live.nbOn);
-    return true;
-  }
+  if (handleConsoleFeatureCommand(upper)) return true;
   if (upper == "PBT1?") {
     uint16_t raw = 0;
     if (!queryPbtInner(raw, 800)) { reportCommandFailure("PBT1?", "no reply"); return true; }
@@ -2381,74 +2786,6 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     if (g_speechEnabled) speakTokenState("transceiver", false);
     return true;
   }
-  if (upper == "NOTCH?") {
-    if (!sp.caps.getNotch) { reportNotAvailable("NOTCH? -> unsupported"); return true; }
-    if (!refreshLiveNotch()) { reportCommandFailure("NOTCH?", "no reply"); return true; }
-    if (!live.notchOn) {
-      if (usbConsoleReady()) Serial.println("NOTCH OFF");
-      speakNotchCycleState(false, NOTCH_WIDTH_UNKNOWN);
-      return true;
-    }
-    if (live.notchWidthValid) {
-      if (usbConsoleReady()) {
-        if (live.notchWidth == NOTCH_WIDTH_NAR) Serial.println("NOTCH NAR");
-        else if (live.notchWidth == NOTCH_WIDTH_MID) Serial.println("NOTCH MID");
-        else if (live.notchWidth == NOTCH_WIDTH_WIDE) Serial.println("NOTCH WIDE");
-        else Serial.println("NOTCH ON");
-      }
-      speakNotchCycleState(true, live.notchWidth);
-      return true;
-    }
-    if (usbConsoleReady()) Serial.println("NOTCH ON");
-    speakTokenState("notch filter", true);
-    return true;
-  }
-  if (upper == "NR ON") {
-    if (!sp.caps.setNr) { reportNotAvailable("NR ON -> unsupported"); return true; }
-    if (!applyNrAndTrack(true)) { reportCommandFailure("NR ON", "failed"); return true; }
-    Serial.println("NR ON");
-    speakBinaryFeatureState(voice_noisereduction, voice_noisereduction_len, true);
-    return true;
-  }
-  if (upper == "NR OFF") {
-    if (!sp.caps.setNr) { reportNotAvailable("NR OFF -> unsupported"); return true; }
-    if (!applyNrAndTrack(false)) { reportCommandFailure("NR OFF", "failed"); return true; }
-    Serial.println("NR OFF");
-    speakBinaryFeatureState(voice_noisereduction, voice_noisereduction_len, false);
-    return true;
-  }
-  if (upper == "NR TOGGLE") {
-    if (!sp.caps.getNr || !sp.caps.setNr) { reportNotAvailable("NR TOGGLE -> unsupported"); return true; }
-    if (!refreshLiveNr()) { reportCommandFailure("NR TOGGLE", "no reply"); return true; }
-    const bool next = !live.nrOn;
-    if (!applyNrAndTrack(next)) { reportCommandFailure("NR TOGGLE", "failed"); return true; }
-    Serial.println(next ? "NR ON" : "NR OFF");
-    speakBinaryFeatureState(voice_noisereduction, voice_noisereduction_len, next);
-    return true;
-  }
-  if (upper == "NB ON") {
-    if (!sp.caps.setNb) { reportNotAvailable("NB ON -> unsupported"); return true; }
-    if (!applyNbAndTrack(true)) { reportCommandFailure("NB ON", "failed"); return true; }
-    Serial.println("NB ON");
-    speakBinaryFeatureState(voice_noiseblanker, voice_noiseblanker_len, true);
-    return true;
-  }
-  if (upper == "NB OFF") {
-    if (!sp.caps.setNb) { reportNotAvailable("NB OFF -> unsupported"); return true; }
-    if (!applyNbAndTrack(false)) { reportCommandFailure("NB OFF", "failed"); return true; }
-    Serial.println("NB OFF");
-    speakBinaryFeatureState(voice_noiseblanker, voice_noiseblanker_len, false);
-    return true;
-  }
-  if (upper == "NB TOGGLE") {
-    if (!sp.caps.getNb || !sp.caps.setNb) { reportNotAvailable("NB TOGGLE -> unsupported"); return true; }
-    if (!refreshLiveNb()) { reportCommandFailure("NB TOGGLE", "no reply"); return true; }
-    const bool next = !live.nbOn;
-    if (!applyNbAndTrack(next)) { reportCommandFailure("NB TOGGLE", "failed"); return true; }
-    Serial.println(next ? "NB ON" : "NB OFF");
-    speakBinaryFeatureState(voice_noiseblanker, voice_noiseblanker_len, next);
-    return true;
-  }
   if (upper == "PA?") {
     bool on = false;
     if (!asciiQueryPreamp(sp, on, 800)) { reportCommandFailure("PA?", "no reply"); return true; }
@@ -2533,56 +2870,12 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     speakTokenState("split", !on);
     return true;
   }
-  if (upper == "NOTCH ON") {
-    if (!sp.caps.setNotch) { reportNotAvailable("NOTCH ON -> unsupported"); return true; }
-    if (!applyNotchAndTrack(true)) { reportCommandFailure("NOTCH ON", "failed"); return true; }
-    Serial.println("NOTCH ON");
-    speakTokenState("notch filter", true);
-    return true;
-  }
-  if (upper == "NOTCH NAR") {
-    if (currentProtocolType() != PROTO_CIV || !sp.caps.setNotch) { reportNotAvailable("NOTCH NAR -> unsupported"); return true; }
-    if (!applyNotchAndTrack(true) || !applyNotchWidthAndTrack(NOTCH_WIDTH_NAR)) { reportCommandFailure("NOTCH NAR", "failed"); return true; }
-    Serial.println("NOTCH NAR");
-    speakNotchCycleState(true, NOTCH_WIDTH_NAR);
-    return true;
-  }
-  if (upper == "NOTCH MID") {
-    if (currentProtocolType() != PROTO_CIV || !sp.caps.setNotch) { reportNotAvailable("NOTCH MID -> unsupported"); return true; }
-    if (!applyNotchAndTrack(true) || !applyNotchWidthAndTrack(NOTCH_WIDTH_MID)) { reportCommandFailure("NOTCH MID", "failed"); return true; }
-    Serial.println("NOTCH MID");
-    speakNotchCycleState(true, NOTCH_WIDTH_MID);
-    return true;
-  }
-  if (upper == "NOTCH WIDE") {
-    if (currentProtocolType() != PROTO_CIV || !sp.caps.setNotch) { reportNotAvailable("NOTCH WIDE -> unsupported"); return true; }
-    if (!applyNotchAndTrack(true) || !applyNotchWidthAndTrack(NOTCH_WIDTH_WIDE)) { reportCommandFailure("NOTCH WIDE", "failed"); return true; }
-    Serial.println("NOTCH WIDE");
-    speakNotchCycleState(true, NOTCH_WIDTH_WIDE);
-    return true;
-  }
-  if (upper == "NOTCH OFF") {
-    if (!sp.caps.setNotch) { reportNotAvailable("NOTCH OFF -> unsupported"); return true; }
-    if (!applyNotchAndTrack(false)) { reportCommandFailure("NOTCH OFF", "failed"); return true; }
-    Serial.println("NOTCH OFF");
-    speakTokenState("notch filter", false);
-    return true;
-  }
-  if (upper == "NOTCH TOGGLE") {
-    if (!sp.caps.getNotch || !sp.caps.setNotch) { reportNotAvailable("NOTCH TOGGLE -> unsupported"); return true; }
-    if (!refreshLiveNotch()) { reportCommandFailure("NOTCH TOGGLE", "no reply"); return true; }
-    const bool next = !live.notchOn;
-    if (!applyNotchAndTrack(next)) { reportCommandFailure("NOTCH TOGGLE", "failed"); return true; }
-    Serial.println(next ? "NOTCH ON" : "NOTCH OFF");
-    speakTokenState("notch filter", next);
-    return true;
-  }
   return false;
 }
 
 static bool handleConsoleBankCommands(const String& line, const String& upper) {
   if (upper == "BANK NEXT") {
-    uint8_t nextBank = (uiGetBank() >= 3) ? 1 : (uint8_t)(uiGetBank() + 1);
+    uint8_t nextBank = (uiGetBank() >= 9) ? 1 : (uint8_t)(uiGetBank() + 1);
     uiSetBank(nextBank);
     Serial.print("OK BANK ");
     Serial.println((int)nextBank);
@@ -2590,7 +2883,7 @@ static bool handleConsoleBankCommands(const String& line, const String& upper) {
     return true;
   }
   if (upper == "BANK PREV") {
-    uint8_t prevBank = (uiGetBank() <= 1) ? 3 : (uint8_t)(uiGetBank() - 1);
+    uint8_t prevBank = (uiGetBank() <= 1) ? 9 : (uint8_t)(uiGetBank() - 1);
     uiSetBank(prevBank);
     Serial.print("OK BANK ");
     Serial.println((int)prevBank);
@@ -2599,7 +2892,7 @@ static bool handleConsoleBankCommands(const String& line, const String& upper) {
   }
   if (upper.startsWith("BANK ")) {
     int b = line.substring(5).toInt();
-    if (b < 1 || b > 3) { Serial.println("BANK -> invalid (use 1..3)"); speakError(); return true; }
+    if (b < 1 || b > 9) { Serial.println("BANK -> invalid (use 1..9)"); speakError(); return true; }
     uiSetBank((uint8_t)b);
     Serial.print("OK BANK ");
     Serial.println((int)b);
@@ -2658,9 +2951,11 @@ void processCommand(String line) {
 
   if (handleConsoleInfoCommands(upper)) return;
   if (handleConsoleProfileCommands(line, upper)) return;
+  if (handleConsoleConnectionCommands(line, upper)) return;
   if (handleFtdx10BlockedConsoleCommand(upper)) return;
   if (handleConsoleToggleCommands(line, upper)) return;
   if (handleConsoleYaesuFt8x7Commands(line, upper)) return;
+  if (handleConsoleAdjustCommands(line, upper)) return;
   if (handleConsoleRadioCommands(line, upper)) return;
   if (handleConsoleBankCommands(line, upper)) return;
   if (usbConsoleReady()) Serial.println("Unknown. Type HELP");

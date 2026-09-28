@@ -1,0 +1,234 @@
+// Bank 1 keypad actions: frequency, lock, power, meters and mode.
+#include "ui_keypad_bank.h"
+#include "engine_civ.h"
+#include "radio_frequency.h"
+#include "radio_state.h"
+#include "radio_utils.h"
+
+static bool queryDialLockReliable(bool& onOut) {
+  if (currentProtocolType() == PROTO_YAESU_FT8X7) {
+    if (!live.lockKnown) return false;
+    onOut = live.lockOn;
+    return true;
+  }
+  for (uint8_t attempt = 0; attempt < 3; ++attempt) {
+    if (queryDialLock(onOut, 800)) {
+      rememberDialLockState(onOut);
+      return true;
+    }
+    if (attempt < 2) {
+      pumpIncoming(20);
+      delay(25);
+    }
+  }
+  if (live.lockKnown) {
+    onOut = live.lockOn;
+    return true;
+  }
+  return false;
+}
+
+// Same wording as a tuning announcement: digits only, no "frequency" prefix.
+static void speakTunedFrequencyHz(uint64_t hz) {
+  if (!g_speechEnabled) return;
+  speakDigitsAndPoint(hzToMHzString3(hz));
+}
+
+void queryBank1RxTx() {
+  printKeypadAction("RXTX?");
+  bool tx = false;
+  if (!queryRxTxStatus(tx, 800)) { keypadReportIfTimedOut("RXTX?"); return; }
+  printKeypadStatus(tx ? "TX" : "RX");
+  if (!g_speechEnabled) return;
+  speakToken("transceiver");
+  playSilenceMs(60);
+  speakSimpleBinaryState(tx);
+}
+
+void reportBank1Ft817RxTxUnreliable() {
+  printKeypadAction("RXTX?");
+  printKeypadStatus("RXTX unreliable");
+  if (g_speechEnabled) {
+    speakToken("transceiver");
+    playSilenceMs(60);
+    speakNotAvailable();
+  }
+}
+
+void queryBank1Frequency() {
+  printKeypadAction("FREQ?");
+  uint64_t hz = 0;
+  if (!queryFrequency(hz, 800)) {
+    if (!keypadReportIfTimedOut("FREQ?")) {
+      printKeypadStatus("FREQ? -> no reply");
+      if (g_speechEnabled) speakError();
+    }
+    return;
+  }
+  printKeypadStatus(String("FREQ: ") + hzToMHzString3(hz) + " MHz");
+  speakQueriedFrequencyHz(hz);
+  rememberAnnouncedFrequency(hz);
+}
+
+void queryBank1TxFrequency() {
+  printKeypadAction("TXFREQ?");
+  uint64_t hz = 0;
+  if (!queryTxFrequency(hz, 800)) {
+    // FT-8x7 without a TX frequency reply: say the frequency instead.
+    if (currentProtocolType() == PROTO_YAESU_FT8X7) {
+      if (queryFrequency(hz, 800)) {
+        printKeypadStatus(String("TXFREQ: ") + hzToMHzString3(hz) + " MHz");
+        speakQueriedFrequencyHz(hz);
+      } else {
+        printKeypadStatus("TXFREQ -> unavailable");
+        if (g_speechEnabled) speakNotAvailable();
+      }
+    }
+    return;
+  }
+  printKeypadStatus(String("TXFREQ: ") + hzToMHzString3(hz) + " MHz");
+  speakQueriedFrequencyHz(hz);
+}
+
+void queryBank1Ft857TxFrequency() {
+  printKeypadAction("TXFREQ?");
+  uint64_t hz = 0;
+  if (g_ft8x7SplitKnown && !g_ft8x7SplitOn && queryFrequency(hz, 800)) {
+    printKeypadStatus(String("TXFREQ: ") + hzToMHzString3(hz) + " MHz");
+    speakQueriedFrequencyHz(hz);
+  } else {
+    printKeypadStatus("TXFREQ unavailable on FT-857/897");
+    if (g_speechEnabled) speakNotAvailable();
+  }
+}
+
+void queryBank1Lock() {
+  printKeypadAction("LOCK?");
+  prepareKeypadSpeechResponse();
+  bool on = false;
+  if (!queryDialLockReliable(on)) {
+    if (keypadReportIfTimedOut("LOCK?")) return;
+    printKeypadStatus("LOCK UNKNOWN");
+    if (g_speechEnabled) {
+      speakToken("lock");
+      playSilenceMs(60);
+      speakError();
+    }
+    return;
+  }
+  printKeypadStatus(on ? "LOCK ON" : "LOCK OFF");
+  speakTokenState("lock", on);
+}
+
+void beginBank1FrequencySet() {
+  printKeypadAction("FREQ");
+  keypadBeginEntry(InputMode::FreqEntry, TargetVfo::Current);
+  if (g_speechEnabled) {
+    speakFrequencyWord();
+    playSilenceMs(80);
+    speakToken("please");
+  }
+}
+
+void roundActiveFrequency(uint32_t stepHz) {
+  printKeypadAction(String("ROUND ") + String((unsigned long)stepHz) + " Hz");
+  g_suspendPollingUntilMs = millis() + 1400;
+  g_suppressFreqSpeakUntilMs = millis() + 2000;
+
+  uint64_t hz = 0;
+  if (!queryFrequency(hz, 800)) {
+    // Radio not responding: do not round or announce a stale value.
+    if (!keypadReportIfTimedOut("ROUND")) {
+      printKeypadStatus("ROUND -> no reply");
+      if (g_speechEnabled) speakError();
+    }
+    return;
+  }
+
+  const uint64_t rounded = RadioFrequency::fromHz(hz).roundedTo(stepHz).hz();
+  // Serial monitor reports old -> new; speech reports only the new frequency.
+  if (rounded == hz) {
+    // Already on a step boundary.
+    printKeypadStatus(String("FREQ: ") + hzToMHzString3(rounded) + " MHz (already rounded)");
+    speakTunedFrequencyHz(rounded);
+    rememberAnnouncedFrequency(rounded);
+    return;
+  }
+
+  if (keypadApplyFrequencyHz(rounded, TargetVfo::Current)) {
+    printKeypadStatus(String("ROUND: ") + hzToMHzString3(hz) + " -> " + hzToMHzString3(rounded) + " MHz");
+    speakTunedFrequencyHz(rounded);
+    rememberAnnouncedFrequency(rounded);
+  } else if (!keypadReportIfTimedOut("ROUND")) {
+    printKeypadStatus(currentProtocolType() == PROTO_YAESU_FT8X7 ? "ROUND -> no change" : "ROUND -> failed");
+    if (g_speechEnabled) speakError();
+  }
+}
+
+void beginBank1RfPowerSet() {
+  if (!currentStoredProfile().caps.setRfPower) {
+    printKeypadStatus("RFPOWER -> unavailable");
+    if (g_speechEnabled) speakNotAvailable();
+    return;
+  }
+  printKeypadAction("RFPOWER");
+  keypadBeginEntry(InputMode::RfPowerEntry);
+  printKeypadStatus("POWER PLEASE");
+  if (g_speechEnabled) {
+    speakToken("power");
+    playSilenceMs(80);
+    speakToken("please");
+  }
+}
+
+void toggleBank1Lock() {
+  printKeypadAction("LOCK");
+  prepareKeypadSpeechResponse();
+  bool on = false;
+  if (!queryDialLockReliable(on)) {
+    if (keypadReportIfTimedOut("LOCK?")) return;
+    printKeypadStatus("LOCK UNKNOWN");
+    if (g_speechEnabled) {
+      speakToken("lock");
+      playSilenceMs(60);
+      speakError();
+    }
+    return;
+  }
+  if (!setDialLock(!on)) { keypadReportIfTimedOut("LOCK"); return; }
+  printKeypadStatus(!on ? "LOCK ON" : "LOCK OFF");
+  speakTokenState("lock", !on);
+}
+
+static void sendOrStageBank1Command(const String& cmd, bool suppressModePrefix = false) {
+  printKeypadAction(cmd);
+  if (AUTO_SEND_BANK1_QUERIES) {
+    speakKeypadCommandWord(cmd);
+    playSilenceMs(60);
+    if (suppressModePrefix) g_suppressModePrefixOnce = true;
+    keypadSendNow(cmd);
+  } else {
+    keypadStageCommand(cmd);
+  }
+}
+
+void queryBank1Power() { sendOrStageBank1Command("PO?"); }
+
+void queryBank1RfPower() { sendOrStageBank1Command("RFPOWER?"); }
+
+void queryBank1Smeter() { sendOrStageBank1Command("SM?"); }
+
+void queryBank1Swr() { sendOrStageBank1Command("SWR?"); }
+
+void queryBank1Mode() { sendOrStageBank1Command("MODE?", true); }
+
+void beginBank1ModeSelect() {
+  keypadBeginModeSelect(TargetVfo::Current);
+  printKeypadAction("MODE");
+  printKeypadStatus("MODE PLEASE");
+  if (g_speechEnabled) {
+    speakToken("mode");
+    playSilenceMs(80);
+    speakToken("please");
+  }
+}

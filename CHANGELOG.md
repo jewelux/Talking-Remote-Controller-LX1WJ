@@ -1,86 +1,107 @@
 # Changelog
 
-## Unreleased — Firmware CI
+## Unreleased
 
-- GitHub Actions workflow `.github/workflows/firmware.yml` builds the ESP32-S3 firmware on every
-  push/PR and packages `hamtrc-<version>.factory.bin` + ESP Web Tools `manifest.json` for the
-  online updater; `v*` tags attach them to a GitHub Release
+### Keypad
 
-## Unreleased — Voice clips
+- in an entry (frequency, RF power, repeater shift, CTCSS, DCS, CI-V address) and in bank,
+  profile and mode select, a key acts as soon as it is pressed; holding or releasing it does
+  nothing more
+- bank select (`*` long): pressing `1`–`9` switches to that bank at once and says its number;
+  `D` is no longer needed
+- mode select ("mode please") takes every key as a mode digit, also keys that do something else on
+  the current bank (e.g. Bank 3 `6`–`9`), and holding a key does not run its long action. A key
+  that picks no mode, or a mode the radio profile cannot set, beeps and mode select stays. The
+  picked mode waits for `D` to apply it; another mode digit replaces it, `#` cancels it and any
+  other key beeps. Before, an invalid digit ended mode select, keys ran their bank actions, a
+  mode the profile cannot set was spoken as picked and then failed silently, and a picked mode left
+  behind could be applied by a later `D`, e.g. at the end of a frequency entry
+- fixed mode select: `1`/`2` were ignored after a Bank 3 VFO A/B mode select (`3`/`4`/`5` long), and
+  Bank 1 `9` long could set VFO A or B instead of the current VFO
+- `D` with nothing typed or chosen beeps and the entry or selection stays. Before, some entries said
+  "error" and ended, some failed silently, and bank and profile select ended with a beep
+- `#` cancels any entry, selection, picked mode, command waiting for `D` or key waiting for a double
+  press, and says "cancel" (it said "ok"; cancelling bank or profile select was silent). With
+  nothing to cancel it beeps
+- holding a key that has no long action beeps once the hold time is reached, and releasing it does
+  nothing. Before, the release ran the key's short action. This includes `D` and `#`
+- a key that waits for a possible double press (e.g. Bank 1 `0`, `1`, `2`) answers as soon as
+  another key is pressed, before that key. Before, the two answers came in the wrong order, or the
+  first press was lost
+- pressing `#` while another key is held no longer runs that key when it is released
+- a key that does nothing gives a short beep instead of silence: keys with no action on the current
+  bank, keys whose feature the radio lacks, and keys an entry or selection does not take
+- choosing a profile number with no stored profile says "not available"
 
-- all voice clips regenerated with Piper voice `en_US-lessac-medium` (was lessac-high) with both
-  noise scales at 0, so regenerating gives identical clips; these are now the defaults of
-  `generate_voices.py`, `say.py` and `setup_venv.ps1`
-- added voice clips "cancel", "not available" and "timeout"
-- pressing `#` to cancel an input now says "cancel" instead of "ok"; cancelling bank or profile
-  selection, which was silent, says "cancel" too
-- when the radio does not answer a keypad action or serial command, the device now says "timeout";
-  it used to say "error" or nothing. Failures for other reasons (unsupported, rejected) keep their
-  old behaviour
-- features the radio or profile cannot provide now say "not available": keys hidden on FTDX10, RF
-  power set, TX frequency and VFO B / VFO mode on FT-857/897, RX/TX state on FT-817, CI-V address and
-  baud setup, an empty profile slot, and serial commands answered "unsupported" or "hidden on
-  FTDX10". Before, these said "error" or nothing
-- a key that does nothing now gives a short beep instead of silence: keys with no action on the
-  current bank or profile, keys whose feature the profile's protocol lacks (e.g. on FT-8x7: NR, NB,
-  notch, tuner, monitor, transceive, band stack, RIT), BANK6 on non-FT-8x7 profiles, `D` with
-  nothing to enter, and keys ignored during an entry or bank/profile selection (extra digits, a
-  second `*`, letter keys, an invalid mode digit, a leading `0` in profile select)
-- WFM mode is now spoken as "wfm" using its own clip; the clip was already in `voice_data.h` but
-  missing from the voice table, so it was spelled out as "w f m"
+### Frequency
 
-## Unreleased — FT8x7 S-meter
+- frequencies are announced and shown to 10 Hz (e.g. `7.12345`, `14.1`, `7.0`) instead of being cut
+  to kHz
+- frequency entry is in MHz with `*` as the decimal point: `14*1` is 14.1 MHz, `14*12345` is
+  14.12345 MHz
+- Bank 1 `0` double press rounds the current frequency to the nearest 500 Hz
+- tuning is announced only when the dial stops, and only once it is at least 100 Hz away from the
+  last frequency you heard or entered. Moving the dial cuts off a readout that is out of date
+  instead of queueing another one
 
-- fixed the FT-817/818/857/897 S-meter always reading S0: the RX-status byte carries the meter in
-  its low nibble (S0..S9, then S9+10..+60 dB) and is now decoded per protocol; the console shows
-  e.g. `S9+20dB`
-- dB over S9 is spoken as a word ("S meter nine plus twenty") using new voice clips ten..sixty;
-  falls back to digits if a clip is missing
+### Speech and sounds
 
-## Unreleased — FT8x7 frequency polling
+- any key press stops what is being spoken, so answers no longer queue up behind earlier ones
+- new voice (Piper `en_US-lessac-medium`) for all clips
+- "timeout" when the radio does not answer, and "not available" for features the radio or profile
+  cannot provide (e.g. keys hidden on FTDX10, an empty profile slot); both used to say "error" or
+  nothing
+- the S-meter says dB over S9 as a word ("S meter nine plus twenty")
+- WFM is said as "wfm" instead of being spelled out
 
-- re-enabled background frequency polling for the Yaesu FT-817/857/897 family (disabled in V3.5.8)
-- FT8x7 polls every 700 ms with a 300 ms timeout; other radios keep 400 ms / 80 ms
-- after 3 failed polls in a row (radio off or disconnected) polling backs off to every 3 s so the
-  blocking timeout does not starve the keypad
-- after a CAT timeout the next FT8x7 command waits for the line to go quiet, so a late reply is not
-  read as the start of the next one; commands are spaced at least 20 ms apart
-- FT8x7 frequency/mode frames with non-BCD digits or an out-of-range frequency are rejected; a
-  polled frequency change is accepted on the first reading (confirmation by two identical readings
-  is available but off)
-- the first FT8x7 command after the CAT port is opened now keeps the same minimum gap as between
-  commands
-- fixed FT-857/897 dial lock turning on when HamTRC starts with the radio already on: the RS232 TX
-  line was held low (a break) from power-up until the radio profile was applied, because the early
-  `digitalWrite(HIGH)` was ignored while the pin was not yet set up as GPIO; the radio read the end
-  of the break as a stray byte, which shifted the first poll so it was executed as LOCK ON
+### Console commands
 
-## Unreleased — Frequency precision and entry
+- new commands for what only the keypad could do: `ROUND [<Hz>]`, `NRLEVEL`, `NBLEVEL`,
+  `MONLEVEL`, `PBT1`, `PBT2`, `RIT` and `VOLUME STEP <+-n>`; `FILWIDTH NEXT | PREV`; `TOGGLE` for
+  `MONITOR`, `TRANSCEIVE`, `RIT`, `FILSHAPE` and `TUNINGSPEECH`; `CIVADDR? | <hex>` and
+  `BAUD? | <rate>` (CI-V); on FT-8x7 `CTCSS? | <Hz>`, `DCS? | <code>` and `VFO SYNC A | B`; on
+  FT-817 `VFO A=B`
+- `FREQHZ`, `VFOAHZ` and `VFOBHZ` set a frequency in Hz
+- `BANK <n>`, `BANK NEXT` and `BANK PREV` cover banks 1–9 like the keypad (they stopped at 3)
+- `NR`, `NB` and `NOTCH` behave like the Bank 2 keys: `TOGGLE` starts from the radio's known state,
+  on the TS-480 `NR TOGGLE` steps off → 1 → 2 → off, and on CI-V `NOTCH TOGGLE` steps off → NAR →
+  MID → WIDE → off
 
-- added a `RadioFrequency` class (`firmware/radio_frequency.{h,cpp}`) that owns frequency parsing,
-  formatting and rounding
-- frequency is now announced and displayed to 10 Hz resolution as `MHz` "point" fractional digits
-  with trailing zeros dropped but always at least one decimal (e.g. `7.12345`, `14.1`, `7.0`)
-  instead of being truncated to kHz; the voice dictionary is unchanged
-- keypad frequency entry now reads a plain number as MHz with `*` as the decimal point
-  (`14*1` → 14.1 MHz, `14*12345` → 14.12345 MHz), replacing the previous kHz-integer entry
-- added Bank 1 `0` double-press to round the current frequency to the nearest 500 Hz (the serial
-  monitor reports old -> new; speech reports the new frequency the same way as a tuning
-  announcement, without the "frequency" prefix)
-- added Hz-argument console commands `FREQHZ`, `VFOAHZ`, `VFOBHZ`
-- FTDX10 keypad frequency entry and rounding set the frequency directly instead of through console
-  commands, so the new frequency is announced once and a rejected write is reported as failed
-- tuning is announced only once the frequency is at least 100 Hz (`FREQ_SPEAK_MIN_STEP_HZ`) away
-  from the last frequency the user heard or entered: a tuning announcement, a Bank 1 `0` query,
-  a keypad/console frequency entry or a 500 Hz rounding
-- any key press now stops speech in progress and cancels a pending tuning announcement, so
-  answers no longer queue up behind earlier announcements; key actions only append their
-  label and value
-- tuning announcements no longer queue up while the dial is moving: moving the dial at least
-  100 Hz away from the frequency being read out stops that readout immediately (other speech such
-  as mode or key answers keeps playing), and only the frequency where tuning stops is announced;
-  the fixed 5 s minimum interval between tuning announcements is replaced by a 500 ms gap
-  (`FREQ_SPEAK_MIN_GAP_MS`) measured from the end of the previous announcement
+### Radios
+
+- FT-817/818/857/897: the frequency is polled in the background again. When the radio is off or
+  disconnected, polling slows down so the keypad stays responsive
+- FT-817/818/857/897: fixed the S-meter always reading S0
+- FT-857/897: fixed the dial lock turning on when HamTRC starts with the radio already on
+- FT-817/818/857/897: RTTY and RTTY-R beep in mode select and are not listed by `MODE LIST`, since
+  these radios have no such mode. Before, RTTY-R switched the radio to FM and RTTY sent WFM
+- FT-817: Bank 3 `1` long toggles VFO A/B and `2` long copies the active VFO to the other (A=B)
+- TS-480: `NR 0`, `NR 1` and `NR 2` set the NR level, and the Bank 2 `1` key and `NR?` say it
+  ("noise reduction two") instead of only on or off
+- NR, NB and notch keys say so when the radio rejects the change or does not answer; this was silent
+- FTDX10: frequency entry and 500 Hz rounding announce the new frequency once and report a write
+  the radio rejects. Bank 2 `8` and `9` say "not available" like the other hidden keys
+- Bank 6 on radios other than the FT-8x7 family is empty: its keys beep like any unassigned key
+  (they said "BANK6 reserved")
+
+### Firmware updates
+
+- every push builds the firmware as a factory image with a manifest for the online updater;
+  version tags attach them to a GitHub release
+
+### For testers: serial trace
+
+- a keypad `CMD` line names the key and gesture, e.g. `CMD BANK3 2 LONG -> A=B`, also where it used
+  a placeholder (`BANK3 FT857 -> SPLIT ON` is now `BANK3 0 LONG -> SPLIT ON`)
+- a rejected key names the mode it was pressed in: `FREQ A -> unassigned`,
+  `MODE SELECT 0 -> unassigned`, `BANK3 5 LONG -> unassigned`
+
+### For developers
+
+- keypad handling is one state machine (`firmware/keypad_input.{h,cpp}`) with a keymap per bank
+  and radio (`firmware/keypad_keymap.cpp`); host unit tests in `tests/keypad` run in CI
+- `generate_voices.py`, `say.py` and `setup_venv.ps1` default to `en_US-lessac-medium` with both
+  noise scales at 0, so regenerating the clips gives identical files
 
 ## V3.5.8 FTDX10 and Keypad Refinement
 

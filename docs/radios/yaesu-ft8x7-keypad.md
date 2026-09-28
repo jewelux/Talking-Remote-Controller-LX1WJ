@@ -15,113 +15,121 @@ Important practical note:
 - For FT8x7 repeater and tone work, treat `2 m` or `70 cm` plus `FM` as the expected operating context. If the radio is on another band or not already in `FM`, `RPT`, `RPTSHIFT`, `CTCSS`, and `DCS` writes may appear inconsistent even though the firmware is sending the documented CAT sequence.
 - Recent FT-817 testing also suggests that documented CAT commands can work correctly once the radio is in the right background state, but that state is not yet characterized well enough to call the whole path fully stable. More testing is still needed around those hidden preconditions.
 
-## Bank 1
+## Bank 1 - Status
 
 | Key | FT-817 | FT-857/897 |
 |---|---|---|
-| `T0 short` | `FREQ?` | `FREQ?` |
-| `T0 long` | `FREQ set` | `FREQ set` |
-| `T1 short` | `RXTX?` | `RXTX?` |
-| `T2 short` | `TXFREQ?` | `TXFREQ?` with FT8x7 fallback |
-| `T3 short` | `LOCK?` | no clean readback |
-| `T3 long` | `LOCK toggle` | not placed on keypad |
-| `T4 short` | experimental | experimental |
-| `T7 short` | `SM?` | `SM?` |
-| `T8 short` | experimental | experimental |
-| `T9 short` | `MODE?` | `MODE?` |
-| `T9 long` | `MODE set` | `MODE set` |
+| `0` short | `FREQ?` | `FREQ?` |
+| `0` long | `FREQ <MHz>`, then digits, then `Enter` | `FREQ <MHz>`, then digits, then `Enter` |
+| `0` double click | `ROUND 500` | `ROUND 500` |
+| `1` short | not available (`RXTX?` readback is unreliable) | `RXTX?` |
+| `2` short | `TXFREQ?`; falls back to `FREQ?` when the radio gives no TX frequency | `FREQ?` when split is known to be off, otherwise not available |
+| `3` short | `LOCK?` (tracked state) | `LOCK?` (tracked state) |
+| `3` long | `LOCK ON/OFF` | `LOCK ON/OFF` |
+| `4` short | `PO?` | `PO?` |
+| `7` short | `SM?` | `SM?` |
+| `8` short | `SWR?` | `SWR?` |
+| `9` short | `MODE?` | `MODE?` |
+| `9` long | `MODE <n>`, then digit, then `Enter` | `MODE <n>`, then digit, then `Enter` |
 
-## Bank 3
+`LOCK?` does not read the radio: FT8x7 CAT has no lock readback, so the firmware speaks the lock state it last set. `3` long flips that tracked state.
+
+## Bank 3 - VFO / Split
 
 FT-817 note:
 
-- If the spoken `SPLIT?` state is out of sync, toggle `T0 long` a few times to bring the spoken state back into sync with the radio.
+- If the spoken `SPLIT?` state is out of sync, toggle `0` long a few times to bring the spoken state back into sync with the radio.
 
 | Key | FT-817 | FT-857/897 |
 |---|---|---|
-| `T0 short` | `SPLIT?` | `SPLIT?` |
-| `T0 long` | `SPLIT toggle` | `SPLIT toggle` |
-| `T0 double` | `TXFREQ?` | `TXFREQ?` |
-| `T1 short` | current `VFOA/VFOB?` | current `VFOA/VFOB?` |
-| `T1 long` | current tracked `VFOA/VFOB FREQ set` | `A/B` |
-| `T1 double` | current tracked `VFOA/VFOB FREQ set` | current `VFOA/VFOB FREQ` |
-| `T2 short` | other `VFOA/VFOB?` | other `VFOA/VFOB?` |
-| `T2 long` | other tracked `VFOA/VFOB FREQ set` | reserved |
-| `T2 double` | other tracked `VFOA/VFOB FREQ set` | other `VFOA/VFOB FREQ` |
-| `T3 short` | `VFOA MODE?` | free |
-| `T3 long` | `VFOA MODE set` | free |
-| `T4 short` | `SYNC VFOA` | `SYNC VFOA` |
-| `T4 long` | `SYNC VFOB` | `SYNC VFOB` |
-| `T5 short` | `VFOB MODE?` | `CLAR ON` |
-| `T5 long` | `VFOB MODE set` | `CLAR OFF` |
-| `T6 short` | active `VFO A` | `RX` |
-| `T6 long` | active `VFO B` | `TX` |
-| `T7 short` | `BSTACK? 1` | `BSTACK? 1` |
-| `T7 long` | `BSTACK 1` | `BSTACK 1` |
-| `T8 short` | `BSTACK? 2` | `BSTACK? 2` |
-| `T8 long` | `BSTACK 2` | `BSTACK 2` |
-| `T9 short` | `BSTACK? 3` | `BSTACK? 3` |
-| `T9 long` | `BSTACK 3` | `BSTACK 3` |
+| `0` short | `SPLIT?` | `SPLIT OFF` |
+| `0` long | `SPLIT ON/OFF` | `SPLIT ON` |
+| `0` double click | `TXFREQ?` | split calibrate (`SPLIT ON`, then `SPLIT OFF`) |
+| `1` short | current `VFOA/VFOB?` | current `VFOA/VFOB?` |
+| `1` long | `A/B` | `A/B` |
+| `1` double click | current `VFOA/VFOB <MHz>`, then digits, then `Enter` | current `VFOA/VFOB <MHz>`, then digits, then `Enter` |
+| `2` short | other `VFOA/VFOB?` | other `VFOA/VFOB?` |
+| `2` long | `A=B` (copy the active VFO to the other) | not available |
+| `2` double click | other `VFOA/VFOB <MHz>`, then digits, then `Enter` | other `VFOA/VFOB <MHz>`, then digits, then `Enter` |
+| `3` short | `VFOA MODE?` | — |
+| `3` long | `VFOA MODE <n>`, then digit, then `Enter` | — |
+| `4` short | `SYNC VFOA` | `SYNC VFOA` |
+| `4` long | `SYNC VFOB` | `SYNC VFOB` |
+| `5` short | `VFOB MODE?` | `CLAR ON` |
+| `5` long | `VFOB MODE <n>`, then digit, then `Enter` | `CLAR OFF` |
+| `6` short | active `VFO A` | `PTT OFF` (RX) |
+| `6` long | active `VFO B` | `PTT ON` (TX) |
 
 FT-817 Bank 3 note:
 
 - The FT-817 branch currently mixes a tracked `current/other VFO` workflow with explicit `SYNC VFOA/VFOB` and explicit active-`VFO A/B` selection.
-- In the current `V3_5_8` software, `T1/T2` long and double both lead into staged frequency entry for the tracked current/other VFO, while `T3/T5` handle `VFOA MODE` and `VFOB MODE`.
-- Because of that design, `T4` sync is still important after any unknown front-panel A/B change.
+- `1`/`2` double click lead into staged frequency entry for the tracked current/other VFO, `1` long toggles `A/B` and `2` long copies the active VFO to the other (`A=B`, also the console command `VFO A=B`), while `3`/`5` handle `VFOA MODE` and `VFOB MODE`.
+- Because of that design, `4` sync is still important after any unknown front-panel A/B change.
 
-## Bank 6
+FT-857/897 Bank 3 note:
 
-| Key | FT-817 | FT-857/897 |
-|---|---|---|
-| `T0 short` | `RPT OFF` | `RPT OFF` |
-| `T0 long` | `RPT MINUS` | `RPT MINUS` |
-| `T0 double` | `RPT PLUS` | `RPT PLUS` |
-| `T1 short` | `RPTSHIFT 0.600` | `RPTSHIFT 0.600` |
-| `T1 long` | `RPTSHIFT 7.600` | `RPTSHIFT 7.600` |
-| `T1 double` | `RPTSHIFT entry` | `RPTSHIFT entry` |
-| `T2 short` | `TONE OFF` | `TONE OFF` |
-| `T2 long` | `TONE CTCSS` | `TONE CTCSS` |
-| `T2 double` | `TONE DCS` | `TONE DCS` |
-| `T3 short` | `CTCSS 88.5` | `CTCSS 88.5` |
-| `T3 long` | `CTCSS entry` | `CTCSS entry` |
-| `T4 short` | `DCS 023` | `DCS 023` |
-| `T4 long` | `DCS entry` | `DCS entry` |
-| `T5 short` | free | free |
-| `T6 short` | free | free |
-| `T7 short` | free | free |
-| `T8 short` | free | free |
-| `T9 short` | free | free |
+- `0` short and long set split explicitly instead of toggling, because the split readback is not trusted. `0` double click forces the radio through `ON` and back to `OFF`, leaving split off at a known state.
 
-For Bank 6 tone handling, `T2` is an explicit mode selector:
-
-- `T2 short` = tone off
-- `T2 long` = CTCSS on
-- `T2 double` = DCS on
-
-## Bank 9
+## Bank 6 - Repeater / Tone
 
 | Key | FT-817 | FT-857/897 |
 |---|---|---|
-| `A short` | `PROFILE?` | `PROFILE?` |
-| `A long` | `PROFILE SELECT` (`1..24`, one or two digits, then `Enter`) | `PROFILE SELECT` (`1..24`, one or two digits, then `Enter`) |
-| `B short` | `PROFILE NEXT` | `PROFILE NEXT` |
-| `C short` | `PROFILE PREV` | `PROFILE PREV` |
-| `T4 short` | same | same |
-| `T4 long` | same | same |
-| `T7 short` | same | same |
-| `T8 short` | same | same |
-| `T9 short` | same | same |
+| `0` short | `RPT OFF` | `RPT OFF` |
+| `0` long | `RPT MINUS` | `RPT MINUS` |
+| `0` double click | `RPT PLUS` | `RPT PLUS` |
+| `1` short | `RPTSHIFT` preset 1 (`rpt_offset_1`, default `0.600`) | `RPTSHIFT` preset 1 (`rpt_offset_1`, default `0.600`) |
+| `1` long | `RPTSHIFT` preset 2 (`rpt_offset_2`, default `7.600`) | `RPTSHIFT` preset 2 (`rpt_offset_2`, default `7.600`) |
+| `1` double click | `RPTSHIFT <kHz>`, then digits, then `Enter` | `RPTSHIFT <kHz>`, then digits, then `Enter` |
+| `2` short | `TONE OFF` | `TONE OFF` |
+| `2` long | `TONE CTCSS` | `TONE CTCSS` |
+| `2` double click | `TONE DCS` | `TONE DCS` |
+| `3` short | `CTCSS?` (speak only) | `CTCSS?` (speak only) |
+| `3` long | `CTCSS <tone>`, then digits, then `Enter` | `CTCSS <tone>`, then digits, then `Enter` |
+| `4` short | `DCS?` (speak only) | `DCS?` (speak only) |
+| `4` long | `DCS <code>`, then digits, then `Enter` | `DCS <code>`, then digits, then `Enter` |
+
+For Bank 6 tone handling, `2` is an explicit mode selector:
+
+- `2` short = tone off
+- `2` long = CTCSS on
+- `2` double click = DCS on
+
+`3` short and `4` short do not read the radio: they speak the last CTCSS tone or DCS code set from the keypad, or the `[bank6]` SD-card default (`88.5`, `023` unless changed) when nothing has been set yet.
+
+## Bank 9 - Profile / System
+
+| Key | FT-817 | FT-857/897 |
+|---|---|---|
+| `A` short | `PROFILE?` | `PROFILE?` |
+| `A` long | `PROFILE SELECT` (`1..24`, one or two digits, then `Enter`) | `PROFILE SELECT` (`1..24`, one or two digits, then `Enter`) |
+| `B` short | `PROFILE NEXT` | `PROFILE NEXT` |
+| `C` short | `PROFILE PREV` | `PROFILE PREV` |
+| `4` short | `TUNINGSPEECH?` | `TUNINGSPEECH?` |
+| `4` long | `TUNINGSPEECH TOGGLE` | `TUNINGSPEECH TOGGLE` |
+| `7` short / long | `VOLUME DOWN` / `VOLUME DOWN FAST` | `VOLUME DOWN` / `VOLUME DOWN FAST` |
+| `8` short / long | `VOLUME UP` / `VOLUME UP FAST` | `VOLUME UP` / `VOLUME UP FAST` |
+| `9` short | `VOLUME?` | `VOLUME?` |
 
 ## Known Limits
 
 | Function | FT-817 | FT-857/897 |
 |---|---|---|
-| `SPLIT` | usable | usable, but readback is still uncertain; if a defined state matters, toggle SPLIT a few times until the radio is known to be in the expected state |
+| `SPLIT` | usable | usable, but readback is still uncertain; use Bank 3 `0` short / long to set a defined state, or `0` double click to calibrate to `OFF` |
 | `Bank 6 repeater/tone writes` | expect best results only on `2 m` or `70 cm` and already in `FM`; other contexts can make valid CAT writes look unreliable | expect best results only on the intended `VHF/UHF` band and already in `FM`; other contexts can make valid CAT writes look unreliable |
 | `CLAR OFF` | usable | usable in current testing |
 | `VFO A/B tracking` | usable with sync support | usable with sync support |
 | `manual front-panel A/B changes` | resync recommended | resync recommended |
+| `LOCK?` | tracked state only, no CAT readback | tracked state only, no CAT readback |
 | FT-817 hidden background conditions | documented CAT commands can work well, but some success still appears to depend on not-yet-characterized radio state; more testing is needed | not the main current concern |
-| `BANK 2 NR/NB/NOTCH/FILTER` | not a current FT8x7 focus | mostly not available via documented FT8x7 CAT |
+| `BANK 2 NR/NB/NOTCH/FILTER` | not available | not available |
+| `BSTACK` | not available | not available |
 | `MEM READ/WRITE` | experimental | experimental |
 | `VOL/SQL/PO/SWR` | not cleanly validated | not cleanly validated |
+
+## Notes
+
+- `Enter` refers to the keypad confirmation key `D`.
+- In frequency entry `*` is the decimal point: `145*500`, then `Enter`, tunes to 145.500 MHz.
+- `double click` refers to a quick second press of the same key; a key with no double-click action runs its short action at once.
+- `*` short speaks the current bank; `*` long, then a digit, selects a bank.
+- `—` marks a key with no function on that radio.

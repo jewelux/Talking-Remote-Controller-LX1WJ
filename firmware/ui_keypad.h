@@ -4,10 +4,10 @@
 
 uint8_t uiGetBank();
 void uiSetBank(uint8_t bank);
-bool profileModeFromDigit(char digit, uint8_t& modeOut);
+// The mode of a mode select digit '1'-'9' (see user-guide.md).
+bool modeFromDigit(char digit, uint8_t& modeOut);
 void setTuningSpeechEnabled(bool enabled);
 void speakTuningSpeechState();
 void speakBankNumber();
-void keypadQueryBank1Lock();
 void initKeypadUi();
 void pollKeypadUi();
