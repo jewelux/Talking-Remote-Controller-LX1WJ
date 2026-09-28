@@ -11,6 +11,7 @@ extern "C" {
 #include "driver/i2s.h"
 }
 
+#include "civ_frame.h"
 #include "config_pins.h"
 #include "voice_data.h"
 
@@ -272,15 +273,6 @@ struct StoredProfile {
   char voiceVendor[16];
   char voiceDigits[16];
   char variant[16];
-};
-
-struct CivDecoded {
-  bool ok = false;
-  uint8_t to = 0;
-  uint8_t from = 0;
-  uint8_t cmd = 0;
-  const uint8_t* payload = nullptr;
-  size_t payloadLen = 0;
 };
 
 struct BandStackEntry {

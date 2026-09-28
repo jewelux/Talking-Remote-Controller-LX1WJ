@@ -13,9 +13,9 @@ static bool civQueryToggleSub(uint8_t subcmd, bool& onOut, uint32_t timeoutMs) {
   civFlushInput();
   const uint8_t sub[] = {subcmd};
   civSend(0x16, sub, 1);
-  CivDecoded d;
-  if (!waitReply(0x16, d, timeoutMs) || d.payloadLen < 2 || d.payload[0] != subcmd) return false;
-  onOut = d.payload[1] != 0x00;
+  const std::optional<CivFrame> d = waitReply(0x16, timeoutMs);
+  if (!d || d->payloadLen < 2 || d->payload[0] != subcmd) return false;
+  onOut = d->payload[1] != 0x00;
   return true;
 }
 
@@ -30,9 +30,9 @@ static bool civQuery1CByte(uint8_t subcmd, uint8_t& valueOut, uint32_t timeoutMs
   civFlushInput();
   const uint8_t sub[] = {subcmd};
   civSend(0x1C, sub, 1);
-  CivDecoded d;
-  if (!waitReply(0x1C, d, timeoutMs) || d.payloadLen < 2 || d.payload[0] != subcmd) return false;
-  valueOut = d.payload[1];
+  const std::optional<CivFrame> d = waitReply(0x1C, timeoutMs);
+  if (!d || d->payloadLen < 2 || d->payload[0] != subcmd) return false;
+  valueOut = d->payload[1];
   return true;
 }
 
@@ -47,9 +47,9 @@ static bool civQuery21Byte(uint8_t subcmd, uint8_t& valueOut, uint32_t timeoutMs
   civFlushInput();
   const uint8_t sub[] = {subcmd};
   civSend(0x21, sub, 1);
-  CivDecoded d;
-  if (!waitReply(0x21, d, timeoutMs) || d.payloadLen < 2 || d.payload[0] != subcmd) return false;
-  valueOut = d.payload[1];
+  const std::optional<CivFrame> d = waitReply(0x21, timeoutMs);
+  if (!d || d->payloadLen < 2 || d->payload[0] != subcmd) return false;
+  valueOut = d->payload[1];
   return true;
 }
 
@@ -77,10 +77,10 @@ static bool civQueryMenuByte(uint8_t group, uint16_t item, uint8_t& valueOut, ui
   civFlushInput();
   const uint8_t sub[] = {group, (uint8_t)((item >> 8) & 0xFF), (uint8_t)(item & 0xFF)};
   civSend(0x1A, sub, 3);
-  CivDecoded d;
-  if (!waitReply(0x1A, d, timeoutMs) || d.payloadLen < 4) return false;
-  if (d.payload[0] != group || d.payload[1] != ((item >> 8) & 0xFF) || d.payload[2] != (item & 0xFF)) return false;
-  valueOut = d.payload[3];
+  const std::optional<CivFrame> d = waitReply(0x1A, timeoutMs);
+  if (!d || d->payloadLen < 4) return false;
+  if (d->payload[0] != group || d->payload[1] != ((item >> 8) & 0xFF) || d->payload[2] != (item & 0xFF)) return false;
+  valueOut = d->payload[3];
   return true;
 }
 
@@ -95,9 +95,9 @@ static bool civQuery14Value(uint8_t subcmd, uint16_t& valueOut, uint32_t timeout
   civFlushInput();
   const uint8_t sub[] = {subcmd};
   civSend(0x14, sub, 1);
-  CivDecoded d;
-  if (!waitReply(0x14, d, timeoutMs) || d.payloadLen < 3 || d.payload[0] != subcmd) return false;
-  valueOut = (uint16_t)bcdDigitsToInt(d.payload + 1, d.payloadLen - 1);
+  const std::optional<CivFrame> d = waitReply(0x14, timeoutMs);
+  if (!d || d->payloadLen < 3 || d->payload[0] != subcmd) return false;
+  valueOut = (uint16_t)bcdDigitsToInt(d->payload.data() + 1, d->payloadLen - 1);
   return valueOut <= 255;
 }
 
@@ -129,22 +129,22 @@ static void civSendMainSub(uint8_t mainSub, uint8_t cmd, const uint8_t* data, si
   civSend(0x29, pl, dataLen + 2);
 }
 
-static bool waitMainSubReply(uint8_t mainSub, uint8_t innerCmd, CivDecoded& out, uint32_t timeoutMs) {
-  CivDecoded d;
-  if (!waitReply(0x29, d, timeoutMs) || d.payloadLen < 2) return false;
-  if (d.payload[0] != mainSub || d.payload[1] != innerCmd) return false;
-  out = d;
-  out.payload = d.payload + 2;
-  out.payloadLen = d.payloadLen - 2;
-  return true;
+// The reply to a 0x29 command, with the echoed main/sub selector and inner
+// command removed from the payload.
+static std::optional<CivFrame> waitMainSubReply(uint8_t mainSub, uint8_t innerCmd, uint32_t timeoutMs) {
+  std::optional<CivFrame> d = waitReply(0x29, timeoutMs);
+  if (!d || d->payloadLen < 2) return std::nullopt;
+  if (d->payload[0] != mainSub || d->payload[1] != innerCmd) return std::nullopt;
+  d->dropPayloadPrefix(2);
+  return d;
 }
 
 static bool civQueryMainSubFrequency(uint8_t mainSub, uint64_t& hzOut, uint32_t timeoutMs) {
   civFlushInput();
   civSendMainSub(mainSub, 0x03, nullptr, 0);
-  CivDecoded d;
-  if (!waitMainSubReply(mainSub, 0x03, d, timeoutMs) || d.payloadLen < 5) return false;
-  hzOut = decodeBcdFrequencyHz(d.payload, 5);
+  const std::optional<CivFrame> d = waitMainSubReply(mainSub, 0x03, timeoutMs);
+  if (!d || d->payloadLen < 5) return false;
+  hzOut = decodeBcdFrequencyHz(d->payload.data(), 5);
   return true;
 }
 
@@ -166,10 +166,10 @@ static bool civSetMainSubFrequency(uint8_t mainSub, uint64_t hz) {
 static bool civQueryMainSubMode(uint8_t mainSub, uint8_t& modeOut, uint8_t& filterOut, uint32_t timeoutMs) {
   civFlushInput();
   civSendMainSub(mainSub, 0x04, nullptr, 0);
-  CivDecoded d;
-  if (!waitMainSubReply(mainSub, 0x04, d, timeoutMs) || d.payloadLen < 1) return false;
-  modeOut = d.payload[0];
-  filterOut = d.payloadLen >= 2 ? d.payload[1] : 1;
+  const std::optional<CivFrame> d = waitMainSubReply(mainSub, 0x04, timeoutMs);
+  if (!d || d->payloadLen < 1) return false;
+  modeOut = d->payload[0];
+  filterOut = d->payloadLen >= 2 ? d->payload[1] : 1;
   return true;
 }
 
@@ -207,9 +207,9 @@ bool civQueryFrequency(const StoredProfile& sp, uint64_t& hzOut, uint32_t timeou
   if (!sp.caps.getFreq) return false;
   civFlushInput();
   civSend(0x03, nullptr, 0);
-  CivDecoded d;
-  if (!waitReply(0x03, d, timeoutMs) || d.payloadLen < 5) return false;
-  hzOut = decodeBcdFrequencyHz(d.payload, 5);
+  const std::optional<CivFrame> d = waitReply(0x03, timeoutMs);
+  if (!d || d->payloadLen < 5) return false;
+  hzOut = decodeBcdFrequencyHz(d->payload.data(), 5);
   return true;
 }
 
@@ -234,9 +234,9 @@ bool civQueryMode(const StoredProfile& sp, uint8_t& modeOut, uint32_t timeoutMs)
   if (!sp.caps.getMode) return false;
   civFlushInput();
   civSend(0x04, nullptr, 0);
-  CivDecoded d;
-  if (!waitReply(0x04, d, timeoutMs) || d.payloadLen < 1) return false;
-  modeOut = d.payload[0];
+  const std::optional<CivFrame> d = waitReply(0x04, timeoutMs);
+  if (!d || d->payloadLen < 1) return false;
+  modeOut = d->payload[0];
   return true;
 }
 
@@ -253,9 +253,9 @@ bool civQuerySMeterRaw(const StoredProfile& sp, int32_t& rawOut, uint32_t timeou
   civFlushInput();
   const uint8_t sub[] = {0x02};
   civSend(0x15, sub, 1);
-  CivDecoded d;
-  if (!waitReply(0x15, d, timeoutMs) || d.payloadLen < 2 || d.payload[0] != 0x02) return false;
-  rawOut = bcdDigitsToInt(d.payload + 1, d.payloadLen - 1);
+  const std::optional<CivFrame> d = waitReply(0x15, timeoutMs);
+  if (!d || d->payloadLen < 2 || d->payload[0] != 0x02) return false;
+  rawOut = bcdDigitsToInt(d->payload.data() + 1, d->payloadLen - 1);
   return true;
 }
 
@@ -264,9 +264,9 @@ bool civQueryPoMeterRaw(const StoredProfile& sp, int32_t& rawOut, uint32_t timeo
   civFlushInput();
   const uint8_t sub[] = {0x11};
   civSend(0x15, sub, 1);
-  CivDecoded d;
-  if (!waitReply(0x15, d, timeoutMs) || d.payloadLen < 2 || d.payload[0] != 0x11) return false;
-  rawOut = bcdDigitsToInt(d.payload + 1, d.payloadLen - 1);
+  const std::optional<CivFrame> d = waitReply(0x15, timeoutMs);
+  if (!d || d->payloadLen < 2 || d->payload[0] != 0x11) return false;
+  rawOut = bcdDigitsToInt(d->payload.data() + 1, d->payloadLen - 1);
   return true;
 }
 
@@ -275,9 +275,9 @@ bool civQuerySWRRaw(const StoredProfile& sp, int32_t& rawOut, uint32_t timeoutMs
   civFlushInput();
   const uint8_t sub[] = {0x12};
   civSend(0x15, sub, 1);
-  CivDecoded d;
-  if (!waitReply(0x15, d, timeoutMs) || d.payloadLen < 2 || d.payload[0] != 0x12) return false;
-  rawOut = bcdDigitsToInt(d.payload + 1, d.payloadLen - 1);
+  const std::optional<CivFrame> d = waitReply(0x15, timeoutMs);
+  if (!d || d->payloadLen < 2 || d->payload[0] != 0x12) return false;
+  rawOut = bcdDigitsToInt(d->payload.data() + 1, d->payloadLen - 1);
   return true;
 }
 
@@ -515,14 +515,14 @@ bool civQueryBandStackEntry(const StoredProfile& sp, uint8_t bandCode, uint8_t r
   civFlushInput();
   const uint8_t sub[] = {0x01, bandCode, registerCode};
   civSend(0x1A, sub, 3);
-  CivDecoded d;
-  if (!waitReply(0x1A, d, timeoutMs) || d.payloadLen < 10) return false;
-  if (d.payload[0] != 0x01 || d.payload[1] != bandCode || d.payload[2] != registerCode) return false;
+  const std::optional<CivFrame> d = waitReply(0x1A, timeoutMs);
+  if (!d || d->payloadLen < 10) return false;
+  if (d->payload[0] != 0x01 || d->payload[1] != bandCode || d->payload[2] != registerCode) return false;
   entryOut.bandCode = bandCode;
   entryOut.registerCode = registerCode;
-  entryOut.freqHz = decodeBcdFrequencyHz(d.payload + 3, 5);
-  entryOut.mode = d.payload[8];
-  entryOut.filter = d.payload[9];
+  entryOut.freqHz = decodeBcdFrequencyHz(d->payload.data() + 3, 5);
+  entryOut.mode = d->payload[8];
+  entryOut.filter = d->payload[9];
   return true;
 }
 
@@ -564,9 +564,9 @@ bool civQueryTxFrequency(const StoredProfile& sp, uint64_t& hzOut, uint32_t time
   civFlushInput();
   const uint8_t sub[] = {0x03};
   civSend(0x1C, sub, 1);
-  CivDecoded d;
-  if (!waitReply(0x1C, d, timeoutMs) || d.payloadLen < 6 || d.payload[0] != 0x03) return false;
-  hzOut = decodeBcdFrequencyHz(d.payload + 1, 5);
+  const std::optional<CivFrame> d = waitReply(0x1C, timeoutMs);
+  if (!d || d->payloadLen < 6 || d->payload[0] != 0x03) return false;
+  hzOut = decodeBcdFrequencyHz(d->payload.data() + 1, 5);
   return true;
 }
 
@@ -606,10 +606,10 @@ static uint8_t civEncodeVfoSelector(bool targetVfoA) {
 static bool civQuerySelectedOrUnselectedFrequencyRaw(uint8_t selector, uint64_t& hzOut, uint32_t timeoutMs) {
   civFlushInput();
   civSend(0x25, &selector, 1);
-  CivDecoded d;
-  if (!waitReply(0x25, d, timeoutMs) || d.payloadLen < 6) return false;
-  if (d.payload[0] != selector) return false;
-  hzOut = decodeBcdFrequencyHz(d.payload + 1, 5);
+  const std::optional<CivFrame> d = waitReply(0x25, timeoutMs);
+  if (!d || d->payloadLen < 6) return false;
+  if (d->payload[0] != selector) return false;
+  hzOut = decodeBcdFrequencyHz(d->payload.data() + 1, 5);
   return true;
 }
 
@@ -677,11 +677,11 @@ bool civQueryVfoMode(const StoredProfile& sp, bool targetVfoA, uint8_t& modeOut,
   const uint8_t selector = civEncodeVfoSelector(targetVfoA);
   civFlushInput();
   civSend(0x26, &selector, 1);
-  CivDecoded d;
-  if (!waitReply(0x26, d, timeoutMs) || d.payloadLen < 4) return false;
-  if (d.payload[0] != selector) return false;
-  modeOut = d.payload[1];
-  filterOut = d.payload[3];
+  const std::optional<CivFrame> d = waitReply(0x26, timeoutMs);
+  if (!d || d->payloadLen < 4) return false;
+  if (d->payload[0] != selector) return false;
+  modeOut = d->payload[1];
+  filterOut = d->payload[3];
   return true;
 }
 
@@ -704,10 +704,10 @@ bool civQuerySplit(const StoredProfile& sp, bool& onOut, uint32_t timeoutMs) {
   if (sp.protocolType != PROTO_CIV) return false;
   civFlushInput();
   civSend(0x0F, nullptr, 0);
-  CivDecoded d;
-  if (!waitReply(0x0F, d, timeoutMs) || d.payloadLen < 1) return false;
-  if (d.payload[0] > 0x01) return false;
-  onOut = d.payload[0] == 0x01;
+  const std::optional<CivFrame> d = waitReply(0x0F, timeoutMs);
+  if (!d || d->payloadLen < 1) return false;
+  if (d->payload[0] > 0x01) return false;
+  onOut = d->payload[0] == 0x01;
   return true;
 }
 
@@ -743,16 +743,16 @@ bool civQueryRitOffsetHz(const StoredProfile& sp, int32_t& hzOut, uint32_t timeo
   civFlushInput();
   const uint8_t sub[] = {0x00};
   civSend(0x21, sub, 1);
-  CivDecoded d;
-  if (!waitReply(0x21, d, timeoutMs) || d.payloadLen < 4 || d.payload[0] != 0x00) return false;
-  const uint8_t low = d.payload[1];
-  const uint8_t high = d.payload[2];
+  const std::optional<CivFrame> d = waitReply(0x21, timeoutMs);
+  if (!d || d->payloadLen < 4 || d->payload[0] != 0x00) return false;
+  const uint8_t low = d->payload[1];
+  const uint8_t high = d->payload[2];
   int32_t magnitude = 0;
   magnitude += ((high >> 4) & 0x0F) * 1000;
   magnitude += (high & 0x0F) * 100;
   magnitude += ((low >> 4) & 0x0F) * 10;
   magnitude += (low & 0x0F);
-  uint8_t sign = d.payload[3];
+  uint8_t sign = d->payload[3];
   if (sign > 0x01) return false;
   hzOut = sign == 0x01 ? -magnitude : magnitude;
   return true;
