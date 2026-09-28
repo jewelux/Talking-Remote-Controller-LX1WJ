@@ -515,27 +515,27 @@ static bool printCivRawTransaction(uint8_t cmd, const uint8_t* payload, size_t p
 
   const uint32_t start = millis();
   bool any = false;
-  uint8_t buf[96];
+  uint8_t buf[kCivMaxFrame];
   while (millis() - start < 1000) {
     size_t n = civReadFrame(buf, sizeof(buf), 80);
     if (!n) continue;
-    CivDecoded d = civDecode(buf, n);
-    if (!d.ok) continue;
-    if (d.from != currentProfile().civAddr) continue;
+    const std::optional<CivFrame> d = civDecode(buf, n);
+    if (!d) continue;
+    if (d->from != currentProfile().civAddr) continue;
     any = true;
     Serial.print("CIVRAW RX: to=");
-    printHexByte2(d.to);
+    printHexByte2(d->to);
     Serial.print(" from=");
-    printHexByte2(d.from);
+    printHexByte2(d->from);
     Serial.print(" cmd=");
-    printHexByte2(d.cmd);
+    printHexByte2(d->cmd);
     Serial.print(" payload=");
-    if (!d.payloadLen) {
+    if (!d->payloadLen) {
       Serial.print("(none)");
     } else {
-      for (size_t i = 0; i < d.payloadLen; ++i) {
+      for (size_t i = 0; i < d->payloadLen; ++i) {
         if (i) Serial.print(' ');
-        printHexByte2(d.payload[i]);
+        printHexByte2(d->payload[i]);
       }
     }
     Serial.println();

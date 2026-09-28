@@ -7,10 +7,10 @@
 #include "radio_utils.h"
 #include "transport_serial.h"
 
-void handleIncomingFrame(const CivDecoded& d) {
+void handleIncomingFrame(const CivFrame& d) {
   if (currentProtocolType() != PROTO_CIV || d.from != g_civRadioAddr) return;
   if (d.cmd == 0x00 && d.payloadLen >= 5) {
-    uint64_t hz = decodeBcdFrequencyHz(d.payload, 5);
+    uint64_t hz = decodeBcdFrequencyHz(d.payload.data(), 5);
     handleObservedFrequency(hz, true);
     return;
   }
@@ -23,12 +23,11 @@ void handleIncomingFrame(const CivDecoded& d) {
 void pumpIncoming(uint32_t maxMs) {
   if (currentProtocolType() != PROTO_CIV) return;
   uint32_t start = millis();
-  uint8_t buf[96];
+  uint8_t buf[kCivMaxFrame];
   while (millis() - start < maxMs) {
     if (!serialTransportAvailable()) break;
     size_t n = civReadFrame(buf, sizeof(buf), 20);
     if (!n) break;
-    CivDecoded d = civDecode(buf, n);
-    if (d.ok) handleIncomingFrame(d);
+    if (const std::optional<CivFrame> d = civDecode(buf, n)) handleIncomingFrame(*d);
   }
 }

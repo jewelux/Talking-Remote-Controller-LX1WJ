@@ -6,6 +6,8 @@ size_t civPacketReadFrame(uint8_t* buf, size_t bufMax, uint32_t timeoutMs) {
   uint32_t start = millis();
   size_t n = 0;
   uint8_t feCount = 0;
+  // A frame longer than buf is dropped whole, never returned cut short.
+  bool overflow = false;
   while (millis() - start < timeoutMs) {
     while (serialTransportAvailable()) {
       uint8_t b = (uint8_t)serialTransportRead();
@@ -25,23 +27,17 @@ size_t civPacketReadFrame(uint8_t* buf, size_t bufMax, uint32_t timeoutMs) {
         continue;
       }
       if (n < bufMax) buf[n++] = b;
-      if (b == 0xFD) return n;
+      else overflow = true;
+      if (b == 0xFD) {
+        if (!overflow) return n;
+        n = 0;
+        feCount = 0;
+        overflow = false;
+      }
     }
     delay(1);
   }
   return 0;
-}
-
-CivDecoded civPacketDecode(const uint8_t* buf, size_t n) {
-  CivDecoded d;
-  if (n < 6 || buf[0] != 0xFE || buf[1] != 0xFE || buf[n - 1] != 0xFD) return d;
-  d.to = buf[2];
-  d.from = buf[3];
-  d.cmd = buf[4];
-  d.payload = &buf[5];
-  d.payloadLen = (n - 1) - 5;
-  d.ok = true;
-  return d;
 }
 
 void civPacketSendFrame(uint8_t to, uint8_t from, uint8_t cmd, const uint8_t* data, size_t dataLen) {
