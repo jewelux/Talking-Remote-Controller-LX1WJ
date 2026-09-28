@@ -47,7 +47,6 @@ bool loadProfilesFromSd() {
     StoredProfile sp;
     if (loadSingleProfileIni(path, sp)) {
       g_slotProfiles[slot - 1] = sp;
-      g_slotProfiles[slot - 1].civ.name = g_slotProfiles[slot - 1].name;
       Serial.print("[SD] slot ");
       Serial.print(slot);
       Serial.print(" <- ");
@@ -67,7 +66,7 @@ void printProfileSlots() {
     Serial.print("  ");
     Serial.print(i + 1);
     Serial.print(" -> ");
-    if (g_slotProfiles[i].valid) Serial.println(g_slotProfiles[i].civ.name);
+    if (g_slotProfiles[i].valid) Serial.println(g_slotProfiles[i].name);
     else Serial.println("(empty)");
   }
 }

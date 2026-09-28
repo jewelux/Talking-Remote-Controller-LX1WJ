@@ -11,7 +11,7 @@ void serialTransportDriveTxIdle(int pin, bool invert) {
   pinMode(pin, OUTPUT);
 }
 
-void serialTransportApplyProfile(const CivProfile& profile) {
+void serialTransportApplyProfile(const ConnectionProfile& profile) {
   civUart1.end();
   civUart2.end();
   pinMode(CIV_TX_PIN, INPUT);

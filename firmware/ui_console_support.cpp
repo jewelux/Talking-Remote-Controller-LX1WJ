@@ -27,7 +27,7 @@ void printStatusSummary() {
   Serial.print("  profile slot: ");
   Serial.println((int)g_profileId);
   Serial.print("  profile name: ");
-  Serial.println(currentProfile().name ? currentProfile().name : "(null)");
+  Serial.println(currentStoredProfile().name);
   Serial.print("  protocol: ");
   Serial.println(protocolTypeToString(currentProtocolType()));
   Serial.print("  speech: ");

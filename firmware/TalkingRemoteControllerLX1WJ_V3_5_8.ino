@@ -72,7 +72,7 @@ void setup() {
   DBG_PRINT("Talking Remote Controller LX1WJ (");
   DBG_PRINT(HAMTRC_FIRMWARE_VERSION);
   DBG_PRINT(") - Selected radio: ");
-  DBG_PRINT(currentProfile().name);
+  DBG_PRINT(currentStoredProfile().name);
   DBG_PRINT("  CI-V addr=0x");
   if (debugLogEnabled()) Serial.println(g_civRadioAddr, HEX);
 

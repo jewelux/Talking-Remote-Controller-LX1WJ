@@ -17,8 +17,8 @@ const StoredProfile& currentStoredProfile() {
   return sp ? *sp : g_slotProfiles[0];
 }
 
-const CivProfile& currentProfile() {
-  return currentStoredProfile().civ;
+const ConnectionProfile& currentConnectionProfile() {
+  return currentStoredProfile().connection;
 }
 
 ProtocolType currentProtocolType() {

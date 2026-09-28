@@ -83,10 +83,10 @@ void applyConnectionOverridesFromNvs() {
   for (uint8_t id = 1; id <= MAX_PROFILE_SLOTS; ++id) {
     StoredProfile& sp = g_slotProfiles[id - 1];
     if (!sp.valid || sp.protocolType != PROTO_CIV) continue;
-    uint8_t civAddr = sp.civ.civAddr;
-    uint32_t baud = sp.civ.baud;
+    uint8_t civAddr = sp.connection.civAddr;
+    uint32_t baud = sp.connection.baud;
     if (!loadConnectionOverrideFromNvs(id, civAddr, baud)) continue;
-    sp.civ.civAddr = civAddr;
-    sp.civ.baud = baud;
+    sp.connection.civAddr = civAddr;
+    sp.connection.baud = baud;
   }
 }

@@ -23,9 +23,9 @@ void queryBank8CivAddress() {
     return;
   }
   char hex[3] = "";
-  formatHexByte(currentProfile().civAddr, hex, sizeof(hex));
+  formatHexByte(currentConnectionProfile().civAddr, hex, sizeof(hex));
   printKeypadStatus(String("CI ") + hex);
-  speakCivAddressValue(currentProfile().civAddr, false);
+  speakCivAddressValue(currentConnectionProfile().civAddr, false);
 }
 
 void beginBank8CivAddressEntry() {
@@ -47,7 +47,7 @@ void beginBank8CivAddressEntry() {
 }
 
 static int currentBaudIndex() {
-  const uint32_t baud = currentProfile().baud;
+  const uint32_t baud = currentConnectionProfile().baud;
   int best = 0;
   uint32_t bestDiff = 0xFFFFFFFFUL;
   for (size_t i = 0; i < kCivBaudRateCount; ++i) {
@@ -73,7 +73,7 @@ void cycleBank8Baud(int delta) {
   if (next < 0) next = count - 1;
   if (next >= count) next = 0;
   const uint32_t baud = kCivBaudRates[next];
-  if (!setCurrentCivConnection(currentProfile().civAddr, baud)) return;
+  if (!setCurrentCivConnection(currentConnectionProfile().civAddr, baud)) return;
   printKeypadStatus(String("BAUD ") + String((unsigned long)baud));
   speakBaudValue(baud, true);
 }

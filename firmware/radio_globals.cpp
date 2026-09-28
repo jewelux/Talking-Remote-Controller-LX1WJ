@@ -1,6 +1,6 @@
 #include "radio_globals.h"
 
-static constexpr CivProfile PROFILE_7300_CIV = {0x94, "IC-7300", CIV_BAUD, 1, CIV_RX_PIN, CIV_TX_PIN, true, false};
+static constexpr ConnectionProfile PROFILE_7300_CIV = {0x94, CIV_BAUD, 1, CIV_RX_PIN, CIV_TX_PIN, true, false};
 
 StoredProfile g_slotProfiles[MAX_PROFILE_SLOTS];
 uint8_t g_profileId = (ICOM_MODEL == ICOM_IC_706MKIIG) ? PROFILE_ID_706_CIV : PROFILE_ID_7300;

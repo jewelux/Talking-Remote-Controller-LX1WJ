@@ -521,7 +521,7 @@ static bool printCivRawTransaction(uint8_t cmd, const uint8_t* payload, size_t p
     if (!n) continue;
     const std::optional<CivFrame> d = civDecode(buf, n);
     if (!d) continue;
-    if (d->from != currentProfile().civAddr) continue;
+    if (d->from != currentConnectionProfile().civAddr) continue;
     any = true;
     Serial.print("CIVRAW RX: to=");
     printHexByte2(d->to);
@@ -1049,7 +1049,7 @@ static bool handleConsoleConnectionCommands(const String& line, const String& up
     reportNotAvailable(civAddrCmd ? "CIVADDR -> CI-V profile required" : "BAUD -> CI-V profile required");
     return true;
   }
-  const CivProfile& p = currentProfile();
+  const ConnectionProfile& p = currentConnectionProfile();
   if (upper == "CIVADDR?") {
     printCivAddress("CIVADDR ", p.civAddr);
     speakCivAddressValue(p.civAddr, false);

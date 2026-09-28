@@ -5,7 +5,7 @@
 // Drives a UART TX pin to its idle level (high, or low when inverted) without a pulse to the
 // opposite level, which the radio would read as a start bit or a break.
 void serialTransportDriveTxIdle(int pin, bool invert);
-void serialTransportApplyProfile(const CivProfile& profile);
+void serialTransportApplyProfile(const ConnectionProfile& profile);
 void serialTransportFlushInput();
 size_t serialTransportAvailable();
 int serialTransportRead();

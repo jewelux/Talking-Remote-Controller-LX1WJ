@@ -252,12 +252,12 @@ static void setProtocolDefaults(StoredProfile& sp) {
   }
 }
 
-static void assignStoredProfile(StoredProfile& sp, const CivProfile& civ, ProtocolType proto, const char* voiceVendor, const char* voiceDigits, bool fromSd) {
+static void assignStoredProfile(StoredProfile& sp, const ConnectionProfile& connection, const char* name, ProtocolType proto, const char* voiceVendor, const char* voiceDigits, bool fromSd) {
   clearStoredProfile(sp);
-  sp.civ = civ;
+  sp.connection = connection;
   sp.protocolType = proto;
   setProtocolDefaults(sp);
-  if (proto == PROTO_CIV && civ.civAddr == 0x94) {
+  if (proto == PROTO_CIV && connection.civAddr == 0x94) {
     sp.caps.getRxTx = true;
     sp.caps.getTxFreq = true;
     sp.caps.getNr = true;
@@ -303,28 +303,27 @@ static void assignStoredProfile(StoredProfile& sp, const CivProfile& civ, Protoc
   }
   sp.valid = true;
   sp.fromSd = fromSd;
-  copyCString(sp.name, sizeof(sp.name), civ.name ? civ.name : "");
+  copyCString(sp.name, sizeof(sp.name), name ? name : "");
   copyCString(sp.voiceVendor, sizeof(sp.voiceVendor), voiceVendor ? voiceVendor : "");
   copyCString(sp.voiceDigits, sizeof(sp.voiceDigits), voiceDigits ? voiceDigits : "");
   copyCString(sp.variant, sizeof(sp.variant), "");
-  sp.civ.name = sp.name;
 }
 
 void seedBuiltInSlots() {
-  const CivProfile profile7300 = {0x94, "IC-7300", CIV_BAUD, 1, CIV_RX_PIN, CIV_TX_PIN, true, false};
-  const CivProfile profile7300Rs232 = {0x94, "Icom 7300 rs232", CIV_BAUD, 2, RS232_RX_PIN, RS232_TX_PIN, false, false};
-  const CivProfile profile706 = {0x58, "Icom 706", CIV_BAUD, 1, CIV_RX_PIN, CIV_TX_PIN, true, false};
-  const CivProfile profile706Rs232 = {0x58, "Icom 706 rs232", CIV_BAUD, 2, RS232_RX_PIN, RS232_TX_PIN, false, false};
-  const CivProfile profile705 = {0xA4, "Icom IC-705", CIV_BAUD, 1, CIV_RX_PIN, CIV_TX_PIN, true, false};
-  const CivProfile profile7760 = {0xB2, "Icom IC-7760", 19200, 1, CIV_RX_PIN, CIV_TX_PIN, true, false};
+  const ConnectionProfile profile7300 = {0x94, CIV_BAUD, 1, CIV_RX_PIN, CIV_TX_PIN, true, false};
+  const ConnectionProfile profile7300Rs232 = {0x94, CIV_BAUD, 2, RS232_RX_PIN, RS232_TX_PIN, false, false};
+  const ConnectionProfile profile706 = {0x58, CIV_BAUD, 1, CIV_RX_PIN, CIV_TX_PIN, true, false};
+  const ConnectionProfile profile706Rs232 = {0x58, CIV_BAUD, 2, RS232_RX_PIN, RS232_TX_PIN, false, false};
+  const ConnectionProfile profile705 = {0xA4, CIV_BAUD, 1, CIV_RX_PIN, CIV_TX_PIN, true, false};
+  const ConnectionProfile profile7760 = {0xB2, 19200, 1, CIV_RX_PIN, CIV_TX_PIN, true, false};
 
   for (uint8_t i = 0; i < MAX_PROFILE_SLOTS; ++i) clearStoredProfile(g_slotProfiles[i]);
-  assignStoredProfile(g_slotProfiles[0], profile7300, PROTO_CIV, "icom", "7300", false);
-  assignStoredProfile(g_slotProfiles[1], profile7300Rs232, PROTO_CIV, "icom", "7300232", false);
-  assignStoredProfile(g_slotProfiles[2], profile706, PROTO_CIV, "icom", "706", false);
-  assignStoredProfile(g_slotProfiles[3], profile706Rs232, PROTO_CIV, "icom", "706232", false);
-  assignStoredProfile(g_slotProfiles[4], profile705, PROTO_CIV, "icom", "705", false);
-  assignStoredProfile(g_slotProfiles[5], profile7760, PROTO_CIV, "icom", "7760", false);
+  assignStoredProfile(g_slotProfiles[0], profile7300, "IC-7300", PROTO_CIV, "icom", "7300", false);
+  assignStoredProfile(g_slotProfiles[1], profile7300Rs232, "Icom 7300 rs232", PROTO_CIV, "icom", "7300232", false);
+  assignStoredProfile(g_slotProfiles[2], profile706, "Icom 706", PROTO_CIV, "icom", "706", false);
+  assignStoredProfile(g_slotProfiles[3], profile706Rs232, "Icom 706 rs232", PROTO_CIV, "icom", "706232", false);
+  assignStoredProfile(g_slotProfiles[4], profile705, "Icom IC-705", PROTO_CIV, "icom", "705", false);
+  assignStoredProfile(g_slotProfiles[5], profile7760, "Icom IC-7760", PROTO_CIV, "icom", "7760", false);
   g_slotProfiles[0].caps.getRfPower = true;
   g_slotProfiles[0].caps.setRfPower = true;
   g_slotProfiles[1].caps.getRfPower = true;
@@ -338,13 +337,14 @@ void seedBuiltInSlots() {
 
 void profileLoaderAssignIniProfile(
   StoredProfile& out,
-  const CivProfile& civ,
+  const ConnectionProfile& connection,
+  const char* name,
   ProtocolType proto,
   const char* voiceVendor,
   const char* voiceDigits,
   const StoredProfile& parsedDefaults
 ) {
-  assignStoredProfile(out, civ, proto, voiceVendor, voiceDigits, true);
+  assignStoredProfile(out, connection, name, proto, voiceVendor, voiceDigits, true);
   out.caps = parsedDefaults.caps;
   out.ascii = parsedDefaults.ascii;
   out.ft8x7Bank6 = parsedDefaults.ft8x7Bank6;

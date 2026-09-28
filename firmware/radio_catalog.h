@@ -5,7 +5,7 @@
 bool isValidProfileId(uint8_t id);
 const StoredProfile* storedProfileForId(uint8_t id);
 const StoredProfile& currentStoredProfile();
-const CivProfile& currentProfile();
+const ConnectionProfile& currentConnectionProfile();
 ProtocolType currentProtocolType();
 const char* currentProfileVariant();
 bool currentProfileVariantIs(const char* variant);

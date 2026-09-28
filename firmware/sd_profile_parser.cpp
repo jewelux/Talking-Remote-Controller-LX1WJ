@@ -1,6 +1,6 @@
 #include "sd_profile_parser.h"
 
-void profileLoaderAssignIniProfile(StoredProfile& out, const CivProfile& civ, ProtocolType proto, const char* voiceVendor, const char* voiceDigits, const StoredProfile& parsedDefaults);
+void profileLoaderAssignIniProfile(StoredProfile& out, const ConnectionProfile& connection, const char* name, ProtocolType proto, const char* voiceVendor, const char* voiceDigits, const StoredProfile& parsedDefaults);
 void profileLoaderPrepareDefaults(StoredProfile& sp, ProtocolType proto);
 void profileLoaderCopyCString(char* dst, size_t dstSize, const char* src);
 
@@ -65,7 +65,7 @@ bool loadSingleProfileIni(const String& path, StoredProfile& out) {
   File f = SD.open(path.c_str());
   if (!f) return false;
 
-  CivProfile civ = {0x94, "", CIV_BAUD, 1, CIV_RX_PIN, CIV_TX_PIN, true, false};
+  ConnectionProfile connection = {0x94, CIV_BAUD, 1, CIV_RX_PIN, CIV_TX_PIN, true, false};
   ProtocolType proto = PROTO_CIV;
   char tempName[32] = "";
   char voiceVendor[16] = "icom";
@@ -118,13 +118,13 @@ bool loadSingleProfileIni(const String& path, StoredProfile& out) {
         profileLoaderPrepareDefaults(sp, proto);
       }
     } else if (section == "connection") {
-      if (key == "civ_addr") civ.civAddr = (uint8_t)parseIniInt(val, civ.civAddr);
-      else if (key == "baud") civ.baud = (uint32_t)parseIniInt(val, civ.baud);
-      else if (key == "uart_num") civ.uartNum = (int8_t)parseIniInt(val, civ.uartNum);
-      else if (key == "rx_pin") civ.rxPin = (int8_t)parseIniInt(val, civ.rxPin);
-      else if (key == "tx_pin") civ.txPin = (int8_t)parseIniInt(val, civ.txPin);
-      else if (key == "tx_invert") civ.txInvert = parseIniBool(val, civ.txInvert);
-      else if (key == "rx_invert") civ.rxInvert = parseIniBool(val, civ.rxInvert);
+      if (key == "civ_addr") connection.civAddr = (uint8_t)parseIniInt(val, connection.civAddr);
+      else if (key == "baud") connection.baud = (uint32_t)parseIniInt(val, connection.baud);
+      else if (key == "uart_num") connection.uartNum = (int8_t)parseIniInt(val, connection.uartNum);
+      else if (key == "rx_pin") connection.rxPin = (int8_t)parseIniInt(val, connection.rxPin);
+      else if (key == "tx_pin") connection.txPin = (int8_t)parseIniInt(val, connection.txPin);
+      else if (key == "tx_invert") connection.txInvert = parseIniBool(val, connection.txInvert);
+      else if (key == "rx_invert") connection.rxInvert = parseIniBool(val, connection.rxInvert);
     } else if (section == "capabilities") {
       if (key == "get_freq") sp.caps.getFreq = parseIniBool(val, sp.caps.getFreq);
       else if (key == "set_freq") sp.caps.setFreq = parseIniBool(val, sp.caps.setFreq);
@@ -266,8 +266,7 @@ bool loadSingleProfileIni(const String& path, StoredProfile& out) {
   f.close();
 
   if (!tempName[0]) profileLoaderCopyCString(tempName, sizeof(tempName), path.c_str());
-  civ.name = tempName;
-  profileLoaderAssignIniProfile(out, civ, proto, voiceVendor, voiceDigits, sp);
+  profileLoaderAssignIniProfile(out, connection, tempName, proto, voiceVendor, voiceDigits, sp);
   profileLoaderCopyCString(out.variant, sizeof(out.variant), variant);
   return true;
 }

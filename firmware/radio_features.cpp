@@ -12,7 +12,7 @@ static FeatureStatus failure(FeatureStatus status) {
 }
 
 static bool isTs480() {
-  return currentProtocolType() == PROTO_KENWOOD_ASCII && String(currentProfile().name).indexOf("TS-480") >= 0;
+  return currentProtocolType() == PROTO_KENWOOD_ASCII && String(currentStoredProfile().name).indexOf("TS-480") >= 0;
 }
 
 // ---- Noise reduction ----
