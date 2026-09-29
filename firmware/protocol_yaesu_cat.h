@@ -16,9 +16,6 @@ void yaesuCatMarkLineDirty();
 void yaesuCatNoteLineOpened();
 void yaesuCatSend5(const uint8_t data[5]);
 bool yaesuCatRead1(uint8_t& out, uint32_t timeoutMs);
-// For a reply whose length varies: a byte that does not come within windowMs is not a timeout.
-// The line is still marked dirty in case it arrives late.
-bool yaesuCatReadOptional1(uint8_t& out, uint32_t windowMs);
 bool yaesuCatRead5(uint8_t out[5], uint32_t timeoutMs);
 bool yaesuCatTransact1(const uint8_t cmd[5], uint8_t& rsp, uint32_t timeoutMs);
 bool yaesuCatTransact5(const uint8_t cmd[5], uint8_t rsp[5], uint32_t timeoutMs);

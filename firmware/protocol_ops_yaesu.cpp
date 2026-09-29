@@ -109,21 +109,22 @@ SMeterReading yaesuCatDecodeSMeter(uint8_t rxStatus) {
   return reading;
 }
 
-// Undocumented 0xBD, answered by the FT-817/818 and FT-857/897. While transmitting the radio
-// sends two bytes of 0..15 meters: byte 0 = PWR (high nibble) | ALC (low), byte 1 = SWR (high) |
-// MOD (low), as Hamlib's ft817.c reads them. In receive it sends one byte 0x00: all meters 0.
-static constexpr uint32_t YAESU_TX_METERS_SECOND_BYTE_MS = 50;
-
+// Undocumented 0xBD, answered by the FT-817/818 and FT-857/897 while transmitting: two bytes of
+// 0..15 meters, byte 0 = PWR (high nibble) | ALC (low), byte 1 = SWR (high) | MOD (low), as
+// Hamlib's ft817.c reads them. In receive the FT-897 does not answer and misses the next polls,
+// so 0xBD is sent only after the TX status shows PTT on; in receive all meters are 0.
 static bool yaesuCatQueryTxMeters(uint8_t out[2], uint32_t timeoutMs) {
+  uint8_t txStatus = 0;
+  if (!yaesuCatQueryTxStatusRaw(txStatus, timeoutMs)) return false;
+  if (!yaesuCatTxStatusTransmitting(txStatus)) {
+    out[0] = 0;
+    out[1] = 0;
+    return true;
+  }
   const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, 0xBD};
   yaesuCatFlushInput();
   yaesuCatSend5(cmd);
-  if (!yaesuCatRead1(out[0], timeoutMs)) return false;
-  if (!yaesuCatReadOptional1(out[1], YAESU_TX_METERS_SECOND_BYTE_MS)) {
-    out[0] = 0;
-    out[1] = 0;
-  }
-  return true;
+  return yaesuCatRead1(out[0], timeoutMs) && yaesuCatRead1(out[1], timeoutMs);
 }
 
 bool yaesuCatQueryPoMeterRaw(const StoredProfile& sp, int32_t& rawOut, uint32_t timeoutMs) {
@@ -169,6 +170,40 @@ bool yaesuCatQueryTxStatusRaw(uint8_t& rawOut, uint32_t timeoutMs) {
 
 bool yaesuCatQueryStatusRaw(uint8_t& rawOut, uint32_t timeoutMs) {
   return yaesuCatQueryTxStatusRaw(rawOut, timeoutMs);
+}
+
+bool yaesuCatTxStatusTransmitting(uint8_t txStatus) {
+  return (txStatus & 0x80) == 0;
+}
+
+// Undocumented 0xBB reads the EEPROM word at an even address; the byte at an odd address is
+// the second of the pair. Read-only: the write opcode (0xBC) is never sent, since a bad write
+// can wipe the radio's memories and calibration.
+bool yaesuCatReadEepromByte(uint16_t addr, uint8_t& out, uint32_t timeoutMs) {
+  const uint8_t cmd[5] = {(uint8_t)(addr >> 8), (uint8_t)(addr & 0xFE), 0x00, 0x00, 0xBB};
+  uint8_t word[2] = {0};
+  yaesuCatFlushInput();
+  yaesuCatSend5(cmd);
+  if (!yaesuCatRead1(word[0], timeoutMs) || !yaesuCatRead1(word[1], timeoutMs)) return false;
+  out = word[addr & 0x01];
+  return true;
+}
+
+// The TX status split bit is valid only while transmitting; the FT-857/897 answer 0xFF in
+// receive. Otherwise split is bit 7 of an EEPROM byte, at the addresses Hamlib reads (0x8D
+// confirmed on an FT-897: 0x03 with split off, 0x83 with split on).
+bool yaesuCatQuerySplit(bool& onOut, uint32_t timeoutMs) {
+  uint8_t txStatus = 0;
+  if (!yaesuCatQueryTxStatusRaw(txStatus, timeoutMs)) return false;
+  if (yaesuCatTxStatusTransmitting(txStatus)) {
+    onOut = (txStatus & 0x20) != 0;
+    return true;
+  }
+  const uint16_t addr = currentProfileVariantIs("ft817") ? 0x007A : 0x008D;
+  uint8_t flags = 0;
+  if (!yaesuCatReadEepromByte(addr, flags, timeoutMs)) return false;
+  onOut = (flags & 0x80) != 0;
+  return true;
 }
 
 bool yaesuCatToggleVfo() {

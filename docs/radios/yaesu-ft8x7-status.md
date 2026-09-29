@@ -44,7 +44,8 @@ The goal of this document is to separate:
 
 | Function | Status |
 |---|---|
-| RX/TX status bit interpretation | raw commands exist, but keypad `RXTX?` is currently disabled for FT-817 because practical results are unstable |
+| RX/TX status bit interpretation | keypad `RXTX?` is disabled for FT-817. The unstable results were likely the old code reading TX status bit 0 (a PO meter bit) instead of bit 7 (PTT); retest before enabling |
+| Split status query | TX status bit 5 (1 = on, as on the FT-897) while transmitting, EEPROM `0x7A` bit 7 in receive; not yet verified on the radio |
 | Meter/status interpretation | partially usable, not fully finalized |
 | Hidden FT-817 background conditions around some documented CAT functions | practical tests suggest the documented commands can work correctly, but the exact conditions for stable behavior are still not fully mapped |
 | Repeater and tone/DCS write paths outside normal VHF/UHF FM context | CAT bytes are implemented, but practical success is much more predictable when the radio is already on `2 m` or `70 cm` and already in `FM` |
@@ -81,7 +82,7 @@ The goal of this document is to separate:
 | S-meter read | implemented and verified |
 | RX status raw read | implemented and verified |
 | TX status raw read | implemented and verified |
-| RX/TX state query | implemented and verified |
+| RX/TX state query | verified on an FT-897: TX status bit 7 (0 = transmitting), `0xFF` in receive |
 | `TXFREQ?` fallback on keypad | implemented and practically usable |
 | Bank 3 current/other VFO read | implemented and practically usable |
 | Bank 3 current/other VFO frequency set | implemented and practically usable |
@@ -94,7 +95,7 @@ The goal of this document is to separate:
 | Function | Status |
 |---|---|
 | Split on/off | currently usable from keypad, but should still be cross-checked more broadly |
-| Split status query | currently usable from keypad, but should still be cross-checked more broadly |
+| Split status query | verified on an FT-897: EEPROM `0x8D` bit 7 in receive, TX status bit 5 while transmitting (1 = on; the manual says 0 = on, which is wrong) |
 | Repeater and tone/DCS write paths outside normal FM repeater context | CAT bytes are implemented, but practical success can still depend on the radio already being in the appropriate VHF/UHF band and FM context |
 | FT-857/897 VFO tracking after manual front-panel A/B changes | keypad workflow is usable, but sync is recommended |
 
@@ -105,7 +106,7 @@ The goal of this document is to separate:
 | Absolute VFO A/B without sync | not reliable after manual front-panel A/B changes |
 | Bank 2 `NR/NB/Notch/filter` functions | not currently available through documented FT8x7 CAT |
 | Memory read/write raw path | experimental |
-| PO / ALC / SWR meters (undocumented `BD`, while transmitting) | implemented, not yet verified on the radio |
+| PO / ALC / SWR meters (undocumented `BD`, only sent while transmitting) | verified on an FT-897: PWR matches the TX status PO bits; in receive the radio does not answer `BD` |
 | Volume / SQL extras | not cleanly validated |
 
 ## FT-897

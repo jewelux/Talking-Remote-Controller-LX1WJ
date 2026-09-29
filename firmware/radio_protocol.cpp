@@ -402,7 +402,7 @@ bool queryRxTxStatus(bool& txOut, uint32_t timeoutMs) {
   if (pt == PROTO_YAESU_FT8X7 && sp.caps.getRxTx) {
     uint8_t raw = 0;
     if (!yaesuCatQueryStatusRaw(raw, timeoutMs)) return false;
-    txOut = (raw & 0x01) == 0;
+    txOut = yaesuCatTxStatusTransmitting(raw);
     return true;
   }
   return false;
@@ -539,17 +539,7 @@ bool querySplit(bool& onOut, uint32_t timeoutMs) {
   if (pt == PROTO_CIV) return civQuerySplit(sp, onOut, timeoutMs);
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiQuerySplit(sp, onOut, timeoutMs);
   if (pt == PROTO_YAESU_FT8X7 && sp.caps.getSplit) {
-    if (g_ft8x7SplitKnown) {
-      onOut = g_ft8x7SplitOn;
-      return true;
-    }
-    uint8_t raw = 0;
-    if (!yaesuCatQueryStatusRaw(raw, timeoutMs)) return false;
-    // BUGFIX V3.5.1: TX-Status-Byte (Opcode 0xF7) Bit-Layout laut KA7OEI/Yaesu-Doku:
-    //   Bit7=0:TX/1:RX  Bit5=1:Split-ON  Bit3=1:HighSWR  Bit2=1:HighALC  Bit1=1:HighPwr
-    // Alter Code verwendete (raw & 0x04) = Bit2 = "High ALC" fuer beide Varianten.
-    // Korrektur: Bit5 = 0x20 ist der Split-Indikator fuer FT-817 und FT-857/897.
-    onOut = (raw & 0x20) != 0;
+    if (!yaesuCatQuerySplit(onOut, timeoutMs)) return false;
     rememberSplitState(onOut);
     return true;
   }

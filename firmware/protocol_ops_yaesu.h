@@ -18,6 +18,11 @@ bool yaesuCatQuerySquelchRaw(int32_t& rawOut, uint32_t timeoutMs);
 bool yaesuCatQueryRxStatusRaw(uint8_t& rawOut, uint32_t timeoutMs);
 bool yaesuCatQueryTxStatusRaw(uint8_t& rawOut, uint32_t timeoutMs);
 bool yaesuCatQueryStatusRaw(uint8_t& rawOut, uint32_t timeoutMs);
+// TX status (0xF7): bit 7 = PTT (0 = transmitting), bit 6 = high SWR, bit 5 = split (1 = on,
+// measured on an FT-897; the manuals say 0 = on), bits 3..0 = PO meter.
+bool yaesuCatTxStatusTransmitting(uint8_t txStatus);
+bool yaesuCatReadEepromByte(uint16_t addr, uint8_t& out, uint32_t timeoutMs);
+bool yaesuCatQuerySplit(bool& onOut, uint32_t timeoutMs);
 bool yaesuCatToggleVfo();
 bool yaesuCatSelectVfoA();
 bool yaesuCatSelectVfoB();

@@ -85,6 +85,11 @@
 - FT-817/818/857/897: the SWR reading no longer sends the radio a command that writes to its
   internal memory, and `ALC?` no longer answers with a fixed memory value. Power, ALC and SWR are
   read from the radio's transmit meters (0–15 while transmitting, 0 in receive)
+- FT-817/818/857/897: split status is read from the radio, also after split was changed on the
+  radio's front panel. Before, it was remembered from HamTRC's own split commands, or read with the
+  on/off meaning reversed, and the FT-857/897 often said it could not tell
+- FT-817/818/857/897: `RXTX?` reads the radio's PTT state. Before, it read part of the power meter
+  and could report receive while transmitting
 - TS-480: `NR 0`, `NR 1` and `NR 2` set the NR level, and the Bank 2 `1` key and `NR?` say it
   ("noise reduction two") instead of only on or off
 - NR, NB and notch keys say so when the radio rejects the change or does not answer; this was silent

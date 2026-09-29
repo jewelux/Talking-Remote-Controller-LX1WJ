@@ -93,7 +93,8 @@ void queryBank1TxFrequency() {
 void queryBank1Ft857TxFrequency() {
   printKeypadAction("TXFREQ?");
   uint64_t hz = 0;
-  if (g_ft8x7SplitKnown && !g_ft8x7SplitOn && queryFrequency(hz, 800)) {
+  bool splitOn = false;
+  if (querySplit(splitOn, 800) && !splitOn && queryFrequency(hz, 800)) {
     printKeypadStatus(String("TXFREQ: ") + hzToMHzString3(hz) + " MHz");
     speakQueriedFrequencyHz(hz);
   } else {

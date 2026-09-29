@@ -773,7 +773,7 @@ void printHelp() {
     Serial.println("    RXTX?");
     Serial.println("    SPLIT OFF | ON | TOGGLE");
     if (ft857Family) Serial.println("    SPLIT CAL  (set ON then OFF, cache OFF)");
-    Serial.println("    SPLIT?  (FT-857/897 uses cached state when raw status is not usable)");
+    Serial.println("    SPLIT?");
     Serial.println("    PTT OFF | ON");
     Serial.println("    SM?");
     Serial.println("    SWR?");
@@ -1631,32 +1631,6 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     bool tx = false;
     if (!queryRxTxStatus(tx, 800)) { reportCommandFailure("RXTX?", "no reply"); return true; }
     Serial.println(tx ? "TX" : "RX");
-    return true;
-  }
-  if (upper == "SPLIT?" && currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft857_897")) {
-    uint8_t raw = 0;
-    if (!yaesuCatQueryTxStatusRaw(raw, 800)) {
-      reportCommandFailure("SPLIT?", "no reply");
-      return true;
-    }
-    if (raw == 0xFF) {
-      if (g_ft8x7SplitKnown) {
-        Serial.print(g_ft8x7SplitOn ? "SPLIT ON" : "SPLIT OFF");
-        Serial.println("  (FT-857/897 cached, raw=0xFF not usable)");
-        speakTokenState("split", g_ft8x7SplitOn);
-      } else {
-        Serial.println("SPLIT? -> not reliable on FT-857/897 (raw=0xFF, cache unknown)");
-      }
-      return true;
-    }
-    const bool on = (raw & 0x20) != 0;
-    rememberSplitState(on);
-    Serial.print(on ? "SPLIT ON" : "SPLIT OFF");
-    Serial.print("  (FT-857/897 warning: not guaranteed, TX status raw=0x");
-    if (raw < 0x10) Serial.print('0');
-    Serial.print(raw, HEX);
-    Serial.println(")");
-    speakTokenState("split", on);
     return true;
   }
   if (upper == "SPLIT CAL" && currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft857_897")) {
