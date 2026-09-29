@@ -3,6 +3,7 @@
 #include "protocol_ascii.h"
 #include "radio_catalog.h"
 #include "radio_globals.h"
+#include "radio_protocol.h"
 #include "radio_runtime.h"
 #include "radio_state.h"
 
@@ -167,4 +168,57 @@ FeatureStatus notchToggle(NotchState& out) {
   if (live.notchWidth == NOTCH_WIDTH_NAR) return applyNotchWidth(NOTCH_WIDTH_MID, out);
   if (live.notchWidth == NOTCH_WIDTH_MID) return applyNotchWidth(NOTCH_WIDTH_WIDE, out);
   return applyNotchState(false, NOTCH_WIDTH_UNKNOWN, out);
+}
+
+// ---- FT-857/897 EEPROM settings ----
+
+const char* ft8x7SettingLabel(Ft8x7Setting setting) {
+  switch (setting) {
+    case Ft8x7Setting::Agc: return "AGC?";
+    case Ft8x7Setting::Ipo: return "IPO?";
+    case Ft8x7Setting::Att: return "ATT?";
+    case Ft8x7Setting::Nar: return "NAR?";
+    case Ft8x7Setting::Dbf: return "DBF?";
+    case Ft8x7Setting::BreakIn: return "BK?";
+    case Ft8x7Setting::Keyer: return "KYR?";
+    case Ft8x7Setting::RfPower: return "RFPOWER?";
+  }
+  return "?";
+}
+
+static FeatureStatus ft8x7BandSettingQuery(Ft8x7Setting setting, Ft8x7SettingState& out) {
+  uint64_t hz = 0;
+  if (!queryFrequency(hz, 800)) return failure(FeatureStatus::NoReply);
+  if (setting == Ft8x7Setting::RfPower) {
+    if (!yaesuFt857QueryRfPowerWatts(hz, out.watts, 800)) return failure(FeatureStatus::NoReply);
+    return FeatureStatus::Ok;
+  }
+  YaesuFt857BandFlags flags;
+  if (!yaesuFt857QueryBandFlags(hz, flags, 800)) return failure(FeatureStatus::NoReply);
+  if (!flags.bandKnown) return FeatureStatus::Unsupported;
+  if (setting == Ft8x7Setting::Nar) {
+    out.on = flags.nar;
+    return FeatureStatus::Ok;
+  }
+  if (!flags.hasIpoAtt) return FeatureStatus::Unsupported;
+  out.on = setting == Ft8x7Setting::Ipo ? flags.ipo : flags.att;
+  return FeatureStatus::Ok;
+}
+
+FeatureStatus ft8x7SettingQuery(Ft8x7Setting setting, Ft8x7SettingState& out) {
+  if (currentProtocolType() != PROTO_YAESU_FT8X7 || !currentProfileVariantIs("ft857_897")) {
+    return FeatureStatus::Unsupported;
+  }
+  if (setting == Ft8x7Setting::RfPower && !currentStoredProfile().caps.getRfPower) return FeatureStatus::Unsupported;
+  out = Ft8x7SettingState();
+  out.setting = setting;
+  bool ok = false;
+  switch (setting) {
+    case Ft8x7Setting::Agc: ok = yaesuFt857QueryAgc(out.agc, 800); break;
+    case Ft8x7Setting::Dbf: ok = yaesuFt857QueryDbf(out.on, 800); break;
+    case Ft8x7Setting::BreakIn: ok = yaesuFt857QueryBreakIn(out.on, 800); break;
+    case Ft8x7Setting::Keyer: ok = yaesuFt857QueryKeyer(out.on, 800); break;
+    default: return ft8x7BandSettingQuery(setting, out);
+  }
+  return ok ? FeatureStatus::Ok : failure(FeatureStatus::NoReply);
 }

@@ -19,3 +19,8 @@ void speakNbState(bool on);
 // "NOTCH OFF", "NOTCH ON", or the width: "NOTCH NAR", "NOTCH MID", "NOTCH WIDE".
 String notchStateText(const NotchState& state);
 void speakNotchState(const NotchState& state);
+
+// FT-857/897 EEPROM settings: "AGC FAST", "IPO ON", "RFPOWER 100 W".
+String ft8x7SettingText(const Ft8x7SettingState& state);
+// The radio's soft key label spelled, then the state: "a g c fast", "i p o on", "power 100 watts".
+void speakFt8x7Setting(const Ft8x7SettingState& state);

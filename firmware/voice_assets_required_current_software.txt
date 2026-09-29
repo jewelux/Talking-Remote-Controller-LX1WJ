@@ -80,6 +80,7 @@ voice_power.wav
 voice_s_meter.wav
 voice_swr.wav
 voice_high.wav
+voice_auto.wav
 voice_rit.wav
 voice_clarifier.wav
 voice_repeater.wav

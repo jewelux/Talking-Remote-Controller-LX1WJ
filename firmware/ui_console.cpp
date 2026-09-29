@@ -858,6 +858,10 @@ void printHelp() {
     Serial.println("    YSTATUS?");
   } else if (ft8x7) {
     Serial.println("    ALC?");
+    if (!ft817) {
+      Serial.println("    AGC? | IPO? | ATT? | NAR? | DBF? | BK? | KYR?  (radio settings, read only)");
+      Serial.println("    RFPOWER?  (menu 75 power of the current band)");
+    }
     Serial.println("    AGC <hex byte>");
     Serial.println("    CIVRAW? <cmd hex> [payload hex bytes]");
     Serial.println("    CIVRAW <cmd hex> [payload hex bytes]");
@@ -879,6 +883,7 @@ void printHelp() {
     Serial.println("    YCAT <10 hex digits>");
     Serial.println("    YCAT? <10 hex digits>");
     Serial.println("    YCAT1? <hex byte>");
+    Serial.println("    YEEPROM? <start hex> [count 1..32]  (read only; not while operating the radio)");
     Serial.println("    YSCAN1 <start hex> <end hex>");
     Serial.println("    YSNIFF <ms>");
     Serial.println("    YSTATUS?");
@@ -1260,9 +1265,28 @@ static bool handleConsoleFt8x7Meters(const String& upper) {
   return false;
 }
 
+// FT-857/897 settings read from the EEPROM, like the Bank 2 keys.
+static bool handleConsoleFt8x7Settings(const String& upper) {
+  static constexpr Ft8x7Setting kSettings[] = {
+    Ft8x7Setting::Agc, Ft8x7Setting::Ipo, Ft8x7Setting::Att, Ft8x7Setting::Nar,
+    Ft8x7Setting::Dbf, Ft8x7Setting::BreakIn, Ft8x7Setting::Keyer, Ft8x7Setting::RfPower,
+  };
+  for (Ft8x7Setting setting : kSettings) {
+    const char* label = ft8x7SettingLabel(setting);
+    if (upper != label) continue;
+    Ft8x7SettingState state;
+    if (reportFeatureFailure(ft8x7SettingQuery(setting, state), label)) return true;
+    Serial.println(ft8x7SettingText(state));
+    speakFt8x7Setting(state);
+    return true;
+  }
+  return false;
+}
+
 static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& upper) {
   if (!isCurrentYaesuFt8x7()) return false;
   if (handleConsoleFt8x7Meters(upper)) return true;
+  if (handleConsoleFt8x7Settings(upper)) return true;
 
   if (upper == "YALL?") {
     Serial.println("[YAESU FT8X7]");
@@ -1920,6 +1944,43 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     Serial.println(rsp, HEX);
     return true;
   }
+  // Few bytes at a time: an FT-897 hung when a logger read 192 bytes every 5 s while the dial
+  // was being turned (the radio writes its EEPROM as it tunes).
+  if (upper.startsWith("YEEPROM? ")) {
+    String args = line.substring(9);
+    args.trim();
+    const int space = args.indexOf(' ');
+    const String addrArg = space < 0 ? args : args.substring(0, space);
+    char* endPtr = nullptr;
+    const long start = strtol(addrArg.c_str(), &endPtr, 16);
+    const long count = space < 0 ? 16 : args.substring(space + 1).toInt();
+    if (!addrArg.length() || *endPtr != '\0' || start < 0 || start > 0xFFFF || count < 1 || count > 32) {
+      Serial.println("YEEPROM? -> use <start hex> [count 1..32], e.g. YEEPROM? 0068 16");
+      return true;
+    }
+    uint8_t word[2] = {0};
+    long wordAddr = -1;
+    for (long addr = start; addr < start + count && addr <= 0xFFFF; ++addr) {
+      if ((addr - start) % 16 == 0) {
+        if (addr != start) Serial.println();
+        char buf[8];
+        snprintf(buf, sizeof(buf), "%04lX:", addr);
+        Serial.print(buf);
+      }
+      if ((addr & ~1L) != wordAddr) {
+        wordAddr = addr & ~1L;
+        if (!yaesuCatReadEepromWord((uint16_t)wordAddr, word, 300)) {
+          Serial.println(" --");
+          reportCommandFailure("YEEPROM?", "no reply");
+          return true;
+        }
+      }
+      Serial.print(' ');
+      Serial.print(byteToUpperHex(word[addr & 1]));
+    }
+    Serial.println();
+    return true;
+  }
   if (upper.startsWith("YSCAN1 ")) {
     uint8_t first = 0;
     uint8_t last = 0;
@@ -1945,6 +2006,11 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
       if (op < 0x10) Serial.print('0');
       Serial.print(op, HEX);
       Serial.print(" -> ");
+      // 0xBC writes the EEPROM and 0xBE is a factory reset.
+      if (op == 0xBC || op == 0xBE) {
+        Serial.println("skipped");
+        continue;
+      }
       if (!yaesuCatTransact1(cmd, rsp, 160)) {
         Serial.println("--");
       } else {

@@ -57,6 +57,7 @@ KeyBinding bank1(const KeypadTraits& t, char key) {
     case '6':
       if (t.layout == L::Ftdx10) return bind(SEND("PA?"), SEND("PA TOGGLE"));
       if (t.layout == L::Civ) return bind(t.canGetRfPower ? queryBank1RfPower : nullptr, beginBank1RfPowerSet);
+      if (t.layout == L::Ft857) return bind(queryBank1RfPower);
       return {};
     case '7': return bind(queryBank1Smeter);
     case '8': return bind(queryBank1Swr);
@@ -68,6 +69,17 @@ KeyBinding bank1(const KeypadTraits& t, char key) {
 KeyBinding bank2(const KeypadTraits& t, char key) {
   const bool civ = t.layout == L::Civ;
   const bool ftdx10 = t.layout == L::Ftdx10;
+  // FT-857/897: settings the radio keeps in its EEPROM, read only.
+  if (t.layout == L::Ft857) {
+    switch (key) {
+      case '4': return bind(queryBank2Ft857Agc);
+      case '5': return bind(queryBank2Ft857Ipo, queryBank2Ft857Att);
+      case '6': return bind(queryBank2Ft857Dbf);
+      case '7': return bind(queryBank2Ft857BreakIn, queryBank2Ft857Keyer);
+      case '8': return bind(queryBank2Ft857Nar);
+      default: break;
+    }
+  }
   switch (key) {
     case '1': return bind(queryBank2Nr, toggleBank2Nr);
     case '2': return bind(queryBank2Nb, toggleBank2Nb);

@@ -27,12 +27,30 @@ Important practical note:
 | `3` short | `LOCK?` (tracked state) | `LOCK?` (tracked state) |
 | `3` long | `LOCK ON/OFF` | `LOCK ON/OFF` |
 | `4` short | `PO?` | `PO?` |
+| `6` short | — | `RFPOWER?`: menu 75 power of the current band ("power 10 watts") |
 | `7` short | `SM?` | `SM?` |
 | `8` short | `SWR?` | `SWR?` |
 | `9` short | `MODE?` | `MODE?` |
 | `9` long | `MODE <n>`, then digit, then `Enter` | `MODE <n>`, then digit, then `Enter` |
 
 `LOCK?` does not read the radio: FT8x7 CAT has no lock readback, so the firmware speaks the lock state it last set. `3` long flips that tracked state.
+
+## Bank 2 - Radio Settings (FT-857/897)
+
+These keys read settings the FT-857/897 keeps in its EEPROM, like the HamPod does. They only read: CAT cannot change these settings, so a long press on `1`–`3` says "not available". IPO, ATT and NAR are those of the current band and VFO, and only on the amateur bands (IPO and ATT on HF and 6 m). On the FT-817 the keys are not available.
+
+| Key | FT-857/897 | Says |
+|---|---|---|
+| `1` short | `NR?` (DSP noise reduction, DNR) | "noise reduction on" |
+| `2` short | `NB?` | "noise blanker off" |
+| `3` short | `NOTCH?` (DSP auto notch, DNF) | "notch filter on" |
+| `4` short | `AGC?` | "a g c auto" (auto, fast, slow or off) |
+| `5` short | `IPO?` | "i p o off" |
+| `5` long | `ATT?` | "a t t off" |
+| `6` short | `DBF?` (DSP bandpass filter) | "d b f off" |
+| `7` short | `BK?` (break-in) | "b k on" |
+| `7` long | `KYR?` (keyer) | "k y r off" |
+| `8` short | `NAR?` (FM narrow) | "n a r off" |
 
 ## Bank 3 - VFO / Split
 

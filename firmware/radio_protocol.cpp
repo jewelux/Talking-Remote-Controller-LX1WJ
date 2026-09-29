@@ -142,6 +142,7 @@ bool queryNr(bool& onOut, uint32_t timeoutMs) {
   const StoredProfile& sp = currentStoredProfile();
   if (pt == PROTO_CIV) return civQueryNr(sp, onOut, timeoutMs);
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiQueryNr(sp, onOut, timeoutMs);
+  if (pt == PROTO_YAESU_FT8X7) return yaesuFt857QueryDnr(onOut, timeoutMs);
   return false;
 }
 
@@ -172,6 +173,7 @@ bool queryNb(bool& onOut, uint32_t timeoutMs) {
   const StoredProfile& sp = currentStoredProfile();
   if (pt == PROTO_CIV) return civQueryNb(sp, onOut, timeoutMs);
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiQueryNb(sp, onOut, timeoutMs);
+  if (pt == PROTO_YAESU_FT8X7) return yaesuFt857QueryNb(onOut, timeoutMs);
   return false;
 }
 
@@ -202,6 +204,7 @@ bool queryNotch(bool& onOut, uint32_t timeoutMs) {
   const StoredProfile& sp = currentStoredProfile();
   if (pt == PROTO_CIV) return civQueryNotch(sp, onOut, timeoutMs);
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiQueryNotch(sp, onOut, timeoutMs);
+  if (pt == PROTO_YAESU_FT8X7) return yaesuFt857QueryDnf(onOut, timeoutMs);
   return false;
 }
 

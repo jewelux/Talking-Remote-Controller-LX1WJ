@@ -91,6 +91,12 @@
 - FT-817/818/857/897: split status is read from the radio, also after split was changed on the
   radio's front panel. Before, it was remembered from HamTRC's own split commands, or read with the
   on/off meaning reversed, and the FT-857/897 often said it could not tell
+- FT-857/897: Bank 2 reads the radio settings a HamPod reads: DSP noise reduction (`1`), noise
+  blanker (`2`), auto notch (`3`), AGC (`4`, "a g c auto"), IPO and ATT of the current band (`5`,
+  long for ATT), DSP bandpass filter (`6`), break-in and keyer (`7`, long for keyer) and FM narrow
+  (`8`). Bank 1 `6` says the menu 75 power of the current band ("power 10 watts"). The same as
+  console commands `NR?`, `NB?`, `NOTCH?`, `AGC?`, `IPO?`, `ATT?`, `DBF?`, `BK?`, `KYR?`, `NAR?` and
+  `RFPOWER?`. They only read these settings; HamTRC cannot change them
 - FT-817/818/857/897: `RXTX?` reads the radio's PTT state. Before, it read part of the power meter
   and could report receive while transmitting
 - TS-480: `NR 0`, `NR 1` and `NR 2` set the NR level, and the Bank 2 `1` key and `NR?` say it

@@ -31,8 +31,30 @@ bool yaesuCatQueryStatusRaw(uint8_t& rawOut, uint32_t timeoutMs);
 // TX status (0xF7): bit 7 = PTT (0 = transmitting), bit 6 = high SWR, bit 5 = split (1 = on,
 // measured on an FT-897; the manuals say 0 = on), bits 3..0 = PO meter.
 bool yaesuCatTxStatusTransmitting(uint8_t txStatus);
+// Reads the EEPROM word at addr & ~1 (0xBB): out[0] is the even byte, out[1] the odd one.
+bool yaesuCatReadEepromWord(uint16_t addr, uint8_t out[2], uint32_t timeoutMs);
 bool yaesuCatReadEepromByte(uint16_t addr, uint8_t& out, uint32_t timeoutMs);
 bool yaesuCatQuerySplit(bool& onOut, uint32_t timeoutMs);
+// FT-857/897 settings read from the EEPROM (read-only). False on other models.
+bool yaesuFt857QueryNb(bool& onOut, uint32_t timeoutMs);
+bool yaesuFt857QueryBreakIn(bool& onOut, uint32_t timeoutMs);
+bool yaesuFt857QueryKeyer(bool& onOut, uint32_t timeoutMs);
+bool yaesuFt857QueryDnr(bool& onOut, uint32_t timeoutMs);
+bool yaesuFt857QueryDnf(bool& onOut, uint32_t timeoutMs);
+bool yaesuFt857QueryDbf(bool& onOut, uint32_t timeoutMs);
+enum class YaesuAgc : uint8_t { Off, Fast, Slow, Auto };
+bool yaesuFt857QueryAgc(YaesuAgc& out, uint32_t timeoutMs);
+// IPO, ATT and FM narrow are kept per band. bandKnown is false outside the amateur bands.
+struct YaesuFt857BandFlags {
+  bool bandKnown = false;
+  bool hasIpoAtt = false;  // HF and 6 m
+  bool ipo = false;
+  bool att = false;
+  bool nar = false;
+};
+bool yaesuFt857QueryBandFlags(uint64_t hz, YaesuFt857BandFlags& out, uint32_t timeoutMs);
+// Menu 75 RF power for the band group of hz: HF, 6 m, VHF or UHF.
+bool yaesuFt857QueryRfPowerWatts(uint64_t hz, uint8_t& wattsOut, uint32_t timeoutMs);
 bool yaesuCatToggleVfo();
 bool yaesuCatSelectVfoA();
 bool yaesuCatSelectVfoB();

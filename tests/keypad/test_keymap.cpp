@@ -117,6 +117,13 @@ void adjustBank2PbtOuter(int d) { record("adjustBank2PbtOuter(%d)", d); }
 void toggleBank2FilterShape() { record("toggleBank2FilterShape"); }
 void queryBank2FilterWidth() { record("queryBank2FilterWidth"); }
 void cycleBank2FilterWidth(int d) { record("cycleBank2FilterWidth(%d)", d); }
+void queryBank2Ft857Agc() { record("queryBank2Ft857Agc"); }
+void queryBank2Ft857Ipo() { record("queryBank2Ft857Ipo"); }
+void queryBank2Ft857Att() { record("queryBank2Ft857Att"); }
+void queryBank2Ft857Dbf() { record("queryBank2Ft857Dbf"); }
+void queryBank2Ft857BreakIn() { record("queryBank2Ft857BreakIn"); }
+void queryBank2Ft857Keyer() { record("queryBank2Ft857Keyer"); }
+void queryBank2Ft857Nar() { record("queryBank2Ft857Nar"); }
 
 void queryBank3Split() { record("queryBank3Split"); }
 void toggleBank3Split() { record("toggleBank3Split"); }

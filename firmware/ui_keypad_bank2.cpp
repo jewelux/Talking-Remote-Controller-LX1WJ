@@ -1,4 +1,5 @@
-// Bank 2 keypad actions: noise reduction, noise blanker, notch, PBT and filter.
+// Bank 2 keypad actions: noise reduction, noise blanker, notch, PBT and filter,
+// and the FT-857/897 settings kept in the EEPROM.
 #include "ui_keypad_bank.h"
 #include "ui_features.h"
 #include "radio_monitor.h"
@@ -54,6 +55,24 @@ void queryBank2Notch() {
   printKeypadStatus(notchStateText(state));
   speakNotchState(state);
 }
+
+static void queryBank2Ft857Setting(Ft8x7Setting setting) {
+  const char* label = ft8x7SettingLabel(setting);
+  printKeypadAction(label);
+  prepareKeypadSpeechResponse();
+  Ft8x7SettingState state;
+  if (keypadReportFeatureFailure(ft8x7SettingQuery(setting, state), label)) return;
+  printKeypadStatus(ft8x7SettingText(state));
+  speakFt8x7Setting(state);
+}
+
+void queryBank2Ft857Agc() { queryBank2Ft857Setting(Ft8x7Setting::Agc); }
+void queryBank2Ft857Ipo() { queryBank2Ft857Setting(Ft8x7Setting::Ipo); }
+void queryBank2Ft857Att() { queryBank2Ft857Setting(Ft8x7Setting::Att); }
+void queryBank2Ft857Dbf() { queryBank2Ft857Setting(Ft8x7Setting::Dbf); }
+void queryBank2Ft857BreakIn() { queryBank2Ft857Setting(Ft8x7Setting::BreakIn); }
+void queryBank2Ft857Keyer() { queryBank2Ft857Setting(Ft8x7Setting::Keyer); }
+void queryBank2Ft857Nar() { queryBank2Ft857Setting(Ft8x7Setting::Nar); }
 
 void toggleBank2Nr() {
   printKeypadAction("NR");

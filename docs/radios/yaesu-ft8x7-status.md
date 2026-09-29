@@ -98,13 +98,13 @@ The goal of this document is to separate:
 | Split status query | verified on an FT-897: EEPROM `0x8D` bit 7 in receive, TX status bit 5 while transmitting (1 = on; the manual says 0 = on, which is wrong) |
 | Repeater and tone/DCS write paths outside normal FM repeater context | CAT bytes are implemented, but practical success can still depend on the radio already being in the appropriate VHF/UHF band and FM context |
 | FT-857/897 VFO tracking after manual front-panel A/B changes | keypad workflow is usable, but sync is recommended |
+| Settings read from the EEPROM (Bank 2, `AGC?`, `IPO?`, `ATT?`, `NAR?`, `DBF?`, `BK?`, `KYR?`, `NR?`, `NB?`, `NOTCH?`, `RFPOWER?`) | verified on an FT-897, read only. Addresses from the yo3ggx FT8x7EE map: `0x6A` bit 5 NB, bits 1..0 AGC speed (00 slow, 01 auto, 10 fast); `0x6B` bit 5 BK, bit 4 KYR; `0xA8` bit 5 AGC on, bits 3..2 DBF, bit 1 DNR, bit 0 DNF; `0x9B`/`0xAA`/`0xAB`/`0xAC` menu 75 power for HF/6 m/VHF/UHF (bits 6..0 = W). Per band and VFO, a 28-byte block: +1 bit 3 NAR, +2 bit 5 IPO, +2 bit 4 ATT, +12..+15 last frequency. VFO A blocks start at `0xBA` (160 m), VFO B blocks `0x1C0` higher; 5 MHz is `0xF2`, not `0x260` as in the map. `0x68` bit 0 names the VFO but does not follow CAT A/B toggles, so the block holding the current frequency decides |
 
 ### Experimental or incomplete
 
 | Function | Status |
 |---|---|
 | Absolute VFO A/B without sync | not reliable after manual front-panel A/B changes |
-| Bank 2 `NR/NB/Notch/filter` functions | not currently available through documented FT8x7 CAT |
 | Memory read/write raw path | experimental |
 | PO / ALC / SWR meters | verified on an FT-897 into a dummy load (PO 10, ALC 8, SWR 1.0): PO from TX status bits 3..0, ALC and SWR from the undocumented `BD`, sent only while transmitting since the radio does not answer it in receive. High-SWR flag (TX status bit 6) not yet seen set |
 | Volume / SQL extras | not cleanly validated |
@@ -120,6 +120,8 @@ The goal of this document is to separate:
 | Practical device verification | not yet available |
 
 ## Notes
+
+- EEPROM reads (`BB`) must stay few and on demand. An FT-897 hung, together with HamTRC, when a test logger read 192 bytes every 5 s while the dial was being turned; a power cycle recovered it. `YEEPROM?` reads at most 32 bytes. The write (`BC`) and factory reset (`BE`) opcodes are never sent.
 
 - The keypad layout for this family is documented separately in [yaesu-ft8x7-keypad.md](./yaesu-ft8x7-keypad.md).
 - Repeater and tone functions are now concentrated in Bank 6.

@@ -57,6 +57,14 @@ void adjustBank2PbtOuter(int delta);
 void toggleBank2FilterShape();
 void queryBank2FilterWidth();
 void cycleBank2FilterWidth(int delta);
+// FT-857/897 settings read from the radio's EEPROM.
+void queryBank2Ft857Agc();
+void queryBank2Ft857Ipo();
+void queryBank2Ft857Att();
+void queryBank2Ft857Dbf();
+void queryBank2Ft857BreakIn();
+void queryBank2Ft857Keyer();
+void queryBank2Ft857Nar();
 
 // ---- Bank 3 ----
 void queryBank3Split();

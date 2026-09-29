@@ -78,6 +78,7 @@ swr
 v f o
 
 # Core control words
+auto
 bank
 cancel
 choose

@@ -104,6 +104,7 @@ static inline float volumeLevelToGain(uint8_t lvl) {
 static const VoiceClip kVoiceClips[] = {
   VOICE_CLIP(a),
   VOICE_CLIP(am),
+  VOICE_CLIP(auto),
   VOICE_CLIP(b),
   VOICE_CLIP(bank),
   VOICE_CLIP(c),

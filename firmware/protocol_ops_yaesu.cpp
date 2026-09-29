@@ -192,12 +192,16 @@ bool yaesuCatTxStatusTransmitting(uint8_t txStatus) {
 // Undocumented 0xBB reads the EEPROM word at an even address; the byte at an odd address is
 // the second of the pair. Read-only: the write opcode (0xBC) is never sent, since a bad write
 // can wipe the radio's memories and calibration.
-bool yaesuCatReadEepromByte(uint16_t addr, uint8_t& out, uint32_t timeoutMs) {
+bool yaesuCatReadEepromWord(uint16_t addr, uint8_t out[2], uint32_t timeoutMs) {
   const uint8_t cmd[5] = {(uint8_t)(addr >> 8), (uint8_t)(addr & 0xFE), 0x00, 0x00, 0xBB};
-  uint8_t word[2] = {0};
   yaesuCatFlushInput();
   yaesuCatSend5(cmd);
-  if (!yaesuCatRead1(word[0], timeoutMs) || !yaesuCatRead1(word[1], timeoutMs)) return false;
+  return yaesuCatRead1(out[0], timeoutMs) && yaesuCatRead1(out[1], timeoutMs);
+}
+
+bool yaesuCatReadEepromByte(uint16_t addr, uint8_t& out, uint32_t timeoutMs) {
+  uint8_t word[2] = {0};
+  if (!yaesuCatReadEepromWord(addr, word, timeoutMs)) return false;
   out = word[addr & 0x01];
   return true;
 }
@@ -216,6 +220,129 @@ bool yaesuCatQuerySplit(bool& onOut, uint32_t timeoutMs) {
   uint8_t flags = 0;
   if (!yaesuCatReadEepromByte(addr, flags, timeoutMs)) return false;
   onOut = (flags & 0x80) != 0;
+  return true;
+}
+
+// FT-857/897 settings that CAT can only read from the EEPROM. Addresses from the yo3ggx FT8x7EE
+// map (https://www.yo3ggx.ro/ft8x7ee/eeprom.html), which Hamlib uses too.
+static bool ft857ReadBit(uint16_t addr, uint8_t mask, bool& onOut, uint32_t timeoutMs) {
+  if (!currentProfileVariantIs("ft857_897")) return false;
+  uint8_t b = 0;
+  if (!yaesuCatReadEepromByte(addr, b, timeoutMs)) return false;
+  onOut = (b & mask) != 0;
+  return true;
+}
+
+bool yaesuFt857QueryNb(bool& onOut, uint32_t timeoutMs) { return ft857ReadBit(0x006A, 0x20, onOut, timeoutMs); }
+bool yaesuFt857QueryBreakIn(bool& onOut, uint32_t timeoutMs) { return ft857ReadBit(0x006B, 0x20, onOut, timeoutMs); }
+bool yaesuFt857QueryKeyer(bool& onOut, uint32_t timeoutMs) { return ft857ReadBit(0x006B, 0x10, onOut, timeoutMs); }
+bool yaesuFt857QueryDnr(bool& onOut, uint32_t timeoutMs) { return ft857ReadBit(0x00A8, 0x02, onOut, timeoutMs); }
+bool yaesuFt857QueryDnf(bool& onOut, uint32_t timeoutMs) { return ft857ReadBit(0x00A8, 0x01, onOut, timeoutMs); }
+bool yaesuFt857QueryDbf(bool& onOut, uint32_t timeoutMs) { return ft857ReadBit(0x00A8, 0x0C, onOut, timeoutMs); }
+
+// AGC off is its own bit (0xA8 bit 5); the speed is 0x6A bits 1..0.
+bool yaesuFt857QueryAgc(YaesuAgc& out, uint32_t timeoutMs) {
+  bool on = false;
+  if (!ft857ReadBit(0x00A8, 0x20, on, timeoutMs)) return false;
+  if (!on) {
+    out = YaesuAgc::Off;
+    return true;
+  }
+  uint8_t b = 0;
+  if (!yaesuCatReadEepromByte(0x006A, b, timeoutMs)) return false;
+  switch (b & 0x03) {
+    case 0x00: out = YaesuAgc::Slow; break;
+    case 0x02: out = YaesuAgc::Fast; break;
+    default: out = YaesuAgc::Auto; break;
+  }
+  return true;
+}
+
+// Each band keeps a 28-byte block per VFO: +1 bit 3 = NAR, +2 bit 5 = IPO, +2 bit 4 = ATT,
+// +12..+15 = the band's last frequency in 10 Hz units, big-endian. VFO B's blocks follow VFO A's.
+// Block addresses measured on an FT-897; they differ from the yo3ggx map only for 5 MHz, which
+// that map puts at 0x25E (on the FT-897 the general coverage block).
+static constexpr uint16_t kFt857VfoBBlockOffset = 0x01C0;
+
+struct Ft857BandSlot {
+  uint32_t lowKhz;
+  uint32_t highKhz;
+  uint16_t block;   // VFO A
+  bool hasIpoAtt;   // IPO and ATT exist on HF and 6 m only
+};
+
+// Only the amateur bands: the band edges the radio uses outside them are not known.
+static constexpr Ft857BandSlot kFt857BandSlots[] = {
+  {1800, 2000, 0x00BA, true},     {3500, 4000, 0x00D6, true},     {5250, 5450, 0x00F2, true},
+  {7000, 7300, 0x010E, true},     {10100, 10150, 0x012A, true},   {14000, 14350, 0x0146, true},
+  {18068, 18168, 0x0162, true},   {21000, 21450, 0x017E, true},   {24890, 24990, 0x019A, true},
+  {28000, 29700, 0x01B6, true},   {50000, 54000, 0x01D2, true},   {144000, 148000, 0x0226, false},
+  {430000, 450000, 0x0242, false},
+};
+
+static bool ft857BlockHoldsFrequency(uint16_t block, uint64_t hz, bool& holdsOut, uint32_t timeoutMs) {
+  uint8_t hi[2] = {0};
+  uint8_t lo[2] = {0};
+  if (!yaesuCatReadEepromWord(block + 12, hi, timeoutMs) || !yaesuCatReadEepromWord(block + 14, lo, timeoutMs)) {
+    return false;
+  }
+  const uint32_t stored = ((uint32_t)hi[0] << 24) | ((uint32_t)hi[1] << 16) | ((uint32_t)lo[0] << 8) | lo[1];
+  holdsOut = stored == (uint32_t)(hz / 10ULL);
+  return true;
+}
+
+// 0x68 bit 0 names the VFO (1 = B), but a CAT A/B toggle does not update it. The radio does
+// write the frequency into the active VFO's band block as it changes, so the block that holds
+// the current frequency decides; when neither does, 0x68 does.
+static bool ft857ActiveBandBlock(const Ft857BandSlot& slot, uint64_t hz, uint16_t& blockOut, uint32_t timeoutMs) {
+  uint8_t vfo = 0;
+  if (!yaesuCatReadEepromByte(0x0068, vfo, timeoutMs)) return false;
+  const uint16_t vfoA = slot.block;
+  const uint16_t vfoB = slot.block + kFt857VfoBBlockOffset;
+  const uint16_t guess = (vfo & 0x01) ? vfoB : vfoA;
+  const uint16_t other = guess == vfoA ? vfoB : vfoA;
+  bool holds = false;
+  if (!ft857BlockHoldsFrequency(guess, hz, holds, timeoutMs)) return false;
+  blockOut = guess;
+  if (holds) return true;
+  if (!ft857BlockHoldsFrequency(other, hz, holds, timeoutMs)) return false;
+  if (holds) blockOut = other;
+  return true;
+}
+
+bool yaesuFt857QueryBandFlags(uint64_t hz, YaesuFt857BandFlags& out, uint32_t timeoutMs) {
+  if (!currentProfileVariantIs("ft857_897")) return false;
+  out = YaesuFt857BandFlags();
+  const uint32_t khz = (uint32_t)(hz / 1000ULL);
+  for (const Ft857BandSlot& slot : kFt857BandSlots) {
+    if (khz < slot.lowKhz || khz > slot.highKhz) continue;
+    uint16_t block = slot.block;
+    if (!ft857ActiveBandBlock(slot, hz, block, timeoutMs)) return false;
+    uint8_t nar = 0;
+    uint8_t ipoAtt = 0;
+    if (!yaesuCatReadEepromByte(block + 1, nar, timeoutMs)) return false;
+    if (slot.hasIpoAtt && !yaesuCatReadEepromByte(block + 2, ipoAtt, timeoutMs)) return false;
+    out.bandKnown = true;
+    out.hasIpoAtt = slot.hasIpoAtt;
+    out.nar = (nar & 0x08) != 0;
+    out.ipo = slot.hasIpoAtt && (ipoAtt & 0x20) != 0;
+    out.att = slot.hasIpoAtt && (ipoAtt & 0x10) != 0;
+    return true;
+  }
+  return true;
+}
+
+// Menu 75 keeps one maximum power per band group. Bits 6..0 are the watts; bit 7 is set from
+// 20 W up (100 W is 0xE4).
+bool yaesuFt857QueryRfPowerWatts(uint64_t hz, uint8_t& wattsOut, uint32_t timeoutMs) {
+  if (!currentProfileVariantIs("ft857_897")) return false;
+  uint16_t addr = 0x009B;                  // HF
+  if (hz >= 420000000ULL) addr = 0x00AC;   // UHF
+  else if (hz >= 76000000ULL) addr = 0x00AB;  // VHF
+  else if (hz >= 33000000ULL) addr = 0x00AA;  // 6 m
+  uint8_t b = 0;
+  if (!yaesuCatReadEepromByte(addr, b, timeoutMs)) return false;
+  wattsOut = b & 0x7F;
   return true;
 }
 

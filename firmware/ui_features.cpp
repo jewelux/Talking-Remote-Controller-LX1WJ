@@ -64,3 +64,59 @@ void speakNotchState(const NotchState& state) {
     default: speakToken("on"); break;
   }
 }
+
+static const char* ft8x7AgcText(YaesuAgc agc) {
+  switch (agc) {
+    case YaesuAgc::Fast: return "FAST";
+    case YaesuAgc::Slow: return "SLOW";
+    case YaesuAgc::Auto: return "AUTO";
+    default: return "OFF";
+  }
+}
+
+// The soft key label on the radio's display.
+static const char* ft8x7SettingName(Ft8x7Setting setting) {
+  switch (setting) {
+    case Ft8x7Setting::Agc: return "AGC";
+    case Ft8x7Setting::Ipo: return "IPO";
+    case Ft8x7Setting::Att: return "ATT";
+    case Ft8x7Setting::Nar: return "NAR";
+    case Ft8x7Setting::Dbf: return "DBF";
+    case Ft8x7Setting::BreakIn: return "BK";
+    case Ft8x7Setting::Keyer: return "KYR";
+    case Ft8x7Setting::RfPower: return "RFPOWER";
+  }
+  return "";
+}
+
+String ft8x7SettingText(const Ft8x7SettingState& state) {
+  String text = String(ft8x7SettingName(state.setting)) + " ";
+  if (state.setting == Ft8x7Setting::RfPower) return text + String((int)state.watts) + " W";
+  if (state.setting == Ft8x7Setting::Agc) return text + ft8x7AgcText(state.agc);
+  return text + (state.on ? "ON" : "OFF");
+}
+
+void speakFt8x7Setting(const Ft8x7SettingState& state) {
+  if (!g_speechEnabled) return;
+  if (state.setting == Ft8x7Setting::RfPower) {
+    speakToken("power");
+    playSilenceMs(60);
+    speakDigitsAndPoint(String((int)state.watts));
+    playSilenceMs(60);
+    speakToken("watts");
+    return;
+  }
+  // "AGC" -> "a g c"
+  String spelled;
+  for (const char* c = ft8x7SettingName(state.setting); *c; ++c) {
+    if (spelled.length()) spelled += ' ';
+    spelled += *c;
+  }
+  if (state.setting == Ft8x7Setting::Agc) {
+    speakToken(spelled);
+    playSilenceMs(60);
+    speakToken(ft8x7AgcText(state.agc));
+    return;
+  }
+  speakTokenState(spelled, state.on);
+}

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "protocol_ops_yaesu.h"
 #include "radio_types.h"
 
 // Radio features the keypad and the console share. Each operation checks the
@@ -51,3 +52,19 @@ FeatureStatus notchSet(bool on);
 FeatureStatus notchSetWidth(NotchWidth width);
 // On CI-V off -> NAR -> MID -> WIDE -> off; elsewhere on, off.
 FeatureStatus notchToggle(NotchState& out);
+
+// FT-857/897 settings read from the radio's EEPROM, since CAT has no command for them. They
+// cannot be set. IPO, ATT and NAR are those of the current band.
+enum class Ft8x7Setting : uint8_t { Agc, Ipo, Att, Nar, Dbf, BreakIn, Keyer, RfPower };
+
+struct Ft8x7SettingState {
+  Ft8x7Setting setting = Ft8x7Setting::Agc;
+  bool on = false;
+  YaesuAgc agc = YaesuAgc::Off;  // Agc
+  uint8_t watts = 0;             // RfPower, for the current band group
+};
+
+// The console command: "AGC?", "IPO?", ...
+const char* ft8x7SettingLabel(Ft8x7Setting setting);
+// Unsupported on other radios, and for IPO/ATT/NAR where the band has none (or is not known).
+FeatureStatus ft8x7SettingQuery(Ft8x7Setting setting, Ft8x7SettingState& out);
