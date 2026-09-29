@@ -71,9 +71,9 @@ bool isFtdx10KeypadProfile();
 bool isFt8x7Ft817Keypad();
 bool isFt8x7Ft857FamilyKeypad();
 
-// The FT-817 and FT-857/897 keypad workflows track VFO A/B locally. Until a
-// toggle or query tells otherwise they assume VFO A.
-void ensureFt8x7VfoTrackingInitialized();
+// The FT-817 and FT-857/897 keypad workflows track VFO A/B. The FT-857/897 reads the
+// active VFO from the radio; the FT-817 assumes VFO A until a toggle or sync says otherwise.
+void refreshFt8x7ActiveVfo();
 // Tracked VFO letter ('A' or 'B') on FT-817 and FT-857/897, '?' otherwise.
 char ft8x7CurrentVfoLabel();
 char ft8x7OtherVfoLabel();

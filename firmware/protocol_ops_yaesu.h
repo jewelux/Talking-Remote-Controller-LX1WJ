@@ -64,6 +64,8 @@ bool yaesuFt857QueryMenuAndRow(uint8_t& menuOut, uint8_t& rowOut, uint32_t timeo
 bool yaesuFt857QueryVox(bool& onOut, uint32_t timeoutMs);
 bool yaesuFt857QueryProc(bool& onOut, uint32_t timeoutMs);
 bool yaesuFt857QueryLock(bool& onOut, uint32_t timeoutMs);
+// True when VFO B is active.
+bool yaesuFt857QueryVfoB(bool& vfoBOut, uint32_t timeoutMs);
 bool yaesuFt857QueryFastTuning(bool& onOut, uint32_t timeoutMs);
 // True while the DSP soft key row is shown (the radio saves it at once, unlike the row number).
 bool yaesuFt857QueryDspRow(bool& onOut, uint32_t timeoutMs);

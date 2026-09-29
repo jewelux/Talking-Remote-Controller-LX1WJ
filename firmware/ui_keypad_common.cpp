@@ -88,19 +88,23 @@ static bool tracksFt8x7Vfo() {
   return isFt8x7Ft817Keypad() || isFt8x7Ft857FamilyKeypad();
 }
 
-void ensureFt8x7VfoTrackingInitialized() {
-  if (tracksFt8x7Vfo() && !live.activeVfoKnown) rememberActiveVfo(true);
+// Without a reply (or on the FT-817, which has no readback) the tracked VFO stays, starting at A.
+void refreshFt8x7ActiveVfo() {
+  if (!tracksFt8x7Vfo()) return;
+  bool vfoA = true;
+  if (queryActiveVfo(vfoA, 300)) return;
+  if (!live.activeVfoKnown) rememberActiveVfo(true);
 }
 
 char ft8x7CurrentVfoLabel() {
-  ensureFt8x7VfoTrackingInitialized();
   if (!tracksFt8x7Vfo()) return '?';
+  if (!live.activeVfoKnown) rememberActiveVfo(true);
   return live.activeVfoA ? 'A' : 'B';
 }
 
 char ft8x7OtherVfoLabel() {
-  ensureFt8x7VfoTrackingInitialized();
   if (!tracksFt8x7Vfo()) return '?';
+  if (!live.activeVfoKnown) rememberActiveVfo(true);
   return live.activeVfoA ? 'B' : 'A';
 }
 

@@ -168,7 +168,9 @@ KeyBinding bank3(const KeypadTraits& t, char key) {
       if (t.layout == L::Ft817) return bind(queryBank3VfoAMode, beginBank3VfoAModeSet);
       return {};
     case '4':
-      if (t.layout == L::Ft817 || t.layout == L::Ft857) return bind(syncBank3VfoA, syncBank3VfoB);
+      // The FT-857/897 reads its VFO from the radio, so only the FT-817 needs the sync keys.
+      if (t.layout == L::Ft817) return bind(syncBank3VfoA, syncBank3VfoB);
+      if (t.layout == L::Ft857) return {};
       if (t.layout == L::Ftdx10) return bind(SEND("VFOA MODE?"), beginBank3VfoAModeSet);
       return bind(queryBank3VfoAMode, beginBank3VfoAModeSet);
     case '5':

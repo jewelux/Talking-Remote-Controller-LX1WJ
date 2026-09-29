@@ -86,7 +86,6 @@ The goal of this document is to separate:
 | `TXFREQ?` fallback on keypad | implemented and practically usable |
 | Bank 3 current/other VFO read | implemented and practically usable |
 | Bank 3 current/other VFO frequency set | implemented and practically usable |
-| Bank 3 sync `VFOA/VFOB` | implemented and practically usable |
 | Bank 3 `A/B` toggle | implemented and practically usable |
 | Clarifier off | implemented and practically usable |
 
@@ -97,7 +96,7 @@ The goal of this document is to separate:
 | Split on/off | currently usable from keypad, but should still be cross-checked more broadly |
 | Split status query | verified on an FT-897: EEPROM `0x8D` bit 7 in receive, TX status bit 5 while transmitting (1 = on; the manual says 0 = on, which is wrong) |
 | Repeater and tone/DCS write paths outside normal FM repeater context | CAT bytes are implemented, but practical success can still depend on the radio already being in the appropriate VHF/UHF band and FM context |
-| FT-857/897 VFO tracking after manual front-panel A/B changes | keypad workflow is usable, but sync is recommended |
+| Active VFO read from the EEPROM (`0x68`) | verified on an FT-897: follows both the front panel A/B key and the CAT toggle; Bank 3 reads it before each VFO action (`get_vfo=1`) |
 | Settings read from the EEPROM (Bank 2, `MENU?`, `ROW?`, `AGC?`, `IPO?`, `ATT?`, `NAR?`, `DBF?`, `BK?`, `KYR?`, `NR?`, `NB?`, `NOTCH?`, `RFPOWER?`) | verified on an FT-897, read only; addresses in the [EEPROM map](#ft-857897-eeprom-map) |
 | Further settings read from the EEPROM (`YSETTINGS?`: VOX, PROC, lock, fast tuning, DSP row, filter, menu levels, clarifier offset) | protocol only, no keys yet; verified on an FT-897 against the values set on the radio |
 
@@ -109,7 +108,7 @@ Shared by all bands:
 
 | Address | Bits | Setting |
 |---|---|---|
-| `0x68` | 0 | VFO, 1 = B (does not follow CAT A/B toggles) |
+| `0x68` | 0 | VFO, 1 = B; follows the front panel A/B key and the CAT toggle (`81`) |
 | `0x6A` | 7 | fast tuning, **inverted** (1 = off) |
 | `0x6A` | 6 | lock, **inverted** (0 = locked); follows the front panel key and CAT lock |
 | `0x6A` | 5 | NB (yo3ggx) |
@@ -162,7 +161,6 @@ The radio saves a band block on events such as key presses, not while the dial t
 
 | Function | Status |
 |---|---|
-| Absolute VFO A/B without sync | not reliable after manual front-panel A/B changes |
 | Memory read/write raw path | experimental |
 | PO / ALC / SWR meters | verified on an FT-897 into a dummy load (PO 10, ALC 8, SWR 1.0): PO from TX status bits 3..0, ALC and SWR from the undocumented `BD`, sent only while transmitting since the radio does not answer it in receive. High-SWR flag (TX status bit 6) not yet seen set |
 | Volume / SQL extras | not cleanly validated |

@@ -258,6 +258,16 @@ bool setPbtOuter(uint16_t value) {
   return false;
 }
 
+bool queryActiveVfo(bool& vfoAOut, uint32_t timeoutMs) {
+  const StoredProfile& sp = currentStoredProfile();
+  if (currentProtocolType() != PROTO_YAESU_FT8X7 || !sp.caps.getVfo) return false;
+  bool vfoB = false;
+  if (!yaesuFt857QueryVfoB(vfoB, timeoutMs)) return false;
+  vfoAOut = !vfoB;
+  rememberActiveVfo(vfoAOut);
+  return true;
+}
+
 bool queryDialLock(bool& onOut, uint32_t timeoutMs) {
   ProtocolType pt = currentProtocolType();
   const StoredProfile& sp = currentStoredProfile();

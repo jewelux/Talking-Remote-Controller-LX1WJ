@@ -72,7 +72,7 @@ void queryBank3VfoA() {
 }
 
 void queryBank3Ft8x7CurrentVfo() {
-  ensureFt8x7VfoTrackingInitialized();
+  refreshFt8x7ActiveVfo();
   const char which = ft8x7CurrentVfoLabel();
   const String label = String("VFO") + which + "?";
   printKeypadAction(label);
@@ -97,7 +97,7 @@ void selectBank3VfoA() {
 void toggleBank3Ft8x7Vfo() {
   printKeypadAction("A/B");
   muteTuningSpeechAfterOwnChange();
-  ensureFt8x7VfoTrackingInitialized();
+  refreshFt8x7ActiveVfo();
   if (!guardFt8x7VfoToggleLock()) return;
   if (!yaesuCatToggleVfo()) { keypadReportIfTimedOut("VFO A"); return; }
   rememberActiveVfo(!live.activeVfoA);
@@ -113,7 +113,7 @@ void beginBank3VfoAFrequencySet() {
 }
 
 void beginBank3Ft8x7CurrentVfoFrequencySet() {
-  ensureFt8x7VfoTrackingInitialized();
+  refreshFt8x7ActiveVfo();
   const char which = ft8x7CurrentVfoLabel();
   printKeypadAction(String("VFO") + which + " FREQ");
   keypadBeginEntry(InputMode::FreqEntry, TargetVfo::Current);
@@ -131,7 +131,7 @@ void queryBank3VfoB() {
 
 // Switches to the other VFO, reads it and switches back.
 void queryBank3Ft857OtherVfo() {
-  ensureFt8x7VfoTrackingInitialized();
+  refreshFt8x7ActiveVfo();
   const char other = ft8x7OtherVfoLabel();
   const String label = String("VFO") + other + "?";
   printKeypadAction(label);
@@ -153,7 +153,7 @@ void queryBank3Ft857OtherVfo() {
 
 // Switches to the other VFO, reads it (one retry) and switches back.
 void queryBank3Ft817OtherVfo() {
-  ensureFt8x7VfoTrackingInitialized();
+  refreshFt8x7ActiveVfo();
   const char other = ft8x7OtherVfoLabel();
   const String label = String("VFO") + other + "?";
   printKeypadAction(label);
@@ -190,7 +190,7 @@ void selectBank3VfoB() {
 void copyBank3Ft817VfoToOther() {
   printKeypadAction("A=B");
   muteTuningSpeechAfterOwnChange();
-  ensureFt8x7VfoTrackingInitialized();
+  refreshFt8x7ActiveVfo();
   if (!guardFt8x7VfoToggleLock()) return;
   if (!ft8x7CopyActiveVfoToOther()) { keypadReportIfTimedOut("A=B"); return; }
   printKeypadStatus("A=B");
@@ -216,7 +216,7 @@ void beginBank3VfoBFrequencySet() {
 }
 
 void beginBank3Ft8x7OtherVfoFrequencySet() {
-  ensureFt8x7VfoTrackingInitialized();
+  refreshFt8x7ActiveVfo();
   const char which = ft8x7OtherVfoLabel();
   printKeypadAction(String("VFO") + which + " FREQ");
   keypadBeginEntry(InputMode::FreqEntry, TargetVfo::Other);
@@ -226,7 +226,7 @@ void beginBank3Ft8x7OtherVfoFrequencySet() {
 
 void selectBank3Ft817ActiveVfoA() {
   printKeypadAction("VFO A ACTIVE");
-  ensureFt8x7VfoTrackingInitialized();
+  refreshFt8x7ActiveVfo();
   if (!live.activeVfoA) {
     if (!guardFt8x7VfoToggleLock()) return;
     if (!yaesuCatToggleVfo()) { keypadReportIfTimedOut("VFO A ACTIVE"); return; }
@@ -239,7 +239,7 @@ void selectBank3Ft817ActiveVfoA() {
 
 void selectBank3Ft817ActiveVfoB() {
   printKeypadAction("VFO B ACTIVE");
-  ensureFt8x7VfoTrackingInitialized();
+  refreshFt8x7ActiveVfo();
   if (live.activeVfoA) {
     if (!guardFt8x7VfoToggleLock()) return;
     if (!yaesuCatToggleVfo()) { keypadReportIfTimedOut("VFO B ACTIVE"); return; }

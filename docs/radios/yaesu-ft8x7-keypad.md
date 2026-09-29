@@ -75,8 +75,8 @@ FT-817 note:
 | `2` double click | other `VFOA/VFOB <MHz>`, then digits, then `Enter` | other `VFOA/VFOB <MHz>`, then digits, then `Enter` |
 | `3` short | `VFOA MODE?` | — |
 | `3` long | `VFOA MODE <n>`, then digit, then `Enter` | — |
-| `4` short | `SYNC VFOA` | `SYNC VFOA` |
-| `4` long | `SYNC VFOB` | `SYNC VFOB` |
+| `4` short | `SYNC VFOA` | — |
+| `4` long | `SYNC VFOB` | — |
 | `5` short | `VFOB MODE?` | `CLAR ON` |
 | `5` long | `VFOB MODE <n>`, then digit, then `Enter` | `CLAR OFF` |
 | `6` short | active `VFO A` | `PTT OFF` (RX) |
@@ -135,8 +135,8 @@ For Bank 6 tone handling, `2` is an explicit mode selector:
 | `SPLIT` | usable | usable; the state is read from the radio |
 | `Bank 6 repeater/tone writes` | expect best results only on `2 m` or `70 cm` and already in `FM`; other contexts can make valid CAT writes look unreliable | expect best results only on the intended `VHF/UHF` band and already in `FM`; other contexts can make valid CAT writes look unreliable |
 | `CLAR OFF` | usable | usable in current testing |
-| `VFO A/B tracking` | usable with sync support | usable with sync support |
-| `manual front-panel A/B changes` | resync recommended | resync recommended |
+| `VFO A/B tracking` | usable with sync support | read from the EEPROM |
+| `manual front-panel A/B changes` | resync recommended | followed; no sync needed |
 | `LOCK?` | tracked state only, no CAT readback | read from the EEPROM |
 | FT-817 hidden background conditions | documented CAT commands can work well, but some success still appears to depend on not-yet-characterized radio state; more testing is needed | not the main current concern |
 | `BANK 2 NR/NB/NOTCH/FILTER` | not available | not available |

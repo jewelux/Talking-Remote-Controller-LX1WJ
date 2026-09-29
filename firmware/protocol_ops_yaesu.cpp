@@ -290,34 +290,16 @@ static constexpr Ft857BandSlot kFt857BandSlots[] = {
   {430000, 450000, 0x0242, false},
 };
 
-static bool ft857BlockHoldsFrequency(uint16_t block, uint64_t hz, bool& holdsOut, uint32_t timeoutMs) {
-  uint8_t hi[2] = {0};
-  uint8_t lo[2] = {0};
-  if (!yaesuCatReadEepromWord(block + 12, hi, timeoutMs) || !yaesuCatReadEepromWord(block + 14, lo, timeoutMs)) {
-    return false;
-  }
-  const uint32_t stored = ((uint32_t)hi[0] << 24) | ((uint32_t)hi[1] << 16) | ((uint32_t)lo[0] << 8) | lo[1];
-  holdsOut = stored == (uint32_t)(hz / 10ULL);
-  return true;
+// 0x68 bit 0 is the active VFO (1 = B). It follows both the front panel A/B key and the CAT
+// toggle.
+bool yaesuFt857QueryVfoB(bool& vfoBOut, uint32_t timeoutMs) {
+  return ft857ReadBit(0x0068, 0x01, vfoBOut, timeoutMs);
 }
 
-// 0x68 bit 0 names the VFO (1 = B), but a CAT A/B toggle does not update it. The radio saves
-// the frequency into the active VFO's band block on events such as key presses (not while the
-// dial turns), so the block that holds the current frequency decides; when neither does, 0x68
-// does.
-static bool ft857ActiveBandBlock(const Ft857BandSlot& slot, uint64_t hz, uint16_t& blockOut, uint32_t timeoutMs) {
-  uint8_t vfo = 0;
-  if (!yaesuCatReadEepromByte(0x0068, vfo, timeoutMs)) return false;
-  const uint16_t vfoA = slot.block;
-  const uint16_t vfoB = slot.block + kFt857VfoBBlockOffset;
-  const uint16_t guess = (vfo & 0x01) ? vfoB : vfoA;
-  const uint16_t other = guess == vfoA ? vfoB : vfoA;
-  bool holds = false;
-  if (!ft857BlockHoldsFrequency(guess, hz, holds, timeoutMs)) return false;
-  blockOut = guess;
-  if (holds) return true;
-  if (!ft857BlockHoldsFrequency(other, hz, holds, timeoutMs)) return false;
-  if (holds) blockOut = other;
+static bool ft857ActiveBandBlock(const Ft857BandSlot& slot, uint16_t& blockOut, uint32_t timeoutMs) {
+  bool vfoB = false;
+  if (!yaesuFt857QueryVfoB(vfoB, timeoutMs)) return false;
+  blockOut = vfoB ? slot.block + kFt857VfoBBlockOffset : slot.block;
   return true;
 }
 
@@ -328,7 +310,7 @@ bool yaesuFt857QueryBandFlags(uint64_t hz, YaesuFt857BandFlags& out, uint32_t ti
   for (const Ft857BandSlot& slot : kFt857BandSlots) {
     if (khz < slot.lowKhz || khz > slot.highKhz) continue;
     uint16_t block = slot.block;
-    if (!ft857ActiveBandBlock(slot, hz, block, timeoutMs)) return false;
+    if (!ft857ActiveBandBlock(slot, block, timeoutMs)) return false;
     uint8_t nar = 0;
     uint8_t ipoAtt = 0;
     if (!yaesuCatReadEepromByte(block + 1, nar, timeoutMs)) return false;
@@ -444,7 +426,7 @@ bool yaesuFt857QueryClarifierOffsetHz(uint64_t hz, int32_t& offsetOut, uint32_t 
   for (const Ft857BandSlot& slot : kFt857BandSlots) {
     if (khz < slot.lowKhz || khz > slot.highKhz) continue;
     uint16_t block = slot.block;
-    if (!ft857ActiveBandBlock(slot, hz, block, timeoutMs)) return false;
+    if (!ft857ActiveBandBlock(slot, block, timeoutMs)) return false;
     uint8_t word[2] = {0};
     if (!yaesuCatReadEepromWord(block + 10, word, timeoutMs)) return false;
     offsetOut = (int32_t)(int16_t)(((uint16_t)word[0] << 8) | word[1]) * 10;

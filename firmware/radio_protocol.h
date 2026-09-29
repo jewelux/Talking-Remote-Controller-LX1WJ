@@ -40,6 +40,8 @@ bool queryPbtInner(uint16_t& valueOut, uint32_t timeoutMs = 800);
 bool setPbtInner(uint16_t value);
 bool queryPbtOuter(uint16_t& valueOut, uint32_t timeoutMs = 800);
 bool setPbtOuter(uint16_t value);
+// Reads the active VFO from the radio; FT-857/897 only (get_vfo).
+bool queryActiveVfo(bool& vfoAOut, uint32_t timeoutMs = 800);
 bool queryDialLock(bool& onOut, uint32_t timeoutMs = 800);
 bool setDialLock(bool on);
 bool queryFilterShape(bool& softOut, uint32_t timeoutMs = 800);

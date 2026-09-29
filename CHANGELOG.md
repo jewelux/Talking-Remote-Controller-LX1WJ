@@ -109,6 +109,10 @@
   watts"). The same as console commands `NR?`, `NB?`, `NOTCH?`, `AGC?`, `IPO?`, `ATT?`, `DBF?`,
   `BK?`, `KYR?`, `NAR?`, `MENU?`, `ROW?` and `RFPOWER?`. They only read these settings; HamTRC
   cannot change them
+- FT-857/897: the Bank 3 VFO keys read which VFO is active from the radio, also after A/B was
+  pressed on its front panel, so "vfo a" and "vfo b" are always right. Before, HamTRC assumed VFO
+  A at start and needed Bank 3 `4` (sync) after a front panel change; that key is now unassigned.
+  IPO, ATT, FM narrow and the clarifier offset are read for the active VFO the same way
 - FT-857/897: the console command `YSETTINGS?` lists more settings read from the radio: VOX,
   PROC, lock, fast tuning, the chosen filter, CW speed, the mic and data gains, VOX gain and
   delay, NR, NB and PROC levels, the DSP filter widths and the clarifier offset. No keys speak
