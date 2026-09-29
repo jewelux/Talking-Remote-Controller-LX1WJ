@@ -884,6 +884,7 @@ void printHelp() {
     Serial.println("    YCAT? <10 hex digits>");
     Serial.println("    YCAT1? <hex byte>");
     Serial.println("    YEEPROM? <start hex> [count 1..32]  (read only; not while operating the radio)");
+    Serial.println("    YEEPROM! <addr hex> <byte hex> <byte hex>  (CAUTION: writes the EEPROM at addr and addr+1)");
     Serial.println("    YSETTINGS?  (FT-857/897 settings read from the EEPROM)");
     Serial.println("    YSCAN1 <start hex> <end hex>");
     Serial.println("    YSNIFF <ms>");
@@ -1996,6 +1997,37 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
       Serial.print(byteToUpperHex(word[addr & 1]));
     }
     Serial.println();
+    return true;
+  }
+  // CAUTION: writes two EEPROM bytes, at addr and addr + 1. A bad write can wipe the radio's
+  // memories and calibration.
+  if (upper.startsWith("YEEPROM! ")) {
+    String args = line.substring(9);
+    args.trim();
+    const int space = args.indexOf(' ');
+    const String addrArg = space < 0 ? args : args.substring(0, space);
+    char* endPtr = nullptr;
+    const long addr = strtol(addrArg.c_str(), &endPtr, 16);
+    uint8_t data[2] = {0};
+    if (!addrArg.length() || *endPtr != ' ' || addr < 0 || addr > 0xFFFE || space < 0 ||
+        !parseTwoHexByteArgs(args.substring(space + 1), data[0], data[1])) {
+      Serial.println("YEEPROM! -> use <addr hex> <byte hex> <byte hex>, e.g. YEEPROM! 0068 1F 00");
+      return true;
+    }
+    uint8_t txStatus = 0;
+    if (!yaesuCatQueryTxStatusRaw(txStatus, 300)) {
+      reportCommandFailure("YEEPROM!", "no reply");
+      return true;
+    }
+    if (yaesuCatTxStatusTransmitting(txStatus)) {
+      Serial.println("YEEPROM! -> not while transmitting");
+      return true;
+    }
+    yaesuCatWriteEeprom2((uint16_t)addr, data);
+    char buf[32];
+    snprintf(buf, sizeof(buf), "YEEPROM! %04lX: %s %s", addr, byteToUpperHex(data[0]).c_str(),
+             byteToUpperHex(data[1]).c_str());
+    Serial.println(buf);
     return true;
   }
   if (upper.startsWith("YSCAN1 ")) {

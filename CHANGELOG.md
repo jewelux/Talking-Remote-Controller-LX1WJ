@@ -72,6 +72,9 @@
 - `EXPERIMENTAL ON | OFF` and `EXPERIMENTAL?`, for testing: every feature counts as supported by
   the radio profile, also those the profile turns off. It is not saved, so after a restart the
   profile applies again
+- FT-817/818/857/897: `YEEPROM! <addr> <byte> <byte>` writes two bytes of the radio's EEPROM, at
+  the address and the one after it, the counterpart of `YEEPROM?`. **Use with caution:** a wrong address or value
+  can wipe the radio's memories and calibration. It is refused while transmitting
 
 ### Radios
 

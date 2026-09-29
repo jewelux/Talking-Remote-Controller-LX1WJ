@@ -190,8 +190,7 @@ bool yaesuCatTxStatusTransmitting(uint8_t txStatus) {
 }
 
 // Undocumented 0xBB reads the EEPROM word at an even address; the byte at an odd address is
-// the second of the pair. Read-only: the write opcode (0xBC) is never sent, since a bad write
-// can wipe the radio's memories and calibration.
+// the second of the pair.
 bool yaesuCatReadEepromWord(uint16_t addr, uint8_t out[2], uint32_t timeoutMs) {
   const uint8_t cmd[5] = {(uint8_t)(addr >> 8), (uint8_t)(addr & 0xFE), 0x00, 0x00, 0xBB};
   yaesuCatFlushInput();
@@ -203,6 +202,17 @@ bool yaesuCatReadEepromByte(uint16_t addr, uint8_t& out, uint32_t timeoutMs) {
   uint8_t word[2] = {0};
   if (!yaesuCatReadEepromWord(addr, word, timeoutMs)) return false;
   out = word[addr & 0x01];
+  return true;
+}
+
+// Undocumented 0xBC writes two EEPROM bytes, at addr and addr + 1; odd addresses work too
+// (0xBB at 0069 returned the bytes at 0069 and 006A on an FT-897). It takes effect at once.
+// CAUTION: a bad write can wipe the radio's memories and calibration. Any reply byte is left
+// for the next flush to drain.
+bool yaesuCatWriteEeprom2(uint16_t addr, const uint8_t data[2]) {
+  const uint8_t cmd[5] = {(uint8_t)(addr >> 8), (uint8_t)(addr & 0xFF), data[0], data[1], 0xBC};
+  yaesuCatSendWriteOnly(cmd);
+  yaesuCatMarkLineDirty();
   return true;
 }
 

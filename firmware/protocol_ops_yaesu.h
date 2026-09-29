@@ -34,6 +34,9 @@ bool yaesuCatTxStatusTransmitting(uint8_t txStatus);
 // Reads the EEPROM word at addr & ~1 (0xBB): out[0] is the even byte, out[1] the odd one.
 bool yaesuCatReadEepromWord(uint16_t addr, uint8_t out[2], uint32_t timeoutMs);
 bool yaesuCatReadEepromByte(uint16_t addr, uint8_t& out, uint32_t timeoutMs);
+// CAUTION: writes data[0] to the EEPROM at addr and data[1] at addr + 1 (0xBC). A bad write can
+// wipe the radio's memories and calibration.
+bool yaesuCatWriteEeprom2(uint16_t addr, const uint8_t data[2]);
 bool yaesuCatQuerySplit(bool& onOut, uint32_t timeoutMs);
 // FT-857/897 settings read from the EEPROM (read-only). False on other models.
 bool yaesuFt857QueryNb(bool& onOut, uint32_t timeoutMs);
