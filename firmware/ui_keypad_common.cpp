@@ -3,6 +3,7 @@
 
 #include "radio_catalog.h"
 #include "radio_monitor.h"
+#include "radio_protocol.h"
 #include "radio_state.h"
 #include "radio_utils.h"
 #include "sd_slots.h"
@@ -203,7 +204,10 @@ void prepareKeypadRadioWrite() {
 
 bool guardFt8x7VfoToggleLock() {
   if (currentProtocolType() != PROTO_YAESU_FT8X7) return true;
-  if (!live.lockKnown || !live.lockOn) return true;
+  // Reads the FT-857/897 lock, so one set on the front panel counts too. No reply: let the
+  // toggle try.
+  bool on = false;
+  if (!queryDialLock(on, 300) || !on) return true;
   printKeypadStatus("LOCK ON");
   if (g_speechEnabled) speakTokenState("lock", true);
   return false;

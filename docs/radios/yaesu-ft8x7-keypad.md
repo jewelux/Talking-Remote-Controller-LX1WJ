@@ -24,7 +24,7 @@ Important practical note:
 | `0` double click | `ROUND 500` | `ROUND 500` |
 | `1` short | not available (`RXTX?` readback is unreliable) | `RXTX?` |
 | `2` short | `TXFREQ?`; falls back to `FREQ?` when the radio gives no TX frequency | `FREQ?` when split is known to be off, otherwise not available |
-| `3` short | `LOCK?` (tracked state) | `LOCK?` (tracked state) |
+| `3` short | `LOCK?` (tracked state) | `LOCK?` (read from the radio) |
 | `3` long | `LOCK ON/OFF` | `LOCK ON/OFF` |
 | `4` short | `PO?` | `PO?` |
 | `6` short | — | `RFPOWER?`: menu 75 power of the current band ("power 10 watts") |
@@ -33,7 +33,7 @@ Important practical note:
 | `9` short | `MODE?` | `MODE?` |
 | `9` long | `MODE <n>`, then digit, then `Enter` | `MODE <n>`, then digit, then `Enter` |
 
-`LOCK?` does not read the radio: FT8x7 CAT has no lock readback, so the firmware speaks the lock state it last set. `3` long flips that tracked state.
+On the FT-857/897 `LOCK?` reads the lock from the radio's EEPROM, so a lock set on the front panel is heard too, and `3` long flips the radio's real state. The FT-817 has no lock readback: the firmware speaks the lock state it last set and `3` long flips that.
 
 ## Bank 2 - Radio Settings (FT-857/897)
 
@@ -137,7 +137,7 @@ For Bank 6 tone handling, `2` is an explicit mode selector:
 | `CLAR OFF` | usable | usable in current testing |
 | `VFO A/B tracking` | usable with sync support | usable with sync support |
 | `manual front-panel A/B changes` | resync recommended | resync recommended |
-| `LOCK?` | tracked state only, no CAT readback | tracked state only, no CAT readback |
+| `LOCK?` | tracked state only, no CAT readback | read from the EEPROM |
 | FT-817 hidden background conditions | documented CAT commands can work well, but some success still appears to depend on not-yet-characterized radio state; more testing is needed | not the main current concern |
 | `BANK 2 NR/NB/NOTCH/FILTER` | not available | not available |
 | `BSTACK` | not available | not available |

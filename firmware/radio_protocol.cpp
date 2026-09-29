@@ -264,6 +264,13 @@ bool queryDialLock(bool& onOut, uint32_t timeoutMs) {
   if (pt == PROTO_CIV) return civQueryDialLock(sp, onOut, timeoutMs);
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiQueryLock(sp, onOut, timeoutMs);
   if (pt == PROTO_YAESU_FT8X7) {
+    // The FT-857/897 keeps the lock in its EEPROM; the FT-817 has no readback, so it gets the
+    // state HamTRC last set.
+    if (currentProfileVariantIs("ft857_897")) {
+      if (!yaesuFt857QueryLock(onOut, timeoutMs)) return false;
+      rememberDialLockState(onOut);
+      return true;
+    }
     if (!live.lockKnown) return false;
     onOut = live.lockOn;
     return true;

@@ -1841,17 +1841,6 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     Serial.println();
     return true;
   }
-  if (upper == "LOCK?" && currentProtocolType() == PROTO_YAESU_FT8X7) {
-    Serial.println("LOCK? -> no safe read command known here; documented write bytes collide with VFO A/B");
-    return true;
-  }
-  if ((upper == "LOCK ON" || upper == "LOCK OFF") && currentProtocolType() == PROTO_YAESU_FT8X7) {
-    const bool on = (upper == "LOCK ON");
-    yaesuCatSetLockDocumentedRaw(on);
-    rememberDialLockState(on);
-    Serial.println(on ? "LOCK ON -> sent documented FT8x7 raw bytes 00 00 00 00 00" : "LOCK OFF -> sent documented FT8x7 raw bytes 00 00 00 00 80");
-    return true;
-  }
   if (upper == "LOCKDOC ON") {
     yaesuCatSetLockDocumentedRaw(true);
     rememberDialLockState(true);

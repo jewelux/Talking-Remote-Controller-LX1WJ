@@ -79,6 +79,10 @@
   disconnected, polling slows down so the keypad stays responsive
 - FT-817/818/857/897: fixed the S-meter always reading S0
 - FT-857/897: fixed the dial lock turning on when HamTRC starts with the radio already on
+- FT-857/897: `LOCK?` (Bank 1 `3`) reads the lock from the radio, also a lock set on its front
+  panel, and `3` long toggles from that state. Before, HamTRC said the lock it last set itself, or
+  "error" if it had not set one yet. VFO A/B switching and reading the other VFO say "lock on"
+  when the radio is locked
 - FT-817/818/857/897: RTTY and RTTY-R beep in mode select and are not listed by `MODE LIST`, since
   these radios have no such mode. Before, RTTY-R switched the radio to FM and RTTY sent WFM
 - FT-817: Bank 3 `1` long toggles VFO A/B and `2` long copies the active VFO to the other (A=B)
