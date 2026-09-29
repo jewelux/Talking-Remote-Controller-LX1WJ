@@ -772,7 +772,6 @@ void printHelp() {
     Serial.println("  Yaesu FT8x7:");
     Serial.println("    RXTX?");
     Serial.println("    SPLIT OFF | ON | TOGGLE");
-    if (ft857Family) Serial.println("    SPLIT CAL  (set ON then OFF, cache OFF)");
     Serial.println("    SPLIT?");
     Serial.println("    PTT OFF | ON");
     Serial.println("    SM?");
@@ -1731,19 +1730,6 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     bool tx = false;
     if (!queryRxTxStatus(tx, 800)) { reportCommandFailure("RXTX?", "no reply"); return true; }
     Serial.println(tx ? "TX" : "RX");
-    return true;
-  }
-  if (upper == "SPLIT CAL" && currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft857_897")) {
-    yaesuCatSetSplit(true);
-    delay(120);
-    yaesuCatSetSplit(false);
-    rememberSplitState(false);
-    Serial.println("SPLIT CAL -> SPLIT OFF  (FT-857/897 cache initialized)");
-    speakTokenState("split", false);
-    if (g_speechEnabled) {
-      playSilenceMs(60);
-      speakToken("ok");
-    }
     return true;
   }
   if (upper == "VOL?") {

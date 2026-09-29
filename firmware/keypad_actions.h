@@ -70,8 +70,6 @@ void queryBank2Ft857Nar();
 void queryBank3Split();
 void toggleBank3Split();
 void queryBank3TxFrequency();
-void setBank3Ft857Split(bool on);
-void calibrateBank3Ft857Split();
 void queryBank3VfoA();
 void selectBank3VfoA();
 void beginBank3VfoAFrequencySet();

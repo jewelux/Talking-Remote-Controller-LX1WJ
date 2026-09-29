@@ -91,6 +91,9 @@
 - FT-817/818/857/897: split status is read from the radio, also after split was changed on the
   radio's front panel. Before, it was remembered from HamTRC's own split commands, or read with the
   on/off meaning reversed, and the FT-857/897 often said it could not tell
+- FT-857/897: Bank 3 `0` works like on the other radios: short says the split state, long toggles
+  it and a double press says the TX frequency. It used to set split off, on, or on and then off,
+  and the `SPLIT CAL` console command is gone
 - FT-857/897: Bank 2 reads the radio settings a HamPod reads: DSP noise reduction (`1`), noise
   blanker (`2`), auto notch (`3`), AGC (`4`, "a g c auto"), IPO and ATT of the current band (`5`,
   long for ATT), DSP bandpass filter (`6`), break-in and keyer (`7`, long for keyer) and FM narrow

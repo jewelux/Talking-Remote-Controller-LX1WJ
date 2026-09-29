@@ -128,8 +128,6 @@ void queryBank2Ft857Nar() { record("queryBank2Ft857Nar"); }
 void queryBank3Split() { record("queryBank3Split"); }
 void toggleBank3Split() { record("toggleBank3Split"); }
 void queryBank3TxFrequency() { record("queryBank3TxFrequency"); }
-void setBank3Ft857Split(bool on) { record("setBank3Ft857Split(%s)", on ? "true" : "false"); }
-void calibrateBank3Ft857Split() { record("calibrateBank3Ft857Split"); }
 void queryBank3VfoA() { record("queryBank3VfoA"); }
 void selectBank3VfoA() { record("selectBank3VfoA"); }
 void beginBank3VfoAFrequencySet() { record("beginBank3VfoAFrequencySet"); }

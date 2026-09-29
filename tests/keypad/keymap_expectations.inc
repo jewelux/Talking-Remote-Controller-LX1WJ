@@ -134,9 +134,8 @@ KEYMAP_ROW(NOT(CIV | FTDX10), 2, '9', "unassigned",          "none",            
 // ---- Bank 3 ----------------------------------------------------------------
 // FT-817 and FT-857/897 track the active VFO: '1' is the current VFO, '2' the
 // other one.
-KEYMAP_ROW(FT857,           3, '0', "setBank3Ft857Split(false)", "setBank3Ft857Split(true)", "calibrateBank3Ft857Split")
 KEYMAP_ROW(FTDX10,          3, '0', "send(SPLIT?)",          "send(SPLIT TOGGLE)",     "send(TXFREQ?)")
-KEYMAP_ROW(NOT(FT857 | FTDX10), 3, '0', "queryBank3Split",   "toggleBank3Split",       "queryBank3TxFrequency")
+KEYMAP_ROW(NOT(FTDX10),     3, '0', "queryBank3Split",       "toggleBank3Split",       "queryBank3TxFrequency")  // fixed: FT857 set split off / on / ON-then-OFF
 // FT-817 '1' and '2' long: fixed, were the frequency entry like the double press.
 KEYMAP_ROW(FT817 | FT857,   3, '1', "queryBank3Ft8x7CurrentVfo", "toggleBank3Ft8x7Vfo", "beginBank3Ft8x7CurrentVfoFrequencySet")
 KEYMAP_ROW(FTDX10,          3, '1', "send(VFOA?)",           "send(VFO A)",            "beginBank3VfoAFrequencySet")

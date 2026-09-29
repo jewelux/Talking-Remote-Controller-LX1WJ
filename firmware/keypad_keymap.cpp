@@ -139,10 +139,6 @@ KeyBinding bank3BandStack(const KeypadTraits& t) {
 KeyBinding bank3(const KeypadTraits& t, char key) {
   switch (key) {
     case '0':
-      if (t.layout == L::Ft857) {
-        return bind([] { setBank3Ft857Split(false); }, [] { setBank3Ft857Split(true); },
-                   calibrateBank3Ft857Split);
-      }
       if (t.layout == L::Ftdx10) {
         return bind(SEND("SPLIT?"), SEND("SPLIT TOGGLE"), SEND("TXFREQ?"));
       }

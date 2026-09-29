@@ -60,9 +60,9 @@ FT-817 note:
 
 | Key | FT-817 | FT-857/897 |
 |---|---|---|
-| `0` short | `SPLIT?` | `SPLIT OFF` |
-| `0` long | `SPLIT ON/OFF` | `SPLIT ON` |
-| `0` double click | `TXFREQ?` | split calibrate (`SPLIT ON`, then `SPLIT OFF`) |
+| `0` short | `SPLIT?` | `SPLIT?` |
+| `0` long | `SPLIT ON/OFF` | `SPLIT ON/OFF` |
+| `0` double click | `TXFREQ?` | `TXFREQ?`: `FREQ?` when split is off, otherwise not available |
 | `1` short | current `VFOA/VFOB?` | current `VFOA/VFOB?` |
 | `1` long | `A/B` | `A/B` |
 | `1` double click | current `VFOA/VFOB <MHz>`, then digits, then `Enter` | current `VFOA/VFOB <MHz>`, then digits, then `Enter` |
@@ -83,10 +83,6 @@ FT-817 Bank 3 note:
 - The FT-817 branch currently mixes a tracked `current/other VFO` workflow with explicit `SYNC VFOA/VFOB` and explicit active-`VFO A/B` selection.
 - `1`/`2` double click lead into staged frequency entry for the tracked current/other VFO, `1` long toggles `A/B` and `2` long copies the active VFO to the other (`A=B`, also the console command `VFO A=B`), while `3`/`5` handle `VFOA MODE` and `VFOB MODE`.
 - Because of that design, `4` sync is still important after any unknown front-panel A/B change.
-
-FT-857/897 Bank 3 note:
-
-- `0` short and long set split explicitly instead of toggling, because the split readback is not trusted. `0` double click forces the radio through `ON` and back to `OFF`, leaving split off at a known state.
 
 ## Bank 6 - Repeater / Tone
 
@@ -132,7 +128,7 @@ For Bank 6 tone handling, `2` is an explicit mode selector:
 
 | Function | FT-817 | FT-857/897 |
 |---|---|---|
-| `SPLIT` | usable | usable, but readback is still uncertain; use Bank 3 `0` short / long to set a defined state, or `0` double click to calibrate to `OFF` |
+| `SPLIT` | usable | usable; the state is read from the radio |
 | `Bank 6 repeater/tone writes` | expect best results only on `2 m` or `70 cm` and already in `FM`; other contexts can make valid CAT writes look unreliable | expect best results only on the intended `VHF/UHF` band and already in `FM`; other contexts can make valid CAT writes look unreliable |
 | `CLAR OFF` | usable | usable in current testing |
 | `VFO A/B tracking` | usable with sync support | usable with sync support |

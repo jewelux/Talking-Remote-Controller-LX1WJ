@@ -6,27 +6,6 @@
 #include "radio_state.h"
 #include "radio_utils.h"
 
-void setBank3Ft857Split(bool on) {
-  printKeypadAction(String("SPLIT ") + (on ? "ON" : "OFF"));
-  if (!setSplit(on)) { keypadReportIfTimedOut("SPLIT"); return; }
-  printKeypadStatus(on ? "SPLIT ON" : "SPLIT OFF");
-  speakTokenState("split", on);
-}
-
-void calibrateBank3Ft857Split() {
-  printKeypadAction("SPLIT CAL");
-  if (!yaesuCatSetSplit(true)) { keypadReportIfTimedOut("SPLIT CAL"); return; }
-  delay(120);
-  if (!yaesuCatSetSplit(false)) { keypadReportIfTimedOut("SPLIT CAL"); return; }
-  rememberSplitState(false);
-  printKeypadStatus("SPLIT OFF");
-  speakTokenState("split", false);
-  if (g_speechEnabled) {
-    playSilenceMs(60);
-    speakToken("ok");
-  }
-}
-
 void setBank3Ft857Clar(bool on) {
   printKeypadAction(String("CLAR ") + (on ? "ON" : "OFF"));
   if (!yaesuCatSetClarifier(on)) { keypadReportIfTimedOut("CLAR"); return; }
