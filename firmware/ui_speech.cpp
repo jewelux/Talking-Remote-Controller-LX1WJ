@@ -25,6 +25,12 @@ static byte kpRowPins[KP_ROWS] = {KP_ROW_PINS[0], KP_ROW_PINS[1], KP_ROW_PINS[2]
 static byte kpColPins[KP_COLS] = {KP_COL_PINS[0], KP_COL_PINS[1], KP_COL_PINS[2], KP_COL_PINS[3]};
 Keypad keypad = Keypad(makeKeymap(kpKeys), kpRowPins, kpColPins, KP_ROWS, KP_COLS);
 
+// The DMA ring holds I2S_DMA_BUF_COUNT * I2S_DMA_BUF_LEN samples (96 ms at 8 kHz).
+// A key press zeroes it but cannot drop it, so its length is the delay before
+// the answer to the key starts.
+static constexpr int I2S_DMA_BUF_COUNT = 6;
+static constexpr int I2S_DMA_BUF_LEN = 128;
+
 enum AudioItemType : uint8_t { AUDIO_CLIP = 0, AUDIO_SILENCE = 1 };
 
 struct AudioItem {
@@ -399,10 +405,9 @@ static constexpr int BEEP_FADE_MS = 5;
 static constexpr float BEEP_AMPLITUDE = 0.2f;
 // The I2S driver resumes writing into the DMA buffer the previous playback left
 // half full, and that buffer plays whenever the DMA ring reaches it, out of order
-// with the rest. At least one DMA buffer (256 samples = 32 ms) of leading silence
-// guarantees only silence lands there and the tone starts in fresh buffers.
-static constexpr int BEEP_LEAD_MS = 32;
-static constexpr int BEEP_LEAD_SAMPLES = I2S_SAMPLE_RATE * BEEP_LEAD_MS / 1000;
+// with the rest. One DMA buffer of leading silence guarantees only silence lands
+// there and the tone starts in fresh buffers.
+static constexpr int BEEP_LEAD_SAMPLES = I2S_DMA_BUF_LEN;
 static constexpr int BEEP_TONE_SAMPLES = I2S_SAMPLE_RATE * BEEP_MS / 1000;
 static int16_t s_beepPcm[BEEP_LEAD_SAMPLES + BEEP_TONE_SAMPLES];
 
@@ -505,8 +510,8 @@ void initSpeech() {
   cfg.bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT;
   cfg.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT;
   cfg.communication_format = I2S_COMM_FORMAT_STAND_MSB;
-  cfg.dma_buf_count = 8;
-  cfg.dma_buf_len = 256;
+  cfg.dma_buf_count = I2S_DMA_BUF_COUNT;
+  cfg.dma_buf_len = I2S_DMA_BUF_LEN;
   cfg.use_apll = false;
   cfg.tx_desc_auto_clear = true;
 

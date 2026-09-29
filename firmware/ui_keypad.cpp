@@ -52,6 +52,13 @@ void speakBankNumber() {
   if (bank >= 1 && bank <= 9) playDigit(bank);
 }
 
+// A radio poll blocks the loop, and keys are only scanned between polls. While
+// the user is pressing keys, no poll runs; an existing longer pause is kept.
+static void suspendPollingForKeypad() {
+  const uint32_t until = millis() + KEYPAD_PRESS_SPEECH_QUIET_MS;
+  if ((int32_t)(until - g_suspendPollingUntilMs) > 0) g_suspendPollingUntilMs = until;
+}
+
 // Any key press interrupts the device: the user wants the answer to this key,
 // not whatever was still being spoken or waiting to be spoken. This is the only
 // place keypad speech is interrupted; key actions compose their answer (label,
@@ -60,6 +67,7 @@ static void silenceSpeechForKeyPress() {
   audioAbortNow();
   cancelPendingFreqAnnouncement();
   g_suppressFreqSpeakUntilMs = millis() + KEYPAD_PRESS_SPEECH_QUIET_MS;
+  suspendPollingForKeypad();
 }
 
 static KeypadTraits currentKeypadTraits() {
@@ -191,6 +199,8 @@ void initKeypadUi() {
 void pollKeypadUi() {
   (void)keypad.getKey();
   s_input.poll(millis());
+  // An open entry or selection waits for more keys: keep the radio unpolled.
+  if (s_input.mode() != InputMode::Normal) suspendPollingForKeypad();
 }
 
 uint8_t uiGetBank() {
