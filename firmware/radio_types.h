@@ -84,6 +84,7 @@ struct ConnectionProfile {
   bool rxInvert;
 };
 
+// Only bool members: EXPERIMENTAL ON sets them all through a bool array (radio_catalog.cpp).
 struct RadioCapabilities {
   bool getFreq;
   bool setFreq;

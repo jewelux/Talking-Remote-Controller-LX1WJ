@@ -677,6 +677,8 @@ void printHelp() {
     Serial.println("    BSTACK <1..3>  (hamTRC internal)");
     Serial.println("    BSTACK? <1..3>  (hamTRC internal)");
   }
+  Serial.println("    EXPERIMENTAL ON | OFF  (all caps on for testing, not saved)");
+  Serial.println("    EXPERIMENTAL?");
   Serial.println("    FB? | FB <kHz> | FBMHZ <MHz>");
   Serial.println("    FREQ <kHz>");
   Serial.println("    FREQ?");
@@ -913,6 +915,11 @@ static bool handleConsoleInfoCommands(const String& upper) {
     printCivRawTransaction(cmd, payload, payloadLen, query);
     return true;
   }
+  if (upper == "EXPERIMENTAL?") {
+    Serial.print("EXPERIMENTAL ");
+    Serial.println(g_experimentalCaps ? "ON" : "OFF");
+    return true;
+  }
   if (upper == "QUIET?") {
     Serial.print("QUIET ");
     Serial.println(g_quiet ? "ON" : "OFF");
@@ -1108,6 +1115,12 @@ static bool handleConsoleConnectionCommands(const String& line, const String& up
 }
 
 static bool handleConsoleToggleCommands(const String& line, const String& upper) {
+  if (upper == "EXPERIMENTAL ON" || upper == "EXPERIMENTAL OFF") {
+    g_experimentalCaps = (upper == "EXPERIMENTAL ON");
+    invalidateExperimentalProfile();
+    Serial.println(g_experimentalCaps ? "OK EXPERIMENTAL ON  (all caps on until OFF or restart)" : "OK EXPERIMENTAL OFF");
+    return true;
+  }
   if (upper == "QUIET ON") { g_quiet = true; Serial.println("OK QUIET ON"); return true; }
   if (upper == "QUIET OFF") { g_quiet = false; Serial.println("OK QUIET OFF"); return true; }
   if (upper == "SPEECH ON") { g_speechEnabled = true; Serial.println("OK SPEECH ON"); return true; }

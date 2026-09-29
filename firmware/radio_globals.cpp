@@ -18,4 +18,5 @@ LiveState live;
 bool g_ft8x7SplitKnown = false;
 bool g_ft8x7SplitOn = false;
 bool g_yaesuCatTrace = false;
+bool g_experimentalCaps = false;
 bool g_radioReplyTimedOut = false;

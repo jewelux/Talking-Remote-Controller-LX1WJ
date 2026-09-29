@@ -12,9 +12,27 @@ const StoredProfile* storedProfileForId(uint8_t id) {
   return sp.valid ? &sp : nullptr;
 }
 
+static StoredProfile s_experimentalProfile;
+static const StoredProfile* s_experimentalSource = nullptr;
+
+void invalidateExperimentalProfile() {
+  s_experimentalSource = nullptr;
+}
+
+static const StoredProfile& withAllCaps(const StoredProfile& base) {
+  if (s_experimentalSource != &base) {
+    s_experimentalProfile = base;
+    bool* flags = reinterpret_cast<bool*>(&s_experimentalProfile.caps);
+    for (size_t i = 0; i < sizeof(RadioCapabilities) / sizeof(bool); ++i) flags[i] = true;
+    s_experimentalSource = &base;
+  }
+  return s_experimentalProfile;
+}
+
 const StoredProfile& currentStoredProfile() {
   const StoredProfile* sp = storedProfileForId(g_profileId);
-  return sp ? *sp : g_slotProfiles[0];
+  const StoredProfile& base = sp ? *sp : g_slotProfiles[0];
+  return g_experimentalCaps ? withAllCaps(base) : base;
 }
 
 const ConnectionProfile& currentConnectionProfile() {

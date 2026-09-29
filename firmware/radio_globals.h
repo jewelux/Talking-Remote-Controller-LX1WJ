@@ -19,6 +19,8 @@ extern LiveState live;
 extern bool g_ft8x7SplitKnown;
 extern bool g_ft8x7SplitOn;
 extern bool g_yaesuCatTrace;
+// EXPERIMENTAL ON: every capability of the active profile counts as on. Not saved.
+extern bool g_experimentalCaps;
 // True when the most recent wait for a radio reply gave up without an answer.
 extern bool g_radioReplyTimedOut;
 extern volatile bool g_audioPlaying;

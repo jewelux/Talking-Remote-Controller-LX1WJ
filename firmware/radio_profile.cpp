@@ -128,6 +128,7 @@ void printActiveProfileDetails() {
     Serial.print(sp->caps.getBandStack ? "1" : "0");
     Serial.println();
   }
+  if (g_experimentalCaps) Serial.println("  EXPERIMENTAL: all caps on");
 }
 
 void applyProfile(uint8_t profileId) {
@@ -135,6 +136,7 @@ void applyProfile(uint8_t profileId) {
     profileId = PROFILE_ID_7300;
   }
   g_profileId = profileId;
+  invalidateExperimentalProfile();
 
   const ConnectionProfile& p = currentConnectionProfile();
   g_civRadioAddr = p.civAddr;

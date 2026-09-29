@@ -69,6 +69,9 @@
 - `NR`, `NB` and `NOTCH` behave like the Bank 2 keys: `TOGGLE` starts from the radio's known state,
   on the TS-480 `NR TOGGLE` steps off → 1 → 2 → off, and on CI-V `NOTCH TOGGLE` steps off → NAR →
   MID → WIDE → off
+- `EXPERIMENTAL ON | OFF` and `EXPERIMENTAL?`, for testing: every feature counts as supported by
+  the radio profile, also those the profile turns off. It is not saved, so after a restart the
+  profile applies again
 
 ### Radios
 
