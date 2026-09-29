@@ -68,6 +68,8 @@ voice_equals.wav
 voice_step.wav
 voice_hertz.wav
 voice_percent.wav
+voice_profile.wav
+voice_volume.wav
 
 4. Radio operating words
 voice_vfo.wav

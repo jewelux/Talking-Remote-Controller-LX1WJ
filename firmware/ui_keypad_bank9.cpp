@@ -24,8 +24,8 @@ void setTuningSpeechEnabled(bool enabled) {
 void beginBank9ProfileSelect() {
   keypadBeginProfileSelect();
   printKeypadAction("PROFILE SELECT");
-  printKeypadStatus("CHOOSE PLEASE");
-  speakPrompt("choose");
+  printKeypadStatus("PROFILE PLEASE");
+  speakPrompt("profile");
 }
 
 void selectNextProfile() {
@@ -57,6 +57,13 @@ void toggleBank9TuningSpeech() {
   speakTuningSpeechState();
 }
 
+// "volume" and the level.
+static void speakVolumeWithLevel(uint8_t lvl) {
+  speakToken("volume");
+  playSilenceMs(60);
+  speakVolumeLevel(lvl);
+}
+
 void adjustBank9Volume(int delta) {
   printKeypadAction(String(delta < 0 ? "VOLUME DOWN" : "VOLUME UP") + (delta < -1 || delta > 1 ? " FAST" : ""));
   int next = (int)g_volumeLevel + delta;
@@ -66,7 +73,7 @@ void adjustBank9Volume(int delta) {
   saveVolumeToNvs((uint8_t)next);
   printKeypadStatus(String("VOLUME ") + String(next));
   if (g_speechEnabled) {
-    speakVolumeLevel((uint8_t)next);
+    speakVolumeWithLevel((uint8_t)next);
     playSilenceMs(60);
     speakToken("ok");
   }
@@ -75,13 +82,16 @@ void adjustBank9Volume(int delta) {
 void queryBank9Volume() {
   printKeypadAction("VOLUME?");
   printKeypadStatus(String("VOLUME ") + String((int)g_volumeLevel));
-  if (g_speechEnabled) speakVolumeLevel(g_volumeLevel);
+  if (g_speechEnabled) speakVolumeWithLevel(g_volumeLevel);
 }
 
 void queryBank9Profile() {
   printKeypadAction("PROFILE?");
   printKeypadStatus("PROFILE CURRENT");
-  speakCurrentProfile();
+  if (!g_speechEnabled) return;
+  speakToken("profile");
+  playSilenceMs(60);
+  speakProfileIdentityFromSlot(g_profileId, false);
 }
 
 void selectBank9DirectProfile(char key) {

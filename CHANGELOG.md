@@ -53,6 +53,9 @@
   nothing
 - the S-meter says dB over S9 as a word ("S meter nine plus twenty")
 - WFM is said as "wfm" instead of being spelled out
+- Bank 9 says what a value is: the volume keys say "volume five" (plus "ok" after a change), the
+  profile query says "profile" before the radio and no longer ends with "ok", and profile select asks "profile please" instead of
+  "choose please"
 
 ### Console commands
 

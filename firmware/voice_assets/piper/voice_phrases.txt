@@ -100,12 +100,14 @@ percent
 please
 plus
 power
+profile
 slow
 stack
 step
 thank you
 sync
 timeout
+volume
 watts
 
 # Radio operating words
