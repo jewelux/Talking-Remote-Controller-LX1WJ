@@ -124,6 +124,8 @@ void queryBank2Ft857Dbf() { record("queryBank2Ft857Dbf"); }
 void queryBank2Ft857BreakIn() { record("queryBank2Ft857BreakIn"); }
 void queryBank2Ft857Keyer() { record("queryBank2Ft857Keyer"); }
 void queryBank2Ft857Nar() { record("queryBank2Ft857Nar"); }
+void queryBank2Ft857Menu() { record("queryBank2Ft857Menu"); }
+void queryBank2Ft857Row() { record("queryBank2Ft857Row"); }
 
 void queryBank3Split() { record("queryBank3Split"); }
 void toggleBank3Split() { record("toggleBank3Split"); }

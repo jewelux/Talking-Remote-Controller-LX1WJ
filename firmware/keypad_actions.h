@@ -65,6 +65,8 @@ void queryBank2Ft857Dbf();
 void queryBank2Ft857BreakIn();
 void queryBank2Ft857Keyer();
 void queryBank2Ft857Nar();
+void queryBank2Ft857Menu();
+void queryBank2Ft857Row();
 
 // ---- Bank 3 ----
 void queryBank3Split();

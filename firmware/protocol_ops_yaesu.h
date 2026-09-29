@@ -55,6 +55,9 @@ struct YaesuFt857BandFlags {
 bool yaesuFt857QueryBandFlags(uint64_t hz, YaesuFt857BandFlags& out, uint32_t timeoutMs);
 // Menu 75 RF power for the band group of hz: HF, 6 m, VHF or UHF.
 bool yaesuFt857QueryRfPowerWatts(uint64_t hz, uint8_t& wattsOut, uint32_t timeoutMs);
+// The menu item and the soft key row as the radio saved them when its menu was last exited,
+// counted from 1 like on the display.
+bool yaesuFt857QueryMenuAndRow(uint8_t& menuOut, uint8_t& rowOut, uint32_t timeoutMs);
 bool yaesuCatToggleVfo();
 bool yaesuCatSelectVfoA();
 bool yaesuCatSelectVfoB();

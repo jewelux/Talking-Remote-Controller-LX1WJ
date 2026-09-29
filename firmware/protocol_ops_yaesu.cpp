@@ -346,6 +346,17 @@ bool yaesuFt857QueryRfPowerWatts(uint64_t hz, uint8_t& wattsOut, uint32_t timeou
   return true;
 }
 
+// 0x88 = menu item, 0x89 = soft key row, both from 0. Measured on an FT-897: the radio writes
+// them when its menu is exited, not while the rows are stepped.
+bool yaesuFt857QueryMenuAndRow(uint8_t& menuOut, uint8_t& rowOut, uint32_t timeoutMs) {
+  if (!currentProfileVariantIs("ft857_897")) return false;
+  uint8_t word[2] = {0};
+  if (!yaesuCatReadEepromWord(0x0088, word, timeoutMs)) return false;
+  menuOut = (uint8_t)(word[0] + 1);
+  rowOut = (uint8_t)(word[1] + 1);
+  return true;
+}
+
 bool yaesuCatToggleVfo() {
   const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, 0x81};
   return yaesuCatSendWriteOnly(cmd);

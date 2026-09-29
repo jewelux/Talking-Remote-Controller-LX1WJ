@@ -77,6 +77,7 @@ KeyBinding bank2(const KeypadTraits& t, char key) {
       case '6': return bind(queryBank2Ft857Dbf);
       case '7': return bind(queryBank2Ft857BreakIn, queryBank2Ft857Keyer);
       case '8': return bind(queryBank2Ft857Nar);
+      case '9': return bind(queryBank2Ft857Menu, queryBank2Ft857Row);
       default: break;
     }
   }

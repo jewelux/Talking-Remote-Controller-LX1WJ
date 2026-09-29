@@ -182,6 +182,8 @@ const char* ft8x7SettingLabel(Ft8x7Setting setting) {
     case Ft8x7Setting::BreakIn: return "BK?";
     case Ft8x7Setting::Keyer: return "KYR?";
     case Ft8x7Setting::RfPower: return "RFPOWER?";
+    case Ft8x7Setting::Menu: return "MENU?";
+    case Ft8x7Setting::Row: return "ROW?";
   }
   return "?";
 }
@@ -218,6 +220,14 @@ FeatureStatus ft8x7SettingQuery(Ft8x7Setting setting, Ft8x7SettingState& out) {
     case Ft8x7Setting::Dbf: ok = yaesuFt857QueryDbf(out.on, 800); break;
     case Ft8x7Setting::BreakIn: ok = yaesuFt857QueryBreakIn(out.on, 800); break;
     case Ft8x7Setting::Keyer: ok = yaesuFt857QueryKeyer(out.on, 800); break;
+    case Ft8x7Setting::Menu:
+    case Ft8x7Setting::Row: {
+      uint8_t menu = 0;
+      uint8_t row = 0;
+      ok = yaesuFt857QueryMenuAndRow(menu, row, 800);
+      out.number = setting == Ft8x7Setting::Menu ? menu : row;
+      break;
+    }
     default: return ft8x7BandSettingQuery(setting, out);
   }
   return ok ? FeatureStatus::Ok : failure(FeatureStatus::NoReply);

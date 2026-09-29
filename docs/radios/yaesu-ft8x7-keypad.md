@@ -51,6 +51,10 @@ These keys read settings the FT-857/897 keeps in its EEPROM, like the HamPod doe
 | `7` short | `BK?` (break-in) | "b k on" |
 | `7` long | `KYR?` (keyer) | "k y r off" |
 | `8` short | `NAR?` (FM narrow) | "n a r off" |
+| `9` short | `MENU?`: the menu item the radio's menu was last left on | "menu 7 6" |
+| `9` long | `ROW?`: the soft key row, as saved when the menu was last exited | "row 1 1" |
+
+The radio saves the menu item and the row only when its menu is exited, so `9` long says the row you were on when you last left the menu.
 
 ## Bank 3 - VFO / Split
 

@@ -860,6 +860,7 @@ void printHelp() {
     if (!ft817) {
       Serial.println("    AGC? | IPO? | ATT? | NAR? | DBF? | BK? | KYR?  (radio settings, read only)");
       Serial.println("    RFPOWER?  (menu 75 power of the current band)");
+      Serial.println("    MENU? | ROW?  (menu item and soft key row, saved when the radio's menu is exited)");
     }
     Serial.println("    AGC <hex byte>");
     Serial.println("    CIVRAW? <cmd hex> [payload hex bytes]");
@@ -1269,6 +1270,7 @@ static bool handleConsoleFt8x7Settings(const String& upper) {
   static constexpr Ft8x7Setting kSettings[] = {
     Ft8x7Setting::Agc, Ft8x7Setting::Ipo, Ft8x7Setting::Att, Ft8x7Setting::Nar,
     Ft8x7Setting::Dbf, Ft8x7Setting::BreakIn, Ft8x7Setting::Keyer, Ft8x7Setting::RfPower,
+    Ft8x7Setting::Menu, Ft8x7Setting::Row,
   };
   for (Ft8x7Setting setting : kSettings) {
     const char* label = ft8x7SettingLabel(setting);

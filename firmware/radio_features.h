@@ -55,13 +55,15 @@ FeatureStatus notchToggle(NotchState& out);
 
 // FT-857/897 settings read from the radio's EEPROM, since CAT has no command for them. They
 // cannot be set. IPO, ATT and NAR are those of the current band.
-enum class Ft8x7Setting : uint8_t { Agc, Ipo, Att, Nar, Dbf, BreakIn, Keyer, RfPower };
+// Menu and Row are the menu item and soft key row saved when the radio's menu was last exited.
+enum class Ft8x7Setting : uint8_t { Agc, Ipo, Att, Nar, Dbf, BreakIn, Keyer, RfPower, Menu, Row };
 
 struct Ft8x7SettingState {
   Ft8x7Setting setting = Ft8x7Setting::Agc;
   bool on = false;
   YaesuAgc agc = YaesuAgc::Off;  // Agc
   uint8_t watts = 0;             // RfPower, for the current band group
+  uint8_t number = 0;            // Menu, Row: from 1
 };
 
 // The console command: "AGC?", "IPO?", ...

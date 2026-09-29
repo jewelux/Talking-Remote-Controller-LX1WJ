@@ -129,7 +129,8 @@ KEYMAP_ROW(FT857,           2, '8', "queryBank2Ft857Nar",    "none",            
 KEYMAP_ROW(NOT(CIV | FTDX10 | FT857), 2, '8', "unassigned", "none",                   "-")
 KEYMAP_ROW(CIV,             2, '9', "queryBank2FilterWidth", "cycleBank2FilterWidth(1)", "cycleBank2FilterWidth(-1)")
 KEYMAP_ROW(FTDX10,          2, '9', "reportFtdx10HiddenKey(BANK2 9 SHORT)", "none",          "-")  // fixed: was unassigned
-KEYMAP_ROW(NOT(CIV | FTDX10), 2, '9', "unassigned",          "none",                   "-")
+KEYMAP_ROW(FT857,           2, '9', "queryBank2Ft857Menu",   "queryBank2Ft857Row",     "-")
+KEYMAP_ROW(NOT(CIV | FTDX10 | FT857), 2, '9', "unassigned", "none",                   "-")
 
 // ---- Bank 3 ----------------------------------------------------------------
 // FT-817 and FT-857/897 track the active VFO: '1' is the current VFO, '2' the

@@ -85,6 +85,8 @@ static const char* ft8x7SettingName(Ft8x7Setting setting) {
     case Ft8x7Setting::BreakIn: return "BK";
     case Ft8x7Setting::Keyer: return "KYR";
     case Ft8x7Setting::RfPower: return "RFPOWER";
+    case Ft8x7Setting::Menu: return "MENU";
+    case Ft8x7Setting::Row: return "ROW";
   }
   return "";
 }
@@ -93,6 +95,7 @@ String ft8x7SettingText(const Ft8x7SettingState& state) {
   String text = String(ft8x7SettingName(state.setting)) + " ";
   if (state.setting == Ft8x7Setting::RfPower) return text + String((int)state.watts) + " W";
   if (state.setting == Ft8x7Setting::Agc) return text + ft8x7AgcText(state.agc);
+  if (state.setting == Ft8x7Setting::Menu || state.setting == Ft8x7Setting::Row) return text + String((int)state.number);
   return text + (state.on ? "ON" : "OFF");
 }
 
@@ -104,6 +107,12 @@ void speakFt8x7Setting(const Ft8x7SettingState& state) {
     speakDigitsAndPoint(String((int)state.watts));
     playSilenceMs(60);
     speakToken("watts");
+    return;
+  }
+  if (state.setting == Ft8x7Setting::Menu || state.setting == Ft8x7Setting::Row) {
+    speakToken(state.setting == Ft8x7Setting::Menu ? "menu" : "row");
+    playSilenceMs(60);
+    speakDigitsAndPoint(String((int)state.number));
     return;
   }
   // "AGC" -> "a g c"

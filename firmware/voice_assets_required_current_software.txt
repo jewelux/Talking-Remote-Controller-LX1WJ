@@ -81,6 +81,8 @@ voice_s_meter.wav
 voice_swr.wav
 voice_high.wav
 voice_auto.wav
+voice_menu.wav
+voice_row.wav
 voice_rit.wav
 voice_clarifier.wav
 voice_repeater.wav

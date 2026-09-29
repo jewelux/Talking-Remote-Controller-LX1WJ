@@ -73,6 +73,8 @@ void queryBank2Ft857Dbf() { queryBank2Ft857Setting(Ft8x7Setting::Dbf); }
 void queryBank2Ft857BreakIn() { queryBank2Ft857Setting(Ft8x7Setting::BreakIn); }
 void queryBank2Ft857Keyer() { queryBank2Ft857Setting(Ft8x7Setting::Keyer); }
 void queryBank2Ft857Nar() { queryBank2Ft857Setting(Ft8x7Setting::Nar); }
+void queryBank2Ft857Menu() { queryBank2Ft857Setting(Ft8x7Setting::Menu); }
+void queryBank2Ft857Row() { queryBank2Ft857Setting(Ft8x7Setting::Row); }
 
 void toggleBank2Nr() {
   printKeypadAction("NR");
