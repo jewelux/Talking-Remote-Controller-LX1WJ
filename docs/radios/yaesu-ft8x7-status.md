@@ -55,7 +55,7 @@ The goal of this document is to separate:
 | Function | Status |
 |---|---|
 | Memory read/write raw path | experimental |
-| PO / ALC / SWR meters (undocumented `BD`, while transmitting) | implemented, not yet verified on the radio |
+| PO / ALC / SWR meters | PO from TX status bits 3..0, ALC and SWR from the undocumented `BD`; implemented, not yet verified on the radio, off in the profile |
 | Volume / SQL extras | not cleanly validated |
 
 ## FT-857
@@ -106,7 +106,7 @@ The goal of this document is to separate:
 | Absolute VFO A/B without sync | not reliable after manual front-panel A/B changes |
 | Bank 2 `NR/NB/Notch/filter` functions | not currently available through documented FT8x7 CAT |
 | Memory read/write raw path | experimental |
-| PO / ALC / SWR meters (undocumented `BD`, only sent while transmitting) | verified on an FT-897: PWR matches the TX status PO bits; in receive the radio does not answer `BD` |
+| PO / ALC / SWR meters | verified on an FT-897 into a dummy load (PO 10, ALC 8, SWR 1.0): PO from TX status bits 3..0, ALC and SWR from the undocumented `BD`, sent only while transmitting since the radio does not answer it in receive. High-SWR flag (TX status bit 6) not yet seen set |
 | Volume / SQL extras | not cleanly validated |
 
 ## FT-897

@@ -1185,8 +1185,84 @@ static bool handleConsoleToggleCommands(const String& line, const String& upper)
   return false;
 }
 
+// FT-8x7 meters exist only while transmitting: in receive, say "<meter> rx".
+static void reportFt8x7MeterInReceive(const char* label, const char* meterToken) {
+  Serial.print(label);
+  Serial.println(": RX (not transmitting)");
+  if (!g_speechEnabled) return;
+  speakToken(meterToken);
+  playSilenceMs(60);
+  speakToken("rx");
+}
+
+static void speakFt8x7HighSwr() {
+  speakToken("swr");
+  playSilenceMs(60);
+  speakToken("high");
+}
+
+static bool handleConsoleFt8x7Meters(const String& upper) {
+  if (upper == "PO?") {
+    if (!currentStoredProfile().caps.getPower) { reportNotAvailable("PO? -> not enabled in this profile"); return true; }
+    YaesuTxMeters meters;
+    if (!yaesuCatQueryTxMeters(meters, false, 800)) { reportCommandFailure("PO?", "no reply"); return true; }
+    if (!meters.transmitting) { reportFt8x7MeterInReceive("PO", "power"); return true; }
+    rememberLivePower(meters.po, millis());
+    Serial.print("PO: ");
+    Serial.print(meters.po);
+    Serial.println(meters.highSwr ? " of 15  HIGH SWR" : " of 15");
+    if (g_speechEnabled) {
+      speakToken("power");
+      playSilenceMs(60);
+      speakDigitsAndPoint(String(meters.po));
+      if (meters.highSwr) {
+        playSilenceMs(120);
+        speakFt8x7HighSwr();
+      }
+    }
+    return true;
+  }
+  if (upper == "SWR?") {
+    if (!currentStoredProfile().caps.getSwr) { reportNotAvailable("SWR? -> not enabled in this profile"); return true; }
+    YaesuTxMeters meters;
+    if (!yaesuCatQueryTxMeters(meters, true, 800)) { reportCommandFailure("SWR?", "no reply"); return true; }
+    if (!meters.transmitting) { reportFt8x7MeterInReceive("SWR", "swr"); return true; }
+    rememberLiveSwr(meters.swr, millis());
+    const float swr = yaesuSwrFromMeter(meters.swr);
+    Serial.print("SWR: ");
+    Serial.print(swr, 1);
+    Serial.print("  (meter ");
+    Serial.print(meters.swr);
+    Serial.println(meters.highSwr ? " of 15, HIGH SWR)" : " of 15)");
+    if (g_speechEnabled) {
+      if (meters.highSwr) {
+        speakFt8x7HighSwr();
+      } else {
+        speakToken("swr");
+      }
+      playSilenceMs(60);
+      speakDigitsAndPoint(String(swr, 1));
+    }
+    return true;
+  }
+  if (upper == "ALC?") {
+    YaesuTxMeters meters;
+    if (!yaesuCatQueryTxMeters(meters, true, 800)) { reportCommandFailure("ALC?", "no reply"); return true; }
+    if (!meters.transmitting) {
+      Serial.println("ALC: RX (not transmitting)");
+      return true;
+    }
+    Serial.print("ALC: ");
+    Serial.print(meters.alc);
+    Serial.println(" of 15");
+    return true;
+  }
+  return false;
+}
+
 static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& upper) {
   if (!isCurrentYaesuFt8x7()) return false;
+  if (handleConsoleFt8x7Meters(upper)) return true;
 
   if (upper == "YALL?") {
     Serial.println("[YAESU FT8X7]");
@@ -1644,13 +1720,6 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
       playSilenceMs(60);
       speakToken("ok");
     }
-    return true;
-  }
-  if (upper == "ALC?") {
-    int32_t raw = 0;
-    if (!yaesuCatQueryAlcRaw(raw, 800)) { reportCommandFailure("ALC?", "no reply"); return true; }
-    Serial.print("ALC: ");
-    Serial.println(raw);
     return true;
   }
   if (upper == "VOL?") {

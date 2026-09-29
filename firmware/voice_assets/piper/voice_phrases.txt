@@ -86,6 +86,7 @@ error
 fast
 frequency
 hertz
+high
 kilohertz
 megahertz
 level

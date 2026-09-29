@@ -136,6 +136,7 @@ static const VoiceClip kVoiceClips[] = {
   VOICE_CLIP(g),
   VOICE_CLIP(h),
   VOICE_CLIP(hertz),
+  VOICE_CLIP(high),
   VOICE_CLIP(i),
   VOICE_CLIP(icom),
   VOICE_CLIP(j),

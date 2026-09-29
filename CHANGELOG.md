@@ -83,8 +83,11 @@
   these radios have no such mode. Before, RTTY-R switched the radio to FM and RTTY sent WFM
 - FT-817: Bank 3 `1` long toggles VFO A/B and `2` long copies the active VFO to the other (A=B)
 - FT-817/818/857/897: the SWR reading no longer sends the radio a command that writes to its
-  internal memory, and `ALC?` no longer answers with a fixed memory value. Power, ALC and SWR are
-  read from the radio's transmit meters (0–15 while transmitting, 0 in receive)
+  internal memory, and `ALC?` no longer answers with a fixed memory value
+- FT-857/897: `PO?` and `SWR?` (Bank 1 `4` and `8`) work while transmitting. Power is said in
+  meter bars from 0 to 15, SWR as a value from 1.0 to 10, with "high" when the radio flags a high
+  SWR ("swr high 3.7"). In receive they say "power rx" and "swr rx". `ALC?` prints 0–15. On the
+  FT-817/818 they stay off in the profile until tested on the radio
 - FT-817/818/857/897: split status is read from the radio, also after split was changed on the
   radio's front panel. Before, it was remembered from HamTRC's own split commands, or read with the
   on/off meaning reversed, and the FT-857/897 often said it could not tell

@@ -109,44 +109,57 @@ SMeterReading yaesuCatDecodeSMeter(uint8_t rxStatus) {
   return reading;
 }
 
-// Undocumented 0xBD, answered by the FT-817/818 and FT-857/897 while transmitting: two bytes of
-// 0..15 meters, byte 0 = PWR (high nibble) | ALC (low), byte 1 = SWR (high) | MOD (low), as
-// Hamlib's ft817.c reads them. In receive the FT-897 does not answer and misses the next polls,
-// so 0xBD is sent only after the TX status shows PTT on; in receive all meters are 0.
-static bool yaesuCatQueryTxMeters(uint8_t out[2], uint32_t timeoutMs) {
+// Power and the high-SWR flag come from the TX status. ALC and SWR need the undocumented 0xBD,
+// answered by the FT-817/818 and FT-857/897 while transmitting: two bytes of 0..15 meters,
+// byte 0 = PWR (high nibble) | ALC (low), byte 1 = SWR (high) | MOD (low), as Hamlib's ft817.c
+// reads them. In receive the FT-897 does not answer 0xBD and misses the next polls, so it is sent
+// only after the TX status shows PTT on.
+bool yaesuCatQueryTxMeters(YaesuTxMeters& out, bool withBdMeters, uint32_t timeoutMs) {
+  out = YaesuTxMeters();
   uint8_t txStatus = 0;
   if (!yaesuCatQueryTxStatusRaw(txStatus, timeoutMs)) return false;
-  if (!yaesuCatTxStatusTransmitting(txStatus)) {
-    out[0] = 0;
-    out[1] = 0;
-    return true;
-  }
+  if (!yaesuCatTxStatusTransmitting(txStatus)) return true;
+  out.transmitting = true;
+  out.highSwr = (txStatus & 0x40) != 0;
+  out.po = txStatus & 0x0F;
+  if (!withBdMeters) return true;
   const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, 0xBD};
+  uint8_t meters[2] = {0};
   yaesuCatFlushInput();
   yaesuCatSend5(cmd);
-  return yaesuCatRead1(out[0], timeoutMs) && yaesuCatRead1(out[1], timeoutMs);
+  if (!yaesuCatRead1(meters[0], timeoutMs) || !yaesuCatRead1(meters[1], timeoutMs)) return false;
+  out.alc = meters[0] & 0x0F;
+  out.swr = (meters[1] >> 4) & 0x0F;
+  return true;
+}
+
+// SWR per meter bar, measured on an FT-817 by WA4YA/DL4YA (Hamlib's FT817_SWR_CAL).
+float yaesuSwrFromMeter(uint8_t bars) {
+  static constexpr float kSwr[] = {1.0f, 1.4f, 1.8f, 2.13f, 2.25f, 3.7f, 6.0f, 7.0f, 8.0f, 9.0f};
+  static constexpr size_t kCount = sizeof(kSwr) / sizeof(kSwr[0]);
+  return bars < kCount ? kSwr[bars] : 10.0f;
 }
 
 bool yaesuCatQueryPoMeterRaw(const StoredProfile& sp, int32_t& rawOut, uint32_t timeoutMs) {
   if (!sp.caps.getPower) return false;
-  uint8_t meters[2] = {0};
-  if (!yaesuCatQueryTxMeters(meters, timeoutMs)) return false;
-  rawOut = (meters[0] >> 4) & 0x0F;
+  YaesuTxMeters meters;
+  if (!yaesuCatQueryTxMeters(meters, false, timeoutMs)) return false;
+  rawOut = meters.po;
   return true;
 }
 
 bool yaesuCatQuerySWRRaw(const StoredProfile& sp, int32_t& rawOut, uint32_t timeoutMs) {
   if (!sp.caps.getSwr) return false;
-  uint8_t meters[2] = {0};
-  if (!yaesuCatQueryTxMeters(meters, timeoutMs)) return false;
-  rawOut = (meters[1] >> 4) & 0x0F;
+  YaesuTxMeters meters;
+  if (!yaesuCatQueryTxMeters(meters, true, timeoutMs)) return false;
+  rawOut = meters.swr;
   return true;
 }
 
 bool yaesuCatQueryAlcRaw(int32_t& rawOut, uint32_t timeoutMs) {
-  uint8_t meters[2] = {0};
-  if (!yaesuCatQueryTxMeters(meters, timeoutMs)) return false;
-  rawOut = meters[0] & 0x0F;
+  YaesuTxMeters meters;
+  if (!yaesuCatQueryTxMeters(meters, true, timeoutMs)) return false;
+  rawOut = meters.alc;
   return true;
 }
 

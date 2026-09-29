@@ -10,6 +10,16 @@ bool yaesuCatSetMode(const StoredProfile& sp, uint8_t mode);
 bool yaesuCatSetModeRawByte(uint8_t modeByte);
 bool yaesuCatQuerySMeterRaw(const StoredProfile& sp, int32_t& rawOut, uint32_t timeoutMs);
 SMeterReading yaesuCatDecodeSMeter(uint8_t rxStatus);
+// Meters are 0..15 bars and stay 0 in receive.
+struct YaesuTxMeters {
+  bool transmitting = false;
+  bool highSwr = false;  // TX status bit 6
+  uint8_t po = 0;        // TX status bits 3..0
+  uint8_t alc = 0;       // 0xBD, only queried withBdMeters
+  uint8_t swr = 0;       // 0xBD, only queried withBdMeters
+};
+bool yaesuCatQueryTxMeters(YaesuTxMeters& out, bool withBdMeters, uint32_t timeoutMs);
+float yaesuSwrFromMeter(uint8_t bars);
 bool yaesuCatQueryPoMeterRaw(const StoredProfile& sp, int32_t& rawOut, uint32_t timeoutMs);
 bool yaesuCatQuerySWRRaw(const StoredProfile& sp, int32_t& rawOut, uint32_t timeoutMs);
 bool yaesuCatQueryAlcRaw(int32_t& rawOut, uint32_t timeoutMs);
