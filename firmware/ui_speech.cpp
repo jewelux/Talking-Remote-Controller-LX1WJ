@@ -98,218 +98,134 @@ static inline float volumeLevelToGain(uint8_t lvl) {
   }
 }
 
+#define VOICE_CLIP(n) {#n, voice_##n, voice_##n##_len}
+
+// Sorted by name; every clip here must exist in voice_data.h.
 static const VoiceClip kVoiceClips[] = {
-  {"voice_a", voice_a, voice_a_len},
-  {"voice_am", voice_am, voice_am_len},
-  {"voice_bank", voice_bank, voice_bank_len},
-  {"voice_b", voice_b, voice_b_len},
-#if defined(HAS_VOICE_voice_cancel)
-  {"voice_cancel", voice_cancel, voice_cancel_len},
-#endif
-  {"voice_c", voice_c, voice_c_len},
-  {"voice_choose", voice_choose, voice_choose_len},
-#if defined(HAS_VOICE_voice_clarifier)
-  {"voice_clarifier", voice_clarifier, voice_clarifier_len},
-#endif
-#if defined(HAS_VOICE_voice_ctcss)
-  {"voice_ctcss", voice_ctcss, voice_ctcss_len},
-#endif
-  {"voice_cw", voice_cw, voice_cw_len},
-  {"voice_cwr", voice_cwr, voice_cwr_len},
-  {"voice_d", voice_d, voice_d_len},
-#if defined(HAS_VOICE_voice_dcs)
-  {"voice_dcs", voice_dcs, voice_dcs_len},
-#endif
-  {"voice_db", voice_db, voice_db_len},
-  {"voice_digi", voice_digi, voice_digi_len},
-#if defined(HAS_VOICE_voice_e)
-  {"voice_e", voice_e, voice_e_len},
-#endif
-  {"voice_eight", voice_eight, voice_eight_len},
-  {"voice_elecraft", voice_elecraft, voice_elecraft_len},
-#if defined(HAS_VOICE_voice_equals)
-  {"voice_equals", voice_equals, voice_equals_len},
-#endif
-  {"voice_error", voice_error, voice_error_len},
-  {"voice_f", voice_f, voice_f_len},
-#if defined(HAS_VOICE_voice_fast)
-  {"voice_fast", voice_fast, voice_fast_len},
-#endif
-  {"voice_five", voice_five, voice_five_len},
-#if defined(HAS_VOICE_voice_fifty)
-  {"voice_fifty", voice_fifty, voice_fifty_len},
-#endif
-  {"voice_filter", voice_filter, voice_filter_len},
-  {"voice_filtershape", voice_filtershape, voice_filtershape_len},
-  {"voice_filterwidth", voice_filterwidth, voice_filterwidth_len},
-  {"voice_fm", voice_fm, voice_fm_len},
-  {"voice_four", voice_four, voice_four_len},
-#if defined(HAS_VOICE_voice_forty)
-  {"voice_forty", voice_forty, voice_forty_len},
-#endif
-  {"voice_frequency", voice_frequency, voice_frequency_len},
-#if defined(HAS_VOICE_voice_g)
-  {"voice_g", voice_g, voice_g_len},
-#endif
-#if defined(HAS_VOICE_voice_h)
-  {"voice_h", voice_h, voice_h_len},
-#endif
-  {"voice_hertz", voice_hertz, voice_hertz_len},
-#if defined(HAS_VOICE_voice_mode)
-  {"voice_mode", voice_mode, voice_mode_len},
-#endif
-  {"voice_i", voice_i, voice_i_len},
-  {"voice_icom", voice_icom, voice_icom_len},
-#if defined(HAS_VOICE_voice_j)
-  {"voice_j", voice_j, voice_j_len},
-#endif
-#if defined(HAS_VOICE_voice_k)
-  {"voice_k", voice_k, voice_k_len},
-#endif
-  {"voice_kenwood", voice_kenwood, voice_kenwood_len},
-  {"voice_kilohertz", voice_kilohertz, voice_kilohertz_len},
-  {"voice_l", voice_l, voice_l_len},
-  {"voice_level", voice_level, voice_level_len},
-  {"voice_lsb", voice_lsb, voice_lsb_len},
-  {"voice_lock", voice_lock, voice_lock_len},
-  {"voice_m", voice_m, voice_m_len},
-  {"voice_megahertz", voice_megahertz, voice_megahertz_len},
-  {"voice_minus", voice_minus, voice_minus_len},
-  {"voice_monitor", voice_monitor, voice_monitor_len},
-#if defined(HAS_VOICE_voice_n)
-  {"voice_n", voice_n, voice_n_len},
-#endif
-  {"voice_nine", voice_nine, voice_nine_len},
-#if defined(HAS_VOICE_voice_noiseblanker)
-  {"voice_noiseblanker", voice_noiseblanker, voice_noiseblanker_len},
-#endif
-#if defined(HAS_VOICE_voice_noisereduction)
-  {"voice_noisereduction", voice_noisereduction, voice_noisereduction_len},
-#endif
-#if defined(HAS_VOICE_voice_notavailable)
-  {"voice_notavailable", voice_notavailable, voice_notavailable_len},
-#endif
-  {"voice_notch", voice_notch, voice_notch_len},
-#if defined(HAS_VOICE_voice_notchfilter)
-  {"voice_notchfilter", voice_notchfilter, voice_notchfilter_len},
-#endif
-#if defined(HAS_VOICE_voice_o)
-  {"voice_o", voice_o, voice_o_len},
-#endif
-  {"voice_off", voice_off, voice_off_len},
-  {"voice_ok", voice_ok, voice_ok_len},
-  {"voice_on", voice_on, voice_on_len},
-  {"voice_one", voice_one, voice_one_len},
-#if defined(HAS_VOICE_voice_p)
-  {"voice_p", voice_p, voice_p_len},
-#endif
-  {"voice_pbt", voice_pbt, voice_pbt_len},
-  {"voice_percent", voice_percent, voice_percent_len},
-  {"voice_please", voice_please, voice_please_len},
-  {"voice_plus", voice_plus, voice_plus_len},
-  {"voice_point", voice_point, voice_point_len},
-  {"voice_power", voice_power, voice_power_len},
-#if defined(HAS_VOICE_voice_ptt)
-  {"voice_ptt", voice_ptt, voice_ptt_len},
-#endif
-#if defined(HAS_VOICE_voice_q)
-  {"voice_q", voice_q, voice_q_len},
-#endif
-#if defined(HAS_VOICE_voice_r)
-  {"voice_r", voice_r, voice_r_len},
-#endif
-#if defined(HAS_VOICE_voice_repeater)
-  {"voice_repeater", voice_repeater, voice_repeater_len},
-#endif
-#if defined(HAS_VOICE_voice_rit)
-  {"voice_rit", voice_rit, voice_rit_len},
-#endif
-  {"voice_rtty", voice_rtty, voice_rtty_len},
-  {"voice_rttyr", voice_rttyr, voice_rttyr_len},
-#if defined(HAS_VOICE_voice_rx)
-  {"voice_rx", voice_rx, voice_rx_len},
-#endif
-  {"voice_s", voice_s, voice_s_len},
-#if defined(HAS_VOICE_voice_s_meter)
-  {"voice_s_meter", voice_s_meter, voice_s_meter_len},
-#endif
-  {"voice_seven", voice_seven, voice_seven_len},
-  {"voice_sharp", voice_sharp, voice_sharp_len},
-  {"voice_six", voice_six, voice_six_len},
-#if defined(HAS_VOICE_voice_sixty)
-  {"voice_sixty", voice_sixty, voice_sixty_len},
-#endif
-#if defined(HAS_VOICE_voice_slow)
-  {"voice_slow", voice_slow, voice_slow_len},
-#endif
-  {"voice_soft", voice_soft, voice_soft_len},
-  {"voice_split", voice_split, voice_split_len},
-  {"voice_stack", voice_stack, voice_stack_len},
-  {"voice_step", voice_step, voice_step_len},
-  {"voice_swr", voice_swr, voice_swr_len},
-#if defined(HAS_VOICE_voice_sync)
-  {"voice_sync", voice_sync, voice_sync_len},
-#endif
-  {"voice_t", voice_t, voice_t_len},
-#if defined(HAS_VOICE_voice_ten)
-  {"voice_ten", voice_ten, voice_ten_len},
-#endif
-  {"voice_thankyou", voice_thankyou, voice_thankyou_len},
-#if defined(HAS_VOICE_voice_thirty)
-  {"voice_thirty", voice_thirty, voice_thirty_len},
-#endif
-  {"voice_three", voice_three, voice_three_len},
-#if defined(HAS_VOICE_voice_transceive)
-  {"voice_transceive", voice_transceive, voice_transceive_len},
-#endif
-  {"voice_transceiver", voice_transceiver, voice_transceiver_len},
-#if defined(HAS_VOICE_voice_timeout)
-  {"voice_timeout", voice_timeout, voice_timeout_len},
-#endif
-#if defined(HAS_VOICE_voice_tone)
-  {"voice_tone", voice_tone, voice_tone_len},
-#endif
-  {"voice_tune", voice_tune, voice_tune_len},
-  {"voice_tuner", voice_tuner, voice_tuner_len},
-#if defined(HAS_VOICE_voice_twenty)
-  {"voice_twenty", voice_twenty, voice_twenty_len},
-#endif
-  {"voice_two", voice_two, voice_two_len},
-#if defined(HAS_VOICE_voice_tx)
-  {"voice_tx", voice_tx, voice_tx_len},
-#endif
-  {"voice_u", voice_u, voice_u_len},
-  {"voice_usb", voice_usb, voice_usb_len},
-#if defined(HAS_VOICE_voice_v)
-  {"voice_v", voice_v, voice_v_len},
-#endif
-  {"voice_vfo", voice_vfo, voice_vfo_len},
-  {"voice_w", voice_w, voice_w_len},
-  {"voice_watts", voice_watts, voice_watts_len},
-#if defined(HAS_VOICE_voice_wfm)
-  {"voice_wfm", voice_wfm, voice_wfm_len},
-#endif
-#if defined(HAS_VOICE_voice_x)
-  {"voice_x", voice_x, voice_x_len},
-#endif
-  {"voice_y", voice_y, voice_y_len},
-  {"voice_yaesu", voice_yaesu, voice_yaesu_len},
-#if defined(HAS_VOICE_voice_xiegu)
-  {"voice_xiegu", voice_xiegu, voice_xiegu_len},
-#endif
-#if defined(HAS_VOICE_voice_z)
-  {"voice_z", voice_z, voice_z_len},
-#endif
-  {"voice_zero", voice_zero, voice_zero_len},
+  VOICE_CLIP(a),
+  VOICE_CLIP(am),
+  VOICE_CLIP(b),
+  VOICE_CLIP(bank),
+  VOICE_CLIP(c),
+  VOICE_CLIP(cancel),
+  VOICE_CLIP(choose),
+  VOICE_CLIP(clarifier),
+  VOICE_CLIP(ctcss),
+  VOICE_CLIP(cw),
+  VOICE_CLIP(cwr),
+  VOICE_CLIP(d),
+  VOICE_CLIP(db),
+  VOICE_CLIP(dcs),
+  VOICE_CLIP(digi),
+  VOICE_CLIP(e),
+  VOICE_CLIP(eight),
+  VOICE_CLIP(elecraft),
+  VOICE_CLIP(equals),
+  VOICE_CLIP(error),
+  VOICE_CLIP(f),
+  VOICE_CLIP(fast),
+  VOICE_CLIP(fifty),
+  VOICE_CLIP(filter),
+  VOICE_CLIP(filtershape),
+  VOICE_CLIP(filterwidth),
+  VOICE_CLIP(five),
+  VOICE_CLIP(fm),
+  VOICE_CLIP(forty),
+  VOICE_CLIP(four),
+  VOICE_CLIP(frequency),
+  VOICE_CLIP(g),
+  VOICE_CLIP(h),
+  VOICE_CLIP(hertz),
+  VOICE_CLIP(i),
+  VOICE_CLIP(icom),
+  VOICE_CLIP(j),
+  VOICE_CLIP(k),
+  VOICE_CLIP(kenwood),
+  VOICE_CLIP(kilohertz),
+  VOICE_CLIP(l),
+  VOICE_CLIP(level),
+  VOICE_CLIP(lock),
+  VOICE_CLIP(lsb),
+  VOICE_CLIP(m),
+  VOICE_CLIP(megahertz),
+  VOICE_CLIP(minus),
+  VOICE_CLIP(mode),
+  VOICE_CLIP(monitor),
+  VOICE_CLIP(n),
+  VOICE_CLIP(nine),
+  VOICE_CLIP(noiseblanker),
+  VOICE_CLIP(noisereduction),
+  VOICE_CLIP(notavailable),
+  VOICE_CLIP(notch),
+  VOICE_CLIP(o),
+  VOICE_CLIP(off),
+  VOICE_CLIP(ok),
+  VOICE_CLIP(on),
+  VOICE_CLIP(one),
+  VOICE_CLIP(p),
+  VOICE_CLIP(pbt),
+  VOICE_CLIP(percent),
+  VOICE_CLIP(please),
+  VOICE_CLIP(plus),
+  VOICE_CLIP(point),
+  VOICE_CLIP(power),
+  VOICE_CLIP(ptt),
+  VOICE_CLIP(q),
+  VOICE_CLIP(r),
+  VOICE_CLIP(repeater),
+  VOICE_CLIP(rit),
+  VOICE_CLIP(rtty),
+  VOICE_CLIP(rttyr),
+  VOICE_CLIP(rx),
+  VOICE_CLIP(s),
+  VOICE_CLIP(s_meter),
+  VOICE_CLIP(seven),
+  VOICE_CLIP(sharp),
+  VOICE_CLIP(six),
+  VOICE_CLIP(sixty),
+  VOICE_CLIP(slow),
+  VOICE_CLIP(soft),
+  VOICE_CLIP(split),
+  VOICE_CLIP(stack),
+  VOICE_CLIP(step),
+  VOICE_CLIP(swr),
+  VOICE_CLIP(sync),
+  VOICE_CLIP(t),
+  VOICE_CLIP(ten),
+  VOICE_CLIP(thankyou),
+  VOICE_CLIP(thirty),
+  VOICE_CLIP(three),
+  VOICE_CLIP(timeout),
+  VOICE_CLIP(tone),
+  VOICE_CLIP(transceive),
+  VOICE_CLIP(transceiver),
+  VOICE_CLIP(tune),
+  VOICE_CLIP(tuner),
+  VOICE_CLIP(twenty),
+  VOICE_CLIP(two),
+  VOICE_CLIP(tx),
+  VOICE_CLIP(u),
+  VOICE_CLIP(usb),
+  VOICE_CLIP(v),
+  VOICE_CLIP(vfo),
+  VOICE_CLIP(w),
+  VOICE_CLIP(watts),
+  VOICE_CLIP(wfm),
+  VOICE_CLIP(x),
+  VOICE_CLIP(xiegu),
+  VOICE_CLIP(y),
+  VOICE_CLIP(yaesu),
+  VOICE_CLIP(z),
+  VOICE_CLIP(zero),
 };
+
+#undef VOICE_CLIP
 static const size_t kVoiceClipsCount = sizeof(kVoiceClips) / sizeof(kVoiceClips[0]);
 
-static const VoiceClip* findVoiceClip(String token) {
-  token.trim();
-  if (!token.length()) return nullptr;
-  if (!token.startsWith("voice_")) token = String("voice_") + token;
+// token must already be normalized (trimmed, lowercase) by speakToken().
+static const VoiceClip* findVoiceClip(const String& token) {
   for (size_t i = 0; i < kVoiceClipsCount; ++i) {
-    if (token.equalsIgnoreCase(kVoiceClips[i].name)) return &kVoiceClips[i];
+    if (strcmp(token.c_str(), kVoiceClips[i].name) == 0) return &kVoiceClips[i];
   }
   return nullptr;
 }
@@ -320,34 +236,21 @@ struct VoiceAlias {
   uint8_t count;
 };
 
+// Only consulted when no clip matches, so a token here must not also be a clip.
 static const VoiceAlias kVoiceAliases[] = {
-  {"usb", {"u", "s", "b"}, 3},
-  {"lsb", {"l", "s", "b"}, 3},
-  {"cw", {"c", "w"}, 2},
-  {"cwr", {"c", "w", "r"}, 3},
-  {"fm", {"f", "m"}, 2},
-  {"wfm", {"w", "f", "m"}, 3},
-  {"db", {"d", "b"}, 2},
-  {"swr", {"s", "w", "r"}, 3},
-  {"rtty", {"r", "t", "t", "y"}, 4},
-  {"rttyr", {"r", "t", "t", "y", "r"}, 5},
-  {"rtty_r", {"r", "t", "t", "y", "r"}, 5},
+  {"rtty_r", {"rttyr"}, 1},
   {"gt", {"g", "t"}, 2},
   {"id", {"i", "d"}, 2},
   {"if", {"i", "f"}, 2},
   {"pa", {"p", "a"}, 2},
   {"ps", {"p", "s"}, 2},
-  {"rx", {"r", "x"}, 2},
-  {"tx", {"t", "x"}, 2},
   {"notchfilter", {"notch", "filter"}, 2},
-  {"notch filter", {"notch", "filter"}, 2},
   {"vfoa", {"vfo", "a"}, 2},
   {"vfob", {"vfo", "b"}, 2},
   {"pbt1", {"pbt", "one"}, 2},
   {"pbt2", {"pbt", "two"}, 2},
   {"filshape", {"filtershape"}, 1},
   {"filwidth", {"filterwidth"}, 1},
-  {"transceive", {"transceiver"}, 1},
 };
 
 static bool speakClipToken(const String& token) {
@@ -684,11 +587,7 @@ void speakProfileIdentityFromSlot(uint8_t id, bool withOk) {
   String vendor = sp->voiceVendor;
   vendor.toLowerCase();
   if (vendor == "xiegu") {
-#ifdef HAS_VOICE_voice_xiegu
     playClipProgmem(voice_xiegu, voice_xiegu_len);
-#else
-    playClipProgmem(voice_icom, voice_icom_len);
-#endif
   } else if (vendor == "icom") {
     playClipProgmem(voice_icom, voice_icom_len);
   } else if (vendor == "kenwood") {

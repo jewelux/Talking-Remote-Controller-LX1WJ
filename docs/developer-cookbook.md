@@ -687,20 +687,21 @@ Clips are looked up by **name** at run time. There is no enum.
    .\.venv\Scripts\python generate_voices.py --only preamp --header
    ```
 
-   This writes `voice_clips/voice_preamp.wav` and appends `voice_preamp[]` and
-   `HAS_VOICE_voice_preamp` to `firmware/voice_data.h`.
+   This writes `voice_clips/voice_preamp.wav` and appends `voice_preamp[]` to
+   `firmware/voice_data.h`. The `HAS_VOICE_voice_preamp` line that comes with
+   it only marks the block for the merge script; firmware doesn't check it.
 
 3. Register it in `kVoiceClips[]` in `ui_speech.cpp`, in alphabetical
    position:
 
    ```cpp
-   #if defined(HAS_VOICE_voice_preamp)
-     {"voice_preamp", voice_preamp, voice_preamp_len},
-   #endif
+     VOICE_CLIP(preamp),
    ```
 
-   Multi-clip words such as `"swr"` (s, w, r) go in `kVoiceAliases[]`
-   instead; they need no new clip.
+   Every clip in the table is required, so the build fails if the clip is
+   missing from `voice_data.h`. Words spoken as a sequence of existing clips,
+   such as `"pa"` (p, a), go in `kVoiceAliases[]` instead; they need no new
+   clip.
 
 4. Speak it: `speakToken("preamp")` or `speakTokenState("preamp", on)`.
    Check it by ear with `VOICE preamp`. An unknown token plays the error
