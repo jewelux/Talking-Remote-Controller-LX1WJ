@@ -69,8 +69,7 @@ void beginBank6RepeaterOffsetEntry() {
     speakToken("repeater");
     playSilenceMs(60);
     speakFrequencyWord();
-    playSilenceMs(80);
-    speakToken("please");
+    speakPlease();
   }
 }
 
@@ -78,22 +77,14 @@ void beginBank6CtcssEntry() {
   printKeypadAction("CTCSS ENTRY");
   keypadBeginEntry(InputMode::CtcssEntry);
   printKeypadStatus("CTCSS PLEASE");
-  if (g_speechEnabled) {
-    speakToken("ctcss");
-    playSilenceMs(80);
-    speakToken("please");
-  }
+  speakPrompt("ctcss");
 }
 
 void beginBank6DcsEntry() {
   printKeypadAction("DCS ENTRY");
   keypadBeginEntry(InputMode::DcsEntry);
   printKeypadStatus("DCS PLEASE");
-  if (g_speechEnabled) {
-    speakToken("dcs");
-    playSilenceMs(80);
-    speakToken("please");
-  }
+  speakPrompt("dcs");
 }
 
 void setBank6RepeaterOff() {

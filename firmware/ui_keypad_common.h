@@ -81,3 +81,13 @@ void speakCivAddressValue(uint8_t addr, bool ok);
 void formatCtcssTenthsLabel(uint16_t toneTenths, char* out, size_t outSize);
 
 void speakFrequencyWord();
+// A short gap, then "please". Ends a prompt such as "mode please".
+void speakPlease();
+// "<token> please".
+void speakPrompt(const char* token);
+// "vfo a" or "vfo b" (just "vfo" for any other letter).
+void speakVfoLabel(char which);
+// "vfo a frequency".
+void speakVfoFrequencyLabel(char which);
+// "vfo a frequency" and the frequency in MHz.
+void speakVfoFrequency(char which, uint64_t hz);

@@ -123,11 +123,7 @@ void queryBank1Lock() {
 void beginBank1FrequencySet() {
   printKeypadAction("FREQ");
   keypadBeginEntry(InputMode::FreqEntry, TargetVfo::Current);
-  if (g_speechEnabled) {
-    speakFrequencyWord();
-    playSilenceMs(80);
-    speakToken("please");
-  }
+  speakPrompt("frequency");
 }
 
 void roundActiveFrequency(uint32_t stepHz) {
@@ -174,11 +170,7 @@ void beginBank1RfPowerSet() {
   printKeypadAction("RFPOWER");
   keypadBeginEntry(InputMode::RfPowerEntry);
   printKeypadStatus("POWER PLEASE");
-  if (g_speechEnabled) {
-    speakToken("power");
-    playSilenceMs(80);
-    speakToken("please");
-  }
+  speakPrompt("power");
 }
 
 void toggleBank1Lock() {
@@ -226,9 +218,5 @@ void beginBank1ModeSelect() {
   keypadBeginModeSelect(TargetVfo::Current);
   printKeypadAction("MODE");
   printKeypadStatus("MODE PLEASE");
-  if (g_speechEnabled) {
-    speakToken("mode");
-    playSilenceMs(80);
-    speakToken("please");
-  }
+  speakPrompt("mode");
 }

@@ -40,9 +40,7 @@ void beginBank8CivAddressEntry() {
   if (g_speechEnabled) {
     speakToken("c");
     playSilenceMs(50);
-    speakToken("i");
-    playSilenceMs(80);
-    speakToken("please");
+    speakPrompt("i");
   }
 }
 

@@ -228,21 +228,6 @@ static bool usbConsoleReady() {
   return (bool)Serial;
 }
 
-static void speakVfoLabel(char which) {
-  if (!g_speechEnabled) return;
-  speakToken("vfo");
-  playSilenceMs(60);
-  if (which == 'A') speakToken("a");
-  else if (which == 'B') speakToken("b");
-}
-
-static void speakVfoFrequencyLabel(char which) {
-  if (!g_speechEnabled) return;
-  speakVfoLabel(which);
-  playSilenceMs(60);
-  speakToken("frequency");
-}
-
 // Report a failed radio command. If the radio never answered, say "timeout";
 // other failures (unsupported, bad argument) stay silent as before.
 static void reportCommandFailure(const char* label, const char* reason) {
@@ -2423,11 +2408,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     Serial.print("VFOA: ");
     Serial.print(hzToMHzString3(hz));
     Serial.println(" MHz");
-    if (g_speechEnabled) {
-      speakVfoFrequencyLabel('A');
-      playSilenceMs(60);
-      speakDigitsAndPoint(hzToMHzString3(hz));
-    }
+    speakVfoFrequency('A', hz);
     return true;
   }
   if (upper == "VFOB?") {
@@ -2436,11 +2417,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     Serial.print("VFOB: ");
     Serial.print(hzToMHzString3(hz));
     Serial.println(" MHz");
-    if (g_speechEnabled) {
-      speakVfoFrequencyLabel('B');
-      playSilenceMs(60);
-      speakDigitsAndPoint(hzToMHzString3(hz));
-    }
+    speakVfoFrequency('B', hz);
     return true;
   }
   if (upper.startsWith("VFOA MODE?")) {

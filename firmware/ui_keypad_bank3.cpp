@@ -6,16 +6,6 @@
 #include "radio_state.h"
 #include "radio_utils.h"
 
-static void speakVfoFrequencyLabel(char which) {
-  if (!g_speechEnabled) return;
-  speakToken("vfo");
-  playSilenceMs(60);
-  if (which == 'A') speakToken("a");
-  else if (which == 'B') speakToken("b");
-  playSilenceMs(60);
-  speakFrequencyWord();
-}
-
 void setBank3Ft857Split(bool on) {
   printKeypadAction(String("SPLIT ") + (on ? "ON" : "OFF"));
   if (!setSplit(on)) { keypadReportIfTimedOut("SPLIT"); return; }
@@ -99,11 +89,7 @@ void queryBank3VfoA() {
   uint64_t hz = 0;
   if (!queryVfoFrequency(true, hz, 800)) { keypadReportIfTimedOut("VFOA?"); return; }
   printKeypadStatus(String("VFOA: ") + hzToMHzString3(hz) + " MHz");
-  if (g_speechEnabled) {
-    speakVfoFrequencyLabel('A');
-    playSilenceMs(60);
-    speakDigitsAndPoint(hzToMHzString3(hz));
-  }
+  speakVfoFrequency('A', hz);
 }
 
 void queryBank3Ft8x7CurrentVfo() {
@@ -114,11 +100,7 @@ void queryBank3Ft8x7CurrentVfo() {
   uint64_t hz = 0;
   if (!queryFrequency(hz, 800)) { keypadReportIfTimedOut(label.c_str()); return; }
   printKeypadStatus(String("VFO") + which + ": " + hzToMHzString3(hz) + " MHz");
-  if (g_speechEnabled) {
-    speakVfoFrequencyLabel(which);
-    playSilenceMs(60);
-    speakDigitsAndPoint(hzToMHzString3(hz));
-  }
+  speakVfoFrequency(which, hz);
 }
 
 void selectBank3VfoA() {
@@ -127,11 +109,7 @@ void selectBank3VfoA() {
   if (!selectVfoA()) { keypadReportIfTimedOut("VFO A"); return; }
   if (currentProtocolType() == PROTO_YAESU_FT8X7) {
     printKeypadStatus("VFO A");
-    if (g_speechEnabled) {
-      speakToken("vfo");
-      playSilenceMs(60);
-      speakToken("a");
-    }
+    speakVfoLabel('A');
     return;
   }
   queryBank3VfoA();
@@ -146,21 +124,13 @@ void toggleBank3Ft8x7Vfo() {
   rememberActiveVfo(!live.activeVfoA);
   const char which = ft8x7CurrentVfoLabel();
   printKeypadStatus(String("VFO") + which);
-  if (g_speechEnabled) {
-    speakToken("vfo");
-    playSilenceMs(60);
-    speakToken(which == 'A' ? "a" : "b");
-  }
+  speakVfoLabel(which);
 }
 
 void beginBank3VfoAFrequencySet() {
   printKeypadAction("VFOA FREQ");
   keypadBeginEntry(InputMode::FreqEntry, TargetVfo::A);
-  if (g_speechEnabled) {
-    speakFrequencyWord();
-    playSilenceMs(80);
-    speakToken("please");
-  }
+  speakPrompt("frequency");
 }
 
 void beginBank3Ft8x7CurrentVfoFrequencySet() {
@@ -168,11 +138,8 @@ void beginBank3Ft8x7CurrentVfoFrequencySet() {
   const char which = ft8x7CurrentVfoLabel();
   printKeypadAction(String("VFO") + which + " FREQ");
   keypadBeginEntry(InputMode::FreqEntry, TargetVfo::Current);
-  if (g_speechEnabled) {
-    speakVfoFrequencyLabel(which);
-    playSilenceMs(80);
-    speakToken("please");
-  }
+  speakVfoFrequencyLabel(which);
+  speakPlease();
 }
 
 void queryBank3VfoB() {
@@ -180,11 +147,7 @@ void queryBank3VfoB() {
   uint64_t hz = 0;
   if (!queryVfoFrequency(false, hz, 800)) { keypadReportIfTimedOut("VFOB?"); return; }
   printKeypadStatus(String("VFOB: ") + hzToMHzString3(hz) + " MHz");
-  if (g_speechEnabled) {
-    speakVfoFrequencyLabel('B');
-    playSilenceMs(60);
-    speakDigitsAndPoint(hzToMHzString3(hz));
-  }
+  speakVfoFrequency('B', hz);
 }
 
 // Switches to the other VFO, reads it and switches back.
@@ -206,11 +169,7 @@ void queryBank3Ft857OtherVfo() {
   delay(180);
   if (!ok) { keypadReportIfTimedOut(label.c_str()); return; }
   printKeypadStatus(String("VFO") + other + ": " + hzToMHzString3(hz) + " MHz");
-  if (g_speechEnabled) {
-    speakVfoFrequencyLabel(other);
-    playSilenceMs(60);
-    speakDigitsAndPoint(hzToMHzString3(hz));
-  }
+  speakVfoFrequency(other, hz);
 }
 
 // Switches to the other VFO, reads it (one retry) and switches back.
@@ -234,11 +193,7 @@ void queryBank3Ft817OtherVfo() {
   delay(120);
   if (!ok) { keypadReportIfTimedOut(label.c_str()); return; }
   printKeypadStatus(String("VFO") + other + ": " + hzToMHzString3(hz) + " MHz");
-  if (g_speechEnabled) {
-    speakVfoFrequencyLabel(other);
-    playSilenceMs(60);
-    speakDigitsAndPoint(hzToMHzString3(hz));
-  }
+  speakVfoFrequency(other, hz);
 }
 
 void selectBank3VfoB() {
@@ -247,11 +202,7 @@ void selectBank3VfoB() {
   if (!selectVfoB()) { keypadReportIfTimedOut("VFO B"); return; }
   if (currentProtocolType() == PROTO_YAESU_FT8X7) {
     printKeypadStatus("VFO B");
-    if (g_speechEnabled) {
-      speakToken("vfo");
-      playSilenceMs(60);
-      speakToken("b");
-    }
+    speakVfoLabel('B');
     return;
   }
   queryBank3VfoB();
@@ -282,11 +233,7 @@ void reportBank3Ft857VfoBUnsupported() {
 void beginBank3VfoBFrequencySet() {
   printKeypadAction("VFOB FREQ");
   keypadBeginEntry(InputMode::FreqEntry, TargetVfo::B);
-  if (g_speechEnabled) {
-    speakFrequencyWord();
-    playSilenceMs(80);
-    speakToken("please");
-  }
+  speakPrompt("frequency");
 }
 
 void beginBank3Ft8x7OtherVfoFrequencySet() {
@@ -294,11 +241,8 @@ void beginBank3Ft8x7OtherVfoFrequencySet() {
   const char which = ft8x7OtherVfoLabel();
   printKeypadAction(String("VFO") + which + " FREQ");
   keypadBeginEntry(InputMode::FreqEntry, TargetVfo::Other);
-  if (g_speechEnabled) {
-    speakVfoFrequencyLabel(which);
-    playSilenceMs(80);
-    speakToken("please");
-  }
+  speakVfoFrequencyLabel(which);
+  speakPlease();
 }
 
 void selectBank3Ft817ActiveVfoA() {
@@ -311,11 +255,7 @@ void selectBank3Ft817ActiveVfoA() {
     delay(120);
   }
   printKeypadStatus("VFO A");
-  if (g_speechEnabled) {
-    speakToken("vfo");
-    playSilenceMs(60);
-    speakToken("a");
-  }
+  speakVfoLabel('A');
 }
 
 void selectBank3Ft817ActiveVfoB() {
@@ -328,11 +268,7 @@ void selectBank3Ft817ActiveVfoB() {
     delay(120);
   }
   printKeypadStatus("VFO B");
-  if (g_speechEnabled) {
-    speakToken("vfo");
-    playSilenceMs(60);
-    speakToken("b");
-  }
+  speakVfoLabel('B');
 }
 
 void syncBank3VfoA() {
@@ -342,9 +278,7 @@ void syncBank3VfoA() {
   if (g_speechEnabled) {
     speakToken("sync");
     playSilenceMs(60);
-    speakToken("vfo");
-    playSilenceMs(60);
-    speakToken("a");
+    speakVfoLabel('A');
   }
 }
 
@@ -355,9 +289,7 @@ void syncBank3VfoB() {
   if (g_speechEnabled) {
     speakToken("sync");
     playSilenceMs(60);
-    speakToken("vfo");
-    playSilenceMs(60);
-    speakToken("b");
+    speakVfoLabel('B');
   }
 }
 
@@ -374,11 +306,7 @@ void queryBank3VfoAMode() {
 void beginBank3VfoAModeSet() {
   printKeypadAction("VFOA MODE");
   keypadBeginModeSelect(TargetVfo::A);
-  if (g_speechEnabled) {
-    speakToken("mode");
-    playSilenceMs(80);
-    speakToken("please");
-  }
+  speakPrompt("mode");
 }
 
 void queryBank3VfoBMode() {
@@ -394,11 +322,7 @@ void queryBank3VfoBMode() {
 void beginBank3VfoBModeSet() {
   printKeypadAction("VFOB MODE");
   keypadBeginModeSelect(TargetVfo::B);
-  if (g_speechEnabled) {
-    speakToken("mode");
-    playSilenceMs(80);
-    speakToken("please");
-  }
+  speakPrompt("mode");
 }
 
 void queryBank3RxTx() {

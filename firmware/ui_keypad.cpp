@@ -21,13 +21,6 @@ bool g_suppressModePrefixOnce = false;
 // key's own response (deferred by double-click detection) is being prepared.
 static constexpr uint32_t KEYPAD_PRESS_SPEECH_QUIET_MS = 1000;
 
-static void speakBankPlease() {
-  if (!g_speechEnabled) return;
-  speakToken("bank");
-  playSilenceMs(60);
-  speakToken("please");
-}
-
 bool modeFromDigit(char digit, uint8_t& modeOut) {
   switch (digit) {
     case '1': modeOut = 0x00; break;
@@ -123,7 +116,7 @@ class KeypadUiListener : public KeypadInputListener {
   void onBankSelectStart() override {
     printKeypadCommand("* HOLD -> BANK SELECT");
     printKeypadStatus("BANK PLEASE");
-    speakBankPlease();
+    speakPrompt("bank");
   }
 
   void onDigitAccepted(const EntrySpec& entry, char key, const char* digits) override {

@@ -149,6 +149,40 @@ void speakFrequencyWord() {
   speakToken("frequency");
 }
 
+void speakPlease() {
+  if (!g_speechEnabled) return;
+  playSilenceMs(20);
+  speakToken("please");
+}
+
+void speakPrompt(const char* token) {
+  if (!g_speechEnabled) return;
+  speakToken(token);
+  speakPlease();
+}
+
+void speakVfoLabel(char which) {
+  if (!g_speechEnabled) return;
+  speakToken("vfo");
+  playSilenceMs(60);
+  if (which == 'A') speakToken("a");
+  else if (which == 'B') speakToken("b");
+}
+
+void speakVfoFrequencyLabel(char which) {
+  if (!g_speechEnabled) return;
+  speakVfoLabel(which);
+  playSilenceMs(60);
+  speakFrequencyWord();
+}
+
+void speakVfoFrequency(char which, uint64_t hz) {
+  if (!g_speechEnabled) return;
+  speakVfoFrequencyLabel(which);
+  playSilenceMs(60);
+  speakDigitsAndPoint(hzToMHzString3(hz));
+}
+
 void prepareKeypadSpeechResponse() {
   g_suspendPollingUntilMs = millis() + KEYPAD_POLL_SUSPEND_MS;
   g_suppressFreqSpeakUntilMs = millis() + 2000;

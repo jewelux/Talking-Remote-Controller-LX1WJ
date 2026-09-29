@@ -6,13 +6,6 @@
 #include "ui_console_support.h"
 #include "ui_keypad.h"
 
-static void speakChoosePlease() {
-  if (!g_speechEnabled) return;
-  speakToken("choose");
-  playSilenceMs(60);
-  speakToken("please");
-}
-
 void speakTuningSpeechState() {
   if (!g_speechEnabled) return;
   speakToken("tune");
@@ -32,7 +25,7 @@ void beginBank9ProfileSelect() {
   keypadBeginProfileSelect();
   printKeypadAction("PROFILE SELECT");
   printKeypadStatus("CHOOSE PLEASE");
-  speakChoosePlease();
+  speakPrompt("choose");
 }
 
 void selectNextProfile() {
