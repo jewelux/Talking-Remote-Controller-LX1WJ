@@ -37,6 +37,7 @@ bool protocolSupportsTuner() {
 bool protocolSupportsMonitor() { return currentProtocolType() == PROTO_CIV; }
 bool protocolSupportsTransceive() { return currentProtocolType() == PROTO_CIV; }
 bool protocolSupportsBandStack() { return currentProtocolType() == PROTO_CIV; }
+// The RIT offset keys too. The FT-857/897 has RIT on/off only (queryRitEnabled, setRitEnabled).
 bool protocolSupportsRit() { return currentProtocolType() == PROTO_CIV; }
 
 bool queryFrequency(uint64_t& hzOut, uint32_t timeoutMs) {
@@ -583,6 +584,7 @@ bool queryRitEnabled(bool& onOut, uint32_t timeoutMs) {
   ProtocolType pt = currentProtocolType();
   const StoredProfile& sp = currentStoredProfile();
   if (pt == PROTO_CIV) return civQueryRitEnabled(sp, onOut, timeoutMs);
+  if (pt == PROTO_YAESU_FT8X7) return yaesuFt857QueryRit(onOut, timeoutMs);
   return false;
 }
 
@@ -590,7 +592,16 @@ bool setRitEnabled(bool on) {
   ProtocolType pt = currentProtocolType();
   const StoredProfile& sp = currentStoredProfile();
   if (pt == PROTO_CIV) return civSetRitEnabled(sp, on);
+  if (pt == PROTO_YAESU_FT8X7) return yaesuFt857SetRit(on, 300);
   return false;
+}
+
+bool toggleRitEnabled(bool& onOut, uint32_t timeoutMs) {
+  if (currentProtocolType() == PROTO_YAESU_FT8X7) return yaesuFt857ToggleRit(onOut, timeoutMs);
+  bool on = false;
+  if (!queryRitEnabled(on, timeoutMs) || !setRitEnabled(!on)) return false;
+  onOut = !on;
+  return true;
 }
 
 bool queryRitOffsetHz(int32_t& hzOut, uint32_t timeoutMs) {

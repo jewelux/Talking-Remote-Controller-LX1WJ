@@ -73,5 +73,6 @@ bool querySplit(bool& onOut, uint32_t timeoutMs = 800);
 bool setSplit(bool on);
 bool queryRitEnabled(bool& onOut, uint32_t timeoutMs = 800);
 bool setRitEnabled(bool on);
+bool toggleRitEnabled(bool& onOut, uint32_t timeoutMs = 800);
 bool queryRitOffsetHz(int32_t& hzOut, uint32_t timeoutMs = 800);
 bool setRitOffsetHz(int32_t hz);

@@ -150,7 +150,8 @@ void queryBank3VfoBMode() { record("queryBank3VfoBMode"); }
 void beginBank3VfoBModeSet() { record("beginBank3VfoBModeSet"); }
 void syncBank3VfoA() { record("syncBank3VfoA"); }
 void syncBank3VfoB() { record("syncBank3VfoB"); }
-void setBank3Ft857Clar(bool on) { record("setBank3Ft857Clar(%s)", on ? "true" : "false"); }
+void queryBank3Ft857Rit() { record("queryBank3Ft857Rit"); }
+void toggleBank3Ft857Rit() { record("toggleBank3Ft857Rit"); }
 void selectBank3Ft817ActiveVfoA() { record("selectBank3Ft817ActiveVfoA"); }
 void selectBank3Ft817ActiveVfoB() { record("selectBank3Ft817ActiveVfoB"); }
 void queryBank3RxTx() { record("queryBank3RxTx"); }

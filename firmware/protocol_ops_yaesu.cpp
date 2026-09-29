@@ -435,6 +435,60 @@ bool yaesuFt857QueryClarifierOffsetHz(uint64_t hz, int32_t& offsetOut, uint32_t 
   return false;
 }
 
+bool yaesuFt857QueryClarifier(bool& onOut, uint32_t timeoutMs) { return ft857ReadBit(0x006A, 0x10, onOut, timeoutMs); }
+
+// The CAT clarifier commands (05 on, 85 off) switch RIT on the FT-857/897. The radio answers 00
+// when it switched and F0 when RIT was already in that state, also after a front panel change.
+static bool ft857SetRitReply(bool on, bool& changedOut, uint32_t timeoutMs) {
+  if (!currentProfileVariantIs("ft857_897")) return false;
+  const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, on ? 0x05 : 0x85};
+  uint8_t rsp = 0;
+  if (!yaesuCatTransact1(cmd, rsp, timeoutMs)) return false;
+  if (rsp != 0x00 && rsp != 0xF0) return false;
+  changedOut = rsp == 0x00;
+  return true;
+}
+
+// RIT on/off is not in the EEPROM (0x6A bit 3 is which of RIT and the clarifier the knob tunes),
+// so switching RIT off asks: refused means it is off, and if it was on it is switched back at
+// once. That hands the knob to RIT if the clarifier had it.
+bool yaesuFt857QueryRit(bool& onOut, uint32_t timeoutMs) {
+  bool changed = false;
+  if (!ft857SetRitReply(false, changed, timeoutMs)) return false;
+  if (changed && !ft857SetRitReply(true, changed, timeoutMs)) return false;
+  onOut = changed;
+  return true;
+}
+
+bool yaesuFt857SetRit(bool on, uint32_t timeoutMs) {
+  bool changed = false;
+  return ft857SetRitReply(on, changed, timeoutMs);
+}
+
+bool yaesuFt857ToggleRit(bool& onOut, uint32_t timeoutMs) {
+  bool changed = false;
+  if (!ft857SetRitReply(true, changed, timeoutMs)) return false;
+  if (changed) {
+    onOut = true;
+    return true;
+  }
+  if (!ft857SetRitReply(false, changed, timeoutMs) || !changed) return false;
+  onOut = false;
+  return true;
+}
+
+bool yaesuFt857QueryKnobIsSquelch(bool& squelchOut, uint32_t timeoutMs) {
+  return ft857ReadBit(0x0072, 0x80, squelchOut, timeoutMs);
+}
+
+bool yaesuFt857QueryMicEq(YaesuFt857MicEq& out, uint32_t timeoutMs) {
+  if (!currentProfileVariantIs("ft857_897")) return false;
+  uint8_t b = 0;
+  if (!yaesuCatReadEepromByte(0x0093, b, timeoutMs)) return false;
+  out = (YaesuFt857MicEq)(b & 0x03);
+  return true;
+}
+
 bool yaesuCatToggleVfo() {
   const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, 0x81};
   return yaesuCatSendWriteOnly(cmd);

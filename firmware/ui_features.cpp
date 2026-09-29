@@ -87,6 +87,7 @@ static const char* ft8x7SettingName(Ft8x7Setting setting) {
     case Ft8x7Setting::RfPower: return "RFPOWER";
     case Ft8x7Setting::Menu: return "MENU";
     case Ft8x7Setting::Row: return "ROW";
+    case Ft8x7Setting::Clarifier: return "CLAR";
   }
   return "";
 }
@@ -113,6 +114,10 @@ void speakFt8x7Setting(const Ft8x7SettingState& state) {
     speakToken(state.setting == Ft8x7Setting::Menu ? "menu" : "row");
     playSilenceMs(60);
     speakDigitsAndPoint(String((int)state.number));
+    return;
+  }
+  if (state.setting == Ft8x7Setting::Clarifier) {
+    speakTokenState("clarifier", state.on);
     return;
   }
   // "AGC" -> "a g c"

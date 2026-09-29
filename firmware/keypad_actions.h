@@ -94,7 +94,8 @@ void beginBank3VfoBModeSet();
 // FT-817, FT-857/897: tell the VFO tracking that VFO A/B is active.
 void syncBank3VfoA();
 void syncBank3VfoB();
-void setBank3Ft857Clar(bool on);
+void queryBank3Ft857Rit();
+void toggleBank3Ft857Rit();
 void selectBank3Ft817ActiveVfoA();
 void selectBank3Ft817ActiveVfoB();
 void queryBank3RxTx();

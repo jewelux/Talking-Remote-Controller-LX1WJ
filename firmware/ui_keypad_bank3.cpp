@@ -6,15 +6,20 @@
 #include "radio_state.h"
 #include "radio_utils.h"
 
-void setBank3Ft857Clar(bool on) {
-  printKeypadAction(String("CLAR ") + (on ? "ON" : "OFF"));
-  if (!yaesuCatSetClarifier(on)) { keypadReportIfTimedOut("CLAR"); return; }
-  printKeypadStatus(on ? "CLAR ON" : "CLAR OFF");
-  if (g_speechEnabled) {
-    speakToken("clarifier");
-    playSilenceMs(60);
-    speakSimpleBinaryState(on);
-  }
+void queryBank3Ft857Rit() {
+  printKeypadAction("RIT?");
+  bool on = false;
+  if (!queryRitEnabled(on, 800)) { keypadReportIfTimedOut("RIT?"); return; }
+  printKeypadStatus(on ? "RIT ON" : "RIT OFF");
+  speakTokenState("rit", on);
+}
+
+void toggleBank3Ft857Rit() {
+  printKeypadAction("RIT");
+  bool on = false;
+  if (!toggleRitEnabled(on, 800)) { keypadReportIfTimedOut("RIT"); return; }
+  printKeypadStatus(on ? "RIT ON" : "RIT OFF");
+  speakTokenState("rit", on);
 }
 
 void setBank3Ft857Ptt(bool on) {

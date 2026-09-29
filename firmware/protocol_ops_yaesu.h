@@ -95,8 +95,20 @@ enum class YaesuFt857Level : uint8_t {
 bool yaesuFt857QueryLevel(YaesuFt857Level level, uint16_t& valueOut, uint32_t timeoutMs);
 // The clarifier offset kept in the band block of hz, as of the radio's last save of that block
 // (it saves on events such as key presses, not while tuning). The offset stays when the
-// clarifier is switched off; the on/off state is not in the EEPROM areas measured.
+// clarifier is switched off.
 bool yaesuFt857QueryClarifierOffsetHz(uint64_t hz, int32_t& offsetOut, uint32_t timeoutMs);
+// The clarifier (a long press of the radio's CLAR key). CAT can read it but not switch it.
+bool yaesuFt857QueryClarifier(bool& onOut, uint32_t timeoutMs);
+// RIT (a short press of the CLAR key), which the CAT clarifier commands switch. Also right after
+// a front panel change.
+bool yaesuFt857QueryRit(bool& onOut, uint32_t timeoutMs);
+bool yaesuFt857SetRit(bool on, uint32_t timeoutMs);
+bool yaesuFt857ToggleRit(bool& onOut, uint32_t timeoutMs);
+// Menu 80: true when the RF/SQL knob is squelch, false when it is RF gain.
+bool yaesuFt857QueryKnobIsSquelch(bool& squelchOut, uint32_t timeoutMs);
+// Menu 48.
+enum class YaesuFt857MicEq : uint8_t { Off, Lpf, Hpf, Both };
+bool yaesuFt857QueryMicEq(YaesuFt857MicEq& out, uint32_t timeoutMs);
 bool yaesuCatToggleVfo();
 bool yaesuCatSelectVfoA();
 bool yaesuCatSelectVfoB();

@@ -175,7 +175,7 @@ KeyBinding bank3(const KeypadTraits& t, char key) {
       return bind(queryBank3VfoAMode, beginBank3VfoAModeSet);
     case '5':
       if (t.layout == L::Ft857) {
-        return bind([] { setBank3Ft857Clar(true); }, [] { setBank3Ft857Clar(false); });
+        return bind(queryBank3Ft857Rit, toggleBank3Ft857Rit);
       }
       if (t.layout == L::Ftdx10) return bind(SEND("VFOB MODE?"), beginBank3VfoBModeSet);
       return bind(queryBank3VfoBMode, beginBank3VfoBModeSet);

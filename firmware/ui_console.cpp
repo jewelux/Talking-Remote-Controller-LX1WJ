@@ -776,8 +776,12 @@ void printHelp() {
     Serial.println("    PTT OFF | ON");
     Serial.println("    SM?");
     Serial.println("    SWR?");
-    Serial.println("    CLAR OFF | ON");
+    Serial.println("    CLAR OFF | ON  (raw CAT; switches RIT on the FT-857/897)");
     Serial.println("    CLAR OFFSET <8 hex digits>");
+    if (ft857Family) {
+      Serial.println("    CLAR?  (the clarifier, which CAT cannot switch)");
+      Serial.println("    RIT? | RIT OFF | ON | TOGGLE");
+    }
     Serial.println("    CTCSS <Hz> | CTCSS?");
     Serial.println("    DCS <code> | DCS?");
     Serial.println("    GT? | GT FAST | SLOW | OFF");
@@ -1272,7 +1276,7 @@ static bool handleConsoleFt8x7Settings(const String& upper) {
   static constexpr Ft8x7Setting kSettings[] = {
     Ft8x7Setting::Agc, Ft8x7Setting::Ipo, Ft8x7Setting::Att, Ft8x7Setting::Nar,
     Ft8x7Setting::Dbf, Ft8x7Setting::BreakIn, Ft8x7Setting::Keyer, Ft8x7Setting::RfPower,
-    Ft8x7Setting::Menu, Ft8x7Setting::Row,
+    Ft8x7Setting::Menu, Ft8x7Setting::Row, Ft8x7Setting::Clarifier,
   };
   for (Ft8x7Setting setting : kSettings) {
     const char* label = ft8x7SettingLabel(setting);
@@ -1928,6 +1932,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     static const NamedBit bits[] = {
       {"VOX", yaesuFt857QueryVox}, {"PROC", yaesuFt857QueryProc}, {"LOCK", yaesuFt857QueryLock},
       {"FAST", yaesuFt857QueryFastTuning}, {"DSPROW", yaesuFt857QueryDspRow},
+      {"CLAR", yaesuFt857QueryClarifier},
     };
     for (const NamedBit& b : bits) {
       bool on = false;
@@ -1937,6 +1942,13 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     YaesuFt857Filter filter = YaesuFt857Filter::BuiltIn;
     Serial.print("FILTER ");
     Serial.println(yaesuFt857QueryFilter(filter, 300) ? (filter == YaesuFt857Filter::Filter2 ? "2" : "BUILTIN") : "--");
+    bool squelch = false;
+    Serial.print("KNOB ");
+    Serial.println(yaesuFt857QueryKnobIsSquelch(squelch, 300) ? (squelch ? "SQL" : "RFGAIN") : "--");
+    static const char* const kMicEqNames[] = {"OFF", "LPF", "HPF", "BOTH"};
+    YaesuFt857MicEq micEq = YaesuFt857MicEq::Off;
+    Serial.print("MICEQ ");
+    Serial.println(yaesuFt857QueryMicEq(micEq, 300) ? kMicEqNames[(uint8_t)micEq] : "--");
     struct NamedLevel { const char* name; YaesuFt857Level level; };
     static const NamedLevel levels[] = {
       {"CWSPEED", YaesuFt857Level::CwSpeed},     {"AMMIC", YaesuFt857Level::AmMicGain},
@@ -2175,10 +2187,9 @@ static bool handleConsoleAdjustCommands(const String& line, const String& upper)
   }
   if (upper == "RIT TOGGLE") {
     bool on = false;
-    if (!queryRitEnabled(on, 800)) { reportCommandFailure("RIT TOGGLE", "no reply"); return true; }
-    if (!setRitEnabled(!on)) { reportCommandFailure("RIT TOGGLE", "failed"); return true; }
-    Serial.println(!on ? "RIT ON" : "RIT OFF");
-    speakTokenState("rit", !on);
+    if (!toggleRitEnabled(on, 800)) { reportCommandFailure("RIT TOGGLE", "failed"); return true; }
+    Serial.println(on ? "RIT ON" : "RIT OFF");
+    speakTokenState("rit", on);
     return true;
   }
   if (upper == "MONITOR TOGGLE") {

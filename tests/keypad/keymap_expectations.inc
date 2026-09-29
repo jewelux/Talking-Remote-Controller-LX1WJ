@@ -151,7 +151,7 @@ KEYMAP_ROW(FT817,           3, '4', "syncBank3VfoA",         "syncBank3VfoB",   
 KEYMAP_ROW(FT857,           3, '4', "unassigned",            "none",                   "-")
 KEYMAP_ROW(FTDX10,          3, '4', "send(VFOA MODE?)",      "beginBank3VfoAModeSet", "-")
 KEYMAP_ROW(NOT(FT817 | FT857 | FTDX10), 3, '4', "queryBank3VfoAMode", "beginBank3VfoAModeSet", "-")
-KEYMAP_ROW(FT857,           3, '5', "setBank3Ft857Clar(true)", "setBank3Ft857Clar(false)", "-")
+KEYMAP_ROW(FT857,           3, '5', "queryBank3Ft857Rit",    "toggleBank3Ft857Rit",    "-")
 KEYMAP_ROW(FTDX10,          3, '5', "send(VFOB MODE?)",      "beginBank3VfoBModeSet",  "-")
 KEYMAP_ROW(NOT(FT857 | FTDX10), 3, '5', "queryBank3VfoBMode", "beginBank3VfoBModeSet", "-")
 KEYMAP_ROW(FT817,           3, '6', "selectBank3Ft817ActiveVfoA", "selectBank3Ft817ActiveVfoB", "-")

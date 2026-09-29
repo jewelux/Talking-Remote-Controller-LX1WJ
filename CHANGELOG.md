@@ -117,6 +117,14 @@
   PROC, lock, fast tuning, the chosen filter, CW speed, the mic and data gains, VOX gain and
   delay, NR, NB and PROC levels, the DSP filter widths and the clarifier offset. No keys speak
   them yet
+- FT-857/897: Bank 3 `5` short says whether RIT is on ("rit on"), long toggles it. It follows
+  the radio's own CLAR key too. Before, the key sent "clarifier on" and "clarifier off" without
+  knowing the state; those CAT commands switch RIT on these radios. If RIT is on, asking switches
+  it off and straight back on, and hands the tuning knob to RIT if the clarifier had it. The same
+  as console commands `RIT?`, `RIT ON`, `RIT OFF` and `RIT TOGGLE`
+- FT-857/897: the console command `CLAR?` says whether the clarifier (a long press of the radio's
+  CLAR key) is on. HamTRC can read it but not switch it. `YSETTINGS?` also lists the clarifier,
+  whether the RF/SQL knob is squelch or RF gain (menu 80) and the mic EQ (menu 48)
 - FT-817/818/857/897: `RXTX?` reads the radio's PTT state. Before, it read part of the power meter
   and could report receive while transmitting
 - TS-480: `NR 0`, `NR 1` and `NR 2` set the NR level, and the Bank 2 `1` key and `NR?` say it

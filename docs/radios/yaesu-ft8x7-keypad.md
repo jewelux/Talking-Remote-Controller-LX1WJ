@@ -77,8 +77,8 @@ FT-817 note:
 | `3` long | `VFOA MODE <n>`, then digit, then `Enter` | — |
 | `4` short | `SYNC VFOA` | — |
 | `4` long | `SYNC VFOB` | — |
-| `5` short | `VFOB MODE?` | `CLAR ON` |
-| `5` long | `VFOB MODE <n>`, then digit, then `Enter` | `CLAR OFF` |
+| `5` short | `VFOB MODE?` | `RIT?` |
+| `5` long | `VFOB MODE <n>`, then digit, then `Enter` | `RIT TOGGLE` |
 | `6` short | active `VFO A` | `PTT OFF` (RX) |
 | `6` long | active `VFO B` | `PTT ON` (TX) |
 
@@ -134,7 +134,7 @@ For Bank 6 tone handling, `2` is an explicit mode selector:
 |---|---|---|
 | `SPLIT` | usable | usable; the state is read from the radio |
 | `Bank 6 repeater/tone writes` | expect best results only on `2 m` or `70 cm` and already in `FM`; other contexts can make valid CAT writes look unreliable | expect best results only on the intended `VHF/UHF` band and already in `FM`; other contexts can make valid CAT writes look unreliable |
-| `CLAR OFF` | usable | usable in current testing |
+| `CLAR OFF` | usable | replaced by `RIT?` / `RIT TOGGLE`; the CAT clarifier commands switch RIT |
 | `VFO A/B tracking` | usable with sync support | read from the EEPROM |
 | `manual front-panel A/B changes` | resync recommended | followed; no sync needed |
 | `LOCK?` | tracked state only, no CAT readback | read from the EEPROM |

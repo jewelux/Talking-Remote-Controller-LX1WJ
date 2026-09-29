@@ -70,7 +70,9 @@ The goal of this document is to separate:
 | PTT on/off | implemented and verified |
 | Lock on/off | implemented and verified |
 | VFO toggle | implemented and verified |
-| Clarifier on | implemented and verified |
+| RIT on/off (the CAT clarifier commands `05`/`85`) | verified on an FT-897: they switch RIT, the short press of the radio's CLAR key; the clarifier (long press) has no CAT command |
+| RIT query and toggle (Bank 3 `5`, `RIT?`, `RIT TOGGLE`) | verified on an FT-897, also after a front panel change. RIT on/off is not in the EEPROM, but the radio answers `05`/`85` with `00` when it switched and `F0` when RIT was already in that state. `RIT?` sends `85`: `F0` means off; `00` means it was on, and `05` switches it back at once. That brief switch hands the knob to RIT if the clarifier had it |
+| Clarifier read (`CLAR?`) | verified on an FT-897, EEPROM `0x6A` bit 4; read only |
 | Clarifier offset | implemented and verified |
 | Repeater shift | implemented and verified |
 | Repeater offset | implemented and verified |
@@ -87,7 +89,6 @@ The goal of this document is to separate:
 | Bank 3 current/other VFO read | implemented and practically usable |
 | Bank 3 current/other VFO frequency set | implemented and practically usable |
 | Bank 3 `A/B` toggle | implemented and practically usable |
-| Clarifier off | implemented and practically usable |
 
 ### Implemented but still worth more testing
 
@@ -98,7 +99,7 @@ The goal of this document is to separate:
 | Repeater and tone/DCS write paths outside normal FM repeater context | CAT bytes are implemented, but practical success can still depend on the radio already being in the appropriate VHF/UHF band and FM context |
 | Active VFO read from the EEPROM (`0x68`) | verified on an FT-897: follows both the front panel A/B key and the CAT toggle; Bank 3 reads it before each VFO action (`get_vfo=1`) |
 | Settings read from the EEPROM (Bank 2, `MENU?`, `ROW?`, `AGC?`, `IPO?`, `ATT?`, `NAR?`, `DBF?`, `BK?`, `KYR?`, `NR?`, `NB?`, `NOTCH?`, `RFPOWER?`) | verified on an FT-897, read only; addresses in the [EEPROM map](#ft-857897-eeprom-map) |
-| Further settings read from the EEPROM (`YSETTINGS?`: VOX, PROC, lock, fast tuning, DSP row, filter, menu levels, clarifier offset) | protocol only, no keys yet; verified on an FT-897 against the values set on the radio |
+| Further settings read from the EEPROM (`YSETTINGS?`: VOX, PROC, lock, fast tuning, DSP row, clarifier, filter, SQL/RF knob, mic EQ, menu levels, clarifier offset) | protocol only, no keys yet; verified on an FT-897 against the values set on the radio |
 
 ### FT-857/897 EEPROM map
 
@@ -112,6 +113,8 @@ Shared by all bands:
 | `0x6A` | 7 | fast tuning, **inverted** (1 = off) |
 | `0x6A` | 6 | lock, **inverted** (0 = locked); follows the front panel key and CAT lock |
 | `0x6A` | 5 | NB (yo3ggx) |
+| `0x6A` | 4 | clarifier on (long press of CLAR); saved at once, survives a power cycle (the offset does not) |
+| `0x6A` | 3 | the knob tunes the clarifier (1) or RIT (0): set by a clarifier switch, cleared by RIT going on, kept when RIT goes off. RIT on/off itself was not found |
 | `0x6A` | 1..0 | AGC speed: 00 slow, 01 auto, 10 fast (yo3ggx) |
 | `0x6B` | 7 | VOX |
 | `0x6B` | 5 | BK (yo3ggx) |
@@ -119,6 +122,7 @@ Shared by all bands:
 | `0x75` | 5..0 | CW speed (menu 30), value + 4 = WPM, 4..60 |
 | `0x76` | 6..0 | VOX gain (menu 88), 1..100 |
 | `0x77` | all | VOX delay (menu 87), × 100 ms, 100..3000 ms |
+| `0x72` | 7 | SQL/RF GAIN (menu 80): 1 = SQL, 0 = RF gain |
 | `0x7A` | 6..0 | SSB mic gain (menu 81), 0..100 |
 | `0x7B` | all | AM mic gain (menu 5), 0..100 |
 | `0x7C` | all | FM mic gain (menu 51), 0..100 |
@@ -131,6 +135,7 @@ Shared by all bands:
 | `0x90` | all | DIG VOX (menu 40), 0..100 |
 | `0x93` | 7..4 | DSP NR level (menu 49), value + 1 = 1..16 |
 | `0x93` | 3..2 | DSP BPF width (menu 45): 0 = 60, 1 = 120, 2 = 240 Hz (1 not seen) |
+| `0x93` | 1..0 | DSP MIC EQ (menu 48): 0 = off, 1 = LPF, 2 = HPF, 3 = both |
 | `0x94` | 4..0 | DSP LPF cutoff (menu 47), 0..31 = 1000..6000 Hz (only the ends measured) |
 | `0x95` | 3..0 | DSP HPF cutoff (menu 46), 100 + 60 × value Hz, 100..1000 Hz |
 | `0x99` | all | NB level (menu 63), 0..100 |
@@ -155,7 +160,7 @@ Per band and VFO, a 28-byte block. VFO A blocks: 160 m `0xBA`, 80 m `0xD6`, 5 MH
 | +10..+11 | all | clarifier offset, signed, 10 Hz units, big-endian (`FF E1` = −310 Hz); kept when the clarifier is off |
 | +12..+15 | all | frequency, 10 Hz units, big-endian |
 
-The radio saves a band block on events such as key presses, not while the dial turns, so the block can lag the current frequency. The clarifier on/off state was not found in `0x00`..`0xBF` or the band blocks. Seen changing without a known cause: `0x6C`/`0x6D`, and `0xA9` bit 7 (set together with DIG VOX 100).
+The radio saves a band block on events such as key presses, not while the dial turns, so the block can lag the current frequency. Seen changing without a known cause: `0x6C`/`0x6D`, and `0xA9` bit 7 (set together with DIG VOX 100).
 
 ### Experimental or incomplete
 

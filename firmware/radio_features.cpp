@@ -184,6 +184,7 @@ const char* ft8x7SettingLabel(Ft8x7Setting setting) {
     case Ft8x7Setting::RfPower: return "RFPOWER?";
     case Ft8x7Setting::Menu: return "MENU?";
     case Ft8x7Setting::Row: return "ROW?";
+    case Ft8x7Setting::Clarifier: return "CLAR?";
   }
   return "?";
 }
@@ -220,6 +221,7 @@ FeatureStatus ft8x7SettingQuery(Ft8x7Setting setting, Ft8x7SettingState& out) {
     case Ft8x7Setting::Dbf: ok = yaesuFt857QueryDbf(out.on, 800); break;
     case Ft8x7Setting::BreakIn: ok = yaesuFt857QueryBreakIn(out.on, 800); break;
     case Ft8x7Setting::Keyer: ok = yaesuFt857QueryKeyer(out.on, 800); break;
+    case Ft8x7Setting::Clarifier: ok = yaesuFt857QueryClarifier(out.on, 800); break;
     case Ft8x7Setting::Menu:
     case Ft8x7Setting::Row: {
       uint8_t menu = 0;
