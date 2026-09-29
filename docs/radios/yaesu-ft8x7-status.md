@@ -54,7 +54,8 @@ The goal of this document is to separate:
 | Function | Status |
 |---|---|
 | Memory read/write raw path | experimental |
-| Volume / SQL / PO / SWR extras | not cleanly validated |
+| PO / ALC / SWR meters (undocumented `BD`, while transmitting) | implemented, not yet verified on the radio |
+| Volume / SQL extras | not cleanly validated |
 
 ## FT-857
 
@@ -78,7 +79,6 @@ The goal of this document is to separate:
 | Extended CTCSS encode/decode modes | implemented and verified |
 | Extended DCS encode/decode modes | implemented and verified |
 | S-meter read | implemented and verified |
-| ALC read | implemented and verified |
 | RX status raw read | implemented and verified |
 | TX status raw read | implemented and verified |
 | RX/TX state query | implemented and verified |
@@ -105,7 +105,8 @@ The goal of this document is to separate:
 | Absolute VFO A/B without sync | not reliable after manual front-panel A/B changes |
 | Bank 2 `NR/NB/Notch/filter` functions | not currently available through documented FT8x7 CAT |
 | Memory read/write raw path | experimental |
-| Volume / SQL / PO / SWR extras | not cleanly validated |
+| PO / ALC / SWR meters (undocumented `BD`, while transmitting) | implemented, not yet verified on the radio |
+| Volume / SQL extras | not cleanly validated |
 
 ## FT-897
 

@@ -114,6 +114,12 @@ bool yaesuCatRead1(uint8_t& out, uint32_t timeoutMs) {
   return false;
 }
 
+bool yaesuCatReadOptional1(uint8_t& out, uint32_t windowMs) {
+  const bool got = yaesuCatRead1(out, windowMs);
+  g_radioReplyTimedOut = false;
+  return got;
+}
+
 bool yaesuCatRead5(uint8_t out[5], uint32_t timeoutMs) {
   g_radioReplyTimedOut = false;
   uint32_t start = millis();

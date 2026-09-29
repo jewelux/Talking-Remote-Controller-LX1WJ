@@ -109,29 +109,43 @@ SMeterReading yaesuCatDecodeSMeter(uint8_t rxStatus) {
   return reading;
 }
 
+// Undocumented 0xBD, answered by the FT-817/818 and FT-857/897. While transmitting the radio
+// sends two bytes of 0..15 meters: byte 0 = PWR (high nibble) | ALC (low), byte 1 = SWR (high) |
+// MOD (low), as Hamlib's ft817.c reads them. In receive it sends one byte 0x00: all meters 0.
+static constexpr uint32_t YAESU_TX_METERS_SECOND_BYTE_MS = 50;
+
+static bool yaesuCatQueryTxMeters(uint8_t out[2], uint32_t timeoutMs) {
+  const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, 0xBD};
+  yaesuCatFlushInput();
+  yaesuCatSend5(cmd);
+  if (!yaesuCatRead1(out[0], timeoutMs)) return false;
+  if (!yaesuCatReadOptional1(out[1], YAESU_TX_METERS_SECOND_BYTE_MS)) {
+    out[0] = 0;
+    out[1] = 0;
+  }
+  return true;
+}
+
 bool yaesuCatQueryPoMeterRaw(const StoredProfile& sp, int32_t& rawOut, uint32_t timeoutMs) {
   if (!sp.caps.getPower) return false;
-  return yaesuCatQueryMeterByte(0xBD, rawOut, timeoutMs);
+  uint8_t meters[2] = {0};
+  if (!yaesuCatQueryTxMeters(meters, timeoutMs)) return false;
+  rawOut = (meters[0] >> 4) & 0x0F;
+  return true;
 }
 
 bool yaesuCatQuerySWRRaw(const StoredProfile& sp, int32_t& rawOut, uint32_t timeoutMs) {
   if (!sp.caps.getSwr) return false;
-  return yaesuCatQueryMeterByte(0xBC, rawOut, timeoutMs);
+  uint8_t meters[2] = {0};
+  if (!yaesuCatQueryTxMeters(meters, timeoutMs)) return false;
+  rawOut = (meters[1] >> 4) & 0x0F;
+  return true;
 }
 
 bool yaesuCatQueryAlcRaw(int32_t& rawOut, uint32_t timeoutMs) {
-  // BUGFIX V3.5.1: Opcode 0xBB = EEPROM Read auf FT-817/857. Das Radio antwortet mit
-  // 2 Bytes (nicht 1). Der alte Code las nur 1 Byte, das zweite blieb im RX-Puffer
-  // und korrumpierte die naechste Frequenzabfrage (Frame-Shift um 1 Byte).
-  // Fix: beide Bytes lesen und das zweite verwerfen.
-  const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, 0xBB};
-  yaesuCatFlushInput();
-  yaesuCatSend5(cmd);
-  uint8_t b0 = 0;
-  uint8_t b1 = 0;
-  if (!yaesuCatRead1(b0, timeoutMs)) return false;
-  yaesuCatRead1(b1, 50);  // zweites Byte lesen und verwerfen
-  rawOut = b0;
+  uint8_t meters[2] = {0};
+  if (!yaesuCatQueryTxMeters(meters, timeoutMs)) return false;
+  rawOut = meters[0] & 0x0F;
   return true;
 }
 
