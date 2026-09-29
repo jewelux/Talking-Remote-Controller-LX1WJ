@@ -2409,6 +2409,8 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     Serial.print((int)watts);
     Serial.println(" W");
     if (g_speechEnabled) {
+      speakToken("power");
+      playSilenceMs(60);
       speakDigitsAndPoint(String((int)watts));
       playSilenceMs(60);
       speakToken("watts");

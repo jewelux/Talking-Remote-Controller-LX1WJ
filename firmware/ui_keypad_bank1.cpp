@@ -193,8 +193,11 @@ void toggleBank1Lock() {
 static void sendOrStageBank1Command(const String& cmd) {
   printKeypadAction(cmd);
   if (AUTO_SEND_BANK1_QUERIES) {
-    speakKeypadCommandWord(cmd);
-    playSilenceMs(60);
+    // The SWR and RF power replies say their own word, so saying it here too doubles it.
+    if (cmd != "SWR?" && cmd != "RFPOWER?") {
+      speakKeypadCommandWord(cmd);
+      playSilenceMs(60);
+    }
     keypadSendNow(cmd);
   } else {
     keypadStageCommand(cmd);
