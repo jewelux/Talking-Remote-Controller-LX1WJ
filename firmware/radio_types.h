@@ -312,7 +312,6 @@ struct LiveState {
   uint64_t tuningStartSpokenHz = 0;
   uint32_t lastChangeMs = 0;
   uint64_t lastSpokenHz = 0;
-  uint64_t heardBeforeHz = 0;  // lastSpokenHz before the current tuning announcement
   bool modeValid = false;
   uint8_t mode = 0xFF;
   uint32_t lastModeMs = 0;

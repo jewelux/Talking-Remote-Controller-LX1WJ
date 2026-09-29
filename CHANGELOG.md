@@ -42,7 +42,7 @@
 - Bank 1 `0` double press rounds the current frequency to the nearest 500 Hz
 - tuning is announced only when the dial stops, and only once it is at least 100 Hz away from the
   last frequency you heard or entered. Moving the dial cuts off a readout that is out of date
-  instead of queueing another one
+  instead of queueing another one, and the next stop is always announced
 
 ### Speech and sounds
 

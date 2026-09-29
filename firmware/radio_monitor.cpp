@@ -19,7 +19,6 @@ static bool freqDiffersEnoughToSpeak(uint64_t hz) {
 
 // Queues hz as a tuning announcement, replacing any tuning announcement still playing.
 static void speakTuningFrequency(uint64_t hz) {
-  live.heardBeforeHz = live.lastSpokenHz;
   live.lastSpokenHz = hz;
   beginTuningSpeech();
   speakDigitsAndPoint(hzToMHzString3(hz));
@@ -33,10 +32,11 @@ static bool tuningSpeechGapElapsed(uint32_t now) {
 void updateFreqSpeechDebounce(uint64_t newHz) {
   const uint32_t now = millis();
   // The dial moved away from the frequency being read out: stop the stale
-  // announcement. It was not heard, so the previous heard frequency stands.
+  // announcement. Part of it was heard, so the user no longer knows where the
+  // radio is: forget the last announced frequency and announce the next stop.
   if (tuningSpeechActive() && freqDiffersEnoughToSpeak(newHz)) {
     cancelTuningSpeech();
-    live.lastSpokenHz = live.heardBeforeHz;
+    live.lastSpokenHz = 0;
   }
   if (!g_tuningSpeakEnabled) return;
   if ((int32_t)(now - g_suppressFreqSpeakUntilMs) < 0) return;
