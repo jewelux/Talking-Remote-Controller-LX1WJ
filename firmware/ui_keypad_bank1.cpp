@@ -192,12 +192,11 @@ void toggleBank1Lock() {
   speakTokenState("lock", !on);
 }
 
-static void sendOrStageBank1Command(const String& cmd, bool suppressModePrefix = false) {
+static void sendOrStageBank1Command(const String& cmd) {
   printKeypadAction(cmd);
   if (AUTO_SEND_BANK1_QUERIES) {
     speakKeypadCommandWord(cmd);
     playSilenceMs(60);
-    if (suppressModePrefix) g_suppressModePrefixOnce = true;
     keypadSendNow(cmd);
   } else {
     keypadStageCommand(cmd);
@@ -212,7 +211,7 @@ void queryBank1Smeter() { sendOrStageBank1Command("SM?"); }
 
 void queryBank1Swr() { sendOrStageBank1Command("SWR?"); }
 
-void queryBank1Mode() { sendOrStageBank1Command("MODE?", true); }
+void queryBank1Mode() { sendOrStageBank1Command("MODE?"); }
 
 void beginBank1ModeSelect() {
   keypadBeginModeSelect(TargetVfo::Current);

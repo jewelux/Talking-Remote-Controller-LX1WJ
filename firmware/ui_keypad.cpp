@@ -16,7 +16,6 @@
 extern Keypad keypad;
 
 bool g_keypadExecuting = false;
-bool g_suppressModePrefixOnce = false;
 // Quiet window after a key press so a tuning announcement cannot start while the
 // key's own response (deferred by double-click detection) is being prepared.
 static constexpr uint32_t KEYPAD_PRESS_SPEECH_QUIET_MS = 1000;

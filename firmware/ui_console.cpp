@@ -414,6 +414,12 @@ static void speakBandStackLabel(uint8_t reg) {
   playDigit((int)reg);
 }
 
+// A key already spoke its own label, so its reply is just the mode name.
+static void speakModeReply(uint8_t mode) {
+  if (g_keypadExecuting) speakModeName(mode);
+  else speakMode(mode);
+}
+
 static bool isCurrentYaesuFt8x7() {
   return currentProtocolType() == PROTO_YAESU_FT8X7;
 }
@@ -978,8 +984,7 @@ static bool handleConsoleProfileCommands(const String& line, const String& upper
       speakBandStackLabel((uint8_t)reg);
       playSilenceMs(60);
       speakDigitsAndPoint(hzToMHzString3(entry.freqHz));
-      g_suppressModePrefixOnce = true;
-      speakMode(entry.mode);
+      speakModeName(entry.mode);
     }
     return true;
   }
@@ -1010,8 +1015,7 @@ static bool handleConsoleProfileCommands(const String& line, const String& upper
       speakBandStackLabel((uint8_t)reg);
       playSilenceMs(60);
       speakDigitsAndPoint(hzToMHzString3(entry.freqHz));
-      g_suppressModePrefixOnce = true;
-      speakMode(entry.mode);
+      speakModeName(entry.mode);
     }
     return true;
   }
@@ -2081,8 +2085,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   if (upper == "MODE?") {
     if (!refreshLiveMode()) { reportCommandFailure("MODE?", "no reply"); return true; }
     Serial.println(modeToString(live.mode));
-    if (g_keypadExecuting) g_suppressModePrefixOnce = true;
-    speakMode(live.mode);
+    speakModeReply(live.mode);
     return true;
   }
   if (upper.startsWith("MODE ")) {
@@ -2092,8 +2095,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
       return true;
     }
     Serial.println("SET MODE -> command sent");
-    if (g_keypadExecuting) g_suppressModePrefixOnce = true;
-    speakMode(mode);
+    speakModeReply(mode);
     return true;
   }
   if (upper == "FB?") {
@@ -2366,8 +2368,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     if (!queryVfoMode(true, mode, filter, 800)) { reportCommandFailure("MAIN MODE?", "no reply"); return true; }
     Serial.print("MAIN MODE: ");
     Serial.println(modeToString(mode));
-    if (g_keypadExecuting) g_suppressModePrefixOnce = true;
-    speakMode(mode);
+    speakModeReply(mode);
     return true;
   }
   if (upper.startsWith("SUB MODE?")) {
@@ -2376,8 +2377,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     if (!queryVfoMode(false, mode, filter, 800)) { reportCommandFailure("SUB MODE?", "no reply"); return true; }
     Serial.print("SUB MODE: ");
     Serial.println(modeToString(mode));
-    if (g_keypadExecuting) g_suppressModePrefixOnce = true;
-    speakMode(mode);
+    speakModeReply(mode);
     return true;
   }
   if (upper.startsWith("MAIN MODE ")) {
@@ -2426,8 +2426,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     if (!queryVfoMode(true, mode, filter, 800)) { reportCommandFailure("VFOA MODE?", "no reply"); return true; }
     Serial.print("VFOA MODE: ");
     Serial.println(modeToString(mode));
-    if (g_keypadExecuting) g_suppressModePrefixOnce = true;
-    speakMode(mode);
+    speakModeReply(mode);
     return true;
   }
   if (upper.startsWith("VFOB MODE?")) {
@@ -2436,8 +2435,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     if (!queryVfoMode(false, mode, filter, 800)) { reportCommandFailure("VFOB MODE?", "no reply"); return true; }
     Serial.print("VFOB MODE: ");
     Serial.println(modeToString(mode));
-    if (g_keypadExecuting) g_suppressModePrefixOnce = true;
-    speakMode(mode);
+    speakModeReply(mode);
     return true;
   }
   if (upper.startsWith("VFOA MODE ")) {

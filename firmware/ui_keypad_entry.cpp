@@ -240,9 +240,8 @@ void keypadEntryCommit(InputMode mode, const char* digits, TargetVfo targetVfo) 
 bool keypadModeDigit(char key, uint8_t& mode) {
   if (!modeFromDigit(key, mode) || !canSetMode(mode)) return false;
   printKeypadCommand(String("MODE DIGIT -> ") + String(key));
-  g_suppressModePrefixOnce = true;
   printKeypadStatus(String("MODE STAGE: ") + modeToString(mode));
-  speakMode(mode);
+  speakModeName(mode);
   return true;
 }
 
@@ -268,10 +267,7 @@ void keypadModeCommit(uint8_t mode, TargetVfo targetVfo) {
     if (targetVfo == TargetVfo::A) printKeypadStatus(String("VFOA MODE: ") + modeToString(mode));
     else if (targetVfo == TargetVfo::B) printKeypadStatus(String("VFOB MODE: ") + modeToString(mode));
     else printKeypadStatus(String("MODE: ") + modeToString(mode));
-    if (g_speechEnabled) {
-      g_suppressModePrefixOnce = true;
-      speakMode(mode);
-    }
+    if (g_speechEnabled) speakModeName(mode);
   } else if (!keypadReportIfTimedOut("MODE")) {
     printKeypadStatus(currentProtocolType() == PROTO_YAESU_FT8X7 ? "MODE -> no change" : "MODE -> failed");
     if (g_speechEnabled && currentProtocolType() == PROTO_YAESU_FT8X7) speakError();

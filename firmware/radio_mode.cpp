@@ -21,12 +21,14 @@ const char* modeToString(uint8_t mode) {
 
 void speakMode(uint8_t mode) {
 #if HAVE_MODE_VOICE
-  if (!g_suppressModePrefixOnce) {
-    playClipProgmem(voice_mode, voice_mode_len);
-    playSilenceMs(120);
-  } else {
-    g_suppressModePrefixOnce = false;
-  }
+  playClipProgmem(voice_mode, voice_mode_len);
+  playSilenceMs(120);
+#endif
+  speakModeName(mode);
+}
+
+void speakModeName(uint8_t mode) {
+#if HAVE_MODE_VOICE
   switch (mode) {
     case 0x00: speakToken("lsb"); break;
     case 0x01: speakToken("usb"); break;

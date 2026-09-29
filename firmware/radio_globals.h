@@ -24,6 +24,5 @@ extern bool g_radioReplyTimedOut;
 extern volatile bool g_audioPlaying;
 extern uint8_t g_volumeLevel;
 extern bool g_keypadExecuting;
-extern bool g_suppressModePrefixOnce;
 
 #define CIVSER (*g_civSerial)

@@ -299,8 +299,7 @@ void queryBank3VfoAMode() {
   uint8_t filter = 0xFF;
   if (!queryVfoMode(true, mode, filter, 800)) { keypadReportIfTimedOut("VFOA MODE?"); return; }
   printKeypadStatus(String("VFOA MODE: ") + modeToString(mode));
-  g_suppressModePrefixOnce = true;
-  speakMode(mode);
+  speakModeName(mode);
 }
 
 void beginBank3VfoAModeSet() {
@@ -315,8 +314,7 @@ void queryBank3VfoBMode() {
   uint8_t filter = 0xFF;
   if (!queryVfoMode(false, mode, filter, 800)) { keypadReportIfTimedOut("VFOB MODE?"); return; }
   printKeypadStatus(String("VFOB MODE: ") + modeToString(mode));
-  g_suppressModePrefixOnce = true;
-  speakMode(mode);
+  speakModeName(mode);
 }
 
 void beginBank3VfoBModeSet() {
