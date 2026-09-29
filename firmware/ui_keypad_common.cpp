@@ -9,6 +9,8 @@
 #include "ui_speech.h"
 
 static constexpr uint32_t KEYPAD_POLL_SUSPEND_MS = 900;
+static constexpr uint32_t KEYPAD_WRITE_POLL_SUSPEND_MS = 1400;
+static constexpr uint32_t KEYPAD_ANSWER_SPEECH_QUIET_MS = 2000;
 
 void printKeypadStatus(const String& line) {
   if ((bool)Serial) Serial.println(line);
@@ -183,9 +185,19 @@ void speakVfoFrequency(char which, uint64_t hz) {
   speakDigitsAndPoint(hzToMHzString3(hz));
 }
 
-void prepareKeypadSpeechResponse() {
+void holdKeypadPolling() {
   g_suspendPollingUntilMs = millis() + KEYPAD_POLL_SUSPEND_MS;
-  g_suppressFreqSpeakUntilMs = millis() + 2000;
+}
+
+void prepareKeypadSpeechResponse() {
+  holdKeypadPolling();
+  g_suppressFreqSpeakUntilMs = millis() + KEYPAD_ANSWER_SPEECH_QUIET_MS;
+  cancelPendingFreqAnnouncement();
+}
+
+void prepareKeypadRadioWrite() {
+  g_suspendPollingUntilMs = millis() + KEYPAD_WRITE_POLL_SUSPEND_MS;
+  g_suppressFreqSpeakUntilMs = millis() + KEYPAD_ANSWER_SPEECH_QUIET_MS;
   cancelPendingFreqAnnouncement();
 }
 

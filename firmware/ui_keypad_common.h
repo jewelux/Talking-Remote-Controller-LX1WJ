@@ -29,8 +29,12 @@ bool keypadApplyFrequencyHz(uint64_t hz, TargetVfo targetVfo);
 
 // No SD card profiles: Bank 9 digits pick the built-in light-Icom profiles.
 bool lightIcomFallbackActive();
+// Holds background polling briefly, so it does not talk over a key's exchange.
+void holdKeypadPolling();
 // Holds polling and tuning speech while a key's answer is prepared.
 void prepareKeypadSpeechResponse();
+// Holds polling a little longer while a key writes to the radio and reads it back.
+void prepareKeypadRadioWrite();
 // FT-8x7 with the dial lock on: say "lock on" and return false.
 bool guardFt8x7VfoToggleLock();
 void speakSimpleBinaryState(bool on);

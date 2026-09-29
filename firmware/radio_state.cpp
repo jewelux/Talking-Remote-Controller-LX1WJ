@@ -2,6 +2,8 @@
 
 #include "radio_globals.h"
 
+static constexpr uint32_t OWN_CHANGE_SPEECH_QUIET_MS = 1500;
+
 void resetLiveRadioState() {
   live.freqValid = false;
   live.lastFreqPollMs = 0;
@@ -43,6 +45,10 @@ void rememberLiveFrequency(uint64_t hz, uint32_t nowMs) {
 
 void rememberAnnouncedFrequency(uint64_t hz) {
   live.lastSpokenHz = hz;
+}
+
+void muteTuningSpeechAfterOwnChange() {
+  g_suppressFreqSpeakUntilMs = millis() + OWN_CHANGE_SPEECH_QUIET_MS;
 }
 
 void rememberLiveMode(uint8_t mode, uint32_t nowMs) {

@@ -105,7 +105,7 @@ void queryBank3Ft8x7CurrentVfo() {
 
 void selectBank3VfoA() {
   printKeypadAction("VFO A");
-  g_suppressFreqSpeakUntilMs = millis() + 1500;
+  muteTuningSpeechAfterOwnChange();
   if (!selectVfoA()) { keypadReportIfTimedOut("VFO A"); return; }
   if (currentProtocolType() == PROTO_YAESU_FT8X7) {
     printKeypadStatus("VFO A");
@@ -117,7 +117,7 @@ void selectBank3VfoA() {
 
 void toggleBank3Ft8x7Vfo() {
   printKeypadAction("A/B");
-  g_suppressFreqSpeakUntilMs = millis() + 1500;
+  muteTuningSpeechAfterOwnChange();
   ensureFt8x7VfoTrackingInitialized();
   if (!guardFt8x7VfoToggleLock()) return;
   if (!yaesuCatToggleVfo()) { keypadReportIfTimedOut("VFO A"); return; }
@@ -198,7 +198,7 @@ void queryBank3Ft817OtherVfo() {
 
 void selectBank3VfoB() {
   printKeypadAction("VFO B");
-  g_suppressFreqSpeakUntilMs = millis() + 1500;
+  muteTuningSpeechAfterOwnChange();
   if (!selectVfoB()) { keypadReportIfTimedOut("VFO B"); return; }
   if (currentProtocolType() == PROTO_YAESU_FT8X7) {
     printKeypadStatus("VFO B");
@@ -210,7 +210,7 @@ void selectBank3VfoB() {
 
 void copyBank3Ft817VfoToOther() {
   printKeypadAction("A=B");
-  g_suppressFreqSpeakUntilMs = millis() + 1500;
+  muteTuningSpeechAfterOwnChange();
   ensureFt8x7VfoTrackingInitialized();
   if (!guardFt8x7VfoToggleLock()) return;
   if (!ft8x7CopyActiveVfoToOther()) { keypadReportIfTimedOut("A=B"); return; }

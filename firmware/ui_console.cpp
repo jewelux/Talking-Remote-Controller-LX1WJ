@@ -94,9 +94,29 @@ static void printLiveToneStateSummary() {
   }
 }
 
+static constexpr uint32_t FT817_DEBUG_POLL_HOLD_MS = 2500;
+
+// Holds polling for a multi-step FT-817 debug exchange, then restores the
+// previous hold. Does nothing when active is false.
+class Ft817DebugPollingHold {
+ public:
+  explicit Ft817DebugPollingHold(bool active = true)
+      : active_(active), savedUntilMs_(g_suspendPollingUntilMs) {
+    if (active_) g_suspendPollingUntilMs = millis() + FT817_DEBUG_POLL_HOLD_MS;
+  }
+  ~Ft817DebugPollingHold() {
+    if (active_) g_suspendPollingUntilMs = savedUntilMs_;
+  }
+  Ft817DebugPollingHold(const Ft817DebugPollingHold&) = delete;
+  Ft817DebugPollingHold& operator=(const Ft817DebugPollingHold&) = delete;
+
+ private:
+  const bool active_;
+  const uint32_t savedUntilMs_;
+};
+
 static void printYaesuFt817FmContext() {
-  const uint32_t savedSuspendPollingUntilMs = g_suspendPollingUntilMs;
-  g_suspendPollingUntilMs = millis() + 2500;
+  const Ft817DebugPollingHold pollingHold;
   Serial.println("[FT-817 FM CONTEXT]");
 
   uint64_t hz = 0;
@@ -153,7 +173,6 @@ static void printYaesuFt817FmContext() {
   Serial.println("  CLAR query:  unavailable");
   Serial.print("  TRACE:       ");
   Serial.println(g_yaesuCatTrace ? "on" : "off");
-  g_suspendPollingUntilMs = savedSuspendPollingUntilMs;
 }
 
 static uint16_t pbtOffsetToRaw(int offset) {
@@ -1509,8 +1528,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
       return true;
     }
     const bool ft817Debug = currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft817");
-    const uint32_t savedSuspendPollingUntilMs = g_suspendPollingUntilMs;
-    if (ft817Debug) g_suspendPollingUntilMs = millis() + 2500;
+    const Ft817DebugPollingHold pollingHold(ft817Debug);
     if (ft817Debug) {
       const uint8_t cmd[5] = {modeByte, 0x00, 0x00, 0x00, 0x07};
       Serial.print("YSETMODE CMD: ");
@@ -1525,7 +1543,6 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     if (ft817Debug) {
       delay(320);
       probeYaesuFt817ModeTxRx("YSETMODE AFTER");
-      g_suspendPollingUntilMs = savedSuspendPollingUntilMs;
     }
     return true;
   }
@@ -1537,8 +1554,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
       return true;
     }
     const bool ft817Quiet = currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft817");
-    const uint32_t savedSuspendPollingUntilMs = g_suspendPollingUntilMs;
-    if (ft817Quiet) g_suspendPollingUntilMs = millis() + 2500;
+    const Ft817DebugPollingHold pollingHold(ft817Quiet);
     yaesuCatFlushInput();
     delay(120);
     yaesuCatSetModeRawByte(modeByte);
@@ -1547,7 +1563,6 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     Serial.println(modeByte, HEX);
     Serial.println("  quiet wait...");
     delay(ft817Quiet ? 1400 : 600);
-    if (ft817Quiet) g_suspendPollingUntilMs = savedSuspendPollingUntilMs;
     return true;
   }
 
@@ -2877,6 +2892,9 @@ static bool handleConsoleBankCommands(const String& line, const String& upper) {
   return false;
 }
 
+// Keeps polling off the radio line while the device restarts into the bootloader.
+static constexpr uint32_t BOOTLOADER_POLL_HOLD_MS = 5000;
+
 static bool handleHamtrcServiceCommand(const String& upper, Print& output) {
   if (upper == "HAMTRC?") {
     output.print("LX1WJ-HAMTRC;protocol=1;chip=esp32;version=");
@@ -2886,7 +2904,7 @@ static bool handleHamtrcServiceCommand(const String& upper, Print& output) {
 
   if (upper == "HAMTRC_BOOTLOADER") {
     if (g_audioPlaying) audioAbortNow();
-    g_suspendPollingUntilMs = millis() + 5000;
+    g_suspendPollingUntilMs = millis() + BOOTLOADER_POLL_HOLD_MS;
     serialTransportFlushInput();
     serialTransportFlushOutput();
     output.println("OK HAMTRC_BOOTLOADER;action=restarting");

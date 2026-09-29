@@ -744,8 +744,9 @@ and the same situation must always sound the same:
 
 - An action blocks `loop()` while it waits for the radio. Pass explicit
   timeouts (800 ms is the convention) and never loop without a bound.
-- Call `prepareKeypadSpeechResponse()`, or set `g_suspendPollingUntilMs`, so
-  background polling does not talk over your exchange.
+- Call `prepareKeypadSpeechResponse()` (or `prepareKeypadRadioWrite()` when
+  the key writes to the radio) so background polling does not talk over your
+  exchange.
 - Read before you toggle: use the tracked `live` value when it is valid,
   otherwise query. After a write, read back where the protocol allows it.
 

@@ -113,8 +113,7 @@ static void commitProfile(const char* digits) {
 }
 
 static void commitFrequency(const char* digits, TargetVfo targetVfo) {
-  g_suspendPollingUntilMs = millis() + 1400;
-  g_suppressFreqSpeakUntilMs = millis() + 2000;
+  prepareKeypadRadioWrite();
   if (rejectFt8x7WriteWhileTx("FREQ")) return;
   RadioFrequency parsedFreq;
   if (!RadioFrequency::parseEntry(String(digits), parsedFreq)) {
@@ -246,8 +245,7 @@ bool keypadModeDigit(char key, uint8_t& mode) {
 }
 
 void keypadModeCommit(uint8_t mode, TargetVfo targetVfo) {
-  g_suspendPollingUntilMs = millis() + 1400;
-  g_suppressFreqSpeakUntilMs = millis() + 2000;
+  prepareKeypadRadioWrite();
   if (rejectFt8x7WriteWhileTx("MODE")) return;
   if (targetVfo == TargetVfo::A) printKeypadCommand("ENTER -> VFOA MODE");
   else if (targetVfo == TargetVfo::B) printKeypadCommand("ENTER -> VFOB MODE");

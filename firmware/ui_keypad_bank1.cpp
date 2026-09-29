@@ -128,8 +128,7 @@ void beginBank1FrequencySet() {
 
 void roundActiveFrequency(uint32_t stepHz) {
   printKeypadAction(String("ROUND ") + String((unsigned long)stepHz) + " Hz");
-  g_suspendPollingUntilMs = millis() + 1400;
-  g_suppressFreqSpeakUntilMs = millis() + 2000;
+  prepareKeypadRadioWrite();
 
   uint64_t hz = 0;
   if (!queryFrequency(hz, 800)) {

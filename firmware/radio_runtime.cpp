@@ -89,7 +89,7 @@ bool refreshLiveNotchWidth() {
 
 bool applyFrequencyAndTrack(uint64_t hz, bool suppressSpeechWindow) {
   if (!setFrequency(hz)) return false;
-  if (suppressSpeechWindow) g_suppressFreqSpeakUntilMs = millis() + 1500;
+  if (suppressSpeechWindow) muteTuningSpeechAfterOwnChange();
   rememberAnnouncedFrequency(hz);
   rememberLiveFrequency(hz, millis());
   return true;

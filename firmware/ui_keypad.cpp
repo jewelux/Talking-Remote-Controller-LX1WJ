@@ -81,13 +81,11 @@ void keypadSendNow(const String& cmd) {
     Serial.print("CMD SEND ");
     Serial.println(cmd);
   }
-  g_suppressFreqSpeakUntilMs = millis() + 2000;
-  cancelPendingFreqAnnouncement();
-  g_suspendPollingUntilMs = millis() + 900;
+  prepareKeypadSpeechResponse();
   g_keypadExecuting = true;
   processCommand(cmd);
   g_keypadExecuting = false;
-  g_suspendPollingUntilMs = millis() + 900;
+  holdKeypadPolling();
 }
 
 namespace {
