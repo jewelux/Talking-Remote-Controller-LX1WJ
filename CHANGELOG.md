@@ -102,6 +102,10 @@
   watts"). The same as console commands `NR?`, `NB?`, `NOTCH?`, `AGC?`, `IPO?`, `ATT?`, `DBF?`,
   `BK?`, `KYR?`, `NAR?`, `MENU?`, `ROW?` and `RFPOWER?`. They only read these settings; HamTRC
   cannot change them
+- FT-857/897: the console command `YSETTINGS?` lists more settings read from the radio: VOX,
+  PROC, lock, fast tuning, the chosen filter, CW speed, the mic and data gains, VOX gain and
+  delay, NR, NB and PROC levels, the DSP filter widths and the clarifier offset. No keys speak
+  them yet
 - FT-817/818/857/897: `RXTX?` reads the radio's PTT state. Before, it read part of the power meter
   and could report receive while transmitting
 - TS-480: `NR 0`, `NR 1` and `NR 2` set the NR level, and the Bank 2 `1` key and `NR?` say it

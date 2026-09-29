@@ -884,6 +884,7 @@ void printHelp() {
     Serial.println("    YCAT? <10 hex digits>");
     Serial.println("    YCAT1? <hex byte>");
     Serial.println("    YEEPROM? <start hex> [count 1..32]  (read only; not while operating the radio)");
+    Serial.println("    YSETTINGS?  (FT-857/897 settings read from the EEPROM)");
     Serial.println("    YSCAN1 <start hex> <end hex>");
     Serial.println("    YSNIFF <ms>");
     Serial.println("    YSTATUS?");
@@ -1930,6 +1931,45 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     Serial.print(": 0x");
     if (rsp < 0x10) Serial.print('0');
     Serial.println(rsp, HEX);
+    return true;
+  }
+  if (upper == "YSETTINGS?") {
+    struct NamedBit { const char* name; bool (*query)(bool&, uint32_t); };
+    static const NamedBit bits[] = {
+      {"VOX", yaesuFt857QueryVox}, {"PROC", yaesuFt857QueryProc}, {"LOCK", yaesuFt857QueryLock},
+      {"FAST", yaesuFt857QueryFastTuning}, {"DSPROW", yaesuFt857QueryDspRow},
+    };
+    for (const NamedBit& b : bits) {
+      bool on = false;
+      Serial.print(b.name);
+      Serial.println(b.query(on, 300) ? (on ? " ON" : " OFF") : " --");
+    }
+    YaesuFt857Filter filter = YaesuFt857Filter::BuiltIn;
+    Serial.print("FILTER ");
+    Serial.println(yaesuFt857QueryFilter(filter, 300) ? (filter == YaesuFt857Filter::Filter2 ? "2" : "BUILTIN") : "--");
+    struct NamedLevel { const char* name; YaesuFt857Level level; };
+    static const NamedLevel levels[] = {
+      {"CWSPEED", YaesuFt857Level::CwSpeed},     {"AMMIC", YaesuFt857Level::AmMicGain},
+      {"DIGGAIN", YaesuFt857Level::DigGain},     {"DIGVOX", YaesuFt857Level::DigVox},
+      {"BPF", YaesuFt857Level::BpfWidth},        {"HPF", YaesuFt857Level::HpfCutoff},
+      {"LPF", YaesuFt857Level::LpfCutoff},       {"NRLEVEL", YaesuFt857Level::NrLevel},
+      {"FMMIC", YaesuFt857Level::FmMicGain},     {"NBLEVEL", YaesuFt857Level::NbLevel},
+      {"PKT1200", YaesuFt857Level::Pkt1200},     {"PKT9600", YaesuFt857Level::Pkt9600},
+      {"PROCLEVEL", YaesuFt857Level::ProcLevel}, {"SSBMIC", YaesuFt857Level::SsbMicGain},
+      {"VOXDELAY", YaesuFt857Level::VoxDelay},   {"VOXGAIN", YaesuFt857Level::VoxGain},
+    };
+    for (const NamedLevel& l : levels) {
+      uint16_t value = 0;
+      Serial.print(l.name);
+      Serial.print(' ');
+      if (yaesuFt857QueryLevel(l.level, value, 300)) Serial.println(value);
+      else Serial.println("--");
+    }
+    uint64_t hz = 0;
+    int32_t offset = 0;
+    Serial.print("CLAROFFSET ");
+    if (queryFrequency(hz, 800) && yaesuFt857QueryClarifierOffsetHz(hz, offset, 300)) Serial.println(offset);
+    else Serial.println("--");
     return true;
   }
   // Few bytes at a time: an FT-897 hung when a logger read 192 bytes every 5 s while the dial

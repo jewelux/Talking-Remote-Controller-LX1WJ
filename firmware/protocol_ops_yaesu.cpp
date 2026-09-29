@@ -291,9 +291,10 @@ static bool ft857BlockHoldsFrequency(uint16_t block, uint64_t hz, bool& holdsOut
   return true;
 }
 
-// 0x68 bit 0 names the VFO (1 = B), but a CAT A/B toggle does not update it. The radio does
-// write the frequency into the active VFO's band block as it changes, so the block that holds
-// the current frequency decides; when neither does, 0x68 does.
+// 0x68 bit 0 names the VFO (1 = B), but a CAT A/B toggle does not update it. The radio saves
+// the frequency into the active VFO's band block on events such as key presses (not while the
+// dial turns), so the block that holds the current frequency decides; when neither does, 0x68
+// does.
 static bool ft857ActiveBandBlock(const Ft857BandSlot& slot, uint64_t hz, uint16_t& blockOut, uint32_t timeoutMs) {
   uint8_t vfo = 0;
   if (!yaesuCatReadEepromByte(0x0068, vfo, timeoutMs)) return false;
@@ -355,6 +356,91 @@ bool yaesuFt857QueryMenuAndRow(uint8_t& menuOut, uint8_t& rowOut, uint32_t timeo
   menuOut = (uint8_t)(word[0] + 1);
   rowOut = (uint8_t)(word[1] + 1);
   return true;
+}
+
+// Measured on an FT-897 by changing one setting at a time (menu levels at both ends of their
+// range). Lock and fast tuning are stored inverted.
+bool yaesuFt857QueryVox(bool& onOut, uint32_t timeoutMs) { return ft857ReadBit(0x006B, 0x80, onOut, timeoutMs); }
+bool yaesuFt857QueryProc(bool& onOut, uint32_t timeoutMs) { return ft857ReadBit(0x00A9, 0x02, onOut, timeoutMs); }
+bool yaesuFt857QueryDspRow(bool& onOut, uint32_t timeoutMs) { return ft857ReadBit(0x00A8, 0x80, onOut, timeoutMs); }
+
+bool yaesuFt857QueryLock(bool& onOut, uint32_t timeoutMs) {
+  bool unlocked = false;
+  if (!ft857ReadBit(0x006A, 0x40, unlocked, timeoutMs)) return false;
+  onOut = !unlocked;
+  return true;
+}
+
+bool yaesuFt857QueryFastTuning(bool& onOut, uint32_t timeoutMs) {
+  bool slow = false;
+  if (!ft857ReadBit(0x006A, 0x80, slow, timeoutMs)) return false;
+  onOut = !slow;
+  return true;
+}
+
+// 0xA7 bit 7 = filter 2. Bit 1 was set when the built-in filter was chosen in CW but not in USB.
+bool yaesuFt857QueryFilter(YaesuFt857Filter& out, uint32_t timeoutMs) {
+  bool filter2 = false;
+  if (!ft857ReadBit(0x00A7, 0x80, filter2, timeoutMs)) return false;
+  out = filter2 ? YaesuFt857Filter::Filter2 : YaesuFt857Filter::BuiltIn;
+  return true;
+}
+
+struct Ft857LevelField {
+  YaesuFt857Level level;
+  uint16_t addr;
+  uint8_t mask;
+  uint8_t shift;
+};
+
+static constexpr Ft857LevelField kFt857LevelFields[] = {
+  {YaesuFt857Level::CwSpeed, 0x0075, 0x3F, 0},    {YaesuFt857Level::AmMicGain, 0x007B, 0x7F, 0},
+  {YaesuFt857Level::DigGain, 0x007D, 0x7F, 0},    {YaesuFt857Level::DigVox, 0x0090, 0x7F, 0},
+  {YaesuFt857Level::BpfWidth, 0x0093, 0x0C, 2},   {YaesuFt857Level::HpfCutoff, 0x0095, 0x0F, 0},
+  {YaesuFt857Level::LpfCutoff, 0x0094, 0x1F, 0},  {YaesuFt857Level::NrLevel, 0x0093, 0xF0, 4},
+  {YaesuFt857Level::FmMicGain, 0x007C, 0x7F, 0},  {YaesuFt857Level::NbLevel, 0x0099, 0x7F, 0},
+  {YaesuFt857Level::Pkt1200, 0x007E, 0x7F, 0},    {YaesuFt857Level::Pkt9600, 0x007F, 0x7F, 0},
+  {YaesuFt857Level::ProcLevel, 0x009A, 0x7F, 0},  {YaesuFt857Level::SsbMicGain, 0x007A, 0x7F, 0},
+  {YaesuFt857Level::VoxDelay, 0x0077, 0xFF, 0},   {YaesuFt857Level::VoxGain, 0x0076, 0x7F, 0},
+};
+
+bool yaesuFt857QueryLevel(YaesuFt857Level level, uint16_t& valueOut, uint32_t timeoutMs) {
+  if (!currentProfileVariantIs("ft857_897")) return false;
+  for (const Ft857LevelField& f : kFt857LevelFields) {
+    if (f.level != level) continue;
+    uint8_t b = 0;
+    if (!yaesuCatReadEepromByte(f.addr, b, timeoutMs)) return false;
+    const uint16_t raw = (uint16_t)((b & f.mask) >> f.shift);
+    switch (level) {
+      case YaesuFt857Level::CwSpeed: valueOut = raw + 4; break;       // 4..60 WPM
+      case YaesuFt857Level::BpfWidth: valueOut = 60 << raw; break;    // 60 / 120 / 240 Hz
+      case YaesuFt857Level::HpfCutoff: valueOut = 100 + 60 * raw; break;  // 100..1000 Hz
+      // 1000..6000 Hz in 32 steps; only the ends were measured, the radio's own steps in
+      // between may differ from this straight line by a few Hz.
+      case YaesuFt857Level::LpfCutoff: valueOut = (uint16_t)(((1000 + raw * 5000 / 31) + 5) / 10 * 10); break;
+      case YaesuFt857Level::NrLevel: valueOut = raw + 1; break;       // 1..16
+      case YaesuFt857Level::VoxDelay: valueOut = raw * 100; break;    // 100..3000 ms
+      default: valueOut = raw; break;                                 // 0..100
+    }
+    return true;
+  }
+  return false;
+}
+
+// Band block +10..+11: signed, 10 Hz units (0xFFE1 = -310 Hz).
+bool yaesuFt857QueryClarifierOffsetHz(uint64_t hz, int32_t& offsetOut, uint32_t timeoutMs) {
+  if (!currentProfileVariantIs("ft857_897")) return false;
+  const uint32_t khz = (uint32_t)(hz / 1000ULL);
+  for (const Ft857BandSlot& slot : kFt857BandSlots) {
+    if (khz < slot.lowKhz || khz > slot.highKhz) continue;
+    uint16_t block = slot.block;
+    if (!ft857ActiveBandBlock(slot, hz, block, timeoutMs)) return false;
+    uint8_t word[2] = {0};
+    if (!yaesuCatReadEepromWord(block + 10, word, timeoutMs)) return false;
+    offsetOut = (int32_t)(int16_t)(((uint16_t)word[0] << 8) | word[1]) * 10;
+    return true;
+  }
+  return false;
 }
 
 bool yaesuCatToggleVfo() {

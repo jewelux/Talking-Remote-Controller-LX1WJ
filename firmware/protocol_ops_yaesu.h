@@ -58,6 +58,40 @@ bool yaesuFt857QueryRfPowerWatts(uint64_t hz, uint8_t& wattsOut, uint32_t timeou
 // The menu item and the soft key row as the radio saved them when its menu was last exited,
 // counted from 1 like on the display.
 bool yaesuFt857QueryMenuAndRow(uint8_t& menuOut, uint8_t& rowOut, uint32_t timeoutMs);
+bool yaesuFt857QueryVox(bool& onOut, uint32_t timeoutMs);
+bool yaesuFt857QueryProc(bool& onOut, uint32_t timeoutMs);
+bool yaesuFt857QueryLock(bool& onOut, uint32_t timeoutMs);
+bool yaesuFt857QueryFastTuning(bool& onOut, uint32_t timeoutMs);
+// True while the DSP soft key row is shown (the radio saves it at once, unlike the row number).
+bool yaesuFt857QueryDspRow(bool& onOut, uint32_t timeoutMs);
+// The filter chosen on the CFIL row. Filter 1 could not be measured (no filter fitted in that
+// slot on the test radio) and reads as BuiltIn.
+enum class YaesuFt857Filter : uint8_t { BuiltIn, Filter2 };
+bool yaesuFt857QueryFilter(YaesuFt857Filter& out, uint32_t timeoutMs);
+// Menu levels, returned in the units the radio shows.
+enum class YaesuFt857Level : uint8_t {
+  CwSpeed,       // menu 30, WPM
+  AmMicGain,     // menu 5
+  DigGain,       // menu 37
+  DigVox,        // menu 40
+  BpfWidth,      // menu 45, Hz
+  HpfCutoff,     // menu 46, Hz
+  LpfCutoff,     // menu 47, Hz
+  NrLevel,       // menu 49
+  FmMicGain,     // menu 51
+  NbLevel,       // menu 63
+  Pkt1200,       // menu 71
+  Pkt9600,       // menu 72
+  ProcLevel,     // menu 74
+  SsbMicGain,    // menu 81
+  VoxDelay,      // menu 87, ms
+  VoxGain,       // menu 88
+};
+bool yaesuFt857QueryLevel(YaesuFt857Level level, uint16_t& valueOut, uint32_t timeoutMs);
+// The clarifier offset kept in the band block of hz, as of the radio's last save of that block
+// (it saves on events such as key presses, not while tuning). The offset stays when the
+// clarifier is switched off; the on/off state is not in the EEPROM areas measured.
+bool yaesuFt857QueryClarifierOffsetHz(uint64_t hz, int32_t& offsetOut, uint32_t timeoutMs);
 bool yaesuCatToggleVfo();
 bool yaesuCatSelectVfoA();
 bool yaesuCatSelectVfoB();
