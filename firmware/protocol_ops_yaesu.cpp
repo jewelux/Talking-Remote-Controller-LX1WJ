@@ -351,13 +351,16 @@ bool yaesuFt857QueryMenuAndRow(uint8_t& menuOut, uint8_t& rowOut, uint32_t timeo
 }
 
 // FT-817/818 settings, at the addresses the FT8x7Com FT817Setup project uses.
-// 0x79 bits 1..0: TX power High, L3, L2, L1 (5, 2.5, 1 and 0.5 W on an external supply).
+// 0x79 bits 1..0: TX power High, L3, L2, L1. On an external supply 5, 2.5, 1 and 0.5 W on the
+// FT-817, and 6, 5, 2.5 and 1 W on the FT-818 (not measured on an FT-818).
 bool yaesuFt817QueryRfPowerTenths(uint16_t& tenthsOut, uint32_t timeoutMs) {
   if (!currentProfileVariantIs("ft817")) return false;
-  static constexpr uint16_t kTenths[] = {50, 25, 10, 5};
+  static constexpr uint16_t kFt817Tenths[] = {50, 25, 10, 5};
+  static constexpr uint16_t kFt818Tenths[] = {60, 50, 25, 10};
+  const bool ft818 = String(currentStoredProfile().name).indexOf("FT-818") >= 0;
   uint8_t b = 0;
   if (!yaesuCatReadEepromByte(0x0079, b, timeoutMs)) return false;
-  tenthsOut = kTenths[b & 0x03];
+  tenthsOut = (ft818 ? kFt818Tenths : kFt817Tenths)[b & 0x03];
   return true;
 }
 

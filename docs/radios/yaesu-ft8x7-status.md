@@ -65,7 +65,7 @@ Read with `BB`, on demand only. Addresses from the FT8x7Com FT817Setup project, 
 | `0x58` | 4 | KYR (measured, as in the map) |
 | `0x75` | 5..0 | menu item (`MENU?`, Bank 2 `9`), said as stored + 1 like the FT-857/897 |
 | `0x76` | 3..0 | function row (`ROW?`, Bank 2 `9` long), said as stored + 1; 7 (row 8) is the NB/AGC row and 9 (row 10) VOX/BK/KYR (measured) |
-| `0x79` | 1..0 | TX power (`RFPOWER?`, Bank 1 `6`): High, L3, L2, L1, said as 5, 2.5, 1 and 0.5 W (the levels with an external supply) |
+| `0x79` | 1..0 | TX power (`RFPOWER?`, Bank 1 `6`): High, L3, L2, L1, said as 5, 2.5, 1 and 0.5 W, on the FT-818 (profile name containing "FT-818") as 6, 5, 2.5 and 1 W (the levels with an external supply; FT-818 not measured) |
 | `0x7A` | 7 | split (measured) |
 | `0x7B` | 4, 3..0 | charging on, charge hours (not used) |
 | band blocks | | 26 bytes per band from `0x7D` (160 m, 80 m, 40 m, ... on an FT-817 without 60 m); the frequency at +10..+13 in 10 Hz units, big-endian. Saved late, like on the FT-897 (measured) |

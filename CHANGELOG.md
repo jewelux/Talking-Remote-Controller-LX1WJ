@@ -136,7 +136,8 @@
   the radio. The same as console commands `NB?`, `AGC?`, `BK?` and `KYR?`; `YSETTINGS?` also lists
   VOX, lock, fast tuning and IF shift. The FT-817 has no DSP, so noise reduction and notch (`1` and `3`) say
   "not available"
-- FT-817/818: Bank 1 `6` says the TX power setting ("power 2.5 watts"), and Bank 2 `9` the menu
+- FT-817/818: Bank 1 `6` says the TX power setting ("power 2.5 watts"; on the FT-818 the levels
+  are 6, 5, 2.5 and 1 watts), and Bank 2 `9` the menu
   item the radio's menu was last left on, long the function row. The same as console commands
   `RFPOWER?`, `MENU?` and `ROW?`
 - FT-817/818: VFO A mode (Bank 3 `3`) and the console commands `VFOA?`, `VFOB?`, `VFOA MODE` and
@@ -152,6 +153,10 @@
 
 ### Firmware updates
 
+- FT-817/818/857/897: copy the new `ft817.ini`, `ft818.ini`, `ft857.ini` and `ft897.ini` from
+  `firmware/SDCard` to the SD card. With the old files, power, SWR, TX power and the noise
+  blanker (on the FT-857/897 also noise reduction and notch) stay "not available", the FT-817's
+  RX/TX state too, and the FT-857/897 VFO keys do not read the active VFO from the radio
 - every push builds the firmware as a factory image with a manifest for the online updater;
   version tags attach them to a GitHub release
 
