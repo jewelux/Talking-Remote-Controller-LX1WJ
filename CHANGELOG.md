@@ -82,7 +82,7 @@
   disconnected, polling slows down so the keypad stays responsive
 - FT-817/818/857/897: fixed the S-meter always reading S0
 - FT-857/897: fixed the dial lock turning on when HamTRC starts with the radio already on
-- FT-857/897: `LOCK?` (Bank 1 `3`) reads the lock from the radio, also a lock set on its front
+- FT-817/818/857/897: `LOCK?` (Bank 1 `3`) reads the lock from the radio, also a lock set on its front
   panel, and `3` long toggles from that state. Before, HamTRC said the lock it last set itself, or
   "error" if it had not set one yet. VFO A/B switching and reading the other VFO say "lock on"
   when the radio is locked
@@ -91,10 +91,9 @@
 - FT-817: Bank 3 `1` long toggles VFO A/B and `2` long copies the active VFO to the other (A=B)
 - FT-817/818/857/897: the SWR reading no longer sends the radio a command that writes to its
   internal memory, and `ALC?` no longer answers with a fixed memory value
-- FT-857/897: `PO?` and `SWR?` (Bank 1 `4` and `8`) work while transmitting. Power is said in
+- FT-817/818/857/897: `PO?` and `SWR?` (Bank 1 `4` and `8`) work while transmitting. Power is said in
   meter bars from 0 to 15, SWR as a value from 1.0 to 10, with "high" when the radio flags a high
-  SWR ("swr high 3.7"). In receive they say "power rx" and "swr rx". `ALC?` prints 0–15. On the
-  FT-817/818 they stay off in the profile until tested on the radio
+  SWR ("swr high 3.7"). In receive they say "power rx" and "swr rx". `ALC?` prints 0–15
 - FT-817/818/857/897: split status is read from the radio, also after split was changed on the
   radio's front panel. Before, it was remembered from HamTRC's own split commands, or read with the
   on/off meaning reversed, and the FT-857/897 often said it could not tell
@@ -112,21 +111,37 @@
 - FT-857/897: the Bank 3 VFO keys read which VFO is active from the radio, also after A/B was
   pressed on its front panel, so "vfo a" and "vfo b" are always right. Before, HamTRC assumed VFO
   A at start and needed Bank 3 `4` (sync) after a front panel change; that key is now unassigned.
-  IPO, ATT, FM narrow and the clarifier offset are read for the active VFO the same way
+  IPO, ATT, FM narrow and the RIT or IF shift offset are read for the active VFO the same way
 - FT-857/897: the console command `YSETTINGS?` lists more settings read from the radio: VOX,
   PROC, lock, fast tuning, the chosen filter, CW speed, the mic and data gains, VOX gain and
-  delay, NR, NB and PROC levels, the DSP filter widths and the clarifier offset. No keys speak
-  them yet
+  delay, NR, NB and PROC levels, the DSP filter widths and an offset of RIT or IF shift (which
+  one is not yet confirmed). No keys speak them yet
 - FT-857/897: Bank 3 `5` short says whether RIT is on ("rit on"), long toggles it. It follows
   the radio's own CLAR key too. Before, the key sent "clarifier on" and "clarifier off" without
   knowing the state; those CAT commands switch RIT on these radios. If RIT is on, asking switches
-  it off and straight back on, and hands the tuning knob to RIT if the clarifier had it. The same
+  it off and straight back on, and hands the tuning knob to RIT if IF shift had it. The same
   as console commands `RIT?`, `RIT ON`, `RIT OFF` and `RIT TOGGLE`
-- FT-857/897: the console command `CLAR?` says whether the clarifier (a long press of the radio's
-  CLAR key) is on. HamTRC can read it but not switch it. `YSETTINGS?` also lists the clarifier,
-  whether the RF/SQL knob is squelch or RF gain (menu 80) and the mic EQ (menu 48)
+- FT-817/818/857/897: the console command `IFSHIFT?` prints whether IF shift (a long press of the
+  radio's CLAR key) is on; it is not spoken. HamTRC can read it but not switch it. `YSETTINGS?`
+  also lists IF shift, and on the FT-857/897 whether the RF/SQL knob is squelch or RF gain (menu
+  80) and the mic EQ (menu 48)
 - FT-817/818/857/897: `RXTX?` reads the radio's PTT state. Before, it read part of the power meter
-  and could report receive while transmitting
+  and could report receive while transmitting. On the FT-817 Bank 1 `1` says it too, instead of
+  "transceiver not available"
+- FT-817/818: Bank 3 `5` short says whether RIT is on, long toggles it, as on the FT-857/897 (RIT is
+  the clarifier, a short press of the radio's CLAR key; IF shift, the long press, is left alone). It
+  replaces VFO B mode on that key: for VFO B's mode, switch with Bank 3 `1` long and use Bank 1 `9`
+- FT-817/818: Bank 2 reads the radio's settings like on the FT-857/897: noise blanker (`2`), AGC
+  (`4`, "a g c auto"), and break-in and keyer (`7`, long for keyer), also when they were changed on
+  the radio. The same as console commands `NB?`, `AGC?`, `BK?` and `KYR?`; `YSETTINGS?` also lists
+  VOX, lock, fast tuning and IF shift. The FT-817 has no DSP, so noise reduction and notch (`1` and `3`) say
+  "not available"
+- FT-817/818: Bank 1 `6` says the TX power setting ("power 2.5 watts"), and Bank 2 `9` the menu
+  item the radio's menu was last left on, long the function row. The same as console commands
+  `RFPOWER?`, `MENU?` and `ROW?`
+- FT-817/818: VFO A mode (Bank 3 `3`) and the console commands `VFOA?`, `VFOB?`, `VFOA MODE` and
+  `VFOB MODE` switch back to the VFO you were on. Before, they left the radio on the VFO they
+  read or set, and `VFOA?` and `VFOB?` could time out
 - TS-480: `NR 0`, `NR 1` and `NR 2` set the NR level, and the Bank 2 `1` key and `NR?` say it
   ("noise reduction two") instead of only on or off
 - NR, NB and notch keys say so when the radio rejects the change or does not answer; this was silent

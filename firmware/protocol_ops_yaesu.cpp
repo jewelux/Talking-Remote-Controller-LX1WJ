@@ -350,6 +350,72 @@ bool yaesuFt857QueryMenuAndRow(uint8_t& menuOut, uint8_t& rowOut, uint32_t timeo
   return true;
 }
 
+// FT-817/818 settings, at the addresses the FT8x7Com FT817Setup project uses.
+// 0x79 bits 1..0: TX power High, L3, L2, L1 (5, 2.5, 1 and 0.5 W on an external supply).
+bool yaesuFt817QueryRfPowerTenths(uint16_t& tenthsOut, uint32_t timeoutMs) {
+  if (!currentProfileVariantIs("ft817")) return false;
+  static constexpr uint16_t kTenths[] = {50, 25, 10, 5};
+  uint8_t b = 0;
+  if (!yaesuCatReadEepromByte(0x0079, b, timeoutMs)) return false;
+  tenthsOut = kTenths[b & 0x03];
+  return true;
+}
+
+// The bit positions of the KA7OEI map (https://www.ka7oei.com/ft817_memmap.html), measured on an
+// FT-817 by switching each setting on the radio. Lock and fast tuning are stored inverted, like
+// on the FT-857/897, though the map says 1 = on. All follow the front panel at once.
+static bool ft817ReadBit(uint16_t addr, uint8_t mask, bool& onOut, uint32_t timeoutMs) {
+  if (!currentProfileVariantIs("ft817")) return false;
+  uint8_t b = 0;
+  if (!yaesuCatReadEepromByte(addr, b, timeoutMs)) return false;
+  onOut = (b & mask) != 0;
+  return true;
+}
+
+bool yaesuFt817QueryLock(bool& onOut, uint32_t timeoutMs) {
+  bool unlocked = false;
+  if (!ft817ReadBit(0x0057, 0x40, unlocked, timeoutMs)) return false;
+  onOut = !unlocked;
+  return true;
+}
+
+bool yaesuFt817QueryFastTuning(bool& onOut, uint32_t timeoutMs) {
+  bool slow = false;
+  if (!ft817ReadBit(0x0057, 0x80, slow, timeoutMs)) return false;
+  onOut = !slow;
+  return true;
+}
+
+bool yaesuFt817QueryNb(bool& onOut, uint32_t timeoutMs) { return ft817ReadBit(0x0057, 0x20, onOut, timeoutMs); }
+// IF shift (a long press of CLAR; the map's "PBT").
+bool yaesuFt817QueryIfShift(bool& onOut, uint32_t timeoutMs) { return ft817ReadBit(0x0057, 0x10, onOut, timeoutMs); }
+bool yaesuFt817QueryVox(bool& onOut, uint32_t timeoutMs) { return ft817ReadBit(0x0058, 0x80, onOut, timeoutMs); }
+bool yaesuFt817QueryBreakIn(bool& onOut, uint32_t timeoutMs) { return ft817ReadBit(0x0058, 0x20, onOut, timeoutMs); }
+bool yaesuFt817QueryKeyer(bool& onOut, uint32_t timeoutMs) { return ft817ReadBit(0x0058, 0x10, onOut, timeoutMs); }
+
+// 0x57 bits 1..0: 00 auto, 01 fast, 10 slow, 11 off.
+bool yaesuFt817QueryAgc(YaesuAgc& out, uint32_t timeoutMs) {
+  if (!currentProfileVariantIs("ft817")) return false;
+  uint8_t b = 0;
+  if (!yaesuCatReadEepromByte(0x0057, b, timeoutMs)) return false;
+  static constexpr YaesuAgc kAgc[] = {YaesuAgc::Auto, YaesuAgc::Fast, YaesuAgc::Slow, YaesuAgc::Off};
+  out = kAgc[b & 0x03];
+  return true;
+}
+
+// 0x75 bits 5..0 = menu item, 0x76 bits 3..0 = function row. Taken to count from 0 like the
+// FT-857/897's.
+bool yaesuFt817QueryMenuAndRow(uint8_t& menuOut, uint8_t& rowOut, uint32_t timeoutMs) {
+  if (!currentProfileVariantIs("ft817")) return false;
+  uint8_t menu = 0;
+  uint8_t row = 0;
+  if (!yaesuCatReadEepromByte(0x0075, menu, timeoutMs)) return false;
+  if (!yaesuCatReadEepromByte(0x0076, row, timeoutMs)) return false;
+  menuOut = (uint8_t)((menu & 0x3F) + 1);
+  rowOut = (uint8_t)((row & 0x0F) + 1);
+  return true;
+}
+
 // Measured on an FT-897 by changing one setting at a time (menu levels at both ends of their
 // range). Lock and fast tuning are stored inverted.
 bool yaesuFt857QueryVox(bool& onOut, uint32_t timeoutMs) { return ft857ReadBit(0x006B, 0x80, onOut, timeoutMs); }
@@ -435,12 +501,13 @@ bool yaesuFt857QueryClarifierOffsetHz(uint64_t hz, int32_t& offsetOut, uint32_t 
   return false;
 }
 
-bool yaesuFt857QueryClarifier(bool& onOut, uint32_t timeoutMs) { return ft857ReadBit(0x006A, 0x10, onOut, timeoutMs); }
+bool yaesuFt857QueryIfShift(bool& onOut, uint32_t timeoutMs) { return ft857ReadBit(0x006A, 0x10, onOut, timeoutMs); }
 
-// The CAT clarifier commands (05 on, 85 off) switch RIT on the FT-857/897. The radio answers 00
-// when it switched and F0 when RIT was already in that state, also after a front panel change.
-static bool ft857SetRitReply(bool on, bool& changedOut, uint32_t timeoutMs) {
-  if (!currentProfileVariantIs("ft857_897")) return false;
+// The CAT clarifier commands (05 on, 85 off) switch RIT, the short press of the CLAR key, which
+// the manuals also call the clarifier. The radio answers 00 when it switched and F0 when RIT was
+// already in that state, also after a front panel change.
+static bool ft8x7SetRitReply(bool on, bool& changedOut, uint32_t timeoutMs) {
+  if (!currentProfileVariantIs("ft857_897") && !currentProfileVariantIs("ft817")) return false;
   const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, on ? 0x05 : 0x85};
   uint8_t rsp = 0;
   if (!yaesuCatTransact1(cmd, rsp, timeoutMs)) return false;
@@ -449,30 +516,30 @@ static bool ft857SetRitReply(bool on, bool& changedOut, uint32_t timeoutMs) {
   return true;
 }
 
-// RIT on/off is not in the EEPROM (0x6A bit 3 is which of RIT and the clarifier the knob tunes),
-// so switching RIT off asks: refused means it is off, and if it was on it is switched back at
-// once. That hands the knob to RIT if the clarifier had it.
-bool yaesuFt857QueryRit(bool& onOut, uint32_t timeoutMs) {
+// RIT on/off is not in the EEPROM (on the FT-857/897 0x6A bit 3 is whether the knob tunes RIT or
+// IF shift), so switching RIT off asks: refused means it is off, and if it was on it is switched
+// back at once. That hands the knob to RIT if IF shift had it.
+bool yaesuFt8x7QueryRit(bool& onOut, uint32_t timeoutMs) {
   bool changed = false;
-  if (!ft857SetRitReply(false, changed, timeoutMs)) return false;
-  if (changed && !ft857SetRitReply(true, changed, timeoutMs)) return false;
+  if (!ft8x7SetRitReply(false, changed, timeoutMs)) return false;
+  if (changed && !ft8x7SetRitReply(true, changed, timeoutMs)) return false;
   onOut = changed;
   return true;
 }
 
-bool yaesuFt857SetRit(bool on, uint32_t timeoutMs) {
+bool yaesuFt8x7SetRit(bool on, uint32_t timeoutMs) {
   bool changed = false;
-  return ft857SetRitReply(on, changed, timeoutMs);
+  return ft8x7SetRitReply(on, changed, timeoutMs);
 }
 
-bool yaesuFt857ToggleRit(bool& onOut, uint32_t timeoutMs) {
+bool yaesuFt8x7ToggleRit(bool& onOut, uint32_t timeoutMs) {
   bool changed = false;
-  if (!ft857SetRitReply(true, changed, timeoutMs)) return false;
+  if (!ft8x7SetRitReply(true, changed, timeoutMs)) return false;
   if (changed) {
     onOut = true;
     return true;
   }
-  if (!ft857SetRitReply(false, changed, timeoutMs) || !changed) return false;
+  if (!ft8x7SetRitReply(false, changed, timeoutMs) || !changed) return false;
   onOut = false;
   return true;
 }

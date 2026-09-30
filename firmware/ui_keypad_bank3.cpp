@@ -6,7 +6,7 @@
 #include "radio_state.h"
 #include "radio_utils.h"
 
-void queryBank3Ft857Rit() {
+void queryBank3Ft8x7Rit() {
   printKeypadAction("RIT?");
   bool on = false;
   if (!queryRitEnabled(on, 800)) { keypadReportIfTimedOut("RIT?"); return; }
@@ -14,7 +14,7 @@ void queryBank3Ft857Rit() {
   speakTokenState("rit", on);
 }
 
-void toggleBank3Ft857Rit() {
+void toggleBank3Ft8x7Rit() {
   printKeypadAction("RIT");
   bool on = false;
   if (!toggleRitEnabled(on, 800)) { keypadReportIfTimedOut("RIT"); return; }

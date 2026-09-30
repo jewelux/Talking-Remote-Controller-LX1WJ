@@ -54,15 +54,17 @@ FeatureStatus notchSetWidth(NotchWidth width);
 FeatureStatus notchToggle(NotchState& out);
 
 // FT-857/897 settings read from the radio's EEPROM, since CAT has no command for them. They
-// cannot be set. IPO, ATT and NAR are those of the current band.
+// cannot be set. IPO, ATT and NAR are those of the current band. The FT-817/818 has RfPower,
+// Menu, Row, Agc, BreakIn, Keyer
+// and IfShift.
 // Menu and Row are the menu item and soft key row saved when the radio's menu was last exited.
-enum class Ft8x7Setting : uint8_t { Agc, Ipo, Att, Nar, Dbf, BreakIn, Keyer, RfPower, Menu, Row, Clarifier };
+enum class Ft8x7Setting : uint8_t { Agc, Ipo, Att, Nar, Dbf, BreakIn, Keyer, RfPower, Menu, Row, IfShift };
 
 struct Ft8x7SettingState {
   Ft8x7Setting setting = Ft8x7Setting::Agc;
   bool on = false;
   YaesuAgc agc = YaesuAgc::Off;  // Agc
-  uint8_t watts = 0;             // RfPower, for the current band group
+  uint16_t wattsTenths = 0;      // RfPower: FT-857/897 for the current band group
   uint8_t number = 0;            // Menu, Row: from 1
 };
 

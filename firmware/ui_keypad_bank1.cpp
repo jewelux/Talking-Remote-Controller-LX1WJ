@@ -6,8 +6,8 @@
 #include "radio_utils.h"
 
 static bool queryDialLockReliable(bool& onOut) {
-  // One EEPROM read on the FT-857/897, the tracked state on the FT-817. No stale fallback: a
-  // toggle must start from the radio's real state.
+  // One EEPROM read on the FT-8x7. No stale fallback: a toggle must start from the radio's real
+  // state.
   if (currentProtocolType() == PROTO_YAESU_FT8X7) return queryDialLock(onOut, 800);
   for (uint8_t attempt = 0; attempt < 3; ++attempt) {
     if (queryDialLock(onOut, 800)) {
@@ -41,16 +41,6 @@ void queryBank1RxTx() {
   speakToken("transceiver");
   playSilenceMs(60);
   speakSimpleBinaryState(tx);
-}
-
-void reportBank1Ft817RxTxUnreliable() {
-  printKeypadAction("RXTX?");
-  printKeypadStatus("RXTX unreliable");
-  if (g_speechEnabled) {
-    speakToken("transceiver");
-    playSilenceMs(60);
-    speakNotAvailable();
-  }
 }
 
 void queryBank1Frequency() {

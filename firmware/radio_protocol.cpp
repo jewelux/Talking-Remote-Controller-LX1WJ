@@ -29,6 +29,28 @@ static bool selectYaesuFtdxVfo(const StoredProfile& sp, bool targetVfoA) {
   return true;
 }
 
+// Runs op on the target VFO, then returns to the VFO that was active. The FT-817 cannot report
+// its VFO (0x55 bit 0, which Hamlib reads, does not follow A/B while the radio runs), so this
+// goes by the tracked one. After a toggle the radio misses a command sent too soon: a query gets
+// one retry, as on the Bank 3 other VFO key.
+template <typename Op>
+static bool ft817OnVfo(bool targetVfoA, bool retry, Op op) {
+  if (!live.activeVfoKnown) rememberActiveVfo(true);
+  const bool priorVfoA = live.activeVfoA;
+  if (!(targetVfoA ? yaesuCatSelectVfoA() : yaesuCatSelectVfoB())) return false;
+  delay(120);
+  bool ok = op();
+  if (!ok && retry) {
+    delay(120);
+    ok = op();
+  }
+  if (priorVfoA != targetVfoA) {
+    delay(120);
+    (void)(priorVfoA ? yaesuCatSelectVfoA() : yaesuCatSelectVfoB());
+  }
+  return ok;
+}
+
 // Keep in sync with the protocol dispatch in the functions below.
 bool protocolSupportsTuner() {
   const ProtocolType pt = currentProtocolType();
@@ -37,7 +59,7 @@ bool protocolSupportsTuner() {
 bool protocolSupportsMonitor() { return currentProtocolType() == PROTO_CIV; }
 bool protocolSupportsTransceive() { return currentProtocolType() == PROTO_CIV; }
 bool protocolSupportsBandStack() { return currentProtocolType() == PROTO_CIV; }
-// The RIT offset keys too. The FT-857/897 has RIT on/off only (queryRitEnabled, setRitEnabled).
+// The RIT offset keys too. The FT-8x7 has RIT on/off only (queryRitEnabled, setRitEnabled).
 bool protocolSupportsRit() { return currentProtocolType() == PROTO_CIV; }
 
 bool queryFrequency(uint64_t& hzOut, uint32_t timeoutMs) {
@@ -174,7 +196,9 @@ bool queryNb(bool& onOut, uint32_t timeoutMs) {
   const StoredProfile& sp = currentStoredProfile();
   if (pt == PROTO_CIV) return civQueryNb(sp, onOut, timeoutMs);
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiQueryNb(sp, onOut, timeoutMs);
-  if (pt == PROTO_YAESU_FT8X7) return yaesuFt857QueryNb(onOut, timeoutMs);
+  if (pt == PROTO_YAESU_FT8X7) {
+    return currentProfileVariantIs("ft817") ? yaesuFt817QueryNb(onOut, timeoutMs) : yaesuFt857QueryNb(onOut, timeoutMs);
+  }
   return false;
 }
 
@@ -275,15 +299,20 @@ bool queryDialLock(bool& onOut, uint32_t timeoutMs) {
   if (pt == PROTO_CIV) return civQueryDialLock(sp, onOut, timeoutMs);
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiQueryLock(sp, onOut, timeoutMs);
   if (pt == PROTO_YAESU_FT8X7) {
-    // The FT-857/897 keeps the lock in its EEPROM; the FT-817 has no readback, so it gets the
-    // state HamTRC last set.
-    if (currentProfileVariantIs("ft857_897")) {
-      if (!yaesuFt857QueryLock(onOut, timeoutMs)) return false;
-      rememberDialLockState(onOut);
+    // The FT-817/818 and FT-857/897 keep the lock in their EEPROM, so a lock set on the front
+    // panel counts too. Other variants get the state HamTRC last set.
+    bool ok = false;
+    if (currentProfileVariantIs("ft817")) {
+      ok = yaesuFt817QueryLock(onOut, timeoutMs);
+    } else if (currentProfileVariantIs("ft857_897")) {
+      ok = yaesuFt857QueryLock(onOut, timeoutMs);
+    } else {
+      if (!live.lockKnown) return false;
+      onOut = live.lockOn;
       return true;
     }
-    if (!live.lockKnown) return false;
-    onOut = live.lockOn;
+    if (!ok) return false;
+    rememberDialLockState(onOut);
     return true;
   }
   return false;
@@ -467,9 +496,7 @@ bool queryVfoFrequency(bool targetVfoA, uint64_t& hzOut, uint32_t timeoutMs) {
   if (pt == PROTO_CIV) return civQueryVfoFrequency(sp, targetVfoA, hzOut, timeoutMs);
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiQueryVfoFrequency(sp, targetVfoA, hzOut, timeoutMs);
   if (pt == PROTO_YAESU_FT8X7 && sp.caps.getVfo && sp.caps.setVfo && currentProfileVariantIs("ft817")) {
-    if (!(targetVfoA ? yaesuCatSelectVfoA() : yaesuCatSelectVfoB())) return false;
-    delay(60);
-    return queryFrequency(hzOut, timeoutMs);
+    return ft817OnVfo(targetVfoA, true, [&] { return queryFrequency(hzOut, timeoutMs); });
   }
   return false;
 }
@@ -480,9 +507,7 @@ bool setVfoFrequency(bool targetVfoA, uint64_t hz) {
   if (pt == PROTO_CIV) return civSetVfoFrequency(sp, targetVfoA, hz);
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiSetVfoFrequency(sp, targetVfoA, hz);
   if (pt == PROTO_YAESU_FT8X7 && sp.caps.setVfo && sp.caps.setFreq && currentProfileVariantIs("ft817")) {
-    if (!(targetVfoA ? yaesuCatSelectVfoA() : yaesuCatSelectVfoB())) return false;
-    delay(60);
-    return setFrequency(hz);
+    return ft817OnVfo(targetVfoA, false, [&] { return setFrequency(hz); });
   }
   return false;
 }
@@ -507,10 +532,8 @@ bool queryVfoMode(bool targetVfoA, uint8_t& modeOut, uint8_t& filterOut, uint32_
     return true;
   }
   if (pt == PROTO_YAESU_FT8X7 && sp.caps.getVfoMode && sp.caps.setVfo && currentProfileVariantIs("ft817")) {
-    if (!(targetVfoA ? yaesuCatSelectVfoA() : yaesuCatSelectVfoB())) return false;
-    delay(60);
     filterOut = 1;
-    return queryMode(modeOut, timeoutMs);
+    return ft817OnVfo(targetVfoA, true, [&] { return queryMode(modeOut, timeoutMs); });
   }
   return false;
 }
@@ -530,9 +553,7 @@ bool setVfoMode(bool targetVfoA, uint8_t mode, uint8_t filter) {
     return ok;
   }
   if (pt == PROTO_YAESU_FT8X7 && sp.caps.setVfoMode && sp.caps.setVfo && currentProfileVariantIs("ft817")) {
-    if (!(targetVfoA ? yaesuCatSelectVfoA() : yaesuCatSelectVfoB())) return false;
-    delay(60);
-    return setMode(mode, filter);
+    return ft817OnVfo(targetVfoA, false, [&] { return setMode(mode, filter); });
   }
   return false;
 }
@@ -584,7 +605,7 @@ bool queryRitEnabled(bool& onOut, uint32_t timeoutMs) {
   ProtocolType pt = currentProtocolType();
   const StoredProfile& sp = currentStoredProfile();
   if (pt == PROTO_CIV) return civQueryRitEnabled(sp, onOut, timeoutMs);
-  if (pt == PROTO_YAESU_FT8X7) return yaesuFt857QueryRit(onOut, timeoutMs);
+  if (pt == PROTO_YAESU_FT8X7) return yaesuFt8x7QueryRit(onOut, timeoutMs);
   return false;
 }
 
@@ -592,12 +613,12 @@ bool setRitEnabled(bool on) {
   ProtocolType pt = currentProtocolType();
   const StoredProfile& sp = currentStoredProfile();
   if (pt == PROTO_CIV) return civSetRitEnabled(sp, on);
-  if (pt == PROTO_YAESU_FT8X7) return yaesuFt857SetRit(on, 300);
+  if (pt == PROTO_YAESU_FT8X7) return yaesuFt8x7SetRit(on, 300);
   return false;
 }
 
 bool toggleRitEnabled(bool& onOut, uint32_t timeoutMs) {
-  if (currentProtocolType() == PROTO_YAESU_FT8X7) return yaesuFt857ToggleRit(onOut, timeoutMs);
+  if (currentProtocolType() == PROTO_YAESU_FT8X7) return yaesuFt8x7ToggleRit(onOut, timeoutMs);
   bool on = false;
   if (!queryRitEnabled(on, timeoutMs) || !setRitEnabled(!on)) return false;
   onOut = !on;

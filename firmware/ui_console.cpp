@@ -778,16 +778,14 @@ void printHelp() {
     Serial.println("    SWR?");
     Serial.println("    CLAR OFF | ON  (raw CAT; switches RIT on the FT-857/897)");
     Serial.println("    CLAR OFFSET <8 hex digits>");
-    if (ft857Family) {
-      Serial.println("    CLAR?  (the clarifier, which CAT cannot switch)");
-      Serial.println("    RIT? | RIT OFF | ON | TOGGLE");
-    }
+    if (ft817 || ft857Family) Serial.println("    IFSHIFT?  (IF shift on or off, which CAT cannot switch; not spoken)");
+    if (ft817 || ft857Family) Serial.println("    RIT? | RIT OFF | ON | TOGGLE");
     Serial.println("    CTCSS <Hz> | CTCSS?");
     Serial.println("    DCS <code> | DCS?");
     Serial.println("    GT? | GT FAST | SLOW | OFF");
     Serial.println("    PA? | PA OFF | ON | TOGGLE");
     Serial.println("    PS? | PS OFF | ON");
-    if (ft817 || ft857Family) Serial.println("    VFO SYNC A | B  (set the tracked VFO)");
+    if (ft817 || ft857Family) Serial.println("    VFO SYNC A | B   (set the tracked VFO)");
     if (ft817) {
       Serial.println("    VOL? | SQL?");
       Serial.println("    VFO TOGGLE | A | B");
@@ -861,11 +859,10 @@ void printHelp() {
     Serial.println("    YSTATUS?");
   } else if (ft8x7) {
     Serial.println("    ALC?");
-    if (!ft817) {
-      Serial.println("    AGC? | IPO? | ATT? | NAR? | DBF? | BK? | KYR?  (radio settings, read only)");
-      Serial.println("    RFPOWER?  (menu 75 power of the current band)");
-      Serial.println("    MENU? | ROW?  (menu item and soft key row, saved when the radio's menu is exited)");
-    }
+    Serial.println(ft817 ? "    AGC? | BK? | KYR?  (radio settings, read only)"
+                         : "    AGC? | IPO? | ATT? | NAR? | DBF? | BK? | KYR?  (radio settings, read only)");
+    Serial.println(ft817 ? "    RFPOWER?  (the TX power setting)" : "    RFPOWER?  (menu 75 power of the current band)");
+    Serial.println("    MENU? | ROW?  (menu item and soft key row, saved when the radio's menu is exited)");
     Serial.println("    AGC <hex byte>");
     Serial.println("    CIVRAW? <cmd hex> [payload hex bytes]");
     Serial.println("    CIVRAW <cmd hex> [payload hex bytes]");
@@ -889,7 +886,7 @@ void printHelp() {
     Serial.println("    YCAT1? <hex byte>");
     Serial.println("    YEEPROM? <start hex> [count 1..32]  (read only; not while operating the radio)");
     Serial.println("    YEEPROM! <addr hex> <byte hex> <byte hex>  (CAUTION: writes the EEPROM at addr and addr+1)");
-    Serial.println("    YSETTINGS?  (FT-857/897 settings read from the EEPROM)");
+    Serial.println("    YSETTINGS?  (settings read from the EEPROM)");
     Serial.println("    YSCAN1 <start hex> <end hex>");
     Serial.println("    YSNIFF <ms>");
     Serial.println("    YSTATUS?");
@@ -1276,7 +1273,7 @@ static bool handleConsoleFt8x7Settings(const String& upper) {
   static constexpr Ft8x7Setting kSettings[] = {
     Ft8x7Setting::Agc, Ft8x7Setting::Ipo, Ft8x7Setting::Att, Ft8x7Setting::Nar,
     Ft8x7Setting::Dbf, Ft8x7Setting::BreakIn, Ft8x7Setting::Keyer, Ft8x7Setting::RfPower,
-    Ft8x7Setting::Menu, Ft8x7Setting::Row, Ft8x7Setting::Clarifier,
+    Ft8x7Setting::Menu, Ft8x7Setting::Row, Ft8x7Setting::IfShift,
   };
   for (Ft8x7Setting setting : kSettings) {
     const char* label = ft8x7SettingLabel(setting);
@@ -1539,7 +1536,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     }
     return true;
   }
-  // The FT-8x7 cannot report the active VFO; this corrects the local tracking.
+  // The FT-817 cannot report the active VFO; this corrects the local tracking.
   if (upper == "VFO SYNC A" || upper == "VFO SYNC B") {
     const bool vfoA = upper == "VFO SYNC A";
     rememberActiveVfo(vfoA);
@@ -1927,12 +1924,26 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     Serial.println(rsp, HEX);
     return true;
   }
+  if (upper == "YSETTINGS?" && currentProfileVariantIs("ft817")) {
+    struct NamedBit { const char* name; bool (*query)(bool&, uint32_t); };
+    static const NamedBit bits[] = {
+      {"VOX", yaesuFt817QueryVox}, {"LOCK", yaesuFt817QueryLock}, {"FAST", yaesuFt817QueryFastTuning},
+      {"NB", yaesuFt817QueryNb},   {"BK", yaesuFt817QueryBreakIn}, {"KYR", yaesuFt817QueryKeyer},
+      {"IFSHIFT", yaesuFt817QueryIfShift},
+    };
+    for (const NamedBit& b : bits) {
+      bool on = false;
+      Serial.print(b.name);
+      Serial.println(b.query(on, 300) ? (on ? " ON" : " OFF") : " --");
+    }
+    return true;
+  }
   if (upper == "YSETTINGS?") {
     struct NamedBit { const char* name; bool (*query)(bool&, uint32_t); };
     static const NamedBit bits[] = {
       {"VOX", yaesuFt857QueryVox}, {"PROC", yaesuFt857QueryProc}, {"LOCK", yaesuFt857QueryLock},
       {"FAST", yaesuFt857QueryFastTuning}, {"DSPROW", yaesuFt857QueryDspRow},
-      {"CLAR", yaesuFt857QueryClarifier},
+      {"IFSHIFT", yaesuFt857QueryIfShift},
     };
     for (const NamedBit& b : bits) {
       bool on = false;

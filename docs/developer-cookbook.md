@@ -396,9 +396,9 @@ user-facing line to `CHANGELOG.md`.
 Branch in the keymap, never in the action:
 
 ```cpp
-case '1':
-  if (t.layout == L::Ft817) return bind(reportBank1Ft817RxTxUnreliable, nullptr, waitOnly);
-  return bind(queryBank1RxTx, nullptr, waitOnly);
+case '2':
+  if (t.layout == L::Ft857) return bind(queryBank1Ft857TxFrequency, nullptr, waitOnly);
+  return bind(queryBank1TxFrequency, nullptr, waitOnly);
 ```
 
 - **Whole radio family behaves differently:** add a `KeypadLayout` value.

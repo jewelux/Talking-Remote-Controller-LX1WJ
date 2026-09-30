@@ -22,22 +22,22 @@ Important practical note:
 | `0` short | `FREQ?` | `FREQ?` |
 | `0` long | `FREQ <MHz>`, then digits, then `Enter` | `FREQ <MHz>`, then digits, then `Enter` |
 | `0` double click | `ROUND 500` | `ROUND 500` |
-| `1` short | not available (`RXTX?` readback is unreliable) | `RXTX?` |
+| `1` short | `RXTX?` | `RXTX?` |
 | `2` short | `TXFREQ?`; falls back to `FREQ?` when the radio gives no TX frequency | `FREQ?` when split is known to be off, otherwise not available |
-| `3` short | `LOCK?` (tracked state) | `LOCK?` (read from the radio) |
+| `3` short | `LOCK?` (read from the radio) | `LOCK?` (read from the radio) |
 | `3` long | `LOCK ON/OFF` | `LOCK ON/OFF` |
 | `4` short | `PO?` | `PO?` |
-| `6` short | — | `RFPOWER?`: menu 75 power of the current band ("power 10 watts") |
+| `6` short | `RFPOWER?`: the TX power setting ("power 2.5 watts") | `RFPOWER?`: menu 75 power of the current band ("power 10 watts") |
 | `7` short | `SM?` | `SM?` |
 | `8` short | `SWR?` | `SWR?` |
 | `9` short | `MODE?` | `MODE?` |
 | `9` long | `MODE <n>`, then digit, then `Enter` | `MODE <n>`, then digit, then `Enter` |
 
-On the FT-857/897 `LOCK?` reads the lock from the radio's EEPROM, so a lock set on the front panel is heard too, and `3` long flips the radio's real state. The FT-817 has no lock readback: the firmware speaks the lock state it last set and `3` long flips that.
+`LOCK?` reads the lock from the radio's EEPROM, so a lock set on the front panel is heard too, and `3` long flips the radio's real state.
 
-## Bank 2 - Radio Settings (FT-857/897)
+## Bank 2 - Radio Settings
 
-These keys read settings the FT-857/897 keeps in its EEPROM, like the HamPod does. They only read: CAT cannot change these settings, so a long press on `1`–`3` says "not available". IPO, ATT and NAR are those of the current band and VFO, and only on the amateur bands (IPO and ATT on HF and 6 m). On the FT-817 the keys are not available.
+These keys read settings the FT-857/897 keeps in its EEPROM, like the HamPod does. They only read: CAT cannot change these settings, so a long press on `1`–`3` says "not available". IPO, ATT and NAR are those of the current band and VFO, and only on the amateur bands (IPO and ATT on HF and 6 m). On the FT-817 `2` (`NB?`), `4` (`AGC?`), `7` (`BK?`, long `KYR?`) and `9` (`MENU?`, long `ROW?`, the function row) are available. It has no DSP, so `1` and `3` say "not available"; it has no IPO/ATT, DBF or NAR keys here, so `5`, `6` and `8` beep.
 
 | Key | FT-857/897 | Says |
 |---|---|---|
@@ -58,10 +58,6 @@ The radio saves the menu item and the row only when its menu is exited, so `9` l
 
 ## Bank 3 - VFO / Split
 
-FT-817 note:
-
-- If the spoken `SPLIT?` state is out of sync, toggle `0` long a few times to bring the spoken state back into sync with the radio.
-
 | Key | FT-817 | FT-857/897 |
 |---|---|---|
 | `0` short | `SPLIT?` | `SPLIT?` |
@@ -77,16 +73,17 @@ FT-817 note:
 | `3` long | `VFOA MODE <n>`, then digit, then `Enter` | — |
 | `4` short | `SYNC VFOA` | — |
 | `4` long | `SYNC VFOB` | — |
-| `5` short | `VFOB MODE?` | `RIT?` |
-| `5` long | `VFOB MODE <n>`, then digit, then `Enter` | `RIT TOGGLE` |
+| `5` short | `RIT?` | `RIT?` |
+| `5` long | `RIT TOGGLE` | `RIT TOGGLE` |
 | `6` short | active `VFO A` | `PTT OFF` (RX) |
 | `6` long | active `VFO B` | `PTT ON` (TX) |
 
 FT-817 Bank 3 note:
 
 - The FT-817 branch currently mixes a tracked `current/other VFO` workflow with explicit `SYNC VFOA/VFOB` and explicit active-`VFO A/B` selection.
-- `1`/`2` double click lead into staged frequency entry for the tracked current/other VFO, `1` long toggles `A/B` and `2` long copies the active VFO to the other (`A=B`, also the console command `VFO A=B`), while `3`/`5` handle `VFOA MODE` and `VFOB MODE`.
-- Because of that design, `4` sync is still important after any unknown front-panel A/B change.
+- `1`/`2` double click lead into staged frequency entry for the tracked current/other VFO, `1` long toggles `A/B` and `2` long copies the active VFO to the other (`A=B`, also the console command `VFO A=B`), and `3` handles `VFOA MODE`, then returns to the VFO in use. VFO B's mode: `1` long, then Bank 1 `9`.
+- The FT-817 cannot report its active VFO, so `4` sync is still important after any unknown front-panel A/B change.
+- `5` works as on the FT-857/897: RIT is the clarifier, the short press of the radio's CLAR key; IF shift (the long press) is left alone. If RIT is on, asking switches it off and straight back on.
 
 ## Bank 6 - Repeater / Tone
 
@@ -132,17 +129,18 @@ For Bank 6 tone handling, `2` is an explicit mode selector:
 
 | Function | FT-817 | FT-857/897 |
 |---|---|---|
-| `SPLIT` | usable | usable; the state is read from the radio |
+| `SPLIT` | usable; the state is read from the radio | usable; the state is read from the radio |
 | `Bank 6 repeater/tone writes` | expect best results only on `2 m` or `70 cm` and already in `FM`; other contexts can make valid CAT writes look unreliable | expect best results only on the intended `VHF/UHF` band and already in `FM`; other contexts can make valid CAT writes look unreliable |
-| `CLAR OFF` | usable | replaced by `RIT?` / `RIT TOGGLE`; the CAT clarifier commands switch RIT |
-| `VFO A/B tracking` | usable with sync support | read from the EEPROM |
+| `CLAR OFF` | replaced by `RIT?` / `RIT TOGGLE`; the CAT clarifier commands switch RIT | replaced by `RIT?` / `RIT TOGGLE`; the CAT clarifier commands switch RIT |
+| `VFO A/B tracking` | usable with sync support; the radio has no readable VFO | read from the EEPROM |
 | `manual front-panel A/B changes` | resync recommended | followed; no sync needed |
-| `LOCK?` | tracked state only, no CAT readback | read from the EEPROM |
+| `LOCK?` | read from the EEPROM | read from the EEPROM |
 | FT-817 hidden background conditions | documented CAT commands can work well, but some success still appears to depend on not-yet-characterized radio state; more testing is needed | not the main current concern |
-| `BANK 2 NR/NB/NOTCH/FILTER` | not available | not available |
+| `BANK 2 NR/NB/NOTCH/FILTER` | NB, AGC, BK and KYR read from the EEPROM; no NR or notch (no DSP) | not available |
 | `BSTACK` | not available | not available |
 | `MEM READ/WRITE` | experimental | experimental |
-| `VOL/SQL/PO/SWR` | not cleanly validated | not cleanly validated |
+| `PO/SWR` | verified | verified |
+| `VOL/SQL` | not cleanly validated | not cleanly validated |
 
 ## Notes
 

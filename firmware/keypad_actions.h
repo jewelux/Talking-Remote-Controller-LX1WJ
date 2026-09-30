@@ -26,7 +26,6 @@ void queryBank1Frequency();
 void beginBank1FrequencySet();
 void roundActiveFrequency(uint32_t stepHz);
 void queryBank1RxTx();
-void reportBank1Ft817RxTxUnreliable();  // FT-817: "RXTX unreliable", "transceiver not available"
 void queryBank1TxFrequency();
 void queryBank1Ft857TxFrequency();  // FT-857/897: the frequency when split is off, else "not available"
 void queryBank1Lock();
@@ -58,15 +57,15 @@ void toggleBank2FilterShape();
 void queryBank2FilterWidth();
 void cycleBank2FilterWidth(int delta);
 // FT-857/897 settings read from the radio's EEPROM.
-void queryBank2Ft857Agc();
+void queryBank2Ft8x7Agc();
 void queryBank2Ft857Ipo();
 void queryBank2Ft857Att();
 void queryBank2Ft857Dbf();
-void queryBank2Ft857BreakIn();
-void queryBank2Ft857Keyer();
+void queryBank2Ft8x7BreakIn();
+void queryBank2Ft8x7Keyer();
 void queryBank2Ft857Nar();
-void queryBank2Ft857Menu();
-void queryBank2Ft857Row();
+void queryBank2Ft8x7Menu();
+void queryBank2Ft8x7Row();
 
 // ---- Bank 3 ----
 void queryBank3Split();
@@ -91,11 +90,11 @@ void queryBank3VfoAMode();
 void beginBank3VfoAModeSet();
 void queryBank3VfoBMode();
 void beginBank3VfoBModeSet();
-// FT-817, FT-857/897: tell the VFO tracking that VFO A/B is active.
+// FT-817: tell the VFO tracking that VFO A/B is active.
 void syncBank3VfoA();
 void syncBank3VfoB();
-void queryBank3Ft857Rit();
-void toggleBank3Ft857Rit();
+void queryBank3Ft8x7Rit();
+void toggleBank3Ft8x7Rit();
 void selectBank3Ft817ActiveVfoA();
 void selectBank3Ft817ActiveVfoB();
 void queryBank3RxTx();

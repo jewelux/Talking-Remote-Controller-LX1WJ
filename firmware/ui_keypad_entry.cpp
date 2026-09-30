@@ -20,15 +20,8 @@ static bool rejectFt8x7WriteWhileTx(const char* statusLabel) {
   if (currentProtocolType() != PROTO_YAESU_FT8X7) return false;
   if (currentProfileVariantIs("ft857_897")) return false;
   if (!currentStoredProfile().caps.getRxTx) return false;
-  const bool isFt817 = currentProfileVariantIs("ft817");
-  uint8_t txHits = 0;
-  const uint8_t attempts = isFt817 ? 3 : 1;
-  for (uint8_t i = 0; i < attempts; ++i) {
-    bool tx = false;
-    if (queryRxTxStatus(tx, 800) && tx) ++txHits;
-    if (i + 1 < attempts) delay(40);
-  }
-  if ((isFt817 && txHits < attempts) || (!isFt817 && txHits == 0)) return false;
+  bool tx = false;
+  if (!queryRxTxStatus(tx, 800) || !tx) return false;
   printKeypadStatus(String(statusLabel) + " -> TX");
   if (g_speechEnabled) {
     speakToken("transceiver");

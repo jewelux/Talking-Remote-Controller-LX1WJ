@@ -12,6 +12,11 @@ static FeatureStatus failure(FeatureStatus status) {
   return g_radioReplyTimedOut ? FeatureStatus::Timeout : status;
 }
 
+// The FT-817/818 has no DSP: no noise reduction and no notch, whatever the profile says.
+static bool isFt817WithoutDsp() {
+  return currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft817");
+}
+
 static bool isTs480() {
   return currentProtocolType() == PROTO_KENWOOD_ASCII && String(currentStoredProfile().name).indexOf("TS-480") >= 0;
 }
@@ -54,7 +59,7 @@ static FeatureStatus ts480NrStep(NrState& out) {
 }
 
 FeatureStatus nrQuery(NrState& out) {
-  if (!currentStoredProfile().caps.getNr) return FeatureStatus::Unsupported;
+  if (!currentStoredProfile().caps.getNr || isFt817WithoutDsp()) return FeatureStatus::Unsupported;
   if (isTs480()) {
     uint8_t level = 0;
     if (!ts480ReadNrLevel(level)) return failure(FeatureStatus::NoReply);
@@ -85,7 +90,7 @@ FeatureStatus nrSetLevel(uint8_t level, NrState& out) {
 }
 
 FeatureStatus nrToggle(NrState& out) {
-  if (!currentStoredProfile().caps.setNr) return FeatureStatus::Unsupported;
+  if (!currentStoredProfile().caps.setNr || isFt817WithoutDsp()) return FeatureStatus::Unsupported;
   if (isTs480()) return ts480NrStep(out);
   if (!live.nrValid && !refreshLiveNr()) return failure(FeatureStatus::NoReply);
   const bool next = !live.nrOn;
@@ -122,7 +127,7 @@ FeatureStatus nbToggle(bool& on) {
 // ---- Notch filter ----
 
 FeatureStatus notchQuery(NotchState& out) {
-  if (!currentStoredProfile().caps.getNotch) return FeatureStatus::Unsupported;
+  if (!currentStoredProfile().caps.getNotch || isFt817WithoutDsp()) return FeatureStatus::Unsupported;
   if (!refreshLiveNotch()) return failure(FeatureStatus::NoReply);
   out.on = live.notchOn;
   out.width = (live.notchOn && live.notchWidthValid) ? live.notchWidth : NOTCH_WIDTH_UNKNOWN;
@@ -159,7 +164,7 @@ static FeatureStatus applyNotchWidth(NotchWidth width, NotchState& out) {
 }
 
 FeatureStatus notchToggle(NotchState& out) {
-  if (!currentStoredProfile().caps.setNotch) return FeatureStatus::Unsupported;
+  if (!currentStoredProfile().caps.setNotch || isFt817WithoutDsp()) return FeatureStatus::Unsupported;
   if (!live.notchValid && !refreshLiveNotch()) return failure(FeatureStatus::NoReply);
   if (currentProtocolType() != PROTO_CIV) return applyNotchState(!live.notchOn, NOTCH_WIDTH_UNKNOWN, out);
 
@@ -170,7 +175,7 @@ FeatureStatus notchToggle(NotchState& out) {
   return applyNotchState(false, NOTCH_WIDTH_UNKNOWN, out);
 }
 
-// ---- FT-857/897 EEPROM settings ----
+// ---- FT-8x7 EEPROM settings ----
 
 const char* ft8x7SettingLabel(Ft8x7Setting setting) {
   switch (setting) {
@@ -184,7 +189,7 @@ const char* ft8x7SettingLabel(Ft8x7Setting setting) {
     case Ft8x7Setting::RfPower: return "RFPOWER?";
     case Ft8x7Setting::Menu: return "MENU?";
     case Ft8x7Setting::Row: return "ROW?";
-    case Ft8x7Setting::Clarifier: return "CLAR?";
+    case Ft8x7Setting::IfShift: return "IFSHIFT?";
   }
   return "?";
 }
@@ -193,7 +198,9 @@ static FeatureStatus ft8x7BandSettingQuery(Ft8x7Setting setting, Ft8x7SettingSta
   uint64_t hz = 0;
   if (!queryFrequency(hz, 800)) return failure(FeatureStatus::NoReply);
   if (setting == Ft8x7Setting::RfPower) {
-    if (!yaesuFt857QueryRfPowerWatts(hz, out.watts, 800)) return failure(FeatureStatus::NoReply);
+    uint8_t watts = 0;
+    if (!yaesuFt857QueryRfPowerWatts(hz, watts, 800)) return failure(FeatureStatus::NoReply);
+    out.wattsTenths = (uint16_t)(watts * 10);
     return FeatureStatus::Ok;
   }
   YaesuFt857BandFlags flags;
@@ -209,7 +216,13 @@ static FeatureStatus ft8x7BandSettingQuery(Ft8x7Setting setting, Ft8x7SettingSta
 }
 
 FeatureStatus ft8x7SettingQuery(Ft8x7Setting setting, Ft8x7SettingState& out) {
-  if (currentProtocolType() != PROTO_YAESU_FT8X7 || !currentProfileVariantIs("ft857_897")) {
+  if (currentProtocolType() != PROTO_YAESU_FT8X7) return FeatureStatus::Unsupported;
+  const bool ft817 = currentProfileVariantIs("ft817");
+  if (!ft817 && !currentProfileVariantIs("ft857_897")) return FeatureStatus::Unsupported;
+  if (ft817 && setting != Ft8x7Setting::RfPower && setting != Ft8x7Setting::Menu &&
+      setting != Ft8x7Setting::Row && setting != Ft8x7Setting::Agc &&
+      setting != Ft8x7Setting::BreakIn && setting != Ft8x7Setting::Keyer &&
+      setting != Ft8x7Setting::IfShift) {
     return FeatureStatus::Unsupported;
   }
   if (setting == Ft8x7Setting::RfPower && !currentStoredProfile().caps.getRfPower) return FeatureStatus::Unsupported;
@@ -217,19 +230,31 @@ FeatureStatus ft8x7SettingQuery(Ft8x7Setting setting, Ft8x7SettingState& out) {
   out.setting = setting;
   bool ok = false;
   switch (setting) {
-    case Ft8x7Setting::Agc: ok = yaesuFt857QueryAgc(out.agc, 800); break;
+    case Ft8x7Setting::Agc: ok = ft817 ? yaesuFt817QueryAgc(out.agc, 800) : yaesuFt857QueryAgc(out.agc, 800); break;
     case Ft8x7Setting::Dbf: ok = yaesuFt857QueryDbf(out.on, 800); break;
-    case Ft8x7Setting::BreakIn: ok = yaesuFt857QueryBreakIn(out.on, 800); break;
-    case Ft8x7Setting::Keyer: ok = yaesuFt857QueryKeyer(out.on, 800); break;
-    case Ft8x7Setting::Clarifier: ok = yaesuFt857QueryClarifier(out.on, 800); break;
+    case Ft8x7Setting::BreakIn:
+      ok = ft817 ? yaesuFt817QueryBreakIn(out.on, 800) : yaesuFt857QueryBreakIn(out.on, 800);
+      break;
+    case Ft8x7Setting::Keyer:
+      ok = ft817 ? yaesuFt817QueryKeyer(out.on, 800) : yaesuFt857QueryKeyer(out.on, 800);
+      break;
+    case Ft8x7Setting::IfShift:
+      ok = ft817 ? yaesuFt817QueryIfShift(out.on, 800) : yaesuFt857QueryIfShift(out.on, 800);
+      break;
     case Ft8x7Setting::Menu:
     case Ft8x7Setting::Row: {
       uint8_t menu = 0;
       uint8_t row = 0;
-      ok = yaesuFt857QueryMenuAndRow(menu, row, 800);
+      ok = ft817 ? yaesuFt817QueryMenuAndRow(menu, row, 800) : yaesuFt857QueryMenuAndRow(menu, row, 800);
       out.number = setting == Ft8x7Setting::Menu ? menu : row;
       break;
     }
+    case Ft8x7Setting::RfPower:
+      if (ft817) {
+        ok = yaesuFt817QueryRfPowerTenths(out.wattsTenths, 800);
+        break;
+      }
+      return ft8x7BandSettingQuery(setting, out);
     default: return ft8x7BandSettingQuery(setting, out);
   }
   return ok ? FeatureStatus::Ok : failure(FeatureStatus::NoReply);

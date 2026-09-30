@@ -30,6 +30,7 @@ Important `V3.5.8` notes:
 - VFO A/B selection no longer fails silently in the FT8x7 path
 - split status now uses the correct TX-status bit interpretation
 - keypad writes are blocked while the radio reports TX to avoid accidental changes on air
-- keypad `RXTX?` remains disabled on FT-817 because field results are still not stable enough
+- `RXTX?`, the PO/ALC/SWR meters, the dial lock, the noise blanker, AGC, VOX, BK, KYR, fast tuning, split status, RIT (Bank 3 `5`), the TX power setting (Bank 1 `6`) and the menu item and function row (Bank 2 `9`) are read from the radio and verified on an FT-817
+- the active VFO cannot be read from the radio, so Bank 3 `4` sync is still needed after an A/B change on the front panel
 - repeater and tone functions should be treated as an `FM` plus `2 m/70 cm` workflow; outside that context, the radio may ignore otherwise documented CAT writes
 - recent testing suggests some documented FT-817 CAT commands still depend on background radio state that is not yet fully characterized, so more field testing is still needed

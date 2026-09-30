@@ -39,14 +39,43 @@ The goal of this document is to separate:
 | Bank 3 `VFOA MODE` on `T3` | implemented and verified |
 | Bank 3 sync `VFOA/VFOB` | implemented and verified |
 | Bank 3 active `VFO A/B` selection on `T6` | implemented and verified |
+| RX/TX state query (Bank 1 `1`, `RXTX?`) | verified: TX status bit 7 (0 = transmitting), `0xFF` in receive |
+| Split status query | verified: EEPROM `0x7A` bit 7 in receive, following both CAT and the front panel; TX status bit 5 (1 = on) while transmitting |
+| PO / ALC / SWR meters | verified at 5 W FM into a dummy load (PO 8, ALC 2, SWR 1.0): PO from TX status bits 3..0, ALC and SWR from the undocumented `BD` (bytes `82 08`), sent only while transmitting. With split on the radio transmits on the other VFO, so its mode decides whether there is power to read |
+| RIT query and toggle (Bank 3 `5`, `RIT?`, `RIT TOGGLE`) | verified: like the FT-897, `05`/`85` switch the clarifier, which the FT-817 manual calls RIT (a short press of CLAR), and answer `00` when they switched, `F0` when it was already in that state, also after a front panel change and with IF shift (the long press of CLAR) on, which they leave alone |
+| Lock query (`LOCK?`, Bank 1 `3`) | verified: EEPROM `0x57` bit 6, inverted (0 = locked), following both the front panel key and the CAT lock |
+| Noise blanker query (`NB?`, Bank 2 `2`) | verified: EEPROM `0x57` bit 5 (1 = on), following the front panel. There is no DSP, so `NR?` and `NOTCH?` say unsupported |
+| AGC, BK and KYR (`AGC?`, `BK?`, `KYR?`, Bank 2 `4` and `7`) and VOX, fast tuning and IF shift (`YSETTINGS?`) | verified, read only; addresses below |
+| IPO, ATT and NAR | not read: they sit in the per-band VFO blocks (IPO appeared at block +0 bit 5), which the radio saves only on a band change or power-off, so a read would lag the radio |
+| VFO A/B commands (`VFOA?`, `VFOB?`, `VFOA MODE?`, `VFOB MODE?` and their sets) | verified: switch to the VFO, wait 120 ms (one retry for a query) and switch back to the VFO in use |
+
+### Read from the EEPROM
+
+Read with `BB`, on demand only. Addresses from the FT8x7Com FT817Setup project, not measured here except where noted.
+
+| Address | Bits | Setting |
+|---|---|---|
+| `0x57` | 6 | lock, **inverted** (0 = locked), like the FT-857/897's `0x6A` bit 6 (measured; the [KA7OEI map](https://www.ka7oei.com/ft817_memmap.html) says 1 = on) |
+| `0x57` | 7 | fast tuning, **inverted** (0 = on), like the FT-857/897 (measured; the map says 1 = on). Only the MH-31 microphone's FST key switches it |
+| `0x57` | 5 | NB (measured, as in the KA7OEI map) |
+| `0x57` | 4 | IF shift on (a long press of CLAR; the map's "PBT"), follows the front panel at once (measured). `YSETTINGS?` only |
+| `0x57` | 1..0 | AGC: 00 auto, 01 fast, 10 slow, 11 off (measured, as in the map) |
+| `0x58` | 7 | VOX (measured, as in the map) |
+| `0x58` | 5 | BK (measured, as in the map) |
+| `0x58` | 4 | KYR (measured, as in the map) |
+| `0x75` | 5..0 | menu item (`MENU?`, Bank 2 `9`), said as stored + 1 like the FT-857/897 |
+| `0x76` | 3..0 | function row (`ROW?`, Bank 2 `9` long), said as stored + 1; 7 (row 8) is the NB/AGC row and 9 (row 10) VOX/BK/KYR (measured) |
+| `0x79` | 1..0 | TX power (`RFPOWER?`, Bank 1 `6`): High, L3, L2, L1, said as 5, 2.5, 1 and 0.5 W (the levels with an external supply) |
+| `0x7A` | 7 | split (measured) |
+| `0x7B` | 4, 3..0 | charging on, charge hours (not used) |
+| band blocks | | 26 bytes per band from `0x7D` (160 m, 80 m, 40 m, ... on an FT-817 without 60 m); the frequency at +10..+13 in 10 Hz units, big-endian. Saved late, like on the FT-897 (measured) |
+
+The active VFO cannot be read: `0x55` bit 0, which Hamlib's `get_vfo` and the KA7OEI map give, did not follow A/B from the front panel or CAT, not even across a power cycle. HamTRC tracks the VFO itself, and Bank 3 `4` syncs it after a front panel change.
 
 ### Implemented but still incomplete
 
 | Function | Status |
 |---|---|
-| RX/TX status bit interpretation | keypad `RXTX?` is disabled for FT-817. The unstable results were likely the old code reading TX status bit 0 (a PO meter bit) instead of bit 7 (PTT); retest before enabling |
-| Split status query | TX status bit 5 (1 = on, as on the FT-897) while transmitting, EEPROM `0x7A` bit 7 in receive; not yet verified on the radio |
-| Meter/status interpretation | partially usable, not fully finalized |
 | Hidden FT-817 background conditions around some documented CAT functions | practical tests suggest the documented commands can work correctly, but the exact conditions for stable behavior are still not fully mapped |
 | Repeater and tone/DCS write paths outside normal VHF/UHF FM context | CAT bytes are implemented, but practical success is much more predictable when the radio is already on `2 m` or `70 cm` and already in `FM` |
 
@@ -55,7 +84,6 @@ The goal of this document is to separate:
 | Function | Status |
 |---|---|
 | Memory read/write raw path | experimental |
-| PO / ALC / SWR meters | PO from TX status bits 3..0, ALC and SWR from the undocumented `BD`; implemented, not yet verified on the radio, off in the profile |
 | Volume / SQL extras | not cleanly validated |
 
 ## FT-857
@@ -70,9 +98,9 @@ The goal of this document is to separate:
 | PTT on/off | implemented and verified |
 | Lock on/off | implemented and verified |
 | VFO toggle | implemented and verified |
-| RIT on/off (the CAT clarifier commands `05`/`85`) | verified on an FT-897: they switch RIT, the short press of the radio's CLAR key; the clarifier (long press) has no CAT command |
-| RIT query and toggle (Bank 3 `5`, `RIT?`, `RIT TOGGLE`) | verified on an FT-897, also after a front panel change. RIT on/off is not in the EEPROM, but the radio answers `05`/`85` with `00` when it switched and `F0` when RIT was already in that state. `RIT?` sends `85`: `F0` means off; `00` means it was on, and `05` switches it back at once. That brief switch hands the knob to RIT if the clarifier had it |
-| Clarifier read (`CLAR?`) | verified on an FT-897, EEPROM `0x6A` bit 4; read only |
+| RIT on/off (the CAT clarifier commands `05`/`85`) | verified on an FT-897: they switch RIT, the short press of the radio's CLAR key (the manual's clarifier); IF shift (long press) has no CAT command |
+| RIT query and toggle (Bank 3 `5`, `RIT?`, `RIT TOGGLE`) | verified on an FT-897, also after a front panel change. RIT on/off is not in the EEPROM, but the radio answers `05`/`85` with `00` when it switched and `F0` when RIT was already in that state. `RIT?` sends `85`: `F0` means off; `00` means it was on, and `05` switches it back at once. That brief switch hands the knob to RIT if IF shift had it |
+| IF shift read (`IFSHIFT?`, printed, not spoken) | verified on an FT-897, EEPROM `0x6A` bit 4; read only. Earlier documented as a second clarifier: the long press of CLAR is IF shift |
 | Clarifier offset | implemented and verified |
 | Repeater shift | implemented and verified |
 | Repeater offset | implemented and verified |
@@ -99,7 +127,7 @@ The goal of this document is to separate:
 | Repeater and tone/DCS write paths outside normal FM repeater context | CAT bytes are implemented, but practical success can still depend on the radio already being in the appropriate VHF/UHF band and FM context |
 | Active VFO read from the EEPROM (`0x68`) | verified on an FT-897: follows both the front panel A/B key and the CAT toggle; Bank 3 reads it before each VFO action (`get_vfo=1`) |
 | Settings read from the EEPROM (Bank 2, `MENU?`, `ROW?`, `AGC?`, `IPO?`, `ATT?`, `NAR?`, `DBF?`, `BK?`, `KYR?`, `NR?`, `NB?`, `NOTCH?`, `RFPOWER?`) | verified on an FT-897, read only; addresses in the [EEPROM map](#ft-857897-eeprom-map) |
-| Further settings read from the EEPROM (`YSETTINGS?`: VOX, PROC, lock, fast tuning, DSP row, clarifier, filter, SQL/RF knob, mic EQ, menu levels, clarifier offset) | protocol only, no keys yet; verified on an FT-897 against the values set on the radio |
+| Further settings read from the EEPROM (`YSETTINGS?`: VOX, PROC, lock, fast tuning, DSP row, IF shift, filter, SQL/RF knob, mic EQ, menu levels, the RIT or IF shift offset) | protocol only, no keys yet; verified on an FT-897 against the values set on the radio |
 
 ### FT-857/897 EEPROM map
 
@@ -113,8 +141,8 @@ Shared by all bands:
 | `0x6A` | 7 | fast tuning, **inverted** (1 = off) |
 | `0x6A` | 6 | lock, **inverted** (0 = locked); follows the front panel key and CAT lock |
 | `0x6A` | 5 | NB (yo3ggx) |
-| `0x6A` | 4 | clarifier on (long press of CLAR); saved at once, survives a power cycle (the offset does not) |
-| `0x6A` | 3 | the knob tunes the clarifier (1) or RIT (0): set by a clarifier switch, cleared by RIT going on, kept when RIT goes off. RIT on/off itself was not found |
+| `0x6A` | 4 | IF shift on (long press of CLAR); saved at once, survives a power cycle (the offset does not) |
+| `0x6A` | 3 | the knob tunes IF shift (1) or RIT (0): set by switching IF shift, cleared by RIT going on, kept when RIT goes off. RIT on/off itself was not found |
 | `0x6A` | 1..0 | AGC speed: 00 slow, 01 auto, 10 fast (yo3ggx) |
 | `0x6B` | 7 | VOX |
 | `0x6B` | 5 | BK (yo3ggx) |
@@ -157,7 +185,7 @@ Per band and VFO, a 28-byte block. VFO A blocks: 160 m `0xBA`, 80 m `0xD6`, 5 MH
 | +1 | 3 | FM narrow (NAR) |
 | +2 | 5 | IPO |
 | +2 | 4 | ATT |
-| +10..+11 | all | clarifier offset, signed, 10 Hz units, big-endian (`FF E1` = −310 Hz); kept when the clarifier is off |
+| +10..+11 | all | an offset, signed, 10 Hz units, big-endian (`FF E1` = −310 Hz), measured as the "clarifier" offset, so the IF shift or the RIT offset: to be re-measured. Kept when it is switched off. `YSETTINGS?` shows it as `CLAROFFSET` |
 | +12..+15 | all | frequency, 10 Hz units, big-endian |
 
 The radio saves a band block on events such as key presses, not while the dial turns, so the block can lag the current frequency. Seen changing without a known cause: `0x6C`/`0x6D`, and `0xA9` bit 7 (set together with DIG VOX 100).

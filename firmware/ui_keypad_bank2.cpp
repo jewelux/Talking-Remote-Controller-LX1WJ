@@ -66,15 +66,15 @@ static void queryBank2Ft857Setting(Ft8x7Setting setting) {
   speakFt8x7Setting(state);
 }
 
-void queryBank2Ft857Agc() { queryBank2Ft857Setting(Ft8x7Setting::Agc); }
+void queryBank2Ft8x7Agc() { queryBank2Ft857Setting(Ft8x7Setting::Agc); }
 void queryBank2Ft857Ipo() { queryBank2Ft857Setting(Ft8x7Setting::Ipo); }
 void queryBank2Ft857Att() { queryBank2Ft857Setting(Ft8x7Setting::Att); }
 void queryBank2Ft857Dbf() { queryBank2Ft857Setting(Ft8x7Setting::Dbf); }
-void queryBank2Ft857BreakIn() { queryBank2Ft857Setting(Ft8x7Setting::BreakIn); }
-void queryBank2Ft857Keyer() { queryBank2Ft857Setting(Ft8x7Setting::Keyer); }
+void queryBank2Ft8x7BreakIn() { queryBank2Ft857Setting(Ft8x7Setting::BreakIn); }
+void queryBank2Ft8x7Keyer() { queryBank2Ft857Setting(Ft8x7Setting::Keyer); }
 void queryBank2Ft857Nar() { queryBank2Ft857Setting(Ft8x7Setting::Nar); }
-void queryBank2Ft857Menu() { queryBank2Ft857Setting(Ft8x7Setting::Menu); }
-void queryBank2Ft857Row() { queryBank2Ft857Setting(Ft8x7Setting::Row); }
+void queryBank2Ft8x7Menu() { queryBank2Ft857Setting(Ft8x7Setting::Menu); }
+void queryBank2Ft8x7Row() { queryBank2Ft857Setting(Ft8x7Setting::Row); }
 
 void toggleBank2Nr() {
   printKeypadAction("NR");

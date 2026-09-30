@@ -61,6 +61,18 @@ bool yaesuFt857QueryRfPowerWatts(uint64_t hz, uint8_t& wattsOut, uint32_t timeou
 // The menu item and the soft key row as the radio saved them when its menu was last exited,
 // counted from 1 like on the display.
 bool yaesuFt857QueryMenuAndRow(uint8_t& menuOut, uint8_t& rowOut, uint32_t timeoutMs);
+// FT-817/818: the TX power setting in tenths of a watt (50, 25, 10 or 5), and the menu item
+// and function row, counted from 1.
+bool yaesuFt817QueryRfPowerTenths(uint16_t& tenthsOut, uint32_t timeoutMs);
+bool yaesuFt817QueryLock(bool& onOut, uint32_t timeoutMs);
+bool yaesuFt817QueryFastTuning(bool& onOut, uint32_t timeoutMs);
+bool yaesuFt817QueryNb(bool& onOut, uint32_t timeoutMs);
+bool yaesuFt817QueryIfShift(bool& onOut, uint32_t timeoutMs);
+bool yaesuFt817QueryVox(bool& onOut, uint32_t timeoutMs);
+bool yaesuFt817QueryBreakIn(bool& onOut, uint32_t timeoutMs);
+bool yaesuFt817QueryKeyer(bool& onOut, uint32_t timeoutMs);
+bool yaesuFt817QueryAgc(YaesuAgc& out, uint32_t timeoutMs);
+bool yaesuFt817QueryMenuAndRow(uint8_t& menuOut, uint8_t& rowOut, uint32_t timeoutMs);
 bool yaesuFt857QueryVox(bool& onOut, uint32_t timeoutMs);
 bool yaesuFt857QueryProc(bool& onOut, uint32_t timeoutMs);
 bool yaesuFt857QueryLock(bool& onOut, uint32_t timeoutMs);
@@ -93,17 +105,17 @@ enum class YaesuFt857Level : uint8_t {
   VoxGain,       // menu 88
 };
 bool yaesuFt857QueryLevel(YaesuFt857Level level, uint16_t& valueOut, uint32_t timeoutMs);
-// The clarifier offset kept in the band block of hz, as of the radio's last save of that block
+// The offset kept in the band block of hz (RIT or IF shift, not yet confirmed which), as of the radio's last save of that block
 // (it saves on events such as key presses, not while tuning). The offset stays when the
 // clarifier is switched off.
 bool yaesuFt857QueryClarifierOffsetHz(uint64_t hz, int32_t& offsetOut, uint32_t timeoutMs);
-// The clarifier (a long press of the radio's CLAR key). CAT can read it but not switch it.
-bool yaesuFt857QueryClarifier(bool& onOut, uint32_t timeoutMs);
-// RIT (a short press of the CLAR key), which the CAT clarifier commands switch. Also right after
-// a front panel change.
-bool yaesuFt857QueryRit(bool& onOut, uint32_t timeoutMs);
-bool yaesuFt857SetRit(bool on, uint32_t timeoutMs);
-bool yaesuFt857ToggleRit(bool& onOut, uint32_t timeoutMs);
+// IF shift (a long press of the radio's CLAR key). CAT can read it but not switch it.
+bool yaesuFt857QueryIfShift(bool& onOut, uint32_t timeoutMs);
+// RIT (a short press of the CLAR key, which the manuals also call the clarifier), which the CAT
+// clarifier commands switch. Also right after a front panel change.
+bool yaesuFt8x7QueryRit(bool& onOut, uint32_t timeoutMs);
+bool yaesuFt8x7SetRit(bool on, uint32_t timeoutMs);
+bool yaesuFt8x7ToggleRit(bool& onOut, uint32_t timeoutMs);
 // Menu 80: true when the RF/SQL knob is squelch, false when it is RF gain.
 bool yaesuFt857QueryKnobIsSquelch(bool& squelchOut, uint32_t timeoutMs);
 // Menu 48.

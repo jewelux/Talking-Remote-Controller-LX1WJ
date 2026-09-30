@@ -87,7 +87,6 @@ void queryBank1Frequency() { record("queryBank1Frequency"); }
 void beginBank1FrequencySet() { record("beginBank1FrequencySet"); }
 void roundActiveFrequency(uint32_t hz) { record("roundActiveFrequency(%u)", (unsigned)hz); }
 void queryBank1RxTx() { record("queryBank1RxTx"); }
-void reportBank1Ft817RxTxUnreliable() { record("reportBank1Ft817RxTxUnreliable"); }
 void queryBank1TxFrequency() { record("queryBank1TxFrequency"); }
 void queryBank1Ft857TxFrequency() { record("queryBank1Ft857TxFrequency"); }
 void queryBank1Lock() { record("queryBank1Lock"); }
@@ -117,15 +116,15 @@ void adjustBank2PbtOuter(int d) { record("adjustBank2PbtOuter(%d)", d); }
 void toggleBank2FilterShape() { record("toggleBank2FilterShape"); }
 void queryBank2FilterWidth() { record("queryBank2FilterWidth"); }
 void cycleBank2FilterWidth(int d) { record("cycleBank2FilterWidth(%d)", d); }
-void queryBank2Ft857Agc() { record("queryBank2Ft857Agc"); }
+void queryBank2Ft8x7Agc() { record("queryBank2Ft8x7Agc"); }
 void queryBank2Ft857Ipo() { record("queryBank2Ft857Ipo"); }
 void queryBank2Ft857Att() { record("queryBank2Ft857Att"); }
 void queryBank2Ft857Dbf() { record("queryBank2Ft857Dbf"); }
-void queryBank2Ft857BreakIn() { record("queryBank2Ft857BreakIn"); }
-void queryBank2Ft857Keyer() { record("queryBank2Ft857Keyer"); }
+void queryBank2Ft8x7BreakIn() { record("queryBank2Ft8x7BreakIn"); }
+void queryBank2Ft8x7Keyer() { record("queryBank2Ft8x7Keyer"); }
 void queryBank2Ft857Nar() { record("queryBank2Ft857Nar"); }
-void queryBank2Ft857Menu() { record("queryBank2Ft857Menu"); }
-void queryBank2Ft857Row() { record("queryBank2Ft857Row"); }
+void queryBank2Ft8x7Menu() { record("queryBank2Ft8x7Menu"); }
+void queryBank2Ft8x7Row() { record("queryBank2Ft8x7Row"); }
 
 void queryBank3Split() { record("queryBank3Split"); }
 void toggleBank3Split() { record("toggleBank3Split"); }
@@ -150,8 +149,8 @@ void queryBank3VfoBMode() { record("queryBank3VfoBMode"); }
 void beginBank3VfoBModeSet() { record("beginBank3VfoBModeSet"); }
 void syncBank3VfoA() { record("syncBank3VfoA"); }
 void syncBank3VfoB() { record("syncBank3VfoB"); }
-void queryBank3Ft857Rit() { record("queryBank3Ft857Rit"); }
-void toggleBank3Ft857Rit() { record("toggleBank3Ft857Rit"); }
+void queryBank3Ft8x7Rit() { record("queryBank3Ft8x7Rit"); }
+void toggleBank3Ft8x7Rit() { record("toggleBank3Ft8x7Rit"); }
 void selectBank3Ft817ActiveVfoA() { record("selectBank3Ft817ActiveVfoA"); }
 void selectBank3Ft817ActiveVfoB() { record("selectBank3Ft817ActiveVfoB"); }
 void queryBank3RxTx() { record("queryBank3RxTx"); }

@@ -87,14 +87,21 @@ static const char* ft8x7SettingName(Ft8x7Setting setting) {
     case Ft8x7Setting::RfPower: return "RFPOWER";
     case Ft8x7Setting::Menu: return "MENU";
     case Ft8x7Setting::Row: return "ROW";
-    case Ft8x7Setting::Clarifier: return "CLAR";
+    case Ft8x7Setting::IfShift: return "IFSHIFT";
   }
   return "";
 }
 
+// 25 -> "2.5", 50 -> "5".
+static String wattsText(uint16_t tenths) {
+  String text = String((int)(tenths / 10));
+  if (tenths % 10) text += "." + String((int)(tenths % 10));
+  return text;
+}
+
 String ft8x7SettingText(const Ft8x7SettingState& state) {
   String text = String(ft8x7SettingName(state.setting)) + " ";
-  if (state.setting == Ft8x7Setting::RfPower) return text + String((int)state.watts) + " W";
+  if (state.setting == Ft8x7Setting::RfPower) return text + wattsText(state.wattsTenths) + " W";
   if (state.setting == Ft8x7Setting::Agc) return text + ft8x7AgcText(state.agc);
   if (state.setting == Ft8x7Setting::Menu || state.setting == Ft8x7Setting::Row) return text + String((int)state.number);
   return text + (state.on ? "ON" : "OFF");
@@ -105,7 +112,7 @@ void speakFt8x7Setting(const Ft8x7SettingState& state) {
   if (state.setting == Ft8x7Setting::RfPower) {
     speakToken("power");
     playSilenceMs(60);
-    speakDigitsAndPoint(String((int)state.watts));
+    speakDigitsAndPoint(wattsText(state.wattsTenths));
     playSilenceMs(60);
     speakToken("watts");
     return;
@@ -116,10 +123,8 @@ void speakFt8x7Setting(const Ft8x7SettingState& state) {
     speakDigitsAndPoint(String((int)state.number));
     return;
   }
-  if (state.setting == Ft8x7Setting::Clarifier) {
-    speakTokenState("clarifier", state.on);
-    return;
-  }
+  // No "shift" clip yet: printed only.
+  if (state.setting == Ft8x7Setting::IfShift) return;
   // "AGC" -> "a g c"
   String spelled;
   for (const char* c = ft8x7SettingName(state.setting); *c; ++c) {

@@ -41,7 +41,6 @@ KeyBinding bank1(const KeypadTraits& t, char key) {
       return bind(queryBank1Frequency, beginBank1FrequencySet, [] { roundActiveFrequency(500); });
     case '1':
       if (t.layout == L::Ftdx10) return bind(SEND("RXTX?"), nullptr, waitOnly);
-      if (t.layout == L::Ft817) return bind(reportBank1Ft817RxTxUnreliable, nullptr, waitOnly);
       return bind(queryBank1RxTx, nullptr, waitOnly);
     case '2':
       if (t.layout == L::Ftdx10) return bind(SEND("TXFREQ?"), nullptr, waitOnly);
@@ -57,7 +56,7 @@ KeyBinding bank1(const KeypadTraits& t, char key) {
     case '6':
       if (t.layout == L::Ftdx10) return bind(SEND("PA?"), SEND("PA TOGGLE"));
       if (t.layout == L::Civ) return bind(t.canGetRfPower ? queryBank1RfPower : nullptr, beginBank1RfPowerSet);
-      if (t.layout == L::Ft857) return bind(queryBank1RfPower);
+      if (t.layout == L::Ft817 || t.layout == L::Ft857) return bind(queryBank1RfPower);
       return {};
     case '7': return bind(queryBank1Smeter);
     case '8': return bind(queryBank1Swr);
@@ -72,12 +71,21 @@ KeyBinding bank2(const KeypadTraits& t, char key) {
   // FT-857/897: settings the radio keeps in its EEPROM, read only.
   if (t.layout == L::Ft857) {
     switch (key) {
-      case '4': return bind(queryBank2Ft857Agc);
+      case '4': return bind(queryBank2Ft8x7Agc);
       case '5': return bind(queryBank2Ft857Ipo, queryBank2Ft857Att);
       case '6': return bind(queryBank2Ft857Dbf);
-      case '7': return bind(queryBank2Ft857BreakIn, queryBank2Ft857Keyer);
+      case '7': return bind(queryBank2Ft8x7BreakIn, queryBank2Ft8x7Keyer);
       case '8': return bind(queryBank2Ft857Nar);
-      case '9': return bind(queryBank2Ft857Menu, queryBank2Ft857Row);
+      case '9': return bind(queryBank2Ft8x7Menu, queryBank2Ft8x7Row);
+      default: break;
+    }
+  }
+  // FT-817/818: the same settings, as far as the radio has them.
+  if (t.layout == L::Ft817) {
+    switch (key) {
+      case '4': return bind(queryBank2Ft8x7Agc);
+      case '7': return bind(queryBank2Ft8x7BreakIn, queryBank2Ft8x7Keyer);
+      case '9': return bind(queryBank2Ft8x7Menu, queryBank2Ft8x7Row);
       default: break;
     }
   }
@@ -174,8 +182,8 @@ KeyBinding bank3(const KeypadTraits& t, char key) {
       if (t.layout == L::Ftdx10) return bind(SEND("VFOA MODE?"), beginBank3VfoAModeSet);
       return bind(queryBank3VfoAMode, beginBank3VfoAModeSet);
     case '5':
-      if (t.layout == L::Ft857) {
-        return bind(queryBank3Ft857Rit, toggleBank3Ft857Rit);
+      if (t.layout == L::Ft817 || t.layout == L::Ft857) {
+        return bind(queryBank3Ft8x7Rit, toggleBank3Ft8x7Rit);
       }
       if (t.layout == L::Ftdx10) return bind(SEND("VFOB MODE?"), beginBank3VfoBModeSet);
       return bind(queryBank3VfoBMode, beginBank3VfoBModeSet);

@@ -12,7 +12,7 @@ It is meant as a short engineering overview, not as a promise list.
 | Xiegu G106 | CAT | implemented | partial | partial | partial | partial | implemented | not recently verified | Existing support should be rechecked command by command. |
 | Kenwood TS-480 | ASCII / CAT | partial | partial | planned | planned | planned | implemented | not recently verified | Good candidate for future expansion. |
 | Elecraft KX2 | ASCII / CAT | partial | partial | partial | planned | planned | implemented | not recently verified | Evolving profile. |
-| Yaesu FT-817 | CAT | implemented | implemented | partial | implemented | partial | implemented | tested on hardware | FT8x7 family notes are documented separately. |
+| Yaesu FT-817 | CAT | implemented | implemented | implemented | implemented | implemented | implemented | tested on hardware | FT8x7 family notes are documented separately. |
 | Yaesu FT-818 | CAT | implemented | implemented | partial | implemented | partial | implemented | not recently verified | Mirrors the FT-817 family path. |
 | Yaesu FT-857 | CAT | implemented | implemented | partial | implemented | partial | implemented | tested on hardware | Split and VFO handling are already documented and tested. |
 | Yaesu FT-897 | CAT | partial | partial | partial | partial | partial | implemented | not recently verified | Shares the FT-857/897 family handling. |

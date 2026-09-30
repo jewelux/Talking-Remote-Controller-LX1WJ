@@ -208,8 +208,8 @@ void prepareKeypadRadioWrite() {
 
 bool guardFt8x7VfoToggleLock() {
   if (currentProtocolType() != PROTO_YAESU_FT8X7) return true;
-  // Reads the FT-857/897 lock, so one set on the front panel counts too. No reply: let the
-  // toggle try.
+  // Reads the radio's lock, so one set on the front panel counts too. No reply: let the toggle
+  // try.
   bool on = false;
   if (!queryDialLock(on, 300) || !on) return true;
   printKeypadStatus("LOCK ON");
