@@ -1,5 +1,5 @@
 // Bank 2 keypad actions: noise reduction, noise blanker, notch, PBT and filter,
-// and the FT-857/897 settings kept in the EEPROM.
+// and the FT-8x7 settings kept in the EEPROM.
 #include "ui_keypad_bank.h"
 #include "ui_features.h"
 #include "radio_monitor.h"
@@ -56,25 +56,15 @@ void queryBank2Notch() {
   speakNotchState(state);
 }
 
-static void queryBank2Ft857Setting(Ft8x7Setting setting) {
-  const char* label = ft8x7SettingLabel(setting);
-  printKeypadAction(label);
-  prepareKeypadSpeechResponse();
-  Ft8x7SettingState state;
-  if (keypadReportFeatureFailure(ft8x7SettingQuery(setting, state), label)) return;
-  printKeypadStatus(ft8x7SettingText(state));
-  speakFt8x7Setting(state);
-}
-
-void queryBank2Ft8x7Agc() { queryBank2Ft857Setting(Ft8x7Setting::Agc); }
-void queryBank2Ft857Ipo() { queryBank2Ft857Setting(Ft8x7Setting::Ipo); }
-void queryBank2Ft857Att() { queryBank2Ft857Setting(Ft8x7Setting::Att); }
-void queryBank2Ft857Dbf() { queryBank2Ft857Setting(Ft8x7Setting::Dbf); }
-void queryBank2Ft8x7BreakIn() { queryBank2Ft857Setting(Ft8x7Setting::BreakIn); }
-void queryBank2Ft8x7Keyer() { queryBank2Ft857Setting(Ft8x7Setting::Keyer); }
-void queryBank2Ft857Nar() { queryBank2Ft857Setting(Ft8x7Setting::Nar); }
-void queryBank2Ft8x7Menu() { queryBank2Ft857Setting(Ft8x7Setting::Menu); }
-void queryBank2Ft8x7Row() { queryBank2Ft857Setting(Ft8x7Setting::Row); }
+void queryBank2Ft8x7NrLevel() { queryKeypadFt8x7Setting(Ft8x7Setting::NrLevel); }
+void queryBank2Ft8x7NbLevel() { queryKeypadFt8x7Setting(Ft8x7Setting::NbLevel); }
+void queryBank2Ft8x7Dbf() { queryKeypadFt8x7Setting(Ft8x7Setting::Dbf); }
+void queryBank2Ft8x7LowCut() { queryKeypadFt8x7Setting(Ft8x7Setting::LowCut); }
+void queryBank2Ft8x7HighCut() { queryKeypadFt8x7Setting(Ft8x7Setting::HighCut); }
+void queryBank2Ft8x7MicEq() { queryKeypadFt8x7Setting(Ft8x7Setting::MicEq); }
+void queryBank2Ft8x7Ipo() { queryKeypadFt8x7Setting(Ft8x7Setting::Ipo); }
+void queryBank2Ft8x7Att() { queryKeypadFt8x7Setting(Ft8x7Setting::Att); }
+void queryBank2Ft8x7Agc() { queryKeypadFt8x7Setting(Ft8x7Setting::Agc); }
 
 void toggleBank2Nr() {
   printKeypadAction("NR");

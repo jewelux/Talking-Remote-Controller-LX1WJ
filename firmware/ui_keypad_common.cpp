@@ -36,6 +36,16 @@ bool keypadReportIfTimedOut(const char* label) {
   return true;
 }
 
+void queryKeypadFt8x7Setting(Ft8x7Setting setting) {
+  const char* label = ft8x7SettingLabel(setting);
+  printKeypadAction(label);
+  prepareKeypadSpeechResponse();
+  Ft8x7SettingState state;
+  if (keypadReportFeatureFailure(ft8x7SettingQuery(setting, state), label)) return;
+  printKeypadStatus(ft8x7SettingText(state));
+  speakFt8x7Setting(state);
+}
+
 bool keypadReportFeatureFailure(FeatureStatus status, const char* label) {
   switch (status) {
     case FeatureStatus::Ok: return false;

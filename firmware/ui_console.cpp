@@ -861,6 +861,7 @@ void printHelp() {
     Serial.println("    ALC?");
     Serial.println(ft817 ? "    AGC? | BK? | KYR?  (radio settings, read only)"
                          : "    AGC? | IPO? | ATT? | NAR? | DBF? | BK? | KYR?  (radio settings, read only)");
+    if (!ft817) Serial.println("    NRLEVEL? | NBLEVEL? | HPF? | LPF? | MICEQ?  (DSP menu settings, read only)");
     Serial.println(ft817 ? "    RFPOWER?  (the TX power setting)" : "    RFPOWER?  (menu 75 power of the current band)");
     Serial.println("    MENU? | ROW?  (menu item and soft key row, saved when the radio's menu is exited)");
     Serial.println("    AGC <hex byte>");
@@ -1268,12 +1269,13 @@ static bool handleConsoleFt8x7Meters(const String& upper) {
   return false;
 }
 
-// FT-857/897 settings read from the EEPROM, like the Bank 2 keys.
+// FT-8x7 settings read from the EEPROM, like the Bank 2 and Bank 8 keys.
 static bool handleConsoleFt8x7Settings(const String& upper) {
   static constexpr Ft8x7Setting kSettings[] = {
     Ft8x7Setting::Agc, Ft8x7Setting::Ipo, Ft8x7Setting::Att, Ft8x7Setting::Nar,
     Ft8x7Setting::Dbf, Ft8x7Setting::BreakIn, Ft8x7Setting::Keyer, Ft8x7Setting::RfPower,
-    Ft8x7Setting::Menu, Ft8x7Setting::Row, Ft8x7Setting::IfShift,
+    Ft8x7Setting::Menu, Ft8x7Setting::Row, Ft8x7Setting::IfShift, Ft8x7Setting::NrLevel,
+    Ft8x7Setting::NbLevel, Ft8x7Setting::LowCut, Ft8x7Setting::HighCut, Ft8x7Setting::MicEq,
   };
   for (Ft8x7Setting setting : kSettings) {
     const char* label = ft8x7SettingLabel(setting);

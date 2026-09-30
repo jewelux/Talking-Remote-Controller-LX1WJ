@@ -475,8 +475,8 @@ bool yaesuFt857QueryLevel(YaesuFt857Level level, uint16_t& valueOut, uint32_t ti
       case YaesuFt857Level::CwSpeed: valueOut = raw + 4; break;       // 4..60 WPM
       case YaesuFt857Level::BpfWidth: valueOut = 60 << raw; break;    // 60 / 120 / 240 Hz
       case YaesuFt857Level::HpfCutoff: valueOut = 100 + 60 * raw; break;  // 100..1000 Hz
-      // 1000..6000 Hz in 32 steps; only the ends were measured, the radio's own steps in
-      // between may differ from this straight line by a few Hz.
+      // 1000..6000 Hz in 32 steps; measured at the ends and at 11 = 2770 Hz (12 = 2940 Hz on
+      // the radio), the radio's other steps may differ from this straight line by a few Hz.
       case YaesuFt857Level::LpfCutoff: valueOut = (uint16_t)(((1000 + raw * 5000 / 31) + 5) / 10 * 10); break;
       case YaesuFt857Level::NrLevel: valueOut = raw + 1; break;       // 1..16
       case YaesuFt857Level::VoxDelay: valueOut = raw * 100; break;    // 100..3000 ms

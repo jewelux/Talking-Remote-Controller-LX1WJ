@@ -190,6 +190,11 @@ const char* ft8x7SettingLabel(Ft8x7Setting setting) {
     case Ft8x7Setting::Menu: return "MENU?";
     case Ft8x7Setting::Row: return "ROW?";
     case Ft8x7Setting::IfShift: return "IFSHIFT?";
+    case Ft8x7Setting::NrLevel: return "NRLEVEL?";
+    case Ft8x7Setting::NbLevel: return "NBLEVEL?";
+    case Ft8x7Setting::LowCut: return "HPF?";
+    case Ft8x7Setting::HighCut: return "LPF?";
+    case Ft8x7Setting::MicEq: return "MICEQ?";
   }
   return "?";
 }
@@ -249,6 +254,11 @@ FeatureStatus ft8x7SettingQuery(Ft8x7Setting setting, Ft8x7SettingState& out) {
       out.number = setting == Ft8x7Setting::Menu ? menu : row;
       break;
     }
+    case Ft8x7Setting::NrLevel: ok = yaesuFt857QueryLevel(YaesuFt857Level::NrLevel, out.value, 800); break;
+    case Ft8x7Setting::NbLevel: ok = yaesuFt857QueryLevel(YaesuFt857Level::NbLevel, out.value, 800); break;
+    case Ft8x7Setting::LowCut: ok = yaesuFt857QueryLevel(YaesuFt857Level::HpfCutoff, out.value, 800); break;
+    case Ft8x7Setting::HighCut: ok = yaesuFt857QueryLevel(YaesuFt857Level::LpfCutoff, out.value, 800); break;
+    case Ft8x7Setting::MicEq: ok = yaesuFt857QueryMicEq(out.micEq, 800); break;
     case Ft8x7Setting::RfPower:
       if (ft817) {
         ok = yaesuFt817QueryRfPowerTenths(out.wattsTenths, 800);

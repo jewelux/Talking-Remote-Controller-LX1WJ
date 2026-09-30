@@ -116,15 +116,15 @@ void adjustBank2PbtOuter(int d) { record("adjustBank2PbtOuter(%d)", d); }
 void toggleBank2FilterShape() { record("toggleBank2FilterShape"); }
 void queryBank2FilterWidth() { record("queryBank2FilterWidth"); }
 void cycleBank2FilterWidth(int d) { record("cycleBank2FilterWidth(%d)", d); }
+void queryBank2Ft8x7NrLevel() { record("queryBank2Ft8x7NrLevel"); }
+void queryBank2Ft8x7NbLevel() { record("queryBank2Ft8x7NbLevel"); }
+void queryBank2Ft8x7Dbf() { record("queryBank2Ft8x7Dbf"); }
+void queryBank2Ft8x7LowCut() { record("queryBank2Ft8x7LowCut"); }
+void queryBank2Ft8x7HighCut() { record("queryBank2Ft8x7HighCut"); }
+void queryBank2Ft8x7MicEq() { record("queryBank2Ft8x7MicEq"); }
+void queryBank2Ft8x7Ipo() { record("queryBank2Ft8x7Ipo"); }
+void queryBank2Ft8x7Att() { record("queryBank2Ft8x7Att"); }
 void queryBank2Ft8x7Agc() { record("queryBank2Ft8x7Agc"); }
-void queryBank2Ft857Ipo() { record("queryBank2Ft857Ipo"); }
-void queryBank2Ft857Att() { record("queryBank2Ft857Att"); }
-void queryBank2Ft857Dbf() { record("queryBank2Ft857Dbf"); }
-void queryBank2Ft8x7BreakIn() { record("queryBank2Ft8x7BreakIn"); }
-void queryBank2Ft8x7Keyer() { record("queryBank2Ft8x7Keyer"); }
-void queryBank2Ft857Nar() { record("queryBank2Ft857Nar"); }
-void queryBank2Ft8x7Menu() { record("queryBank2Ft8x7Menu"); }
-void queryBank2Ft8x7Row() { record("queryBank2Ft8x7Row"); }
 
 void queryBank3Split() { record("queryBank3Split"); }
 void toggleBank3Split() { record("toggleBank3Split"); }
@@ -188,6 +188,8 @@ void beginBank6DcsEntry() { record("beginBank6DcsEntry"); }
 void queryBank8CivAddress() { record("queryBank8CivAddress"); }
 void beginBank8CivAddressEntry() { record("beginBank8CivAddressEntry"); }
 void cycleBank8Baud(int d) { record("cycleBank8Baud(%d)", d); }
+void queryBank8Ft8x7Row() { record("queryBank8Ft8x7Row"); }
+void queryBank8Ft8x7Menu() { record("queryBank8Ft8x7Menu"); }
 
 void selectBank9DirectProfile(char key) { record("selectBank9DirectProfile(%c)", key); }
 void queryBank9TuningSpeech() { record("queryBank9TuningSpeech"); }

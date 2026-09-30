@@ -1,6 +1,9 @@
-// Bank 8 keypad actions: CI-V address and baud rate.
+// Bank 8 keypad actions: CI-V address and baud rate, and the FT-8x7 menu item and row.
 #include "ui_keypad_bank.h"
 #include "radio_profile.h"
+
+void queryBank8Ft8x7Row() { queryKeypadFt8x7Setting(Ft8x7Setting::Row); }
+void queryBank8Ft8x7Menu() { queryKeypadFt8x7Setting(Ft8x7Setting::Menu); }
 
 static void speakBaudValue(uint32_t baud, bool ok) {
   if (!g_speechEnabled) return;

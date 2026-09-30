@@ -44,17 +44,17 @@ All Bank 2 keys only read settings from the radio's EEPROM. CAT don't change the
 | `1` short | not available (no DSP) | `NR?` (DSP noise reduction) |
 | `2` short | `NB?` | `NB?` |
 | `3` short | not available (no DSP) | `NOTCH?` (DSP auto notch) |
-| `4` short | `AGC?` | `AGC?` |
-| `5` short | — | `IPO?` (HF and 6 m) |
-| `5` long | — | `ATT?` (HF and 6 m) |
-| `6` short | — | `DBF?` (DSP bandpass filter) |
-| `7` short | `BK?` (break-in) | `BK?` (break-in) |
-| `7` long | `KYR?` (keyer) | `KYR?` (keyer) |
-| `8` short | — | `NAR?` (FM narrow) |
-| `9` short | `MENU?` (last menu item) | `MENU?` (last menu item) |
-| `9` long | `ROW?` (function row) | `ROW?` (soft key row) |
+| `4` short | not available (no DSP) | `NRLEVEL?` (menu 49, 1–16) |
+| `5` short | not available | `NBLEVEL?` (menu 63, 0–100) |
+| `6` short | not available (no DSP) | `DBF?` (DSP bandpass filter) |
+| `7` short | not available (no DSP) | `HPF?`: low cut (menu 46, DSP HPF cutoff), "h p f 300 hertz" |
+| `8` short | not available (no DSP) | `LPF?`: high cut (menu 47, DSP LPF cutoff), "l p f 2800 hertz" |
+| `9` short | not available (no DSP) | `MICEQ?`: TX equalizer (menu 48), "equalizer off", "l p f", "h p f" or "both" |
+| `A` short | not available | `IPO?` (HF and 6 m) |
+| `A` long | not available | `ATT?` (HF and 6 m) |
+| `A` double click | `AGC?` | `AGC?` |
 
-IPO, ATT and NAR are those of the current band and VFO. `MENU?` and `ROW?` are saved only when the radio's menu is exited.
+IPO and ATT are those of the current band and VFO. The menu settings are read as the radio last saved them. Break-in, keyer and FM narrow have no key; the console commands `BK?`, `KYR?` and `NAR?` read them.
 
 ## Bank 3 - VFO / Split
 
@@ -111,6 +111,15 @@ For Bank 6 tone handling, `2` is an explicit mode selector:
 
 `3` short and `4` short do not read the radio: they speak the last CTCSS tone or DCS code set from the keypad, or the `[bank6]` SD-card default (`88.5`, `023` unless changed) when nothing has been set yet.
 
+## Bank 8 - Radio Menu
+
+| Key | FT-817 | FT-857/897 |
+|---|---|---|
+| `7` short | `ROW?` (function row) | `ROW?` (soft key row) |
+| `8` short | `MENU?` (last menu item) | `MENU?` (last menu item) |
+
+`MENU?` and `ROW?` are saved only when the radio's menu is exited.
+
 ## Bank 9 - Profile / System
 
 | Key | FT-817 | FT-857/897 |
@@ -134,7 +143,7 @@ For Bank 6 tone handling, `2` is an explicit mode selector:
 | `VFO A/B tracking` | usable with sync support; the radio has no readable VFO | read from the EEPROM |
 | `manual front-panel A/B changes` | resync recommended | followed; no sync needed |
 | FT-817 hidden background conditions | documented CAT commands can work well, but some success still appears to depend on not-yet-characterized radio state; more testing is needed | not the main current concern |
-| `Bank 2 settings` | read only; no NR or notch (no DSP) | read only |
+| `Bank 2 settings` | read only; only NB and AGC (no DSP, IPO/ATT not read) | read only |
 | `MEM READ/WRITE` | experimental | experimental |
 | `VOL/SQL` | not cleanly validated | not cleanly validated |
 

@@ -58,7 +58,12 @@ FeatureStatus notchToggle(NotchState& out);
 // Menu, Row, Agc, BreakIn, Keyer
 // and IfShift.
 // Menu and Row are the menu item and soft key row saved when the radio's menu was last exited.
-enum class Ft8x7Setting : uint8_t { Agc, Ipo, Att, Nar, Dbf, BreakIn, Keyer, RfPower, Menu, Row, IfShift };
+// NrLevel (menu 49), NbLevel (63), LowCut (46, DSP HPF), HighCut (47, DSP LPF) and MicEq (48)
+// are FT-857/897 DSP menu settings.
+enum class Ft8x7Setting : uint8_t {
+  Agc, Ipo, Att, Nar, Dbf, BreakIn, Keyer, RfPower, Menu, Row, IfShift,
+  NrLevel, NbLevel, LowCut, HighCut, MicEq,
+};
 
 struct Ft8x7SettingState {
   Ft8x7Setting setting = Ft8x7Setting::Agc;
@@ -66,6 +71,8 @@ struct Ft8x7SettingState {
   YaesuAgc agc = YaesuAgc::Off;  // Agc
   uint16_t wattsTenths = 0;      // RfPower: FT-857/897 for the current band group
   uint8_t number = 0;            // Menu, Row: from 1
+  uint16_t value = 0;            // NrLevel 1..16, NbLevel 0..100, LowCut and HighCut in Hz
+  YaesuFt857MicEq micEq = YaesuFt857MicEq::Off;  // MicEq
 };
 
 // The console command: "AGC?", "IPO?", ...

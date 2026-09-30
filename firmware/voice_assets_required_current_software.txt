@@ -83,6 +83,8 @@ voice_high.wav
 voice_auto.wav
 voice_menu.wav
 voice_row.wav
+voice_equalizer.wav
+voice_both.wav
 voice_rit.wav
 voice_clarifier.wav
 voice_repeater.wav

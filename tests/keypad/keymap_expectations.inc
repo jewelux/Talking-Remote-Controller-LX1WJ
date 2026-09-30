@@ -108,28 +108,30 @@ KEYMAP_ROW(ALL,             2, '2', "queryBank2Nb",          "toggleBank2Nb",   
 KEYMAP_ROW(ALL,             2, '3', "queryBank2Notch",       "toggleBank2Notch",       "-")
 KEYMAP_ROW(CIV,             2, '4', "queryBank2NrLevel",     "adjustBank2NrLevel(10)", "adjustBank2NrLevel(-10)")
 KEYMAP_ROW(FTDX10,          2, '4', "send(GT?)",             "send(GT FAST)",          "send(GT SLOW)")
-KEYMAP_ROW(FT817 | FT857,   2, '4', "queryBank2Ft8x7Agc",    "none",                   "-")
+KEYMAP_ROW(FT817 | FT857,   2, '4', "queryBank2Ft8x7NrLevel", "none",                  "-")
 KEYMAP_ROW(NOT(CIV | FTDX10 | FT817 | FT857), 2, '4', "unassigned", "none",            "-")
 KEYMAP_ROW(CIV,             2, '5', "queryBank2NbLevel",     "adjustBank2NbLevel(10)", "adjustBank2NbLevel(-10)")
 KEYMAP_ROW(FTDX10,          2, '5', "send(PS?)",             "send(PS OFF)",           "send(PS ON)")
-KEYMAP_ROW(FT857,           2, '5', "queryBank2Ft857Ipo",    "queryBank2Ft857Att",     "-")
-KEYMAP_ROW(NOT(CIV | FTDX10 | FT857), 2, '5', "unassigned", "none",                   "-")
+KEYMAP_ROW(FT817 | FT857,   2, '5', "queryBank2Ft8x7NbLevel", "none",                  "-")
+KEYMAP_ROW(NOT(CIV | FTDX10 | FT817 | FT857), 2, '5', "unassigned", "none",            "-")
 KEYMAP_ROW(CIV,             2, '6', "queryBank2PbtInner",    "adjustBank2PbtInner(10)", "adjustBank2PbtInner(-10)")
 KEYMAP_ROW(FTDX10,          2, '6', "send(IF?)",             "none",                   "-")
-KEYMAP_ROW(FT857,           2, '6', "queryBank2Ft857Dbf",    "none",                   "-")
-KEYMAP_ROW(NOT(CIV | FTDX10 | FT857), 2, '6', "unassigned", "none",                   "-")
+KEYMAP_ROW(FT817 | FT857,   2, '6', "queryBank2Ft8x7Dbf",    "none",                   "-")
+KEYMAP_ROW(NOT(CIV | FTDX10 | FT817 | FT857), 2, '6', "unassigned", "none",            "-")
 KEYMAP_ROW(CIV,             2, '7', "queryBank2PbtOuter",    "adjustBank2PbtOuter(10)", "adjustBank2PbtOuter(-10)")
 KEYMAP_ROW(FTDX10,          2, '7', "send(ID?)",             "none",                   "-")
-KEYMAP_ROW(FT817 | FT857,   2, '7', "queryBank2Ft8x7BreakIn", "queryBank2Ft8x7Keyer",   "-")
+KEYMAP_ROW(FT817 | FT857,   2, '7', "queryBank2Ft8x7LowCut", "none",                   "-")
 KEYMAP_ROW(NOT(CIV | FTDX10 | FT817 | FT857), 2, '7', "unassigned", "none",            "-")
 KEYMAP_ROW(CIV,             2, '8', "send(FILSHAPE?)",       "toggleBank2FilterShape", "-")
 KEYMAP_ROW(FTDX10,          2, '8', "reportFtdx10HiddenKey(BANK2 8 SHORT)", "none",          "-")  // fixed: was unassigned
-KEYMAP_ROW(FT857,           2, '8', "queryBank2Ft857Nar",    "none",                   "-")
-KEYMAP_ROW(NOT(CIV | FTDX10 | FT857), 2, '8', "unassigned", "none",                   "-")
+KEYMAP_ROW(FT817 | FT857,   2, '8', "queryBank2Ft8x7HighCut", "none",                  "-")
+KEYMAP_ROW(NOT(CIV | FTDX10 | FT817 | FT857), 2, '8', "unassigned", "none",            "-")
 KEYMAP_ROW(CIV,             2, '9', "queryBank2FilterWidth", "cycleBank2FilterWidth(1)", "cycleBank2FilterWidth(-1)")
 KEYMAP_ROW(FTDX10,          2, '9', "reportFtdx10HiddenKey(BANK2 9 SHORT)", "none",          "-")  // fixed: was unassigned
-KEYMAP_ROW(FT817 | FT857,   2, '9', "queryBank2Ft8x7Menu",   "queryBank2Ft8x7Row",     "-")
+KEYMAP_ROW(FT817 | FT857,   2, '9', "queryBank2Ft8x7MicEq",  "none",                   "-")
 KEYMAP_ROW(NOT(CIV | FTDX10 | FT817 | FT857), 2, '9', "unassigned", "none",            "-")
+KEYMAP_ROW(FT817 | FT857,   2, 'A', "queryBank2Ft8x7Ipo",    "queryBank2Ft8x7Att",     "queryBank2Ft8x7Agc")
+KEYMAP_ROW(NOT(FT817 | FT857), 2, 'A', "unassigned",       "none",                   "-")
 
 // ---- Bank 3 ----------------------------------------------------------------
 // FT-817 and FT-857/897 track the active VFO: '1' is the current VFO, '2' the
@@ -201,6 +203,10 @@ KEYMAP_ROW(NOT(FT8X7),      6, '4', "unassigned",            "none",            
 // ---- Bank 8 ----------------------------------------------------------------
 KEYMAP_ROW(ALL,             8, '1', "queryBank8CivAddress",  "beginBank8CivAddressEntry", "-")
 KEYMAP_ROW(ALL,             8, '2', "cycleBank8Baud(1)",     "cycleBank8Baud(-1)",     "none")
+KEYMAP_ROW(FT817 | FT857,   8, '7', "queryBank8Ft8x7Row",    "none",                   "-")
+KEYMAP_ROW(NOT(FT817 | FT857), 8, '7', "unassigned",       "none",                   "-")
+KEYMAP_ROW(FT817 | FT857,   8, '8', "queryBank8Ft8x7Menu",   "none",                   "-")
+KEYMAP_ROW(NOT(FT817 | FT857), 8, '8', "unassigned",       "none",                   "-")
 
 // ---- Bank 9 ----------------------------------------------------------------
 // LIGHT: digits 1-9 pick a built-in profile directly, ahead of any other short.

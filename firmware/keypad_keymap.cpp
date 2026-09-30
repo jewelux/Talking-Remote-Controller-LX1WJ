@@ -68,24 +68,17 @@ KeyBinding bank1(const KeypadTraits& t, char key) {
 KeyBinding bank2(const KeypadTraits& t, char key) {
   const bool civ = t.layout == L::Civ;
   const bool ftdx10 = t.layout == L::Ftdx10;
-  // FT-857/897: settings the radio keeps in its EEPROM, read only.
-  if (t.layout == L::Ft857) {
+  // FT-817 and FT-857/897: settings the radio keeps in its EEPROM, read only. The FT-817
+  // has no DSP and no readable IPO/ATT, so of these it answers only AGC.
+  if (t.layout == L::Ft817 || t.layout == L::Ft857) {
     switch (key) {
-      case '4': return bind(queryBank2Ft8x7Agc);
-      case '5': return bind(queryBank2Ft857Ipo, queryBank2Ft857Att);
-      case '6': return bind(queryBank2Ft857Dbf);
-      case '7': return bind(queryBank2Ft8x7BreakIn, queryBank2Ft8x7Keyer);
-      case '8': return bind(queryBank2Ft857Nar);
-      case '9': return bind(queryBank2Ft8x7Menu, queryBank2Ft8x7Row);
-      default: break;
-    }
-  }
-  // FT-817/818: the same settings, as far as the radio has them.
-  if (t.layout == L::Ft817) {
-    switch (key) {
-      case '4': return bind(queryBank2Ft8x7Agc);
-      case '7': return bind(queryBank2Ft8x7BreakIn, queryBank2Ft8x7Keyer);
-      case '9': return bind(queryBank2Ft8x7Menu, queryBank2Ft8x7Row);
+      case '4': return bind(queryBank2Ft8x7NrLevel);
+      case '5': return bind(queryBank2Ft8x7NbLevel);
+      case '6': return bind(queryBank2Ft8x7Dbf);
+      case '7': return bind(queryBank2Ft8x7LowCut);
+      case '8': return bind(queryBank2Ft8x7HighCut);
+      case '9': return bind(queryBank2Ft8x7MicEq);
+      case 'A': return bind(queryBank2Ft8x7Ipo, queryBank2Ft8x7Att, queryBank2Ft8x7Agc);
       default: break;
     }
   }
@@ -248,10 +241,18 @@ KeyBinding bank6(const KeypadTraits& t, char key) {
   }
 }
 
-KeyBinding bank8(char key) {
+KeyBinding bank8(const KeypadTraits& t, char key) {
+  // FT-817 and FT-857/897: the radio's menu position.
+  const bool ft8x7Menu = t.layout == L::Ft817 || t.layout == L::Ft857;
   switch (key) {
     case '1': return bind(queryBank8CivAddress, beginBank8CivAddressEntry);
     case '2': return bind([] { cycleBank8Baud(1); }, [] { cycleBank8Baud(-1); }, waitOnly);
+    case '7':
+      if (ft8x7Menu) return bind(queryBank8Ft8x7Row);
+      return {};
+    case '8':
+      if (ft8x7Menu) return bind(queryBank8Ft8x7Menu);
+      return {};
     default: return {};
   }
 }
@@ -301,7 +302,7 @@ KeyBinding keymapLookup(const KeypadTraits& traits, uint8_t bank, char key) {
     case 4: return bank4(traits, key);
     case 5: return bank5(key);
     case 6: return bank6(traits, key);
-    case 8: return bank8(key);
+    case 8: return bank8(traits, key);
     case 9: return bank9(traits, key);
     default: return {};
   }

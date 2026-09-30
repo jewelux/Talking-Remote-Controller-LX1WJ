@@ -88,8 +88,33 @@ static const char* ft8x7SettingName(Ft8x7Setting setting) {
     case Ft8x7Setting::Menu: return "MENU";
     case Ft8x7Setting::Row: return "ROW";
     case Ft8x7Setting::IfShift: return "IFSHIFT";
+    case Ft8x7Setting::NrLevel: return "NRLEVEL";
+    case Ft8x7Setting::NbLevel: return "NBLEVEL";
+    case Ft8x7Setting::LowCut: return "HPF";
+    case Ft8x7Setting::HighCut: return "LPF";
+    case Ft8x7Setting::MicEq: return "MICEQ";
   }
   return "";
+}
+
+// Menu 48 as the radio shows it.
+static const char* ft8x7MicEqText(YaesuFt857MicEq eq) {
+  switch (eq) {
+    case YaesuFt857MicEq::Lpf: return "LPF";
+    case YaesuFt857MicEq::Hpf: return "HPF";
+    case YaesuFt857MicEq::Both: return "BOTH";
+    default: return "OFF";
+  }
+}
+
+// "LPF" -> "l p f"
+static String spelledLetters(const char* name) {
+  String spelled;
+  for (const char* c = name; *c; ++c) {
+    if (spelled.length()) spelled += ' ';
+    spelled += *c;
+  }
+  return spelled;
 }
 
 // 25 -> "2.5", 50 -> "5".
@@ -104,6 +129,11 @@ String ft8x7SettingText(const Ft8x7SettingState& state) {
   if (state.setting == Ft8x7Setting::RfPower) return text + wattsText(state.wattsTenths) + " W";
   if (state.setting == Ft8x7Setting::Agc) return text + ft8x7AgcText(state.agc);
   if (state.setting == Ft8x7Setting::Menu || state.setting == Ft8x7Setting::Row) return text + String((int)state.number);
+  if (state.setting == Ft8x7Setting::NrLevel || state.setting == Ft8x7Setting::NbLevel) return text + String(state.value);
+  if (state.setting == Ft8x7Setting::LowCut || state.setting == Ft8x7Setting::HighCut) {
+    return text + String(state.value) + " Hz";
+  }
+  if (state.setting == Ft8x7Setting::MicEq) return text + ft8x7MicEqText(state.micEq);
   return text + (state.on ? "ON" : "OFF");
 }
 
@@ -123,14 +153,39 @@ void speakFt8x7Setting(const Ft8x7SettingState& state) {
     speakDigitsAndPoint(String((int)state.number));
     return;
   }
+  // "noise reduction level 8", "noise blanker level 50"
+  if (state.setting == Ft8x7Setting::NrLevel || state.setting == Ft8x7Setting::NbLevel) {
+    speakToken(state.setting == Ft8x7Setting::NrLevel ? "noisereduction" : "noiseblanker");
+    playSilenceMs(60);
+    speakToken("level");
+    playSilenceMs(60);
+    speakDigitsAndPoint(String(state.value));
+    return;
+  }
+  // "h p f 300 hertz": the radio's menu name, low cut being the high pass filter.
+  if (state.setting == Ft8x7Setting::LowCut || state.setting == Ft8x7Setting::HighCut) {
+    speakToken(spelledLetters(ft8x7SettingName(state.setting)));
+    playSilenceMs(60);
+    speakDigitsAndPoint(String(state.value));
+    playSilenceMs(60);
+    speakToken("hertz");
+    return;
+  }
+  // "equalizer both", "equalizer l p f"
+  if (state.setting == Ft8x7Setting::MicEq) {
+    speakToken("equalizer");
+    playSilenceMs(60);
+    if (state.micEq == YaesuFt857MicEq::Lpf || state.micEq == YaesuFt857MicEq::Hpf) {
+      speakToken(spelledLetters(ft8x7MicEqText(state.micEq)));
+    } else {
+      speakToken(ft8x7MicEqText(state.micEq));
+    }
+    return;
+  }
   // No "shift" clip yet: printed only.
   if (state.setting == Ft8x7Setting::IfShift) return;
   // "AGC" -> "a g c"
-  String spelled;
-  for (const char* c = ft8x7SettingName(state.setting); *c; ++c) {
-    if (spelled.length()) spelled += ' ';
-    spelled += *c;
-  }
+  const String spelled = spelledLetters(ft8x7SettingName(state.setting));
   if (state.setting == Ft8x7Setting::Agc) {
     speakToken(spelled);
     playSilenceMs(60);

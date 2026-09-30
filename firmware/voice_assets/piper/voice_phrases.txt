@@ -80,6 +80,7 @@ v f o
 # Core control words
 auto
 bank
+both
 cancel
 choose
 equals
@@ -129,6 +130,7 @@ tuner
 split
 
 # Filter / DSP
+equalizer
 filter
 filter shape | filtershape
 filter width | filterwidth

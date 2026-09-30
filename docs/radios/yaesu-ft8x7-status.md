@@ -45,7 +45,7 @@ The goal of this document is to separate:
 | RIT query and toggle (Bank 3 `5`, `RIT?`, `RIT TOGGLE`) | verified: like the FT-897, `05`/`85` switch the clarifier, which the FT-817 manual calls RIT (a short press of CLAR), and answer `00` when they switched, `F0` when it was already in that state, also after a front panel change and with IF shift (the long press of CLAR) on, which they leave alone |
 | Lock query (`LOCK?`, Bank 1 `3`) | verified: EEPROM `0x57` bit 6, inverted (0 = locked), following both the front panel key and the CAT lock |
 | Noise blanker query (`NB?`, Bank 2 `2`) | verified: EEPROM `0x57` bit 5 (1 = on), following the front panel. There is no DSP, so `NR?` and `NOTCH?` say unsupported |
-| AGC, BK and KYR (`AGC?`, `BK?`, `KYR?`, Bank 2 `4` and `7`) and VOX, fast tuning and IF shift (`YSETTINGS?`) | verified, read only; addresses below |
+| AGC, BK and KYR (`AGC?`, `BK?`, `KYR?`, Bank 2 `A` double click for AGC) and VOX, fast tuning and IF shift (`YSETTINGS?`) | verified, read only; addresses below |
 | IPO, ATT and NAR | not read: they sit in the per-band VFO blocks (IPO appeared at block +0 bit 5), which the radio saves only on a band change or power-off, so a read would lag the radio |
 | VFO A/B commands (`VFOA?`, `VFOB?`, `VFOA MODE?`, `VFOB MODE?` and their sets) | verified: switch to the VFO, wait 120 ms (one retry for a query) and switch back to the VFO in use |
 
@@ -63,8 +63,8 @@ Read with `BB`, on demand only. Addresses from the FT8x7Com FT817Setup project, 
 | `0x58` | 7 | VOX (measured, as in the map) |
 | `0x58` | 5 | BK (measured, as in the map) |
 | `0x58` | 4 | KYR (measured, as in the map) |
-| `0x75` | 5..0 | menu item (`MENU?`, Bank 2 `9`), said as stored + 1 like the FT-857/897 (measured) |
-| `0x76` | 3..0 | function row (`ROW?`, Bank 2 `9` long), said as stored + 1; 7 (row 8) is the NB/AGC row and 9 (row 10) VOX/BK/KYR (measured) |
+| `0x75` | 5..0 | menu item (`MENU?`, Bank 8 `8`), said as stored + 1 like the FT-857/897 (measured) |
+| `0x76` | 3..0 | function row (`ROW?`, Bank 8 `7`), said as stored + 1; 7 (row 8) is the NB/AGC row and 9 (row 10) VOX/BK/KYR (measured) |
 | `0x79` | 1..0 | TX power (`RFPOWER?`, Bank 1 `6`): High, L3, L2, L1, said as 5, 2.5, 1 and 0.5 W, on the FT-818 (profile name containing "FT-818") as 6, 5, 2.5 and 1 W (the levels with an external supply; FT-818 not measured) |
 | `0x7A` | 7 | split (measured) |
 | `0x7B` | 4, 3..0 | charging on, charge hours (not used) |
@@ -126,8 +126,8 @@ The active VFO cannot be read: `0x55` bit 0, which Hamlib's `get_vfo` and the KA
 | Split status query | verified on an FT-897: EEPROM `0x8D` bit 7 in receive, TX status bit 5 while transmitting (1 = on; the manual says 0 = on, which is wrong) |
 | Repeater and tone/DCS write paths outside normal FM repeater context | CAT bytes are implemented, but practical success can still depend on the radio already being in the appropriate VHF/UHF band and FM context |
 | Active VFO read from the EEPROM (`0x68`) | verified on an FT-897: follows both the front panel A/B key and the CAT toggle; Bank 3 reads it before each VFO action (`get_vfo=1`) |
-| Settings read from the EEPROM (Bank 2, `MENU?`, `ROW?`, `AGC?`, `IPO?`, `ATT?`, `NAR?`, `DBF?`, `BK?`, `KYR?`, `NR?`, `NB?`, `NOTCH?`, `RFPOWER?`) | verified on an FT-897, read only; addresses in the [EEPROM map](#ft-857897-eeprom-map) |
-| Further settings read from the EEPROM (`YSETTINGS?`: VOX, PROC, lock, fast tuning, DSP row, IF shift, filter, SQL/RF knob, mic EQ, menu levels, the RIT offset) | protocol only, no keys yet; verified on an FT-897 against the values set on the radio |
+| Settings read from the EEPROM (Bank 2, Bank 8 `7`/`8`, `MENU?`, `ROW?`, `AGC?`, `IPO?`, `ATT?`, `NAR?`, `DBF?`, `BK?`, `KYR?`, `NR?`, `NB?`, `NOTCH?`, `NRLEVEL?`, `NBLEVEL?`, `HPF?`, `LPF?`, `MICEQ?`, `RFPOWER?`) | verified on an FT-897, read only; addresses in the [EEPROM map](#ft-857897-eeprom-map) |
+| Further settings read from the EEPROM (`YSETTINGS?`: VOX, PROC, lock, fast tuning, DSP row, IF shift, filter, SQL/RF knob, mic EQ, menu levels, the RIT offset) | protocol only, no keys except those in Bank 2; verified on an FT-897 against the values set on the radio |
 
 ### FT-857/897 EEPROM map
 
@@ -164,7 +164,7 @@ Shared by all bands:
 | `0x93` | 7..4 | DSP NR level (menu 49), value + 1 = 1..16 |
 | `0x93` | 3..2 | DSP BPF width (menu 45): 0 = 60, 1 = 120, 2 = 240 Hz (1 not seen) |
 | `0x93` | 1..0 | DSP MIC EQ (menu 48): 0 = off, 1 = LPF, 2 = HPF, 3 = both |
-| `0x94` | 4..0 | DSP LPF cutoff (menu 47), 0..31 = 1000..6000 Hz (only the ends measured) |
+| `0x94` | 4..0 | DSP LPF cutoff (menu 47), 0..31 = 1000..6000 Hz (measured at the ends and 11 = 2770 Hz) |
 | `0x95` | 3..0 | DSP HPF cutoff (menu 46), 100 + 60 × value Hz, 100..1000 Hz |
 | `0x99` | all | NB level (menu 63), 0..100 |
 | `0x9A` | all | PROC level (menu 74), 0..100 |

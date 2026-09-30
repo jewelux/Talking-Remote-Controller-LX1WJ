@@ -56,16 +56,16 @@ void adjustBank2PbtOuter(int delta);
 void toggleBank2FilterShape();
 void queryBank2FilterWidth();
 void cycleBank2FilterWidth(int delta);
-// FT-857/897 settings read from the radio's EEPROM.
+// FT-8x7 settings read from the radio's EEPROM. The FT-817 has only AGC of these.
+void queryBank2Ft8x7NrLevel();
+void queryBank2Ft8x7NbLevel();
+void queryBank2Ft8x7Dbf();
+void queryBank2Ft8x7LowCut();
+void queryBank2Ft8x7HighCut();
+void queryBank2Ft8x7MicEq();
+void queryBank2Ft8x7Ipo();
+void queryBank2Ft8x7Att();
 void queryBank2Ft8x7Agc();
-void queryBank2Ft857Ipo();
-void queryBank2Ft857Att();
-void queryBank2Ft857Dbf();
-void queryBank2Ft8x7BreakIn();
-void queryBank2Ft8x7Keyer();
-void queryBank2Ft857Nar();
-void queryBank2Ft8x7Menu();
-void queryBank2Ft8x7Row();
 
 // ---- Bank 3 ----
 void queryBank3Split();
@@ -138,6 +138,9 @@ void beginBank6DcsEntry();
 void queryBank8CivAddress();
 void beginBank8CivAddressEntry();
 void cycleBank8Baud(int delta);
+// FT-8x7: the soft key (function) row and menu item saved when the radio's menu was last exited.
+void queryBank8Ft8x7Row();
+void queryBank8Ft8x7Menu();
 
 // ---- Bank 9 ----
 // Light-Icom fallback: key '1'-'9' picks that built-in profile. The keymap

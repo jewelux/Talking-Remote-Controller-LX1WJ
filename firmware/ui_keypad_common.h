@@ -59,6 +59,8 @@ bool keypadReportIfTimedOut(const char* label);
 // A shared feature operation did not succeed: beep when unsupported, say
 // "timeout" or give the error sound otherwise, and return true. Ok: false.
 bool keypadReportFeatureFailure(FeatureStatus status, const char* label);
+// Reads an FT-8x7 EEPROM setting, prints and speaks it; the FT-817 beeps for what it lacks.
+void queryKeypadFt8x7Setting(Ft8x7Setting setting);
 // The key has no action here: short beep.
 void keypadReportUnassigned(const String& label);
 // When supported is false the key's feature is missing on this profile: beep like

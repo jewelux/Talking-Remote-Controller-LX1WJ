@@ -77,9 +77,10 @@
 - FT-817/818/857/897: `YEEPROM! <addr> <byte> <byte>` writes two bytes of the radio's EEPROM, at
   the address and the one after it, the counterpart of `YEEPROM?`. **Use with caution:** a wrong address or value
   can wipe the radio's memories and calibration. It is refused while transmitting
-- FT-817/818/857/897: every Bank 2 key, Bank 1 `6` and Bank 3 `5` has a console command
-  (`NB?`, `AGC?`, `BK?`, `KYR?`, `MENU?`, `ROW?`, `RFPOWER?`, `RIT?` …; on the FT-857/897 also
-  `NR?`, `NOTCH?`, `IPO?`, `ATT?`, `DBF?` and `NAR?`). `IFSHIFT?` prints whether IF shift is on,
+- FT-817/818/857/897: every Bank 2 and Bank 8 key, Bank 1 `6` and Bank 3 `5` has a console command
+  (`NB?`, `AGC?`, `MENU?`, `ROW?`, `RFPOWER?`, `RIT?` …; on the FT-857/897 also `NR?`, `NOTCH?`,
+  `NRLEVEL?`, `NBLEVEL?`, `HPF?`, `LPF?`, `MICEQ?`, `IPO?`, `ATT?` and `DBF?`). `BK?`, `KYR?` and,
+  on the FT-857/897, `NAR?` read break-in, keyer and FM narrow. `IFSHIFT?` prints whether IF shift is on,
   and `YSETTINGS?` lists more settings read from the radio, e.g. VOX, lock, fast tuning and IF
   shift, on the FT-857/897 also PROC, CW speed, the gains and the DSP filter widths
 
@@ -108,11 +109,14 @@
   it and a double press says the TX frequency. It used to set split off, on, or on and then off,
   and the `SPLIT CAL` console command is gone
 - FT-817/818/857/897: Bank 2 reads the radio's settings, also those changed on the radio: noise
-  blanker (`2`), AGC (`4`, "a g c auto"), break-in and keyer (`7`, long for keyer) and the menu
-  item the radio's menu was last left on (`9`, "menu 7 6"; long for the soft key or function row).
-  The FT-857/897 also reads DSP noise reduction (`1`), auto notch (`3`), IPO and ATT (`5`, long for
-  ATT), the DSP bandpass filter (`6`) and FM narrow (`8`); the FT-817 has no DSP, so `1` and `3`
-  say "not available". HamTRC only reads these settings; it cannot change them
+  blanker (`2`) and AGC (`A` double press, "a g c auto"). The FT-857/897 also reads DSP noise
+  reduction (`1`), auto notch (`3`), the NR level (`4`, "noise reduction level 8"), the NB level
+  (`5`), the DSP bandpass filter (`6`), the low cut and high cut (`7` and `8`, "h p f 300 hertz",
+  "l p f 2800 hertz"), the TX equalizer (`9`, "equalizer both") and IPO and ATT (`A`, long for
+  ATT); the FT-817 has no DSP, so these say "not available". HamTRC only reads these settings; it
+  cannot change them
+- FT-817/818/857/897: Bank 8 `8` says the menu item the radio's menu was last left on ("menu 7 6"),
+  `7` the soft key or function row
 - FT-817/818/857/897: Bank 1 `6` says the TX power: on the FT-857/897 the menu 75 power of the
   current band ("power 10 watts"), on the FT-817/818 the power setting (on the FT-818 6, 5, 2.5
   and 1 watts)
