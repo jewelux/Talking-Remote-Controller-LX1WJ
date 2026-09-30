@@ -127,7 +127,7 @@ The active VFO cannot be read: `0x55` bit 0, which Hamlib's `get_vfo` and the KA
 | Repeater and tone/DCS write paths outside normal FM repeater context | CAT bytes are implemented, but practical success can still depend on the radio already being in the appropriate VHF/UHF band and FM context |
 | Active VFO read from the EEPROM (`0x68`) | verified on an FT-897: follows both the front panel A/B key and the CAT toggle; Bank 3 reads it before each VFO action (`get_vfo=1`) |
 | Settings read from the EEPROM (Bank 2, `MENU?`, `ROW?`, `AGC?`, `IPO?`, `ATT?`, `NAR?`, `DBF?`, `BK?`, `KYR?`, `NR?`, `NB?`, `NOTCH?`, `RFPOWER?`) | verified on an FT-897, read only; addresses in the [EEPROM map](#ft-857897-eeprom-map) |
-| Further settings read from the EEPROM (`YSETTINGS?`: VOX, PROC, lock, fast tuning, DSP row, IF shift, filter, SQL/RF knob, mic EQ, menu levels, the RIT or IF shift offset) | protocol only, no keys yet; verified on an FT-897 against the values set on the radio |
+| Further settings read from the EEPROM (`YSETTINGS?`: VOX, PROC, lock, fast tuning, DSP row, IF shift, filter, SQL/RF knob, mic EQ, menu levels, the RIT offset) | protocol only, no keys yet; verified on an FT-897 against the values set on the radio |
 
 ### FT-857/897 EEPROM map
 
@@ -185,7 +185,7 @@ Per band and VFO, a 28-byte block. VFO A blocks: 160 m `0xBA`, 80 m `0xD6`, 5 MH
 | +1 | 3 | FM narrow (NAR) |
 | +2 | 5 | IPO |
 | +2 | 4 | ATT |
-| +10..+11 | all | an offset, signed, 10 Hz units, big-endian (`FF E1` = −310 Hz), measured as the "clarifier" offset, so the IF shift or the RIT offset: to be re-measured. Kept when it is switched off. `YSETTINGS?` shows it as `CLAROFFSET` |
+| +10..+11 | all | the RIT offset, signed, 10 Hz units, big-endian (`FF AA` = −860 Hz), measured on 20 m against the frequency the radio reports with RIT on. Kept when RIT is switched off. Current only after the radio saves the block: a band change saves it, turning the knob or a short press of CLAR does not. The IF shift offset is not here. `YSETTINGS?` shows it as `RITOFFSET` |
 | +12..+15 | all | frequency, 10 Hz units, big-endian |
 
 The radio saves a band block on events such as key presses, not while the dial turns, so the block can lag the current frequency. Seen changing without a known cause: `0x6C`/`0x6D`, and `0xA9` bit 7 (set together with DIG VOX 100).

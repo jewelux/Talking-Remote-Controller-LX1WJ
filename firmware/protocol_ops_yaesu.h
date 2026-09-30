@@ -105,10 +105,10 @@ enum class YaesuFt857Level : uint8_t {
   VoxGain,       // menu 88
 };
 bool yaesuFt857QueryLevel(YaesuFt857Level level, uint16_t& valueOut, uint32_t timeoutMs);
-// The offset kept in the band block of hz (RIT or IF shift, not yet confirmed which), as of the radio's last save of that block
-// (it saves on events such as key presses, not while tuning). The offset stays when the
-// clarifier is switched off.
-bool yaesuFt857QueryClarifierOffsetHz(uint64_t hz, int32_t& offsetOut, uint32_t timeoutMs);
+// The RIT offset kept in the band block of hz, as of the radio's last save of that block (a
+// band change saves it; turning the knob or switching RIT off does not). The offset stays when
+// RIT is switched off. The IF shift offset is not kept there.
+bool yaesuFt857QueryRitOffsetHz(uint64_t hz, int32_t& offsetOut, uint32_t timeoutMs);
 // IF shift (a long press of the radio's CLAR key). CAT can read it but not switch it.
 bool yaesuFt857QueryIfShift(bool& onOut, uint32_t timeoutMs);
 // RIT (a short press of the CLAR key, which the manuals also call the clarifier), which the CAT

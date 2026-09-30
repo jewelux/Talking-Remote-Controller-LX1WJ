@@ -489,7 +489,7 @@ bool yaesuFt857QueryLevel(YaesuFt857Level level, uint16_t& valueOut, uint32_t ti
 }
 
 // Band block +10..+11: signed, 10 Hz units (0xFFE1 = -310 Hz).
-bool yaesuFt857QueryClarifierOffsetHz(uint64_t hz, int32_t& offsetOut, uint32_t timeoutMs) {
+bool yaesuFt857QueryRitOffsetHz(uint64_t hz, int32_t& offsetOut, uint32_t timeoutMs) {
   if (!currentProfileVariantIs("ft857_897")) return false;
   const uint32_t khz = (uint32_t)(hz / 1000ULL);
   for (const Ft857BandSlot& slot : kFt857BandSlots) {

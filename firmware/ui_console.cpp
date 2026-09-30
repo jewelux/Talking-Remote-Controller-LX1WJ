@@ -1980,8 +1980,8 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     }
     uint64_t hz = 0;
     int32_t offset = 0;
-    Serial.print("CLAROFFSET ");
-    if (queryFrequency(hz, 800) && yaesuFt857QueryClarifierOffsetHz(hz, offset, 300)) Serial.println(offset);
+    Serial.print("RITOFFSET ");
+    if (queryFrequency(hz, 800) && yaesuFt857QueryRitOffsetHz(hz, offset, 300)) Serial.println(offset);
     else Serial.println("--");
     return true;
   }
