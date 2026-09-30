@@ -53,6 +53,8 @@
   nothing
 - the S-meter says dB over S9 as a word ("S meter nine plus twenty")
 - WFM is said as "wfm" instead of being spelled out
+- the RX/TX query (Bank 1 `1`, and Bank 3 `6` on radios other than the FT-8x7 and FTDX10) says
+  "transceiver rx" or "transceiver tx" instead of "transceiver off" or "on"
 - Bank 9 says what a value is: the volume keys say "volume five" (plus "ok" after a change), the
   profile query says "profile" before the radio and no longer ends with "ok", and profile select asks "profile please" instead of
   "choose please"

@@ -222,6 +222,13 @@ void speakSimpleBinaryState(bool on) {
   playClipProgmem(on ? voice_on : voice_off, on ? voice_on_len : voice_off_len);
 }
 
+void speakRxTxState(bool tx) {
+  if (!g_speechEnabled) return;
+  speakToken("transceiver");
+  playSilenceMs(60);
+  speakToken(tx ? "tx" : "rx");
+}
+
 void speakQueriedFrequencyHz(uint64_t hz) {
   if (!g_speechEnabled) return;
   speakFrequencyWord();

@@ -38,6 +38,8 @@ void prepareKeypadRadioWrite();
 // FT-8x7 with the dial lock on: say "lock on" and return false.
 bool guardFt8x7VfoToggleLock();
 void speakSimpleBinaryState(bool on);
+// "transceiver rx" or "transceiver tx".
+void speakRxTxState(bool tx);
 void speakQueriedFrequencyHz(uint64_t hz);
 void speakFeatureValue(const uint8_t* featureData, size_t featureLen, uint8_t value);
 uint8_t levelRawToPercent(uint16_t raw);

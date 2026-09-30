@@ -47,10 +47,7 @@ void queryBank1RxTx() {
   bool tx = false;
   if (!queryRxTxStatus(tx, 800)) { keypadReportIfTimedOut("RXTX?"); return; }
   printKeypadStatus(tx ? "TX" : "RX");
-  if (!g_speechEnabled) return;
-  speakToken("transceiver");
-  playSilenceMs(60);
-  speakSimpleBinaryState(tx);
+  speakRxTxState(tx);
 }
 
 void queryBank1Frequency() {
