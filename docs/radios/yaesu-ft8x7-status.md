@@ -195,7 +195,7 @@ The radio saves a band block on events such as key presses, not while the dial t
 | Function | Status |
 |---|---|
 | Memory read/write raw path | experimental |
-| PO / ALC / SWR meters | verified on an FT-897 into a dummy load (PO 10, ALC 8, SWR 1.0): PO from TX status bits 3..0, ALC and SWR from the undocumented `BD`, sent only while transmitting since the radio does not answer it in receive. High-SWR flag (TX status bit 6) not yet seen set |
+| PO / ALC / SWR meters | verified on an FT-897 into a dummy load (PO 10, ALC 8, SWR 1.0): PO from TX status bits 3..0, ALC and SWR from the undocumented `BD`, sent only while transmitting since the radio does not answer it in receive. High-SWR flag (TX status bit 6) verified: "swr high" is said when the radio flags it |
 | Volume / SQL extras | not cleanly validated |
 
 ## FT-897

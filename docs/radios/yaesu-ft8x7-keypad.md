@@ -2,6 +2,8 @@
 
 This document describes the current keypad layout for the Yaesu FT-817, FT-857, and FT-897 family.
 
+> The layout is experimental and may still change.
+
 The intention is:
 
 - keep the overall bank structure consistent across the FT8x7 family
@@ -27,34 +29,32 @@ Important practical note:
 | `3` short | `LOCK?` (read from the radio) | `LOCK?` (read from the radio) |
 | `3` long | `LOCK ON/OFF` | `LOCK ON/OFF` |
 | `4` short | `PO?` | `PO?` |
-| `6` short | `RFPOWER?`: the TX power setting ("power 2.5 watts") | `RFPOWER?`: menu 75 power of the current band ("power 10 watts") |
+| `6` short | `RFPOWER?`: the TX power setting | `RFPOWER?`: menu 75 power of the current band |
 | `7` short | `SM?` | `SM?` |
 | `8` short | `SWR?` | `SWR?` |
 | `9` short | `MODE?` | `MODE?` |
 | `9` long | `MODE <n>`, then digit, then `Enter` | `MODE <n>`, then digit, then `Enter` |
 
-`LOCK?` reads the lock from the radio's EEPROM, so a lock set on the front panel is heard too, and `3` long flips the radio's real state.
-
 ## Bank 2 - Radio Settings
 
-These keys read settings the FT-857/897 keeps in its EEPROM, like the HamPod does. They only read: CAT cannot change these settings, so a long press on `1`–`3` says "not available". IPO, ATT and NAR are those of the current band and VFO, and only on the amateur bands (IPO and ATT on HF and 6 m). On the FT-817 `2` (`NB?`), `4` (`AGC?`), `7` (`BK?`, long `KYR?`) and `9` (`MENU?`, long `ROW?`, the function row) are available. It has no DSP, so `1` and `3` say "not available"; it has no IPO/ATT, DBF or NAR keys here, so `5`, `6` and `8` beep.
+All Bank 2 keys only read settings from the radio's EEPROM. CAT don't change them, so a long press on `1`–`3` says "not available".
 
-| Key | FT-857/897 | Says |
+| Key | FT-817 | FT-857/897 |
 |---|---|---|
-| `1` short | `NR?` (DSP noise reduction, DNR) | "noise reduction on" |
-| `2` short | `NB?` | "noise blanker off" |
-| `3` short | `NOTCH?` (DSP auto notch, DNF) | "notch filter on" |
-| `4` short | `AGC?` | "a g c auto" (auto, fast, slow or off) |
-| `5` short | `IPO?` | "i p o off" |
-| `5` long | `ATT?` | "a t t off" |
-| `6` short | `DBF?` (DSP bandpass filter) | "d b f off" |
-| `7` short | `BK?` (break-in) | "b k on" |
-| `7` long | `KYR?` (keyer) | "k y r off" |
-| `8` short | `NAR?` (FM narrow) | "n a r off" |
-| `9` short | `MENU?`: the menu item the radio's menu was last left on | "menu 7 6" |
-| `9` long | `ROW?`: the soft key row, as saved when the menu was last exited | "row 1 1" |
+| `1` short | not available (no DSP) | `NR?` (DSP noise reduction) |
+| `2` short | `NB?` | `NB?` |
+| `3` short | not available (no DSP) | `NOTCH?` (DSP auto notch) |
+| `4` short | `AGC?` | `AGC?` |
+| `5` short | — | `IPO?` (HF and 6 m) |
+| `5` long | — | `ATT?` (HF and 6 m) |
+| `6` short | — | `DBF?` (DSP bandpass filter) |
+| `7` short | `BK?` (break-in) | `BK?` (break-in) |
+| `7` long | `KYR?` (keyer) | `KYR?` (keyer) |
+| `8` short | — | `NAR?` (FM narrow) |
+| `9` short | `MENU?` (last menu item) | `MENU?` (last menu item) |
+| `9` long | `ROW?` (function row) | `ROW?` (soft key row) |
 
-The radio saves the menu item and the row only when its menu is exited, so `9` long says the row you were on when you last left the menu.
+IPO, ATT and NAR are those of the current band and VFO. `MENU?` and `ROW?` are saved only when the radio's menu is exited.
 
 ## Bank 3 - VFO / Split
 
@@ -129,17 +129,13 @@ For Bank 6 tone handling, `2` is an explicit mode selector:
 
 | Function | FT-817 | FT-857/897 |
 |---|---|---|
-| `SPLIT` | usable; the state is read from the radio | usable; the state is read from the radio |
 | `Bank 6 repeater/tone writes` | expect best results only on `2 m` or `70 cm` and already in `FM`; other contexts can make valid CAT writes look unreliable | expect best results only on the intended `VHF/UHF` band and already in `FM`; other contexts can make valid CAT writes look unreliable |
 | `CLAR OFF` | replaced by `RIT?` / `RIT TOGGLE`; the CAT clarifier commands switch RIT | replaced by `RIT?` / `RIT TOGGLE`; the CAT clarifier commands switch RIT |
 | `VFO A/B tracking` | usable with sync support; the radio has no readable VFO | read from the EEPROM |
 | `manual front-panel A/B changes` | resync recommended | followed; no sync needed |
-| `LOCK?` | read from the EEPROM | read from the EEPROM |
 | FT-817 hidden background conditions | documented CAT commands can work well, but some success still appears to depend on not-yet-characterized radio state; more testing is needed | not the main current concern |
-| `BANK 2 NR/NB/NOTCH/FILTER` | NB, AGC, BK and KYR read from the EEPROM; no NR or notch (no DSP) | not available |
-| `BSTACK` | not available | not available |
+| `Bank 2 settings` | read only; no NR or notch (no DSP) | read only |
 | `MEM READ/WRITE` | experimental | experimental |
-| `PO/SWR` | verified | verified |
 | `VOL/SQL` | not cleanly validated | not cleanly validated |
 
 ## Notes
