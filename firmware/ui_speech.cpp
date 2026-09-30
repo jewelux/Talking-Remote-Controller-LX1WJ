@@ -64,7 +64,10 @@ static inline bool tuningIdCancelled(uint32_t id) { return id != 0 && id <= g_tu
 static inline bool audioStopRequested() { return g_audioAbortReq || tuningIdCancelled(g_playingTuningId); }
 
 static inline bool audioQueueIsEmpty() { return g_aqHead == g_aqTail; }
-static void audioQueueClear() { g_aqHead = g_aqTail = 0; }
+static void audioQueueClear() {
+  g_aqHead = 0;
+  g_aqTail = 0;
+}
 static bool audioEnqueueClip(const uint8_t* data, size_t len) {
   if (!data || !len) return false;
   int next = (g_aqTail + 1) % AUDIO_QUEUE_LEN;

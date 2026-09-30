@@ -510,7 +510,7 @@ bool yaesuFt857QueryIfShift(bool& onOut, uint32_t timeoutMs) { return ft857ReadB
 // already in that state, also after a front panel change.
 static bool ft8x7SetRitReply(bool on, bool& changedOut, uint32_t timeoutMs) {
   if (!currentProfileVariantIs("ft857_897") && !currentProfileVariantIs("ft817")) return false;
-  const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, on ? 0x05 : 0x85};
+  const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, (uint8_t)(on ? 0x05 : 0x85)};
   uint8_t rsp = 0;
   if (!yaesuCatTransact1(cmd, rsp, timeoutMs)) return false;
   if (rsp != 0x00 && rsp != 0xF0) return false;
@@ -600,22 +600,22 @@ bool yaesuCatSelectVfoB() {
 }
 
 bool yaesuCatSetPtt(bool on) {
-  const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, on ? 0x08 : 0x88};
+  const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, (uint8_t)(on ? 0x08 : 0x88)};
   return yaesuCatSendWriteOnly(cmd);
 }
 
 bool yaesuCatSetClarifier(bool on) {
-  const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, on ? 0x05 : 0x85};
+  const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, (uint8_t)(on ? 0x05 : 0x85)};
   return yaesuCatSendWriteOnly(cmd);
 }
 
 bool yaesuCatSetSplit(bool on) {
-  const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, on ? 0x02 : 0x82};
+  const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, (uint8_t)(on ? 0x02 : 0x82)};
   return yaesuCatSendWriteOnly(cmd);
 }
 
 bool yaesuCatSetLockDocumentedRaw(bool on) {
-  const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, on ? 0x00 : 0x80};
+  const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, (uint8_t)(on ? 0x00 : 0x80)};
   return yaesuCatSendWriteOnly(cmd);
 }
 
@@ -631,7 +631,7 @@ bool yaesuCatSetRepeaterOffsetHzRaw(uint64_t hz) {
 }
 
 bool yaesuCatSetPowerDocumentedRaw(bool on) {
-  const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, on ? 0x0F : 0x8F};
+  const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, (uint8_t)(on ? 0x0F : 0x8F)};
   return yaesuCatSendWriteOnly(cmd);
 }
 

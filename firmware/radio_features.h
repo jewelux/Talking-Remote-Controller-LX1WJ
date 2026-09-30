@@ -55,8 +55,7 @@ FeatureStatus notchToggle(NotchState& out);
 
 // FT-857/897 settings read from the radio's EEPROM, since CAT has no command for them. They
 // cannot be set. IPO, ATT and NAR are those of the current band. The FT-817/818 has RfPower,
-// Menu, Row, Agc, BreakIn, Keyer
-// and IfShift.
+// Menu, Row, Agc, BreakIn, Keyer and IfShift.
 // Menu and Row are the menu item and soft key row saved when the radio's menu was last exited.
 // NrLevel (menu 49), NbLevel (63), LowCut (46, DSP HPF), HighCut (47, DSP LPF) and MicEq (48)
 // are FT-857/897 DSP menu settings.
