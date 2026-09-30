@@ -63,7 +63,7 @@ Read with `BB`, on demand only. Addresses from the FT8x7Com FT817Setup project, 
 | `0x58` | 7 | VOX (measured, as in the map) |
 | `0x58` | 5 | BK (measured, as in the map) |
 | `0x58` | 4 | KYR (measured, as in the map) |
-| `0x75` | 5..0 | menu item (`MENU?`, Bank 2 `9`), said as stored + 1 like the FT-857/897 |
+| `0x75` | 5..0 | menu item (`MENU?`, Bank 2 `9`), said as stored + 1 like the FT-857/897 (measured) |
 | `0x76` | 3..0 | function row (`ROW?`, Bank 2 `9` long), said as stored + 1; 7 (row 8) is the NB/AGC row and 9 (row 10) VOX/BK/KYR (measured) |
 | `0x79` | 1..0 | TX power (`RFPOWER?`, Bank 1 `6`): High, L3, L2, L1, said as 5, 2.5, 1 and 0.5 W, on the FT-818 (profile name containing "FT-818") as 6, 5, 2.5 and 1 W (the levels with an external supply; FT-818 not measured) |
 | `0x7A` | 7 | split (measured) |
@@ -141,7 +141,7 @@ Shared by all bands:
 | `0x6A` | 7 | fast tuning, **inverted** (1 = off) |
 | `0x6A` | 6 | lock, **inverted** (0 = locked); follows the front panel key and CAT lock |
 | `0x6A` | 5 | NB (yo3ggx) |
-| `0x6A` | 4 | IF shift on (long press of CLAR); saved at once, survives a power cycle (the offset does not) |
+| `0x6A` | 4 | IF shift on (long press of CLAR); saved at once, survives a power cycle. The IF shift offset does not survive one and is not stored anywhere in `0x000`–`0x5FF`, also not after a band change saved the band block (measured) |
 | `0x6A` | 3 | the knob tunes IF shift (1) or RIT (0): set by switching IF shift, cleared by RIT going on, kept when RIT goes off. RIT on/off itself was not found |
 | `0x6A` | 1..0 | AGC speed: 00 slow, 01 auto, 10 fast (yo3ggx) |
 | `0x6B` | 7 | VOX |
@@ -185,10 +185,11 @@ Per band and VFO, a 28-byte block. VFO A blocks: 160 m `0xBA`, 80 m `0xD6`, 5 MH
 | +1 | 3 | FM narrow (NAR) |
 | +2 | 5 | IPO |
 | +2 | 4 | ATT |
+| +4 | 7 | unknown; not RIT (set in blocks with a zero RIT offset too). Saved with the band's working state |
 | +10..+11 | all | the RIT offset, signed, 10 Hz units, big-endian (`FF AA` = −860 Hz), measured on 20 m against the frequency the radio reports with RIT on. Kept when RIT is switched off. Current only after the radio saves the block: a band change saves it, turning the knob or a short press of CLAR does not. The IF shift offset is not here. `YSETTINGS?` shows it as `RITOFFSET` |
 | +12..+15 | all | frequency, 10 Hz units, big-endian |
 
-The radio saves a band block on events such as key presses, not while the dial turns, so the block can lag the current frequency. Seen changing without a known cause: `0x6C`/`0x6D`, and `0xA9` bit 7 (set together with DIG VOX 100).
+The radio saves a band block on events such as key presses, not while the dial turns, so the block can lag the current frequency. A CAT frequency jump into another band carries the current working state there: that band's block is saved with the mode bytes (+3, +6, +7), +4 and the RIT offset of the band that was left. The band keys work differently: the RIT offset is kept per band, and a band key brings back the offset saved for that band. Seen changing without a known cause: `0x6C`/`0x6D`, and `0xA9` bit 7 (set together with DIG VOX 100).
 
 ### Experimental or incomplete
 

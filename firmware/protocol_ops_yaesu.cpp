@@ -406,8 +406,7 @@ bool yaesuFt817QueryAgc(YaesuAgc& out, uint32_t timeoutMs) {
   return true;
 }
 
-// 0x75 bits 5..0 = menu item, 0x76 bits 3..0 = function row. Taken to count from 0 like the
-// FT-857/897's.
+// 0x75 bits 5..0 = menu item, 0x76 bits 3..0 = function row, both counted from 0.
 bool yaesuFt817QueryMenuAndRow(uint8_t& menuOut, uint8_t& rowOut, uint32_t timeoutMs) {
   if (!currentProfileVariantIs("ft817")) return false;
   uint8_t menu = 0;
