@@ -123,7 +123,8 @@
 - FT-817/818/857/897: Bank 3 `5` short says whether RIT is on ("rit on"), long toggles it, also
   after RIT was switched with the radio's CLAR key. Before, the key sent "clarifier on" and
   "clarifier off" without knowing the state. If RIT is on, asking switches it off and straight
-  back on. On the FT-817/818 this replaces VFO B mode: for VFO B's mode, switch with Bank 3 `1`
+  back on; on the FT-857/897 the clarifier knob then tunes RIT even if it was tuning IF shift.
+  On the FT-817/818 this replaces VFO B mode: for VFO B's mode, switch with Bank 3 `1`
   long and use Bank 1 `9`
 - FT-857/897: the Bank 3 VFO keys read which VFO is active from the radio, also after A/B was
   pressed on its front panel, so "vfo a" and "vfo b" are always right. Before, HamTRC assumed VFO

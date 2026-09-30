@@ -85,6 +85,10 @@ FT-817 Bank 3 note:
 - The FT-817 cannot report its active VFO, so `4` sync is still important after any unknown front-panel A/B change.
 - `5` works as on the FT-857/897: RIT is the clarifier, the short press of the radio's CLAR key; IF shift (the long press) is left alone. If RIT is on, asking switches it off and straight back on.
 
+FT-857/897 Bank 3 note:
+
+- `5` short switches RIT off and straight back on when RIT is on, since the radio cannot report RIT otherwise. If the clarifier knob was tuning IF shift at that moment, it tunes RIT afterwards (EEPROM `0x6A` bit 3). `5` long does not do this: it moves the knob to RIT only when it switches RIT on.
+
 ## Bank 6 - Repeater / Tone
 
 | Key | FT-817 | FT-857/897 |
