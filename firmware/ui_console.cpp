@@ -67,15 +67,6 @@ static void probeYaesuFt817ModeTxRx(const char* phaseLabel) {
   printYaesuProbeByte("  RX:   ", yaesuCatQueryRxStatusRaw(raw, 800), raw);
 }
 
-static void printYesNoUnknown(const char* label, bool known, bool on) {
-  Serial.print(label);
-  if (!known) {
-    Serial.println("unknown");
-    return;
-  }
-  Serial.println(on ? "on" : "off");
-}
-
 static void printLiveToneStateSummary() {
   Serial.print("  CTCSS cache: ");
   if (!live.ctcssValid) {
@@ -166,11 +157,10 @@ static void printYaesuFt817FmContext() {
     Serial.print("  SPLIT:       ");
     Serial.println(splitOn ? "on" : "off");
   } else {
-    printYesNoUnknown("  SPLIT CACHE: ", g_ft8x7SplitKnown, g_ft8x7SplitOn);
+    Serial.println("  SPLIT:       no reply");
   }
 
   printLiveToneStateSummary();
-  Serial.println("  CLAR query:  unavailable");
   Serial.print("  TRACE:       ");
   Serial.println(g_yaesuCatTrace ? "on" : "off");
 }
@@ -1812,13 +1802,11 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
   }
   if (upper == "SPLIT ON") {
     yaesuCatSetSplit(true);
-    rememberSplitState(true);
     Serial.println("SPLIT ON");
     return true;
   }
   if (upper == "SPLIT OFF") {
     yaesuCatSetSplit(false);
-    rememberSplitState(false);
     Serial.println("SPLIT OFF");
     return true;
   }
@@ -2034,7 +2022,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     char* endPtr = nullptr;
     const long addr = strtol(addrArg.c_str(), &endPtr, 16);
     uint8_t data[2] = {0};
-    if (!addrArg.length() || *endPtr != ' ' || addr < 0 || addr > 0xFFFE || space < 0 ||
+    if (!addrArg.length() || *endPtr != '\0' || addr < 0 || addr > 0xFFFE || space < 0 ||
         !parseTwoHexByteArgs(args.substring(space + 1), data[0], data[1])) {
       Serial.println("YEEPROM! -> use <addr hex> <byte hex> <byte hex>, e.g. YEEPROM! 0068 1F 00");
       return true;

@@ -346,8 +346,6 @@ struct LiveState {
   uint16_t dcsCode = 0;
   bool activeVfoKnown = false;
   bool activeVfoA = true;
-  bool splitKnown = false;
-  bool splitOn = false;
   bool lockKnown = false;
   bool lockOn = false;
 };

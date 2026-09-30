@@ -18,5 +18,4 @@ void rememberLiveNr(bool on, uint32_t nowMs);
 void rememberLiveNb(bool on, uint32_t nowMs);
 void rememberLiveNotch(bool on, uint32_t nowMs, bool widthValid = false, NotchWidth width = NOTCH_WIDTH_UNKNOWN);
 void rememberActiveVfo(bool vfoA);
-void rememberSplitState(bool on);
 void rememberDialLockState(bool on);

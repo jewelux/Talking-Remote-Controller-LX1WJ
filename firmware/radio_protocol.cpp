@@ -580,11 +580,7 @@ bool querySplit(bool& onOut, uint32_t timeoutMs) {
   const StoredProfile& sp = currentStoredProfile();
   if (pt == PROTO_CIV) return civQuerySplit(sp, onOut, timeoutMs);
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiQuerySplit(sp, onOut, timeoutMs);
-  if (pt == PROTO_YAESU_FT8X7 && sp.caps.getSplit) {
-    if (!yaesuCatQuerySplit(onOut, timeoutMs)) return false;
-    rememberSplitState(onOut);
-    return true;
-  }
+  if (pt == PROTO_YAESU_FT8X7 && sp.caps.getSplit) return yaesuCatQuerySplit(onOut, timeoutMs);
   return false;
 }
 
@@ -593,11 +589,7 @@ bool setSplit(bool on) {
   const StoredProfile& sp = currentStoredProfile();
   if (pt == PROTO_CIV) return civSetSplit(sp, on);
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiSetSplit(sp, on);
-  if (pt == PROTO_YAESU_FT8X7) {
-    if (!yaesuCatSetSplit(on)) return false;
-    rememberSplitState(on);
-    return true;
-  }
+  if (pt == PROTO_YAESU_FT8X7) return yaesuCatSetSplit(on);
   return false;
 }
 

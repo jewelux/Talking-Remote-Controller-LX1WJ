@@ -16,8 +16,6 @@ extern bool g_tuningSpeakEnabled;
 extern uint32_t g_suppressFreqSpeakUntilMs;
 extern uint32_t g_suspendPollingUntilMs;
 extern LiveState live;
-extern bool g_ft8x7SplitKnown;
-extern bool g_ft8x7SplitOn;
 extern bool g_yaesuCatTrace;
 // EXPERIMENTAL ON: every capability of the active profile counts as on. Not saved.
 extern bool g_experimentalCaps;
