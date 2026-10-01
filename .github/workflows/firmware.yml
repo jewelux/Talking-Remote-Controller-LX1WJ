@@ -25,6 +25,9 @@ jobs:
       - name: FT-8x7 unit tests
         run: make -C tests/ft8x7
 
+      - name: FT-847 unit tests
+        run: make -C tests/ft847
+
   build:
     runs-on: ubuntu-latest
     outputs:
