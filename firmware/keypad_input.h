@@ -127,17 +127,23 @@ class KeypadInputListener {
   // '#': everything was cancelled. With nothing to cancel, '#' gives
   // onRejected("CLEAR") instead.
   virtual void onClear() = 0;
+  // An entry or selection had no key event for kEntryTimeoutMs and was
+  // dropped. The mode is already back to Normal.
+  virtual void onEntryTimeout(InputMode mode) = 0;
 };
 
 class KeypadInput {
  public:
   // A second short press of the same key within this time is a double click.
   static constexpr uint32_t kDoubleClickMs = 220;
+  // An entry or selection with no key event for this long goes back to Normal.
+  static constexpr uint32_t kEntryTimeoutMs = 30000;
 
   explicit KeypadInput(KeypadInputListener& listener) : listener_(listener) {}
 
   void onKey(char key, KeyGesture gesture, uint32_t nowMs);
-  // Runs a deferred short action once the double-click wait has passed.
+  // Runs a deferred short action once the double-click wait has passed, and
+  // ends an entry or selection that waited kEntryTimeoutMs for a key.
   void poll(uint32_t nowMs);
 
   // Called by keymap actions.
@@ -223,6 +229,8 @@ class KeypadInput {
   void enter();
   void commitEntry();
   void clearAll();
+  // Drops the entry or selection that waited too long.
+  void timeOut();
   // Runs action with keypadActiveKey() naming it, e.g. "BANK3 2 LONG".
   void runAction(KeyAction action, uint8_t bank, char key, const char* gesture);
   void runShortOrReject(const KeyBinding& binding, uint8_t bank, char key);
@@ -250,4 +258,6 @@ class KeypadInput {
   // then ignored until all keys are up.
   KeySet down_;
   bool coPress_ = false;
+  // Time of the last key event; an entry or selection times out from here.
+  uint32_t lastKeyMs_ = 0;
 };

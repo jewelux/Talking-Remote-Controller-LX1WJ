@@ -85,6 +85,7 @@ bool KeypadInput::KeySet::release(char key) {
 }
 
 void KeypadInput::onKey(char key, KeyGesture gesture, uint32_t nowMs) {
+  lastKeyMs_ = nowMs;
   listener_.onActivity(gesture == KeyGesture::Pressed);
   if (coPressed(key, gesture)) return;
   // The second press is over: its release is judged by the double-click time.
@@ -175,10 +176,12 @@ void KeypadInput::pressedInMode(char key) {
 }
 
 void KeypadInput::poll(uint32_t nowMs) {
-  if (!pending_.active || (uint32_t)(nowMs - pending_.atMs) <= kDoubleClickMs) return;
-  // The second press is down: its release or hold decides, however long it takes.
-  if (pending_.repressed) return;
-  runPending();
+  // A waiting short runs once its time is over. While its second press is down,
+  // that press's release or hold decides, however long it takes.
+  if (pending_.active && (uint32_t)(nowMs - pending_.atMs) > kDoubleClickMs && !pending_.repressed) {
+    runPending();
+  }
+  if (mode_ != InputMode::Normal && (uint32_t)(nowMs - lastKeyMs_) > kEntryTimeoutMs) timeOut();
 }
 
 bool KeypadInput::secondPressDown(char key) const {
@@ -415,6 +418,17 @@ void KeypadInput::clearAll() {
   pending_.active = false;
   oneShotBank_ = 0;
   listener_.onClear();
+}
+
+// Like Clear for the mode only: a staged command, and the swallowed release of
+// a key still held, stay.
+void KeypadInput::timeOut() {
+  const InputMode mode = mode_;
+  mode_ = InputMode::Normal;
+  digits_.clear();
+  entryVfo_ = TargetVfo::Current;
+  stagedMode_ = kNoMode;
+  listener_.onEntryTimeout(mode);
 }
 
 void KeypadInput::runAction(KeyAction action, uint8_t bank, char key, const char* gesture) {

@@ -33,6 +33,9 @@
   digits already typed stay. This includes `#`
 - bank select with `*` still held: the digit picks the bank of the next key only, then your bank is
   back. Only the digit is spoken
+- an entry or bank, profile or mode select left for 30 seconds without a key ends and says
+  "timeout". A command waiting for `D` stays. Before, it waited forever, and tuning on the radio was
+  not announced meanwhile
 - a key that does nothing gives a short beep instead of silence: keys with no action on the current
   bank, keys whose feature the radio lacks, and keys an entry or selection does not take
 - choosing a profile number with no stored profile says "not available"

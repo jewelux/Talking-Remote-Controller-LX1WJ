@@ -141,6 +141,12 @@ class KeypadUiListener : public KeypadInputListener {
     printKeypadCommand("CLEAR");
     if (g_speechEnabled) speakToken("cancel");
   }
+
+  void onEntryTimeout(InputMode mode) override {
+    const EntrySpec* entry = keypadEntrySpec(mode);
+    printKeypadCommand(String(entry ? entry->name : "MODE SELECT") + " TIMEOUT");
+    if (g_speechEnabled) speakTimeout();
+  }
 };
 
 KeypadUiListener s_listener;

@@ -106,6 +106,9 @@ struct Fake : KeypadInputListener {
     log.push_back(std::string("send staged ") + cmd);
   }
   void onClear() override { log.push_back("clear"); }
+  void onEntryTimeout(InputMode mode) override {
+    log.push_back(std::string("timeout ") + modeName(mode));
+  }
 
   // The log since the last call, then cleared.
   std::vector<std::string> take() {
@@ -1471,4 +1474,79 @@ TEST(input_staged_command_is_cut_to_its_maximum) {
   KeypadInput in(f);
   in.stageCommand("0123456789012345678901234567");
   CHECK_EQ(strlen(in.stagedCommand()), KeypadInput::kMaxStagedCommand);
+}
+
+// --- Entry timeout ---------------------------------------------------------------------
+
+TEST(input_entry_times_out_after_no_key) {
+  Fake f;
+  f.holds = {"1 0"};
+  f.shorts = {"1 5"};
+  KeypadInput in(f);
+  f.hooks["hold 1 0"] = [&] { in.beginEntry(InputMode::FreqEntry, TargetVfo::A); };
+  hold(in, '0', 1000);
+  in.poll(1000 + KeypadInput::kEntryTimeoutMs);
+  CHECK_EQ(in.mode(), InputMode::FreqEntry);
+  in.poll(1001 + KeypadInput::kEntryTimeoutMs);
+  CHECK_EQ(in.mode(), InputMode::Normal);
+  CHECK_EQ(in.entryTargetVfo(), TargetVfo::Current);
+  // Once is enough, and the next key is a Normal key again.
+  in.poll(2000 + KeypadInput::kEntryTimeoutMs);
+  tap(in, '5', 3000 + KeypadInput::kEntryTimeoutMs);
+  CHECK_LOG(f, "hold 1 0", "timeout FreqEntry", "short 1 5");
+}
+
+TEST(input_entry_timeout_restarts_with_every_key) {
+  Fake f;
+  KeypadInput in(f);
+  in.beginEntry(InputMode::RfPowerEntry);
+  in.onKey('5', KeyGesture::Pressed, 20000);
+  in.poll(20000 + KeypadInput::kEntryTimeoutMs);
+  // The release counts as a key event too.
+  in.onKey('5', KeyGesture::Released, 25000);
+  in.poll(25000 + KeypadInput::kEntryTimeoutMs);
+  CHECK_EQ(in.mode(), InputMode::RfPowerEntry);
+  CHECK_EQ(in.digits(), "5");
+  in.poll(25001 + KeypadInput::kEntryTimeoutMs);
+  CHECK_EQ(in.mode(), InputMode::Normal);
+  CHECK_EQ(in.digits(), "");
+  CHECK_LOG(f, "digit RfPowerEntry 5 5", "timeout RfPowerEntry");
+}
+
+TEST(input_bank_select_times_out) {
+  Fake f;
+  KeypadInput in(f);
+  hold(in, '*', 1000);
+  in.poll(1001 + KeypadInput::kEntryTimeoutMs);
+  CHECK_EQ(in.mode(), InputMode::Normal);
+  CHECK_EQ(in.bank(), 1);
+  CHECK_LOG(f, "bank please", "timeout BankSelect");
+}
+
+// A timed-out mode select leaves no picked mode for a later Enter.
+TEST(input_mode_select_times_out_with_its_pick) {
+  Fake f;
+  KeypadInput in(f);
+  in.beginModeSelect(TargetVfo::B);
+  tap(in, '3', 1000);
+  in.poll(1001 + KeypadInput::kEntryTimeoutMs);
+  CHECK_EQ(in.mode(), InputMode::Normal);
+  CHECK(!in.stagedModeActive());
+  tap(in, 'D', 2000 + KeypadInput::kEntryTimeoutMs);
+  CHECK_LOG(f, "mode digit 3", "timeout ModeSelect", "rejected ENTER");
+}
+
+// Normal mode does not time out, and a staged command waits for Enter however
+// long it takes, also through an entry that times out.
+TEST(input_staged_command_outlives_the_timeout) {
+  Fake f;
+  KeypadInput in(f);
+  in.stageCommand("PO?");
+  in.poll(2 * KeypadInput::kEntryTimeoutMs);
+  in.beginEntry(InputMode::RfPowerEntry);
+  tap(in, '5', 2 * KeypadInput::kEntryTimeoutMs);
+  in.poll(3 * KeypadInput::kEntryTimeoutMs + 1);
+  CHECK(in.hasStagedCommand());
+  tap(in, 'D', 4 * KeypadInput::kEntryTimeoutMs);
+  CHECK_LOG(f, "digit RfPowerEntry 5 5", "timeout RfPowerEntry", "send staged PO?");
 }

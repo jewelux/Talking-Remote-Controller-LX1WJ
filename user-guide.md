@@ -25,6 +25,8 @@ Global rules:
 - Long press: change something
 - `D`: confirm
 - `#`: cancel and leave the current entry
+- An entry or selection left for 30 seconds without a key ends and says "timeout". A command
+  waiting for `D` stays
 - `*` short: speak the current bank
 - `*` long, let go, then a digit `1`–`9`: change to that bank at once ("bank 3")
 - `*` long and, still holding `*`, a digit `1`–`9`: the next key only acts on that bank, then you

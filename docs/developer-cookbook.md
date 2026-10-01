@@ -244,6 +244,9 @@ Keep it that way.
   release.
 - **A key the mode does not take** beeps and the mode stays; only `#` leaves.
 - **Enter with nothing typed** beeps and stays.
+- **30 s with no key event** (`kEntryTimeoutMs`) ends any mode other than
+  Normal: `poll()` calls the listener's `onEntryTimeout`. A staged command
+  stays.
 
 How each entry takes digits is one table row in `keypad_input.cpp`:
 
@@ -752,6 +755,7 @@ and the same situation must always sound the same:
 | The radio or protocol cannot do it at all | "not available" | `speakNotAvailable` |
 | Invalid value, or a write was rejected | "error" | `speakError` |
 | `#` cancelled something | "cancel" | the listener's `onClear` |
+| An entry or selection waited 30 s for a key | "timeout" | the listener's `onEntryTimeout` |
 | Asking for input | "<thing> please" | e.g. "frequency please" |
 
 - **Build the answer by appending speech.** Only a new key press interrupts
