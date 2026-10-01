@@ -77,12 +77,12 @@ Mode digits:
 - `1` LSB
 - `2` USB
 - `3` CW
-- `4` FM
-- `5` AM
-- `6` RTTY
-- `7` CWR
-- `8` DIGI
-- `9` RTTYR
+- `4` AM
+- `5` FM
+- `6` DATA/DIGI
+- `7` RTTY
+- `8` CW-R
+- `9` RTTY-R
 
 ## CI-V Connection Setup
 
