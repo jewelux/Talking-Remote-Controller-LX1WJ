@@ -112,6 +112,7 @@ step
 thank you
 sync
 timeout
+verbose | | verbose,
 volume
 watts
 

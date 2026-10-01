@@ -25,8 +25,7 @@ void speakNrState(const NrState& state) {
     speakTokenState("noisereduction", state.on);
     return;
   }
-  speakToken("noisereduction");
-  playSilenceMs(60);
+  speakLabel("noisereduction");
   playDigit(state.level);
 }
 
@@ -51,8 +50,7 @@ String notchStateText(const NotchState& state) {
 // The width as its number: 1 NAR, 2 MID, 3 WIDE.
 void speakNotchState(const NotchState& state) {
   if (!g_speechEnabled) return;
-  speakToken("notch filter");
-  playSilenceMs(60);
+  speakLabel("notch filter");
   if (!state.on) {
     speakToken("off");
     return;
@@ -142,32 +140,26 @@ String ft8x7SettingText(const Ft8x7SettingState& state) {
 void speakFt8x7Setting(const Ft8x7SettingState& state) {
   if (!g_speechEnabled) return;
   if (state.setting == Ft8x7Setting::RfPower) {
-    speakToken("power");
-    playSilenceMs(60);
+    speakLabel("power");
     speakDigitsAndPoint(wattsText(state.wattsTenths));
     playSilenceMs(60);
     speakToken("watts");
     return;
   }
   if (state.setting == Ft8x7Setting::Menu || state.setting == Ft8x7Setting::Row) {
-    speakToken(state.setting == Ft8x7Setting::Menu ? "menu" : "row");
-    playSilenceMs(60);
+    speakLabel(state.setting == Ft8x7Setting::Menu ? "menu" : "row");
     speakDigitsAndPoint(String((int)state.number));
     return;
   }
   // "noise reduction level 8", "noise blanker level 50"
   if (state.setting == Ft8x7Setting::NrLevel || state.setting == Ft8x7Setting::NbLevel) {
-    speakToken(state.setting == Ft8x7Setting::NrLevel ? "noisereduction" : "noiseblanker");
-    playSilenceMs(60);
-    speakToken("level");
-    playSilenceMs(60);
+    speakLabel(state.setting == Ft8x7Setting::NrLevel ? "noisereduction level" : "noiseblanker level");
     speakDigitsAndPoint(String(state.value));
     return;
   }
   // "h p f 300 hertz": the radio's menu name, low cut being the high pass filter.
   if (state.setting == Ft8x7Setting::LowCut || state.setting == Ft8x7Setting::HighCut) {
-    speakToken(spelledLetters(ft8x7SettingName(state.setting)));
-    playSilenceMs(60);
+    speakLabel(spelledLetters(ft8x7SettingName(state.setting)));
     speakDigitsAndPoint(String(state.value));
     playSilenceMs(60);
     speakToken("hertz");
@@ -175,8 +167,7 @@ void speakFt8x7Setting(const Ft8x7SettingState& state) {
   }
   // "equalizer both", "equalizer l p f"
   if (state.setting == Ft8x7Setting::MicEq) {
-    speakToken("equalizer");
-    playSilenceMs(60);
+    speakLabel("equalizer");
     if (state.micEq == YaesuFt857MicEq::Lpf || state.micEq == YaesuFt857MicEq::Hpf) {
       speakToken(spelledLetters(ft8x7MicEqText(state.micEq)));
     } else {
@@ -186,8 +177,7 @@ void speakFt8x7Setting(const Ft8x7SettingState& state) {
   }
   // "antenna front", "antenna rear"
   if (state.setting == Ft8x7Setting::Antenna) {
-    speakToken("antenna");
-    playSilenceMs(60);
+    speakLabel("antenna");
     speakToken(state.on ? "rear" : "front");
     return;
   }
@@ -196,8 +186,7 @@ void speakFt8x7Setting(const Ft8x7SettingState& state) {
   // "AGC" -> "a g c"
   const String spelled = spelledLetters(ft8x7SettingName(state.setting));
   if (state.setting == Ft8x7Setting::Agc) {
-    speakToken(spelled);
-    playSilenceMs(60);
+    speakLabel(spelled);
     speakToken(ft8x7AgcText(state.agc));
     return;
   }

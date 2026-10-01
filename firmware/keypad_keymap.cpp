@@ -278,6 +278,7 @@ constexpr Action kDirectProfile[] = {
 KeyBinding bank9Keys(char key) {
   switch (key) {
     case '4': return bind(queryBank9TuningSpeech, toggleBank9TuningSpeech);
+    case '5': return bind(queryBank9Verbose, toggleBank9Verbose);
     case '7': return bind([] { adjustBank9Volume(-1); }, [] { adjustBank9Volume(-2); });
     case '8': return bind([] { adjustBank9Volume(1); }, [] { adjustBank9Volume(2); });
     case '9': return bind(queryBank9Volume);

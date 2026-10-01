@@ -149,6 +149,8 @@ void queryBank8Ft8x7Menu();
 void selectBank9DirectProfile(char key);
 void queryBank9TuningSpeech();
 void toggleBank9TuningSpeech();
+void queryBank9Verbose();   // "VERBOSE?", says "verbose on/off"
+void toggleBank9Verbose();
 // -1/1: "VOLUME DOWN/UP"; -2/2: "VOLUME DOWN/UP FAST".
 void adjustBank9Volume(int delta);
 void queryBank9Volume();   // "VOLUME?", speaks the volume

@@ -191,10 +191,7 @@ static void sendOrStageBank1Command(const String& cmd) {
   printKeypadAction(cmd);
   if (AUTO_SEND_BANK1_QUERIES) {
     // The SWR and RF power replies say their own word, so saying it here too doubles it.
-    if (cmd != "SWR?" && cmd != "RFPOWER?") {
-      speakKeypadCommandWord(cmd);
-      playSilenceMs(60);
-    }
+    if (cmd != "SWR?" && cmd != "RFPOWER?") speakKeypadCommandWord(cmd);
     keypadSendNow(cmd);
   } else {
     keypadStageCommand(cmd);

@@ -2,15 +2,9 @@
 #include "ui_keypad_bank.h"
 #include "radio_frequency.h"
 
-static void speakRitLabel() {
-  if (!g_speechEnabled) return;
-  speakToken("rit");
-}
-
 static void speakRitOffsetValue(int32_t hz) {
   if (!g_speechEnabled) return;
-  speakRitLabel();
-  playSilenceMs(60);
+  speakLabel("rit");
   if (hz > 0) {
     speakToken("plus");
     playSilenceMs(60);
@@ -33,8 +27,7 @@ void queryBank5Rit() {
   if (!queryRitOffsetHz(offset, 800)) offset = 0;
   printKeypadStatus(String(on ? "RIT ON " : "RIT OFF ") + String(offset) + " Hz");
   if (!g_speechEnabled) return;
-  speakRitLabel();
-  playSilenceMs(60);
+  speakLabel("rit");
   speakToken(on ? "on" : "off");
   if (offset != 0) {
     playSilenceMs(60);
@@ -49,9 +42,7 @@ void toggleBank5Rit() {
   if (!queryRitEnabled(on, 800)) { keypadReportIfTimedOut("RIT"); return; }
   if (!setRitEnabled(!on)) { keypadReportIfTimedOut("RIT"); return; }
   printKeypadStatus(!on ? "RIT ON" : "RIT OFF");
-  speakRitLabel();
-  playSilenceMs(60);
-  speakToken(!on ? "on" : "off");
+  speakTokenState("rit", !on);
 }
 
 void setBank5RitOffset(int32_t hz) {

@@ -214,6 +214,7 @@ The current keypad concept uses radio-specific banks with:
 | Profile / System | `PROFILE NEXT` | Bank 9: `B` short |
 | Profile / System | `PROFILE PREV` | Bank 9: `C` short |
 | Profile / System | `TUNINGSPEECH?`, `TUNINGSPEECH TOGGLE` | Bank 9: `4` short / `4` long |
+| Profile / System | `VERBOSE?`, `VERBOSE TOGGLE` | Bank 9: `5` short / `5` long |
 | Profile / System | `VOLUME DOWN / DOWN FAST` | Bank 9: `7` short / `7` long |
 | Profile / System | `VOLUME UP / UP FAST` | Bank 9: `8` short / `8` long |
 | Profile / System | `VOLUME?` | Bank 9: `9` short |

@@ -6,6 +6,8 @@ uint8_t loadProfileFromNvs(uint8_t fallback);
 void saveProfileToNvs(uint8_t id);
 bool loadTuningSpeakFromNvs(bool fallback);
 void saveTuningSpeakToNvs(bool v);
+bool loadVerboseFromNvs(bool fallback);
+void saveVerboseToNvs(bool v);
 uint8_t loadVolumeFromNvs(uint8_t fallback);
 void saveVolumeToNvs(uint8_t level);
 bool loadConnectionOverrideFromNvs(uint8_t id, uint8_t& civAddr, uint32_t& baud);

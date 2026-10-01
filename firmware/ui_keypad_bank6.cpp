@@ -22,8 +22,7 @@ static void setBank6Ft8x7RepeaterShift(uint8_t shiftByte, const char* label) {
   if (!yaesuCatSetRepeaterShiftRaw(shiftByte)) { keypadReportIfTimedOut("RPT"); return; }
   printKeypadStatus(String("RPT ") + label);
   if (!g_speechEnabled) return;
-  speakToken("repeater");
-  playSilenceMs(60);
+  speakLabel("repeater");
   if (String(label) == "MINUS") speakToken("minus");
   else if (String(label) == "PLUS") speakToken("plus");
   else speakToken("off");
@@ -34,10 +33,7 @@ static void setBank6Ft8x7RepeaterOffsetHz(uint64_t hz) {
   if (!yaesuCatSetRepeaterOffsetHzRaw(hz)) { keypadReportIfTimedOut("RPTSHIFT"); return; }
   printKeypadStatus(String("RPTSHIFT ") + hzToMHzString3(hz) + " MHz");
   if (!g_speechEnabled) return;
-  speakToken("repeater");
-  playSilenceMs(60);
-  speakFrequencyWord();
-  playSilenceMs(60);
+  speakLabel("repeater frequency");
   speakDigitsAndPoint(hzToMHzString3(hz));
 }
 
@@ -46,8 +42,7 @@ static void setBank6Ft8x7ToneMode(uint8_t modeByte, const char* label) {
   if (!yaesuCatSetToneDcsModeRaw(modeByte)) { keypadReportIfTimedOut("TONE"); return; }
   printKeypadStatus(String("TONE ") + label);
   if (!g_speechEnabled) return;
-  speakToken("tone");
-  playSilenceMs(60);
+  speakLabel("tone");
   if (String(label) == "OFF") {
     speakToken("off");
   } else if (String(label) == "CTCSS") {
@@ -122,8 +117,7 @@ void queryBank6CtcssDefault() {
   printKeypadAction(String("CTCSS ") + label);
   printKeypadStatus(String("CTCSS ") + label);
   if (!g_speechEnabled) return;
-  speakToken("ctcss");
-  playSilenceMs(60);
+  speakLabel("ctcss");
   speakDigitsAndPoint(label);
 }
 
@@ -134,7 +128,6 @@ void queryBank6DcsDefault() {
   printKeypadAction(String("DCS ") + label);
   printKeypadStatus(String("DCS ") + label);
   if (!g_speechEnabled) return;
-  speakToken("dcs");
-  playSilenceMs(60);
+  speakLabel("dcs");
   speakDigitsAndPoint(label);
 }

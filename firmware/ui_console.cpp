@@ -362,9 +362,7 @@ static void speakConsoleTokenOrGap(const char* token) {
 
 static void speakRitStateAndOffset(bool on, int32_t offset) {
   if (!g_speechEnabled) return;
-  speakToken("rit");
-  playSilenceMs(60);
-  speakToken(on ? "on" : "off");
+  speakTokenState("rit", on);
   if (offset == 0) return;
   playSilenceMs(60);
   if (offset > 0) {
@@ -382,8 +380,7 @@ static void speakRitStateAndOffset(bool on, int32_t offset) {
 
 static void speakSignedStepValue(const String& label, int value) {
   if (!g_speechEnabled) return;
-  speakToken(label);
-  playSilenceMs(60);
+  speakLabel(label);
   if (value < 0) {
     speakToken("minus");
     playSilenceMs(60);
@@ -416,10 +413,7 @@ static int32_t clampInt32(int32_t value, int32_t lo, int32_t hi) {
 
 static void speakBandStackLabel(uint8_t reg) {
   if (!g_speechEnabled) return;
-  speakToken("b");
-  playSilenceMs(60);
-  speakToken("stack");
-  playSilenceMs(60);
+  speakLabel("b stack");
   playDigit((int)reg);
 }
 
@@ -698,6 +692,8 @@ void printHelp() {
   Serial.println("    TEST");
   Serial.println("    TUNINGSPEECH OFF | ON | TOGGLE");
   Serial.println("    TUNINGSPEECH?");
+  Serial.println("    VERBOSE OFF | ON | TOGGLE");
+  Serial.println("    VERBOSE?");
   Serial.println("    VOICE <name>");
   Serial.println("    VOLUME <1..9> | VOLUME STEP <+-n>");
   Serial.println("    VOLUME?");
@@ -944,6 +940,12 @@ static bool handleConsoleInfoCommands(const String& upper) {
     speakTuningSpeechState();
     return true;
   }
+  if (upper == "VERBOSE?") {
+    Serial.print("VERBOSE ");
+    Serial.println(g_verboseSpeech ? "ON" : "OFF");
+    speakVerboseState();
+    return true;
+  }
   if (upper == "VOLUME?") {
     Serial.print("VOLUME ");
     Serial.println((int)g_volumeLevel);
@@ -1107,8 +1109,7 @@ static bool handleConsoleConnectionCommands(const String& line, const String& up
   Serial.println((unsigned long)baud);
   if (g_speechEnabled) {
     speakDigitsAndPoint(String((unsigned long)baud));
-    playSilenceMs(80);
-    speakOk();
+    speakValueOk();
   }
   return true;
 }
@@ -1142,6 +1143,13 @@ static bool handleConsoleToggleCommands(const String& line, const String& upper)
     speakTuningSpeechState();
     return true;
   }
+  if (upper == "VERBOSE ON" || upper == "VERBOSE OFF" || upper == "VERBOSE TOGGLE") {
+    if (upper == "VERBOSE TOGGLE") setVerboseSpeech(!g_verboseSpeech);
+    else setVerboseSpeech(upper == "VERBOSE ON");
+    Serial.println(g_verboseSpeech ? "OK VERBOSE ON" : "OK VERBOSE OFF");
+    speakVerboseState();
+    return true;
+  }
   if (upper.startsWith("VOLUME STEP")) {
     int32_t step = 0;
     if (!parseStepArg(line, upper, "VOLUME STEP ", step)) {
@@ -1155,8 +1163,7 @@ static bool handleConsoleToggleCommands(const String& line, const String& upper)
     Serial.println((int)lvl);
     if (g_speechEnabled) {
       speakVolumeLevel(lvl);
-      playSilenceMs(60);
-      speakToken("ok");
+      speakValueOk();
     }
     return true;
   }
@@ -1173,8 +1180,7 @@ static bool handleConsoleToggleCommands(const String& line, const String& upper)
     Serial.println(lvl);
     if (g_speechEnabled) {
       speakVolumeLevel((uint8_t)lvl);
-      playSilenceMs(60);
-      speakToken("ok");
+      speakValueOk();
     }
     return true;
   }
@@ -1189,8 +1195,7 @@ static void reportFt8x7MeterInReceive(const char* label, const char* meterToken)
   Serial.print(label);
   Serial.println(": RX (not transmitting)");
   if (!g_speechEnabled) return;
-  speakToken(meterToken);
-  playSilenceMs(60);
+  speakLabel(meterToken);
   speakToken("rx");
 }
 
@@ -1211,8 +1216,7 @@ static bool handleConsoleFt8x7Meters(const String& upper) {
     Serial.print(meters.po);
     Serial.println(meters.highSwr ? " of 15  HIGH SWR" : " of 15");
     if (g_speechEnabled) {
-      speakToken("power");
-      playSilenceMs(60);
+      speakLabel("power");
       speakDigitsAndPoint(String(meters.po));
       if (meters.highSwr) {
         playSilenceMs(120);
@@ -1234,12 +1238,13 @@ static bool handleConsoleFt8x7Meters(const String& upper) {
     Serial.print(meters.swr);
     Serial.println(meters.highSwr ? " of 15, HIGH SWR)" : " of 15)");
     if (g_speechEnabled) {
+      // The warning stays with verbose off.
       if (meters.highSwr) {
         speakFt8x7HighSwr();
+        playSilenceMs(60);
       } else {
-        speakToken("swr");
+        speakLabel("swr");
       }
-      playSilenceMs(60);
       speakDigitsAndPoint(String(swr, 1));
     }
     return true;
@@ -1471,8 +1476,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     Serial.print(label);
     Serial.println(live.ctcssValid ? " Hz (last set)" : " Hz (profile default)");
     if (g_speechEnabled) {
-      speakToken("ctcss");
-      playSilenceMs(60);
+      speakLabel("ctcss");
       speakDigitsAndPoint(label);
     }
     return true;
@@ -1491,8 +1495,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     Serial.print(label);
     Serial.println(" Hz");
     if (g_speechEnabled) {
-      speakToken("ctcss");
-      playSilenceMs(60);
+      speakLabel("ctcss");
       speakDigitsAndPoint(label);
     }
     return true;
@@ -1505,8 +1508,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     Serial.print(label);
     Serial.println(live.dcsValid ? " (last set)" : " (profile default)");
     if (g_speechEnabled) {
-      speakToken("dcs");
-      playSilenceMs(60);
+      speakLabel("dcs");
       speakDigitsAndPoint(label);
     }
     return true;
@@ -1523,8 +1525,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     Serial.print("DCS ");
     Serial.println(label);
     if (g_speechEnabled) {
-      speakToken("dcs");
-      playSilenceMs(60);
+      speakLabel("dcs");
       speakDigitsAndPoint(label);
     }
     return true;
@@ -2216,8 +2217,7 @@ static bool handleConsoleAdjustCommands(const String& line, const String& upper)
     if (!setFilterShape(!soft)) { reportCommandFailure("FILSHAPE TOGGLE", "failed"); return true; }
     Serial.println(!soft ? "FILSHAPE SOFT" : "FILSHAPE SHARP");
     if (g_speechEnabled) {
-      speakToken("filtershape");
-      playSilenceMs(60);
+      speakLabel("filtershape");
       speakToken(!soft ? "soft" : "sharp");
     }
     return true;
@@ -2233,8 +2233,7 @@ static bool handleConsoleAdjustCommands(const String& line, const String& upper)
     Serial.print("FILWIDTH ");
     Serial.println(next);
     if (g_speechEnabled) {
-      speakToken("filterwidth");
-      playSilenceMs(60);
+      speakLabel("filterwidth");
       playDigit((uint8_t)next);
     }
     return true;
@@ -2431,8 +2430,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     float swr = swrRawToValue(live.swrRaw);
     Serial.println(swr, 2);
     if (g_speechEnabled) {
-      speakToken("swr");
-      playSilenceMs(60);
+      speakLabel("swr");
       speakDigitsAndPoint(String(swr, 2));
     }
     return true;
@@ -2441,7 +2439,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     if (!refreshLivePower()) { reportCommandFailure("PO?", "no reply"); return true; }
     Serial.println(live.powerRaw);
     if (g_speechEnabled) {
-      playClipProgmem(voice_power, voice_power_len);
+      speakLabelClip(voice_power, voice_power_len);
       speakDigitsAndPoint(String(live.powerRaw));
     }
     return true;
@@ -2454,8 +2452,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     Serial.print((int)watts);
     Serial.println(" W");
     if (g_speechEnabled) {
-      speakToken("power");
-      playSilenceMs(60);
+      speakLabel("power");
       speakDigitsAndPoint(String((int)watts));
       playSilenceMs(60);
       speakToken("watts");
@@ -2476,8 +2473,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     Serial.print(watts);
     Serial.println(" W");
     if (g_speechEnabled) {
-      speakToken("power");
-      playSilenceMs(60);
+      speakLabel("power");
       speakDigitsAndPoint(String(watts));
       playSilenceMs(60);
       speakToken("watts");
@@ -2780,8 +2776,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     if (!queryFilterShape(soft, 800)) { reportCommandFailure("FILSHAPE?", "no reply"); return true; }
     Serial.println(soft ? "FILSHAPE SOFT" : "FILSHAPE SHARP");
     if (g_speechEnabled) {
-      speakToken("filtershape");
-      playSilenceMs(60);
+      speakLabel("filtershape");
       speakToken(soft ? "soft" : "sharp");
     }
     return true;
@@ -2790,8 +2785,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     if (!setFilterShape(false)) { reportCommandFailure("FILSHAPE SHARP", "failed"); return true; }
     Serial.println("FILSHAPE SHARP");
     if (g_speechEnabled) {
-      speakToken("filtershape");
-      playSilenceMs(60);
+      speakLabel("filtershape");
       speakToken("sharp");
     }
     return true;
@@ -2800,8 +2794,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     if (!setFilterShape(true)) { reportCommandFailure("FILSHAPE SOFT", "failed"); return true; }
     Serial.println("FILSHAPE SOFT");
     if (g_speechEnabled) {
-      speakToken("filtershape");
-      playSilenceMs(60);
+      speakLabel("filtershape");
       speakToken("soft");
     }
     return true;
@@ -2812,8 +2805,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     Serial.print("FILWIDTH ");
     Serial.println((int)filter);
     if (g_speechEnabled) {
-      speakToken("filterwidth");
-      playSilenceMs(60);
+      speakLabel("filterwidth");
       playDigit(filter);
     }
     return true;
@@ -2879,8 +2871,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     Serial.print((int)levelRawToPercent(raw));
     Serial.println("%");
     if (g_speechEnabled) {
-      playClipProgmem(voice_noiseblanker, voice_noiseblanker_len);
-      playSilenceMs(60);
+      speakLabelClip(voice_noiseblanker, voice_noiseblanker_len);
       speakDigitsAndPoint(String((int)levelRawToPercent(raw)));
       playSilenceMs(60);
       speakToken("percent");
@@ -2895,8 +2886,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     Serial.print(percent);
     Serial.println("%");
     if (g_speechEnabled) {
-      playClipProgmem(voice_noiseblanker, voice_noiseblanker_len);
-      playSilenceMs(60);
+      speakLabelClip(voice_noiseblanker, voice_noiseblanker_len);
       speakDigitsAndPoint(String(percent));
       playSilenceMs(60);
       speakToken("percent");
@@ -2934,8 +2924,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     Serial.print("FILWIDTH ");
     Serial.println(filter);
     if (g_speechEnabled) {
-      speakToken("filterwidth");
-      playSilenceMs(60);
+      speakLabel("filterwidth");
       playDigit((uint8_t)filter);
     }
     return true;

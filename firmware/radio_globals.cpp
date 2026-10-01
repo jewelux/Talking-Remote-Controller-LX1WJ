@@ -12,6 +12,7 @@ HardwareSerial* g_civSerial = &civUart1;
 bool g_quiet = false;
 bool g_speechEnabled = true;
 bool g_tuningSpeakEnabled = true;
+bool g_verboseSpeech = true;
 uint32_t g_suppressFreqSpeakUntilMs = 0;
 uint32_t g_suspendPollingUntilMs = 0;
 LiveState live;

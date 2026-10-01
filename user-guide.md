@@ -44,6 +44,18 @@ spoken "seven point zero".
 - A new key press stops the current speech immediately.
 - The spoken result depends on the selected radio profile.
 
+## Shorter Answers
+
+Every answer first says what it is, then the value: "power 50 watts", "noise blanker 40 percent",
+"volume five ok". Once you know the keys, you can turn the names off and hear only the values:
+"50 watts", "40 percent", "five". Units stay, and the "ok" after a change is dropped.
+
+- Bank 9, `5` short: says "verbose on" or "verbose off"
+- Bank 9, `5` long: switches between the two
+
+The setting is kept after power off. Prompts such as "frequency please" and messages such as
+"not available" stay the same. Console: `VERBOSE?` and `VERBOSE ON | OFF | TOGGLE`.
+
 ## Practical Everyday Use
 
 These actions are the normal starting point on many profiles:

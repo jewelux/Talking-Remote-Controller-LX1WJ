@@ -143,17 +143,16 @@ void speakCivAddressValue(uint8_t addr, bool ok) {
   if (!g_speechEnabled) return;
   char hex[3] = "";
   formatHexByte(addr, hex, sizeof(hex));
-  speakToken("c");
-  playSilenceMs(50);
-  speakToken("i");
-  playSilenceMs(80);
+  if (g_verboseSpeech) {
+    speakToken("c");
+    playSilenceMs(50);
+    speakToken("i");
+    playSilenceMs(80);
+  }
   speakHexNibble(hex[0]);
   playSilenceMs(50);
   speakHexNibble(hex[1]);
-  if (ok) {
-    playSilenceMs(80);
-    speakOk();
-  }
+  if (ok) speakValueOk();
 }
 
 void formatCtcssTenthsLabel(uint16_t toneTenths, char* out, size_t outSize) {
@@ -178,25 +177,34 @@ void speakPrompt(const char* token) {
   speakPlease();
 }
 
-void speakVfoLabel(char which) {
-  if (!g_speechEnabled) return;
-  speakToken("vfo");
-  playSilenceMs(60);
+static void speakVfoLetter(char which) {
   if (which == 'A') speakToken("a");
   else if (which == 'B') speakToken("b");
 }
 
+// The letter is the value, so verbose off keeps it.
+void speakVfoLabel(char which) {
+  if (!g_speechEnabled) return;
+  speakLabel("vfo");
+  speakVfoLetter(which);
+}
+
+// A prompt: the same words with verbose off.
 void speakVfoFrequencyLabel(char which) {
   if (!g_speechEnabled) return;
-  speakVfoLabel(which);
+  speakToken("vfo");
+  playSilenceMs(60);
+  speakVfoLetter(which);
   playSilenceMs(60);
   speakFrequencyWord();
 }
 
+// Verbose off: "a 7.1".
 void speakVfoFrequency(char which, uint64_t hz) {
   if (!g_speechEnabled) return;
-  speakVfoFrequencyLabel(which);
+  speakVfoLabel(which);
   playSilenceMs(60);
+  speakLabel("frequency");
   speakDigitsAndPoint(hzToMHzString3(hz));
 }
 
@@ -234,15 +242,13 @@ void speakSimpleBinaryState(bool on) {
 
 void speakRxTxState(bool tx) {
   if (!g_speechEnabled) return;
-  speakToken("transceiver");
-  playSilenceMs(60);
+  speakLabel("transceiver");
   speakToken(tx ? "tx" : "rx");
 }
 
 void speakQueriedFrequencyHz(uint64_t hz) {
   if (!g_speechEnabled) return;
-  speakFrequencyWord();
-  playSilenceMs(60);
+  speakLabel("frequency");
   speakDigitsAndPoint(hzToMHzString3(hz));
 }
 
@@ -259,8 +265,7 @@ uint16_t levelPercentToRaw(int percent) {
 
 void speakFeatureValue(const uint8_t* featureData, size_t featureLen, uint8_t value) {
   if (!g_speechEnabled) return;
-  playClipProgmem(featureData, featureLen);
-  playSilenceMs(60);
+  speakLabelClip(featureData, featureLen);
   speakDigitsAndPoint(String((int)value));
 }
 
@@ -270,12 +275,12 @@ bool lightIcomFallbackActive() {
 
 void speakKeypadCommandWord(const String& cmd) {
   if (!g_speechEnabled) return;
-  if (cmd == "FREQ?") speakFrequencyWord();
-  else if (cmd == "MODE?") speakToken("mode");
-  else if (cmd == "SM?") speakToken("s_meter");
-  else if (cmd == "SWR?") speakToken("swr");
-  else if (cmd == "RFPOWER?") speakToken("power");
-  else if (cmd == "NOTCH?") speakToken("notch filter");
+  if (cmd == "FREQ?") speakLabel("frequency");
+  else if (cmd == "MODE?") speakLabel("mode");
+  else if (cmd == "SM?") speakLabel("s_meter");
+  else if (cmd == "SWR?") speakLabel("swr");
+  else if (cmd == "RFPOWER?") speakLabel("power");
+  else if (cmd == "NOTCH?") speakLabel("notch filter");
 }
 
 void sendKeypadCommand(const char* cmd) {

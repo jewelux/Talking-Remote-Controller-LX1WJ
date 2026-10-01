@@ -745,6 +745,10 @@ and the same situation must always sound the same:
   action.
 - **Guard speech with `g_speechEnabled`.** Speech can be turned off; the
   serial trace must still say everything.
+- **Say a value's name with `speakLabel`** (it adds the gap) and the "ok"
+  after a changed value with `speakValueOk`. Verbose off (Bank 9 `5`) drops
+  both, so the user hears only the value. `speakTokenState` and
+  `speakTokenPercent` already do this.
 - **Trace first.** Start every action with `printKeypadAction("WHAT")`.
   Testers and blind users debug from that line.
 

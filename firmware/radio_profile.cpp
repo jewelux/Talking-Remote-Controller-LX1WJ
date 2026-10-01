@@ -177,7 +177,8 @@ void applyProfile(uint8_t profileId) {
 }
 
 void speakCurrentProfile() {
-  speakProfileIdentityFromSlot(g_profileId, true);
+  speakProfileIdentityFromSlot(g_profileId, false);
+  speakValueOk();
 }
 
 const uint32_t kCivBaudRates[] = {4800, 9600, 19200, 38400, 57600, 115200};

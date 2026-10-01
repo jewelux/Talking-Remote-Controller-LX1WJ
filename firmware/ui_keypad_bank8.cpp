@@ -8,10 +8,7 @@ void queryBank8Ft8x7Menu() { queryKeypadFt8x7Setting(Ft8x7Setting::Menu); }
 static void speakBaudValue(uint32_t baud, bool ok) {
   if (!g_speechEnabled) return;
   speakDigitsAndPoint(String((unsigned long)baud));
-  if (ok) {
-    playSilenceMs(80);
-    speakOk();
-  }
+  if (ok) speakValueOk();
 }
 
 static bool currentProfileAllowsCivSetup() {

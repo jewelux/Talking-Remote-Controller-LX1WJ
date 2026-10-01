@@ -196,6 +196,8 @@ void queryBank8Ft8x7Menu() { record("queryBank8Ft8x7Menu"); }
 void selectBank9DirectProfile(char key) { record("selectBank9DirectProfile(%c)", key); }
 void queryBank9TuningSpeech() { record("queryBank9TuningSpeech"); }
 void toggleBank9TuningSpeech() { record("toggleBank9TuningSpeech"); }
+void queryBank9Verbose() { record("queryBank9Verbose"); }
+void toggleBank9Verbose() { record("toggleBank9Verbose"); }
 void adjustBank9Volume(int d) { record("adjustBank9Volume(%d)", d); }
 void queryBank9Volume() { record("queryBank9Volume"); }
 void queryBank9Profile() { record("queryBank9Profile"); }

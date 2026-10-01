@@ -23,11 +23,7 @@ static bool rejectFt8x7WriteWhileTx(const char* statusLabel) {
   bool tx = false;
   if (!queryRxTxStatus(tx, 800) || !tx) return false;
   printKeypadStatus(String(statusLabel) + " -> TX");
-  if (g_speechEnabled) {
-    speakToken("transceiver");
-    playSilenceMs(60);
-    speakToken("tx");
-  }
+  speakRxTxState(true);
   return true;
 }
 
@@ -58,10 +54,7 @@ bool keypadApplyFrequencyHz(uint64_t hz, TargetVfo targetVfo) {
 
 static void speakRepeaterOffsetHz(uint64_t hz) {
   if (!g_speechEnabled) return;
-  speakToken("repeater");
-  playSilenceMs(60);
-  speakFrequencyWord();
-  playSilenceMs(60);
+  speakLabel("repeater frequency");
   speakDigitsAndPoint(hzToMHzString3(hz));
 }
 
@@ -182,8 +175,7 @@ static void commitCtcss(const char* digits) {
   if (toneTenths > 0 && yaesuCatSetCtcssTenths(toneTenths)) {
     printKeypadStatus(String("CTCSS ") + label);
     if (g_speechEnabled) {
-      speakToken("ctcss");
-      playSilenceMs(60);
+      speakLabel("ctcss");
       speakDigitsAndPoint(label);
     }
   } else if (!yaesuCtcssTenthsValid(toneTenths)) {
@@ -201,8 +193,7 @@ static void commitDcs(const char* digits) {
   if (yaesuCatSetDcsCode(dcsCode)) {
     printKeypadStatus(String("DCS ") + label);
     if (g_speechEnabled) {
-      speakToken("dcs");
-      playSilenceMs(60);
+      speakLabel("dcs");
       speakDigitsAndPoint(label);
     }
   } else if (!yaesuDcsCodeValid(dcsCode)) {

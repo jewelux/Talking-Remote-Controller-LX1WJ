@@ -8,6 +8,8 @@ void uiSetBank(uint8_t bank);
 bool modeFromDigit(char digit, uint8_t& modeOut);
 void setTuningSpeechEnabled(bool enabled);
 void speakTuningSpeechState();
+void setVerboseSpeech(bool verbose);
+void speakVerboseState();
 void speakBankNumber();
 void initKeypadUi();
 void pollKeypadUi();

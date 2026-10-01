@@ -69,6 +69,7 @@ voice_step.wav
 voice_hertz.wav
 voice_percent.wav
 voice_profile.wav
+voice_verbose.wav
 voice_volume.wav
 
 4. Radio operating words

@@ -21,8 +21,10 @@ const char* modeToString(uint8_t mode) {
 
 void speakMode(uint8_t mode) {
 #if HAVE_MODE_VOICE
-  playClipProgmem(voice_mode, voice_mode_len);
-  playSilenceMs(120);
+  if (g_verboseSpeech) {
+    playClipProgmem(voice_mode, voice_mode_len);
+    playSilenceMs(120);
+  }
 #endif
   speakModeName(mode);
 }

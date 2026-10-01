@@ -17,8 +17,7 @@ static uint16_t pbtOffsetToRaw(int offset) {
 
 static void speakSignedStepValue(const String& label, int value) {
   if (!g_speechEnabled) return;
-  speakToken(label);
-  playSilenceMs(60);
+  speakLabel(label);
   if (value < 0) {
     speakToken("minus");
     playSilenceMs(60);
@@ -227,8 +226,7 @@ void toggleBank2FilterShape() {
   if (!setFilterShape(!soft)) { keypadReportIfTimedOut("FILSHAPE"); return; }
   printKeypadStatus(!soft ? "FILSHAPE SOFT" : "FILSHAPE SHARP");
   if (g_speechEnabled) {
-    speakToken("filtershape");
-    playSilenceMs(60);
+    speakLabel("filtershape");
     speakToken(!soft ? "soft" : "sharp");
   }
 }
@@ -239,8 +237,7 @@ void queryBank2FilterWidth() {
   if (!queryCurrentFilterSlotForKeypad(filter)) { keypadReportIfTimedOut("FILWIDTH?"); return; }
   printKeypadStatus(String("FILWIDTH ") + String((int)filter));
   if (g_speechEnabled) {
-    speakToken("filterwidth");
-    playSilenceMs(60);
+    speakLabel("filterwidth");
     playDigit(filter);
   }
 }
@@ -257,8 +254,7 @@ void cycleBank2FilterWidth(int delta) {
   if (!setMode(mode, (uint8_t)next)) { keypadReportIfTimedOut("FILWIDTH"); return; }
   printKeypadStatus(String("FILWIDTH ") + String(next));
   if (g_speechEnabled) {
-    speakToken("filterwidth");
-    playSilenceMs(60);
+    speakLabel("filterwidth");
     playDigit((uint8_t)next);
   }
 }

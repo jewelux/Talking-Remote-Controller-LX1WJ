@@ -8,17 +8,26 @@
 
 void speakTuningSpeechState() {
   if (!g_speechEnabled) return;
-  speakToken("tune");
-  playSilenceMs(60);
-  speakFrequencyWord();
-  playSilenceMs(60);
-  speakToken(g_tuningSpeakEnabled ? "on" : "off");
+  speakTokenState("tune frequency", g_tuningSpeakEnabled);
 }
 
 void setTuningSpeechEnabled(bool enabled) {
   g_tuningSpeakEnabled = enabled;
   saveTuningSpeakToNvs(g_tuningSpeakEnabled);
   if (!g_tuningSpeakEnabled) cancelPendingFreqAnnouncement();
+}
+
+// Always with its name: alone, "off" would not say what verbose off is.
+void speakVerboseState() {
+  if (!g_speechEnabled) return;
+  speakToken("verbose");
+  playSilenceMs(60);
+  speakToken(g_verboseSpeech ? "on" : "off");
+}
+
+void setVerboseSpeech(bool verbose) {
+  g_verboseSpeech = verbose;
+  saveVerboseToNvs(g_verboseSpeech);
 }
 
 void beginBank9ProfileSelect() {
@@ -57,10 +66,22 @@ void toggleBank9TuningSpeech() {
   speakTuningSpeechState();
 }
 
+void queryBank9Verbose() {
+  printKeypadAction("VERBOSE?");
+  printKeypadStatus(String("VERBOSE ") + (g_verboseSpeech ? "ON" : "OFF"));
+  speakVerboseState();
+}
+
+void toggleBank9Verbose() {
+  printKeypadAction("VERBOSE");
+  setVerboseSpeech(!g_verboseSpeech);
+  printKeypadStatus(String("VERBOSE ") + (g_verboseSpeech ? "ON" : "OFF"));
+  speakVerboseState();
+}
+
 // "volume" and the level.
 static void speakVolumeWithLevel(uint8_t lvl) {
-  speakToken("volume");
-  playSilenceMs(60);
+  speakLabel("volume");
   speakVolumeLevel(lvl);
 }
 
@@ -74,8 +95,7 @@ void adjustBank9Volume(int delta) {
   printKeypadStatus(String("VOLUME ") + String(next));
   if (g_speechEnabled) {
     speakVolumeWithLevel((uint8_t)next);
-    playSilenceMs(60);
-    speakToken("ok");
+    speakValueOk();
   }
 }
 
@@ -89,8 +109,7 @@ void queryBank9Profile() {
   printKeypadAction("PROFILE?");
   printKeypadStatus("PROFILE CURRENT");
   if (!g_speechEnabled) return;
-  speakToken("profile");
-  playSilenceMs(60);
+  speakLabel("profile");
   speakProfileIdentityFromSlot(g_profileId, false);
 }
 

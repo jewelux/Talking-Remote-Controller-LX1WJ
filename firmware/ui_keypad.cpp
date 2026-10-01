@@ -39,8 +39,7 @@ bool modeFromDigit(char digit, uint8_t& modeOut) {
 void speakBankNumber() {
   if (!g_speechEnabled) return;
   const uint8_t bank = uiGetBank();
-  speakToken("bank");
-  playSilenceMs(60);
+  speakLabel("bank");
   if (bank >= 1 && bank <= 9) playDigit(bank);
 }
 
@@ -174,7 +173,6 @@ void keypadStageCommand(const String& cmd) {
   }
   if (g_speechEnabled) {
     speakKeypadCommandWord(cmd);
-    playSilenceMs(60);
     speakToken("ok");
   }
 }

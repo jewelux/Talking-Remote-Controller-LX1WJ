@@ -33,6 +33,21 @@ void saveTuningSpeakToNvs(bool v) {
   prefs.end();
 }
 
+bool loadVerboseFromNvs(bool fallback) {
+  Preferences prefs;
+  if (!prefs.begin("talkingrc", false)) return fallback;
+  bool v = prefs.getBool("verbose", fallback);
+  prefs.end();
+  return v;
+}
+
+void saveVerboseToNvs(bool v) {
+  Preferences prefs;
+  if (!prefs.begin("talkingrc", false)) return;
+  prefs.putBool("verbose", v);
+  prefs.end();
+}
+
 uint8_t loadVolumeFromNvs(uint8_t fallback) {
   Preferences prefs;
   if (!prefs.begin("talkingrc", false)) return fallback;

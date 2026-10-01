@@ -26,8 +26,7 @@ void setBank3Ft857Ptt(bool on) {
   printKeypadAction(String("PTT ") + (on ? "ON" : "OFF"));
   if (!yaesuCatSetPtt(on)) { keypadReportIfTimedOut("PTT"); return; }
   printKeypadStatus(on ? "PTT ON" : "PTT OFF");
-  speakToken("ptt");
-  playSilenceMs(60);
+  speakLabel("ptt");
   speakSimpleBinaryState(on);
 }
 

@@ -50,6 +50,10 @@
 
 ### Speech and sounds
 
+- verbose off says only the value: "50 watts" instead of "power 50 watts", "five" instead of
+  "volume five ok". Units stay; the name and the "ok" after a change are left out. Bank 9 `5`
+  short says "verbose on" or "verbose off", `5` long switches it; console `VERBOSE?` and
+  `VERBOSE ON | OFF | TOGGLE`. Verbose is on by default and kept after power off
 - any key press stops what is being spoken, so answers no longer queue up behind earlier ones
 - new voice (Piper `en_US-lessac-medium`) for all clips
 - "timeout" when the radio does not answer, and "not available" for features the radio or profile

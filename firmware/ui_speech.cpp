@@ -220,6 +220,7 @@ static const VoiceClip kVoiceClips[] = {
   VOICE_CLIP(u),
   VOICE_CLIP(usb),
   VOICE_CLIP(v),
+  VOICE_CLIP(verbose),
   VOICE_CLIP(vfo),
   VOICE_CLIP(volume),
   VOICE_CLIP(w),
@@ -492,8 +493,8 @@ static bool playTens(int tens) {
 
 void speakSValue(const SMeterReading& reading) {
   if (!g_speechEnabled) return;
-  if (!g_keypadExecuting) speakToken("s_meter");
-  playSilenceMs(60);
+  // From the keypad, the key already said "s meter" (speakKeypadCommandWord).
+  if (!g_keypadExecuting) speakLabel("s_meter");
   playDigit((int)min<uint8_t>(reading.sUnits, 9));
   if (reading.dbOverS9) {
     playSilenceMs(60);
@@ -547,20 +548,37 @@ bool speakToken(const String& token) {
   return false;
 }
 
-bool speakTokenState(const String& token, bool on) {
-  if (!g_speechEnabled) return false;
+bool speakLabel(const String& token) {
+  if (!g_speechEnabled || !g_verboseSpeech) return true;
   bool ok = speakToken(token);
   playSilenceMs(60);
+  return ok;
+}
+
+void speakLabelClip(const uint8_t* data, size_t length) {
+  if (!g_speechEnabled || !g_verboseSpeech) return;
+  playClipProgmem(data, length);
+  playSilenceMs(60);
+}
+
+bool speakTokenState(const String& token, bool on) {
+  if (!g_speechEnabled) return false;
+  bool ok = speakLabel(token);
   return speakToken(on ? "on" : "off") && ok;
 }
 
 bool speakTokenPercent(const String& token, uint8_t percent) {
   if (!g_speechEnabled) return false;
-  bool ok = speakToken(token);
-  playSilenceMs(60);
+  bool ok = speakLabel(token);
   speakDigitsAndPoint(String((int)percent));
   playSilenceMs(60);
   return speakToken("percent") && ok;
+}
+
+void speakValueOk() {
+  if (!g_speechEnabled || !g_verboseSpeech) return;
+  playSilenceMs(60);
+  speakOk();
 }
 
 void speakOk() { speakToken("ok"); }

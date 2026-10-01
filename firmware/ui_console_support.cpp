@@ -36,6 +36,8 @@ void printStatusSummary() {
   Serial.println(g_quiet ? "ON" : "OFF");
   Serial.print("  tuning speech: ");
   Serial.println(g_tuningSpeakEnabled ? "ON" : "OFF");
+  Serial.print("  verbose: ");
+  Serial.println(g_verboseSpeech ? "ON" : "OFF");
   Serial.print("  volume: ");
   Serial.println((int)g_volumeLevel);
   if (live.freqValid) {
