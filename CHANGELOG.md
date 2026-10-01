@@ -158,7 +158,8 @@
 - FT-817/818/857/897: copy the new `ft817.ini`, `ft818.ini`, `ft857.ini` and `ft897.ini` from
   `firmware/SDCard` to the SD card. With the old files, power, SWR, TX power and the noise
   blanker (on the FT-857/897 also noise reduction and notch) stay "not available", the FT-817's
-  RX/TX state too, and the FT-857/897 VFO keys do not read the active VFO from the radio
+  RX/TX state too, and the FT-857/897 VFO keys do not read the active VFO from the radio. With the
+  old `ft818.ini` an FT-818 says the FT-817's TX power levels
 - every push builds the firmware as a factory image with a manifest for the online updater;
   version tags attach them to a GitHub release
 

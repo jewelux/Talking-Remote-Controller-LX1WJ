@@ -197,7 +197,7 @@ bool queryNb(bool& onOut, uint32_t timeoutMs) {
   if (pt == PROTO_CIV) return civQueryNb(sp, onOut, timeoutMs);
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiQueryNb(sp, onOut, timeoutMs);
   if (pt == PROTO_YAESU_FT8X7) {
-    return currentProfileVariantIs("ft817") ? yaesuFt817QueryNb(onOut, timeoutMs) : yaesuFt857QueryNb(onOut, timeoutMs);
+    return currentIsFt817Family() ? yaesuFt817QueryNb(onOut, timeoutMs) : yaesuFt857QueryNb(onOut, timeoutMs);
   }
   return false;
 }
@@ -302,9 +302,9 @@ bool queryDialLock(bool& onOut, uint32_t timeoutMs) {
     // The FT-817/818 and FT-857/897 keep the lock in their EEPROM, so a lock set on the front
     // panel counts too. Other variants get the state HamTRC last set.
     bool ok = false;
-    if (currentProfileVariantIs("ft817")) {
+    if (currentIsFt817Family()) {
       ok = yaesuFt817QueryLock(onOut, timeoutMs);
-    } else if (currentProfileVariantIs("ft857_897")) {
+    } else if (currentIsFt857Family()) {
       ok = yaesuFt857QueryLock(onOut, timeoutMs);
     } else {
       if (!live.lockKnown) return false;
@@ -476,7 +476,7 @@ bool selectVfoA() {
   if (pt == PROTO_CIV) return civSelectVfoA(sp);
   if (pt == PROTO_YAESU_FTDX_ASCII) return selectYaesuFtdxVfo(sp, true);
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII) return asciiSelectVfoA(sp);
-  if (pt == PROTO_YAESU_FT8X7 && sp.caps.setVfo && currentProfileVariantIs("ft817")) return yaesuCatSelectVfoA();
+  if (pt == PROTO_YAESU_FT8X7 && sp.caps.setVfo && currentIsFt817Family()) return yaesuCatSelectVfoA();
   return false;
 }
 
@@ -486,7 +486,7 @@ bool selectVfoB() {
   if (pt == PROTO_CIV) return civSelectVfoB(sp);
   if (pt == PROTO_YAESU_FTDX_ASCII) return selectYaesuFtdxVfo(sp, false);
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII) return asciiSelectVfoB(sp);
-  if (pt == PROTO_YAESU_FT8X7 && sp.caps.setVfo && currentProfileVariantIs("ft817")) return yaesuCatSelectVfoB();
+  if (pt == PROTO_YAESU_FT8X7 && sp.caps.setVfo && currentIsFt817Family()) return yaesuCatSelectVfoB();
   return false;
 }
 
@@ -495,7 +495,7 @@ bool queryVfoFrequency(bool targetVfoA, uint64_t& hzOut, uint32_t timeoutMs) {
   const StoredProfile& sp = currentStoredProfile();
   if (pt == PROTO_CIV) return civQueryVfoFrequency(sp, targetVfoA, hzOut, timeoutMs);
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiQueryVfoFrequency(sp, targetVfoA, hzOut, timeoutMs);
-  if (pt == PROTO_YAESU_FT8X7 && sp.caps.getVfo && sp.caps.setVfo && currentProfileVariantIs("ft817")) {
+  if (pt == PROTO_YAESU_FT8X7 && sp.caps.getVfo && sp.caps.setVfo && currentIsFt817Family()) {
     return ft817OnVfo(targetVfoA, true, [&] { return queryFrequency(hzOut, timeoutMs); });
   }
   return false;
@@ -506,7 +506,7 @@ bool setVfoFrequency(bool targetVfoA, uint64_t hz) {
   const StoredProfile& sp = currentStoredProfile();
   if (pt == PROTO_CIV) return civSetVfoFrequency(sp, targetVfoA, hz);
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiSetVfoFrequency(sp, targetVfoA, hz);
-  if (pt == PROTO_YAESU_FT8X7 && sp.caps.setVfo && sp.caps.setFreq && currentProfileVariantIs("ft817")) {
+  if (pt == PROTO_YAESU_FT8X7 && sp.caps.setVfo && sp.caps.setFreq && currentIsFt817Family()) {
     return ft817OnVfo(targetVfoA, false, [&] { return setFrequency(hz); });
   }
   return false;
@@ -531,7 +531,7 @@ bool queryVfoMode(bool targetVfoA, uint8_t& modeOut, uint8_t& filterOut, uint32_
     filterOut = 1;
     return true;
   }
-  if (pt == PROTO_YAESU_FT8X7 && sp.caps.getVfoMode && sp.caps.setVfo && currentProfileVariantIs("ft817")) {
+  if (pt == PROTO_YAESU_FT8X7 && sp.caps.getVfoMode && sp.caps.setVfo && currentIsFt817Family()) {
     filterOut = 1;
     return ft817OnVfo(targetVfoA, true, [&] { return queryMode(modeOut, timeoutMs); });
   }
@@ -552,7 +552,7 @@ bool setVfoMode(bool targetVfoA, uint8_t mode, uint8_t filter) {
     if (priorVfoA != targetVfoA) (void)selectYaesuFtdxVfo(sp, priorVfoA);
     return ok;
   }
-  if (pt == PROTO_YAESU_FT8X7 && sp.caps.setVfoMode && sp.caps.setVfo && currentProfileVariantIs("ft817")) {
+  if (pt == PROTO_YAESU_FT8X7 && sp.caps.setVfoMode && sp.caps.setVfo && currentIsFt817Family()) {
     return ft817OnVfo(targetVfoA, false, [&] { return setMode(mode, filter); });
   }
   return false;

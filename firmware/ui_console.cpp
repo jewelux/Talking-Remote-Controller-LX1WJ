@@ -643,8 +643,8 @@ static bool parseConsoleModeToken(String token, uint8_t& modeOut) {
 void printHelp() {
   const bool ftdx10 = isFtdx10ConsoleProfile();
   const bool ft8x7 = currentProtocolType() == PROTO_YAESU_FT8X7;
-  const bool ft817 = ft8x7 && currentProfileVariantIs("ft817");
-  const bool ft857Family = ft8x7 && currentProfileVariantIs("ft857_897");
+  const bool ft817 = ft8x7 && currentIsFt817Family();
+  const bool ft857Family = ft8x7 && currentIsFt857Family();
   Serial.println();
   Serial.println("Commands (case-insensitive):");
   Serial.println("  General:");
@@ -1289,8 +1289,8 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     Serial.println("[YAESU FT8X7]");
     Serial.print("  VARIANT: ");
     Serial.println(currentProfileVariant()[0] ? currentProfileVariant() : "(default)");
-    const bool isFt817 = currentProfileVariantIs("ft817");
-    const bool isFt857Family = currentProfileVariantIs("ft857_897");
+    const bool isFt817 = currentIsFt817Family();
+    const bool isFt857Family = currentIsFt857Family();
 
     uint64_t hz = 0;
     if (queryFrequency(hz, 800)) {
@@ -1387,9 +1387,9 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     const char* variant = currentProfileVariant();
     Serial.print("YVAR: ");
     Serial.println(variant[0] ? variant : "(default)");
-    if (currentProfileVariantIs("ft817")) {
+    if (currentIsFt817Family()) {
       Serial.println("  Tone/DCS family: FT-817 style (simple Tone/DCS layout)");
-    } else if (currentProfileVariantIs("ft857_897")) {
+    } else if (currentIsFt857Family()) {
       Serial.println("  Tone/DCS family: FT-857/897 style (separate TX/RX Tone/DCS layout)");
     } else {
       Serial.println("  Tone/DCS family: unknown variant");
@@ -1416,12 +1416,12 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
       Serial.println("YTMODE -> use DCS, DCSDEC, DCSENC, CTCSS, CTCSSDEC, CTCSSENC, OFF, or hex byte");
       return true;
     }
-    if (currentProfileVariantIs("ft817")) {
+    if (currentIsFt817Family()) {
       if (!(modeByte == 0x0A || modeByte == 0x2A || modeByte == 0x4A || modeByte == 0x8A)) {
         Serial.println("YTMODE -> mode not documented for FT-817 variant");
         return true;
       }
-    } else if (currentProfileVariantIs("ft857_897")) {
+    } else if (currentIsFt857Family()) {
       if (!(modeByte == 0x0A || modeByte == 0x0B || modeByte == 0x0C || modeByte == 0x2A || modeByte == 0x3A || modeByte == 0x4A || modeByte == 0x8A)) {
         Serial.println("YTMODE -> mode not documented for FT-857/897 variant");
         return true;
@@ -1441,16 +1441,16 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     uint8_t data[4] = {0};
     String arg = line.substring(6);
     bool ok = false;
-    if (currentProfileVariantIs("ft817")) {
+    if (currentIsFt817Family()) {
       uint8_t pair[2] = {0};
       ok = parseHexNybbleString(arg, pair, 2);
       data[0] = pair[0];
       data[1] = pair[1];
-    } else if (currentProfileVariantIs("ft857_897")) {
+    } else if (currentIsFt857Family()) {
       ok = parseHexNybbleString(arg, data, 4);
     }
     if (!ok) {
-      if (currentProfileVariantIs("ft817")) Serial.println("YTONE -> FT-817 expects 4 hex digits, e.g. 0885");
+      if (currentIsFt817Family()) Serial.println("YTONE -> FT-817 expects 4 hex digits, e.g. 0885");
       else Serial.println("YTONE -> FT-857/897 expects 8 hex digits, e.g. 08851000");
       return true;
     }
@@ -1542,16 +1542,16 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     uint8_t data[4] = {0};
     String arg = line.substring(5);
     bool ok = false;
-    if (currentProfileVariantIs("ft817")) {
+    if (currentIsFt817Family()) {
       uint8_t pair[2] = {0};
       ok = parseHexNybbleString(arg, pair, 2);
       data[0] = pair[0];
       data[1] = pair[1];
-    } else if (currentProfileVariantIs("ft857_897")) {
+    } else if (currentIsFt857Family()) {
       ok = parseHexNybbleString(arg, data, 4);
     }
     if (!ok) {
-      if (currentProfileVariantIs("ft817")) Serial.println("YDCS -> FT-817 expects 4 hex digits, e.g. 0023");
+      if (currentIsFt817Family()) Serial.println("YDCS -> FT-817 expects 4 hex digits, e.g. 0023");
       else Serial.println("YDCS -> FT-857/897 expects 8 hex digits, e.g. 00230371");
       return true;
     }
@@ -1564,7 +1564,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
   }
 
   if (upper == "YPOWER ON" || upper == "YPOWER OFF") {
-    if (!currentProfileVariantIs("ft817")) {
+    if (!currentIsFt817Family()) {
       Serial.println("YPOWER -> documented only for FT-817 variant");
       return true;
     }
@@ -1633,7 +1633,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
       Serial.println("YSETMODE -> use hex byte, e.g. 08, 88, 0A, 0C");
       return true;
     }
-    const bool ft817Debug = currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft817");
+    const bool ft817Debug = currentIsFt817Family();
     const Ft817DebugPollingHold pollingHold(ft817Debug);
     if (ft817Debug) {
       const uint8_t cmd[5] = {modeByte, 0x00, 0x00, 0x00, 0x07};
@@ -1659,7 +1659,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
       Serial.println("YSETMODEQ -> use hex byte, e.g. 08, 04, 02");
       return true;
     }
-    const bool ft817Quiet = currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft817");
+    const bool ft817Quiet = currentIsFt817Family();
     const Ft817DebugPollingHold pollingHold(ft817Quiet);
     yaesuCatFlushInput();
     delay(120);
@@ -1673,7 +1673,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
   }
 
   if (upper == "YFMCTX?") {
-    if (!currentProfileVariantIs("ft817")) {
+    if (!currentIsFt817Family()) {
       Serial.println("YFMCTX? -> FT-817 only");
       return true;
     }
@@ -1720,14 +1720,14 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     Serial.println(raw, HEX);
     return true;
   }
-  if (upper == "RXTX?" && currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft857_897")) {
+  if (upper == "RXTX?" && currentIsFt857Family()) {
     bool tx = false;
     if (!queryRxTxStatus(tx, 800)) { reportCommandFailure("RXTX?", "no reply"); return true; }
     Serial.println(tx ? "TX" : "RX");
     return true;
   }
   if (upper == "VOL?") {
-    if (currentProfileVariantIs("ft857_897")) {
+    if (currentIsFt857Family()) {
       reportNotAvailable("VOL? -> unsupported on verified FT-857/897 path");
       return true;
     }
@@ -1738,7 +1738,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     return true;
   }
   if (upper == "SQL?") {
-    if (currentProfileVariantIs("ft857_897")) {
+    if (currentIsFt857Family()) {
       reportNotAvailable("SQL? -> unsupported on verified FT-857/897 path");
       return true;
     }
@@ -1754,7 +1754,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     return true;
   }
   if (upper == "VFO A=B") {
-    if (!currentProfileVariantIs("ft817")) {
+    if (!currentIsFt817Family()) {
       Serial.println("VFO A=B -> enabled only for FT-817");
       return true;
     }
@@ -1770,7 +1770,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     return true;
   }
   if (upper == "VFO A") {
-    if (!currentProfileVariantIs("ft817")) {
+    if (!currentIsFt817Family()) {
       Serial.println("VFO A -> raw FT8x7 VFO select is currently enabled only for FT-817");
       return true;
     }
@@ -1779,7 +1779,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     return true;
   }
   if (upper == "VFO B") {
-    if (!currentProfileVariantIs("ft817")) {
+    if (!currentIsFt817Family()) {
       Serial.println("VFO B -> raw FT8x7 VFO select is currently enabled only for FT-817");
       return true;
     }
@@ -1911,7 +1911,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     Serial.println(rsp, HEX);
     return true;
   }
-  if (upper == "YSETTINGS?" && currentProfileVariantIs("ft817")) {
+  if (upper == "YSETTINGS?" && currentIsFt817Family()) {
     struct NamedBit { const char* name; bool (*query)(bool&, uint32_t); };
     static const NamedBit bits[] = {
       {"VOX", yaesuFt817QueryVox}, {"LOCK", yaesuFt817QueryLock}, {"FAST", yaesuFt817QueryFastTuning},

@@ -14,7 +14,7 @@ static FeatureStatus failure(FeatureStatus status) {
 
 // The FT-817/818 has no DSP: no noise reduction and no notch, whatever the profile says.
 static bool isFt817WithoutDsp() {
-  return currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft817");
+  return currentIsFt817Family();
 }
 
 static bool isTs480() {
@@ -223,8 +223,8 @@ static FeatureStatus ft8x7BandSettingQuery(Ft8x7Setting setting, Ft8x7SettingSta
 
 FeatureStatus ft8x7SettingQuery(Ft8x7Setting setting, Ft8x7SettingState& out) {
   if (currentProtocolType() != PROTO_YAESU_FT8X7) return FeatureStatus::Unsupported;
-  const bool ft817 = currentProfileVariantIs("ft817");
-  if (!ft817 && !currentProfileVariantIs("ft857_897")) return FeatureStatus::Unsupported;
+  const bool ft817 = currentIsFt817Family();
+  if (!ft817 && !currentIsFt857Family()) return FeatureStatus::Unsupported;
   if (ft817 && setting != Ft8x7Setting::RfPower && setting != Ft8x7Setting::Menu &&
       setting != Ft8x7Setting::Row && setting != Ft8x7Setting::Agc &&
       setting != Ft8x7Setting::BreakIn && setting != Ft8x7Setting::Keyer &&

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ft8x7_model.h"
 #include "radio_globals.h"
 
 bool isValidProfileId(uint8_t id);
@@ -11,4 +12,9 @@ void invalidateExperimentalProfile();
 const ConnectionProfile& currentConnectionProfile();
 ProtocolType currentProtocolType();
 const char* currentProfileVariant();
-bool currentProfileVariantIs(const char* variant);
+// The FT-8x7 model of the active profile; None for a profile of another protocol.
+Ft8x7Model currentFt8x7Model();
+// FT-817 or FT-818.
+bool currentIsFt817Family();
+// FT-857 or FT-897.
+bool currentIsFt857Family();

@@ -2,6 +2,7 @@
 
 #include "packet_ascii.h"
 #include "debug_log.h"
+#include "ft8x7_model.h"
 
 bool readAsciiLine(String& out, uint32_t timeoutMs) {
   return asciiPacketReadLine(out, timeoutMs);
@@ -76,7 +77,7 @@ bool profileInternalModeForCode(const StoredProfile& sp, const String& code, uin
   if (code.equalsIgnoreCase(sp.ascii.modeCwr) && sp.ascii.modeCwr[0]) { modeOut = 0x07; return true; }
   if (code.equalsIgnoreCase(sp.ascii.modeRttyR) && sp.ascii.modeRttyR[0]) { modeOut = 0x08; return true; }
   if (code.equalsIgnoreCase(sp.ascii.modeDigi) && sp.ascii.modeDigi[0]) { modeOut = 0x11; return true; }
-  if (!strcmp(sp.variant, "ft857_897")) {
+  if (ft8x7ModelForVariant(sp.variant) == Ft8x7Model::Ft857) {
     // FT-857/897 may report additional undocumented bytes depending on
     // installed filters and packet handling.
     if (code.equalsIgnoreCase("0C")) { modeOut = 0x11; return true; }

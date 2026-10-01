@@ -18,7 +18,7 @@
 
 static bool rejectFt8x7WriteWhileTx(const char* statusLabel) {
   if (currentProtocolType() != PROTO_YAESU_FT8X7) return false;
-  if (currentProfileVariantIs("ft857_897")) return false;
+  if (currentIsFt857Family()) return false;
   if (!currentStoredProfile().caps.getRxTx) return false;
   bool tx = false;
   if (!queryRxTxStatus(tx, 800) || !tx) return false;
@@ -38,7 +38,7 @@ bool keypadApplyFrequencyHz(uint64_t hz, TargetVfo targetVfo) {
   } else if (targetVfo == TargetVfo::B) {
     ok = setVfoFrequency(false, hz);
   } else if (targetVfo == TargetVfo::Other && currentProtocolType() == PROTO_YAESU_FT8X7 &&
-             (currentProfileVariantIs("ft817") || currentProfileVariantIs("ft857_897"))) {
+             (currentIsFt817Family() || currentIsFt857Family())) {
     if (yaesuCatToggleVfo()) {
       delay(120);
       ok = setFrequency(hz);

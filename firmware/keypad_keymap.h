@@ -18,7 +18,7 @@ enum class KeypadLayout : uint8_t {
   Civ,      // PROTO_CIV
   Ftdx10,   // isFtdx10KeypadProfile(): most keys run a console command
   Ft8x7,    // PROTO_YAESU_FT8X7 with no known variant: Generic plus Bank 6
-  Ft817,    // FT8X7 variant "ft817" (FT-817, FT-818)
+  Ft817,    // FT8X7 variants "ft817" and "ft818"
   Ft857,    // FT8X7 variant "ft857_897" (FT-857, FT-897)
 };
 

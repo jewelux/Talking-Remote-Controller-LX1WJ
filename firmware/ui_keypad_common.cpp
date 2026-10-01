@@ -87,11 +87,11 @@ bool isFtdx10KeypadProfile() {
 }
 
 bool isFt8x7Ft817Keypad() {
-  return currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft817");
+  return currentIsFt817Family();
 }
 
 bool isFt8x7Ft857FamilyKeypad() {
-  return currentProtocolType() == PROTO_YAESU_FT8X7 && currentProfileVariantIs("ft857_897");
+  return currentIsFt857Family();
 }
 
 static bool tracksFt8x7Vfo() {

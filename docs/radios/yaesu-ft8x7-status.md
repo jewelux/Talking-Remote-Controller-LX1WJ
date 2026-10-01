@@ -4,7 +4,7 @@ This document summarizes the current CAT support status for the Yaesu FT-817, FT
 
 The family is currently handled in two sub-variants:
 
-- `ft817`
+- `ft817` (and `ft818`, the same apart from its power levels)
 - `ft857_897`
 
 The goal of this document is to separate:

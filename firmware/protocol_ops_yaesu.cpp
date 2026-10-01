@@ -208,7 +208,7 @@ bool yaesuCatQuerySplit(bool& onOut, uint32_t timeoutMs) {
     onOut = (txStatus & 0x20) != 0;
     return true;
   }
-  const uint16_t addr = currentProfileVariantIs("ft817") ? 0x007A : 0x008D;
+  const uint16_t addr = currentIsFt817Family() ? 0x007A : 0x008D;
   uint8_t flags = 0;
   if (!yaesuCatReadEepromByte(addr, flags, timeoutMs)) return false;
   onOut = (flags & 0x80) != 0;
@@ -217,7 +217,7 @@ bool yaesuCatQuerySplit(bool& onOut, uint32_t timeoutMs) {
 
 // FT-857/897 settings that CAT can only read from the EEPROM (ft8x7_eeprom_map.h).
 static bool ft857ReadBit(uint16_t addr, uint8_t mask, bool& onOut, uint32_t timeoutMs) {
-  if (!currentProfileVariantIs("ft857_897")) return false;
+  if (!currentIsFt857Family()) return false;
   uint8_t b = 0;
   if (!yaesuCatReadEepromByte(addr, b, timeoutMs)) return false;
   onOut = (b & mask) != 0;
@@ -263,7 +263,7 @@ static bool ft857ActiveBandBlock(uint64_t hz, const Ft857BandSlot*& slotOut, uin
 }
 
 bool yaesuFt857QueryBandFlags(uint64_t hz, YaesuFt857BandFlags& out, uint32_t timeoutMs) {
-  if (!currentProfileVariantIs("ft857_897")) return false;
+  if (!currentIsFt857Family()) return false;
   out = YaesuFt857BandFlags();
   const Ft857BandSlot* slot = nullptr;
   uint16_t block = 0;
@@ -284,7 +284,7 @@ bool yaesuFt857QueryBandFlags(uint64_t hz, YaesuFt857BandFlags& out, uint32_t ti
 }
 
 bool yaesuFt857QueryRfPowerWatts(uint64_t hz, uint8_t& wattsOut, uint32_t timeoutMs) {
-  if (!currentProfileVariantIs("ft857_897")) return false;
+  if (!currentIsFt857Family()) return false;
   uint8_t b = 0;
   if (!yaesuCatReadEepromByte(ft857RfPowerAddr(ft8x7BandGroupForHz(hz)), b, timeoutMs)) return false;
   wattsOut = ft857RfPowerWatts(b);
@@ -292,7 +292,7 @@ bool yaesuFt857QueryRfPowerWatts(uint64_t hz, uint8_t& wattsOut, uint32_t timeou
 }
 
 bool yaesuFt857QueryMenuAndRow(uint8_t& menuOut, uint8_t& rowOut, uint32_t timeoutMs) {
-  if (!currentProfileVariantIs("ft857_897")) return false;
+  if (!currentIsFt857Family()) return false;
   uint8_t word[2] = {0};
   if (!yaesuCatReadEepromWord(FT857_MENU_ROW_ADDR, word, timeoutMs)) return false;
   menuOut = (uint8_t)(word[0] + 1);
@@ -301,8 +301,8 @@ bool yaesuFt857QueryMenuAndRow(uint8_t& menuOut, uint8_t& rowOut, uint32_t timeo
 }
 
 bool yaesuFt817QueryRfPowerTenths(uint16_t& tenthsOut, uint32_t timeoutMs) {
-  if (!currentProfileVariantIs("ft817")) return false;
-  const bool ft818 = String(currentStoredProfile().name).indexOf("FT-818") >= 0;
+  if (!currentIsFt817Family()) return false;
+  const bool ft818 = currentFt8x7Model() == Ft8x7Model::Ft818;
   uint8_t b = 0;
   if (!yaesuCatReadEepromByte(FT817_RF_POWER_ADDR, b, timeoutMs)) return false;
   tenthsOut = ft817RfPowerTenths(b, ft818);
@@ -312,7 +312,7 @@ bool yaesuFt817QueryRfPowerTenths(uint16_t& tenthsOut, uint32_t timeoutMs) {
 // Lock and fast tuning are stored inverted, like on the FT-857/897, though the KA7OEI map says
 // 1 = on. All follow the front panel at once.
 static bool ft817ReadBit(uint16_t addr, uint8_t mask, bool& onOut, uint32_t timeoutMs) {
-  if (!currentProfileVariantIs("ft817")) return false;
+  if (!currentIsFt817Family()) return false;
   uint8_t b = 0;
   if (!yaesuCatReadEepromByte(addr, b, timeoutMs)) return false;
   onOut = (b & mask) != 0;
@@ -341,7 +341,7 @@ bool yaesuFt817QueryBreakIn(bool& onOut, uint32_t timeoutMs) { return ft817ReadB
 bool yaesuFt817QueryKeyer(bool& onOut, uint32_t timeoutMs) { return ft817ReadBit(0x0058, 0x10, onOut, timeoutMs); }
 
 bool yaesuFt817QueryAgc(YaesuAgc& out, uint32_t timeoutMs) {
-  if (!currentProfileVariantIs("ft817")) return false;
+  if (!currentIsFt817Family()) return false;
   uint8_t b = 0;
   if (!yaesuCatReadEepromByte(FT817_AGC_ADDR, b, timeoutMs)) return false;
   out = ft817AgcFromByte(b);
@@ -349,7 +349,7 @@ bool yaesuFt817QueryAgc(YaesuAgc& out, uint32_t timeoutMs) {
 }
 
 bool yaesuFt817QueryMenuAndRow(uint8_t& menuOut, uint8_t& rowOut, uint32_t timeoutMs) {
-  if (!currentProfileVariantIs("ft817")) return false;
+  if (!currentIsFt817Family()) return false;
   uint8_t menu = 0;
   uint8_t row = 0;
   if (!yaesuCatReadEepromByte(FT817_MENU_ADDR, menu, timeoutMs)) return false;
@@ -391,7 +391,7 @@ bool yaesuFt857QueryFilter(YaesuFt857Filter& out, uint32_t timeoutMs) {
 }
 
 bool yaesuFt857QueryLevel(YaesuFt857Level level, uint16_t& valueOut, uint32_t timeoutMs) {
-  if (!currentProfileVariantIs("ft857_897")) return false;
+  if (!currentIsFt857Family()) return false;
   uint16_t addr = 0;
   if (!ft857LevelAddr(level, addr)) return false;
   uint8_t b = 0;
@@ -401,7 +401,7 @@ bool yaesuFt857QueryLevel(YaesuFt857Level level, uint16_t& valueOut, uint32_t ti
 }
 
 bool yaesuFt857QueryRitOffsetHz(uint64_t hz, int32_t& offsetOut, uint32_t timeoutMs) {
-  if (!currentProfileVariantIs("ft857_897")) return false;
+  if (!currentIsFt857Family()) return false;
   const Ft857BandSlot* slot = nullptr;
   uint16_t block = 0;
   if (!ft857ActiveBandBlock(hz, slot, block, timeoutMs) || !slot) return false;
@@ -417,7 +417,7 @@ bool yaesuFt857QueryIfShift(bool& onOut, uint32_t timeoutMs) { return ft857ReadB
 // the manuals also call the clarifier. The radio answers 00 when it switched and F0 when RIT was
 // already in that state, also after a front panel change.
 static bool ft8x7SetRitReply(bool on, bool& changedOut, uint32_t timeoutMs) {
-  if (!currentProfileVariantIs("ft857_897") && !currentProfileVariantIs("ft817")) return false;
+  if (!currentIsFt857Family() && !currentIsFt817Family()) return false;
   const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, (uint8_t)(on ? 0x05 : 0x85)};
   uint8_t rsp = 0;
   if (!yaesuCatTransact1(cmd, rsp, timeoutMs)) return false;
@@ -459,7 +459,7 @@ bool yaesuFt857QueryKnobIsSquelch(bool& squelchOut, uint32_t timeoutMs) {
 }
 
 bool yaesuFt857QueryMicEq(YaesuFt857MicEq& out, uint32_t timeoutMs) {
-  if (!currentProfileVariantIs("ft857_897")) return false;
+  if (!currentIsFt857Family()) return false;
   uint8_t b = 0;
   if (!yaesuCatReadEepromByte(FT857_MIC_EQ_ADDR, b, timeoutMs)) return false;
   out = ft857MicEqFromByte(b);
@@ -588,7 +588,7 @@ bool yaesuCatSetDcsCodeRaw(const uint8_t data[4]) {
 
 // FT-857/897 take separate TX and RX values; the FT-817 takes one.
 static void fillToneData(uint16_t value, uint8_t data[4]) {
-  yaesuEncodeToneData(value, currentProfileVariantIs("ft857_897"), data);
+  yaesuEncodeToneData(value, currentIsFt857Family(), data);
 }
 
 bool yaesuCatSetCtcssTenths(uint16_t toneTenths) {

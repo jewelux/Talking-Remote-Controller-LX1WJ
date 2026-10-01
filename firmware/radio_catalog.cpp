@@ -47,7 +47,16 @@ const char* currentProfileVariant() {
   return currentStoredProfile().variant;
 }
 
-bool currentProfileVariantIs(const char* variant) {
-  if (!variant) return false;
-  return strcmp(currentStoredProfile().variant, variant) == 0;
+Ft8x7Model currentFt8x7Model() {
+  const StoredProfile& sp = currentStoredProfile();
+  if (sp.protocolType != PROTO_YAESU_FT8X7) return Ft8x7Model::None;
+  return ft8x7ModelForVariant(sp.variant);
+}
+
+bool currentIsFt817Family() {
+  return ft8x7IsFt817Family(currentFt8x7Model());
+}
+
+bool currentIsFt857Family() {
+  return currentFt8x7Model() == Ft8x7Model::Ft857;
 }

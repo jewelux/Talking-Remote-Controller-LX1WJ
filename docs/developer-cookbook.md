@@ -639,12 +639,14 @@ one feature such as `NR?`. Then try every bank on the keypad.
 
 **About `variant=`.** It opts into code paths for one radio:
 
-- `ft817` and `ft857_897` select the FT-8x7 VFO tracking and keypad layouts.
+- `ft817`, `ft818` and `ft857_897` select the FT-8x7 model (`ft8x7_model.h`):
+  its EEPROM map, VFO tracking and keypad layout. Code asks
+  `currentFt8x7Model()`, `currentIsFt817Family()` or `currentIsFt857Family()`,
+  never the string.
 - `ic7760` selects the CI-V main/sub handling.
 
-A new variant name does nothing until code checks it with
-`currentProfileVariantIs("…")`. Prefer a variant or a capability to matching
-the radio's `name`. The TS-480 name check in `radio_features.cpp` is legacy.
+A new variant name does nothing until code checks it. Prefer a variant or a
+capability to matching the radio's `name`. The TS-480 name check in `radio_features.cpp` is legacy.
 
 ### 4.6 Add a new protocol
 
