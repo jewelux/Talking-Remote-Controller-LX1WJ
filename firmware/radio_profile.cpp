@@ -6,6 +6,7 @@
 #include "transport_serial.h"
 #include "ui_speech.h"
 #include "packet_ascii.h"
+#include "protocol_ft847.h"
 #include "protocol_yaesu_cat.h"
 
 const char* protocolTypeToString(ProtocolType pt) {
@@ -15,6 +16,7 @@ const char* protocolTypeToString(ProtocolType pt) {
     case PROTO_ELECRAFT_ASCII: return "ELECRAFT_ASCII";
     case PROTO_YAESU_FT8X7: return "YAESU_FT8X7_CAT";
     case PROTO_YAESU_FTDX_ASCII: return "YAESU_FTDX_ASCII_CAT";
+    case PROTO_YAESU_FT847: return "YAESU_FT847_CAT";
     default: return "UNKNOWN";
   }
 }
@@ -144,6 +146,7 @@ void applyProfile(uint8_t profileId) {
   resetLiveRadioState();
   g_yaesuCatTrace = false;
   if (currentProtocolType() == PROTO_YAESU_FT8X7) yaesuCatNoteLineOpened();
+  if (currentProtocolType() == PROTO_YAESU_FT847) ft847NoteLineOpened();
   if (currentProtocolType() == PROTO_ELECRAFT_ASCII) {
     delay(30);
     // Force documented default behavior so GET replies are not polluted by unsolicited auto-info.

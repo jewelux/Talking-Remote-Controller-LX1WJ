@@ -114,6 +114,7 @@ bool loadSingleProfileIni(const String& path, StoredProfile& out) {
         else if (v == "ELECRAFT_ASCII") proto = PROTO_ELECRAFT_ASCII;
         else if (v == "YAESU_FT8X7") proto = PROTO_YAESU_FT8X7;
         else if (v == "YAESU_FTDX_ASCII") proto = PROTO_YAESU_FTDX_ASCII;
+        else if (v == "YAESU_FT847") proto = PROTO_YAESU_FT847;
         sp.protocolType = proto;
         profileLoaderPrepareDefaults(sp, proto);
       }
