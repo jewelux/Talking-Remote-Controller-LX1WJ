@@ -62,6 +62,7 @@ to completion, and that action talks to the radio synchronously.
 | Shared features | `radio_features.*`, `ui_features.*` | NR, NB and notch, used by both keypad and console |
 | Radio API | `radio_protocol.*`, `radio_runtime.*`, `radio_state.*` | Protocol-independent calls, and the tracked `live` state |
 | Protocols | `protocol_ops_*`, `protocol_*`, `packet_*`, `transport_serial.*` | CI-V, Kenwood/Elecraft/FTDX ASCII, Yaesu FT-8x7 5-byte CAT |
+| FT-8x7 fields | `ft8x7_codec.*`, `ft8x7_eeprom_map.*`, `ft8x7_model.h` | CAT frame fields, the EEPROM map per model, the model from the variant. No `Arduino.h`; `protocol_ft8x7_eeprom.*` reads the EEPROM with them |
 | Profiles | `radio_types.h`, `sd_profile_parser.*`, `profile_loader.*`, `sd_slots.*`, `radio_profile.*`, `radio_catalog.*` | What a radio is: connection, protocol, capabilities, command strings |
 | Speech | `ui_speech.*`, `voice_data.h` (generated) | Clips, tokens, the audio queue |
 | Settings | `radio_prefs.*` | NVS: profile, volume, tuning speech, CI-V address and baud per slot |

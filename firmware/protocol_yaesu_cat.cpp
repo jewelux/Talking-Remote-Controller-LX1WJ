@@ -98,6 +98,12 @@ void yaesuCatSend5(const uint8_t data[5]) {
   s_nextTxAllowedMs = millis() + YAESU_CAT_MIN_COMMAND_GAP_MS;
 }
 
+void yaesuCatSendWriteOnly(const uint8_t cmd[5]) {
+  yaesuCatFlushInput();
+  yaesuCatSend5(cmd);
+  delay(YAESU_CAT_WRITE_SETTLE_MS);
+}
+
 bool yaesuCatRead1(uint8_t& out, uint32_t timeoutMs) {
   g_radioReplyTimedOut = false;
   uint32_t start = millis();

@@ -12,6 +12,10 @@ void yaesuCatMarkLineDirty();
 // commands, so it never follows a line change immediately.
 void yaesuCatNoteLineOpened();
 void yaesuCatSend5(const uint8_t data[5]);
+// After a command the radio does not answer, before the next command may follow.
+static constexpr uint32_t YAESU_CAT_WRITE_SETTLE_MS = 60;
+// Sends a command the radio does not answer, then waits YAESU_CAT_WRITE_SETTLE_MS.
+void yaesuCatSendWriteOnly(const uint8_t cmd[5]);
 bool yaesuCatRead1(uint8_t& out, uint32_t timeoutMs);
 bool yaesuCatRead5(uint8_t out[5], uint32_t timeoutMs);
 bool yaesuCatTransact1(const uint8_t cmd[5], uint8_t& rsp, uint32_t timeoutMs);
