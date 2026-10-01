@@ -156,6 +156,22 @@
 - Bank 6 on radios other than the FT-8x7 family is empty: its keys beep like any unassigned key
   (they said "BANK6 reserved")
 
+### Yaesu FT-847 (new, not yet tested on the radio)
+
+- new profile `ft847.ini` (slot 16) with its own protocol `YAESU_FT847`. The FT-847 shares the
+  5-byte CAT frame of the FT-817/857/897 but not all of its commands (`0x80` is CAT OFF, not
+  lock off), so no FT-8x7 code runs for it
+- frequency and mode read and set, S-meter (5-bit, 0..31 dots), RX/TX status. HamTRC sends CAT ON
+  before the first command and again after the radio did not answer, e.g. after it was switched
+  off and on
+- while an FT-847 profile is active, only FT-847 CAT frames reach the radio; any other write (e.g.
+  a console command for another radio) is dropped and reported, because its bytes could be read
+  as an FT-847 command such as PTT ON
+- console commands for testing: `F847?`, `F847CAT ON | OFF`, `F847GAP`, `F847RX?`, `F847TX?`,
+  `F847MODE?`, `F847TRACE`, `F847RAW`, `F847RAW1?`, `F847RAW5?`; see
+  `docs/radios/yaesu-ft-847.md`. Host tests in `tests/ft847`
+- not yet: PTT, satellite mode, repeater shift, CTCSS and DCS
+
 ### Firmware updates
 
 - FT-817/818/857/897: copy the new `ft817.ini`, `ft818.ini`, `ft857.ini` and `ft897.ini` from
