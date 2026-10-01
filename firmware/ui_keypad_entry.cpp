@@ -37,15 +37,8 @@ bool keypadApplyFrequencyHz(uint64_t hz, TargetVfo targetVfo) {
     ok = setVfoFrequency(true, hz);
   } else if (targetVfo == TargetVfo::B) {
     ok = setVfoFrequency(false, hz);
-  } else if (targetVfo == TargetVfo::Other && currentProtocolType() == PROTO_YAESU_FT8X7 &&
-             (currentIsFt817Family() || currentIsFt857Family())) {
-    if (yaesuCatToggleVfo()) {
-      delay(120);
-      ok = setFrequency(hz);
-      delay(120);
-      yaesuCatToggleVfo();
-      delay(120);
-    }
+  } else if (targetVfo == TargetVfo::Other && (currentIsFt817Family() || currentIsFt857Family())) {
+    ok = ft8x7SetOtherVfoFrequency(hz);
   } else {
     ok = applyFrequencyAndTrack(hz, true);
   }

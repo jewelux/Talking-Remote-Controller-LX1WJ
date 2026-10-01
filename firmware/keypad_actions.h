@@ -82,8 +82,7 @@ void beginBank3VfoBFrequencySet();
 void queryBank3Ft8x7CurrentVfo();
 void beginBank3Ft8x7CurrentVfoFrequencySet();
 void beginBank3Ft8x7OtherVfoFrequencySet();
-void queryBank3Ft817OtherVfo();
-void queryBank3Ft857OtherVfo();
+void queryBank3Ft8x7OtherVfo();
 void toggleBank3Ft8x7Vfo();             // "A/B"
 void copyBank3Ft817VfoToOther();         // "A=B"
 void reportBank3Ft857VfoBUnsupported();  // "VFO B", "not available"

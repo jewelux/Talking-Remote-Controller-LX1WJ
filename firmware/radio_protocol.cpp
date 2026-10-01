@@ -29,26 +29,48 @@ static bool selectYaesuFtdxVfo(const StoredProfile& sp, bool targetVfoA) {
   return true;
 }
 
-// Runs op on the target VFO, then returns to the VFO that was active. The FT-817 cannot report
-// its VFO (0x55 bit 0, which Hamlib reads, does not follow A/B while the radio runs), so this
-// goes by the tracked one. After a toggle the radio misses a command sent too soon: a query gets
-// one retry, as on the Bank 3 other VFO key.
+// FT-8x7 VFO switches. The radio misses a command sent too soon after the A/B toggle, so each
+// toggle is followed by a pause.
+static constexpr uint32_t FT8X7_VFO_SETTLE_MS = 120;       // after switching to the other VFO
+static constexpr uint32_t FT8X7_VFO_RETURN_GAP_MS = 180;   // before and after switching back
+
+// Runs op once, or twice when retry is set and the first try fails.
 template <typename Op>
-static bool ft817OnVfo(bool targetVfoA, bool retry, Op op) {
-  if (!live.activeVfoKnown) rememberActiveVfo(true);
-  const bool priorVfoA = live.activeVfoA;
-  if (!(targetVfoA ? yaesuCatSelectVfoA() : yaesuCatSelectVfoB())) return false;
-  delay(120);
+static bool ft8x7RunWithRetry(bool retry, Op op) {
   bool ok = op();
   if (!ok && retry) {
-    delay(120);
+    delay(FT8X7_VFO_SETTLE_MS);
     ok = op();
   }
-  if (priorVfoA != targetVfoA) {
-    delay(120);
-    (void)(priorVfoA ? yaesuCatSelectVfoA() : yaesuCatSelectVfoB());
-  }
   return ok;
+}
+
+// Runs op on the other VFO, then switches back, keeping the tracked VFO right throughout. A
+// query (retry) gets one more try. False when op failed or a switch was not sent; when the
+// switch back was not sent, the other VFO stays active and tracked.
+template <typename Op>
+static bool ft8x7OnOtherVfo(bool retry, Op op) {
+  if (!live.activeVfoKnown) rememberActiveVfo(true);
+  const bool priorVfoA = live.activeVfoA;
+  if (!yaesuCatToggleVfo()) return false;
+  rememberActiveVfo(!priorVfoA);
+  delay(FT8X7_VFO_SETTLE_MS);
+  const bool ok = ft8x7RunWithRetry(retry, op);
+  delay(FT8X7_VFO_RETURN_GAP_MS);
+  if (!yaesuCatToggleVfo()) return false;
+  rememberActiveVfo(priorVfoA);
+  delay(FT8X7_VFO_RETURN_GAP_MS);
+  return ok;
+}
+
+// Runs op on the target VFO, switching to it and back when it is not the active one. The
+// FT-817 cannot report its VFO (0x55 bit 0, which Hamlib reads, does not follow A/B while the
+// radio runs), so this goes by the tracked one.
+template <typename Op>
+static bool ft8x7OnVfo(bool targetVfoA, bool retry, Op op) {
+  if (!live.activeVfoKnown) rememberActiveVfo(true);
+  if (live.activeVfoA == targetVfoA) return ft8x7RunWithRetry(retry, op);
+  return ft8x7OnOtherVfo(retry, op);
 }
 
 // Keep in sync with the protocol dispatch in the functions below.
@@ -496,7 +518,7 @@ bool queryVfoFrequency(bool targetVfoA, uint64_t& hzOut, uint32_t timeoutMs) {
   if (pt == PROTO_CIV) return civQueryVfoFrequency(sp, targetVfoA, hzOut, timeoutMs);
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiQueryVfoFrequency(sp, targetVfoA, hzOut, timeoutMs);
   if (pt == PROTO_YAESU_FT8X7 && sp.caps.getVfo && sp.caps.setVfo && currentIsFt817Family()) {
-    return ft817OnVfo(targetVfoA, true, [&] { return queryFrequency(hzOut, timeoutMs); });
+    return ft8x7OnVfo(targetVfoA, true, [&] { return queryFrequency(hzOut, timeoutMs); });
   }
   return false;
 }
@@ -507,7 +529,7 @@ bool setVfoFrequency(bool targetVfoA, uint64_t hz) {
   if (pt == PROTO_CIV) return civSetVfoFrequency(sp, targetVfoA, hz);
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiSetVfoFrequency(sp, targetVfoA, hz);
   if (pt == PROTO_YAESU_FT8X7 && sp.caps.setVfo && sp.caps.setFreq && currentIsFt817Family()) {
-    return ft817OnVfo(targetVfoA, false, [&] { return setFrequency(hz); });
+    return ft8x7OnVfo(targetVfoA, false, [&] { return setFrequency(hz); });
   }
   return false;
 }
@@ -533,7 +555,7 @@ bool queryVfoMode(bool targetVfoA, uint8_t& modeOut, uint8_t& filterOut, uint32_
   }
   if (pt == PROTO_YAESU_FT8X7 && sp.caps.getVfoMode && sp.caps.setVfo && currentIsFt817Family()) {
     filterOut = 1;
-    return ft817OnVfo(targetVfoA, true, [&] { return queryMode(modeOut, timeoutMs); });
+    return ft8x7OnVfo(targetVfoA, true, [&] { return queryMode(modeOut, timeoutMs); });
   }
   return false;
 }
@@ -553,7 +575,7 @@ bool setVfoMode(bool targetVfoA, uint8_t mode, uint8_t filter) {
     return ok;
   }
   if (pt == PROTO_YAESU_FT8X7 && sp.caps.setVfoMode && sp.caps.setVfo && currentIsFt817Family()) {
-    return ft817OnVfo(targetVfoA, false, [&] { return setMode(mode, filter); });
+    return ft8x7OnVfo(targetVfoA, false, [&] { return setMode(mode, filter); });
   }
   return false;
 }
@@ -564,15 +586,21 @@ bool ft8x7CopyActiveVfoToOther() {
   uint8_t mode = 0xFF;
   if (!queryFrequency(hz, 800)) return false;
   if (!queryMode(mode, 800)) return false;
-  if (!yaesuCatToggleVfo()) return false;
-  delay(120);
-  bool ok = setFrequency(hz);
-  delay(120);
-  if (ok) ok = setMode(mode, 1);
-  delay(120);
-  yaesuCatToggleVfo();
-  delay(120);
-  return ok;
+  return ft8x7OnOtherVfo(false, [&] {
+    if (!setFrequency(hz)) return false;
+    delay(FT8X7_VFO_SETTLE_MS);
+    return setMode(mode, 1);
+  });
+}
+
+bool ft8x7QueryOtherVfoFrequency(uint64_t& hzOut, uint32_t timeoutMs) {
+  if (currentProtocolType() != PROTO_YAESU_FT8X7) return false;
+  return ft8x7OnOtherVfo(true, [&] { return queryFrequency(hzOut, timeoutMs); });
+}
+
+bool ft8x7SetOtherVfoFrequency(uint64_t hz) {
+  if (currentProtocolType() != PROTO_YAESU_FT8X7) return false;
+  return ft8x7OnOtherVfo(false, [&] { return setFrequency(hz); });
 }
 
 bool querySplit(bool& onOut, uint32_t timeoutMs) {

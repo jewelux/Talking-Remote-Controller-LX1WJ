@@ -161,10 +161,10 @@ KeyBinding bank3(const KeypadTraits& t, char key) {
       return bind(queryBank3VfoA, selectBank3VfoA, beginBank3VfoAFrequencySet);
     case '2':
       if (t.layout == L::Ft817) {
-        return bind(queryBank3Ft817OtherVfo, copyBank3Ft817VfoToOther, beginBank3Ft8x7OtherVfoFrequencySet);
+        return bind(queryBank3Ft8x7OtherVfo, copyBank3Ft817VfoToOther, beginBank3Ft8x7OtherVfoFrequencySet);
       }
       if (t.layout == L::Ft857) {
-        return bind(queryBank3Ft857OtherVfo, reportBank3Ft857VfoBUnsupported,
+        return bind(queryBank3Ft8x7OtherVfo, reportBank3Ft857VfoBUnsupported,
                    beginBank3Ft8x7OtherVfoFrequencySet);
       }
       if (t.layout == L::Ftdx10) {

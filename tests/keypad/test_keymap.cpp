@@ -140,8 +140,7 @@ void beginBank3VfoBFrequencySet() { record("beginBank3VfoBFrequencySet"); }
 void queryBank3Ft8x7CurrentVfo() { record("queryBank3Ft8x7CurrentVfo"); }
 void beginBank3Ft8x7CurrentVfoFrequencySet() { record("beginBank3Ft8x7CurrentVfoFrequencySet"); }
 void beginBank3Ft8x7OtherVfoFrequencySet() { record("beginBank3Ft8x7OtherVfoFrequencySet"); }
-void queryBank3Ft817OtherVfo() { record("queryBank3Ft817OtherVfo"); }
-void queryBank3Ft857OtherVfo() { record("queryBank3Ft857OtherVfo"); }
+void queryBank3Ft8x7OtherVfo() { record("queryBank3Ft8x7OtherVfo"); }
 void toggleBank3Ft8x7Vfo() { record("toggleBank3Ft8x7Vfo"); }
 void copyBank3Ft817VfoToOther() { record("copyBank3Ft817VfoToOther"); }
 void reportBank3Ft857VfoBUnsupported() { record("reportBank3Ft857VfoBUnsupported"); }
