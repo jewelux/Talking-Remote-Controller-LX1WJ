@@ -171,28 +171,20 @@ bool yaesuCatFreqFieldValid(const uint8_t data[4]) {
   return hz >= YAESU_CAT_MIN_FREQ_HZ && hz <= YAESU_CAT_MAX_FREQ_HZ;
 }
 
+// Eight BCD digits of 10 Hz units, most significant first.
 void yaesuCatEncodeFreqHz(uint64_t hz, uint8_t out[4]) {
-  uint64_t units10 = hz / 10ULL;
-  char buf[9];
-  snprintf(buf, sizeof(buf), "%08llu", (unsigned long long)units10);
-  for (int i = 0; i < 4; ++i) {
-    uint8_t hi = (uint8_t)(buf[i * 2] - '0');
-    uint8_t lo = (uint8_t)(buf[i * 2 + 1] - '0');
-    out[i] = (uint8_t)((hi << 4) | lo);
+  uint32_t units10 = (uint32_t)((hz / 10ULL) % 100000000ULL);
+  for (int i = 3; i >= 0; --i) {
+    const uint8_t pair = (uint8_t)(units10 % 100);
+    units10 /= 100;
+    out[i] = (uint8_t)(((pair / 10) << 4) | (pair % 10));
   }
 }
 
 void yaesuCatEncodeRepeaterOffsetHz(uint64_t hz, uint8_t out[4]) {
   // FT-817 practical testing shows repeater offset uses the same 10 Hz BCD
   // scaling as the standard Yaesu frequency write path.
-  uint64_t units10 = hz / 10ULL;
-  char buf[9];
-  snprintf(buf, sizeof(buf), "%08llu", (unsigned long long)units10);
-  for (int i = 0; i < 4; ++i) {
-    uint8_t hi = (uint8_t)(buf[i * 2] - '0');
-    uint8_t lo = (uint8_t)(buf[i * 2 + 1] - '0');
-    out[i] = (uint8_t)((hi << 4) | lo);
-  }
+  yaesuCatEncodeFreqHz(hz, out);
 }
 
 bool parseHexByteString(const String& s, uint8_t& valueOut) {

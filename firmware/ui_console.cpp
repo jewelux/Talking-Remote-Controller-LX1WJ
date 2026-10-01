@@ -79,7 +79,7 @@ static void printLiveToneStateSummary() {
   if (!live.dcsValid) {
     Serial.println("unknown");
   } else {
-    char label[4];
+    char label[6];
     snprintf(label, sizeof(label), "%03u", (unsigned)live.dcsCode);
     Serial.println(label);
   }
@@ -348,11 +348,6 @@ static bool handleConsoleFeatureCommand(const String& upper) {
     return true;
   }
   return false;
-}
-
-static void speakConsoleSpeechGapMarker() {
-  if (!g_speechEnabled) return;
-  speakError();
 }
 
 static void speakConsoleTokenOrGap(const char* token) {
@@ -2040,8 +2035,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     }
     yaesuCatWriteEeprom2((uint16_t)addr, data);
     char buf[32];
-    snprintf(buf, sizeof(buf), "YEEPROM! %04lX: %s %s", addr, byteToUpperHex(data[0]).c_str(),
-             byteToUpperHex(data[1]).c_str());
+    snprintf(buf, sizeof(buf), "YEEPROM! %04X: %02X %02X", (unsigned)addr, data[0], data[1]);
     Serial.println(buf);
     return true;
   }
