@@ -1,5 +1,11 @@
 #include "ui_speech.h"
 
+// The I2S driver below (driver/i2s_std.h) exists from ESP-IDF 5, i.e. core 3.x.
+#if !defined(ESP_ARDUINO_VERSION_MAJOR) || ESP_ARDUINO_VERSION_MAJOR < 3
+#error "HamTRC needs the ESP32 Arduino core 3.x or newer (Boards Manager: esp32 by Espressif Systems)"
+#endif
+
+#include "driver/i2s_std.h"
 #include "radio_catalog.h"
 
 static float g_speechVolume = 0.45f;
@@ -26,10 +32,11 @@ static byte kpColPins[KP_COLS] = {KP_COL_PINS[0], KP_COL_PINS[1], KP_COL_PINS[2]
 Keypad keypad = Keypad(makeKeymap(kpKeys), kpRowPins, kpColPins, KP_ROWS, KP_COLS);
 
 // The DMA ring holds I2S_DMA_BUF_COUNT * I2S_DMA_BUF_LEN samples (96 ms at 8 kHz).
-// A key press zeroes it but cannot drop it, so its length is the delay before
-// the answer to the key starts.
+// A key press stops the output and refills the ring with silence, so its length
+// is the delay before the answer to the key starts.
 static constexpr int I2S_DMA_BUF_COUNT = 6;
 static constexpr int I2S_DMA_BUF_LEN = 128;
+static i2s_chan_handle_t s_i2sTx = nullptr;
 
 enum AudioItemType : uint8_t { AUDIO_CLIP = 0, AUDIO_SILENCE = 1 };
 
@@ -359,10 +366,10 @@ static bool playClipProgmemBlocking(const uint8_t* data, size_t length) {
       samples[i] = (int16_t)v;
     }
     size_t written = 0;
-    esp_err_t err = i2s_write(I2S_NUM_0, buffer, n, &written, pdMS_TO_TICKS(20));
+    // A timeout only means no DMA buffer came free yet; keep what was written.
+    esp_err_t err = i2s_channel_write(s_i2sTx, buffer, n, &written, 20);
     if (audioStopRequested()) return false;
-    if (err != ESP_OK) return false;
-    if (written == 0) continue;
+    if (err != ESP_OK && err != ESP_ERR_TIMEOUT) return false;
     offset += written;
   }
   return true;
@@ -375,8 +382,19 @@ static void playSilenceMsBlocking(int ms) {
   int loops = max(1, ms / 10);
   for (int i = 0; i < loops; ++i) {
     if (audioStopRequested()) break;
-    i2s_write(I2S_NUM_0, z, sizeof(z), &written, pdMS_TO_TICKS(20));
+    i2s_channel_write(s_i2sTx, z, sizeof(z), &written, 20);
   }
+}
+
+// Stopping the channel cuts the sound at once but leaves the unplayed buffers as
+// they are, and enabling it plays the ring from the first buffer. Preloading
+// silence overwrites all of it, so the cut-off speech cannot come back.
+static void i2sDropBufferedAudio() {
+  static const int16_t silence[I2S_DMA_BUF_COUNT * I2S_DMA_BUF_LEN] = {};
+  size_t loaded = 0;
+  i2s_channel_disable(s_i2sTx);
+  i2s_channel_preload_data(s_i2sTx, silence, sizeof(silence), &loaded);
+  i2s_channel_enable(s_i2sTx);
 }
 
 static void audioTask(void* pv) {
@@ -384,7 +402,7 @@ static void audioTask(void* pv) {
   for (;;) {
     if (g_audioAbortReq) {
       g_audioAbortReq = false;
-      i2s_zero_dma_buffer(I2S_NUM_0);
+      i2sDropBufferedAudio();
     }
 
     if (audioQueueIsEmpty()) {
@@ -421,28 +439,28 @@ static void audioTask(void* pv) {
 void initSpeech() {
   if (AMP_SD_PIN >= 0) pinMode(AMP_SD_PIN, OUTPUT);
 
-  i2s_config_t cfg;
-  memset(&cfg, 0, sizeof(cfg));
-  cfg.mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX);
-  cfg.sample_rate = I2S_SAMPLE_RATE;
-  cfg.bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT;
-  cfg.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT;
-  cfg.communication_format = I2S_COMM_FORMAT_STAND_MSB;
-  cfg.dma_buf_count = I2S_DMA_BUF_COUNT;
-  cfg.dma_buf_len = I2S_DMA_BUF_LEN;
-  cfg.use_apll = false;
-  cfg.tx_desc_auto_clear = true;
+  i2s_chan_config_t chanCfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_0, I2S_ROLE_MASTER);
+  chanCfg.dma_desc_num = I2S_DMA_BUF_COUNT;
+  chanCfg.dma_frame_num = I2S_DMA_BUF_LEN;
+  chanCfg.auto_clear = true;
+  i2s_new_channel(&chanCfg, &s_i2sTx, nullptr);
 
-  i2s_pin_config_t pins;
-  memset(&pins, 0, sizeof(pins));
-  pins.bck_io_num = I2S_BCLK_PIN;
-  pins.ws_io_num = I2S_LRCLK_PIN;
-  pins.data_out_num = I2S_DOUT_PIN;
-  pins.data_in_num = I2S_PIN_NO_CHANGE;
-
-  i2s_driver_install(I2S_NUM_0, &cfg, 0, NULL);
-  i2s_set_pin(I2S_NUM_0, &pins);
-  i2s_zero_dma_buffer(I2S_NUM_0);
+  // 16-bit MSB-aligned frames, sound on the left slot only.
+  i2s_std_config_t stdCfg = {
+    .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(I2S_SAMPLE_RATE),
+    .slot_cfg = I2S_STD_MSB_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_MONO),
+    .gpio_cfg = {
+      .mclk = I2S_GPIO_UNUSED,
+      .bclk = (gpio_num_t)I2S_BCLK_PIN,
+      .ws = (gpio_num_t)I2S_LRCLK_PIN,
+      .dout = (gpio_num_t)I2S_DOUT_PIN,
+      .din = I2S_GPIO_UNUSED,
+      .invert_flags = {},
+    },
+  };
+  stdCfg.slot_cfg.slot_mask = I2S_STD_SLOT_LEFT;
+  i2s_channel_init_std_mode(s_i2sTx, &stdCfg);
+  i2s_channel_enable(s_i2sTx);
 
   xTaskCreatePinnedToCore(audioTask, "audioTask", 4096, nullptr, 2, nullptr, 1);
   applyVolumeLevel(DEFAULT_VOLUME_LEVEL);

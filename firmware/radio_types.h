@@ -7,10 +7,6 @@
 #include <SPI.h>
 #include <SD.h>
 
-extern "C" {
-#include "driver/i2s.h"
-}
-
 #include "civ_frame.h"
 #include "config_pins.h"
 #include "voice_data.h"

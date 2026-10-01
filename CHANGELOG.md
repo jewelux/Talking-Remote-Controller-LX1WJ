@@ -171,6 +171,7 @@
 
 ### For developers
 
+- building needs the ESP32 Arduino core 3.x or newer; an older core stops with a message saying so
 - keypad handling is one state machine (`firmware/keypad_input.{h,cpp}`) with a keymap per bank
   and radio (`firmware/keypad_keymap.cpp`); host unit tests in `tests/keypad` run in CI
 - `generate_voices.py`, `say.py` and `setup_venv.ps1` default to `en_US-lessac-medium` with both
