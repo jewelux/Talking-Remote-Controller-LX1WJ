@@ -135,8 +135,6 @@ class KeypadUiListener : public KeypadInputListener {
   bool onModeDigit(char key, uint8_t& mode) override { return keypadModeDigit(key, mode); }
   void onModeCommit(uint8_t mode, TargetVfo targetVfo) override { keypadModeCommit(mode, targetVfo); }
 
-  void onStagedCommandSend(const char* cmd) override { keypadSendNow(cmd); }
-
   void onClear() override {
     printKeypadCommand("CLEAR");
     if (g_speechEnabled) speakToken("cancel");
@@ -170,18 +168,6 @@ void keypadEvent(KeypadEvent k) {
 }
 
 }  // namespace
-
-void keypadStageCommand(const String& cmd) {
-  s_input.stageCommand(cmd.c_str());
-  if ((bool)Serial) {
-    Serial.print("CMD STAGE ");
-    Serial.println(cmd);
-  }
-  if (g_speechEnabled) {
-    speakKeypadCommandWord(cmd);
-    speakToken("ok");
-  }
-}
 
 void keypadBeginEntry(InputMode mode, TargetVfo targetVfo) {
   s_input.beginEntry(mode, targetVfo);

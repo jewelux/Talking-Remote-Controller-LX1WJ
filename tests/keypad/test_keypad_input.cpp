@@ -3,7 +3,6 @@
 #include "keypad_input.h"
 #include "test_runner.h"
 
-#include <cstring>
 #include <functional>
 #include <map>
 #include <set>
@@ -101,9 +100,6 @@ struct Fake : KeypadInputListener {
   void onModeCommit(uint8_t mode, TargetVfo targetVfo) override {
     log.push_back("mode commit " + std::to_string(mode) + " vfo" +
                   std::to_string((int)targetVfo));
-  }
-  void onStagedCommandSend(const char *cmd) override {
-    log.push_back(std::string("send staged ") + cmd);
   }
   void onClear() override { log.push_back("clear"); }
   void onEntryTimeout(InputMode mode) override {
@@ -299,11 +295,9 @@ TEST(input_clear_while_another_key_is_down_is_a_co_press) {
 TEST(input_hold_of_d_and_hash_is_unassigned_and_swallows_release) {
   Fake f;
   KeypadInput in(f);
-  in.stageCommand("PO?");
   hold(in, 'D');
   hold(in, '#');
   CHECK_LOG(f, "rejected ENTER LONG", "rejected CLEAR LONG");
-  CHECK(in.hasStagedCommand());
 }
 
 TEST(input_hold_of_d_and_hash_in_entry_acts_on_release) {
@@ -584,7 +578,6 @@ TEST(input_clear_during_second_press_is_a_co_press) {
   giveDoubleHold(f);
   KeypadInput in(f);
   in.setBank(4);
-  in.stageCommand("PO?");
   tap(in, '0', 1000);
   in.onKey('0', KeyGesture::Pressed, 1100);
   tap(in, '#', 1150);
@@ -592,7 +585,6 @@ TEST(input_clear_during_second_press_is_a_co_press) {
   in.onKey('0', KeyGesture::Released, 1900);
   CHECK_LOG(f, "rejected TWO KEYS");
   CHECK(!in.doubleClickPending());
-  CHECK(in.hasStagedCommand());
 }
 
 TEST(input_double_hold_needs_same_bank) {
@@ -667,13 +659,12 @@ TEST(input_waiting_short_runs_before_star_and_enter) {
   f.waits = {"1 0"};
   f.shorts = {"1 0"};
   KeypadInput in(f);
-  in.stageCommand("SM?");
   tap(in, '0', 1000);
   tap(in, '*', 1100);
   tap(in, '0', 1400);
   tap(in, 'D', 1500);
   in.poll(2000);
-  CHECK_LOG(f, "short 1 0", "bank? 1", "short 1 0", "send staged SM?");
+  CHECK_LOG(f, "short 1 0", "bank? 1", "short 1 0", "rejected ENTER");
 }
 
 TEST(input_waiting_short_runs_before_bank_select) {
@@ -1228,19 +1219,15 @@ TEST(input_clear_with_nothing_to_cancel_is_unassigned) {
   CHECK_LOG(f, "rejected CLEAR");
 }
 
-TEST(input_clear_cancels_staged_command_or_waiting_short) {
+TEST(input_clear_cancels_a_waiting_short) {
   Fake f;
   f.waits = {"1 0"};
   f.shorts = {"1 0"};
   KeypadInput in(f);
-  in.stageCommand("SWR?");
-  tap(in, '#');
-  CHECK(!in.hasStagedCommand());
   tap(in, '0', 1000);
   tap(in, '#', 1100);
   in.poll(2000);
-  tap(in, 'D');
-  CHECK_LOG(f, "clear", "clear", "rejected ENTER");
+  CHECK_LOG(f, "clear");
 }
 
 // --- Clear and Enter routing ----------------------------------------------------------
@@ -1280,17 +1267,14 @@ TEST(input_clear_cancels_staged_mode_and_waiting_short) {
   CHECK_LOG(f, "mode digit 3", "clear", "clear", "rejected ENTER");
 }
 
-TEST(input_enter_in_normal_mode_routes_staged_mode_then_staged_command) {
+TEST(input_enter_in_normal_mode_after_a_mode_commit_beeps) {
   Fake f;
   KeypadInput in(f);
-  in.stageCommand("MODE?");
   in.beginModeSelect(TargetVfo::B);
   tap(in, '4');
   tap(in, 'D');
   tap(in, 'D');
-  tap(in, 'D');
-  CHECK_LOG(f, "mode digit 4", "mode commit 4 vfo2", "send staged MODE?",
-                        "rejected ENTER");
+  CHECK_LOG(f, "mode digit 4", "mode commit 4 vfo2", "rejected ENTER");
 }
 
 // F3: a staged mode is modal until Enter applies it or '#' cancels it. Keys
@@ -1350,12 +1334,10 @@ TEST(input_mode_select_invalid_key_keeps_it_active) {
 TEST(input_mode_select_enter_beeps_and_keeps_it_active) {
   Fake f;
   KeypadInput in(f);
-  in.stageCommand("PO?");
   in.beginModeSelect(TargetVfo::Current);
   tap(in, 'D');
   CHECK_EQ(in.mode(), InputMode::ModeSelect);
   CHECK(!in.stagedModeActive());
-  CHECK(in.hasStagedCommand());
   CHECK_LOG(f, "rejected MODE SELECT D");
 }
 
@@ -1445,37 +1427,6 @@ TEST(input_every_entry_mode_has_its_rules) {
   CHECK(keypadEntrySpec(InputMode::ModeSelect) == nullptr);
 }
 
-// --- Staged command --------------------------------------------------------------------
-
-TEST(input_staged_command_is_replaced_and_sent_once) {
-  Fake f;
-  KeypadInput in(f);
-  in.stageCommand("PO?");
-  in.stageCommand("SWR?");
-  CHECK_EQ(in.stagedCommand(), "SWR?");
-  tap(in, 'D');
-  CHECK(!in.hasStagedCommand());
-  tap(in, 'D');
-  CHECK_LOG(f, "send staged SWR?", "rejected ENTER");
-}
-
-// An entry keeps the staged command: Enter commits the entry first.
-TEST(input_staged_command_waits_through_an_entry) {
-  Fake f;
-  KeypadInput in(f);
-  in.stageCommand("PO?");
-  in.beginEntry(InputMode::RfPowerEntry);
-  typeKeys(in, "5DD");
-  CHECK_LOG(f, "digit RfPowerEntry 5 5", "commit RfPowerEntry [5] vfo0", "send staged PO?");
-}
-
-TEST(input_staged_command_is_cut_to_its_maximum) {
-  Fake f;
-  KeypadInput in(f);
-  in.stageCommand("0123456789012345678901234567");
-  CHECK_EQ(strlen(in.stagedCommand()), KeypadInput::kMaxStagedCommand);
-}
-
 // --- Entry timeout ---------------------------------------------------------------------
 
 TEST(input_entry_times_out_after_no_key) {
@@ -1536,17 +1487,10 @@ TEST(input_mode_select_times_out_with_its_pick) {
   CHECK_LOG(f, "mode digit 3", "timeout ModeSelect", "rejected ENTER");
 }
 
-// Normal mode does not time out, and a staged command waits for Enter however
-// long it takes, also through an entry that times out.
-TEST(input_staged_command_outlives_the_timeout) {
+TEST(input_normal_mode_does_not_time_out) {
   Fake f;
   KeypadInput in(f);
-  in.stageCommand("PO?");
   in.poll(2 * KeypadInput::kEntryTimeoutMs);
-  in.beginEntry(InputMode::RfPowerEntry);
-  tap(in, '5', 2 * KeypadInput::kEntryTimeoutMs);
-  in.poll(3 * KeypadInput::kEntryTimeoutMs + 1);
-  CHECK(in.hasStagedCommand());
-  tap(in, 'D', 4 * KeypadInput::kEntryTimeoutMs);
-  CHECK_LOG(f, "digit RfPowerEntry 5 5", "timeout RfPowerEntry", "send staged PO?");
+  CHECK_EQ(in.mode(), InputMode::Normal);
+  CHECK_LOG(f);
 }

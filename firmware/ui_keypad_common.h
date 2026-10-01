@@ -15,8 +15,6 @@ void keypadBeginProfileSelect();
 
 // Runs a console command for a key, with the keypad's polling and speech holds.
 void keypadSendNow(const String& cmd);
-// Keeps cmd for the next Enter.
-void keypadStageCommand(const String& cmd);
 void speakKeypadCommandWord(const String& cmd);
 
 // Entries and selections (ui_keypad_entry.cpp), called by the state machine.

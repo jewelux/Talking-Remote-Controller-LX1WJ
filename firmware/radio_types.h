@@ -17,7 +17,6 @@ struct VoiceClip {
   size_t len;
 };
 
-static constexpr bool AUTO_SEND_BANK1_QUERIES = true;
 static constexpr uint8_t MAX_PROFILE_SLOTS = 24;
 static constexpr uint8_t CIV_MY_ADDR = 0xE0;
 static constexpr uint8_t CIV_CTRL_ADDR = CIV_MY_ADDR;

@@ -206,10 +206,6 @@ void KeypadInput::beginModeSelect(TargetVfo targetVfo) {
   stagedMode_ = kNoMode;
 }
 
-void KeypadInput::stageCommand(const char* cmd) {
-  snprintf(stagedCommand_, sizeof(stagedCommand_), "%s", cmd ? cmd : "");
-}
-
 // The keys that belong to the state machine rather than the keymap, the same
 // on every bank, or nullptr. A key that works in Normal mode only is input for
 // the other modes and is not global there.
@@ -349,19 +345,12 @@ bool KeypadInput::takesDigit(const EntrySpec& entry, char key) const {
   return point < 0 || (int)len - point - 1 < entry.maxFraction;
 }
 
-// Enter ('D'). Entries and selections commit; in Normal mode a staged command
-// is sent. With no mode, bank or digit chosen yet, Enter beeps and the mode
-// stays: only Clear cancels.
+// Enter ('D'). Entries and selections commit; in Normal mode it beeps. With no
+// mode, bank or digit chosen yet, Enter beeps and the mode stays: only Clear
+// cancels.
 void KeypadInput::enter() {
   if (mode_ == InputMode::Normal) {
-    if (!hasStagedCommand()) {
-      listener_.onRejected("ENTER");
-      return;
-    }
-    char cmd[sizeof(stagedCommand_)];
-    memcpy(cmd, stagedCommand_, sizeof(cmd));
-    stagedCommand_[0] = '\0';
-    listener_.onStagedCommandSend(cmd);
+    listener_.onRejected("ENTER");
     return;
   }
   if (mode_ == InputMode::ModeSelect) {
@@ -403,25 +392,24 @@ void KeypadInput::commitEntry() {
   listener_.onCommit(mode, digits.c_str(), targetVfo);
 }
 
-// Clear ('#') cancels every mode, entry, staged mode, staged command, waiting
-// double click and one-shot bank, and beeps when there is none. Keys still held
-// keep their swallowed release.
+// Clear ('#') cancels every mode, entry, staged mode, waiting double click and
+// one-shot bank, and beeps when there is none. Keys still held keep their
+// swallowed release.
 void KeypadInput::clearAll() {
-  if (mode_ == InputMode::Normal && !pending_.active && !hasStagedCommand() && !oneShotBank_) {
+  if (mode_ == InputMode::Normal && !pending_.active && !oneShotBank_) {
     listener_.onRejected("CLEAR");
     return;
   }
   mode_ = InputMode::Normal;
   digits_.clear();
   entryVfo_ = TargetVfo::Current;
-  stagedCommand_[0] = '\0';
   pending_.active = false;
   oneShotBank_ = 0;
   listener_.onClear();
 }
 
-// Like Clear for the mode only: a staged command, and the swallowed release of
-// a key still held, stay.
+// Like Clear for the mode only: the swallowed release of a key still held
+// stays.
 void KeypadInput::timeOut() {
   const InputMode mode = mode_;
   mode_ = InputMode::Normal;

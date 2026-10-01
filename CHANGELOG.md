@@ -20,9 +20,9 @@
   Bank 1 `9` long could set VFO A or B instead of the current VFO
 - `D` with nothing typed or chosen beeps and the entry or selection stays. Before, some entries said
   "error" and ended, some failed silently, and bank and profile select ended with a beep
-- `#` cancels any entry, selection, picked mode, command waiting for `D` or key waiting for a double
-  press, and says "cancel" (it said "ok"; cancelling bank or profile select was silent). With
-  nothing to cancel it beeps
+- `#` cancels any entry, selection, picked mode or key waiting for a double press, and says
+  "cancel" (it said "ok"; cancelling bank or profile select was silent). With nothing to cancel it
+  beeps
 - holding a key that has no long action beeps once the hold time is reached, and releasing it does
   nothing. Before, the release ran the key's short action. This includes `D` and `#`
 - a key that waits for a possible double press (e.g. Bank 1 `0`, `1`, `2`) answers as soon as
@@ -34,8 +34,7 @@
 - bank select with `*` still held: the digit picks the bank of the next key only, then your bank is
   back. Only the digit is spoken
 - an entry or bank, profile or mode select left for 30 seconds without a key ends and says
-  "timeout". A command waiting for `D` stays. Before, it waited forever, and tuning on the radio was
-  not announced meanwhile
+  "timeout". Before, it waited forever, and tuning on the radio was not announced meanwhile
 - a key that does nothing gives a short beep instead of silence: keys with no action on the current
   bank, keys whose feature the radio lacks, and keys an entry or selection does not take
 - choosing a profile number with no stored profile says "not available"

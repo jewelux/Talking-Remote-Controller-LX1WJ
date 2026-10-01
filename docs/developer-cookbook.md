@@ -230,12 +230,11 @@ Keep it that way.
             ┌────────┐  '*' hold                ┌─────────────┐      │
             │ Normal │ ───────────────────────► │ BankSelect  │ ─ digit commits at once
             └────────┘                          └─────────────┘
-              │  │  action calls keypadBeginEntry / BeginModeSelect / BeginProfileSelect
-              │  ├──────────────────────────► ProfileSelect   (1–2 digits, D)
-              │  ├──────────────────────────► ModeSelect      (a mode key, D)
-              │  └──────────────────────────► FreqEntry, RfPowerEntry, CivAddrEntry,
-              │                               RptOffsetEntry, CtcssEntry, DcsEntry  (digits, D)
-              └─ 'D' with a staged command: send it
+                 │  action calls keypadBeginEntry / BeginModeSelect / BeginProfileSelect
+                 ├──────────────────────────► ProfileSelect   (1–2 digits, D)
+                 ├──────────────────────────► ModeSelect      (a mode key, D)
+                 └──────────────────────────► FreqEntry, RfPowerEntry, CivAddrEntry,
+                                              RptOffsetEntry, CtcssEntry, DcsEntry  (digits, D)
 ```
 
 - **Normal** mode waits for the release so it can tell short, long and double
@@ -245,8 +244,7 @@ Keep it that way.
 - **A key the mode does not take** beeps and the mode stays; only `#` leaves.
 - **Enter with nothing typed** beeps and stays.
 - **30 s with no key event** (`kEntryTimeoutMs`) ends any mode other than
-  Normal: `poll()` calls the listener's `onEntryTimeout`. A staged command
-  stays.
+  Normal: `poll()` calls the listener's `onEntryTimeout`.
 
 How each entry takes digits is one table row in `keypad_input.cpp`:
 

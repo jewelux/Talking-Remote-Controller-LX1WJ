@@ -187,26 +187,22 @@ void toggleBank1Lock() {
   speakTokenState("lock", !on);
 }
 
-static void sendOrStageBank1Command(const String& cmd) {
+static void sendBank1Query(const String& cmd) {
   printKeypadAction(cmd);
-  if (AUTO_SEND_BANK1_QUERIES) {
-    // The SWR and RF power replies say their own word, so saying it here too doubles it.
-    if (cmd != "SWR?" && cmd != "RFPOWER?") speakKeypadCommandWord(cmd);
-    keypadSendNow(cmd);
-  } else {
-    keypadStageCommand(cmd);
-  }
+  // The SWR and RF power replies say their own word, so saying it here too doubles it.
+  if (cmd != "SWR?" && cmd != "RFPOWER?") speakKeypadCommandWord(cmd);
+  keypadSendNow(cmd);
 }
 
-void queryBank1Power() { sendOrStageBank1Command("PO?"); }
+void queryBank1Power() { sendBank1Query("PO?"); }
 
-void queryBank1RfPower() { sendOrStageBank1Command("RFPOWER?"); }
+void queryBank1RfPower() { sendBank1Query("RFPOWER?"); }
 
-void queryBank1Smeter() { sendOrStageBank1Command("SM?"); }
+void queryBank1Smeter() { sendBank1Query("SM?"); }
 
-void queryBank1Swr() { sendOrStageBank1Command("SWR?"); }
+void queryBank1Swr() { sendBank1Query("SWR?"); }
 
-void queryBank1Mode() { sendOrStageBank1Command("MODE?"); }
+void queryBank1Mode() { sendBank1Query("MODE?"); }
 
 void beginBank1ModeSelect() {
   keypadBeginModeSelect(TargetVfo::Current);

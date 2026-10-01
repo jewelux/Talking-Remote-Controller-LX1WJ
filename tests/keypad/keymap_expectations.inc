@@ -47,11 +47,11 @@
 //
 // Actions are named after the existing function where one exists, with its
 // arguments. Inline code in the old dispatchers gets a name here:
-//   queryBank1Power         sendOrStageBank1Command("PO?")
-//   queryBank1Smeter        sendOrStageBank1Command("SM?")
-//   queryBank1Swr           sendOrStageBank1Command("SWR?")
-//   queryBank1Mode          sendOrStageBank1Command("MODE?", true)
-//   queryBank1RfPower       sendOrStageBank1Command("RFPOWER?")
+//   queryBank1Power         sendBank1Query("PO?")
+//   queryBank1Smeter        sendBank1Query("SM?")
+//   queryBank1Swr           sendBank1Query("SWR?")
+//   queryBank1Mode          sendBank1Query("MODE?")
+//   queryBank1RfPower       sendBank1Query("RFPOWER?")
 //   beginBank1ModeSelect    "MODE", mode select, "mode please"
 //   send(CMD)               sendKeypadCommand(CMD): the console command
 //                           CMD. Most FTDX10 keys; the old code had these
