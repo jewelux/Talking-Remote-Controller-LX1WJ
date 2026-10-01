@@ -156,6 +156,21 @@ static void setProtocolDefaults(StoredProfile& sp) {
   setFt8x7Bank6Defaults(sp);
   setPowerDefaults(sp);
 
+  if (sp.protocolType == PROTO_YAESU_FT847) {
+    // Mode bytes as hex, like the FT-8x7 [modes]; the FT-847 has no RTTY or DIGI mode.
+    copyCString(sp.ascii.modeRtty, sizeof(sp.ascii.modeRtty), "");
+    copyCString(sp.ascii.modeRttyR, sizeof(sp.ascii.modeRttyR), "");
+    copyCString(sp.ascii.modeDigi, sizeof(sp.ascii.modeDigi), "");
+    copyCString(sp.ascii.modeLsb, sizeof(sp.ascii.modeLsb), "00");
+    copyCString(sp.ascii.modeUsb, sizeof(sp.ascii.modeUsb), "01");
+    copyCString(sp.ascii.modeCw, sizeof(sp.ascii.modeCw), "02");
+    copyCString(sp.ascii.modeCwr, sizeof(sp.ascii.modeCwr), "03");
+    copyCString(sp.ascii.modeAm, sizeof(sp.ascii.modeAm), "04");
+    copyCString(sp.ascii.modeFm, sizeof(sp.ascii.modeFm), "08");
+    sp.caps.getSmeter = true;
+    sp.caps.getRxTx = true;
+  }
+
   if (sp.protocolType == PROTO_CIV) {
     sp.caps.getSmeter = true;
     sp.caps.getPower = true;

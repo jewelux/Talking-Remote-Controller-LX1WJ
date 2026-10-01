@@ -63,7 +63,8 @@ enum ProtocolType : uint8_t {
   PROTO_KENWOOD_ASCII = 1,
   PROTO_ELECRAFT_ASCII = 2,
   PROTO_YAESU_FT8X7 = 3,
-  PROTO_YAESU_FTDX_ASCII = 4
+  PROTO_YAESU_FTDX_ASCII = 4,
+  PROTO_YAESU_FT847 = 5
 };
 
 // The link to the radio, as the profile's [connection] section sets it: which

@@ -21,8 +21,10 @@ void serialTransportApplyProfile(const ConnectionProfile& profile) {
 
   g_civSerial = (profile.uartNum == 2) ? &civUart2 : &civUart1;
   g_civSerial->end();
-  const uint32_t serialConfig = (currentProtocolType() == PROTO_YAESU_FT8X7) ? SERIAL_8N2 : SERIAL_8N1;
-  if (currentProtocolType() == PROTO_YAESU_FT8X7) {
+  // The Yaesu 5-byte CAT radios want two stop bits.
+  const bool yaesu5Byte = currentProtocolType() == PROTO_YAESU_FT8X7 || currentProtocolType() == PROTO_YAESU_FT847;
+  const uint32_t serialConfig = yaesu5Byte ? SERIAL_8N2 : SERIAL_8N1;
+  if (yaesu5Byte) {
     serialTransportDriveTxIdle(profile.txPin, profile.txInvert);
     delay(5);
   }
@@ -48,15 +50,28 @@ int serialTransportRead() {
   return g_civSerial->read();
 }
 
+static bool s_ft847WriteGateOpen = false;
+
+void serialTransportSetFt847WriteGate(bool open) { s_ft847WriteGateOpen = open; }
+
+static bool serialTransportWriteAllowed() {
+  if (currentProtocolType() != PROTO_YAESU_FT847 || s_ft847WriteGateOpen) return true;
+  if (Serial) Serial.println("[F847] blocked a write that is not an FT-847 CAT frame");
+  return false;
+}
+
 size_t serialTransportWrite(const uint8_t* data, size_t len) {
+  if (!serialTransportWriteAllowed()) return 0;
   return g_civSerial->write(data, len);
 }
 
 size_t serialTransportWriteByte(uint8_t value) {
+  if (!serialTransportWriteAllowed()) return 0;
   return g_civSerial->write(value);
 }
 
 size_t serialTransportPrint(const char* text) {
+  if (!serialTransportWriteAllowed()) return 0;
   return g_civSerial->print(text);
 }
 
