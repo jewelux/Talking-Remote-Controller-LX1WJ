@@ -126,7 +126,7 @@ static void commitFrequency(const char* digits, TargetVfo targetVfo) {
     if (g_speechEnabled) speakDigitsAndPoint(hzToMHzString3(hz));
   } else if (!keypadReportIfTimedOut("FREQ")) {
     printKeypadStatus(currentProtocolType() == PROTO_YAESU_FT8X7 ? "FREQ -> no change" : "FREQ -> failed");
-    if (g_speechEnabled && currentProtocolType() == PROTO_YAESU_FT8X7) speakError();
+    if (g_speechEnabled) speakError();
   }
 }
 
@@ -246,6 +246,6 @@ void keypadModeCommit(uint8_t mode, TargetVfo targetVfo) {
     if (g_speechEnabled) speakModeName(mode);
   } else if (!keypadReportIfTimedOut("MODE")) {
     printKeypadStatus(currentProtocolType() == PROTO_YAESU_FT8X7 ? "MODE -> no change" : "MODE -> failed");
-    if (g_speechEnabled && currentProtocolType() == PROTO_YAESU_FT8X7) speakError();
+    if (g_speechEnabled) speakError();
   }
 }

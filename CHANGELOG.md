@@ -61,6 +61,8 @@
 - "timeout" when the radio does not answer, and "not available" for features the radio or profile
   cannot provide (e.g. keys hidden on FTDX10, an empty profile slot); both used to say "error" or
   nothing
+- a frequency or mode the radio did not take says "error" on Icom, Kenwood, Elecraft and FTDX
+  radios too. Before, only the FT-8x7 said it; the others stayed silent
 - the S-meter says dB over S9 as a word ("S meter nine plus twenty")
 - WFM is said as "wfm" instead of being spelled out
 - the RX/TX query (Bank 1 `1`, and Bank 3 `6` on radios other than the FT-8x7 and FTDX10) says
