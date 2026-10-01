@@ -29,17 +29,12 @@ static bool selectYaesuFtdxVfo(const StoredProfile& sp, bool targetVfoA) {
   return true;
 }
 
-// FT-8x7 VFO switches. The radio misses a command sent too soon after the A/B toggle, so each
-// toggle is followed by a pause.
-static constexpr uint32_t FT8X7_VFO_SETTLE_MS = 120;       // after switching to the other VFO
-static constexpr uint32_t FT8X7_VFO_RETURN_GAP_MS = 180;   // before and after switching back
-
 // Runs op once, or twice when retry is set and the first try fails.
 template <typename Op>
 static bool ft8x7RunWithRetry(bool retry, Op op) {
   bool ok = op();
   if (!ok && retry) {
-    delay(FT8X7_VFO_SETTLE_MS);
+    delay(YAESU_CAT_VFO_SETTLE_MS);
     ok = op();
   }
   return ok;
@@ -53,12 +48,12 @@ static bool ft8x7OnOtherVfo(bool retry, Op op) {
   const bool priorVfoA = live.activeVfoA;
   yaesuCatToggleVfo();
   rememberActiveVfo(!priorVfoA);
-  delay(FT8X7_VFO_SETTLE_MS);
+  delay(YAESU_CAT_VFO_SETTLE_MS);
   const bool ok = ft8x7RunWithRetry(retry, op);
-  delay(FT8X7_VFO_RETURN_GAP_MS);
+  delay(YAESU_CAT_VFO_RETURN_GAP_MS);
   yaesuCatToggleVfo();
   rememberActiveVfo(priorVfoA);
-  delay(FT8X7_VFO_RETURN_GAP_MS);
+  delay(YAESU_CAT_VFO_RETURN_GAP_MS);
   return ok;
 }
 
@@ -586,7 +581,7 @@ bool ft8x7CopyActiveVfoToOther() {
   if (!queryMode(mode, 800)) return false;
   return ft8x7OnOtherVfo(false, [&] {
     if (!setFrequency(hz)) return false;
-    delay(FT8X7_VFO_SETTLE_MS);
+    delay(YAESU_CAT_VFO_SETTLE_MS);
     return setMode(mode, 1);
   });
 }

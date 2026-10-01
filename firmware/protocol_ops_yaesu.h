@@ -4,6 +4,18 @@
 #include "ft8x7_eeprom_map.h"
 #include "radio_globals.h"
 
+// Pauses that keep the radio's CAT parser from missing a command.
+// After a command the radio does not answer.
+static constexpr uint32_t YAESU_CAT_WRITE_SETTLE_MS = 60;
+// After a frequency or mode write: a readback sooner can take the line before the radio has
+// settled the new value.
+static constexpr uint32_t YAESU_CAT_FREQ_MODE_SETTLE_MS = 140;
+// After the A/B toggle, and before and after toggling back from a look at the other VFO.
+static constexpr uint32_t YAESU_CAT_VFO_SETTLE_MS = 120;
+static constexpr uint32_t YAESU_CAT_VFO_RETURN_GAP_MS = 180;
+// How long a read for the keypad or the console waits for its reply.
+static constexpr uint32_t YAESU_CAT_REPLY_TIMEOUT_MS = 800;
+
 bool yaesuCatQueryFrequency(const StoredProfile& sp, uint64_t& hzOut, uint32_t timeoutMs);
 bool yaesuCatQueryModeRawByte(uint8_t& modeByteOut, uint32_t timeoutMs);
 bool yaesuCatSetFrequency(const StoredProfile& sp, uint64_t hz);

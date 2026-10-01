@@ -18,7 +18,7 @@ static bool yaesuCatQueryMeterByte(uint8_t cmdByte, int32_t& rawOut, uint32_t ti
 static void yaesuCatSendWriteOnly(const uint8_t cmd[5]) {
   yaesuCatFlushInput();
   yaesuCatSend5(cmd);
-  delay(60);
+  delay(YAESU_CAT_WRITE_SETTLE_MS);
 }
 
 bool yaesuCatQueryFrequency(const StoredProfile& sp, uint64_t& hzOut, uint32_t timeoutMs) {
@@ -49,9 +49,7 @@ bool yaesuCatSetFrequency(const StoredProfile& sp, uint64_t hz) {
   yaesuCatFlushInput();
   yaesuCatSend5(cmd);
   // FT-817/857 frequency writes behave like write-only commands in practice.
-  // Avoid querying immediately afterward because the follow-up CAT traffic can
-  // steal the bus before the radio settles the new value.
-  delay(140);
+  delay(YAESU_CAT_FREQ_MODE_SETTLE_MS);
   return true;
 }
 
@@ -76,9 +74,7 @@ bool yaesuCatSetMode(const StoredProfile& sp, uint8_t mode) {
   if (!profileModeCodeForInternal(sp, mode, code)) return false;
   if (!parseHexByteString(code, modeByte)) return false;
   yaesuCatSetModeRawByte(modeByte);
-  // FT-817/857 mode writes also need quiet time after the raw write command.
-  // A direct readback right here is more likely to interfere than to help.
-  delay(140);
+  delay(YAESU_CAT_FREQ_MODE_SETTLE_MS);
   return true;
 }
 

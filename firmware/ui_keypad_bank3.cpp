@@ -202,7 +202,7 @@ void selectBank3Ft817ActiveVfoA() {
     if (!guardFt8x7VfoToggleLock()) return;
     yaesuCatToggleVfo();
     rememberActiveVfo(true);
-    delay(120);
+    delay(YAESU_CAT_VFO_SETTLE_MS);
   }
   printKeypadStatus("VFO A");
   speakVfoLabel('A');
@@ -215,7 +215,7 @@ void selectBank3Ft817ActiveVfoB() {
     if (!guardFt8x7VfoToggleLock()) return;
     yaesuCatToggleVfo();
     rememberActiveVfo(false);
-    delay(120);
+    delay(YAESU_CAT_VFO_SETTLE_MS);
   }
   printKeypadStatus("VFO B");
   speakVfoLabel('B');

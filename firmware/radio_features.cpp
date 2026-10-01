@@ -177,6 +177,8 @@ FeatureStatus notchToggle(NotchState& out) {
 
 // ---- FT-8x7 EEPROM settings ----
 
+static constexpr uint32_t kFt8x7TimeoutMs = YAESU_CAT_REPLY_TIMEOUT_MS;
+
 const char* ft8x7SettingLabel(Ft8x7Setting setting) {
   switch (setting) {
     case Ft8x7Setting::Agc: return "AGC?";
@@ -202,15 +204,15 @@ const char* ft8x7SettingLabel(Ft8x7Setting setting) {
 
 static FeatureStatus ft8x7BandSettingQuery(Ft8x7Setting setting, Ft8x7SettingState& out) {
   uint64_t hz = 0;
-  if (!queryFrequency(hz, 800)) return failure(FeatureStatus::NoReply);
+  if (!queryFrequency(hz, kFt8x7TimeoutMs)) return failure(FeatureStatus::NoReply);
   if (setting == Ft8x7Setting::RfPower) {
     uint8_t watts = 0;
-    if (!yaesuFt857QueryRfPowerWatts(hz, watts, 800)) return failure(FeatureStatus::NoReply);
+    if (!yaesuFt857QueryRfPowerWatts(hz, watts, kFt8x7TimeoutMs)) return failure(FeatureStatus::NoReply);
     out.wattsTenths = (uint16_t)(watts * 10);
     return FeatureStatus::Ok;
   }
   YaesuFt857BandFlags flags;
-  if (!yaesuFt857QueryBandFlags(hz, flags, 800)) return failure(FeatureStatus::NoReply);
+  if (!yaesuFt857QueryBandFlags(hz, flags, kFt8x7TimeoutMs)) return failure(FeatureStatus::NoReply);
   if (!flags.bandKnown) return FeatureStatus::Unsupported;
   if (setting == Ft8x7Setting::Nar) {
     out.on = flags.nar;
@@ -257,33 +259,33 @@ FeatureStatus ft8x7SettingQuery(Ft8x7Setting setting, Ft8x7SettingState& out) {
   out.setting = setting;
   Ft8x7Flag flag = Ft8x7Flag::Nb;
   if (ft8x7SettingFlag(setting, flag)) {
-    if (!yaesuFt8x7QueryFlag(flag, out.on, 800)) return failure(FeatureStatus::NoReply);
+    if (!yaesuFt8x7QueryFlag(flag, out.on, kFt8x7TimeoutMs)) return failure(FeatureStatus::NoReply);
     return FeatureStatus::Ok;
   }
   bool ok = false;
   switch (setting) {
-    case Ft8x7Setting::Agc: ok = yaesuFt8x7QueryAgc(out.agc, 800); break;
+    case Ft8x7Setting::Agc: ok = yaesuFt8x7QueryAgc(out.agc, kFt8x7TimeoutMs); break;
     case Ft8x7Setting::Menu:
     case Ft8x7Setting::Row: {
       uint8_t menu = 0;
       uint8_t row = 0;
-      ok = yaesuFt8x7QueryMenuAndRow(menu, row, 800);
+      ok = yaesuFt8x7QueryMenuAndRow(menu, row, kFt8x7TimeoutMs);
       out.number = setting == Ft8x7Setting::Menu ? menu : row;
       break;
     }
-    case Ft8x7Setting::NrLevel: ok = yaesuFt857QueryLevel(YaesuFt857Level::NrLevel, out.value, 800); break;
-    case Ft8x7Setting::NbLevel: ok = yaesuFt857QueryLevel(YaesuFt857Level::NbLevel, out.value, 800); break;
-    case Ft8x7Setting::LowCut: ok = yaesuFt857QueryLevel(YaesuFt857Level::HpfCutoff, out.value, 800); break;
-    case Ft8x7Setting::HighCut: ok = yaesuFt857QueryLevel(YaesuFt857Level::LpfCutoff, out.value, 800); break;
-    case Ft8x7Setting::MicEq: ok = yaesuFt857QueryMicEq(out.micEq, 800); break;
+    case Ft8x7Setting::NrLevel: ok = yaesuFt857QueryLevel(YaesuFt857Level::NrLevel, out.value, kFt8x7TimeoutMs); break;
+    case Ft8x7Setting::NbLevel: ok = yaesuFt857QueryLevel(YaesuFt857Level::NbLevel, out.value, kFt8x7TimeoutMs); break;
+    case Ft8x7Setting::LowCut: ok = yaesuFt857QueryLevel(YaesuFt857Level::HpfCutoff, out.value, kFt8x7TimeoutMs); break;
+    case Ft8x7Setting::HighCut: ok = yaesuFt857QueryLevel(YaesuFt857Level::LpfCutoff, out.value, kFt8x7TimeoutMs); break;
+    case Ft8x7Setting::MicEq: ok = yaesuFt857QueryMicEq(out.micEq, kFt8x7TimeoutMs); break;
     case Ft8x7Setting::Antenna: {
       uint64_t hz = 0;
-      ok = queryFrequency(hz, 800) && yaesuFt817QueryRearAntenna(hz, out.on, 800);
+      ok = queryFrequency(hz, kFt8x7TimeoutMs) && yaesuFt817QueryRearAntenna(hz, out.on, kFt8x7TimeoutMs);
       break;
     }
     case Ft8x7Setting::RfPower:
       if (ft8x7IsFt817Family(model)) {
-        ok = yaesuFt817QueryRfPowerTenths(out.wattsTenths, 800);
+        ok = yaesuFt817QueryRfPowerTenths(out.wattsTenths, kFt8x7TimeoutMs);
         break;
       }
       return ft8x7BandSettingQuery(setting, out);
