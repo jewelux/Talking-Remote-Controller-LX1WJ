@@ -19,7 +19,7 @@ static uint16_t currentFt8x7DefaultDcsCode() {
 
 static void setBank6Ft8x7RepeaterShift(uint8_t shiftByte, const char* label) {
   printKeypadAction(String("RPT ") + label);
-  if (!yaesuCatSetRepeaterShiftRaw(shiftByte)) { keypadReportIfTimedOut("RPT"); return; }
+  yaesuCatSetRepeaterShiftRaw(shiftByte);
   printKeypadStatus(String("RPT ") + label);
   if (!g_speechEnabled) return;
   speakLabel("repeater");
@@ -30,7 +30,7 @@ static void setBank6Ft8x7RepeaterShift(uint8_t shiftByte, const char* label) {
 
 static void setBank6Ft8x7RepeaterOffsetHz(uint64_t hz) {
   printKeypadAction(String("RPTSHIFT ") + hzToMHzString3(hz));
-  if (!yaesuCatSetRepeaterOffsetHzRaw(hz)) { keypadReportIfTimedOut("RPTSHIFT"); return; }
+  yaesuCatSetRepeaterOffsetHzRaw(hz);
   printKeypadStatus(String("RPTSHIFT ") + hzToMHzString3(hz) + " MHz");
   if (!g_speechEnabled) return;
   speakLabel("repeater frequency");
@@ -39,7 +39,7 @@ static void setBank6Ft8x7RepeaterOffsetHz(uint64_t hz) {
 
 static void setBank6Ft8x7ToneMode(uint8_t modeByte, const char* label) {
   printKeypadAction(String("TONE ") + label);
-  if (!yaesuCatSetToneDcsModeRaw(modeByte)) { keypadReportIfTimedOut("TONE"); return; }
+  yaesuCatSetToneDcsModeRaw(modeByte);
   printKeypadStatus(String("TONE ") + label);
   if (!g_speechEnabled) return;
   speakLabel("tone");

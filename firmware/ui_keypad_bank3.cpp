@@ -24,7 +24,7 @@ void toggleBank3Ft8x7Rit() {
 
 void setBank3Ft857Ptt(bool on) {
   printKeypadAction(String("PTT ") + (on ? "ON" : "OFF"));
-  if (!yaesuCatSetPtt(on)) { keypadReportIfTimedOut("PTT"); return; }
+  yaesuCatSetPtt(on);
   printKeypadStatus(on ? "PTT ON" : "PTT OFF");
   speakLabel("ptt");
   speakSimpleBinaryState(on);
@@ -103,7 +103,7 @@ void toggleBank3Ft8x7Vfo() {
   muteTuningSpeechAfterOwnChange();
   refreshFt8x7ActiveVfo();
   if (!guardFt8x7VfoToggleLock()) return;
-  if (!yaesuCatToggleVfo()) { keypadReportIfTimedOut("VFO A"); return; }
+  yaesuCatToggleVfo();
   rememberActiveVfo(!live.activeVfoA);
   const char which = ft8x7CurrentVfoLabel();
   printKeypadStatus(String("VFO") + which);
@@ -200,7 +200,7 @@ void selectBank3Ft817ActiveVfoA() {
   refreshFt8x7ActiveVfo();
   if (!live.activeVfoA) {
     if (!guardFt8x7VfoToggleLock()) return;
-    if (!yaesuCatToggleVfo()) { keypadReportIfTimedOut("VFO A ACTIVE"); return; }
+    yaesuCatToggleVfo();
     rememberActiveVfo(true);
     delay(120);
   }
@@ -213,7 +213,7 @@ void selectBank3Ft817ActiveVfoB() {
   refreshFt8x7ActiveVfo();
   if (live.activeVfoA) {
     if (!guardFt8x7VfoToggleLock()) return;
-    if (!yaesuCatToggleVfo()) { keypadReportIfTimedOut("VFO B ACTIVE"); return; }
+    yaesuCatToggleVfo();
     rememberActiveVfo(false);
     delay(120);
   }

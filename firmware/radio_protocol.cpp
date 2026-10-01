@@ -46,18 +46,17 @@ static bool ft8x7RunWithRetry(bool retry, Op op) {
 }
 
 // Runs op on the other VFO, then switches back, keeping the tracked VFO right throughout. A
-// query (retry) gets one more try. False when op failed or a switch was not sent; when the
-// switch back was not sent, the other VFO stays active and tracked.
+// query (retry) gets one more try. False when op failed.
 template <typename Op>
 static bool ft8x7OnOtherVfo(bool retry, Op op) {
   if (!live.activeVfoKnown) rememberActiveVfo(true);
   const bool priorVfoA = live.activeVfoA;
-  if (!yaesuCatToggleVfo()) return false;
+  yaesuCatToggleVfo();
   rememberActiveVfo(!priorVfoA);
   delay(FT8X7_VFO_SETTLE_MS);
   const bool ok = ft8x7RunWithRetry(retry, op);
   delay(FT8X7_VFO_RETURN_GAP_MS);
-  if (!yaesuCatToggleVfo()) return false;
+  yaesuCatToggleVfo();
   rememberActiveVfo(priorVfoA);
   delay(FT8X7_VFO_RETURN_GAP_MS);
   return ok;
@@ -346,7 +345,7 @@ bool setDialLock(bool on) {
   if (pt == PROTO_CIV) return civSetDialLock(sp, on);
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiSetLock(sp, on);
   if (pt == PROTO_YAESU_FT8X7) {
-    if (!yaesuCatSetLockDocumentedRaw(on)) return false;
+    yaesuCatSetLockDocumentedRaw(on);
     rememberDialLockState(on);
     return true;
   }
@@ -498,7 +497,10 @@ bool selectVfoA() {
   if (pt == PROTO_CIV) return civSelectVfoA(sp);
   if (pt == PROTO_YAESU_FTDX_ASCII) return selectYaesuFtdxVfo(sp, true);
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII) return asciiSelectVfoA(sp);
-  if (pt == PROTO_YAESU_FT8X7 && sp.caps.setVfo && currentIsFt817Family()) return yaesuCatSelectVfoA();
+  if (pt == PROTO_YAESU_FT8X7 && sp.caps.setVfo && currentIsFt817Family()) {
+    yaesuCatSelectVfoA();
+    return true;
+  }
   return false;
 }
 
@@ -508,7 +510,10 @@ bool selectVfoB() {
   if (pt == PROTO_CIV) return civSelectVfoB(sp);
   if (pt == PROTO_YAESU_FTDX_ASCII) return selectYaesuFtdxVfo(sp, false);
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII) return asciiSelectVfoB(sp);
-  if (pt == PROTO_YAESU_FT8X7 && sp.caps.setVfo && currentIsFt817Family()) return yaesuCatSelectVfoB();
+  if (pt == PROTO_YAESU_FT8X7 && sp.caps.setVfo && currentIsFt817Family()) {
+    yaesuCatSelectVfoB();
+    return true;
+  }
   return false;
 }
 
@@ -617,7 +622,10 @@ bool setSplit(bool on) {
   const StoredProfile& sp = currentStoredProfile();
   if (pt == PROTO_CIV) return civSetSplit(sp, on);
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiSetSplit(sp, on);
-  if (pt == PROTO_YAESU_FT8X7) return yaesuCatSetSplit(on);
+  if (pt == PROTO_YAESU_FT8X7) {
+    yaesuCatSetSplit(on);
+    return true;
+  }
   return false;
 }
 

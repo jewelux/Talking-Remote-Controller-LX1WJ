@@ -15,11 +15,10 @@ static bool yaesuCatQueryMeterByte(uint8_t cmdByte, int32_t& rawOut, uint32_t ti
   return true;
 }
 
-static bool yaesuCatSendWriteOnly(const uint8_t cmd[5]) {
+static void yaesuCatSendWriteOnly(const uint8_t cmd[5]) {
   yaesuCatFlushInput();
   yaesuCatSend5(cmd);
   delay(60);
-  return true;
 }
 
 bool yaesuCatQueryFrequency(const StoredProfile& sp, uint64_t& hzOut, uint32_t timeoutMs) {
@@ -76,16 +75,16 @@ bool yaesuCatSetMode(const StoredProfile& sp, uint8_t mode) {
   uint8_t modeByte = 0;
   if (!profileModeCodeForInternal(sp, mode, code)) return false;
   if (!parseHexByteString(code, modeByte)) return false;
-  if (!yaesuCatSetModeRawByte(modeByte)) return false;
+  yaesuCatSetModeRawByte(modeByte);
   // FT-817/857 mode writes also need quiet time after the raw write command.
   // A direct readback right here is more likely to interfere than to help.
   delay(140);
   return true;
 }
 
-bool yaesuCatSetModeRawByte(uint8_t modeByte) {
+void yaesuCatSetModeRawByte(uint8_t modeByte) {
   const uint8_t cmd[5] = {modeByte, 0x00, 0x00, 0x00, 0x07};
-  return yaesuCatSendWriteOnly(cmd);
+  yaesuCatSendWriteOnly(cmd);
 }
 
 bool yaesuCatQuerySMeterRaw(const StoredProfile& sp, int32_t& rawOut, uint32_t timeoutMs) {
@@ -191,11 +190,10 @@ bool yaesuCatReadEepromByte(uint16_t addr, uint8_t& out, uint32_t timeoutMs) {
 // (0xBB at 0069 returned the bytes at 0069 and 006A on an FT-897). It takes effect at once.
 // CAUTION: a bad write can wipe the radio's memories and calibration. Any reply byte is left
 // for the next flush to drain.
-bool yaesuCatWriteEeprom2(uint16_t addr, const uint8_t data[2]) {
+void yaesuCatWriteEeprom2(uint16_t addr, const uint8_t data[2]) {
   const uint8_t cmd[5] = {(uint8_t)(addr >> 8), (uint8_t)(addr & 0xFF), data[0], data[1], 0xBC};
   yaesuCatSendWriteOnly(cmd);
   yaesuCatMarkLineDirty();
-  return true;
 }
 
 // The TX status split bit is valid only while transmitting; the FT-857/897 answer 0xFF in
@@ -466,81 +464,57 @@ bool yaesuFt857QueryMicEq(YaesuFt857MicEq& out, uint32_t timeoutMs) {
   return true;
 }
 
-bool yaesuCatToggleVfo() {
+void yaesuCatToggleVfo() {
   const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, 0x81};
-  return yaesuCatSendWriteOnly(cmd);
+  yaesuCatSendWriteOnly(cmd);
 }
 
-bool yaesuCatSelectVfoA() {
-  // BUGFIX V3.5.1: War ein Stub (return false). Alle Aufrufer (selectVfoA,
-  // queryVfoFrequency, setVfoFrequency, queryVfoMode, setVfoMode) schlugen dadurch
-  // lautlos fehl. Frequenzschreiben auf VFO A/B meldete fälschlich "Error".
-  //
-  // FT-817 hat keinen direkten "Gehe zu VFO A"-Befehl. Einzige Moeglichkeit:
-  // Toggle (0x81) wenn wir wissen dass gerade VFO B aktiv ist.
-  // Ist der aktive VFO unbekannt oder bereits A -> nichts senden, als OK melden.
-  if (!live.activeVfoKnown || live.activeVfoA) {
-    rememberActiveVfo(true);
-    return true;
-  }
-  // Aktuell auf VFO B -> einmal toggeln um auf A zu wechseln
-  const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, 0x81};
-  yaesuCatFlushInput();
-  yaesuCatSend5(cmd);
-  delay(60);
+// The FT-8x7 has no command for VFO A or B, only the A/B toggle, so these toggle when the
+// tracked VFO is the other one. An unknown VFO counts as the target.
+void yaesuCatSelectVfoA() {
+  if (live.activeVfoKnown && !live.activeVfoA) yaesuCatToggleVfo();
   rememberActiveVfo(true);
-  return true;
 }
 
-bool yaesuCatSelectVfoB() {
-  // BUGFIX V3.5.1: War ein Stub (return false). Siehe yaesuCatSelectVfoA().
-  if (!live.activeVfoKnown || !live.activeVfoA) {
-    rememberActiveVfo(false);
-    return true;
-  }
-  // Aktuell auf VFO A -> einmal toggeln um auf B zu wechseln
-  const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, 0x81};
-  yaesuCatFlushInput();
-  yaesuCatSend5(cmd);
-  delay(60);
+void yaesuCatSelectVfoB() {
+  if (live.activeVfoKnown && live.activeVfoA) yaesuCatToggleVfo();
   rememberActiveVfo(false);
-  return true;
 }
 
-bool yaesuCatSetPtt(bool on) {
+void yaesuCatSetPtt(bool on) {
   const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, (uint8_t)(on ? 0x08 : 0x88)};
-  return yaesuCatSendWriteOnly(cmd);
+  yaesuCatSendWriteOnly(cmd);
 }
 
-bool yaesuCatSetClarifier(bool on) {
+void yaesuCatSetClarifier(bool on) {
   const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, (uint8_t)(on ? 0x05 : 0x85)};
-  return yaesuCatSendWriteOnly(cmd);
+  yaesuCatSendWriteOnly(cmd);
 }
 
-bool yaesuCatSetSplit(bool on) {
+void yaesuCatSetSplit(bool on) {
   const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, (uint8_t)(on ? 0x02 : 0x82)};
-  return yaesuCatSendWriteOnly(cmd);
+  yaesuCatSendWriteOnly(cmd);
 }
 
-bool yaesuCatSetLockDocumentedRaw(bool on) {
+void yaesuCatSetLockDocumentedRaw(bool on) {
   const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, (uint8_t)(on ? 0x00 : 0x80)};
-  return yaesuCatSendWriteOnly(cmd);
+  yaesuCatSendWriteOnly(cmd);
 }
 
-bool yaesuCatSetRepeaterShiftRaw(uint8_t shiftByte) {
+void yaesuCatSetRepeaterShiftRaw(uint8_t shiftByte) {
   const uint8_t cmd[5] = {shiftByte, 0x00, 0x00, 0x00, 0x09};
-  return yaesuCatSendWriteOnly(cmd);
+  yaesuCatSendWriteOnly(cmd);
 }
 
-bool yaesuCatSetRepeaterOffsetHzRaw(uint64_t hz) {
+void yaesuCatSetRepeaterOffsetHzRaw(uint64_t hz) {
   uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, 0xF9};
   yaesuCatEncodeRepeaterOffsetHz(hz, cmd);
-  return yaesuCatSendWriteOnly(cmd);
+  yaesuCatSendWriteOnly(cmd);
 }
 
-bool yaesuCatSetPowerDocumentedRaw(bool on) {
+void yaesuCatSetPowerDocumentedRaw(bool on) {
   const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, (uint8_t)(on ? 0x0F : 0x8F)};
-  return yaesuCatSendWriteOnly(cmd);
+  yaesuCatSendWriteOnly(cmd);
 }
 
 bool yaesuCatMemoryWrite() {
@@ -561,29 +535,29 @@ bool yaesuCatMemoryReadRaw(uint8_t rsp[5], uint32_t timeoutMs) {
   return false;
 }
 
-bool yaesuCatSetAgcMode(uint8_t modeByte) {
+void yaesuCatSetAgcMode(uint8_t modeByte) {
   const uint8_t cmd[5] = {0x00, 0x00, 0x00, modeByte, 0xF3};
-  return yaesuCatSendWriteOnly(cmd);
+  yaesuCatSendWriteOnly(cmd);
 }
 
-bool yaesuCatSetClarifierOffsetRaw(const uint8_t data[4]) {
+void yaesuCatSetClarifierOffsetRaw(const uint8_t data[4]) {
   const uint8_t cmd[5] = {data[0], data[1], data[2], data[3], 0xF5};
-  return yaesuCatSendWriteOnly(cmd);
+  yaesuCatSendWriteOnly(cmd);
 }
 
-bool yaesuCatSetToneDcsModeRaw(uint8_t modeByte) {
+void yaesuCatSetToneDcsModeRaw(uint8_t modeByte) {
   const uint8_t cmd[5] = {modeByte, 0x00, 0x00, 0x00, 0x0A};
-  return yaesuCatSendWriteOnly(cmd);
+  yaesuCatSendWriteOnly(cmd);
 }
 
-bool yaesuCatSetCtcssToneRaw(const uint8_t data[4]) {
+void yaesuCatSetCtcssToneRaw(const uint8_t data[4]) {
   const uint8_t cmd[5] = {data[0], data[1], data[2], data[3], 0x0B};
-  return yaesuCatSendWriteOnly(cmd);
+  yaesuCatSendWriteOnly(cmd);
 }
 
-bool yaesuCatSetDcsCodeRaw(const uint8_t data[4]) {
+void yaesuCatSetDcsCodeRaw(const uint8_t data[4]) {
   const uint8_t cmd[5] = {data[0], data[1], data[2], data[3], 0x0C};
-  return yaesuCatSendWriteOnly(cmd);
+  yaesuCatSendWriteOnly(cmd);
 }
 
 // FT-857/897 take separate TX and RX values; the FT-817 takes one.
@@ -595,7 +569,7 @@ bool yaesuCatSetCtcssTenths(uint16_t toneTenths) {
   if (!yaesuCtcssTenthsValid(toneTenths)) return false;
   uint8_t data[4];
   fillToneData(toneTenths, data);
-  if (!yaesuCatSetCtcssToneRaw(data)) return false;
+  yaesuCatSetCtcssToneRaw(data);
   live.ctcssValid = true;
   live.ctcssTenths = toneTenths;
   return true;
@@ -605,7 +579,7 @@ bool yaesuCatSetDcsCode(uint16_t dcsCode) {
   if (!yaesuDcsCodeValid(dcsCode)) return false;
   uint8_t data[4];
   fillToneData(dcsCode, data);
-  if (!yaesuCatSetDcsCodeRaw(data)) return false;
+  yaesuCatSetDcsCodeRaw(data);
   live.dcsValid = true;
   live.dcsCode = dcsCode;
   return true;

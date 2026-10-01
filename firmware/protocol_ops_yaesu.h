@@ -9,7 +9,7 @@ bool yaesuCatQueryModeRawByte(uint8_t& modeByteOut, uint32_t timeoutMs);
 bool yaesuCatSetFrequency(const StoredProfile& sp, uint64_t hz);
 bool yaesuCatQueryMode(const StoredProfile& sp, uint8_t& modeOut, uint32_t timeoutMs);
 bool yaesuCatSetMode(const StoredProfile& sp, uint8_t mode);
-bool yaesuCatSetModeRawByte(uint8_t modeByte);
+void yaesuCatSetModeRawByte(uint8_t modeByte);
 bool yaesuCatQuerySMeterRaw(const StoredProfile& sp, int32_t& rawOut, uint32_t timeoutMs);
 SMeterReading yaesuCatDecodeSMeter(uint8_t rxStatus);
 // Meters are 0..15 bars and stay 0 in receive.
@@ -34,7 +34,7 @@ bool yaesuCatReadEepromWord(uint16_t addr, uint8_t out[2], uint32_t timeoutMs);
 bool yaesuCatReadEepromByte(uint16_t addr, uint8_t& out, uint32_t timeoutMs);
 // CAUTION: writes data[0] to the EEPROM at addr and data[1] at addr + 1 (0xBC). A bad write can
 // wipe the radio's memories and calibration.
-bool yaesuCatWriteEeprom2(uint16_t addr, const uint8_t data[2]);
+void yaesuCatWriteEeprom2(uint16_t addr, const uint8_t data[2]);
 bool yaesuCatQuerySplit(bool& onOut, uint32_t timeoutMs);
 // FT-857/897 settings read from the EEPROM (read-only). False on other models.
 bool yaesuFt857QueryNb(bool& onOut, uint32_t timeoutMs);
@@ -96,23 +96,25 @@ bool yaesuFt8x7ToggleRit(bool& onOut, uint32_t timeoutMs);
 // Menu 80: true when the RF/SQL knob is squelch, false when it is RF gain.
 bool yaesuFt857QueryKnobIsSquelch(bool& squelchOut, uint32_t timeoutMs);
 bool yaesuFt857QueryMicEq(YaesuFt857MicEq& out, uint32_t timeoutMs);
-bool yaesuCatToggleVfo();
-bool yaesuCatSelectVfoA();
-bool yaesuCatSelectVfoB();
-bool yaesuCatSetPtt(bool on);
-bool yaesuCatSetClarifier(bool on);
-bool yaesuCatSetSplit(bool on);
-bool yaesuCatSetLockDocumentedRaw(bool on);
-bool yaesuCatSetRepeaterShiftRaw(uint8_t shiftByte);
-bool yaesuCatSetRepeaterOffsetHzRaw(uint64_t hz);
-bool yaesuCatSetPowerDocumentedRaw(bool on);
+// Write-only commands: the radio does not answer them and the UART cannot report a failed
+// send, so there is nothing to check after one.
+void yaesuCatToggleVfo();
+void yaesuCatSelectVfoA();
+void yaesuCatSelectVfoB();
+void yaesuCatSetPtt(bool on);
+void yaesuCatSetClarifier(bool on);
+void yaesuCatSetSplit(bool on);
+void yaesuCatSetLockDocumentedRaw(bool on);
+void yaesuCatSetRepeaterShiftRaw(uint8_t shiftByte);
+void yaesuCatSetRepeaterOffsetHzRaw(uint64_t hz);
+void yaesuCatSetPowerDocumentedRaw(bool on);
 bool yaesuCatMemoryWrite();
 bool yaesuCatMemoryReadRaw(uint8_t rsp[5], uint32_t timeoutMs);
-bool yaesuCatSetAgcMode(uint8_t modeByte);
-bool yaesuCatSetClarifierOffsetRaw(const uint8_t data[4]);
-bool yaesuCatSetToneDcsModeRaw(uint8_t modeByte);
-bool yaesuCatSetCtcssToneRaw(const uint8_t data[4]);
-bool yaesuCatSetDcsCodeRaw(const uint8_t data[4]);
+void yaesuCatSetAgcMode(uint8_t modeByte);
+void yaesuCatSetClarifierOffsetRaw(const uint8_t data[4]);
+void yaesuCatSetToneDcsModeRaw(uint8_t modeByte);
+void yaesuCatSetCtcssToneRaw(const uint8_t data[4]);
+void yaesuCatSetDcsCodeRaw(const uint8_t data[4]);
 // A write of a standard tone or code (ft8x7_codec.h) updates the live tone cache.
 bool yaesuCatSetCtcssTenths(uint16_t toneTenths);
 bool yaesuCatSetDcsCode(uint16_t dcsCode);

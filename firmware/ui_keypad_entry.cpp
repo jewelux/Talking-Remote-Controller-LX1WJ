@@ -152,7 +152,8 @@ static void commitCivAddress(const char* digits) {
 static void commitRepeaterOffset(const char* digits) {
   printKeypadCommand("ENTER -> RPTSHIFT");
   uint64_t hz = (uint64_t)atoi(digits) * 1000ULL;
-  if (hz > 0 && yaesuCatSetRepeaterOffsetHzRaw(hz)) {
+  if (hz > 0) {
+    yaesuCatSetRepeaterOffsetHzRaw(hz);
     printKeypadStatus(String("RPTSHIFT ") + hzToMHzString3(hz) + " MHz");
     speakRepeaterOffsetHz(hz);
   } else {
