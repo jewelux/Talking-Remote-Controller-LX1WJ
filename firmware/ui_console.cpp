@@ -1266,6 +1266,7 @@ static bool handleConsoleFt8x7Settings(const String& upper) {
     Ft8x7Setting::Dbf, Ft8x7Setting::BreakIn, Ft8x7Setting::Keyer, Ft8x7Setting::RfPower,
     Ft8x7Setting::Menu, Ft8x7Setting::Row, Ft8x7Setting::IfShift, Ft8x7Setting::NrLevel,
     Ft8x7Setting::NbLevel, Ft8x7Setting::LowCut, Ft8x7Setting::HighCut, Ft8x7Setting::MicEq,
+    Ft8x7Setting::Antenna,
   };
   for (Ft8x7Setting setting : kSettings) {
     const char* label = ft8x7SettingLabel(setting);

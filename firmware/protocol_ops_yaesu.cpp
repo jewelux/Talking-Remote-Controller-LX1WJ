@@ -418,6 +418,18 @@ bool yaesuFt817QueryMenuAndRow(uint8_t& menuOut, uint8_t& rowOut, uint32_t timeo
   return true;
 }
 
+// 0x7A bits 5..0: the antenna of each band group, 1 = rear. Bit 0 HF, 1 6 m, 2 FM broadcast,
+// 3 air, 4 2 m, 5 UHF (KA7OEI map). Bit 7 of the same byte is split.
+bool yaesuFt817QueryRearAntenna(uint64_t hz, bool& rearOut, uint32_t timeoutMs) {
+  uint8_t mask = 0x01;                          // HF
+  if (hz >= 420000000ULL) mask = 0x20;          // UHF
+  else if (hz >= 137000000ULL) mask = 0x10;     // 2 m
+  else if (hz >= 108000000ULL) mask = 0x08;     // air
+  else if (hz >= 76000000ULL) mask = 0x04;      // FM broadcast
+  else if (hz >= 33000000ULL) mask = 0x02;      // 6 m
+  return ft817ReadBit(0x007A, mask, rearOut, timeoutMs);
+}
+
 // Measured on an FT-897 by changing one setting at a time (menu levels at both ends of their
 // range). Lock and fast tuning are stored inverted.
 bool yaesuFt857QueryVox(bool& onOut, uint32_t timeoutMs) { return ft857ReadBit(0x006B, 0x80, onOut, timeoutMs); }

@@ -66,6 +66,7 @@ void queryBank2Ft8x7MicEq();
 void queryBank2Ft8x7Ipo();
 void queryBank2Ft8x7Att();
 void queryBank2Ft8x7Agc();
+void queryBank2Ft817Antenna();
 
 // ---- Bank 3 ----
 void queryBank3Split();

@@ -78,7 +78,7 @@
   the address and the one after it, the counterpart of `YEEPROM?`. **Use with caution:** a wrong address or value
   can wipe the radio's memories and calibration. It is refused while transmitting
 - FT-817/818/857/897: every Bank 2 and Bank 8 key, Bank 1 `6` and Bank 3 `5` has a console command
-  (`NB?`, `AGC?`, `MENU?`, `ROW?`, `RFPOWER?`, `RIT?` …; on the FT-857/897 also `NR?`, `NOTCH?`,
+  (`NB?`, `AGC?`, `MENU?`, `ROW?`, `RFPOWER?`, `RIT?` …; on the FT-817/818 also `ANT?`; on the FT-857/897 also `NR?`, `NOTCH?`,
   `NRLEVEL?`, `NBLEVEL?`, `HPF?`, `LPF?`, `MICEQ?`, `IPO?`, `ATT?` and `DBF?`). `BK?`, `KYR?` and,
   on the FT-857/897, `NAR?` read break-in, keyer and FM narrow. `IFSHIFT?` prints whether IF shift is on,
   and `YSETTINGS?` lists more settings read from the radio, e.g. VOX, lock, fast tuning and IF
@@ -115,6 +115,8 @@
   "l p f 2800 hertz"), the TX equalizer (`9`, "equalizer both") and IPO and ATT (`A`, long for
   ATT); the FT-817 has no DSP, so these say "not available". HamTRC only reads these settings; it
   cannot change them
+- FT-817/818: Bank 2 `0` says which antenna jack the current band uses (menu 07), "antenna front"
+  or "antenna rear". The console command is `ANT?`
 - FT-817/818/857/897: Bank 8 `8` says the menu item the radio's menu was last left on ("menu 7 6"),
   `7` the soft key or function row
 - FT-817/818/857/897: Bank 1 `6` says the TX power: on the FT-857/897 the menu 75 power of the

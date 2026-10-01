@@ -116,6 +116,9 @@ volume
 watts
 
 # Radio operating words
+antenna
+front
+rear
 clarifier
 digi | | didgy
 monitor

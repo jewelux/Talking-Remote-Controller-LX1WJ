@@ -73,6 +73,8 @@ bool yaesuFt817QueryBreakIn(bool& onOut, uint32_t timeoutMs);
 bool yaesuFt817QueryKeyer(bool& onOut, uint32_t timeoutMs);
 bool yaesuFt817QueryAgc(YaesuAgc& out, uint32_t timeoutMs);
 bool yaesuFt817QueryMenuAndRow(uint8_t& menuOut, uint8_t& rowOut, uint32_t timeoutMs);
+// FT-817/818: true when the band group of hz uses the rear antenna jack (menu 07).
+bool yaesuFt817QueryRearAntenna(uint64_t hz, bool& rearOut, uint32_t timeoutMs);
 bool yaesuFt857QueryVox(bool& onOut, uint32_t timeoutMs);
 bool yaesuFt857QueryProc(bool& onOut, uint32_t timeoutMs);
 bool yaesuFt857QueryLock(bool& onOut, uint32_t timeoutMs);

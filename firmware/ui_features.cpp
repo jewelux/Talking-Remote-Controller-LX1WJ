@@ -93,6 +93,7 @@ static const char* ft8x7SettingName(Ft8x7Setting setting) {
     case Ft8x7Setting::LowCut: return "HPF";
     case Ft8x7Setting::HighCut: return "LPF";
     case Ft8x7Setting::MicEq: return "MICEQ";
+    case Ft8x7Setting::Antenna: return "ANT";
   }
   return "";
 }
@@ -134,6 +135,7 @@ String ft8x7SettingText(const Ft8x7SettingState& state) {
     return text + String(state.value) + " Hz";
   }
   if (state.setting == Ft8x7Setting::MicEq) return text + ft8x7MicEqText(state.micEq);
+  if (state.setting == Ft8x7Setting::Antenna) return text + (state.on ? "REAR" : "FRONT");
   return text + (state.on ? "ON" : "OFF");
 }
 
@@ -180,6 +182,13 @@ void speakFt8x7Setting(const Ft8x7SettingState& state) {
     } else {
       speakToken(ft8x7MicEqText(state.micEq));
     }
+    return;
+  }
+  // "antenna front", "antenna rear"
+  if (state.setting == Ft8x7Setting::Antenna) {
+    speakToken("antenna");
+    playSilenceMs(60);
+    speakToken(state.on ? "rear" : "front");
     return;
   }
   // No "shift" clip yet: printed only.

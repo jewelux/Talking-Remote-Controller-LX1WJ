@@ -41,6 +41,7 @@ All Bank 2 keys only read settings from the radio's EEPROM. CAT don't change the
 
 | Key | FT-817 | FT-857/897 |
 |---|---|---|
+| `0` short | `ANT?`: antenna jack of the current band (menu 07), "antenna front" or "antenna rear" | not available |
 | `1` short | not available (no DSP) | `NR?` (DSP noise reduction) |
 | `2` short | `NB?` | `NB?` |
 | `3` short | not available (no DSP) | `NOTCH?` (DSP auto notch) |
@@ -147,7 +148,7 @@ For Bank 6 tone handling, `2` is an explicit mode selector:
 | `VFO A/B tracking` | usable with sync support; the radio has no readable VFO | read from the EEPROM |
 | `manual front-panel A/B changes` | resync recommended | followed; no sync needed |
 | FT-817 hidden background conditions | documented CAT commands can work well, but some success still appears to depend on not-yet-characterized radio state; more testing is needed | not the main current concern |
-| `Bank 2 settings` | read only; only NB and AGC (no DSP, IPO/ATT not read) | read only |
+| `Bank 2 settings` | read only; only antenna, NB and AGC (no DSP, IPO/ATT not read) | read only |
 | `MEM READ/WRITE` | experimental | experimental |
 | `VOL/SQL` | not cleanly validated | not cleanly validated |
 

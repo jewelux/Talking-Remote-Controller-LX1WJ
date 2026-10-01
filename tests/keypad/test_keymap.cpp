@@ -125,6 +125,7 @@ void queryBank2Ft8x7MicEq() { record("queryBank2Ft8x7MicEq"); }
 void queryBank2Ft8x7Ipo() { record("queryBank2Ft8x7Ipo"); }
 void queryBank2Ft8x7Att() { record("queryBank2Ft8x7Att"); }
 void queryBank2Ft8x7Agc() { record("queryBank2Ft8x7Agc"); }
+void queryBank2Ft817Antenna() { record("queryBank2Ft817Antenna"); }
 
 void queryBank3Split() { record("queryBank3Split"); }
 void toggleBank3Split() { record("toggleBank3Split"); }

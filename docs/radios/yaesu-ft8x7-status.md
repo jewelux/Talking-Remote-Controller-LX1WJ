@@ -66,6 +66,7 @@ Read with `BB`, on demand only. Addresses from the FT8x7Com FT817Setup project, 
 | `0x75` | 5..0 | menu item (`MENU?`, Bank 8 `8`), said as stored + 1 like the FT-857/897 (measured) |
 | `0x76` | 3..0 | function row (`ROW?`, Bank 8 `7`), said as stored + 1; 7 (row 8) is the NB/AGC row and 9 (row 10) VOX/BK/KYR (measured) |
 | `0x79` | 1..0 | TX power (`RFPOWER?`, Bank 1 `6`): High, L3, L2, L1, said as 5, 2.5, 1 and 0.5 W, on the FT-818 (profile name containing "FT-818") as 6, 5, 2.5 and 1 W (the levels with an external supply; FT-818 not measured) |
+| `0x7A` | 5..0 | antenna jack per band group (menu 07, `ANT?`, Bank 2 `0`), 1 = rear: bit 0 HF (below 33 MHz), 1 6 m (33–76 MHz), 2 FM broadcast (76–108), 3 air (108–137), 4 2 m (137–420), 5 UHF (from 420) (measured, as in the KA7OEI map) |
 | `0x7A` | 7 | split (measured) |
 | `0x7B` | 4, 3..0 | charging on, charge hours (not used) |
 | band blocks | | 26 bytes per band from `0x7D` (160 m, 80 m, 40 m, ... on an FT-817 without 60 m); the frequency at +10..+13 in 10 Hz units, big-endian. Saved late, like on the FT-897 (measured) |

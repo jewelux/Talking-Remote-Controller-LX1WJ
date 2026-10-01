@@ -195,6 +195,7 @@ const char* ft8x7SettingLabel(Ft8x7Setting setting) {
     case Ft8x7Setting::LowCut: return "HPF?";
     case Ft8x7Setting::HighCut: return "LPF?";
     case Ft8x7Setting::MicEq: return "MICEQ?";
+    case Ft8x7Setting::Antenna: return "ANT?";
   }
   return "?";
 }
@@ -227,9 +228,10 @@ FeatureStatus ft8x7SettingQuery(Ft8x7Setting setting, Ft8x7SettingState& out) {
   if (ft817 && setting != Ft8x7Setting::RfPower && setting != Ft8x7Setting::Menu &&
       setting != Ft8x7Setting::Row && setting != Ft8x7Setting::Agc &&
       setting != Ft8x7Setting::BreakIn && setting != Ft8x7Setting::Keyer &&
-      setting != Ft8x7Setting::IfShift) {
+      setting != Ft8x7Setting::IfShift && setting != Ft8x7Setting::Antenna) {
     return FeatureStatus::Unsupported;
   }
+  if (!ft817 && setting == Ft8x7Setting::Antenna) return FeatureStatus::Unsupported;
   if (setting == Ft8x7Setting::RfPower && !currentStoredProfile().caps.getRfPower) return FeatureStatus::Unsupported;
   out = Ft8x7SettingState();
   out.setting = setting;
@@ -259,6 +261,11 @@ FeatureStatus ft8x7SettingQuery(Ft8x7Setting setting, Ft8x7SettingState& out) {
     case Ft8x7Setting::LowCut: ok = yaesuFt857QueryLevel(YaesuFt857Level::HpfCutoff, out.value, 800); break;
     case Ft8x7Setting::HighCut: ok = yaesuFt857QueryLevel(YaesuFt857Level::LpfCutoff, out.value, 800); break;
     case Ft8x7Setting::MicEq: ok = yaesuFt857QueryMicEq(out.micEq, 800); break;
+    case Ft8x7Setting::Antenna: {
+      uint64_t hz = 0;
+      ok = queryFrequency(hz, 800) && yaesuFt817QueryRearAntenna(hz, out.on, 800);
+      break;
+    }
     case Ft8x7Setting::RfPower:
       if (ft817) {
         ok = yaesuFt817QueryRfPowerTenths(out.wattsTenths, 800);

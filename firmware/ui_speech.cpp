@@ -107,6 +107,7 @@ static inline float volumeLevelToGain(uint8_t lvl) {
 static const VoiceClip kVoiceClips[] = {
   VOICE_CLIP(a),
   VOICE_CLIP(am),
+  VOICE_CLIP(antenna),
   VOICE_CLIP(auto),
   VOICE_CLIP(b),
   VOICE_CLIP(bank),
@@ -138,6 +139,7 @@ static const VoiceClip kVoiceClips[] = {
   VOICE_CLIP(fm),
   VOICE_CLIP(forty),
   VOICE_CLIP(four),
+  VOICE_CLIP(front),
   VOICE_CLIP(frequency),
   VOICE_CLIP(g),
   VOICE_CLIP(h),
@@ -181,6 +183,7 @@ static const VoiceClip kVoiceClips[] = {
   VOICE_CLIP(ptt),
   VOICE_CLIP(q),
   VOICE_CLIP(r),
+  VOICE_CLIP(rear),
   VOICE_CLIP(repeater),
   VOICE_CLIP(rit),
   VOICE_CLIP(row),

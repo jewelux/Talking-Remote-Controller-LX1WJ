@@ -1,5 +1,5 @@
 // Bank 2 keypad actions: noise reduction, noise blanker, notch, PBT and filter,
-// and the FT-8x7 settings kept in the EEPROM.
+// and the FT-8x7 settings kept in the EEPROM, among them the FT-817 antenna jack.
 #include "ui_keypad_bank.h"
 #include "ui_features.h"
 #include "radio_monitor.h"
@@ -65,6 +65,7 @@ void queryBank2Ft8x7MicEq() { queryKeypadFt8x7Setting(Ft8x7Setting::MicEq); }
 void queryBank2Ft8x7Ipo() { queryKeypadFt8x7Setting(Ft8x7Setting::Ipo); }
 void queryBank2Ft8x7Att() { queryKeypadFt8x7Setting(Ft8x7Setting::Att); }
 void queryBank2Ft8x7Agc() { queryKeypadFt8x7Setting(Ft8x7Setting::Agc); }
+void queryBank2Ft817Antenna() { queryKeypadFt8x7Setting(Ft8x7Setting::Antenna); }
 
 void toggleBank2Nr() {
   printKeypadAction("NR");

@@ -19,7 +19,7 @@ enum class FeatureStatus : uint8_t {
 // Noise reduction. level is 1 or 2 on the TS-480, whose NR has two levels, and
 // 0 elsewhere (or when off).
 struct NrState {
-  bool on = false;
+  bool on = false;               // Antenna: true = rear
   uint8_t level = 0;
 };
 
@@ -55,13 +55,13 @@ FeatureStatus notchToggle(NotchState& out);
 
 // FT-857/897 settings read from the radio's EEPROM, since CAT has no command for them. They
 // cannot be set. IPO, ATT and NAR are those of the current band. The FT-817/818 has RfPower,
-// Menu, Row, Agc, BreakIn, Keyer and IfShift.
+// Menu, Row, Agc, BreakIn, Keyer, IfShift and Antenna.
 // Menu and Row are the menu item and soft key row saved when the radio's menu was last exited.
 // NrLevel (menu 49), NbLevel (63), LowCut (46, DSP HPF), HighCut (47, DSP LPF) and MicEq (48)
 // are FT-857/897 DSP menu settings.
 enum class Ft8x7Setting : uint8_t {
   Agc, Ipo, Att, Nar, Dbf, BreakIn, Keyer, RfPower, Menu, Row, IfShift,
-  NrLevel, NbLevel, LowCut, HighCut, MicEq,
+  NrLevel, NbLevel, LowCut, HighCut, MicEq, Antenna,
 };
 
 struct Ft8x7SettingState {
