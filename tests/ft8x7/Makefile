@@ -2,6 +2,6 @@
 
 NAME := ft8x7_tests
 # Pure firmware sources under test. They must not include Arduino.h.
-FIRMWARE_SRCS := ft8x7_codec.cpp
+FIRMWARE_SRCS := ft8x7_codec.cpp ft8x7_eeprom_map.cpp
 
 include ../common/host_tests.mk

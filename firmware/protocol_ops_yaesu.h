@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ft8x7_codec.h"
+#include "ft8x7_eeprom_map.h"
 #include "radio_globals.h"
 
 bool yaesuCatQueryFrequency(const StoredProfile& sp, uint64_t& hzOut, uint32_t timeoutMs);
@@ -42,7 +43,6 @@ bool yaesuFt857QueryKeyer(bool& onOut, uint32_t timeoutMs);
 bool yaesuFt857QueryDnr(bool& onOut, uint32_t timeoutMs);
 bool yaesuFt857QueryDnf(bool& onOut, uint32_t timeoutMs);
 bool yaesuFt857QueryDbf(bool& onOut, uint32_t timeoutMs);
-enum class YaesuAgc : uint8_t { Off, Fast, Slow, Auto };
 bool yaesuFt857QueryAgc(YaesuAgc& out, uint32_t timeoutMs);
 // IPO, ATT and FM narrow are kept per band. bandKnown is false outside the amateur bands.
 struct YaesuFt857BandFlags {
@@ -80,29 +80,7 @@ bool yaesuFt857QueryVfoB(bool& vfoBOut, uint32_t timeoutMs);
 bool yaesuFt857QueryFastTuning(bool& onOut, uint32_t timeoutMs);
 // True while the DSP soft key row is shown (the radio saves it at once, unlike the row number).
 bool yaesuFt857QueryDspRow(bool& onOut, uint32_t timeoutMs);
-// The filter chosen on the CFIL row. Filter 1 could not be measured (no filter fitted in that
-// slot on the test radio) and reads as BuiltIn.
-enum class YaesuFt857Filter : uint8_t { BuiltIn, Filter2 };
 bool yaesuFt857QueryFilter(YaesuFt857Filter& out, uint32_t timeoutMs);
-// Menu levels, returned in the units the radio shows.
-enum class YaesuFt857Level : uint8_t {
-  CwSpeed,       // menu 30, WPM
-  AmMicGain,     // menu 5
-  DigGain,       // menu 37
-  DigVox,        // menu 40
-  BpfWidth,      // menu 45, Hz
-  HpfCutoff,     // menu 46, Hz
-  LpfCutoff,     // menu 47, Hz
-  NrLevel,       // menu 49
-  FmMicGain,     // menu 51
-  NbLevel,       // menu 63
-  Pkt1200,       // menu 71
-  Pkt9600,       // menu 72
-  ProcLevel,     // menu 74
-  SsbMicGain,    // menu 81
-  VoxDelay,      // menu 87, ms
-  VoxGain,       // menu 88
-};
 bool yaesuFt857QueryLevel(YaesuFt857Level level, uint16_t& valueOut, uint32_t timeoutMs);
 // The RIT offset kept in the band block of hz, as of the radio's last save of that block (a
 // band change saves it; turning the knob or switching RIT off does not). The offset stays when
@@ -117,8 +95,6 @@ bool yaesuFt8x7SetRit(bool on, uint32_t timeoutMs);
 bool yaesuFt8x7ToggleRit(bool& onOut, uint32_t timeoutMs);
 // Menu 80: true when the RF/SQL knob is squelch, false when it is RF gain.
 bool yaesuFt857QueryKnobIsSquelch(bool& squelchOut, uint32_t timeoutMs);
-// Menu 48.
-enum class YaesuFt857MicEq : uint8_t { Off, Lpf, Hpf, Both };
 bool yaesuFt857QueryMicEq(YaesuFt857MicEq& out, uint32_t timeoutMs);
 bool yaesuCatToggleVfo();
 bool yaesuCatSelectVfoA();
