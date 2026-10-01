@@ -18,9 +18,9 @@ static uint16_t currentFt8x7DefaultDcsCode() {
 }
 
 static void setBank6Ft8x7RepeaterShift(uint8_t shiftByte, const char* label) {
-  printKeypadAction(String("RPT ") + label);
+  printKeypadAction("RPT {}", label);
   yaesuCatSetRepeaterShiftRaw(shiftByte);
-  printKeypadStatus(String("RPT ") + label);
+  printKeypadStatus("RPT {}", label);
   if (!g_speechEnabled) return;
   speakLabel("repeater");
   if (String(label) == "MINUS") speakToken("minus");
@@ -29,18 +29,18 @@ static void setBank6Ft8x7RepeaterShift(uint8_t shiftByte, const char* label) {
 }
 
 static void setBank6Ft8x7RepeaterOffsetHz(uint64_t hz) {
-  printKeypadAction(String("RPTSHIFT ") + hzToMHzString3(hz));
+  printKeypadAction("RPTSHIFT {}", RadioFrequency::fromHz(hz));
   yaesuCatSetRepeaterOffsetHzRaw(hz);
-  printKeypadStatus(String("RPTSHIFT ") + hzToMHzString3(hz) + " MHz");
+  printKeypadStatus("RPTSHIFT {} MHz", RadioFrequency::fromHz(hz));
   if (!g_speechEnabled) return;
   speakLabel("repeater frequency");
   speakDigitsAndPoint(hzToMHzString3(hz));
 }
 
 static void setBank6Ft8x7ToneMode(uint8_t modeByte, const char* label) {
-  printKeypadAction(String("TONE ") + label);
+  printKeypadAction("TONE {}", label);
   yaesuCatSetToneDcsModeRaw(modeByte);
-  printKeypadStatus(String("TONE ") + label);
+  printKeypadStatus("TONE {}", label);
   if (!g_speechEnabled) return;
   speakLabel("tone");
   if (String(label) == "OFF") {
@@ -114,8 +114,8 @@ void queryBank6CtcssDefault() {
   char label[12] = "";
   uint16_t toneTenths = live.ctcssValid ? live.ctcssTenths : currentFt8x7DefaultCtcssTenths();
   formatCtcssTenthsLabel(toneTenths, label, sizeof(label));
-  printKeypadAction(String("CTCSS ") + label);
-  printKeypadStatus(String("CTCSS ") + label);
+  printKeypadAction("CTCSS {}", label);
+  printKeypadStatus("CTCSS {}", label);
   if (!g_speechEnabled) return;
   speakLabel("ctcss");
   speakDigitsAndPoint(label);
@@ -125,8 +125,8 @@ void queryBank6DcsDefault() {
   char label[8] = "";
   const uint16_t dcsCode = live.dcsValid ? live.dcsCode : currentFt8x7DefaultDcsCode();
   snprintf(label, sizeof(label), "%03u", (unsigned)dcsCode);
-  printKeypadAction(String("DCS ") + label);
-  printKeypadStatus(String("DCS ") + label);
+  printKeypadAction("DCS {}", label);
+  printKeypadStatus("DCS {}", label);
   if (!g_speechEnabled) return;
   speakLabel("dcs");
   speakDigitsAndPoint(label);

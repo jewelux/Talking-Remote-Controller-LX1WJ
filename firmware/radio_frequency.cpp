@@ -1,5 +1,7 @@
 #include "radio_frequency.h"
 
+#include "formatted_line.h"
+
 namespace {
 bool isDigitRun(const String& s) {
   for (size_t i = 0; i < s.length(); ++i) {
@@ -39,19 +41,19 @@ bool RadioFrequency::parseEntry(const String& entry, RadioFrequency& out) {
 }
 
 String RadioFrequency::toString() const {
-  uint32_t mhz = (uint32_t)(hz_ / 1000000ULL);
-  uint32_t frac = (uint32_t)((hz_ % 1000000ULL) / 10ULL);  // 0..99999 (10 Hz units)
+  return String(FormattedLine("{}", *this).c_str());
+}
 
-  char buf[6];
-  snprintf(buf, sizeof(buf), "%05lu", (unsigned long)frac);
-  int end = 5;
-  while (end > 1 && buf[end - 1] == '0') --end;  // strip trailing zeros, keep >=1 decimal
-  buf[end] = '\0';
+void FormattedLine::append(const RadioFrequency& freq) {
+  uint32_t frac = (uint32_t)((freq.hz() % 1000000ULL) / 10ULL);  // 0..99999 (10 Hz units)
+  char decimals[5];
+  for (int i = 4; i >= 0; --i, frac /= 10) decimals[i] = (char)('0' + frac % 10);
+  size_t len = 5;
+  while (len > 1 && decimals[len - 1] == '0') --len;  // strip trailing zeros, keep >=1 decimal
 
-  String s = String(mhz);
-  s += '.';
-  s += buf;  // always at least one decimal digit (e.g. 7000000 -> "7.0")
-  return s;
+  append((uint32_t)(freq.hz() / 1000000ULL));
+  append('.');
+  append(std::string_view(decimals, len));  // always at least one decimal digit (7000000 -> "7.0")
 }
 
 RadioFrequency RadioFrequency::roundedTo(uint32_t stepHz) const {

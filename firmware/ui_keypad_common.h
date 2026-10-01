@@ -1,5 +1,6 @@
 #pragma once
 
+#include "formatted_line.h"
 #include "keypad_actions.h"
 #include "keypad_input.h"
 #include "radio_features.h"
@@ -43,12 +44,35 @@ void speakFeatureValue(const uint8_t* featureData, size_t featureLen, uint8_t va
 uint8_t levelRawToPercent(uint16_t raw);
 uint16_t levelPercentToRaw(int percent);
 
-void printKeypadStatus(const String& line);
-// Serial "CMD <line>" trace.
-void printKeypadCommand(const String& line);
-// Serial trace of a bank key action: "CMD <key> -> <what>", the key being
-// keypadActiveKey() (e.g. "BANK3 2 LONG"). Just "CMD <what>" outside a key action.
-void printKeypadAction(const String& what);
+// Serial traces. Each takes a format with {} placeholders and its arguments (see
+// FormattedLine); text that is not a literal goes through "{}":
+//   printKeypadStatus("LOCK {}", on ? "ON" : "OFF");
+//   printKeypadStatus("VFO{}: {} MHz", which, RadioFrequency::fromHz(hz));
+// Nothing is formatted while no console is attached.
+template <class... Args>
+void printKeypadStatus(LineFormat<sizeof...(Args)> format, const Args&... args) {
+  if (Serial) Serial.println(FormattedLine(format, args...).c_str());
+}
+
+// "CMD <line>" trace.
+template <class... Args>
+void printKeypadCommand(LineFormat<sizeof...(Args)> format, const Args&... args) {
+  if (!Serial) return;
+  FormattedLine line("CMD ");
+  line.appendFormat(format, args...);
+  Serial.println(line.c_str());
+}
+
+// Trace of a bank key action: "CMD <key> -> <what>", the key being keypadActiveKey()
+// (e.g. "BANK3 2 LONG"). Just "CMD <what>" outside a key action.
+template <class... Args>
+void printKeypadAction(LineFormat<sizeof...(Args)> format, const Args&... args) {
+  if (!Serial) return;
+  FormattedLine line("CMD ");
+  if (const char* key = keypadActiveKey()) line.appendFormat("{} -> ", key);
+  line.appendFormat(format, args...);
+  Serial.println(line.c_str());
+}
 
 // Keypad feedback. Each prints a status line and gives the matching audio cue.
 // Radio gave no answer: say "timeout" and return true. Otherwise return false, so
@@ -60,7 +84,7 @@ bool keypadReportFeatureFailure(FeatureStatus status, const char* label);
 // Reads an FT-8x7 EEPROM setting, prints and speaks it; the FT-817 beeps for what it lacks.
 void queryKeypadFt8x7Setting(Ft8x7Setting setting);
 // The key has no action here: short beep.
-void keypadReportUnassigned(const String& label);
+void keypadReportUnassigned(const char* label);
 // When supported is false the key's feature is missing on this profile: beep like
 // an unassigned key and return true.
 bool keypadReportIfUnsupported(bool supported, const char* label);

@@ -46,7 +46,7 @@ void queryBank1RxTx() {
   }
   bool tx = false;
   if (!queryRxTxStatus(tx, 800)) { keypadReportIfTimedOut("RXTX?"); return; }
-  printKeypadStatus(tx ? "TX" : "RX");
+  printKeypadStatus("{}", tx ? "TX" : "RX");
   speakRxTxState(tx);
 }
 
@@ -60,7 +60,7 @@ void queryBank1Frequency() {
     }
     return;
   }
-  printKeypadStatus(String("FREQ: ") + hzToMHzString3(hz) + " MHz");
+  printKeypadStatus("FREQ: {} MHz", RadioFrequency::fromHz(hz));
   speakQueriedFrequencyHz(hz);
   rememberAnnouncedFrequency(hz);
 }
@@ -72,7 +72,7 @@ void queryBank1TxFrequency() {
     // FT-8x7 without a TX frequency reply: say the frequency instead.
     if (currentProtocolType() == PROTO_YAESU_FT8X7) {
       if (queryFrequency(hz, 800)) {
-        printKeypadStatus(String("TXFREQ: ") + hzToMHzString3(hz) + " MHz");
+        printKeypadStatus("TXFREQ: {} MHz", RadioFrequency::fromHz(hz));
         speakQueriedFrequencyHz(hz);
       } else {
         printKeypadStatus("TXFREQ -> unavailable");
@@ -81,7 +81,7 @@ void queryBank1TxFrequency() {
     }
     return;
   }
-  printKeypadStatus(String("TXFREQ: ") + hzToMHzString3(hz) + " MHz");
+  printKeypadStatus("TXFREQ: {} MHz", RadioFrequency::fromHz(hz));
   speakQueriedFrequencyHz(hz);
 }
 
@@ -90,7 +90,7 @@ void queryBank1Ft857TxFrequency() {
   uint64_t hz = 0;
   bool splitOn = false;
   if (querySplit(splitOn, 800) && !splitOn && queryFrequency(hz, 800)) {
-    printKeypadStatus(String("TXFREQ: ") + hzToMHzString3(hz) + " MHz");
+    printKeypadStatus("TXFREQ: {} MHz", RadioFrequency::fromHz(hz));
     speakQueriedFrequencyHz(hz);
   } else {
     printKeypadStatus("TXFREQ unavailable on FT-857/897");
@@ -112,7 +112,7 @@ void queryBank1Lock() {
     }
     return;
   }
-  printKeypadStatus(on ? "LOCK ON" : "LOCK OFF");
+  printKeypadStatus("LOCK {}", on ? "ON" : "OFF");
   speakTokenState("lock", on);
 }
 
@@ -123,7 +123,7 @@ void beginBank1FrequencySet() {
 }
 
 void roundActiveFrequency(uint32_t stepHz) {
-  printKeypadAction(String("ROUND ") + String((unsigned long)stepHz) + " Hz");
+  printKeypadAction("ROUND {} Hz", stepHz);
   prepareKeypadRadioWrite();
 
   uint64_t hz = 0;
@@ -140,18 +140,18 @@ void roundActiveFrequency(uint32_t stepHz) {
   // Serial monitor reports old -> new; speech reports only the new frequency.
   if (rounded == hz) {
     // Already on a step boundary.
-    printKeypadStatus(String("FREQ: ") + hzToMHzString3(rounded) + " MHz (already rounded)");
+    printKeypadStatus("FREQ: {} MHz (already rounded)", RadioFrequency::fromHz(rounded));
     speakTunedFrequencyHz(rounded);
     rememberAnnouncedFrequency(rounded);
     return;
   }
 
   if (keypadApplyFrequencyHz(rounded, TargetVfo::Current)) {
-    printKeypadStatus(String("ROUND: ") + hzToMHzString3(hz) + " -> " + hzToMHzString3(rounded) + " MHz");
+    printKeypadStatus("ROUND: {} -> {} MHz", RadioFrequency::fromHz(hz), RadioFrequency::fromHz(rounded));
     speakTunedFrequencyHz(rounded);
     rememberAnnouncedFrequency(rounded);
   } else if (!keypadReportIfTimedOut("ROUND")) {
-    printKeypadStatus(currentProtocolType() == PROTO_YAESU_FT8X7 ? "ROUND -> no change" : "ROUND -> failed");
+    printKeypadStatus("ROUND -> {}", currentProtocolType() == PROTO_YAESU_FT8X7 ? "no change" : "failed");
     if (g_speechEnabled) speakError();
   }
 }
@@ -183,12 +183,12 @@ void toggleBank1Lock() {
     return;
   }
   if (!setDialLock(!on)) { keypadReportIfTimedOut("LOCK"); return; }
-  printKeypadStatus(!on ? "LOCK ON" : "LOCK OFF");
+  printKeypadStatus("LOCK {}", !on ? "ON" : "OFF");
   speakTokenState("lock", !on);
 }
 
 static void sendBank1Query(const String& cmd) {
-  printKeypadAction(cmd);
+  printKeypadAction("{}", cmd.c_str());
   // The SWR and RF power replies say their own word, so saying it here too doubles it.
   if (cmd != "SWR?" && cmd != "RFPOWER?") speakKeypadCommandWord(cmd);
   keypadSendNow(cmd);

@@ -10,7 +10,7 @@ void queryBank3Ft8x7Rit() {
   printKeypadAction("RIT?");
   bool on = false;
   if (!queryRitEnabled(on, 800)) { keypadReportIfTimedOut("RIT?"); return; }
-  printKeypadStatus(on ? "RIT ON" : "RIT OFF");
+  printKeypadStatus("RIT {}", on ? "ON" : "OFF");
   speakTokenState("rit", on);
 }
 
@@ -18,14 +18,14 @@ void toggleBank3Ft8x7Rit() {
   printKeypadAction("RIT");
   bool on = false;
   if (!toggleRitEnabled(on, 800)) { keypadReportIfTimedOut("RIT"); return; }
-  printKeypadStatus(on ? "RIT ON" : "RIT OFF");
+  printKeypadStatus("RIT {}", on ? "ON" : "OFF");
   speakTokenState("rit", on);
 }
 
 void setBank3Ft857Ptt(bool on) {
-  printKeypadAction(String("PTT ") + (on ? "ON" : "OFF"));
+  printKeypadAction("PTT {}", on ? "ON" : "OFF");
   yaesuCatSetPtt(on);
-  printKeypadStatus(on ? "PTT ON" : "PTT OFF");
+  printKeypadStatus("PTT {}", on ? "ON" : "OFF");
   speakLabel("ptt");
   speakSimpleBinaryState(on);
 }
@@ -34,7 +34,7 @@ void queryBank3Split() {
   printKeypadAction("SPLIT?");
   bool on = false;
   if (!querySplit(on, 800)) { keypadReportIfTimedOut("SPLIT?"); return; }
-  printKeypadStatus(on ? "SPLIT ON" : "SPLIT OFF");
+  printKeypadStatus("SPLIT {}", on ? "ON" : "OFF");
   speakTokenState("split", on);
 }
 
@@ -43,7 +43,7 @@ void toggleBank3Split() {
   bool on = false;
   if (!querySplit(on, 800)) { keypadReportIfTimedOut("SPLIT"); return; }
   if (!setSplit(!on)) { keypadReportIfTimedOut("SPLIT"); return; }
-  printKeypadStatus(!on ? "SPLIT ON" : "SPLIT OFF");
+  printKeypadStatus("SPLIT {}", !on ? "ON" : "OFF");
   speakTokenState("split", !on);
 }
 
@@ -54,7 +54,7 @@ void queryBank3TxFrequency() {
     if (currentProtocolType() == PROTO_YAESU_FT8X7) {
       bool splitOn = false;
       if (querySplit(splitOn, 800) && !splitOn && queryFrequency(hz, 800)) {
-        printKeypadStatus(String("TXFREQ: ") + hzToMHzString3(hz) + " MHz");
+        printKeypadStatus("TXFREQ: {} MHz", RadioFrequency::fromHz(hz));
         speakQueriedFrequencyHz(hz);
       } else {
         printKeypadStatus("TXFREQ -> unavailable");
@@ -63,7 +63,7 @@ void queryBank3TxFrequency() {
     }
     return;
   }
-  printKeypadStatus(String("TXFREQ: ") + hzToMHzString3(hz) + " MHz");
+  printKeypadStatus("TXFREQ: {} MHz", RadioFrequency::fromHz(hz));
   speakQueriedFrequencyHz(hz);
 }
 
@@ -71,18 +71,18 @@ void queryBank3VfoA() {
   printKeypadAction("VFOA?");
   uint64_t hz = 0;
   if (!queryVfoFrequency(true, hz, 800)) { keypadReportIfTimedOut("VFOA?"); return; }
-  printKeypadStatus(String("VFOA: ") + hzToMHzString3(hz) + " MHz");
+  printKeypadStatus("VFOA: {} MHz", RadioFrequency::fromHz(hz));
   speakVfoFrequency('A', hz);
 }
 
 void queryBank3Ft8x7CurrentVfo() {
   refreshFt8x7ActiveVfo();
   const char which = ft8x7CurrentVfoLabel();
-  const String label = String("VFO") + which + "?";
-  printKeypadAction(label);
+  const FormattedLine label("VFO{}?", which);
+  printKeypadAction("{}", label.c_str());
   uint64_t hz = 0;
   if (!queryFrequency(hz, 800)) { keypadReportIfTimedOut(label.c_str()); return; }
-  printKeypadStatus(String("VFO") + which + ": " + hzToMHzString3(hz) + " MHz");
+  printKeypadStatus("VFO{}: {} MHz", which, RadioFrequency::fromHz(hz));
   speakVfoFrequency(which, hz);
 }
 
@@ -106,7 +106,7 @@ void toggleBank3Ft8x7Vfo() {
   yaesuCatToggleVfo();
   rememberActiveVfo(!live.activeVfoA);
   const char which = ft8x7CurrentVfoLabel();
-  printKeypadStatus(String("VFO") + which);
+  printKeypadStatus("VFO{}", which);
   speakVfoLabel(which);
 }
 
@@ -119,7 +119,7 @@ void beginBank3VfoAFrequencySet() {
 void beginBank3Ft8x7CurrentVfoFrequencySet() {
   refreshFt8x7ActiveVfo();
   const char which = ft8x7CurrentVfoLabel();
-  printKeypadAction(String("VFO") + which + " FREQ");
+  printKeypadAction("VFO{} FREQ", which);
   keypadBeginEntry(InputMode::FreqEntry, TargetVfo::Current);
   speakVfoFrequencyLabel(which);
   speakPlease();
@@ -129,7 +129,7 @@ void queryBank3VfoB() {
   printKeypadAction("VFOB?");
   uint64_t hz = 0;
   if (!queryVfoFrequency(false, hz, 800)) { keypadReportIfTimedOut("VFOB?"); return; }
-  printKeypadStatus(String("VFOB: ") + hzToMHzString3(hz) + " MHz");
+  printKeypadStatus("VFOB: {} MHz", RadioFrequency::fromHz(hz));
   speakVfoFrequency('B', hz);
 }
 
@@ -137,12 +137,12 @@ void queryBank3VfoB() {
 void queryBank3Ft8x7OtherVfo() {
   refreshFt8x7ActiveVfo();
   const char other = ft8x7OtherVfoLabel();
-  const String label = String("VFO") + other + "?";
-  printKeypadAction(label);
+  const FormattedLine label("VFO{}?", other);
+  printKeypadAction("{}", label.c_str());
   if (!guardFt8x7VfoToggleLock()) return;
   uint64_t hz = 0;
   if (!ft8x7QueryOtherVfoFrequency(hz, 800)) { keypadReportIfTimedOut(label.c_str()); return; }
-  printKeypadStatus(String("VFO") + other + ": " + hzToMHzString3(hz) + " MHz");
+  printKeypadStatus("VFO{}: {} MHz", other, RadioFrequency::fromHz(hz));
   speakVfoFrequency(other, hz);
 }
 
@@ -189,7 +189,7 @@ void beginBank3VfoBFrequencySet() {
 void beginBank3Ft8x7OtherVfoFrequencySet() {
   refreshFt8x7ActiveVfo();
   const char which = ft8x7OtherVfoLabel();
-  printKeypadAction(String("VFO") + which + " FREQ");
+  printKeypadAction("VFO{} FREQ", which);
   keypadBeginEntry(InputMode::FreqEntry, TargetVfo::Other);
   speakVfoFrequencyLabel(which);
   speakPlease();
@@ -248,7 +248,7 @@ void queryBank3VfoAMode() {
   uint8_t mode = 0xFF;
   uint8_t filter = 0xFF;
   if (!queryVfoMode(true, mode, filter, 800)) { keypadReportIfTimedOut("VFOA MODE?"); return; }
-  printKeypadStatus(String("VFOA MODE: ") + modeToString(mode));
+  printKeypadStatus("VFOA MODE: {}", modeToString(mode));
   speakModeName(mode);
 }
 
@@ -263,7 +263,7 @@ void queryBank3VfoBMode() {
   uint8_t mode = 0xFF;
   uint8_t filter = 0xFF;
   if (!queryVfoMode(false, mode, filter, 800)) { keypadReportIfTimedOut("VFOB MODE?"); return; }
-  printKeypadStatus(String("VFOB MODE: ") + modeToString(mode));
+  printKeypadStatus("VFOB MODE: {}", modeToString(mode));
   speakModeName(mode);
 }
 
@@ -277,18 +277,18 @@ void queryBank3RxTx() {
   printKeypadAction("RXTX?");
   bool tx = false;
   if (!queryRxTxStatus(tx, 800)) { keypadReportIfTimedOut("RXTX?"); return; }
-  printKeypadStatus(tx ? "TX" : "RX");
+  printKeypadStatus("{}", tx ? "TX" : "RX");
   speakRxTxState(tx);
 }
 
 void queryBank3BandStack(uint8_t reg) {
-  printKeypadAction(String("BSTACK? ") + String(reg));
+  printKeypadAction("BSTACK? {}", reg);
   if (keypadReportIfUnsupported(protocolSupportsBandStack(), "BSTACK?")) return;
   keypadSendNow(String("BSTACK? ") + String(reg));
 }
 
 void recallBank3BandStack(uint8_t reg) {
-  printKeypadAction(String("BSTACK ") + String(reg));
+  printKeypadAction("BSTACK {}", reg);
   if (keypadReportIfUnsupported(protocolSupportsBandStack(), "BSTACK")) return;
   keypadSendNow(String("BSTACK ") + String(reg));
 }

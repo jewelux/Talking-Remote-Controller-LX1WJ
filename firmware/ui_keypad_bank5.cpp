@@ -25,7 +25,7 @@ void queryBank5Rit() {
   int32_t offset = 0;
   if (!queryRitEnabled(on, 800)) { keypadReportIfTimedOut("RIT?"); return; }
   if (!queryRitOffsetHz(offset, 800)) offset = 0;
-  printKeypadStatus(String(on ? "RIT ON " : "RIT OFF ") + String(offset) + " Hz");
+  printKeypadStatus("RIT {} {} Hz", on ? "ON" : "OFF", offset);
   if (!g_speechEnabled) return;
   speakLabel("rit");
   speakToken(on ? "on" : "off");
@@ -41,20 +41,20 @@ void toggleBank5Rit() {
   bool on = false;
   if (!queryRitEnabled(on, 800)) { keypadReportIfTimedOut("RIT"); return; }
   if (!setRitEnabled(!on)) { keypadReportIfTimedOut("RIT"); return; }
-  printKeypadStatus(!on ? "RIT ON" : "RIT OFF");
+  printKeypadStatus("RIT {}", !on ? "ON" : "OFF");
   speakTokenState("rit", !on);
 }
 
 void setBank5RitOffset(int32_t hz) {
-  printKeypadAction(String("RIT ") + String(hz) + " Hz");
+  printKeypadAction("RIT {} Hz", hz);
   if (keypadReportIfUnsupported(protocolSupportsRit(), "RIT")) return;
   if (!setRitOffsetHz(hz)) { keypadReportIfTimedOut("RIT"); return; }
-  printKeypadStatus(String("RIT ") + String(hz) + " Hz");
+  printKeypadStatus("RIT {} Hz", hz);
   speakRitOffsetValue(hz);
 }
 
 void adjustBank5Rit(int32_t deltaHz) {
-  printKeypadAction(String("RIT STEP ") + (deltaHz >= 0 ? "+" : "") + String(deltaHz) + " Hz");
+  printKeypadAction("RIT STEP {}{} Hz", deltaHz >= 0 ? "+" : "", deltaHz);
   if (keypadReportIfUnsupported(protocolSupportsRit(), "RIT")) return;
   int32_t offset = 0;
   if (!queryRitOffsetHz(offset, 800)) { keypadReportIfTimedOut("RIT"); return; }

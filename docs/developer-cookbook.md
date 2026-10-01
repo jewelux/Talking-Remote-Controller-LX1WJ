@@ -307,7 +307,7 @@ KeyBinding bank2(const KeypadTraits& t, char key) {
      prepareKeypadSpeechResponse();              // hold polling and tuning speech
      NotchState state;
      if (keypadReportFeatureFailure(notchToggle(state), "NOTCH")) return;
-     printKeypadStatus(notchStateText(state));   // "NOTCH ON"
+     printKeypadStatus("{}", notchStateText(state).c_str());  // "NOTCH ON"
      speakNotchState(state);                     // "notch filter" "on"
    }
    ```
@@ -365,7 +365,7 @@ void toggleBank4Preamp() {
   prepareKeypadSpeechResponse();
   bool on = false;
   if (keypadReportFeatureFailure(preampToggle(on), "PREAMP")) return;  // beep / "timeout" / "error"
-  printKeypadStatus(on ? "PREAMP ON" : "PREAMP OFF");
+  printKeypadStatus("PREAMP {}", on ? "ON" : "OFF");
   speakTokenState("preamp", on);                // needs a "preamp" clip, see 4.7
 }
 ```
@@ -767,6 +767,13 @@ and the same situation must always sound the same:
   `speakTokenPercent` already do this.
 - **Trace first.** Start every action with `printKeypadAction("WHAT")`.
   Testers and blind users debug from that line.
+- **Format traces with `{}`, not `String`.** The `printKeypad*` helpers take a
+  literal with `{}` placeholders and its arguments, e.g.
+  `printKeypadStatus("VFO{}: {} MHz", which, RadioFrequency::fromHz(hz))`.
+  They format on the stack, so a trace never touches the heap. Arguments are
+  integers, `char`, `const char*` and `RadioFrequency`; anything else, or a
+  wrong `{}` count, does not compile. Text that is not a literal goes through
+  `"{}"`, and a `String` passes `.c_str()`.
 
 **Blocking and the radio bus.**
 

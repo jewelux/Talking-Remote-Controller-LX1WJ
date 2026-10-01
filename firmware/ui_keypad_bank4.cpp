@@ -6,7 +6,7 @@ void queryBank4Tuner() {
   if (keypadReportIfUnsupported(protocolSupportsTuner(), "TUNER?")) return;
   bool on = false;
   if (!queryTuner(on, 800)) { keypadReportIfTimedOut("TUNER?"); return; }
-  printKeypadStatus(on ? "TUNER ON" : "TUNER OFF");
+  printKeypadStatus("TUNER {}", on ? "ON" : "OFF");
   speakTokenState("tuner", on);
 }
 
@@ -16,7 +16,7 @@ void toggleBank4Tuner() {
   bool on = false;
   if (!queryTuner(on, 800)) { keypadReportIfTimedOut("TUNER"); return; }
   if (!setTuner(!on)) { keypadReportIfTimedOut("TUNER"); return; }
-  printKeypadStatus(!on ? "TUNER ON" : "TUNER OFF");
+  printKeypadStatus("TUNER {}", !on ? "ON" : "OFF");
   speakTokenState("tuner", !on);
 }
 
@@ -34,7 +34,7 @@ void toggleBank4Monitor() {
   bool on = false;
   if (!queryMonitorEnabled(on, 800)) { keypadReportIfTimedOut("MONITOR"); return; }
   if (!setMonitorEnabled(!on)) { keypadReportIfTimedOut("MONITOR"); return; }
-  printKeypadStatus(!on ? "MONITOR ON" : "MONITOR OFF");
+  printKeypadStatus("MONITOR {}", !on ? "ON" : "OFF");
   speakTokenState("monitor", !on);
 }
 
@@ -44,7 +44,7 @@ void queryBank4MonitorLevel() {
   uint16_t raw = 0;
   if (!queryMonitorLevel(raw, 800)) { keypadReportIfTimedOut("MONLEVEL?"); return; }
   const uint8_t percent = levelRawToPercent(raw);
-  printKeypadStatus(String("MONLEVEL ") + String((int)percent) + "%");
+  printKeypadStatus("MONLEVEL {}%", percent);
   speakFeatureValue(voice_monitor, voice_monitor_len, percent);
 }
 
@@ -66,6 +66,6 @@ void toggleBank4Transceive() {
   bool on = false;
   if (!queryTransceiveEnabled(on, 800)) { keypadReportIfTimedOut("TRANSCEIVE"); return; }
   if (!setTransceiveEnabled(!on)) { keypadReportIfTimedOut("TRANSCEIVE"); return; }
-  printKeypadStatus(!on ? "TRANSCEIVE ON" : "TRANSCEIVE OFF");
+  printKeypadStatus("TRANSCEIVE {}", !on ? "ON" : "OFF");
   speakTokenState("transceiver", !on);
 }

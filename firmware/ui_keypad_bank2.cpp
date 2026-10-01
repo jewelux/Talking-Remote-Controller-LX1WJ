@@ -33,7 +33,7 @@ void queryBank2Nr() {
   prepareKeypadSpeechResponse();
   NrState state;
   if (keypadReportFeatureFailure(nrQuery(state), "NR?")) return;
-  printKeypadStatus(nrStateText(state));
+  printKeypadStatus("{}", nrStateText(state).c_str());
   speakNrState(state);
 }
 
@@ -42,7 +42,7 @@ void queryBank2Nb() {
   prepareKeypadSpeechResponse();
   bool on = false;
   if (keypadReportFeatureFailure(nbQuery(on), "NB?")) return;
-  printKeypadStatus(nbStateText(on));
+  printKeypadStatus("{}", nbStateText(on).c_str());
   speakNbState(on);
 }
 
@@ -51,7 +51,7 @@ void queryBank2Notch() {
   prepareKeypadSpeechResponse();
   NotchState state;
   if (keypadReportFeatureFailure(notchQuery(state), "NOTCH?")) return;
-  printKeypadStatus(notchStateText(state));
+  printKeypadStatus("{}", notchStateText(state).c_str());
   speakNotchState(state);
 }
 
@@ -71,7 +71,7 @@ void toggleBank2Nr() {
   prepareKeypadSpeechResponse();
   NrState state;
   if (keypadReportFeatureFailure(nrToggle(state), "NR")) return;
-  printKeypadStatus(nrStateText(state));
+  printKeypadStatus("{}", nrStateText(state).c_str());
   speakNrState(state);
 }
 
@@ -80,7 +80,7 @@ void toggleBank2Nb() {
   prepareKeypadSpeechResponse();
   bool on = false;
   if (keypadReportFeatureFailure(nbToggle(on), "NB")) return;
-  printKeypadStatus(nbStateText(on));
+  printKeypadStatus("{}", nbStateText(on).c_str());
   speakNbState(on);
 }
 
@@ -89,7 +89,7 @@ void toggleBank2Notch() {
   prepareKeypadSpeechResponse();
   NotchState state;
   if (keypadReportFeatureFailure(notchToggle(state), "NOTCH")) return;
-  printKeypadStatus(notchStateText(state));
+  printKeypadStatus("{}", notchStateText(state).c_str());
   speakNotchState(state);
 }
 
@@ -104,7 +104,7 @@ void queryBank2NrLevel() {
     return;
   }
   uint8_t percent = levelRawToPercent(raw);
-  printKeypadStatus(String("NRLEVEL ") + String((int)percent) + "%");
+  printKeypadStatus("NRLEVEL {}%", percent);
   speakFeatureValue(voice_noisereduction, voice_noisereduction_len, percent);
 }
 
@@ -133,7 +133,7 @@ void adjustBank2NrLevel(int deltaPercent) {
   }
 
   const uint8_t readPercent = levelRawToPercent(readBack);
-  printKeypadStatus(String("NRLEVEL ") + String((int)readPercent) + "%");
+  printKeypadStatus("NRLEVEL {}%", readPercent);
   if (!wrote && (bool)Serial) {
     Serial.println("WARN NRLEVEL write not confirmed; using readback value");
   }
@@ -151,7 +151,7 @@ void queryBank2NbLevel() {
     return;
   }
   uint8_t percent = levelRawToPercent(raw);
-  printKeypadStatus(String("NBLEVEL ") + String((int)percent) + "%");
+  printKeypadStatus("NBLEVEL {}%", percent);
   speakTokenPercent("noiseblanker", percent);
 }
 
@@ -163,7 +163,7 @@ void adjustBank2NbLevel(int deltaPercent) {
   if (percent < 0) percent = 0;
   if (percent > 100) percent = 100;
   if (!setNbLevel(levelPercentToRaw(percent))) { keypadReportIfTimedOut("NBLEVEL"); return; }
-  printKeypadStatus(String("NBLEVEL ") + String(percent) + "%");
+  printKeypadStatus("NBLEVEL {}%", percent);
   speakTokenPercent("noiseblanker", (uint8_t)percent);
 }
 
@@ -189,7 +189,7 @@ void queryBank2PbtInner() {
     }
     return;
   }
-  printKeypadStatus(String("PBT1 ") + String(pbtRawToOffset(raw)) + " step");
+  printKeypadStatus("PBT1 {} step", pbtRawToOffset(raw));
   speakSignedStepValue("pbt", pbtRawToOffset(raw));
 }
 
@@ -206,7 +206,7 @@ void queryBank2PbtOuter() {
   printKeypadAction("PBT2?");
   uint16_t raw = 0;
   if (!queryPbtOuter(raw, 800)) { keypadReportIfTimedOut("PBT2?"); return; }
-  printKeypadStatus(String("PBT2 ") + String(pbtRawToOffset(raw)) + " step");
+  printKeypadStatus("PBT2 {} step", pbtRawToOffset(raw));
   speakSignedStepValue("pbt", pbtRawToOffset(raw));
 }
 
@@ -224,7 +224,7 @@ void toggleBank2FilterShape() {
   bool soft = false;
   if (!queryFilterShape(soft, 800)) { keypadReportIfTimedOut("FILSHAPE"); return; }
   if (!setFilterShape(!soft)) { keypadReportIfTimedOut("FILSHAPE"); return; }
-  printKeypadStatus(!soft ? "FILSHAPE SOFT" : "FILSHAPE SHARP");
+  printKeypadStatus("FILSHAPE {}", !soft ? "SOFT" : "SHARP");
   if (g_speechEnabled) {
     speakLabel("filtershape");
     speakToken(!soft ? "soft" : "sharp");
@@ -235,7 +235,7 @@ void queryBank2FilterWidth() {
   printKeypadAction("FILWIDTH?");
   uint8_t filter = 0xFF;
   if (!queryCurrentFilterSlotForKeypad(filter)) { keypadReportIfTimedOut("FILWIDTH?"); return; }
-  printKeypadStatus(String("FILWIDTH ") + String((int)filter));
+  printKeypadStatus("FILWIDTH {}", filter);
   if (g_speechEnabled) {
     speakLabel("filterwidth");
     playDigit(filter);
@@ -252,7 +252,7 @@ void cycleBank2FilterWidth(int delta) {
   if (next < 1) next = 3;
   if (next > 3) next = 1;
   if (!setMode(mode, (uint8_t)next)) { keypadReportIfTimedOut("FILWIDTH"); return; }
-  printKeypadStatus(String("FILWIDTH ") + String(next));
+  printKeypadStatus("FILWIDTH {}", next);
   if (g_speechEnabled) {
     speakLabel("filterwidth");
     playDigit((uint8_t)next);

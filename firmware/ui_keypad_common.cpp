@@ -13,36 +13,20 @@ static constexpr uint32_t KEYPAD_POLL_SUSPEND_MS = 900;
 static constexpr uint32_t KEYPAD_WRITE_POLL_SUSPEND_MS = 1400;
 static constexpr uint32_t KEYPAD_ANSWER_SPEECH_QUIET_MS = 2000;
 
-void printKeypadStatus(const String& line) {
-  if ((bool)Serial) Serial.println(line);
-}
-
-void printKeypadCommand(const String& line) {
-  if ((bool)Serial) {
-    Serial.print("CMD ");
-    Serial.println(line);
-  }
-}
-
-void printKeypadAction(const String& what) {
-  const char* key = keypadActiveKey();
-  printKeypadCommand(key ? String(key) + " -> " + what : what);
-}
-
 bool keypadReportIfTimedOut(const char* label) {
   if (!g_radioReplyTimedOut) return false;
-  printKeypadStatus(String(label) + " -> timeout");
+  printKeypadStatus("{} -> timeout", label);
   if (g_speechEnabled) speakTimeout();
   return true;
 }
 
 void queryKeypadFt8x7Setting(Ft8x7Setting setting) {
   const char* label = ft8x7SettingLabel(setting);
-  printKeypadAction(label);
+  printKeypadAction("{}", label);
   prepareKeypadSpeechResponse();
   Ft8x7SettingState state;
   if (keypadReportFeatureFailure(ft8x7SettingQuery(setting, state), label)) return;
-  printKeypadStatus(ft8x7SettingText(state));
+  printKeypadStatus("{}", ft8x7SettingText(state).c_str());
   speakFt8x7Setting(state);
 }
 
@@ -51,31 +35,31 @@ bool keypadReportFeatureFailure(FeatureStatus status, const char* label) {
     case FeatureStatus::Ok: return false;
     case FeatureStatus::Unsupported: return keypadReportIfUnsupported(false, label);
     case FeatureStatus::Timeout:
-      printKeypadStatus(String(label) + " -> timeout");
+      printKeypadStatus("{} -> timeout", label);
       if (g_speechEnabled) speakTimeout();
       return true;
     default:
-      printKeypadStatus(String(label) + " -> " + featureStatusText(status));
+      printKeypadStatus("{} -> {}", label, featureStatusText(status));
       if (g_speechEnabled) speakError();
       return true;
   }
 }
 
-void keypadReportUnassigned(const String& label) {
-  printKeypadStatus(label + " -> unassigned");
+void keypadReportUnassigned(const char* label) {
+  printKeypadStatus("{} -> unassigned", label);
   playBeep();
 }
 
 bool keypadReportIfUnsupported(bool supported, const char* label) {
   if (supported) return false;
-  printKeypadStatus(String(label) + " -> unsupported");
+  printKeypadStatus("{} -> unsupported", label);
   playBeep();
   return true;
 }
 
 void reportFtdx10HiddenKey() {
   const char* key = keypadActiveKey();
-  printKeypadStatus(String(key ? key : "KEY") + " hidden on FTDX10");
+  printKeypadStatus("{} hidden on FTDX10", key ? key : "KEY");
   if (g_speechEnabled) speakNotAvailable();
 }
 
@@ -284,6 +268,6 @@ void speakKeypadCommandWord(const String& cmd) {
 }
 
 void sendKeypadCommand(const char* cmd) {
-  printKeypadAction(cmd);
+  printKeypadAction("{}", cmd);
   keypadSendNow(cmd);
 }

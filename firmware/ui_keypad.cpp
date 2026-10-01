@@ -105,7 +105,7 @@ class KeypadUiListener : public KeypadInputListener {
 
   void onBankQuery(uint8_t bank) override {
     printKeypadCommand("* SHORT -> BANK?");
-    printKeypadStatus(String("BANK ") + String((int)bank));
+    printKeypadStatus("BANK {}", bank);
     speakBankNumber();
   }
 
@@ -117,8 +117,8 @@ class KeypadUiListener : public KeypadInputListener {
 
   // Just the digit: "bank N" would sound like a lasting switch.
   void onOneShotBank(uint8_t bank) override {
-    printKeypadCommand(String("BANK SELECT DIGIT -> ONCE ") + String((int)bank));
-    printKeypadStatus(String("BANK ") + String((int)bank) + " ONCE");
+    printKeypadCommand("BANK SELECT DIGIT -> ONCE {}", bank);
+    printKeypadStatus("BANK {} ONCE", bank);
     if (g_speechEnabled) playDigit(bank);
   }
 
@@ -142,7 +142,7 @@ class KeypadUiListener : public KeypadInputListener {
 
   void onEntryTimeout(InputMode mode) override {
     const EntrySpec* entry = keypadEntrySpec(mode);
-    printKeypadCommand(String(entry ? entry->name : "MODE SELECT") + " TIMEOUT");
+    printKeypadCommand("{} TIMEOUT", entry ? entry->name : "MODE SELECT");
     if (g_speechEnabled) speakTimeout();
   }
 };
