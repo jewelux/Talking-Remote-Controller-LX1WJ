@@ -63,6 +63,7 @@
   nothing
 - a frequency or mode the radio did not take says "error" on Icom, Kenwood, Elecraft and FTDX
   radios too. Before, only the FT-8x7 said it; the others stayed silent
+- FT-8x7: a CTCSS tone or DCS code that is not a standard one says "error". Before, it was silent.
 - the S-meter says dB over S9 as a word ("S meter nine plus twenty")
 - WFM is said as "wfm" instead of being spelled out
 - the RX/TX query (Bank 1 `1`, and Bank 3 `6` on radios other than the FT-8x7 and FTDX10) says

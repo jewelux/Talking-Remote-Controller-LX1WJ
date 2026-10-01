@@ -1580,9 +1580,10 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
   if (upper.startsWith("YRPTSHIFT ")) {
     String arg = line.substring(10);
     arg.trim();
-    double mhz = arg.toDouble();
-    if (mhz <= 0.0) {
-      Serial.println("YRPTSHIFT -> use MHz, e.g. 0.600 or 5.000");
+    char* endPtr = nullptr;
+    const double mhz = strtod(arg.c_str(), &endPtr);
+    if (!arg.length() || *endPtr != '\0' || mhz < 0.0) {
+      Serial.println("YRPTSHIFT -> use MHz, e.g. 0, 0.600 or 5.000");
       return true;
     }
     uint64_t hz = (uint64_t)(mhz * 1000000.0 + 0.5);

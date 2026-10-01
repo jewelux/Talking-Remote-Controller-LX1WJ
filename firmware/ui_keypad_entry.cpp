@@ -152,48 +152,44 @@ static void commitCivAddress(const char* digits) {
 static void commitRepeaterOffset(const char* digits) {
   printKeypadCommand("ENTER -> RPTSHIFT");
   uint64_t hz = (uint64_t)atoi(digits) * 1000ULL;
-  if (hz > 0) {
-    yaesuCatSetRepeaterOffsetHzRaw(hz);
-    printKeypadStatus(String("RPTSHIFT ") + hzToMHzString3(hz) + " MHz");
-    speakRepeaterOffsetHz(hz);
-  } else {
-    printKeypadStatus("RPTSHIFT -> failed");
-  }
+  yaesuCatSetRepeaterOffsetHzRaw(hz);
+  printKeypadStatus(String("RPTSHIFT ") + hzToMHzString3(hz) + " MHz");
+  speakRepeaterOffsetHz(hz);
 }
 
+// The FT-8x7 tone and DCS writes are write-only: they fail only on a value
+// that is not a standard tone or code.
 static void commitCtcss(const char* digits) {
   printKeypadCommand("ENTER -> CTCSS");
   uint16_t toneTenths = (uint16_t)atoi(digits);
+  if (!yaesuCatSetCtcssTenths(toneTenths)) {
+    printKeypadStatus("CTCSS -> invalid");
+    if (g_speechEnabled) speakError();
+    return;
+  }
   char label[12] = "";
   formatCtcssTenthsLabel(toneTenths, label, sizeof(label));
-  if (toneTenths > 0 && yaesuCatSetCtcssTenths(toneTenths)) {
-    printKeypadStatus(String("CTCSS ") + label);
-    if (g_speechEnabled) {
-      speakLabel("ctcss");
-      speakDigitsAndPoint(label);
-    }
-  } else if (!yaesuCtcssTenthsValid(toneTenths)) {
-    printKeypadStatus("CTCSS -> invalid");
-  } else {
-    printKeypadStatus("CTCSS -> failed");
+  printKeypadStatus(String("CTCSS ") + label);
+  if (g_speechEnabled) {
+    speakLabel("ctcss");
+    speakDigitsAndPoint(label);
   }
 }
 
 static void commitDcs(const char* digits) {
   printKeypadCommand("ENTER -> DCS");
   uint16_t dcsCode = (uint16_t)atoi(digits);
+  if (!yaesuCatSetDcsCode(dcsCode)) {
+    printKeypadStatus("DCS -> invalid");
+    if (g_speechEnabled) speakError();
+    return;
+  }
   char label[8] = "";
   snprintf(label, sizeof(label), "%03u", (unsigned)dcsCode);
-  if (yaesuCatSetDcsCode(dcsCode)) {
-    printKeypadStatus(String("DCS ") + label);
-    if (g_speechEnabled) {
-      speakLabel("dcs");
-      speakDigitsAndPoint(label);
-    }
-  } else if (!yaesuDcsCodeValid(dcsCode)) {
-    printKeypadStatus("DCS -> invalid");
-  } else {
-    printKeypadStatus("DCS -> failed");
+  printKeypadStatus(String("DCS ") + label);
+  if (g_speechEnabled) {
+    speakLabel("dcs");
+    speakDigitsAndPoint(label);
   }
 }
 
