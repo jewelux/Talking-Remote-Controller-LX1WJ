@@ -225,14 +225,7 @@ void keypadModeCommit(uint8_t mode, TargetVfo targetVfo) {
   else if (targetVfo == TargetVfo::B) printKeypadCommand("ENTER -> VFOB MODE");
   else printKeypadCommand("ENTER -> MODE");
   bool ok = false;
-  if (isFtdx10KeypadProfile()) {
-    String cmd;
-    if (targetVfo == TargetVfo::A) cmd = String("VFOA MODE ") + modeToString(mode);
-    else if (targetVfo == TargetVfo::B) cmd = String("VFOB MODE ") + modeToString(mode);
-    else cmd = String("MODE ") + modeToString(mode);
-    keypadSendNow(cmd);
-    ok = true;
-  } else if (targetVfo == TargetVfo::A) ok = setVfoMode(true, mode, 1);
+  if (targetVfo == TargetVfo::A) ok = setVfoMode(true, mode, 1);
   else if (targetVfo == TargetVfo::B) ok = setVfoMode(false, mode, 1);
   else ok = applyModeAndTrack(mode, 1);
   if (ok) {

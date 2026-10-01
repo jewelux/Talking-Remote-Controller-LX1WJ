@@ -156,6 +156,8 @@
 - NR, NB and notch keys say so when the radio rejects the change or does not answer; this was silent
 - FTDX10: frequency entry and 500 Hz rounding announce the new frequency once and report a write
   the radio rejects. Bank 2 `8` and `9` say "not available" like the other hidden keys
+- FTDX10: setting the current VFO's mode says it once (it was said twice), and a failed VFO A/B
+  mode set says "error" or "timeout" instead of the mode name
 - Bank 6 on radios other than the FT-8x7 family is empty: its keys beep like any unassigned key
   (they said "BANK6 reserved")
 
