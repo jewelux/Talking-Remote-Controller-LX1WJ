@@ -89,8 +89,9 @@
   (`NB?`, `AGC?`, `MENU?`, `ROW?`, `RFPOWER?`, `RIT?` …; on the FT-817/818 also `ANT?`; on the FT-857/897 also `NR?`, `NOTCH?`,
   `NRLEVEL?`, `NBLEVEL?`, `HPF?`, `LPF?`, `MICEQ?`, `IPO?`, `ATT?` and `DBF?`). `BK?`, `KYR?` and,
   on the FT-857/897, `NAR?` read break-in, keyer and FM narrow. `IFSHIFT?` prints whether IF shift is on,
-  and `YSETTINGS?` lists more settings read from the radio, e.g. VOX, lock, fast tuning and IF
-  shift, on the FT-857/897 also PROC, CW speed, the gains and the DSP filter widths
+  and `YSETTINGS?` lists more settings read from the radio, e.g. VOX, lock, fast tuning, NB,
+  break-in, keyer and IF shift, on the FT-857/897 also PROC, CW speed, the gains and the DSP filter
+  widths. `CLAR ON | OFF` say when the radio did not switch RIT
 
 ### Radios
 
@@ -175,6 +176,8 @@
 - building needs the ESP32 Arduino core 3.x or newer; an older core stops with a message saying so
 - keypad handling is one state machine (`firmware/keypad_input.{h,cpp}`) with a keymap per bank
   and radio (`firmware/keypad_keymap.cpp`); host unit tests in `tests/keypad` run in CI
+- the FT-8x7 CAT fields and EEPROM map (`firmware/ft8x7_*`) are plain C++ with host unit tests in
+  `tests/ft8x7`; the on/off settings each model keeps in its EEPROM are one table per model
 - `generate_voices.py`, `say.py` and `setup_venv.ps1` default to `en_US-lessac-medium` with both
   noise scales at 0, so regenerating the clips gives identical files
 
