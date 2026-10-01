@@ -1,5 +1,69 @@
 #include "ft8x7_eeprom_map.h"
 
+#include <stddef.h>
+
+struct Ft8x7FlagRow {
+  Ft8x7Flag flag;
+  Ft8x7FlagField field;
+};
+
+// Measured on an FT-897 by changing one setting at a time. Lock and fast tuning are stored
+// inverted. Split at 0x8D as Hamlib reads it (0x03 with split off, 0x83 with split on).
+static constexpr Ft8x7FlagRow kFt857Flags[] = {
+  {Ft8x7Flag::VfoB, {0x0068, 0x01, false}},
+  {Ft8x7Flag::IfShift, {0x006A, 0x10, false}},
+  {Ft8x7Flag::Nb, {0x006A, 0x20, false}},
+  {Ft8x7Flag::Lock, {0x006A, 0x40, true}},
+  {Ft8x7Flag::FastTuning, {0x006A, 0x80, true}},
+  {Ft8x7Flag::Keyer, {0x006B, 0x10, false}},
+  {Ft8x7Flag::BreakIn, {0x006B, 0x20, false}},
+  {Ft8x7Flag::Vox, {0x006B, 0x80, false}},
+  {Ft8x7Flag::KnobIsSquelch, {0x0072, 0x80, false}},
+  {Ft8x7Flag::Split, {0x008D, 0x80, false}},
+  // 0xA7 bit 1 was set when the built-in filter was chosen in CW but not in USB.
+  {Ft8x7Flag::Filter2, {0x00A7, 0x80, false}},
+  {Ft8x7Flag::Dnf, {0x00A8, 0x01, false}},
+  {Ft8x7Flag::Dnr, {0x00A8, 0x02, false}},
+  {Ft8x7Flag::Dbf, {0x00A8, 0x0C, false}},
+  {Ft8x7Flag::AgcOn, {0x00A8, 0x20, false}},
+  {Ft8x7Flag::DspRow, {0x00A8, 0x80, false}},
+  {Ft8x7Flag::Proc, {0x00A9, 0x02, false}},
+};
+
+// The bit positions of the KA7OEI map, measured on an FT-817 by switching each setting on the
+// radio. Lock and fast tuning are stored inverted, like on the FT-857/897, though the map says
+// 1 = on. All follow the front panel at once.
+static constexpr Ft8x7FlagRow kFt817Flags[] = {
+  {Ft8x7Flag::IfShift, {0x0057, 0x10, false}},
+  {Ft8x7Flag::Nb, {0x0057, 0x20, false}},
+  {Ft8x7Flag::Lock, {0x0057, 0x40, true}},
+  {Ft8x7Flag::FastTuning, {0x0057, 0x80, true}},
+  {Ft8x7Flag::Keyer, {0x0058, 0x10, false}},
+  {Ft8x7Flag::BreakIn, {0x0058, 0x20, false}},
+  {Ft8x7Flag::Vox, {0x0058, 0x80, false}},
+  {Ft8x7Flag::Split, {0x007A, 0x80, false}},
+};
+
+template <size_t N>
+static bool findFlag(const Ft8x7FlagRow (&rows)[N], Ft8x7Flag flag, Ft8x7FlagField& out) {
+  for (const Ft8x7FlagRow& row : rows) {
+    if (row.flag != flag) continue;
+    out = row.field;
+    return true;
+  }
+  return false;
+}
+
+bool ft8x7FlagField(Ft8x7Model model, Ft8x7Flag flag, Ft8x7FlagField& out) {
+  if (ft8x7IsFt817Family(model)) return findFlag(kFt817Flags, flag, out);
+  if (model == Ft8x7Model::Ft857) return findFlag(kFt857Flags, flag, out);
+  return false;
+}
+
+bool ft8x7FlagValue(const Ft8x7FlagField& field, uint8_t b) {
+  return ((b & field.mask) != 0) != field.inverted;
+}
+
 Ft8x7BandGroup ft8x7BandGroupForHz(uint64_t hz) {
   if (hz >= 420000000ULL) return Ft8x7BandGroup::Uhf;
   if (hz >= 137000000ULL) return Ft8x7BandGroup::Vhf;

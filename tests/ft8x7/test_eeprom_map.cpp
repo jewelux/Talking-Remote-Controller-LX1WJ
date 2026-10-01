@@ -181,3 +181,111 @@ TEST(ft817_rear_antenna_bit_per_band_group) {
   CHECK_EQ(ft817RearAntennaMask(Ft8x7BandGroup::Vhf), 0x10);
   CHECK_EQ(ft817RearAntennaMask(Ft8x7BandGroup::Uhf), 0x20);
 }
+
+namespace {
+
+struct FlagCase {
+  Ft8x7Flag flag;
+  uint16_t addr;
+  uint8_t mask;
+  bool inverted;
+};
+
+constexpr Ft8x7Flag kAllFlags[] = {
+  Ft8x7Flag::Nb,     Ft8x7Flag::BreakIn, Ft8x7Flag::Keyer,   Ft8x7Flag::Vox,
+  Ft8x7Flag::Proc,   Ft8x7Flag::Lock,    Ft8x7Flag::FastTuning, Ft8x7Flag::IfShift,
+  Ft8x7Flag::Dnr,    Ft8x7Flag::Dnf,     Ft8x7Flag::Dbf,     Ft8x7Flag::AgcOn,
+  Ft8x7Flag::DspRow, Ft8x7Flag::VfoB,    Ft8x7Flag::Filter2, Ft8x7Flag::KnobIsSquelch,
+  Ft8x7Flag::Split,
+};
+
+void checkFlags(Ft8x7Model model, const FlagCase *cases, size_t count) {
+  for (size_t i = 0; i < count; ++i) {
+    Ft8x7FlagField field{};
+    CHECK(ft8x7FlagField(model, cases[i].flag, field));
+    CHECK_EQ(field.addr, cases[i].addr);
+    CHECK_EQ(field.mask, cases[i].mask);
+    CHECK_EQ(field.inverted, cases[i].inverted);
+  }
+  // Every other flag is not kept.
+  size_t kept = 0;
+  for (Ft8x7Flag flag : kAllFlags) {
+    Ft8x7FlagField field{};
+    if (ft8x7FlagField(model, flag, field)) ++kept;
+  }
+  CHECK_EQ(kept, count);
+}
+
+// Two flags in one byte must not share a bit.
+void checkNoSharedBits(Ft8x7Model model) {
+  for (Ft8x7Flag a : kAllFlags) {
+    for (Ft8x7Flag b : kAllFlags) {
+      if (a == b) continue;
+      Ft8x7FlagField fa{};
+      Ft8x7FlagField fb{};
+      if (!ft8x7FlagField(model, a, fa) || !ft8x7FlagField(model, b, fb)) continue;
+      CHECK(fa.addr != fb.addr || (fa.mask & fb.mask) == 0);
+    }
+  }
+}
+
+}  // namespace
+
+TEST(ft857_flag_map) {
+  const FlagCase cases[] = {
+    {Ft8x7Flag::VfoB, 0x0068, 0x01, false},       {Ft8x7Flag::IfShift, 0x006A, 0x10, false},
+    {Ft8x7Flag::Nb, 0x006A, 0x20, false},         {Ft8x7Flag::Lock, 0x006A, 0x40, true},
+    {Ft8x7Flag::FastTuning, 0x006A, 0x80, true},  {Ft8x7Flag::Keyer, 0x006B, 0x10, false},
+    {Ft8x7Flag::BreakIn, 0x006B, 0x20, false},    {Ft8x7Flag::Vox, 0x006B, 0x80, false},
+    {Ft8x7Flag::KnobIsSquelch, 0x0072, 0x80, false}, {Ft8x7Flag::Split, 0x008D, 0x80, false},
+    {Ft8x7Flag::Filter2, 0x00A7, 0x80, false},    {Ft8x7Flag::Dnf, 0x00A8, 0x01, false},
+    {Ft8x7Flag::Dnr, 0x00A8, 0x02, false},        {Ft8x7Flag::Dbf, 0x00A8, 0x0C, false},
+    {Ft8x7Flag::AgcOn, 0x00A8, 0x20, false},      {Ft8x7Flag::DspRow, 0x00A8, 0x80, false},
+    {Ft8x7Flag::Proc, 0x00A9, 0x02, false},
+  };
+  checkFlags(Ft8x7Model::Ft857, cases, sizeof(cases) / sizeof(cases[0]));
+  checkNoSharedBits(Ft8x7Model::Ft857);
+}
+
+TEST(ft817_flag_map) {
+  const FlagCase cases[] = {
+    {Ft8x7Flag::IfShift, 0x0057, 0x10, false},   {Ft8x7Flag::Nb, 0x0057, 0x20, false},
+    {Ft8x7Flag::Lock, 0x0057, 0x40, true},       {Ft8x7Flag::FastTuning, 0x0057, 0x80, true},
+    {Ft8x7Flag::Keyer, 0x0058, 0x10, false},     {Ft8x7Flag::BreakIn, 0x0058, 0x20, false},
+    {Ft8x7Flag::Vox, 0x0058, 0x80, false},       {Ft8x7Flag::Split, 0x007A, 0x80, false},
+  };
+  checkFlags(Ft8x7Model::Ft817, cases, sizeof(cases) / sizeof(cases[0]));
+  checkFlags(Ft8x7Model::Ft818, cases, sizeof(cases) / sizeof(cases[0]));
+  checkNoSharedBits(Ft8x7Model::Ft817);
+}
+
+TEST(ft817_split_does_not_share_the_antenna_bits) {
+  Ft8x7FlagField split{};
+  CHECK(ft8x7FlagField(Ft8x7Model::Ft817, Ft8x7Flag::Split, split));
+  CHECK_EQ(split.addr, FT817_ANTENNA_ADDR);
+  for (uint8_t g = 0; g <= (uint8_t)Ft8x7BandGroup::Uhf; ++g) {
+    CHECK_EQ(split.mask & ft817RearAntennaMask((Ft8x7BandGroup)g), 0);
+  }
+}
+
+TEST(no_flags_without_a_known_model) {
+  for (Ft8x7Flag flag : kAllFlags) {
+    Ft8x7FlagField field{};
+    CHECK(!ft8x7FlagField(Ft8x7Model::None, flag, field));
+  }
+}
+
+TEST(flag_value_reads_any_bit_of_the_mask) {
+  const Ft8x7FlagField dbf{0x00A8, 0x0C, false};
+  CHECK(!ft8x7FlagValue(dbf, 0x00));
+  CHECK(ft8x7FlagValue(dbf, 0x04));
+  CHECK(ft8x7FlagValue(dbf, 0x08));
+  CHECK(!ft8x7FlagValue(dbf, 0xF3));
+}
+
+TEST(flag_value_of_an_inverted_bit) {
+  const Ft8x7FlagField lock{0x006A, 0x40, true};
+  CHECK(ft8x7FlagValue(lock, 0x00));
+  CHECK(!ft8x7FlagValue(lock, 0x40));
+  CHECK(ft8x7FlagValue(lock, 0xBF));
+}

@@ -11,11 +11,40 @@
 
 #include <stdint.h>
 
-enum class YaesuAgc : uint8_t { Off, Fast, Slow, Auto };
+#include "ft8x7_model.h"
 
-// The filter chosen on the CFIL row. Filter 1 could not be measured (no filter fitted in that
-// slot on the test radio) and reads as BuiltIn.
-enum class YaesuFt857Filter : uint8_t { BuiltIn, Filter2 };
+// Settings kept as one bit, or as a group of bits of which any set means on.
+enum class Ft8x7Flag : uint8_t {
+  Nb,
+  BreakIn,
+  Keyer,
+  Vox,
+  Proc,
+  Lock,
+  FastTuning,
+  IfShift,        // a long press of CLAR; the KA7OEI map's "PBT"
+  Dnr,
+  Dnf,
+  Dbf,
+  AgcOn,          // FT-857/897: AGC off is its own bit
+  DspRow,         // the DSP soft key row is shown (saved at once, unlike the row number)
+  VfoB,           // VFO B is active; follows the A/B key and the CAT toggle
+  Filter2,        // filter 2 is chosen on the CFIL row (filter 1 could not be measured)
+  KnobIsSquelch,  // menu 80: the RF/SQL knob is squelch, not RF gain
+  Split,          // valid in receive; the TX status has it while transmitting
+};
+
+struct Ft8x7FlagField {
+  uint16_t addr;
+  uint8_t mask;
+  bool inverted;  // the bit is set when the setting is off
+};
+
+// Where model keeps flag. False when it does not (or for Ft8x7Model::None).
+bool ft8x7FlagField(Ft8x7Model model, Ft8x7Flag flag, Ft8x7FlagField& out);
+bool ft8x7FlagValue(const Ft8x7FlagField& field, uint8_t b);
+
+enum class YaesuAgc : uint8_t { Off, Fast, Slow, Auto };
 
 // Menu 48.
 enum class YaesuFt857MicEq : uint8_t { Off, Lpf, Hpf, Both };
@@ -75,9 +104,7 @@ int32_t ft857RitOffsetHz(const uint8_t word[2]);
 uint16_t ft857RfPowerAddr(Ft8x7BandGroup group);
 uint8_t ft857RfPowerWatts(uint8_t b);
 
-// AGC off is its own bit (0xA8 bit 5); the speed is 0x6A bits 1..0.
-static constexpr uint16_t FT857_AGC_ON_ADDR = 0x00A8;
-static constexpr uint8_t FT857_AGC_ON_MASK = 0x20;
+// AGC off is its own bit (Ft8x7Flag::AgcOn); the speed is 0x6A bits 1..0.
 static constexpr uint16_t FT857_AGC_SPEED_ADDR = 0x006A;
 YaesuAgc ft857AgcFromSpeed(uint8_t b);
 

@@ -196,9 +196,23 @@ void yaesuCatWriteEeprom2(uint16_t addr, const uint8_t data[2]) {
   yaesuCatMarkLineDirty();
 }
 
+// FT-8x7 settings that CAT can only read from the EEPROM (ft8x7_eeprom_map.h).
+bool yaesuFt8x7QueryFlag(Ft8x7Flag flag, bool& onOut, uint32_t timeoutMs) {
+  Ft8x7FlagField field;
+  if (!ft8x7FlagField(currentFt8x7Model(), flag, field)) return false;
+  uint8_t b = 0;
+  if (!yaesuCatReadEepromByte(field.addr, b, timeoutMs)) return false;
+  onOut = ft8x7FlagValue(field, b);
+  return true;
+}
+
+bool yaesuFt8x7HasFlag(Ft8x7Flag flag) {
+  Ft8x7FlagField field;
+  return ft8x7FlagField(currentFt8x7Model(), flag, field);
+}
+
 // The TX status split bit is valid only while transmitting; the FT-857/897 answer 0xFF in
-// receive. Otherwise split is bit 7 of an EEPROM byte, at the addresses Hamlib reads (0x8D
-// confirmed on an FT-897: 0x03 with split off, 0x83 with split on).
+// receive. Otherwise the EEPROM has it.
 bool yaesuCatQuerySplit(bool& onOut, uint32_t timeoutMs) {
   uint8_t txStatus = 0;
   if (!yaesuCatQueryTxStatusRaw(txStatus, timeoutMs)) return false;
@@ -206,46 +220,46 @@ bool yaesuCatQuerySplit(bool& onOut, uint32_t timeoutMs) {
     onOut = (txStatus & 0x20) != 0;
     return true;
   }
-  const uint16_t addr = currentIsFt817Family() ? 0x007A : 0x008D;
-  uint8_t flags = 0;
-  if (!yaesuCatReadEepromByte(addr, flags, timeoutMs)) return false;
-  onOut = (flags & 0x80) != 0;
-  return true;
+  return yaesuFt8x7QueryFlag(Ft8x7Flag::Split, onOut, timeoutMs);
 }
 
-// FT-857/897 settings that CAT can only read from the EEPROM (ft8x7_eeprom_map.h).
-static bool ft857ReadBit(uint16_t addr, uint8_t mask, bool& onOut, uint32_t timeoutMs) {
-  if (!currentIsFt857Family()) return false;
+bool yaesuFt8x7QueryAgc(YaesuAgc& out, uint32_t timeoutMs) {
+  const Ft8x7Model model = currentFt8x7Model();
   uint8_t b = 0;
-  if (!yaesuCatReadEepromByte(addr, b, timeoutMs)) return false;
-  onOut = (b & mask) != 0;
-  return true;
-}
-
-bool yaesuFt857QueryNb(bool& onOut, uint32_t timeoutMs) { return ft857ReadBit(0x006A, 0x20, onOut, timeoutMs); }
-bool yaesuFt857QueryBreakIn(bool& onOut, uint32_t timeoutMs) { return ft857ReadBit(0x006B, 0x20, onOut, timeoutMs); }
-bool yaesuFt857QueryKeyer(bool& onOut, uint32_t timeoutMs) { return ft857ReadBit(0x006B, 0x10, onOut, timeoutMs); }
-bool yaesuFt857QueryDnr(bool& onOut, uint32_t timeoutMs) { return ft857ReadBit(0x00A8, 0x02, onOut, timeoutMs); }
-bool yaesuFt857QueryDnf(bool& onOut, uint32_t timeoutMs) { return ft857ReadBit(0x00A8, 0x01, onOut, timeoutMs); }
-bool yaesuFt857QueryDbf(bool& onOut, uint32_t timeoutMs) { return ft857ReadBit(0x00A8, 0x0C, onOut, timeoutMs); }
-
-bool yaesuFt857QueryAgc(YaesuAgc& out, uint32_t timeoutMs) {
+  if (ft8x7IsFt817Family(model)) {
+    if (!yaesuCatReadEepromByte(FT817_AGC_ADDR, b, timeoutMs)) return false;
+    out = ft817AgcFromByte(b);
+    return true;
+  }
+  if (model != Ft8x7Model::Ft857) return false;
   bool on = false;
-  if (!ft857ReadBit(FT857_AGC_ON_ADDR, FT857_AGC_ON_MASK, on, timeoutMs)) return false;
+  if (!yaesuFt8x7QueryFlag(Ft8x7Flag::AgcOn, on, timeoutMs)) return false;
   if (!on) {
     out = YaesuAgc::Off;
     return true;
   }
-  uint8_t b = 0;
   if (!yaesuCatReadEepromByte(FT857_AGC_SPEED_ADDR, b, timeoutMs)) return false;
   out = ft857AgcFromSpeed(b);
   return true;
 }
 
-// 0x68 bit 0 is the active VFO (1 = B). It follows both the front panel A/B key and the CAT
-// toggle.
-bool yaesuFt857QueryVfoB(bool& vfoBOut, uint32_t timeoutMs) {
-  return ft857ReadBit(0x0068, 0x01, vfoBOut, timeoutMs);
+bool yaesuFt8x7QueryMenuAndRow(uint8_t& menuOut, uint8_t& rowOut, uint32_t timeoutMs) {
+  const Ft8x7Model model = currentFt8x7Model();
+  if (ft8x7IsFt817Family(model)) {
+    uint8_t menu = 0;
+    uint8_t row = 0;
+    if (!yaesuCatReadEepromByte(FT817_MENU_ADDR, menu, timeoutMs)) return false;
+    if (!yaesuCatReadEepromByte(FT817_ROW_ADDR, row, timeoutMs)) return false;
+    menuOut = ft817MenuFromByte(menu);
+    rowOut = ft817RowFromByte(row);
+    return true;
+  }
+  if (model != Ft8x7Model::Ft857) return false;
+  uint8_t word[2] = {0};
+  if (!yaesuCatReadEepromWord(FT857_MENU_ROW_ADDR, word, timeoutMs)) return false;
+  menuOut = (uint8_t)(word[0] + 1);
+  rowOut = (uint8_t)(word[1] + 1);
+  return true;
 }
 
 // The band slot of hz (null outside the amateur bands) and its block on the active VFO.
@@ -255,7 +269,7 @@ static bool ft857ActiveBandBlock(uint64_t hz, const Ft857BandSlot*& slotOut, uin
   slotOut = ft857BandSlotForHz(hz);
   if (!slotOut) return true;
   bool vfoB = false;
-  if (!yaesuFt857QueryVfoB(vfoB, timeoutMs)) return false;
+  if (!yaesuFt8x7QueryFlag(Ft8x7Flag::VfoB, vfoB, timeoutMs)) return false;
   blockOut = ft857BandBlock(*slotOut, vfoB);
   return true;
 }
@@ -289,102 +303,20 @@ bool yaesuFt857QueryRfPowerWatts(uint64_t hz, uint8_t& wattsOut, uint32_t timeou
   return true;
 }
 
-bool yaesuFt857QueryMenuAndRow(uint8_t& menuOut, uint8_t& rowOut, uint32_t timeoutMs) {
-  if (!currentIsFt857Family()) return false;
-  uint8_t word[2] = {0};
-  if (!yaesuCatReadEepromWord(FT857_MENU_ROW_ADDR, word, timeoutMs)) return false;
-  menuOut = (uint8_t)(word[0] + 1);
-  rowOut = (uint8_t)(word[1] + 1);
-  return true;
-}
-
 bool yaesuFt817QueryRfPowerTenths(uint16_t& tenthsOut, uint32_t timeoutMs) {
-  if (!currentIsFt817Family()) return false;
-  const bool ft818 = currentFt8x7Model() == Ft8x7Model::Ft818;
+  const Ft8x7Model model = currentFt8x7Model();
+  if (!ft8x7IsFt817Family(model)) return false;
   uint8_t b = 0;
   if (!yaesuCatReadEepromByte(FT817_RF_POWER_ADDR, b, timeoutMs)) return false;
-  tenthsOut = ft817RfPowerTenths(b, ft818);
-  return true;
-}
-
-// Lock and fast tuning are stored inverted, like on the FT-857/897, though the KA7OEI map says
-// 1 = on. All follow the front panel at once.
-static bool ft817ReadBit(uint16_t addr, uint8_t mask, bool& onOut, uint32_t timeoutMs) {
-  if (!currentIsFt817Family()) return false;
-  uint8_t b = 0;
-  if (!yaesuCatReadEepromByte(addr, b, timeoutMs)) return false;
-  onOut = (b & mask) != 0;
-  return true;
-}
-
-bool yaesuFt817QueryLock(bool& onOut, uint32_t timeoutMs) {
-  bool unlocked = false;
-  if (!ft817ReadBit(0x0057, 0x40, unlocked, timeoutMs)) return false;
-  onOut = !unlocked;
-  return true;
-}
-
-bool yaesuFt817QueryFastTuning(bool& onOut, uint32_t timeoutMs) {
-  bool slow = false;
-  if (!ft817ReadBit(0x0057, 0x80, slow, timeoutMs)) return false;
-  onOut = !slow;
-  return true;
-}
-
-bool yaesuFt817QueryNb(bool& onOut, uint32_t timeoutMs) { return ft817ReadBit(0x0057, 0x20, onOut, timeoutMs); }
-// IF shift (a long press of CLAR; the map's "PBT").
-bool yaesuFt817QueryIfShift(bool& onOut, uint32_t timeoutMs) { return ft817ReadBit(0x0057, 0x10, onOut, timeoutMs); }
-bool yaesuFt817QueryVox(bool& onOut, uint32_t timeoutMs) { return ft817ReadBit(0x0058, 0x80, onOut, timeoutMs); }
-bool yaesuFt817QueryBreakIn(bool& onOut, uint32_t timeoutMs) { return ft817ReadBit(0x0058, 0x20, onOut, timeoutMs); }
-bool yaesuFt817QueryKeyer(bool& onOut, uint32_t timeoutMs) { return ft817ReadBit(0x0058, 0x10, onOut, timeoutMs); }
-
-bool yaesuFt817QueryAgc(YaesuAgc& out, uint32_t timeoutMs) {
-  if (!currentIsFt817Family()) return false;
-  uint8_t b = 0;
-  if (!yaesuCatReadEepromByte(FT817_AGC_ADDR, b, timeoutMs)) return false;
-  out = ft817AgcFromByte(b);
-  return true;
-}
-
-bool yaesuFt817QueryMenuAndRow(uint8_t& menuOut, uint8_t& rowOut, uint32_t timeoutMs) {
-  if (!currentIsFt817Family()) return false;
-  uint8_t menu = 0;
-  uint8_t row = 0;
-  if (!yaesuCatReadEepromByte(FT817_MENU_ADDR, menu, timeoutMs)) return false;
-  if (!yaesuCatReadEepromByte(FT817_ROW_ADDR, row, timeoutMs)) return false;
-  menuOut = ft817MenuFromByte(menu);
-  rowOut = ft817RowFromByte(row);
+  tenthsOut = ft817RfPowerTenths(b, model == Ft8x7Model::Ft818);
   return true;
 }
 
 bool yaesuFt817QueryRearAntenna(uint64_t hz, bool& rearOut, uint32_t timeoutMs) {
-  return ft817ReadBit(FT817_ANTENNA_ADDR, ft817RearAntennaMask(ft8x7BandGroupForHz(hz)), rearOut, timeoutMs);
-}
-
-// Lock and fast tuning are stored inverted.
-bool yaesuFt857QueryVox(bool& onOut, uint32_t timeoutMs) { return ft857ReadBit(0x006B, 0x80, onOut, timeoutMs); }
-bool yaesuFt857QueryProc(bool& onOut, uint32_t timeoutMs) { return ft857ReadBit(0x00A9, 0x02, onOut, timeoutMs); }
-bool yaesuFt857QueryDspRow(bool& onOut, uint32_t timeoutMs) { return ft857ReadBit(0x00A8, 0x80, onOut, timeoutMs); }
-
-bool yaesuFt857QueryLock(bool& onOut, uint32_t timeoutMs) {
-  bool unlocked = false;
-  if (!ft857ReadBit(0x006A, 0x40, unlocked, timeoutMs)) return false;
-  onOut = !unlocked;
-  return true;
-}
-
-bool yaesuFt857QueryFastTuning(bool& onOut, uint32_t timeoutMs) {
-  bool slow = false;
-  if (!ft857ReadBit(0x006A, 0x80, slow, timeoutMs)) return false;
-  onOut = !slow;
-  return true;
-}
-
-// 0xA7 bit 7 = filter 2. Bit 1 was set when the built-in filter was chosen in CW but not in USB.
-bool yaesuFt857QueryFilter(YaesuFt857Filter& out, uint32_t timeoutMs) {
-  bool filter2 = false;
-  if (!ft857ReadBit(0x00A7, 0x80, filter2, timeoutMs)) return false;
-  out = filter2 ? YaesuFt857Filter::Filter2 : YaesuFt857Filter::BuiltIn;
+  if (!currentIsFt817Family()) return false;
+  uint8_t b = 0;
+  if (!yaesuCatReadEepromByte(FT817_ANTENNA_ADDR, b, timeoutMs)) return false;
+  rearOut = (b & ft817RearAntennaMask(ft8x7BandGroupForHz(hz))) != 0;
   return true;
 }
 
@@ -409,7 +341,13 @@ bool yaesuFt857QueryRitOffsetHz(uint64_t hz, int32_t& offsetOut, uint32_t timeou
   return true;
 }
 
-bool yaesuFt857QueryIfShift(bool& onOut, uint32_t timeoutMs) { return ft857ReadBit(0x006A, 0x10, onOut, timeoutMs); }
+bool yaesuFt857QueryMicEq(YaesuFt857MicEq& out, uint32_t timeoutMs) {
+  if (!currentIsFt857Family()) return false;
+  uint8_t b = 0;
+  if (!yaesuCatReadEepromByte(FT857_MIC_EQ_ADDR, b, timeoutMs)) return false;
+  out = ft857MicEqFromByte(b);
+  return true;
+}
 
 // The CAT clarifier commands (05 on, 85 off) switch RIT, the short press of the CLAR key, which
 // the manuals also call the clarifier. The radio answers 00 when it switched and F0 when RIT was
@@ -449,18 +387,6 @@ bool yaesuFt8x7ToggleRit(bool& onOut, uint32_t timeoutMs) {
   }
   if (!ft8x7SetRitReply(false, changed, timeoutMs) || !changed) return false;
   onOut = false;
-  return true;
-}
-
-bool yaesuFt857QueryKnobIsSquelch(bool& squelchOut, uint32_t timeoutMs) {
-  return ft857ReadBit(0x0072, 0x80, squelchOut, timeoutMs);
-}
-
-bool yaesuFt857QueryMicEq(YaesuFt857MicEq& out, uint32_t timeoutMs) {
-  if (!currentIsFt857Family()) return false;
-  uint8_t b = 0;
-  if (!yaesuCatReadEepromByte(FT857_MIC_EQ_ADDR, b, timeoutMs)) return false;
-  out = ft857MicEqFromByte(b);
   return true;
 }
 

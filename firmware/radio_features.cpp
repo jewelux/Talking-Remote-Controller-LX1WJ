@@ -221,38 +221,53 @@ static FeatureStatus ft8x7BandSettingQuery(Ft8x7Setting setting, Ft8x7SettingSta
   return FeatureStatus::Ok;
 }
 
-FeatureStatus ft8x7SettingQuery(Ft8x7Setting setting, Ft8x7SettingState& out) {
-  if (currentProtocolType() != PROTO_YAESU_FT8X7) return FeatureStatus::Unsupported;
-  const bool ft817 = currentIsFt817Family();
-  if (!ft817 && !currentIsFt857Family()) return FeatureStatus::Unsupported;
-  if (ft817 && setting != Ft8x7Setting::RfPower && setting != Ft8x7Setting::Menu &&
-      setting != Ft8x7Setting::Row && setting != Ft8x7Setting::Agc &&
-      setting != Ft8x7Setting::BreakIn && setting != Ft8x7Setting::Keyer &&
-      setting != Ft8x7Setting::IfShift && setting != Ft8x7Setting::Antenna) {
-    return FeatureStatus::Unsupported;
+// The settings that are one EEPROM flag.
+static bool ft8x7SettingFlag(Ft8x7Setting setting, Ft8x7Flag& flagOut) {
+  switch (setting) {
+    case Ft8x7Setting::Dbf: flagOut = Ft8x7Flag::Dbf; return true;
+    case Ft8x7Setting::BreakIn: flagOut = Ft8x7Flag::BreakIn; return true;
+    case Ft8x7Setting::Keyer: flagOut = Ft8x7Flag::Keyer; return true;
+    case Ft8x7Setting::IfShift: flagOut = Ft8x7Flag::IfShift; return true;
+    default: return false;
   }
-  if (!ft817 && setting == Ft8x7Setting::Antenna) return FeatureStatus::Unsupported;
+}
+
+// A flag is supported where the EEPROM map has it.
+static bool ft8x7SettingSupported(Ft8x7Setting setting, Ft8x7Model model) {
+  Ft8x7Flag flag = Ft8x7Flag::Nb;
+  if (ft8x7SettingFlag(setting, flag)) {
+    Ft8x7FlagField field;
+    return ft8x7FlagField(model, flag, field);
+  }
+  switch (setting) {
+    case Ft8x7Setting::Agc:
+    case Ft8x7Setting::Menu:
+    case Ft8x7Setting::Row:
+    case Ft8x7Setting::RfPower: return model != Ft8x7Model::None;
+    case Ft8x7Setting::Antenna: return ft8x7IsFt817Family(model);
+    default: return model == Ft8x7Model::Ft857;  // IPO, ATT, NAR, the DSP menu levels, mic EQ
+  }
+}
+
+FeatureStatus ft8x7SettingQuery(Ft8x7Setting setting, Ft8x7SettingState& out) {
+  const Ft8x7Model model = currentFt8x7Model();
+  if (!ft8x7SettingSupported(setting, model)) return FeatureStatus::Unsupported;
   if (setting == Ft8x7Setting::RfPower && !currentStoredProfile().caps.getRfPower) return FeatureStatus::Unsupported;
   out = Ft8x7SettingState();
   out.setting = setting;
+  Ft8x7Flag flag = Ft8x7Flag::Nb;
+  if (ft8x7SettingFlag(setting, flag)) {
+    if (!yaesuFt8x7QueryFlag(flag, out.on, 800)) return failure(FeatureStatus::NoReply);
+    return FeatureStatus::Ok;
+  }
   bool ok = false;
   switch (setting) {
-    case Ft8x7Setting::Agc: ok = ft817 ? yaesuFt817QueryAgc(out.agc, 800) : yaesuFt857QueryAgc(out.agc, 800); break;
-    case Ft8x7Setting::Dbf: ok = yaesuFt857QueryDbf(out.on, 800); break;
-    case Ft8x7Setting::BreakIn:
-      ok = ft817 ? yaesuFt817QueryBreakIn(out.on, 800) : yaesuFt857QueryBreakIn(out.on, 800);
-      break;
-    case Ft8x7Setting::Keyer:
-      ok = ft817 ? yaesuFt817QueryKeyer(out.on, 800) : yaesuFt857QueryKeyer(out.on, 800);
-      break;
-    case Ft8x7Setting::IfShift:
-      ok = ft817 ? yaesuFt817QueryIfShift(out.on, 800) : yaesuFt857QueryIfShift(out.on, 800);
-      break;
+    case Ft8x7Setting::Agc: ok = yaesuFt8x7QueryAgc(out.agc, 800); break;
     case Ft8x7Setting::Menu:
     case Ft8x7Setting::Row: {
       uint8_t menu = 0;
       uint8_t row = 0;
-      ok = ft817 ? yaesuFt817QueryMenuAndRow(menu, row, 800) : yaesuFt857QueryMenuAndRow(menu, row, 800);
+      ok = yaesuFt8x7QueryMenuAndRow(menu, row, 800);
       out.number = setting == Ft8x7Setting::Menu ? menu : row;
       break;
     }
@@ -267,7 +282,7 @@ FeatureStatus ft8x7SettingQuery(Ft8x7Setting setting, Ft8x7SettingState& out) {
       break;
     }
     case Ft8x7Setting::RfPower:
-      if (ft817) {
+      if (ft8x7IsFt817Family(model)) {
         ok = yaesuFt817QueryRfPowerTenths(out.wattsTenths, 800);
         break;
       }

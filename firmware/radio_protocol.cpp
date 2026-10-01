@@ -186,7 +186,7 @@ bool queryNr(bool& onOut, uint32_t timeoutMs) {
   const StoredProfile& sp = currentStoredProfile();
   if (pt == PROTO_CIV) return civQueryNr(sp, onOut, timeoutMs);
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiQueryNr(sp, onOut, timeoutMs);
-  if (pt == PROTO_YAESU_FT8X7) return yaesuFt857QueryDnr(onOut, timeoutMs);
+  if (pt == PROTO_YAESU_FT8X7) return yaesuFt8x7QueryFlag(Ft8x7Flag::Dnr, onOut, timeoutMs);
   return false;
 }
 
@@ -217,9 +217,7 @@ bool queryNb(bool& onOut, uint32_t timeoutMs) {
   const StoredProfile& sp = currentStoredProfile();
   if (pt == PROTO_CIV) return civQueryNb(sp, onOut, timeoutMs);
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiQueryNb(sp, onOut, timeoutMs);
-  if (pt == PROTO_YAESU_FT8X7) {
-    return currentIsFt817Family() ? yaesuFt817QueryNb(onOut, timeoutMs) : yaesuFt857QueryNb(onOut, timeoutMs);
-  }
+  if (pt == PROTO_YAESU_FT8X7) return yaesuFt8x7QueryFlag(Ft8x7Flag::Nb, onOut, timeoutMs);
   return false;
 }
 
@@ -250,7 +248,7 @@ bool queryNotch(bool& onOut, uint32_t timeoutMs) {
   const StoredProfile& sp = currentStoredProfile();
   if (pt == PROTO_CIV) return civQueryNotch(sp, onOut, timeoutMs);
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiQueryNotch(sp, onOut, timeoutMs);
-  if (pt == PROTO_YAESU_FT8X7) return yaesuFt857QueryDnf(onOut, timeoutMs);
+  if (pt == PROTO_YAESU_FT8X7) return yaesuFt8x7QueryFlag(Ft8x7Flag::Dnf, onOut, timeoutMs);
   return false;
 }
 
@@ -308,7 +306,7 @@ bool queryActiveVfo(bool& vfoAOut, uint32_t timeoutMs) {
   const StoredProfile& sp = currentStoredProfile();
   if (currentProtocolType() != PROTO_YAESU_FT8X7 || !sp.caps.getVfo) return false;
   bool vfoB = false;
-  if (!yaesuFt857QueryVfoB(vfoB, timeoutMs)) return false;
+  if (!yaesuFt8x7QueryFlag(Ft8x7Flag::VfoB, vfoB, timeoutMs)) return false;
   vfoAOut = !vfoB;
   rememberActiveVfo(vfoAOut);
   return true;
@@ -322,17 +320,12 @@ bool queryDialLock(bool& onOut, uint32_t timeoutMs) {
   if (pt == PROTO_YAESU_FT8X7) {
     // The FT-817/818 and FT-857/897 keep the lock in their EEPROM, so a lock set on the front
     // panel counts too. Other variants get the state HamTRC last set.
-    bool ok = false;
-    if (currentIsFt817Family()) {
-      ok = yaesuFt817QueryLock(onOut, timeoutMs);
-    } else if (currentIsFt857Family()) {
-      ok = yaesuFt857QueryLock(onOut, timeoutMs);
-    } else {
+    if (!yaesuFt8x7HasFlag(Ft8x7Flag::Lock)) {
       if (!live.lockKnown) return false;
       onOut = live.lockOn;
       return true;
     }
-    if (!ok) return false;
+    if (!yaesuFt8x7QueryFlag(Ft8x7Flag::Lock, onOut, timeoutMs)) return false;
     rememberDialLockState(onOut);
     return true;
   }

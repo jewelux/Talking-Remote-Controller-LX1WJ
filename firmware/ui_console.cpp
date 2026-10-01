@@ -1911,38 +1911,26 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     Serial.println(rsp, HEX);
     return true;
   }
-  if (upper == "YSETTINGS?" && currentIsFt817Family()) {
-    struct NamedBit { const char* name; bool (*query)(bool&, uint32_t); };
-    static const NamedBit bits[] = {
-      {"VOX", yaesuFt817QueryVox}, {"LOCK", yaesuFt817QueryLock}, {"FAST", yaesuFt817QueryFastTuning},
-      {"NB", yaesuFt817QueryNb},   {"BK", yaesuFt817QueryBreakIn}, {"KYR", yaesuFt817QueryKeyer},
-      {"IFSHIFT", yaesuFt817QueryIfShift},
-    };
-    for (const NamedBit& b : bits) {
-      bool on = false;
-      Serial.print(b.name);
-      Serial.println(b.query(on, 300) ? (on ? " ON" : " OFF") : " --");
-    }
-    return true;
-  }
   if (upper == "YSETTINGS?") {
-    struct NamedBit { const char* name; bool (*query)(bool&, uint32_t); };
-    static const NamedBit bits[] = {
-      {"VOX", yaesuFt857QueryVox}, {"PROC", yaesuFt857QueryProc}, {"LOCK", yaesuFt857QueryLock},
-      {"FAST", yaesuFt857QueryFastTuning}, {"DSPROW", yaesuFt857QueryDspRow},
-      {"IFSHIFT", yaesuFt857QueryIfShift},
+    // The on/off settings the model keeps.
+    struct NamedFlag { const char* name; Ft8x7Flag flag; };
+    static const NamedFlag flags[] = {
+      {"VOX", Ft8x7Flag::Vox},       {"PROC", Ft8x7Flag::Proc},   {"LOCK", Ft8x7Flag::Lock},
+      {"FAST", Ft8x7Flag::FastTuning}, {"NB", Ft8x7Flag::Nb},      {"BK", Ft8x7Flag::BreakIn},
+      {"KYR", Ft8x7Flag::Keyer},     {"DSPROW", Ft8x7Flag::DspRow}, {"IFSHIFT", Ft8x7Flag::IfShift},
     };
-    for (const NamedBit& b : bits) {
+    for (const NamedFlag& f : flags) {
+      if (!yaesuFt8x7HasFlag(f.flag)) continue;
       bool on = false;
-      Serial.print(b.name);
-      Serial.println(b.query(on, 300) ? (on ? " ON" : " OFF") : " --");
+      Serial.print(f.name);
+      Serial.println(yaesuFt8x7QueryFlag(f.flag, on, 300) ? (on ? " ON" : " OFF") : " --");
     }
-    YaesuFt857Filter filter = YaesuFt857Filter::BuiltIn;
+    if (!currentIsFt857Family()) return true;
+    bool on = false;
     Serial.print("FILTER ");
-    Serial.println(yaesuFt857QueryFilter(filter, 300) ? (filter == YaesuFt857Filter::Filter2 ? "2" : "BUILTIN") : "--");
-    bool squelch = false;
+    Serial.println(yaesuFt8x7QueryFlag(Ft8x7Flag::Filter2, on, 300) ? (on ? "2" : "BUILTIN") : "--");
     Serial.print("KNOB ");
-    Serial.println(yaesuFt857QueryKnobIsSquelch(squelch, 300) ? (squelch ? "SQL" : "RFGAIN") : "--");
+    Serial.println(yaesuFt8x7QueryFlag(Ft8x7Flag::KnobIsSquelch, on, 300) ? (on ? "SQL" : "RFGAIN") : "--");
     static const char* const kMicEqNames[] = {"OFF", "LPF", "HPF", "BOTH"};
     YaesuFt857MicEq micEq = YaesuFt857MicEq::Off;
     Serial.print("MICEQ ");

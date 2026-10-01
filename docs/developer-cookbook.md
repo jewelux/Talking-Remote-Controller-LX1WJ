@@ -511,6 +511,12 @@ bool asciiQueryPreamp(const StoredProfile& sp, bool& onOut, uint32_t timeoutMs) 
 Write ops that verify: CI-V set functions read the value back
 (`civSetNb`). FT-8x7 CAT writes are write-only, so never read back there.
 
+The FT-8x7 CAT cannot read most settings, but the radio's EEPROM has them.
+An on/off setting is an `Ft8x7Flag` with one row per model in
+`ft8x7_eeprom_map.cpp`, read with `yaesuFt8x7QueryFlag`; a model without
+the row reports it unsupported. Add a test row in `tests/ft8x7` with the
+address and bit you measured on the radio.
+
 **4. Façade.** Add one dispatch per protocol in `radio_protocol.cpp`, and
 declare it in the header:
 
