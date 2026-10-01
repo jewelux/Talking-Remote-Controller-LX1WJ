@@ -143,5 +143,6 @@ Keep the first field test simple:
 ## More Help
 
 - Short setup path: [QUICKSTART.md](QUICKSTART.md)
+- Every key on every radio: [docs/keypad-map.md](docs/keypad-map.md)
 - Current per-radio support: [docs/radio-support-matrix.md](docs/radio-support-matrix.md)
 - FTDX10 family helper list: [docs/radios/yaesu-ftdx10-blind-test-list.txt](docs/radios/yaesu-ftdx10-blind-test-list.txt)

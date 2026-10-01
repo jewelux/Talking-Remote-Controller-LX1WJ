@@ -1,6 +1,8 @@
 # FT8x7 Keypad Layout
 
 This document describes the current keypad layout for the Yaesu FT-817, FT-857, and FT-897 family.
+It lists the keys these radios have of their own; [the keypad map](../keypad-map.md) has every
+bank, Bank 4, 5 and 7 included, for all radios.
 
 > The layout is experimental and may still change.
 
