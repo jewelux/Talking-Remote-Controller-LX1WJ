@@ -42,7 +42,7 @@ struct Fake : KeypadInputListener {
   int activity = 0;
   int pressedActivity = 0;
 
-  std::set<std::string> holds, shorts, doubles, waits;
+  std::set<std::string> holds, shorts, doubles, doubleHolds, waits;
   std::map<std::string, std::function<void()>> hooks;  // "hold 1 0" -> hook
   std::string validModeDigits = "123456789";
 
@@ -53,7 +53,8 @@ struct Fake : KeypadInputListener {
     const std::string k = activeKey ? activeKey : "(null)";
     const std::string gesture = k.size() > 8 ? k.substr(8) : "";
     const char *name = gesture == "LONG" ? "hold" : gesture == "SHORT" ? "short"
-                                                  : gesture == "DOUBLE" ? "double" : nullptr;
+                       : gesture == "DOUBLE" ? "double"
+                       : gesture == "DOUBLE LONG" ? "doublehold" : nullptr;
     if (k.size() < 9 || k.compare(0, 4, "BANK") != 0 || k[5] != ' ' || k[7] != ' ' || !name) {
       log.push_back("action without key: " + k);
       return;
@@ -74,6 +75,7 @@ struct Fake : KeypadInputListener {
     if (shorts.count(id)) b.shortAction = runFakeAction;
     if (holds.count(id)) b.holdAction = runFakeAction;
     if (doubles.count(id)) b.doubleAction = runFakeAction;
+    if (doubleHolds.count(id)) b.doubleHoldAction = runFakeAction;
     b.waitsForDouble = waits.count(id) > 0;
     return b;
   }
@@ -273,9 +275,9 @@ TEST(input_release_of_hold_that_began_entry_is_not_typed) {
   CHECK_LOG(f, "digit FreqEntry 1 1");
 }
 
-// Fixed by construction: '#' used to clear the hold flags, so a key held
-// through '#' ran its short action on release.
-TEST(input_clear_keeps_hold_of_key_still_down) {
+// A key held through '#' is a co-press: '#' beeps instead of clearing, and
+// the release of the held key does not run its short action.
+TEST(input_clear_while_another_key_is_down_is_a_co_press) {
   Fake f;
   f.holds = {"1 3"};
   f.shorts = {"1 3"};
@@ -285,7 +287,9 @@ TEST(input_clear_keeps_hold_of_key_still_down) {
   in.onKey('3', KeyGesture::Held, 0);
   tap(in, '#');
   in.onKey('3', KeyGesture::Released, 0);
-  CHECK_LOG(f, "hold 1 3", "clear");
+  CHECK_LOG(f, "hold 1 3", "rejected TWO KEYS");
+  // Nothing was cancelled.
+  CHECK_EQ(in.mode(), InputMode::FreqEntry);
 }
 
 TEST(input_hold_of_d_and_hash_is_unassigned_and_swallows_release) {
@@ -371,7 +375,9 @@ TEST(input_double_without_action_restarts_wait_and_runs_short_once) {
   CHECK_LOG(f, "short 8 2");
 }
 
-TEST(input_hold_of_waiting_key_replaces_its_short) {
+// A tap then a hold is a double hold, never the key's long action: with none
+// assigned it beeps, and the short it follows does not run.
+TEST(input_hold_after_short_of_key_without_double_hold_beeps_and_drops_the_short) {
   Fake f;
   f.waits = {"4 0"};
   f.shorts = {"4 0"};
@@ -379,12 +385,151 @@ TEST(input_hold_of_waiting_key_replaces_its_short) {
   KeypadInput in(f);
   in.setBank(4);
   tap(in, '0', 1000);
+  in.onKey('0', KeyGesture::Pressed, 1100);
+  in.onKey('0', KeyGesture::Held, 1600);
+  in.onKey('0', KeyGesture::Released, 1900);
+  in.poll(5000);
+  CHECK_LOG(f, "rejected BANK4 0 DOUBLE LONG");
+  CHECK(!in.doubleClickPending());
+  // Only that release is swallowed.
+  tap(in, '0', 6000);
+  in.poll(6300);
+  CHECK_LOG(f, "short 4 0");
+}
+
+// --- Double hold: a short press, then a hold within the double-click time ----
+
+// A key with a double hold, a short and a long action, bank 4 key '0'.
+void giveDoubleHold(Fake &f) {
+  f.waits = {"4 0"};
+  f.shorts = {"4 0"};
+  f.holds = {"4 0"};
+  f.doubleHolds = {"4 0"};
+}
+
+TEST(input_hold_right_after_short_is_double_hold) {
+  Fake f;
+  giveDoubleHold(f);
+  KeypadInput in(f);
+  in.setBank(4);
+  tap(in, '0', 1000);
   hold(in, '0', 1100);
-  in.poll(2000);
+  CHECK_LOG(f, "doublehold 4 0");
+  CHECK(!in.doubleClickPending());
+  in.poll(5000);
+  CHECK_LOG(f);
+}
+
+TEST(input_double_hold_action_is_named_double_long) {
+  Fake f;
+  giveDoubleHold(f);
+  std::string named;
+  f.hooks["doublehold 4 0"] = [&] { named = keypadActiveKey() ? keypadActiveKey() : "(null)"; };
+  KeypadInput in(f);
+  in.setBank(4);
+  tap(in, '0', 1000);
+  hold(in, '0', 1100);
+  CHECK_EQ(named.c_str(), "BANK4 0 DOUBLE LONG");
+  CHECK(keypadActiveKey() == nullptr);
+}
+
+// The hold event comes long after the second press went down; the short must
+// not run meanwhile, however often the main loop polls.
+TEST(input_second_press_waits_for_the_double_hold) {
+  Fake f;
+  giveDoubleHold(f);
+  KeypadInput in(f);
+  in.setBank(4);
+  tap(in, '0', 1000);
+  in.onKey('0', KeyGesture::Pressed, 1100);
+  in.poll(1230);
+  in.poll(1500);
+  CHECK_LOG(f);
+  CHECK(in.doubleClickPending());
+  in.onKey('0', KeyGesture::Held, 1600);
+  in.onKey('0', KeyGesture::Released, 1900);
+  CHECK_LOG(f, "doublehold 4 0");
+  in.poll(5000);
+  CHECK_LOG(f);
+}
+
+TEST(input_double_hold_swallows_its_release) {
+  Fake f;
+  giveDoubleHold(f);
+  KeypadInput in(f);
+  in.setBank(4);
+  tap(in, '0', 1000);
+  hold(in, '0', 1100);
+  CHECK_LOG(f, "doublehold 4 0");
+  // Only that release is swallowed.
+  tap(in, '0', 3000);
+  in.poll(3300);
+  CHECK_LOG(f, "short 4 0");
+}
+
+TEST(input_hold_without_short_before_is_plain_long) {
+  Fake f;
+  giveDoubleHold(f);
+  KeypadInput in(f);
+  in.setBank(4);
+  hold(in, '0', 1000);
   CHECK_LOG(f, "hold 4 0");
 }
 
-TEST(input_unassigned_hold_of_waiting_key_keeps_its_short) {
+TEST(input_hold_after_double_click_time_is_short_then_long) {
+  Fake f;
+  giveDoubleHold(f);
+  KeypadInput in(f);
+  in.setBank(4);
+  tap(in, '0', 1000);
+  in.poll(1300);
+  CHECK_LOG(f, "short 4 0");
+  hold(in, '0', 1400);
+  CHECK_LOG(f, "hold 4 0");
+}
+
+// The second press went down after the time, and the main loop had not polled:
+// its own event runs the expired short first, so the hold is a plain long press.
+TEST(input_second_press_after_double_click_time_is_not_double_hold) {
+  Fake f;
+  giveDoubleHold(f);
+  KeypadInput in(f);
+  in.setBank(4);
+  tap(in, '0', 1000);
+  in.onKey('0', KeyGesture::Pressed, 1000 + KeypadInput::kDoubleClickMs + 1);
+  in.onKey('0', KeyGesture::Held, 2000);
+  in.onKey('0', KeyGesture::Released, 2100);
+  CHECK_LOG(f, "short 4 0", "hold 4 0");
+}
+
+TEST(input_double_hold_key_still_takes_double_click) {
+  Fake f;
+  giveDoubleHold(f);
+  f.doubles = {"4 0"};
+  KeypadInput in(f);
+  in.setBank(4);
+  tap(in, '0', 1000);
+  tap(in, '0', 1100);
+  CHECK_LOG(f, "double 4 0");
+}
+
+// A second press released after the time, with no hold, is two shorts like
+// for any waiting key.
+TEST(input_slow_second_press_of_double_hold_key_is_two_shorts) {
+  Fake f;
+  giveDoubleHold(f);
+  KeypadInput in(f);
+  in.setBank(4);
+  tap(in, '0', 1000);
+  in.onKey('0', KeyGesture::Pressed, 1100);
+  in.onKey('0', KeyGesture::Released, 1500);
+  CHECK_LOG(f, "short 4 0");
+  in.poll(2000);
+  CHECK_LOG(f, "short 4 0");
+}
+
+// The short keeps waiting while the second press is down, however long that is.
+TEST(input_second_press_holds_back_the_short_of_any_waiting_key) {
   Fake f;
   f.waits = {"4 0"};
   f.shorts = {"4 0"};
@@ -392,9 +537,71 @@ TEST(input_unassigned_hold_of_waiting_key_keeps_its_short) {
   in.setBank(4);
   tap(in, '0', 1000);
   in.onKey('0', KeyGesture::Pressed, 1100);
-  in.onKey('0', KeyGesture::Held, 1100);
+  in.poll(1500);
+  CHECK_LOG(f);
+  // Released after the time, with no hold: two shorts.
+  in.onKey('0', KeyGesture::Released, 1600);
+  CHECK_LOG(f, "short 4 0");
   in.poll(2000);
-  CHECK_LOG(f, "rejected BANK4 0 LONG", "short 4 0");
+  CHECK_LOG(f, "short 4 0");
+}
+
+TEST(input_plain_hold_of_double_hold_key_without_long_beeps_as_long) {
+  Fake f;
+  f.waits = {"4 0"};
+  f.shorts = {"4 0"};
+  f.doubleHolds = {"4 0"};
+  KeypadInput in(f);
+  in.setBank(4);
+  hold(in, '0', 1000);
+  CHECK_LOG(f, "rejected BANK4 0 LONG");
+}
+
+// Two keys down at once beep and drop the waiting short; the second press of
+// the double hold is part of it, so the hold does nothing either.
+TEST(input_other_key_during_second_press_is_a_co_press) {
+  Fake f;
+  giveDoubleHold(f);
+  f.shorts.insert("4 7");
+  KeypadInput in(f);
+  in.setBank(4);
+  tap(in, '0', 1000);
+  in.onKey('0', KeyGesture::Pressed, 1100);
+  tap(in, '7', 1150);
+  in.onKey('0', KeyGesture::Held, 1600);
+  in.onKey('0', KeyGesture::Released, 1900);
+  in.poll(5000);
+  CHECK_LOG(f, "rejected TWO KEYS");
+  CHECK(!in.doubleClickPending());
+}
+
+TEST(input_clear_during_second_press_is_a_co_press) {
+  Fake f;
+  giveDoubleHold(f);
+  KeypadInput in(f);
+  in.setBank(4);
+  in.stageCommand("PO?");
+  tap(in, '0', 1000);
+  in.onKey('0', KeyGesture::Pressed, 1100);
+  tap(in, '#', 1150);
+  in.onKey('0', KeyGesture::Held, 1600);
+  in.onKey('0', KeyGesture::Released, 1900);
+  CHECK_LOG(f, "rejected TWO KEYS");
+  CHECK(!in.doubleClickPending());
+  CHECK(in.hasStagedCommand());
+}
+
+TEST(input_double_hold_needs_same_bank) {
+  Fake f;
+  giveDoubleHold(f);
+  f.waits.insert("3 0");
+  f.shorts.insert("3 0");
+  KeypadInput in(f);
+  in.setBank(4);
+  tap(in, '0', 1000);
+  in.setBank(3);
+  hold(in, '0', 1100);
+  CHECK_LOG(f, "short 4 0", "rejected BANK3 0 LONG");
 }
 
 // A waiting short answers before any later key, never after it.
@@ -540,18 +747,20 @@ TEST(input_bank_select_commits_on_the_digit) {
   CHECK_LOG(f, "rejected BANK5 3");
 }
 
-// A digit pressed while '*' is still down commits; the '*' release after it
-// is swallowed.
-TEST(input_bank_select_digit_during_the_star_hold) {
+// A digit pressed while '*' is still down is a co-press: bank select stays
+// open and the digit is not taken. Released, a digit commits.
+TEST(input_bank_select_digit_during_the_star_hold_is_a_co_press) {
   Fake f;
   KeypadInput in(f);
   in.onKey('*', KeyGesture::Pressed, 0);
   in.onKey('*', KeyGesture::Held, 0);
   tap(in, '4');
   in.onKey('*', KeyGesture::Released, 0);
-  CHECK_EQ(in.mode(), InputMode::Normal);
+  CHECK_EQ(in.mode(), InputMode::BankSelect);
+  CHECK_LOG(f, "bank please", "rejected TWO KEYS");
+  tap(in, '4');
   CHECK_EQ(in.bank(), 4);
-  CHECK_LOG(f, "bank please", "commit BankSelect [4] vfo0");
+  CHECK_LOG(f, "commit BankSelect [4] vfo0");
 }
 
 TEST(input_bank_select_enter_is_unassigned_and_stays) {
@@ -768,19 +977,83 @@ TEST(input_key_that_ends_the_mode_is_silent_until_released) {
   CHECK_LOG(f, "short 5 5");
 }
 
-// A key that went down in Normal mode and comes up in an entry another key
-// opened was never typed into it.
-TEST(input_release_of_a_key_pressed_before_the_entry_is_ignored) {
+// A press while another key is down never reaches the keymap, so it cannot open
+// an entry the first key's release would then type into.
+TEST(input_press_while_another_key_is_down_is_a_co_press) {
   Fake f;
   f.shorts = {"1 1"};
   KeypadInput in(f);
-  f.hooks["short 1 1"] = [&] { in.beginEntry(InputMode::FreqEntry); };
   in.onKey('4', KeyGesture::Pressed, 0);
   tap(in, '1');
   in.onKey('4', KeyGesture::Released, 0);
-  CHECK_EQ(in.mode(), InputMode::FreqEntry);
-  CHECK_EQ(std::string(in.digits()), std::string());
-  CHECK_LOG(f, "short 1 1");
+  CHECK_EQ(in.mode(), InputMode::Normal);
+  CHECK_LOG(f, "rejected TWO KEYS");
+}
+
+// --- Co-press: two keys down at once -----------------------------------------
+
+// One beep, then silence until every key is up, whatever the order of events.
+TEST(input_co_press_ignores_everything_until_all_keys_are_up) {
+  Fake f;
+  f.shorts = {"1 4", "1 5", "1 6"};
+  f.holds = {"1 4", "1 5", "1 6"};
+  KeypadInput in(f);
+  in.onKey('4', KeyGesture::Pressed, 0);
+  in.onKey('5', KeyGesture::Pressed, 10);
+  in.onKey('6', KeyGesture::Pressed, 20);
+  in.onKey('4', KeyGesture::Held, 500);
+  in.onKey('5', KeyGesture::Held, 510);
+  in.onKey('4', KeyGesture::Released, 600);
+  in.onKey('5', KeyGesture::Released, 610);
+  in.onKey('6', KeyGesture::Held, 620);
+  in.onKey('6', KeyGesture::Released, 700);
+  CHECK_LOG(f, "rejected TWO KEYS");
+  // The next press is a plain one again.
+  tap(in, '4');
+  CHECK_LOG(f, "short 1 4");
+}
+
+TEST(input_co_press_beeps_again_in_the_next_one) {
+  Fake f;
+  KeypadInput in(f);
+  for (int i = 0; i < 2; ++i) {
+    in.onKey('4', KeyGesture::Pressed, 0);
+    in.onKey('5', KeyGesture::Pressed, 0);
+    in.onKey('4', KeyGesture::Released, 0);
+    in.onKey('5', KeyGesture::Released, 0);
+  }
+  CHECK_LOG(f, "rejected TWO KEYS", "rejected TWO KEYS");
+}
+
+// What an entry took before the co-press stays, and a release the entry had
+// swallowed does not stay swallowed for the next press of that key.
+TEST(input_co_press_keeps_the_entry_and_forgets_swallowed_releases) {
+  Fake f;
+  f.shorts = {"1 5"};
+  KeypadInput in(f);
+  in.beginEntry(InputMode::RfPowerEntry);
+  in.onKey('5', KeyGesture::Pressed, 0);
+  in.onKey('6', KeyGesture::Pressed, 0);
+  in.onKey('5', KeyGesture::Released, 0);
+  in.onKey('6', KeyGesture::Released, 0);
+  CHECK_EQ(in.mode(), InputMode::RfPowerEntry);
+  CHECK_EQ(std::string(in.digits()), std::string("5"));
+  CHECK_LOG(f, "digit RfPowerEntry 5 5", "rejected TWO KEYS");
+  tap(in, 'D');
+  in.beginEntry(InputMode::RfPowerEntry);
+  CHECK_LOG(f, "commit RfPowerEntry [5] vfo0");
+  tap(in, '5');
+  CHECK_LOG(f, "digit RfPowerEntry 5 5");
+}
+
+// A key tapped and released before the next goes down is no co-press.
+TEST(input_keys_one_after_the_other_are_no_co_press) {
+  Fake f;
+  f.shorts = {"1 4", "1 5"};
+  KeypadInput in(f);
+  tap(in, '4');
+  tap(in, '5');
+  CHECK_LOG(f, "short 1 4", "short 1 5");
 }
 
 TEST(input_entry_starts_empty_each_time) {

@@ -149,8 +149,12 @@ KeyGesture gestureFor(KeyState state) {
   }
 }
 
+// getKeys() reports every key that changes state, so KeypadInput sees keys
+// pressed together. getState() is only the first key's, hence the lookup.
 void keypadEvent(KeypadEvent k) {
-  s_input.onKey((char)k, gestureFor(keypad.getState()), millis());
+  const int slot = keypad.findInList((char)k);
+  if (slot < 0) return;
+  s_input.onKey((char)k, gestureFor(keypad.key[slot].kstate), millis());
 }
 
 }  // namespace
@@ -187,7 +191,7 @@ void initKeypadUi() {
 }
 
 void pollKeypadUi() {
-  (void)keypad.getKey();
+  (void)keypad.getKeys();
   s_input.poll(millis());
   // An open entry or selection waits for more keys: keep the radio unpolled.
   if (s_input.mode() != InputMode::Normal) suspendPollingForKeypad();

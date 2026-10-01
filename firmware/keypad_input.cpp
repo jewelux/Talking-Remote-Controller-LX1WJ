@@ -5,10 +5,10 @@
 
 namespace {
 
-// Bit positions for the swallowed keys.
+// Bit positions in a KeySet.
 constexpr char kTrackedKeys[] = "0123456789ABCD*#";
 
-int holdBit(char key) {
+int keyBit(char key) {
   if (key == '\0') return -1;
   const char* p = strchr(kTrackedKeys, key);
   return p ? (int)(p - kTrackedKeys) : -1;
@@ -17,7 +17,7 @@ int holdBit(char key) {
 bool isDigit(char key) { return key >= '0' && key <= '9'; }
 
 // The key keypadActiveKey() reports; empty while no action runs.
-char g_activeKey[20] = "";
+char g_activeKey[24] = "";
 
 // Names the key in g_activeKey while one action runs.
 class ActiveKey {
@@ -54,18 +54,24 @@ const EntrySpec* keypadEntrySpec(InputMode mode) {
   return nullptr;
 }
 
-void KeypadInput::SwallowedKeys::set(char key) {
-  const int bit = holdBit(key);
+void KeypadInput::KeySet::set(char key) {
+  const int bit = keyBit(key);
   if (bit >= 0) bits_ |= (uint16_t)(1u << bit);
 }
 
-bool KeypadInput::SwallowedKeys::has(char key) const {
-  const int bit = holdBit(key);
+bool KeypadInput::KeySet::has(char key) const {
+  const int bit = keyBit(key);
   return bit >= 0 && (bits_ & (uint16_t)(1u << bit)) != 0;
 }
 
-bool KeypadInput::SwallowedKeys::release(char key) {
-  const int bit = holdBit(key);
+bool KeypadInput::KeySet::hasOtherThan(char key) const {
+  const int bit = keyBit(key);
+  const uint16_t own = bit >= 0 ? (uint16_t)(1u << bit) : (uint16_t)0;
+  return (bits_ & (uint16_t)~own) != 0;
+}
+
+bool KeypadInput::KeySet::release(char key) {
+  const int bit = keyBit(key);
   if (bit < 0) return false;
   const uint16_t mask = (uint16_t)(1u << bit);
   const bool wasSet = (bits_ & mask) != 0;
@@ -75,12 +81,18 @@ bool KeypadInput::SwallowedKeys::release(char key) {
 
 void KeypadInput::onKey(char key, KeyGesture gesture, uint32_t nowMs) {
   listener_.onActivity(gesture == KeyGesture::Pressed);
+  if (coPressed(key, gesture)) return;
+  // The second press is over: its release is judged by the double-click time.
+  if (gesture == KeyGesture::Released && key == pending_.key) pending_.repressed = false;
   // A short waiting for a double click answers before any later key: when its
   // wait is over, or when another key goes down. '#' cancels it instead.
   poll(nowMs);
-  if (gesture == KeyGesture::Pressed && pending_.active && key != '#' &&
-      (key != pending_.key || bank_ != pending_.bank)) {
-    runPending();
+  if (gesture == KeyGesture::Pressed && pending_.active && key != '#') {
+    if (key != pending_.key || bank_ != pending_.bank) {
+      runPending();
+    } else {
+      pending_.repressed = true;
+    }
   }
   if (gesture == KeyGesture::Pressed) {
     // Normal mode waits for the release: it tells short, long and double apart.
@@ -113,6 +125,27 @@ void KeypadInput::onKey(char key, KeyGesture gesture, uint32_t nowMs) {
   releasedNormal(key, nowMs);
 }
 
+// Two keys down at once are no gesture. The second press beeps, drops a waiting
+// short and starts a co-press: every event of every key, the releases too, is
+// ignored until all keys are up. What an entry or selection already took stays.
+bool KeypadInput::coPressed(char key, KeyGesture gesture) {
+  if (gesture == KeyGesture::Pressed) {
+    if (!coPress_ && down_.hasOtherThan(key)) {
+      coPress_ = true;
+      pending_.active = false;
+      listener_.onRejected("TWO KEYS");
+    }
+    down_.set(key);
+  }
+  const bool ignored = coPress_;
+  if (gesture == KeyGesture::Released) {
+    down_.release(key);
+    if (ignored) swallowed_.release(key);
+    if (!down_.any()) coPress_ = false;
+  }
+  return ignored;
+}
+
 // Bank, profile and mode select and the entries have no long or double
 // action, so their keys act as soon as they go down. The hold and release
 // that follow do nothing, even once the key has ended the mode.
@@ -133,7 +166,13 @@ void KeypadInput::pressedInMode(char key) {
 
 void KeypadInput::poll(uint32_t nowMs) {
   if (!pending_.active || (uint32_t)(nowMs - pending_.atMs) <= kDoubleClickMs) return;
+  // The second press is down: its release or hold decides, however long it takes.
+  if (pending_.repressed) return;
   runPending();
+}
+
+bool KeypadInput::secondPressDown(char key) const {
+  return pending_.active && pending_.repressed && key == pending_.key && bank_ == pending_.bank;
 }
 
 void KeypadInput::runPending() {
@@ -188,28 +227,34 @@ void KeypadInput::held(char key) {
   if (mode_ != InputMode::Normal || swallowed_.has(key)) return;
   swallowed_.set(key);
   const GlobalKey* g = globalKey(key);
+  // A hold right after a short press of the same key is a double hold, a
+  // gesture of its own: with no action it beeps, it never turns into a long
+  // press, and the short it follows does not run.
+  const bool doubleHold = !g && secondPressDown(key);
   bool handled;
   if (g) {
     handled = g->onHold != nullptr;
     if (handled) (this->*g->onHold)();
   } else {
-    const KeyAction action = listener_.keyBinding(bank_, key).holdAction;
+    const KeyBinding binding = listener_.keyBinding(bank_, key);
+    const KeyAction action = doubleHold ? binding.doubleHoldAction : binding.holdAction;
     handled = action != nullptr;
-    if (handled) runAction(action, bank_, key, "LONG");
+    if (handled) runAction(action, bank_, key, doubleHold ? "DOUBLE LONG" : "LONG");
   }
-  if (handled) {
-    // Only the waiting key itself can still be waiting here: its long action
-    // replaces its short.
+  if (handled || doubleHold) {
+    // Only the waiting key itself can still be waiting here: its long or
+    // double-hold action replaces its short.
     pending_.active = false;
-    return;
   }
-  // The beep is no action: the key's short still waiting for a double click
-  // stays.
+  if (handled) return;
+  // The beep is no action: a short still waiting for a double click stays. Only
+  // a '#' hold gets here with one waiting; its release cancels it.
   char label[24];
   if (g) {
     snprintf(label, sizeof(label), "%s LONG", g->name);
   } else {
-    snprintf(label, sizeof(label), "BANK%u %c LONG", (unsigned)bank_, key);
+    snprintf(label, sizeof(label), "BANK%u %c %s", (unsigned)bank_, key,
+             doubleHold ? "DOUBLE LONG" : "LONG");
   }
   listener_.onRejected(label);
 }
@@ -227,6 +272,7 @@ void KeypadInput::releasedNormal(char key, uint32_t nowMs) {
   if (binding.waitsForDouble) {
     // Any other key still waiting has run when this key went down.
     pending_.active = true;
+    pending_.repressed = false;
     pending_.bank = bank_;
     pending_.key = key;
     pending_.atMs = nowMs;

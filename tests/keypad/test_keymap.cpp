@@ -16,7 +16,7 @@ namespace {
 std::string g_calls;
 // The key and gesture outcome() runs, as KeypadInput names it for
 // keypadActiveKey(): "BANK2 8 SHORT".
-char g_key[20] = "";
+char g_key[24] = "";
 
 void record(const char *fmt, ...) {
   char buf[64];
@@ -56,7 +56,8 @@ std::string outcome(KeyAction action, uint8_t bank, char key, const char *gestur
 }
 
 bool isEmpty(const KeyBinding &b) {
-  return !b.shortAction && !b.holdAction && !b.doubleAction && !b.waitsForDouble;
+  return !b.shortAction && !b.holdAction && !b.doubleAction && !b.doubleHoldAction &&
+         !b.waitsForDouble;
 }
 
 void checkOutcome(const Family &f, uint8_t bank, char key, const char *gesture,
@@ -238,6 +239,11 @@ TEST(keymap_double_click_matches_expectations) {
     // A key that does not wait never gets a double click, so it has no action.
     if (b.doubleAction && !b.waitsForDouble) {
       fprintf(stderr, "  %s bank %u key %c: double action without the wait\n", f.name, bank, key);
+      ++::test::g_checkFailures;
+    }
+    if (b.doubleHoldAction && !b.waitsForDouble) {
+      fprintf(stderr, "  %s bank %u key %c: double hold action without the wait\n", f.name, bank,
+              key);
       ++::test::g_checkFailures;
     }
     checkOutcome(f, bank, key, "double",

@@ -26,7 +26,9 @@ Global rules:
 - `D`: confirm
 - `#`: cancel and leave the current entry
 - `*` short: speak the current bank
-- `*` long, then a digit `1`–`9`: change to that bank at once
+- `*` long, then a digit `1`–`9`: change to that bank at once (let go of `*` first)
+- Press one key at a time. If a second key goes down while another is still held, the radio beeps
+  and ignores both keys until you let go of all of them; nothing is run or cancelled
 - `*` while entering a frequency: the decimal point (see Bank 1 `0` long below)
 
 Frequencies are spoken in full: the megahertz digits, "point", then the remaining digits with

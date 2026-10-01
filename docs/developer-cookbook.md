@@ -181,6 +181,13 @@ Gestures:
 - A **double** press is two presses of the same key within 220 ms. Only keys
   that wait for a double press notice it; the rest act on the first release
   straight away.
+- A **double hold** is a short press followed, within the same 220 ms, by a
+  hold of the same key. It is a gesture of its own: it runs the double-hold
+  action, and with none assigned it beeps. It never falls back to the long
+  action, and the short it follows does not run. Only keys that wait for a
+  double press can have it; the rest act on the first release, so their next
+  hold is a plain long press. While the second press is down on a waiting key,
+  its short is held back until the key is released or the hold fires.
 
 ### The three pieces
 
@@ -201,7 +208,7 @@ Gestures:
    talks to the radio or the speaker; everything goes out through
    `KeypadInputListener`.
 2. **The keymap** (`keypad_keymap.cpp`) answers "what does this key do on this
-   radio?" by returning a `KeyBinding {short, hold, double, waitsForDouble}`.
+   radio?" by returning a `KeyBinding {short, hold, double, doubleHold, waitsForDouble}`.
 3. **`KeypadUiListener`** (`ui_keypad.cpp`) *carries it out*. It interrupts
    speech on a press, builds `KeypadTraits` from the active profile, and routes
    entries to `ui_keypad_entry.cpp`.
@@ -262,8 +269,9 @@ KeyBinding bank2(const KeypadTraits& t, char key) {
     ...
 ```
 
-- `bind(short, hold, double)`: pass `nullptr` for no action. A key with a
-  double action waits 220 ms before running its short action.
+- `bind(short, hold, double, doubleHold)`: pass `nullptr` for no action. A key
+  with a double or double-hold action waits 220 ms before running its short
+  action. A key with only a double-hold action passes `waitOnly` as its double.
 - `waitOnly` as the double action means "wait anyway, but do nothing on a
   double press". Use it when a key next to a double-click key should feel the
   same.

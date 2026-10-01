@@ -7,10 +7,10 @@
 
 // Keypad input state machine. It decides what each key event means: which
 // mode is active, which digits an entry takes, when a release is swallowed
-// (after a hold, or after a press an entry took), and when a short press waits
-// for a double click. Everything it
-// decides goes out through KeypadInputListener. Pure C++ with no Arduino.h, so
-// it runs in the host unit tests (tests/keypad).
+// (after a hold, or after a press an entry took), when a short press waits for
+// a double click or a double hold, and when two keys are down at once.
+// Everything it decides goes out through KeypadInputListener. Pure C++ with no
+// Arduino.h, so it runs in the host unit tests (tests/keypad).
 //
 // Keys: '0'-'9' and 'A'-'C' are bank keys and go to the keymap through the
 // listener. '*' (bank), 'D' (Enter) and '#' (Clear) belong to the state machine.
@@ -64,9 +64,12 @@ struct KeyBinding {
   KeyAction shortAction = nullptr;
   KeyAction holdAction = nullptr;
   KeyAction doubleAction = nullptr;
-  // A short press waits for a possible double click. A key may wait with no
-  // double action: a quick second press restarts the wait, and the short
-  // action then runs once.
+  // A short press followed by a hold within the double-click time. A gesture of
+  // its own: with no action it beeps, and the long action does not run instead.
+  KeyAction doubleHoldAction = nullptr;
+  // A short press waits for a possible double click or double hold. A key may
+  // wait with no double action: a quick second press restarts the wait, and the
+  // short action then runs once.
   bool waitsForDouble = false;
 };
 
@@ -95,7 +98,8 @@ class KeypadInputListener {
   // A digit (or the frequency point) was taken into entry.
   virtual void onDigitAccepted(const EntrySpec& entry, char key, const char* digits) = 0;
   // The key does nothing here: an unassigned key, a digit an entry does not
-  // take, Enter with nothing picked, '#' with nothing to cancel. "<label> ->
+  // take, Enter with nothing picked, '#' with nothing to cancel, a second key
+  // pressed while another is down ("TWO KEYS"). "<label> ->
   // unassigned" and the beep.
   virtual void onRejected(const char* label) = 0;
   // Enter in profile select or an entry, with at least one digit typed (with
@@ -154,14 +158,18 @@ class KeypadInput {
   static constexpr size_t kMaxStagedCommand = 23;
 
  private:
-  // Keys whose release is swallowed: their hold was handled, or their press
+  // A set of keys, one bit each. Used for the keys that are down and for the
+  // keys whose release is swallowed: their hold was handled, or their press
   // was taken by bank, profile or mode select or an entry.
-  class SwallowedKeys {
+  class KeySet {
    public:
     void set(char key);
     bool has(char key) const;
     // Clears key's bit. Returns true when it was set.
     bool release(char key);
+    bool any() const { return bits_ != 0; }
+    // Some key other than key is in the set.
+    bool hasOtherThan(char key) const;
 
    private:
     uint16_t bits_ = 0;
@@ -183,13 +191,21 @@ class KeypadInput {
     uint8_t bank = 0;
     char key = 0;
     uint32_t atMs = 0;
+    // The key went down again within the time and is still down: its release
+    // makes a double click, its hold a double hold.
+    bool repressed = false;
   };
 
   const GlobalKey* globalKey(char key) const;
   void sayBank();
   void beginBankSelect();
+  // Tracks the keys that are down. True when the event belongs to a co-press
+  // and is to be ignored.
+  bool coPressed(char key, KeyGesture gesture);
   void held(char key);
   void runPending();
+  // key is the waiting short's key, down again.
+  bool secondPressDown(char key) const;
   void releasedNormal(char key, uint32_t nowMs);
   void pressedInMode(char key);
   void pressedModeSelect(char key);
@@ -216,6 +232,10 @@ class KeypadInput {
   uint8_t stagedMode_ = kNoMode;
   // The command waiting for Enter in Normal mode, or empty.
   char stagedCommand_[kMaxStagedCommand + 1] = "";
-  SwallowedKeys swallowed_;
+  KeySet swallowed_;
   DoubleClick pending_;
+  // Keys that are down now, and whether two were down at once: every event is
+  // then ignored until all keys are up.
+  KeySet down_;
+  bool coPress_ = false;
 };

@@ -11,14 +11,18 @@ using Action = KeyAction;
 // runs once.
 void waitOnly() {}
 
-// One key: its short, hold and double-click actions. nullptr = none; a key
-// with no double action does not wait for a double click.
-KeyBinding bind(Action shortAction, Action holdAction = nullptr, Action doubleAction = nullptr) {
+// One key: its short, hold, double-click and double-hold (a short press, then a
+// hold) actions. nullptr = none; a key with neither a double nor a double-hold
+// action does not wait for a double click. A key with only a double-hold action
+// passes waitOnly as its double.
+KeyBinding bind(Action shortAction, Action holdAction = nullptr, Action doubleAction = nullptr,
+                Action doubleHoldAction = nullptr) {
   KeyBinding b;
   b.shortAction = shortAction;
   b.holdAction = holdAction;
   b.doubleAction = doubleAction == waitOnly ? nullptr : doubleAction;
-  b.waitsForDouble = doubleAction != nullptr;
+  b.doubleHoldAction = doubleHoldAction;
+  b.waitsForDouble = doubleAction != nullptr || doubleHoldAction != nullptr;
   return b;
 }
 

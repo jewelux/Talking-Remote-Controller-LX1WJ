@@ -28,7 +28,9 @@
 - a key that waits for a possible double press (e.g. Bank 1 `0`, `1`, `2`) answers as soon as
   another key is pressed, before that key. Before, the two answers came in the wrong order, or the
   first press was lost
-- pressing `#` while another key is held no longer runs that key when it is released
+- on such a key, a press quickly followed by a hold beeps. Before, it ran the long action
+- pressing a key while another is held beeps, and both are ignored until all keys are let go;
+  digits already typed stay. This includes `#`, and a digit while `*` is still held for bank select
 - a key that does nothing gives a short beep instead of silence: keys with no action on the current
   bank, keys whose feature the radio lacks, and keys an entry or selection does not take
 - choosing a profile number with no stored profile says "not available"
