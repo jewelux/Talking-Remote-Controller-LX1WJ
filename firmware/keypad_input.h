@@ -94,6 +94,10 @@ class KeypadInputListener {
   virtual void onBankQuery(uint8_t bank) = 0;
   // '*' hold: bank select started.
   virtual void onBankSelectStart() = 0;
+  // Bank select took its digit while '*' was still held: only the next key
+  // acts on bank, then the current bank is back. The mode is already back to
+  // Normal.
+  virtual void onOneShotBank(uint8_t bank) = 0;
 
   // A digit (or the frequency point) was taken into entry.
   virtual void onDigitAccepted(const EntrySpec& entry, char key, const char* digits) = 0;
@@ -104,8 +108,9 @@ class KeypadInputListener {
   virtual void onRejected(const char* label) = 0;
   // Enter in profile select or an entry, with at least one digit typed (with
   // none, Enter beeps and the mode stays), or the digit that fills an entry
-  // that commits when full: bank select commits on its digit. The mode is
-  // already back to Normal. For bank select the new bank is already set.
+  // that commits when full: bank select commits on its digit, once '*' is let
+  // go. The mode is already back to Normal. For bank select the new bank is
+  // already set.
   virtual void onCommit(InputMode mode, const char* digits, TargetVfo targetVfo) = 0;
 
   // A key typed during mode select. When it picks a mode: gives the feedback
@@ -168,6 +173,8 @@ class KeypadInput {
     // Clears key's bit. Returns true when it was set.
     bool release(char key);
     bool any() const { return bits_ != 0; }
+    // key is the only key in the set.
+    bool isOnly(char key) const;
     // Some key other than key is in the set.
     bool hasOtherThan(char key) const;
 
@@ -202,6 +209,8 @@ class KeypadInput {
   // Tracks the keys that are down. True when the event belongs to a co-press
   // and is to be ignored.
   bool coPressed(char key, KeyGesture gesture);
+  // The bank a key acts on: the one-shot bank while one is set.
+  uint8_t keyBank() const { return oneShotBank_ ? oneShotBank_ : bank_; }
   void held(char key);
   void runPending();
   // key is the waiting short's key, down again.
@@ -222,6 +231,9 @@ class KeypadInput {
 
   KeypadInputListener& listener_;
   uint8_t bank_ = 1;
+  // The bank of the next key only, or 0. It ends once that key has acted or
+  // beeped; a short waiting for a double click keeps it until then.
+  uint8_t oneShotBank_ = 0;
   InputMode mode_ = InputMode::Normal;
   // The longest entry is a frequency: 12 characters, plus a point the old code
   // accepted even after them.

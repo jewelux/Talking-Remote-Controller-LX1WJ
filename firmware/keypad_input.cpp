@@ -70,6 +70,11 @@ bool KeypadInput::KeySet::hasOtherThan(char key) const {
   return (bits_ & (uint16_t)~own) != 0;
 }
 
+bool KeypadInput::KeySet::isOnly(char key) const {
+  const int bit = keyBit(key);
+  return bit >= 0 && bits_ == (uint16_t)(1u << bit);
+}
+
 bool KeypadInput::KeySet::release(char key) {
   const int bit = keyBit(key);
   if (bit < 0) return false;
@@ -88,7 +93,7 @@ void KeypadInput::onKey(char key, KeyGesture gesture, uint32_t nowMs) {
   // wait is over, or when another key goes down. '#' cancels it instead.
   poll(nowMs);
   if (gesture == KeyGesture::Pressed && pending_.active && key != '#') {
-    if (key != pending_.key || bank_ != pending_.bank) {
+    if (key != pending_.key || keyBank() != pending_.bank) {
       runPending();
     } else {
       pending_.repressed = true;
@@ -120,19 +125,24 @@ void KeypadInput::onKey(char key, KeyGesture gesture, uint32_t nowMs) {
 
   if (const GlobalKey* g = globalKey(key)) {
     (this->*g->onShort)();
+    oneShotBank_ = 0;
     return;
   }
   releasedNormal(key, nowMs);
 }
 
 // Two keys down at once are no gesture. The second press beeps, drops a waiting
-// short and starts a co-press: every event of every key, the releases too, is
-// ignored until all keys are up. What an entry or selection already took stays.
+// short and a one-shot bank and starts a co-press: every event of every key,
+// the releases too, is ignored until all keys are up. What an entry or
+// selection already took stays. The one exception: a digit pressed while the
+// '*' that opened bank select is still held picks a one-shot bank.
 bool KeypadInput::coPressed(char key, KeyGesture gesture) {
   if (gesture == KeyGesture::Pressed) {
-    if (!coPress_ && down_.hasOtherThan(key)) {
+    const bool oneShotChord = mode_ == InputMode::BankSelect && isDigit(key) && down_.isOnly('*');
+    if (!coPress_ && down_.hasOtherThan(key) && !oneShotChord) {
       coPress_ = true;
       pending_.active = false;
+      oneShotBank_ = 0;
       listener_.onRejected("TWO KEYS");
     }
     down_.set(key);
@@ -172,11 +182,12 @@ void KeypadInput::poll(uint32_t nowMs) {
 }
 
 bool KeypadInput::secondPressDown(char key) const {
-  return pending_.active && pending_.repressed && key == pending_.key && bank_ == pending_.bank;
+  return pending_.active && pending_.repressed && key == pending_.key && keyBank() == pending_.bank;
 }
 
 void KeypadInput::runPending() {
   pending_.active = false;
+  oneShotBank_ = 0;
   listener_.onActivity(false);
   runShortOrReject(listener_.keyBinding(pending_.bank, pending_.key), pending_.bank, pending_.key);
 }
@@ -231,54 +242,61 @@ void KeypadInput::held(char key) {
   // gesture of its own: with no action it beeps, it never turns into a long
   // press, and the short it follows does not run.
   const bool doubleHold = !g && secondPressDown(key);
+  const uint8_t bank = keyBank();
   bool handled;
   if (g) {
     handled = g->onHold != nullptr;
     if (handled) (this->*g->onHold)();
   } else {
-    const KeyBinding binding = listener_.keyBinding(bank_, key);
+    const KeyBinding binding = listener_.keyBinding(bank, key);
     const KeyAction action = doubleHold ? binding.doubleHoldAction : binding.holdAction;
     handled = action != nullptr;
-    if (handled) runAction(action, bank_, key, doubleHold ? "DOUBLE LONG" : "LONG");
+    if (handled) runAction(action, bank, key, doubleHold ? "DOUBLE LONG" : "LONG");
   }
   if (handled || doubleHold) {
     // Only the waiting key itself can still be waiting here: its long or
     // double-hold action replaces its short.
     pending_.active = false;
   }
+  // A one-shot bank ends with this key, unless a short still waits on it.
+  if (!pending_.active) oneShotBank_ = 0;
   if (handled) return;
   // The beep is no action: a short still waiting for a double click stays. Only
-  // a '#' hold gets here with one waiting; its release cancels it.
+  // a '#' hold gets here with one waiting.
   char label[24];
   if (g) {
     snprintf(label, sizeof(label), "%s LONG", g->name);
   } else {
-    snprintf(label, sizeof(label), "BANK%u %c %s", (unsigned)bank_, key,
+    snprintf(label, sizeof(label), "BANK%u %c %s", (unsigned)bank, key,
              doubleHold ? "DOUBLE LONG" : "LONG");
   }
   listener_.onRejected(label);
 }
 
 void KeypadInput::releasedNormal(char key, uint32_t nowMs) {
-  const KeyBinding binding = listener_.keyBinding(bank_, key);
-  if (pending_.active && pending_.bank == bank_ && pending_.key == key &&
+  const uint8_t bank = keyBank();
+  const KeyBinding binding = listener_.keyBinding(bank, key);
+  if (pending_.active && pending_.bank == bank && pending_.key == key &&
       (uint32_t)(nowMs - pending_.atMs) <= kDoubleClickMs) {
     pending_.active = false;
     if (binding.doubleAction) {
-      runAction(binding.doubleAction, bank_, key, "DOUBLE");
+      oneShotBank_ = 0;
+      runAction(binding.doubleAction, bank, key, "DOUBLE");
       return;
     }
   }
   if (binding.waitsForDouble) {
-    // Any other key still waiting has run when this key went down.
+    // Any other key still waiting has run when this key went down. A one-shot
+    // bank stays until this short has run.
     pending_.active = true;
     pending_.repressed = false;
-    pending_.bank = bank_;
+    pending_.bank = bank;
     pending_.key = key;
     pending_.atMs = nowMs;
     return;
   }
-  runShortOrReject(binding, bank_, key);
+  oneShotBank_ = 0;
+  runShortOrReject(binding, bank, key);
 }
 
 // Mode select takes a key that picks a mode; another one replaces it, and
@@ -366,18 +384,27 @@ void KeypadInput::commitEntry() {
   const InputMode mode = mode_;
   const decltype(digits_) digits = digits_;
   const TargetVfo targetVfo = entryVfo_;
-  if (mode == InputMode::BankSelect) bank_ = (uint8_t)(digits.c_str()[0] - '0');
   mode_ = InputMode::Normal;
   digits_.clear();
   entryVfo_ = TargetVfo::Current;
+  if (mode == InputMode::BankSelect) {
+    const uint8_t bank = (uint8_t)(digits.c_str()[0] - '0');
+    // The digit came while '*' was still held: the next key only.
+    if (down_.has('*')) {
+      oneShotBank_ = bank;
+      listener_.onOneShotBank(bank);
+      return;
+    }
+    bank_ = bank;
+  }
   listener_.onCommit(mode, digits.c_str(), targetVfo);
 }
 
-// Clear ('#') cancels every mode, entry, staged mode, staged command and
-// waiting double click, and beeps when there is none. Keys still held keep their
-// swallowed release.
+// Clear ('#') cancels every mode, entry, staged mode, staged command, waiting
+// double click and one-shot bank, and beeps when there is none. Keys still held
+// keep their swallowed release.
 void KeypadInput::clearAll() {
-  if (mode_ == InputMode::Normal && !pending_.active && !hasStagedCommand()) {
+  if (mode_ == InputMode::Normal && !pending_.active && !hasStagedCommand() && !oneShotBank_) {
     listener_.onRejected("CLEAR");
     return;
   }
@@ -386,6 +413,7 @@ void KeypadInput::clearAll() {
   entryVfo_ = TargetVfo::Current;
   stagedCommand_[0] = '\0';
   pending_.active = false;
+  oneShotBank_ = 0;
   listener_.onClear();
 }
 

@@ -81,6 +81,7 @@ struct Fake : KeypadInputListener {
   }
   void onBankQuery(uint8_t bank) override { log.push_back("bank? " + std::to_string(bank)); }
   void onBankSelectStart() override { log.push_back("bank please"); }
+  void onOneShotBank(uint8_t bank) override { log.push_back("once " + std::to_string(bank)); }
   void onDigitAccepted(const EntrySpec &entry, char key, const char *digits) override {
     log.push_back(std::string("digit ") + modeName(entry.mode) + " " + key + " " + digits);
   }
@@ -747,20 +748,138 @@ TEST(input_bank_select_commits_on_the_digit) {
   CHECK_LOG(f, "rejected BANK5 3");
 }
 
-// A digit pressed while '*' is still down is a co-press: bank select stays
-// open and the digit is not taken. Released, a digit commits.
-TEST(input_bank_select_digit_during_the_star_hold_is_a_co_press) {
+// --- One-shot bank: a digit pressed while '*' is still held ------------------
+
+// '*' held to bank select and kept down while a digit is pressed.
+void chordBank(KeypadInput &in, char digit) {
+  in.onKey('*', KeyGesture::Pressed, 0);
+  in.onKey('*', KeyGesture::Held, 0);
+  tap(in, digit);
+  in.onKey('*', KeyGesture::Released, 0);
+}
+
+TEST(input_one_shot_bank_runs_the_next_key_only) {
   Fake f;
+  f.shorts = {"1 5", "4 5"};
+  KeypadInput in(f);
+  chordBank(in, '4');
+  CHECK_EQ(in.mode(), InputMode::Normal);
+  CHECK_EQ(in.bank(), 1);
+  CHECK_LOG(f, "bank please", "once 4");
+  tap(in, '5');
+  tap(in, '5');
+  CHECK_LOG(f, "short 4 5", "short 1 5");
+}
+
+TEST(input_one_shot_bank_takes_a_hold) {
+  Fake f;
+  f.holds = {"4 5"};
+  f.shorts = {"1 5"};
+  KeypadInput in(f);
+  chordBank(in, '4');
+  f.take();
+  hold(in, '5');
+  tap(in, '5');
+  CHECK_LOG(f, "hold 4 5", "short 1 5");
+}
+
+// The one-shot bank ends with the key's beep too.
+TEST(input_one_shot_bank_ends_with_an_unassigned_key) {
+  Fake f;
+  f.shorts = {"1 5"};
+  KeypadInput in(f);
+  chordBank(in, '4');
+  f.take();
+  tap(in, '5');
+  tap(in, '5');
+  CHECK_LOG(f, "rejected BANK4 5", "short 1 5");
+}
+
+// A key waiting for a double click keeps the one-shot bank until it answers.
+TEST(input_one_shot_bank_waits_with_a_double_click_key) {
+  Fake f;
+  f.waits = {"4 0", "1 0"};
+  f.shorts = {"4 0", "1 0"};
+  f.doubles = {"4 0"};
+  KeypadInput in(f);
+  chordBank(in, '4');
+  f.take();
+  tap(in, '0', 1000);
+  tap(in, '0', 1100);
+  CHECK_LOG(f, "double 4 0");
+  tap(in, '0', 2000);
+  in.poll(2500);
+  CHECK_LOG(f, "short 1 0");
+
+  chordBank(in, '4');
+  f.take();
+  tap(in, '0', 3000);
+  in.poll(3500);
+  CHECK_LOG(f, "short 4 0");
+  tap(in, '0', 4000);
+  in.poll(4500);
+  CHECK_LOG(f, "short 1 0");
+}
+
+TEST(input_clear_cancels_a_one_shot_bank) {
+  Fake f;
+  f.shorts = {"1 5", "4 5"};
+  KeypadInput in(f);
+  chordBank(in, '4');
+  f.take();
+  tap(in, '#');
+  tap(in, '5');
+  CHECK_LOG(f, "clear", "short 1 5");
+}
+
+// After the digit, any key pressed while '*' is still held is a co-press: it
+// also drops the one-shot bank.
+TEST(input_key_while_star_still_held_after_one_shot_is_a_co_press) {
+  Fake f;
+  f.shorts = {"1 5", "4 5"};
   KeypadInput in(f);
   in.onKey('*', KeyGesture::Pressed, 0);
   in.onKey('*', KeyGesture::Held, 0);
   tap(in, '4');
+  tap(in, '5');
+  in.onKey('*', KeyGesture::Released, 0);
+  CHECK_LOG(f, "bank please", "once 4", "rejected TWO KEYS");
+  tap(in, '5');
+  CHECK_LOG(f, "short 1 5");
+}
+
+// Only a digit makes the chord; any other key is a co-press as always.
+TEST(input_non_digit_while_star_held_in_bank_select_is_a_co_press) {
+  Fake f;
+  KeypadInput in(f);
+  in.onKey('*', KeyGesture::Pressed, 0);
+  in.onKey('*', KeyGesture::Held, 0);
+  tap(in, 'A');
   in.onKey('*', KeyGesture::Released, 0);
   CHECK_EQ(in.mode(), InputMode::BankSelect);
   CHECK_LOG(f, "bank please", "rejected TWO KEYS");
+}
+
+// A digit pressed before the '*' hold opened bank select is a co-press.
+TEST(input_digit_during_star_before_its_hold_is_a_co_press) {
+  Fake f;
+  KeypadInput in(f);
+  in.onKey('*', KeyGesture::Pressed, 0);
   tap(in, '4');
-  CHECK_EQ(in.bank(), 4);
-  CHECK_LOG(f, "commit BankSelect [4] vfo0");
+  in.onKey('*', KeyGesture::Held, 0);
+  in.onKey('*', KeyGesture::Released, 0);
+  CHECK_EQ(in.mode(), InputMode::Normal);
+  CHECK_EQ(in.bank(), 1);
+  CHECK_LOG(f, "rejected TWO KEYS");
+}
+
+// A digit bank select takes not: beeps, and bank select stays.
+TEST(input_one_shot_chord_with_zero_beeps) {
+  Fake f;
+  KeypadInput in(f);
+  chordBank(in, '0');
+  CHECK_EQ(in.mode(), InputMode::BankSelect);
+  CHECK_LOG(f, "bank please", "rejected BANK SELECT 0");
 }
 
 TEST(input_bank_select_enter_is_unassigned_and_stays) {

@@ -116,6 +116,13 @@ class KeypadUiListener : public KeypadInputListener {
     speakPrompt("bank");
   }
 
+  // Just the digit: "bank N" would sound like a lasting switch.
+  void onOneShotBank(uint8_t bank) override {
+    printKeypadCommand(String("BANK SELECT DIGIT -> ONCE ") + String((int)bank));
+    printKeypadStatus(String("BANK ") + String((int)bank) + " ONCE");
+    if (g_speechEnabled) playDigit(bank);
+  }
+
   void onDigitAccepted(const EntrySpec& entry, char key, const char* digits) override {
     keypadEntryDigit(entry, key, digits);
   }

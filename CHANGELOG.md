@@ -30,7 +30,9 @@
   first press was lost
 - on such a key, a press quickly followed by a hold beeps. Before, it ran the long action
 - pressing a key while another is held beeps, and both are ignored until all keys are let go;
-  digits already typed stay. This includes `#`, and a digit while `*` is still held for bank select
+  digits already typed stay. This includes `#`
+- bank select with `*` still held: the digit picks the bank of the next key only, then your bank is
+  back. Only the digit is spoken
 - a key that does nothing gives a short beep instead of silence: keys with no action on the current
   bank, keys whose feature the radio lacks, and keys an entry or selection does not take
 - choosing a profile number with no stored profile says "not available"

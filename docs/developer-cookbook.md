@@ -169,7 +169,7 @@ change the handler table.
 
 | Key | Short | Long (700 ms) |
 |---|---|---|
-| `*` | Say the bank | Bank select: "bank please", then one digit |
+| `*` | Say the bank | Bank select: "bank please", then one digit; a digit while `*` is still held picks the bank of the next key only |
 | `0`–`9`, `A`–`C` | Bank function | Bank function (hold) |
 | `D` | Enter: commit an entry or selection | – |
 | `#` | Clear: cancel whatever is pending | – |
