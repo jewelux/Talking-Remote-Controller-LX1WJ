@@ -364,7 +364,7 @@ void toggleBank4Preamp() {
   printKeypadAction("PREAMP");                  // trace first, always
   prepareKeypadSpeechResponse();
   bool on = false;
-  if (keypadReportFeatureFailure(preampToggle(on), "PREAMP")) return;  // beep / "timeout" / "error"
+  if (keypadReportFeatureFailure(preampToggle(on), "PREAMP")) return;  // "not available" / "timeout" / "error"
   printKeypadStatus("PREAMP {}", on ? "ON" : "OFF");
   speakTokenState("preamp", on);                // needs a "preamp" clip, see 4.7
 }
@@ -748,10 +748,15 @@ and the same situation must always sound the same:
 | Situation | Feedback | Helper |
 |---|---|---|
 | Key has no action here, or the entry does not take the key | beep | `keypadReportUnassigned` (the state machine calls it) |
-| The profile lacks the feature | beep | `keypadReportIfUnsupported`, `FeatureStatus::Unsupported` |
+| The radio or profile has no command for it, or it cannot run here | "not available" | `keypadReportIfUnsupported`, `FeatureStatus::Unsupported` |
 | The radio did not answer | "timeout" | `keypadReportIfTimedOut` |
-| The radio or protocol cannot do it at all | "not available" | `speakNotAvailable` |
-| Invalid value, or a write was rejected | "error" | `speakError` |
+| Invalid value, or the radio refused or answered wrongly | "error" | `speakError` |
+| A radio call returned false | one of the three above | `keypadReportFailure` |
+
+"not available", "timeout" and "error" are said through `speakKeypadFailure`, which
+puts the function's name first when verbose is on ("tuner not available"). It looks
+the trace label up in `kSpokenLabels`; a new label needs a row there (an FT-8x7
+setting like `AGC?` is spelled instead).
 | `#` cancelled something | "cancel" | the listener's `onClear` |
 | An entry or selection waited 30 s for a key | "timeout" | the listener's `onEntryTimeout` |
 | Asking for input | "<thing> please" | e.g. "frequency please" |
@@ -869,7 +874,7 @@ pattern):
 | Status | Keypad (`keypadReportFeatureFailure`) | Console |
 |---|---|---|
 | `Ok` | caller prints and speaks the state | same |
-| `Unsupported` | beep, `"X -> unsupported"` | "not available" |
+| `Unsupported` | "not available", `"X -> not available"` | "not available" |
 | `Timeout` | "timeout" | "timeout" |
 | `NoReply`, `Failed` | "error", `"X -> no reply"` / `"X -> failed"` | printed only, no sound |
 

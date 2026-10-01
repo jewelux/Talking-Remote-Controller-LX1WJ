@@ -7,17 +7,112 @@
 #include "radio_state.h"
 #include "radio_utils.h"
 #include "sd_slots.h"
+#include "transport_serial.h"
 #include "ui_speech.h"
 
 static constexpr uint32_t KEYPAD_POLL_SUSPEND_MS = 900;
 static constexpr uint32_t KEYPAD_WRITE_POLL_SUSPEND_MS = 1400;
 static constexpr uint32_t KEYPAD_ANSWER_SPEECH_QUIET_MS = 2000;
 
+static uint32_t s_writesBeforeKey = 0;
+
+void keypadForgetRadioActivity() {
+  g_radioReplyTimedOut = false;
+  s_writesBeforeKey = serialTransportWriteCount();
+}
+
+struct SpokenLabel {
+  const char* label;  // trace label without '?'
+  const char* words;  // clip tokens
+};
+
+static constexpr SpokenLabel kSpokenLabels[] = {
+  {"A=B", "a equals b"},
+  {"ANT", "antenna"},
+  {"BAUD", "baud"},
+  {"BSTACK", "band stack"},
+  {"CIVADDR", "c i"},
+  {"CTCSS", "ctcss"},
+  {"DCS", "dcs"},
+  {"FILSHAPE", "filtershape"},
+  {"FILWIDTH", "filterwidth"},
+  {"FREQ", "frequency"},
+  {"LOCK", "lock"},
+  {"MICEQ", "equalizer"},
+  {"MODE", "mode"},
+  {"MONITOR", "monitor"},
+  {"MONLEVEL", "monitor level"},
+  {"NB", "noiseblanker"},
+  {"NBLEVEL", "noiseblanker level"},
+  {"NOTCH", "notch"},
+  {"NR", "noisereduction"},
+  {"NRLEVEL", "noisereduction level"},
+  {"PBT1", "pbt one"},
+  {"PBT2", "pbt two"},
+  {"PROFILE", "profile"},
+  {"RFPOWER", "power"},
+  {"RIT", "rit"},
+  {"ROUND", "frequency"},
+  {"RXTX", "transceiver"},
+  {"SPLIT", "split"},
+  {"TRANSCEIVE", "transceive"},
+  {"TUNE", "tune"},
+  {"TUNER", "tuner"},
+  {"TXFREQ", "tx frequency"},
+  {"VFO A", "vfo a"},
+  {"VFO B", "vfo b"},
+  {"VFOA", "vfo a"},
+  {"VFOA FREQ", "vfo a frequency"},
+  {"VFOA MODE", "vfo a mode"},
+  {"VFOB", "vfo b"},
+  {"VFOB FREQ", "vfo b frequency"},
+  {"VFOB MODE", "vfo b mode"},
+};
+
+// The FT-8x7 EEPROM settings not in the table (AGC?, IPO?, HPF? ...) are
+// spelled, as their answers say them.
+static String spokenLabel(const char* label) {
+  String name(label);
+  if (name.endsWith("?")) name.remove(name.length() - 1);
+  for (const SpokenLabel& entry : kSpokenLabels) {
+    if (name == entry.label) return entry.words;
+  }
+  String spelled;
+  for (size_t i = 0; i < name.length(); ++i) {
+    if (name[i] < 'A' || name[i] > 'Z') return String();
+    if (spelled.length()) spelled += ' ';
+    spelled += name[i];
+  }
+  return spelled;
+}
+
+void speakKeypadFailure(const char* label, KeypadFailure failure) {
+  if (!g_speechEnabled) return;
+  const String name = spokenLabel(label);
+  if (name.length()) speakLabel(name);
+  switch (failure) {
+    case KeypadFailure::NotAvailable: speakNotAvailable(); break;
+    case KeypadFailure::Timeout: speakTimeout(); break;
+    case KeypadFailure::Error: speakError(); break;
+  }
+}
+
 bool keypadReportIfTimedOut(const char* label) {
   if (!g_radioReplyTimedOut) return false;
   printKeypadStatus("{} -> timeout", label);
-  if (g_speechEnabled) speakTimeout();
+  speakKeypadFailure(label, KeypadFailure::Timeout);
   return true;
+}
+
+void keypadReportFailure(const char* label) {
+  if (keypadReportIfTimedOut(label)) return;
+  // Nothing went to the radio: the profile has no command for it.
+  if (serialTransportWriteCount() == s_writesBeforeKey) {
+    keypadReportIfUnsupported(false, label);
+    return;
+  }
+  printKeypadStatus("{} -> failed", label);
+  speakKeypadFailure(label, KeypadFailure::Error);
 }
 
 void queryKeypadFt8x7Setting(Ft8x7Setting setting) {
@@ -36,11 +131,11 @@ bool keypadReportFeatureFailure(FeatureStatus status, const char* label) {
     case FeatureStatus::Unsupported: return keypadReportIfUnsupported(false, label);
     case FeatureStatus::Timeout:
       printKeypadStatus("{} -> timeout", label);
-      if (g_speechEnabled) speakTimeout();
+      speakKeypadFailure(label, KeypadFailure::Timeout);
       return true;
     default:
       printKeypadStatus("{} -> {}", label, featureStatusText(status));
-      if (g_speechEnabled) speakError();
+      speakKeypadFailure(label, KeypadFailure::Error);
       return true;
   }
 }
@@ -52,8 +147,8 @@ void keypadReportUnassigned(const char* label) {
 
 bool keypadReportIfUnsupported(bool supported, const char* label) {
   if (supported) return false;
-  printKeypadStatus("{} -> unsupported", label);
-  playBeep();
+  printKeypadStatus("{} -> not available", label);
+  speakKeypadFailure(label, KeypadFailure::NotAvailable);
   return true;
 }
 

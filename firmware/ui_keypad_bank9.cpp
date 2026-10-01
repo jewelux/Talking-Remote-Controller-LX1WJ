@@ -119,7 +119,7 @@ void selectBank9DirectProfile(char key) {
   if (!storedProfileForId(slot)) {
     printKeypadAction("PROFILE");
     printKeypadStatus("PROFILE {} EMPTY", slot);
-    if (g_speechEnabled) speakNotAvailable();
+    speakKeypadFailure("PROFILE", KeypadFailure::NotAvailable);
     return;
   }
   printKeypadAction("PROFILE {}", slot);

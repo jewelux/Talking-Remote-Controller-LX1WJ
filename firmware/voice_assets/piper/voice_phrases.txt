@@ -79,7 +79,9 @@ v f o
 
 # Core control words
 auto
+band
 bank
+baud
 both
 cancel
 choose

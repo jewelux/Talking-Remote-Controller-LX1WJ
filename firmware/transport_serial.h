@@ -12,4 +12,6 @@ int serialTransportRead();
 size_t serialTransportWrite(const uint8_t* data, size_t len);
 size_t serialTransportWriteByte(uint8_t value);
 size_t serialTransportPrint(const char* text);
+// How many writes went to the radio since boot. Equal before and after an action: it sent nothing.
+uint32_t serialTransportWriteCount();
 void serialTransportFlushOutput();

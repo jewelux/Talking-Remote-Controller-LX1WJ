@@ -19,7 +19,7 @@ void queryBank8CivAddress() {
   printKeypadAction("CIVADDR?");
   if (!currentProfileAllowsCivSetup()) {
     printKeypadStatus("CIVADDR -> unavailable");
-    if (g_speechEnabled) speakNotAvailable();
+    speakKeypadFailure("CIVADDR", KeypadFailure::NotAvailable);
     return;
   }
   char hex[3] = "";
@@ -32,7 +32,7 @@ void beginBank8CivAddressEntry() {
   printKeypadAction("CIVADDR");
   if (!currentProfileAllowsCivSetup()) {
     printKeypadStatus("CIVADDR -> unavailable");
-    if (g_speechEnabled) speakNotAvailable();
+    speakKeypadFailure("CIVADDR", KeypadFailure::NotAvailable);
     return;
   }
   keypadBeginEntry(InputMode::CivAddrEntry);
@@ -63,7 +63,7 @@ void cycleBank8Baud(int delta) {
   printKeypadAction("BAUD");
   if (!currentProfileAllowsCivSetup()) {
     printKeypadStatus("BAUD -> unavailable");
-    if (g_speechEnabled) speakNotAvailable();
+    speakKeypadFailure("BAUD", KeypadFailure::NotAvailable);
     return;
   }
   const int count = (int)kCivBaudRateCount;

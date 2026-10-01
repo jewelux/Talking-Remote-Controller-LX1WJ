@@ -87,7 +87,7 @@ static void commitProfile(const char* digits) {
     speakCurrentProfile();
   } else {
     printKeypadStatus("PROFILE -> not available");
-    if (g_speechEnabled) speakNotAvailable();
+    speakKeypadFailure("PROFILE", KeypadFailure::NotAvailable);
   }
 }
 
@@ -97,7 +97,7 @@ static void commitFrequency(const char* digits, TargetVfo targetVfo) {
   RadioFrequency parsedFreq;
   if (!RadioFrequency::parseEntry(String(digits), parsedFreq)) {
     printKeypadStatus("FREQ -> invalid");
-    if (g_speechEnabled) speakError();
+    speakKeypadFailure("FREQ", KeypadFailure::Error);
     return;
   }
   const uint64_t hz = parsedFreq.hz();
@@ -126,7 +126,7 @@ static void commitFrequency(const char* digits, TargetVfo targetVfo) {
     if (g_speechEnabled) speakDigitsAndPoint(hzToMHzString3(hz));
   } else if (!keypadReportIfTimedOut("FREQ")) {
     printKeypadStatus("FREQ -> {}", currentProtocolType() == PROTO_YAESU_FT8X7 ? "no change" : "failed");
-    if (g_speechEnabled) speakError();
+    speakKeypadFailure("FREQ", KeypadFailure::Error);
   }
 }
 
@@ -140,7 +140,7 @@ static void commitCivAddress(const char* digits) {
   int addr = atoi(digits);
   if (addr < 0 || addr > 255 || !setCurrentCivConnection((uint8_t)addr, currentConnectionProfile().baud)) {
     printKeypadStatus("CIVADDR -> invalid");
-    if (g_speechEnabled) speakError();
+    speakKeypadFailure("CIVADDR", KeypadFailure::Error);
     return;
   }
   char hex[3] = "";
@@ -164,7 +164,7 @@ static void commitCtcss(const char* digits) {
   uint16_t toneTenths = (uint16_t)atoi(digits);
   if (!yaesuCatSetCtcssTenths(toneTenths)) {
     printKeypadStatus("CTCSS -> invalid");
-    if (g_speechEnabled) speakError();
+    speakKeypadFailure("CTCSS", KeypadFailure::Error);
     return;
   }
   char label[12] = "";
@@ -181,7 +181,7 @@ static void commitDcs(const char* digits) {
   uint16_t dcsCode = (uint16_t)atoi(digits);
   if (!yaesuCatSetDcsCode(dcsCode)) {
     printKeypadStatus("DCS -> invalid");
-    if (g_speechEnabled) speakError();
+    speakKeypadFailure("DCS", KeypadFailure::Error);
     return;
   }
   char label[8] = "";
@@ -235,6 +235,6 @@ void keypadModeCommit(uint8_t mode, TargetVfo targetVfo) {
     if (g_speechEnabled) speakModeName(mode);
   } else if (!keypadReportIfTimedOut("MODE")) {
     printKeypadStatus("MODE -> {}", currentProtocolType() == PROTO_YAESU_FT8X7 ? "no change" : "failed");
-    if (g_speechEnabled) speakError();
+    speakKeypadFailure("MODE", KeypadFailure::Error);
   }
 }

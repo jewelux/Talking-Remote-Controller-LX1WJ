@@ -36,7 +36,7 @@
 - an entry or bank, profile or mode select left for 30 seconds without a key ends and says
   "timeout". Before, it waited forever, and tuning on the radio was not announced meanwhile
 - a key that does nothing gives a short beep instead of silence: keys with no action on the current
-  bank, keys whose feature the radio lacks, and keys an entry or selection does not take
+  bank, and keys an entry or selection does not take
 - choosing a profile number with no stored profile says "not available"
 
 ### Frequency
@@ -63,7 +63,15 @@
   nothing
 - a frequency or mode the radio did not take says "error" on Icom, Kenwood, Elecraft and FTDX
   radios too. Before, only the FT-8x7 said it; the others stayed silent
+- TS-480 and KX2: the Bank 3 VFO A/B frequency and mode set keys say "not available" at once
+  instead of asking for the entry and then staying silent
 - FT-8x7: a CTCSS tone or DCS code that is not a standard one says "error". Before, it was silent.
+- a key whose radio command fails always answers: "timeout" when the radio does not reply, "error"
+  when it refuses or answers wrongly, and "not available" when the radio or profile has no such
+  command. Before, many keys (VFO, split, RIT, tuner, PBT and others) stayed silent unless it was a
+  timeout, and keys for a feature the radio lacks (tuner, monitor, RIT, band stack) beeped
+- with verbose on, "not available", "timeout" and "error" from a key start with the function's
+  name, e.g. "tuner not available", "split timeout", "c t c s s error"
 - the S-meter says dB over S9 as a word ("S meter nine plus twenty")
 - WFM is said as "wfm" instead of being spelled out
 - the RX/TX query (Bank 1 `1`, and Bank 3 `6` on radios other than the FT-8x7 and FTDX10) says

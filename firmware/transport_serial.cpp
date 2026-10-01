@@ -2,6 +2,8 @@
 
 #include "radio_catalog.h"
 
+static uint32_t s_writeCount = 0;
+
 void serialTransportDriveTxIdle(int pin, bool invert) {
   // digitalWrite() is ignored until pinMode() has claimed the pin as GPIO, and pinMode(OUTPUT)
   // drives the output register's current level, which is 0 after reset. Claim the pin as an input
@@ -49,15 +51,22 @@ int serialTransportRead() {
 }
 
 size_t serialTransportWrite(const uint8_t* data, size_t len) {
+  ++s_writeCount;
   return g_civSerial->write(data, len);
 }
 
 size_t serialTransportWriteByte(uint8_t value) {
+  ++s_writeCount;
   return g_civSerial->write(value);
 }
 
 size_t serialTransportPrint(const char* text) {
+  ++s_writeCount;
   return g_civSerial->print(text);
+}
+
+uint32_t serialTransportWriteCount() {
+  return s_writeCount;
 }
 
 void serialTransportFlushOutput() {

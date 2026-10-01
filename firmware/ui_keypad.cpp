@@ -94,8 +94,8 @@ class KeypadUiListener : public KeypadInputListener {
   void onActivity(bool pressed) override {
     // Actions run on release, hold or after the double-click wait (in entries
     // and selections on press), with background polling in between: a timeout
-    // it left must not be blamed on this key.
-    g_radioReplyTimedOut = false;
+    // or a write it left must not be blamed on this key.
+    keypadForgetRadioActivity();
     if (pressed) silenceSpeechForKeyPress();
   }
 

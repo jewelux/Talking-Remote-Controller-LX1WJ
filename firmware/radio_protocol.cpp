@@ -573,6 +573,25 @@ bool setVfoMode(bool targetVfoA, uint8_t mode, uint8_t filter) {
   return false;
 }
 
+bool canSetVfoFrequency(bool targetVfoA) {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (pt == PROTO_CIV) return true;
+  if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) {
+    return (targetVfoA ? sp.ascii.vfoASetFormat : sp.ascii.vfoBSetFormat)[0] != '\0';
+  }
+  if (pt == PROTO_YAESU_FT8X7) return sp.caps.setVfo && sp.caps.setFreq && currentIsFt817Family();
+  return false;
+}
+
+bool canSetVfoMode() {
+  ProtocolType pt = currentProtocolType();
+  const StoredProfile& sp = currentStoredProfile();
+  if (pt == PROTO_CIV || pt == PROTO_YAESU_FTDX_ASCII) return true;
+  if (pt == PROTO_YAESU_FT8X7) return sp.caps.setVfoMode && sp.caps.setVfo && currentIsFt817Family();
+  return false;
+}
+
 bool ft8x7CopyActiveVfoToOther() {
   if (currentProtocolType() != PROTO_YAESU_FT8X7) return false;
   uint64_t hz = 0;

@@ -135,8 +135,10 @@ Keep the first field test simple:
 - Press `#` to cancel the current action.
 - Ask the current frequency again with Bank 1, `0` short.
 - Ask the current bank again with `*` short.
-- A key with nothing to do on the active profile gives a short beep. Some say "not available"
-  instead, for example keys hidden on FTDX10.
+- A key with no action on the current bank gives a short beep. A key whose feature the radio or
+  profile lacks says "not available", for example the tuner keys on an FT-817 or keys hidden on
+  FTDX10. With verbose on, the function's name comes first: "tuner not available", "split
+  timeout", "frequency error".
 
 ## More Help
 

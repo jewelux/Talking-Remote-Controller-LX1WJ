@@ -37,15 +37,11 @@ void queryBank1RxTx() {
   // An FT-8x7 profile without get_rxtx, e.g. an ft817.ini from before RXTX? was verified.
   if (currentProtocolType() == PROTO_YAESU_FT8X7 && !currentStoredProfile().caps.getRxTx) {
     printKeypadStatus("RXTX -> unavailable");
-    if (g_speechEnabled) {
-      speakToken("transceiver");
-      playSilenceMs(60);
-      speakNotAvailable();
-    }
+    speakKeypadFailure("RXTX", KeypadFailure::NotAvailable);
     return;
   }
   bool tx = false;
-  if (!queryRxTxStatus(tx, 800)) { keypadReportIfTimedOut("RXTX?"); return; }
+  if (!queryRxTxStatus(tx, 800)) { keypadReportFailure("RXTX?"); return; }
   printKeypadStatus("{}", tx ? "TX" : "RX");
   speakRxTxState(tx);
 }
@@ -54,10 +50,7 @@ void queryBank1Frequency() {
   printKeypadAction("FREQ?");
   uint64_t hz = 0;
   if (!queryFrequency(hz, 800)) {
-    if (!keypadReportIfTimedOut("FREQ?")) {
-      printKeypadStatus("FREQ? -> no reply");
-      if (g_speechEnabled) speakError();
-    }
+    keypadReportFailure("FREQ?");
     return;
   }
   printKeypadStatus("FREQ: {} MHz", RadioFrequency::fromHz(hz));
@@ -76,8 +69,10 @@ void queryBank1TxFrequency() {
         speakQueriedFrequencyHz(hz);
       } else {
         printKeypadStatus("TXFREQ -> unavailable");
-        if (g_speechEnabled) speakNotAvailable();
+        speakKeypadFailure("TXFREQ", KeypadFailure::NotAvailable);
       }
+    } else {
+      keypadReportFailure("TXFREQ?");
     }
     return;
   }
@@ -94,7 +89,7 @@ void queryBank1Ft857TxFrequency() {
     speakQueriedFrequencyHz(hz);
   } else {
     printKeypadStatus("TXFREQ unavailable on FT-857/897");
-    if (g_speechEnabled) speakNotAvailable();
+    speakKeypadFailure("TXFREQ", KeypadFailure::NotAvailable);
   }
 }
 
@@ -105,11 +100,7 @@ void queryBank1Lock() {
   if (!queryDialLockReliable(on)) {
     if (keypadReportIfTimedOut("LOCK?")) return;
     printKeypadStatus("LOCK UNKNOWN");
-    if (g_speechEnabled) {
-      speakToken("lock");
-      playSilenceMs(60);
-      speakError();
-    }
+    speakKeypadFailure("LOCK", KeypadFailure::Error);
     return;
   }
   printKeypadStatus("LOCK {}", on ? "ON" : "OFF");
@@ -129,10 +120,7 @@ void roundActiveFrequency(uint32_t stepHz) {
   uint64_t hz = 0;
   if (!queryFrequency(hz, 800)) {
     // Radio not responding: do not round or announce a stale value.
-    if (!keypadReportIfTimedOut("ROUND")) {
-      printKeypadStatus("ROUND -> no reply");
-      if (g_speechEnabled) speakError();
-    }
+    keypadReportFailure("ROUND");
     return;
   }
 
@@ -152,14 +140,14 @@ void roundActiveFrequency(uint32_t stepHz) {
     rememberAnnouncedFrequency(rounded);
   } else if (!keypadReportIfTimedOut("ROUND")) {
     printKeypadStatus("ROUND -> {}", currentProtocolType() == PROTO_YAESU_FT8X7 ? "no change" : "failed");
-    if (g_speechEnabled) speakError();
+    speakKeypadFailure("ROUND", KeypadFailure::Error);
   }
 }
 
 void beginBank1RfPowerSet() {
   if (!currentStoredProfile().caps.setRfPower) {
     printKeypadStatus("RFPOWER -> unavailable");
-    if (g_speechEnabled) speakNotAvailable();
+    speakKeypadFailure("RFPOWER", KeypadFailure::NotAvailable);
     return;
   }
   printKeypadAction("RFPOWER");
@@ -175,14 +163,10 @@ void toggleBank1Lock() {
   if (!queryDialLockReliable(on)) {
     if (keypadReportIfTimedOut("LOCK?")) return;
     printKeypadStatus("LOCK UNKNOWN");
-    if (g_speechEnabled) {
-      speakToken("lock");
-      playSilenceMs(60);
-      speakError();
-    }
+    speakKeypadFailure("LOCK", KeypadFailure::Error);
     return;
   }
-  if (!setDialLock(!on)) { keypadReportIfTimedOut("LOCK"); return; }
+  if (!setDialLock(!on)) { keypadReportFailure("LOCK"); return; }
   printKeypadStatus("LOCK {}", !on ? "ON" : "OFF");
   speakTokenState("lock", !on);
 }

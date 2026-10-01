@@ -74,19 +74,30 @@ void printKeypadAction(LineFormat<sizeof...(Args)> format, const Args&... args) 
   Serial.println(line.c_str());
 }
 
+// A key event: radio traffic and timeouts from before it are not this key's doing.
+void keypadForgetRadioActivity();
+// The answer to a key whose function did not work: with verbose on, the
+// function's name first ("tuner not available", "split timeout"). label is the
+// trace label, e.g. "TUNER?"; a label with no spoken name gives the bare answer.
+enum class KeypadFailure : uint8_t { NotAvailable, Timeout, Error };
+void speakKeypadFailure(const char* label, KeypadFailure failure);
 // Keypad feedback. Each prints a status line and gives the matching audio cue.
 // Radio gave no answer: say "timeout" and return true. Otherwise return false, so
 // the caller keeps its own handling of the failure (unsupported, rejected).
 bool keypadReportIfTimedOut(const char* label);
-// A shared feature operation did not succeed: beep when unsupported, say
-// "timeout" or give the error sound otherwise, and return true. Ok: false.
+// A radio operation failed: say "timeout" when the radio gave no answer, "not
+// available" when nothing was sent (the profile has no command for it), and
+// "error" otherwise (the radio refused it or answered something else).
+void keypadReportFailure(const char* label);
+// A shared feature operation did not succeed: say "not available" when
+// unsupported, "timeout" or "error" otherwise, and return true. Ok: false.
 bool keypadReportFeatureFailure(FeatureStatus status, const char* label);
-// Reads an FT-8x7 EEPROM setting, prints and speaks it; the FT-817 beeps for what it lacks.
+// Reads an FT-8x7 EEPROM setting, prints and speaks it; the FT-817 says "not available" for what it lacks.
 void queryKeypadFt8x7Setting(Ft8x7Setting setting);
 // The key has no action here: short beep.
 void keypadReportUnassigned(const char* label);
-// When supported is false the key's feature is missing on this profile: beep like
-// an unassigned key and return true.
+// When supported is false the key's feature is missing on this radio or profile:
+// say "not available" and return true. (A beep is only for a key with no action.)
 bool keypadReportIfUnsupported(bool supported, const char* label);
 // The key is hidden on the FTDX10 layout: say "not available".
 void reportFtdx10HiddenKey();

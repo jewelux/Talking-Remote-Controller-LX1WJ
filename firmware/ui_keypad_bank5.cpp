@@ -23,7 +23,7 @@ void queryBank5Rit() {
   if (keypadReportIfUnsupported(protocolSupportsRit(), "RIT?")) return;
   bool on = false;
   int32_t offset = 0;
-  if (!queryRitEnabled(on, 800)) { keypadReportIfTimedOut("RIT?"); return; }
+  if (!queryRitEnabled(on, 800)) { keypadReportFailure("RIT?"); return; }
   if (!queryRitOffsetHz(offset, 800)) offset = 0;
   printKeypadStatus("RIT {} {} Hz", on ? "ON" : "OFF", offset);
   if (!g_speechEnabled) return;
@@ -39,8 +39,8 @@ void toggleBank5Rit() {
   printKeypadAction("RIT");
   if (keypadReportIfUnsupported(protocolSupportsRit(), "RIT")) return;
   bool on = false;
-  if (!queryRitEnabled(on, 800)) { keypadReportIfTimedOut("RIT"); return; }
-  if (!setRitEnabled(!on)) { keypadReportIfTimedOut("RIT"); return; }
+  if (!queryRitEnabled(on, 800)) { keypadReportFailure("RIT"); return; }
+  if (!setRitEnabled(!on)) { keypadReportFailure("RIT"); return; }
   printKeypadStatus("RIT {}", !on ? "ON" : "OFF");
   speakTokenState("rit", !on);
 }
@@ -48,7 +48,7 @@ void toggleBank5Rit() {
 void setBank5RitOffset(int32_t hz) {
   printKeypadAction("RIT {} Hz", hz);
   if (keypadReportIfUnsupported(protocolSupportsRit(), "RIT")) return;
-  if (!setRitOffsetHz(hz)) { keypadReportIfTimedOut("RIT"); return; }
+  if (!setRitOffsetHz(hz)) { keypadReportFailure("RIT"); return; }
   printKeypadStatus("RIT {} Hz", hz);
   speakRitOffsetValue(hz);
 }
@@ -57,7 +57,7 @@ void adjustBank5Rit(int32_t deltaHz) {
   printKeypadAction("RIT STEP {}{} Hz", deltaHz >= 0 ? "+" : "", deltaHz);
   if (keypadReportIfUnsupported(protocolSupportsRit(), "RIT")) return;
   int32_t offset = 0;
-  if (!queryRitOffsetHz(offset, 800)) { keypadReportIfTimedOut("RIT"); return; }
+  if (!queryRitOffsetHz(offset, 800)) { keypadReportFailure("RIT"); return; }
   int32_t next = offset + deltaHz;
   if (next < -9999) next = -9999;
   if (next > 9999) next = 9999;
@@ -66,8 +66,8 @@ void adjustBank5Rit(int32_t deltaHz) {
 
 void setBank5RitOff() {
   printKeypadAction("RIT OFF");
-  if (!keypadReportIfUnsupported(protocolSupportsRit(), "RIT") && setRitEnabled(false)) {
-    printKeypadStatus("RIT OFF");
-    if (g_speechEnabled) speakToken("off");
-  }
+  if (keypadReportIfUnsupported(protocolSupportsRit(), "RIT")) return;
+  if (!setRitEnabled(false)) { keypadReportFailure("RIT"); return; }
+  printKeypadStatus("RIT OFF");
+  if (g_speechEnabled) speakToken("off");
 }
