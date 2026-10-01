@@ -155,38 +155,6 @@ void yaesuCatPrintFrame(const uint8_t data[5]) {
   }
 }
 
-uint64_t yaesuCatDecodeFreqHz(const uint8_t data[4]) {
-  uint64_t digits = 0;
-  for (int i = 0; i < 4; ++i) {
-    digits = digits * 100ULL + (uint64_t)(((data[i] >> 4) & 0x0F) * 10 + (data[i] & 0x0F));
-  }
-  return digits * 10ULL;
-}
-
-bool yaesuCatFreqFieldValid(const uint8_t data[4]) {
-  for (int i = 0; i < 4; ++i) {
-    if (((data[i] >> 4) & 0x0F) > 9 || (data[i] & 0x0F) > 9) return false;
-  }
-  const uint64_t hz = yaesuCatDecodeFreqHz(data);
-  return hz >= YAESU_CAT_MIN_FREQ_HZ && hz <= YAESU_CAT_MAX_FREQ_HZ;
-}
-
-// Eight BCD digits of 10 Hz units, most significant first.
-void yaesuCatEncodeFreqHz(uint64_t hz, uint8_t out[4]) {
-  uint32_t units10 = (uint32_t)((hz / 10ULL) % 100000000ULL);
-  for (int i = 3; i >= 0; --i) {
-    const uint8_t pair = (uint8_t)(units10 % 100);
-    units10 /= 100;
-    out[i] = (uint8_t)(((pair / 10) << 4) | (pair % 10));
-  }
-}
-
-void yaesuCatEncodeRepeaterOffsetHz(uint64_t hz, uint8_t out[4]) {
-  // FT-817 practical testing shows repeater offset uses the same 10 Hz BCD
-  // scaling as the standard Yaesu frequency write path.
-  yaesuCatEncodeFreqHz(hz, out);
-}
-
 bool parseHexByteString(const String& s, uint8_t& valueOut) {
   String t = s;
   t.trim();

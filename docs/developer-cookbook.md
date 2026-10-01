@@ -110,12 +110,17 @@ arduino-cli compile \
 
 ### Host tests (no hardware)
 
-The keypad logic is plain C++ and is tested with g++:
+The keypad logic and the FT-8x7 frame and EEPROM decoding are plain C++ and
+are tested with g++:
 
 ```sh
 make -C tests/keypad               # build and run everything
 make -C tests/keypad FILTER=hold   # only tests whose name contains "hold"
+make -C tests/ft8x7                # FT-817/857/897 CAT fields and EEPROM map
 ```
+
+A source under test must not include `Arduino.h`; its suite's `Makefile`
+lists it in `FIRMWARE_SRCS`. The runner is shared in `tests/common`.
 
 CI runs these on every push. On Windows, use any g++ with `make`, such as
 MSYS2 or WSL.

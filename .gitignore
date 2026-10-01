@@ -13,4 +13,4 @@ __pycache__/
 firmware/voice_assets/piper/models/
 
 # Host unit tests
-tests/keypad/build/
+tests/*/build/

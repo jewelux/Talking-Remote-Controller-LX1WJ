@@ -22,6 +22,9 @@ jobs:
       - name: Keypad unit tests
         run: make -C tests/keypad
 
+      - name: FT-8x7 unit tests
+        run: make -C tests/ft8x7
+
   build:
     runs-on: ubuntu-latest
     outputs:
