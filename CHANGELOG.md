@@ -72,6 +72,7 @@
   timeout, and keys for a feature the radio lacks (tuner, monitor, RIT, band stack) beeped
 - with verbose on, "not available", "timeout" and "error" from a key start with the function's
   name, e.g. "tuner not available", "split timeout", "c t c s s error"
+- a CI-V address with the hex digit E (e.g. E0) says "e" instead of "error"
 - the S-meter says dB over S9 as a word ("S meter nine plus twenty")
 - WFM is said as "wfm" instead of being spelled out
 - the RX/TX query (Bank 1 `1`, and Bank 3 `6` on radios other than the FT-8x7 and FTDX10) says

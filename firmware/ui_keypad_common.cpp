@@ -207,15 +207,7 @@ void speakHexNibble(char c) {
     playDigit(c - '0');
     return;
   }
-  switch (c) {
-    case 'A': speakToken("a"); break;
-    case 'B': speakToken("b"); break;
-    case 'C': speakToken("c"); break;
-    case 'D': speakToken("d"); break;
-    case 'E': speakError(); break;
-    case 'F': speakToken("f"); break;
-    default: speakError(); break;
-  }
+  speakToken(String(c));  // A-F: the letter clip
 }
 
 void speakCivAddressValue(uint8_t addr, bool ok) {
