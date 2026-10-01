@@ -460,7 +460,7 @@ bool queryRxTxStatus(bool& txOut, uint32_t timeoutMs) {
   }
   if (pt == PROTO_YAESU_FT8X7 && sp.caps.getRxTx) {
     uint8_t raw = 0;
-    if (!yaesuCatQueryStatusRaw(raw, timeoutMs)) return false;
+    if (!yaesuCatQueryTxStatusRaw(raw, timeoutMs)) return false;
     txOut = yaesuCatTxStatusTransmitting(raw);
     return true;
   }

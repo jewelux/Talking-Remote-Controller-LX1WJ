@@ -39,7 +39,6 @@ bool yaesuCatQueryVolumeRaw(int32_t& rawOut, uint32_t timeoutMs);
 bool yaesuCatQuerySquelchRaw(int32_t& rawOut, uint32_t timeoutMs);
 bool yaesuCatQueryRxStatusRaw(uint8_t& rawOut, uint32_t timeoutMs);
 bool yaesuCatQueryTxStatusRaw(uint8_t& rawOut, uint32_t timeoutMs);
-bool yaesuCatQueryStatusRaw(uint8_t& rawOut, uint32_t timeoutMs);
 // Split from the TX status while transmitting, else from the EEPROM.
 bool yaesuCatQuerySplit(bool& onOut, uint32_t timeoutMs);
 // RIT (a short press of the CLAR key, which the manuals also call the clarifier), which the CAT
@@ -54,14 +53,11 @@ void yaesuCatToggleVfo();
 void yaesuCatSelectVfoA();
 void yaesuCatSelectVfoB();
 void yaesuCatSetPtt(bool on);
-void yaesuCatSetClarifier(bool on);
 void yaesuCatSetSplit(bool on);
 void yaesuCatSetLockDocumentedRaw(bool on);
 void yaesuCatSetRepeaterShiftRaw(uint8_t shiftByte);
 void yaesuCatSetRepeaterOffsetHzRaw(uint64_t hz);
 void yaesuCatSetPowerDocumentedRaw(bool on);
-bool yaesuCatMemoryWrite();
-bool yaesuCatMemoryReadRaw(uint8_t rsp[5], uint32_t timeoutMs);
 void yaesuCatSetAgcMode(uint8_t modeByte);
 void yaesuCatSetClarifierOffsetRaw(const uint8_t data[4]);
 void yaesuCatSetToneDcsModeRaw(uint8_t modeByte);

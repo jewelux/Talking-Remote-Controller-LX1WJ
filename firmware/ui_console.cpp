@@ -757,7 +757,7 @@ void printHelp() {
     Serial.println("    PTT OFF | ON");
     Serial.println("    SM?");
     Serial.println("    SWR?");
-    Serial.println("    CLAR OFF | ON  (raw CAT; switches RIT on the FT-857/897)");
+    Serial.println("    CLAR OFF | ON  (the CAT clarifier commands, which switch RIT)");
     Serial.println("    CLAR OFFSET <8 hex digits>");
     if (ft817 || ft857Family) Serial.println("    IFSHIFT?  (IF shift on or off, which CAT cannot switch; not spoken)");
     if (ft817 || ft857Family) Serial.println("    RIT? | RIT OFF | ON | TOGGLE");
@@ -1359,16 +1359,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
       Serial.println("  SQL: variant unknown");
     }
 
-    if (isFt817) {
-      uint8_t status = 0;
-      if (yaesuCatQueryStatusRaw(status, 800)) {
-        Serial.print("  STATUS: 0x");
-        if (status < 0x10) Serial.print('0');
-        Serial.println(status, HEX);
-      } else {
-        Serial.println("  STATUS: no reply");
-      }
-    } else if (isFt857Family) {
+    if (isFt817 || isFt857Family) {
       uint8_t status = 0;
       if (yaesuCatQueryTxStatusRaw(status, 800)) {
         Serial.print("  STATUS: 0x");
@@ -1807,14 +1798,13 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     Serial.println("SPLIT OFF");
     return true;
   }
-  if (upper == "CLAR ON") {
-    yaesuCatSetClarifier(true);
-    Serial.println("CLAR ON");
-    return true;
-  }
-  if (upper == "CLAR OFF") {
-    yaesuCatSetClarifier(false);
-    Serial.println("CLAR OFF");
+  // The clarifier commands switch RIT; the radio answers whether it switched.
+  if (upper == "CLAR ON" || upper == "CLAR OFF") {
+    if (!yaesuFt8x7SetRit(upper == "CLAR ON", YAESU_CAT_REPLY_TIMEOUT_MS)) {
+      reportCommandFailure(upper.c_str(), "failed");
+      return true;
+    }
+    Serial.println(upper);
     return true;
   }
   if (upper.startsWith("CLAR OFFSET ")) {

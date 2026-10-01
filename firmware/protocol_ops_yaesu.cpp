@@ -155,10 +155,6 @@ bool yaesuCatQueryTxStatusRaw(uint8_t& rawOut, uint32_t timeoutMs) {
   return yaesuCatTransact1(cmd, rawOut, timeoutMs);
 }
 
-bool yaesuCatQueryStatusRaw(uint8_t& rawOut, uint32_t timeoutMs) {
-  return yaesuCatQueryTxStatusRaw(rawOut, timeoutMs);
-}
-
 // The TX status split bit is valid only while transmitting; the FT-857/897 answer 0xFF in
 // receive. Otherwise the EEPROM has it.
 bool yaesuCatQuerySplit(bool& onOut, uint32_t timeoutMs) {
@@ -234,11 +230,6 @@ void yaesuCatSetPtt(bool on) {
   yaesuCatSendWriteOnly(cmd);
 }
 
-void yaesuCatSetClarifier(bool on) {
-  const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, (uint8_t)(on ? 0x05 : 0x85)};
-  yaesuCatSendWriteOnly(cmd);
-}
-
 void yaesuCatSetSplit(bool on) {
   const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, (uint8_t)(on ? 0x02 : 0x82)};
   yaesuCatSendWriteOnly(cmd);
@@ -263,24 +254,6 @@ void yaesuCatSetRepeaterOffsetHzRaw(uint64_t hz) {
 void yaesuCatSetPowerDocumentedRaw(bool on) {
   const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, (uint8_t)(on ? 0x0F : 0x8F)};
   yaesuCatSendWriteOnly(cmd);
-}
-
-bool yaesuCatMemoryWrite() {
-  // BUGFIX V3.5.1: Opcode 0x0A ist auf FT-817/857 "Set CTCSS/DCS Mode" (NICHT
-  // "Memory Write"). [0x00,0x00,0x00,0x00,0x0A] = Mode 0x00 = CTCSS/DCS ausschalten.
-  // Aufruf dieses Befehls hat unbeabsichtigt CTCSS auf dem Radio deaktiviert!
-  // Einen "Memory Write"-CAT-Befehl gibt es beim FT8x7 nicht.
-  // Funktion deaktiviert um Radio-Einstellungen zu schuetzen.
-  return false;
-}
-
-bool yaesuCatMemoryReadRaw(uint8_t rsp[5], uint32_t timeoutMs) {
-  // HINWEIS: Opcode 0x0B ist auf FT-817/857 "Set CTCSS Tone" (Write-Only).
-  // Ein "Memory Read"-Befehl existiert beim FT8x7 nicht via CAT.
-  // Diese Funktion ist nicht implementierbar und gibt immer false zurueck.
-  (void)rsp;
-  (void)timeoutMs;
-  return false;
 }
 
 void yaesuCatSetAgcMode(uint8_t modeByte) {
