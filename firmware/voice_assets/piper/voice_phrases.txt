@@ -107,6 +107,7 @@ please
 plus
 power
 profile
+reset
 row
 slow
 stack

@@ -252,7 +252,7 @@ KeyBinding bank8(const KeypadTraits& t, char key) {
   const bool ft8x7Menu = t.layout == L::Ft817 || t.layout == L::Ft857;
   switch (key) {
     case '1': return bind(queryBank8CivAddress, beginBank8CivAddressEntry);
-    case '2': return bind([] { cycleBank8Baud(1); }, [] { cycleBank8Baud(-1); }, waitOnly);
+    case '2': return bind(queryBank8Baud, [] { cycleBank8Baud(-1); }, [] { cycleBank8Baud(1); });
     case '7':
       if (ft8x7Menu) return bind(queryBank8Ft8x7Row);
       return {};
@@ -270,7 +270,7 @@ KeyBinding bank9(char key) {
     case '7': return bind([] { adjustBank9Volume(-1); }, [] { adjustBank9Volume(-2); });
     case '8': return bind([] { adjustBank9Volume(1); }, [] { adjustBank9Volume(2); });
     case '9': return bind(queryBank9Volume);
-    case 'A': return bind(queryBank9Profile, beginBank9ProfileSelect);
+    case 'A': return bind(queryBank9Profile, beginBank9ProfileSelect, resetBank9Profile);
     case 'B': return bind(selectNextProfile);
     case 'C': return bind(selectPrevProfile);
     default: return {};

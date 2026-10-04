@@ -187,6 +187,7 @@ void beginBank6DcsEntry() { record("beginBank6DcsEntry"); }
 
 void queryBank8CivAddress() { record("queryBank8CivAddress"); }
 void beginBank8CivAddressEntry() { record("beginBank8CivAddressEntry"); }
+void queryBank8Baud() { record("queryBank8Baud"); }
 void cycleBank8Baud(int d) { record("cycleBank8Baud(%d)", d); }
 void queryBank8Ft8x7Row() { record("queryBank8Ft8x7Row"); }
 void queryBank8Ft8x7Menu() { record("queryBank8Ft8x7Menu"); }
@@ -199,6 +200,7 @@ void adjustBank9Volume(int d) { record("adjustBank9Volume(%d)", d); }
 void queryBank9Volume() { record("queryBank9Volume"); }
 void queryBank9Profile() { record("queryBank9Profile"); }
 void beginBank9ProfileSelect() { record("beginBank9ProfileSelect"); }
+void resetBank9Profile() { record("resetBank9Profile"); }
 void selectNextProfile() { record("selectNextProfile"); }
 void selectPrevProfile() { record("selectPrevProfile"); }
 

@@ -222,6 +222,20 @@ void speakCivAddressValue(uint8_t addr, bool ok) {
   if (ok) speakValueOk();
 }
 
+void speakBaudValue(uint32_t baud, bool ok) {
+  if (!g_speechEnabled) return;
+  if (!ok) speakLabel("baud");
+  speakDigitsAndPoint(String((unsigned long)baud));
+  if (ok) speakValueOk();
+}
+
+void speakProfileReset() {
+  if (!g_speechEnabled) return;
+  speakToken("profile");
+  playSilenceMs(60);
+  speakToken("reset");
+}
+
 void formatCtcssTenthsLabel(uint16_t toneTenths, char* out, size_t outSize) {
   if (!out || outSize < 2) return;
   snprintf(out, outSize, "%u.%u", (unsigned)(toneTenths / 10), (unsigned)(toneTenths % 10));

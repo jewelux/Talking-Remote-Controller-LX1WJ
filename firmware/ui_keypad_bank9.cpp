@@ -105,6 +105,20 @@ void queryBank9Volume() {
   if (g_speechEnabled) speakVolumeWithLevel(g_volumeLevel);
 }
 
+void resetBank9Profile() {
+  printKeypadAction("PROFILE RESET");
+  resetCurrentConnection();
+  const ConnectionProfile& link = currentConnectionProfile();
+  if (currentProtocolType() == PROTO_CIV) {
+    char hex[3] = "";
+    formatHexByte(link.civAddr, hex, sizeof(hex));
+    printKeypadStatus("BAUD {} CI {}", link.baud, hex);
+  } else {
+    printKeypadStatus("BAUD {}", link.baud);
+  }
+  speakProfileReset();
+}
+
 void queryBank9Profile() {
   printKeypadAction("PROFILE?");
   printKeypadStatus("PROFILE CURRENT");

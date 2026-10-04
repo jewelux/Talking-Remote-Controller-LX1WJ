@@ -225,6 +225,16 @@ bool setCurrentCivAddress(uint8_t civAddr) {
   return true;
 }
 
+void resetCurrentConnection() {
+  clearConnectionOverrideInNvs(g_profileId);
+  applyProfile(g_profileId);
+}
+
+void resetAllConnections() {
+  for (size_t i = 0; i < profileCount(); ++i) clearConnectionOverrideInNvs(profileAt(i).slot);
+  applyProfile(g_profileId);
+}
+
 void printProfileSlots() {
   Serial.println("[SLOTS]");
   for (size_t i = 0; i < profileCount(); ++i) {

@@ -17,3 +17,8 @@ bool setCurrentBaud(uint32_t baud);
 // Sets the CI-V address of the active profile, saves it for its slot and
 // reopens the link. False when the active profile is not a CI-V one.
 bool setCurrentCivAddress(uint8_t civAddr);
+// PROFILE RESET: forgets the baud and CI-V address saved for the active slot,
+// so its profile's defaults apply, and reopens the link.
+void resetCurrentConnection();
+// PROFILE RESET ALL: the same for every slot.
+void resetAllConnections();

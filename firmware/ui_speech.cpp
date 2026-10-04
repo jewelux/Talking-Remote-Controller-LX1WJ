@@ -194,6 +194,7 @@ static const VoiceClip kVoiceClips[] = {
   VOICE_CLIP(r),
   VOICE_CLIP(rear),
   VOICE_CLIP(repeater),
+  VOICE_CLIP(reset),
   VOICE_CLIP(rit),
   VOICE_CLIP(row),
   VOICE_CLIP(rtty),

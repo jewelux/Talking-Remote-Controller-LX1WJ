@@ -202,7 +202,7 @@ KEYMAP_ROW(NOT(FT8X7),      6, '4', "unassigned",            "none",            
 
 // ---- Bank 8 ----------------------------------------------------------------
 KEYMAP_ROW(ALL,             8, '1', "queryBank8CivAddress",  "beginBank8CivAddressEntry", "-")
-KEYMAP_ROW(ALL,             8, '2', "cycleBank8Baud(1)",     "cycleBank8Baud(-1)",     "none")
+KEYMAP_ROW(ALL,             8, '2', "queryBank8Baud",        "cycleBank8Baud(-1)",     "cycleBank8Baud(1)")
 KEYMAP_ROW(FT817 | FT857,   8, '7', "queryBank8Ft8x7Row",    "none",                   "-")
 KEYMAP_ROW(NOT(FT817 | FT857), 8, '7', "unassigned",       "none",                   "-")
 KEYMAP_ROW(FT817 | FT857,   8, '8', "queryBank8Ft8x7Menu",   "none",                   "-")
@@ -214,6 +214,6 @@ KEYMAP_ROW(ALL,             9, '5', "queryBank9Verbose",     "toggleBank9Verbose
 KEYMAP_ROW(ALL,             9, '7', "adjustBank9Volume(-1)", "adjustBank9Volume(-2)",  "-")
 KEYMAP_ROW(ALL,             9, '8', "adjustBank9Volume(1)",  "adjustBank9Volume(2)",   "-")
 KEYMAP_ROW(ALL,             9, '9', "queryBank9Volume",      "none",                   "-")
-KEYMAP_ROW(ALL,             9, 'A', "queryBank9Profile",     "beginBank9ProfileSelect", "-")
+KEYMAP_ROW(ALL,             9, 'A', "queryBank9Profile",     "beginBank9ProfileSelect", "resetBank9Profile")
 KEYMAP_ROW(ALL,             9, 'B', "selectNextProfile",     "none",                   "-")
 KEYMAP_ROW(ALL,             9, 'C', "selectPrevProfile",     "none",                   "-")

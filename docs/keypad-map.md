@@ -174,14 +174,16 @@ Empty on every radio: all keys are free.
 |---|---|---|---|---|---|
 | `1` short | CI-V address | not available | not available | not available | not available |
 | `1` long | CI-V address entry | not available | not available | not available | not available |
-| `2` short | next baud rate | next baud rate | next baud rate | next baud rate | next baud rate |
+| `2` short | baud rate | baud rate | baud rate | baud rate | baud rate |
 | `2` long | previous baud rate | previous baud rate | previous baud rate | previous baud rate | previous baud rate |
+| `2` double | next baud rate | next baud rate | next baud rate | next baud rate | next baud rate |
 | `7` short | free | free | free | function row | soft key row |
 | `8` short | free | free | free | last menu item | last menu item |
 
-The baud keys step through the rates the radio offers (see the
+`2` long and double step through the rates the radio offers (see the
 [radio support matrix](radio-support-matrix.md)) and keep the choice for the profile. Set the same
-rate on the radio.
+rate on the radio. Bank 9 `A` double press puts the baud rate and CI-V address back to the
+profile's defaults.
 
 ## Bank 9 - Profile and Speech
 
@@ -198,6 +200,7 @@ The same on every radio.
 | `9` short | volume |
 | `A` short | profile |
 | `A` long | profile select |
+| `A` double | reset the profile's baud rate and CI-V address to its defaults |
 | `B` short | next profile |
 | `C` short | previous profile |
 

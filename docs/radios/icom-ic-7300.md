@@ -129,6 +129,7 @@ New features and new radios come with a new firmware.
 
 - `CIVADDR?`, `CIVADDR <hex>`
 - `BAUD?`, `BAUD <rate>` (4800, 9600, 19200, 38400, 57600, 115200)
+- `PROFILE RESET`, `PROFILE RESET ALL` (baud and CI-V address back to the defaults)
 
 The IC-7300's CI-V jack itself goes up to 19200 baud; set the same rate in the
 radio's CI-V menu.
@@ -209,6 +210,7 @@ The current keypad concept uses radio-specific banks with:
 |---|---|---|
 | Profile / System | Speak current profile | Bank 9: `A` short |
 | Profile / System | Start profile selection | Bank 9: `A` long, then `1..9`, then `Enter` |
+| Profile / System | `PROFILE RESET` (baud and CI-V address to the defaults) | Bank 9: `A` double click |
 | Profile / System | `PROFILE NEXT` | Bank 9: `B` short |
 | Profile / System | `PROFILE PREV` | Bank 9: `C` short |
 | Profile / System | `TUNINGSPEECH?`, `TUNINGSPEECH TOGGLE` | Bank 9: `4` short / `4` long |

@@ -14,3 +14,5 @@ void saveVolumeToNvs(uint8_t level);
 // civAddr and baud as they are, and returns false, when none were saved.
 bool loadConnectionOverrideFromNvs(uint8_t id, uint8_t& civAddr, uint32_t& baud);
 void saveConnectionOverrideToNvs(uint8_t id, uint8_t civAddr, uint32_t baud);
+// Forgets the CI-V address and baud saved for slot id.
+void clearConnectionOverrideInNvs(uint8_t id);

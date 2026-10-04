@@ -93,3 +93,13 @@ void saveConnectionOverrideToNvs(uint8_t id, uint8_t civAddr, uint32_t baud) {
   prefs.putULong(baudKey.c_str(), baud);
   prefs.end();
 }
+
+void clearConnectionOverrideInNvs(uint8_t id) {
+  Preferences prefs;
+  if (!prefs.begin("talkingrc", false)) return;
+  const String civKey = connectionKey("civ", id);
+  const String baudKey = connectionKey("baud", id);
+  if (prefs.isKey(civKey.c_str())) prefs.remove(civKey.c_str());
+  if (prefs.isKey(baudKey.c_str())) prefs.remove(baudKey.c_str());
+  prefs.end();
+}

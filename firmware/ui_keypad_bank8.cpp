@@ -5,12 +5,6 @@
 void queryBank8Ft8x7Row() { queryKeypadFt8x7Setting(Ft8x7Setting::Row); }
 void queryBank8Ft8x7Menu() { queryKeypadFt8x7Setting(Ft8x7Setting::Menu); }
 
-static void speakBaudValue(uint32_t baud, bool ok) {
-  if (!g_speechEnabled) return;
-  speakDigitsAndPoint(String((unsigned long)baud));
-  if (ok) speakValueOk();
-}
-
 static bool currentProfileAllowsCivSetup() {
   return currentProtocolType() == PROTO_CIV;
 }
@@ -42,6 +36,13 @@ void beginBank8CivAddressEntry() {
     playSilenceMs(50);
     speakPrompt("i");
   }
+}
+
+void queryBank8Baud() {
+  printKeypadAction("BAUD?");
+  const uint32_t baud = currentConnectionProfile().baud;
+  printKeypadStatus("BAUD {}", baud);
+  speakBaudValue(baud, false);
 }
 
 // Where the link's baud sits in bauds; 0 if it is not there.

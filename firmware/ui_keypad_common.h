@@ -117,6 +117,10 @@ char ft8x7OtherVfoLabel();
 void formatHexByte(uint8_t value, char* out, size_t outSize);
 void speakHexNibble(char c);
 void speakCivAddressValue(uint8_t addr, bool ok);
+// "baud 4800", or with ok "4800 ok".
+void speakBaudValue(uint32_t baud, bool ok);
+// "profile reset", after the profile's baud and CI-V address went back to its defaults.
+void speakProfileReset();
 
 void formatCtcssTenthsLabel(uint16_t toneTenths, char* out, size_t outSize);
 

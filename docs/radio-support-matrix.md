@@ -22,9 +22,11 @@ It is meant as a short engineering overview, not as a promise list.
 
 ## Profiles and baud rates
 
-Every profile is built into the firmware. Bank 8 `2` (console `BAUD`) steps through the rates the
-radio offers and keeps the choice for the profile; set the same rate on the radio. On CI-V radios,
-Bank 8 `1` (console `CIVADDR`) speaks or sets the CI-V address.
+Every profile is built into the firmware. Bank 8 `2` says the baud rate, and its long and double
+press (console `BAUD`) step down and up through the rates the radio offers; the choice is kept for
+the profile, so set the same rate on the radio. On CI-V radios, Bank 8 `1` (console `CIVADDR`)
+speaks or sets the CI-V address. Bank 9 `A` double press (console `PROFILE RESET`, or
+`PROFILE RESET ALL` for every profile) puts both back to the defaults below.
 
 | Slot | Radio | Port | Default baud | Selectable baud |
 |---|---|---|---|---|

@@ -114,11 +114,15 @@
   `slots.ini`: 1 IC-7300, 2 IC-706, 3 IC-7300 RS-232, 4 IC-706 RS-232, 5 G106, 6 KX2, 7 TS-480,
   8 FT-817, 9 FT-857, 10 FT-897, 11 FTDX10, 12 FTDX101D, 13 FTDX101MP, 14 FT-818, 15 FT-891,
   17 IC-705, 18 IC-7760
-- the baud rate can be set on every radio, not only on CI-V radios: Bank 8 `2` short and long
-  step through the rates the radio offers (FT-817/818/857/897: 4800, 9600, 38400; FTDX10,
-  FTDX101 and FT-891: 4800 to 38400; TS-480: 4800 to 57600; KX2: 4800 to 38400), and console
-  `BAUD <rate>` refuses others and lists them. The choice is kept for each profile. `PROFILE?`
-  lists the rates
+- the baud rate can be set on every radio, not only on CI-V radios. Bank 8 `2` short says it
+  ("baud 4 8 0 0"), long and double press step down and up through the rates the radio offers
+  (FT-817/818/857/897: 4800, 9600, 38400; FTDX10, FTDX101 and FT-891: 4800 to 38400; TS-480:
+  4800 to 57600; KX2: 4800 to 38400). Before, `2` short and long stepped up and down. Console
+  `BAUD <rate>` refuses other rates and lists them. The choice is kept for each profile, and
+  `PROFILE?` lists the rates
+- Bank 9 `A` double press resets the profile: its baud rate and CI-V address go back to the
+  defaults, and HamTRC says "profile reset". Console `PROFILE RESET`, and `PROFILE RESET ALL`
+  for every profile
 - the six Icom profiles HamTRC offered when the SD card did not load are gone, and with them
   Bank 9 `1`–`9` picking a profile directly; on Bank 9, `1`–`3` and `6` beep
 

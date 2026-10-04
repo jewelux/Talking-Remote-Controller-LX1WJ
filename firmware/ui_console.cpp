@@ -670,6 +670,7 @@ void printHelp() {
   Serial.println("    MODE?");
   Serial.println("    PROFILE <slot>  (SLOTS? lists them)");
   Serial.println("    PROFILE NEXT | PREV");
+  Serial.println("    PROFILE RESET [ALL]  (saved baud and CI-V address back to the defaults)");
   Serial.println("    PROFILE?");
   Serial.println("    QUIET OFF | QUIET ON");
   Serial.println("    QUIET?");
@@ -946,7 +947,33 @@ static bool handleConsoleInfoCommands(const String& upper) {
   return false;
 }
 
+static void printConnectionSettings(const char* prefix) {
+  const ConnectionProfile& link = currentConnectionProfile();
+  Serial.print(prefix);
+  Serial.print("BAUD ");
+  Serial.print((unsigned long)link.baud);
+  if (currentProtocolType() == PROTO_CIV) {
+    char hex[3] = "";
+    formatHexByte(link.civAddr, hex, sizeof(hex));
+    Serial.print(" CIVADDR ");
+    Serial.print(hex);
+  }
+  Serial.println();
+}
+
 static bool handleConsoleProfileCommands(const String& line, const String& upper) {
+  if (upper == "PROFILE RESET") {
+    resetCurrentConnection();
+    printConnectionSettings("OK PROFILE RESET  ");
+    speakProfileReset();
+    return true;
+  }
+  if (upper == "PROFILE RESET ALL") {
+    resetAllConnections();
+    printConnectionSettings("OK PROFILE RESET ALL  active: ");
+    speakProfileReset();
+    return true;
+  }
   if (upper == "PROFILE NEXT") {
     uint8_t next = adjacentProfileSlot(g_profileId, 1);
     applyProfile(next);
