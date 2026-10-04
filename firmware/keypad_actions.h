@@ -143,9 +143,6 @@ void queryBank8Ft8x7Row();
 void queryBank8Ft8x7Menu();
 
 // ---- Bank 9 ----
-// Light-Icom fallback: key '1'-'9' picks that built-in profile. The keymap
-// binds it only while the fallback is active.
-void selectBank9DirectProfile(char key);
 void queryBank9TuningSpeech();
 void toggleBank9TuningSpeech();
 void queryBank9Verbose();   // "VERBOSE?", says "verbose on/off"

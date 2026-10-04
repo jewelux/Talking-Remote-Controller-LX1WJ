@@ -27,7 +27,6 @@ void keypadModeCommit(uint8_t mode, TargetVfo targetVfo);
 bool keypadApplyFrequencyHz(uint64_t hz, TargetVfo targetVfo);
 
 // No SD card profiles: Bank 9 digits pick the built-in light-Icom profiles.
-bool lightIcomFallbackActive();
 // Holds background polling briefly, so it does not talk over a key's exchange.
 void holdKeypadPolling();
 // Holds polling and tuning speech while a key's answer is prepared.

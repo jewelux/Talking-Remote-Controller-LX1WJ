@@ -40,16 +40,16 @@ static bool asciiQueryRawLine(const char* cmd, const char* prefix, String& lineO
 }
 
 bool asciiQueryFrequency(const RadioProfile& sp, uint64_t& hzOut, uint32_t timeoutMs) {
-  if (!sp.caps.getFreq || !sp.ascii.freqGet[0]) return false;
+  if (!sp.caps.getFreq || !sp.commands->freqGet[0]) return false;
   String line;
-  if (!transactAsciiCommand(sp.ascii.freqGet, line, sp.ascii.freqReplyPrefix, timeoutMs)) return false;
-  return parseAsciiUnsignedResponse(line, sp.ascii.freqReplyPrefix, hzOut);
+  if (!transactAsciiCommand(sp.commands->freqGet, line, sp.commands->freqReplyPrefix, timeoutMs)) return false;
+  return parseAsciiUnsignedResponse(line, sp.commands->freqReplyPrefix, hzOut);
 }
 
 bool asciiSetFrequency(const RadioProfile& sp, uint64_t hz) {
-  if (!sp.caps.setFreq || !sp.ascii.freqSetFormat[0]) return false;
+  if (!sp.caps.setFreq || !sp.commands->freqSetFormat[0]) return false;
   char buf[32];
-  snprintf(buf, sizeof(buf), sp.ascii.freqSetFormat, (unsigned long long)hz);
+  snprintf(buf, sizeof(buf), sp.commands->freqSetFormat, (unsigned long long)hz);
   serialTransportFlushInput();
   serialTransportPrint(buf);
   serialTransportFlushOutput();
@@ -59,10 +59,10 @@ bool asciiSetFrequency(const RadioProfile& sp, uint64_t hz) {
 }
 
 bool asciiQueryMode(const RadioProfile& sp, uint8_t& modeOut, uint32_t timeoutMs) {
-  if (!sp.caps.getMode || !sp.ascii.modeGet[0]) return false;
+  if (!sp.caps.getMode || !sp.commands->modeGet[0]) return false;
   String line;
-  if (!transactAsciiCommand(sp.ascii.modeGet, line, sp.ascii.modeReplyPrefix, timeoutMs)) return false;
-  int start = (int)strlen(sp.ascii.modeReplyPrefix);
+  if (!transactAsciiCommand(sp.commands->modeGet, line, sp.commands->modeReplyPrefix, timeoutMs)) return false;
+  int start = (int)strlen(sp.commands->modeReplyPrefix);
   int semi = line.indexOf(';', start);
   if (semi < 0) semi = line.length();
   String code = line.substring(start, semi);
@@ -71,11 +71,11 @@ bool asciiQueryMode(const RadioProfile& sp, uint8_t& modeOut, uint32_t timeoutMs
 }
 
 bool asciiSetMode(const RadioProfile& sp, uint8_t mode) {
-  if (!sp.caps.setMode || !sp.ascii.modeSetFormat[0]) return false;
+  if (!sp.caps.setMode || !sp.commands->modeSetFormat[0]) return false;
   String code;
   if (!profileModeCodeForInternal(sp, mode, code)) return false;
   char cmd[24];
-  snprintf(cmd, sizeof(cmd), sp.ascii.modeSetFormat, code.c_str());
+  snprintf(cmd, sizeof(cmd), sp.commands->modeSetFormat, code.c_str());
   serialTransportFlushInput();
   serialTransportPrint(cmd);
   serialTransportFlushOutput();
@@ -83,51 +83,51 @@ bool asciiSetMode(const RadioProfile& sp, uint8_t mode) {
 }
 
 bool asciiQuerySMeterRaw(const RadioProfile& sp, int32_t& rawOut, uint32_t timeoutMs) {
-  if (!sp.caps.getSmeter || !sp.ascii.smeterGet[0]) return false;
+  if (!sp.caps.getSmeter || !sp.commands->smeterGet[0]) return false;
   String line;
-  if (!transactAsciiCommand(sp.ascii.smeterGet, line, sp.ascii.smeterReplyPrefix, timeoutMs)) return false;
-  return parseAsciiSignedResponse(line, sp.ascii.smeterReplyPrefix, rawOut);
+  if (!transactAsciiCommand(sp.commands->smeterGet, line, sp.commands->smeterReplyPrefix, timeoutMs)) return false;
+  return parseAsciiSignedResponse(line, sp.commands->smeterReplyPrefix, rawOut);
 }
 
 bool asciiQueryPoMeterRaw(const RadioProfile& sp, int32_t& rawOut, uint32_t timeoutMs) {
-  if (!sp.caps.getPower || !sp.ascii.powerGet[0]) return false;
+  if (!sp.caps.getPower || !sp.commands->powerGet[0]) return false;
   String line;
-  if (!transactAsciiCommand(sp.ascii.powerGet, line, sp.ascii.powerReplyPrefix, timeoutMs)) return false;
-  return parseAsciiSignedResponse(line, sp.ascii.powerReplyPrefix, rawOut);
+  if (!transactAsciiCommand(sp.commands->powerGet, line, sp.commands->powerReplyPrefix, timeoutMs)) return false;
+  return parseAsciiSignedResponse(line, sp.commands->powerReplyPrefix, rawOut);
 }
 
 bool asciiQuerySWRRaw(const RadioProfile& sp, int32_t& rawOut, uint32_t timeoutMs) {
-  if (!sp.caps.getSwr || !sp.ascii.swrGet[0]) return false;
+  if (!sp.caps.getSwr || !sp.commands->swrGet[0]) return false;
   String line;
-  if (!transactAsciiCommand(sp.ascii.swrGet, line, sp.ascii.swrReplyPrefix, timeoutMs)) return false;
-  return parseAsciiSignedResponse(line, sp.ascii.swrReplyPrefix, rawOut);
+  if (!transactAsciiCommand(sp.commands->swrGet, line, sp.commands->swrReplyPrefix, timeoutMs)) return false;
+  return parseAsciiSignedResponse(line, sp.commands->swrReplyPrefix, rawOut);
 }
 
 bool asciiQueryStatusLine(const RadioProfile& sp, String& lineOut, uint32_t timeoutMs) {
-  return asciiQueryRawLine(sp.ascii.ifGet, sp.ascii.ifReplyPrefix, lineOut, timeoutMs);
+  return asciiQueryRawLine(sp.commands->ifGet, sp.commands->ifReplyPrefix, lineOut, timeoutMs);
 }
 
 bool asciiQueryIdLine(const RadioProfile& sp, String& lineOut, uint32_t timeoutMs) {
-  return asciiQueryRawLine(sp.ascii.idGet, sp.ascii.idReplyPrefix, lineOut, timeoutMs);
+  return asciiQueryRawLine(sp.commands->idGet, sp.commands->idReplyPrefix, lineOut, timeoutMs);
 }
 
 bool asciiQueryOmLine(const RadioProfile& sp, String& lineOut, uint32_t timeoutMs) {
-  return asciiQueryRawLine(sp.ascii.omGet, sp.ascii.omReplyPrefix, lineOut, timeoutMs);
+  return asciiQueryRawLine(sp.commands->omGet, sp.commands->omReplyPrefix, lineOut, timeoutMs);
 }
 
 bool asciiQueryPreamp(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
-  if (!sp.ascii.preampGet[0] || !sp.ascii.preampReplyPrefix[0]) return false;
+  if (!sp.commands->preampGet[0] || !sp.commands->preampReplyPrefix[0]) return false;
   String line;
-  if (!transactAsciiCommand(sp.ascii.preampGet, line, sp.ascii.preampReplyPrefix, timeoutMs)) return false;
-  return asciiParseOnOffResponse(line, sp.ascii.preampReplyPrefix, onOut);
+  if (!transactAsciiCommand(sp.commands->preampGet, line, sp.commands->preampReplyPrefix, timeoutMs)) return false;
+  return asciiParseOnOffResponse(line, sp.commands->preampReplyPrefix, onOut);
 }
 
 bool asciiSetPreamp(const RadioProfile& sp, bool on) {
-  return asciiSendSimpleCommand(on ? sp.ascii.preampOnCmd : sp.ascii.preampOffCmd);
+  return asciiSendSimpleCommand(on ? sp.commands->preampOnCmd : sp.commands->preampOffCmd);
 }
 
 bool asciiQueryAgcLine(const RadioProfile& sp, String& lineOut, uint32_t timeoutMs) {
-  return asciiQueryRawLine(sp.ascii.agcGet, sp.ascii.agcReplyPrefix, lineOut, timeoutMs);
+  return asciiQueryRawLine(sp.commands->agcGet, sp.commands->agcReplyPrefix, lineOut, timeoutMs);
 }
 
 bool asciiSetAgcCommand(const RadioProfile& sp, const char* cmd) {
@@ -136,16 +136,16 @@ bool asciiSetAgcCommand(const RadioProfile& sp, const char* cmd) {
 }
 
 bool asciiQueryPowerState(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
-  if (!sp.ascii.powerStateGet[0] || !sp.ascii.powerStateReplyPrefix[0]) return false;
+  if (!sp.commands->powerStateGet[0] || !sp.commands->powerStateReplyPrefix[0]) return false;
   String line;
-  if (!transactAsciiCommand(sp.ascii.powerStateGet, line, sp.ascii.powerStateReplyPrefix, timeoutMs)) return false;
-  return asciiParseOnOffResponse(line, sp.ascii.powerStateReplyPrefix, onOut);
+  if (!transactAsciiCommand(sp.commands->powerStateGet, line, sp.commands->powerStateReplyPrefix, timeoutMs)) return false;
+  return asciiParseOnOffResponse(line, sp.commands->powerStateReplyPrefix, onOut);
 }
 
 bool asciiSetPowerState(const RadioProfile& sp, bool on) {
-  const char* cmd = on ? sp.ascii.powerStateOnCmd : sp.ascii.powerStateOffCmd;
+  const char* cmd = on ? sp.commands->powerStateOnCmd : sp.commands->powerStateOffCmd;
   if (!cmd || !cmd[0]) return false;
-  if (sp.protocolType == PROTO_YAESU_FTDX_ASCII && on) {
+  if (sp.protocol == PROTO_YAESU_FTDX_ASCII && on) {
     // FTDX10/101 CAT power-on requires the documented double-send timing window.
     if (!asciiSendSimpleCommand(cmd)) return false;
     delay(1100);
@@ -155,85 +155,85 @@ bool asciiSetPowerState(const RadioProfile& sp, bool on) {
 }
 
 bool asciiQueryTuner(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
-  if (!sp.ascii.tunerGet[0] || !sp.ascii.tunerReplyPrefix[0]) return false;
+  if (!sp.commands->tunerGet[0] || !sp.commands->tunerReplyPrefix[0]) return false;
   String line;
-  if (!transactAsciiCommand(sp.ascii.tunerGet, line, sp.ascii.tunerReplyPrefix, timeoutMs)) {
+  if (!transactAsciiCommand(sp.commands->tunerGet, line, sp.commands->tunerReplyPrefix, timeoutMs)) {
     delay(40);
-    if (!transactAsciiCommand(sp.ascii.tunerGet, line, sp.ascii.tunerReplyPrefix, timeoutMs)) return false;
+    if (!transactAsciiCommand(sp.commands->tunerGet, line, sp.commands->tunerReplyPrefix, timeoutMs)) return false;
   }
-  return asciiParseOnOffResponse(line, sp.ascii.tunerReplyPrefix, onOut);
+  return asciiParseOnOffResponse(line, sp.commands->tunerReplyPrefix, onOut);
 }
 
 bool asciiSetTuner(const RadioProfile& sp, bool on) {
-  if (!asciiSendSimpleCommand(on ? sp.ascii.tunerOnCmd : sp.ascii.tunerOffCmd)) return false;
+  if (!asciiSendSimpleCommand(on ? sp.commands->tunerOnCmd : sp.commands->tunerOffCmd)) return false;
   delay(50);
   return true;
 }
 
 bool asciiStartTune(const RadioProfile& sp) {
-  return asciiSendSimpleCommand(sp.ascii.tuneStartCmd);
+  return asciiSendSimpleCommand(sp.commands->tuneStartCmd);
 }
 
 bool asciiQuerySplit(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
-  if (!sp.ascii.splitGet[0] || !sp.ascii.splitReplyPrefix[0]) return false;
+  if (!sp.commands->splitGet[0] || !sp.commands->splitReplyPrefix[0]) return false;
   String line;
-  if (!transactAsciiCommand(sp.ascii.splitGet, line, sp.ascii.splitReplyPrefix, timeoutMs)) return false;
-  return asciiParseOnOffResponse(line, sp.ascii.splitReplyPrefix, onOut);
+  if (!transactAsciiCommand(sp.commands->splitGet, line, sp.commands->splitReplyPrefix, timeoutMs)) return false;
+  return asciiParseOnOffResponse(line, sp.commands->splitReplyPrefix, onOut);
 }
 
 bool asciiSetSplit(const RadioProfile& sp, bool on) {
-  return asciiSendSimpleCommand(on ? sp.ascii.splitOnCmd : sp.ascii.splitOffCmd);
+  return asciiSendSimpleCommand(on ? sp.commands->splitOnCmd : sp.commands->splitOffCmd);
 }
 
 bool asciiQueryNr(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
-  if (!sp.caps.getNr || !sp.ascii.nrGet[0] || !sp.ascii.nrReplyPrefix[0]) return false;
+  if (!sp.caps.getNr || !sp.commands->nrGet[0] || !sp.commands->nrReplyPrefix[0]) return false;
   String line;
-  if (!transactAsciiCommand(sp.ascii.nrGet, line, sp.ascii.nrReplyPrefix, timeoutMs)) return false;
-  return asciiParseOnOffResponse(line, sp.ascii.nrReplyPrefix, onOut);
+  if (!transactAsciiCommand(sp.commands->nrGet, line, sp.commands->nrReplyPrefix, timeoutMs)) return false;
+  return asciiParseOnOffResponse(line, sp.commands->nrReplyPrefix, onOut);
 }
 
 bool asciiSetNr(const RadioProfile& sp, bool on) {
   if (!sp.caps.setNr) return false;
-  return asciiSendSimpleCommand(on ? sp.ascii.nrOnCmd : sp.ascii.nrOffCmd);
+  return asciiSendSimpleCommand(on ? sp.commands->nrOnCmd : sp.commands->nrOffCmd);
 }
 
 bool asciiQueryNb(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
-  if (!sp.caps.getNb || !sp.ascii.nbGet[0] || !sp.ascii.nbReplyPrefix[0]) return false;
+  if (!sp.caps.getNb || !sp.commands->nbGet[0] || !sp.commands->nbReplyPrefix[0]) return false;
   String line;
-  if (!transactAsciiCommand(sp.ascii.nbGet, line, sp.ascii.nbReplyPrefix, timeoutMs)) return false;
-  return asciiParseOnOffResponse(line, sp.ascii.nbReplyPrefix, onOut);
+  if (!transactAsciiCommand(sp.commands->nbGet, line, sp.commands->nbReplyPrefix, timeoutMs)) return false;
+  return asciiParseOnOffResponse(line, sp.commands->nbReplyPrefix, onOut);
 }
 
 bool asciiSetNb(const RadioProfile& sp, bool on) {
   if (!sp.caps.setNb) return false;
-  return asciiSendSimpleCommand(on ? sp.ascii.nbOnCmd : sp.ascii.nbOffCmd);
+  return asciiSendSimpleCommand(on ? sp.commands->nbOnCmd : sp.commands->nbOffCmd);
 }
 
 bool asciiQueryNotch(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
-  if (!sp.caps.getNotch || !sp.ascii.notchGet[0] || !sp.ascii.notchReplyPrefix[0]) return false;
+  if (!sp.caps.getNotch || !sp.commands->notchGet[0] || !sp.commands->notchReplyPrefix[0]) return false;
   String line;
-  if (!transactAsciiCommand(sp.ascii.notchGet, line, sp.ascii.notchReplyPrefix, timeoutMs)) return false;
-  return asciiParseOnOffResponse(line, sp.ascii.notchReplyPrefix, onOut);
+  if (!transactAsciiCommand(sp.commands->notchGet, line, sp.commands->notchReplyPrefix, timeoutMs)) return false;
+  return asciiParseOnOffResponse(line, sp.commands->notchReplyPrefix, onOut);
 }
 
 bool asciiSetNotch(const RadioProfile& sp, bool on) {
   if (!sp.caps.setNotch) return false;
-  return asciiSendSimpleCommand(on ? sp.ascii.notchOnCmd : sp.ascii.notchOffCmd);
+  return asciiSendSimpleCommand(on ? sp.commands->notchOnCmd : sp.commands->notchOffCmd);
 }
 
 bool asciiQueryLock(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
-  if (!sp.ascii.lockGet[0] || !sp.ascii.lockReplyPrefix[0]) return false;
+  if (!sp.commands->lockGet[0] || !sp.commands->lockReplyPrefix[0]) return false;
   String line;
-  if (!transactAsciiCommand(sp.ascii.lockGet, line, sp.ascii.lockReplyPrefix, timeoutMs)) return false;
-  return asciiParseOnOffResponse(line, sp.ascii.lockReplyPrefix, onOut);
+  if (!transactAsciiCommand(sp.commands->lockGet, line, sp.commands->lockReplyPrefix, timeoutMs)) return false;
+  return asciiParseOnOffResponse(line, sp.commands->lockReplyPrefix, onOut);
 }
 
 bool asciiSetLock(const RadioProfile& sp, bool on) {
-  return asciiSendSimpleCommand(on ? sp.ascii.lockOnCmd : sp.ascii.lockOffCmd);
+  return asciiSendSimpleCommand(on ? sp.commands->lockOnCmd : sp.commands->lockOffCmd);
 }
 
 bool asciiQueryYaesuRadioInfoFlag(const RadioProfile& sp, const char* code, bool& onOut, uint32_t timeoutMs) {
-  if (sp.protocolType != PROTO_YAESU_FTDX_ASCII || !code || !code[0]) return false;
+  if (sp.protocol != PROTO_YAESU_FTDX_ASCII || !code || !code[0]) return false;
   char cmd[12];
   snprintf(cmd, sizeof(cmd), "RI%s;", code);
   String line;
@@ -255,10 +255,10 @@ bool asciiQueryYaesuRadioInfoFlag(const RadioProfile& sp, const char* code, bool
 }
 
 bool asciiQueryActiveVfoA(const RadioProfile& sp, bool& vfoAOut, uint32_t timeoutMs) {
-  if (!sp.ascii.vfoGet[0] || !sp.ascii.vfoReplyPrefix[0]) return false;
+  if (!sp.commands->vfoGet[0] || !sp.commands->vfoReplyPrefix[0]) return false;
   String line;
-  if (!transactAsciiCommand(sp.ascii.vfoGet, line, sp.ascii.vfoReplyPrefix, timeoutMs)) return false;
-  int start = (int)strlen(sp.ascii.vfoReplyPrefix);
+  if (!transactAsciiCommand(sp.commands->vfoGet, line, sp.commands->vfoReplyPrefix, timeoutMs)) return false;
+  int start = (int)strlen(sp.commands->vfoReplyPrefix);
   int semi = line.indexOf(';', start);
   if (semi < 0) semi = line.length();
   String value = line.substring(start, semi);
@@ -269,19 +269,19 @@ bool asciiQueryActiveVfoA(const RadioProfile& sp, bool& vfoAOut, uint32_t timeou
 }
 
 bool asciiSelectVfoA(const RadioProfile& sp) {
-  return asciiSendSimpleCommand(sp.ascii.vfoACmd);
+  return asciiSendSimpleCommand(sp.commands->vfoACmd);
 }
 
 bool asciiSelectVfoB(const RadioProfile& sp) {
-  return asciiSendSimpleCommand(sp.ascii.vfoBCmd);
+  return asciiSendSimpleCommand(sp.commands->vfoBCmd);
 }
 
 bool asciiSwapVfo(const RadioProfile& sp) {
-  return asciiSendSimpleCommand(sp.ascii.vfoSwapCmd);
+  return asciiSendSimpleCommand(sp.commands->vfoSwapCmd);
 }
 
 bool asciiQueryVfoFrequency(const RadioProfile& sp, bool targetVfoA, uint64_t& hzOut, uint32_t timeoutMs) {
-  const char* cmd = targetVfoA ? sp.ascii.vfoAGet : sp.ascii.vfoBGet;
+  const char* cmd = targetVfoA ? sp.commands->vfoAGet : sp.commands->vfoBGet;
   const char* prefix = targetVfoA ? "FA" : "FB";
   if (!cmd[0]) return false;
   String line;
@@ -290,7 +290,7 @@ bool asciiQueryVfoFrequency(const RadioProfile& sp, bool targetVfoA, uint64_t& h
 }
 
 bool asciiSetVfoFrequency(const RadioProfile& sp, bool targetVfoA, uint64_t hz) {
-  const char* format = targetVfoA ? sp.ascii.vfoASetFormat : sp.ascii.vfoBSetFormat;
+  const char* format = targetVfoA ? sp.commands->vfoASetFormat : sp.commands->vfoBSetFormat;
   if (!format[0]) return false;
   char buf[32];
   snprintf(buf, sizeof(buf), format, (unsigned long long)hz);

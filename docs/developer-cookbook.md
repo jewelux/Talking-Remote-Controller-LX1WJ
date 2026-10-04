@@ -7,7 +7,7 @@ radio feature, a new radio, a new spoken word).
 The other docs, which this one does not repeat:
 
 - [README](../README.md): project goals and the branch model (`main`, `development`, feature branches)
-- [QUICKSTART](../QUICKSTART.md): flashing, the SD card, using the device
+- [QUICKSTART](../QUICKSTART.md): flashing and using the device
 - [builder-guide](../builder-guide.md): hardware, online updates, and the documentation rule
 - [hardware_wiring](hardware_wiring.md): pins and cables
 - [voice_assets/piper/README](../firmware/voice_assets/piper/README.md): setting up voice generation
@@ -62,19 +62,20 @@ to completion, and that action talks to the radio synchronously.
 | Shared features | `radio_features.*`, `ui_features.*` | NR, NB and notch, used by both keypad and console |
 | Radio API | `radio_protocol.*`, `radio_runtime.*`, `radio_state.*` | Protocol-independent calls, and the tracked `live` state |
 | Protocols | `protocol_ops_*`, `protocol_*`, `packet_*`, `transport_serial.*` | CI-V, Kenwood/Elecraft/FTDX ASCII, Yaesu FT-8x7 5-byte CAT |
-| FT-8x7 fields | `ft8x7_codec.*`, `ft8x7_eeprom_map.*`, `ft8x7_model.h` | CAT frame fields, the EEPROM map per model, the model from the variant. No `Arduino.h`; `protocol_ft8x7_eeprom.*` reads the EEPROM with them |
-| Profiles | `radio_types.h`, `sd_profile_parser.*`, `profile_loader.*`, `sd_slots.*`, `radio_profile.*`, `radio_catalog.*` | What a radio is: connection, protocol, capabilities, command strings |
+| FT-8x7 fields | `ft8x7_codec.*`, `ft8x7_eeprom_map.*`, `ft8x7_model.h` | CAT frame fields, the EEPROM map per model, the FT-8x7 model from the `RadioModel`. No `Arduino.h`; `protocol_ft8x7_eeprom.*` reads the EEPROM with them |
+| Profiles | `radio_profile_types.h`, `radio_profile_table.*`, `radio_catalog.*`, `radio_profile.*` | What a radio is (connection, protocol, capabilities, command strings), the built-in radios, the active one, and switching between them. The types and the table have no `Arduino.h` |
 | Speech | `ui_speech.*`, `voice_data.h` (generated) | Clips, tokens, the audio queue |
 | Settings | `radio_prefs.*` | NVS: profile, volume, tuning speech, CI-V address and baud per slot |
 
 **Five concepts to learn first:**
 
-- **Profile** (`RadioProfile`): one radio in one slot (1–24). Slots come
-  from `SDCard/slots.ini`, with built-in CI-V profiles as the fallback.
+- **Profile** (`RadioProfile`): one radio in one slot. Every profile is
+  built in (`kProfiles` in `radio_profile_table.cpp`); `currentProfile()` is
+  the active one.
 - **Protocol** (`ProtocolType`): `PROTO_CIV`, `PROTO_KENWOOD_ASCII`,
   `PROTO_ELECRAFT_ASCII`, `PROTO_YAESU_FTDX_ASCII`, `PROTO_YAESU_FT8X7`.
 - **Capabilities** (`RadioCapabilities`, `sp.caps.getX` / `setX`): what this
-  profile may do. Set from the ini's `[capabilities]` section.
+  profile may do. Set in the profile table.
 - **`live`** (`LiveState`): what we last knew about the radio, with a
   `xValid` flag for each value.
 - **Bank**: one page of keypad functions, from 1 to 9. The same key does
@@ -141,7 +142,7 @@ Useful commands:
 | Command | What it shows |
 |---|---|
 | `HELP` | Every command, for the active protocol |
-| `PROFILE?`, `SLOTS?` | Active profile details (source, protocol, variant, capabilities), all slots |
+| `PROFILE?`, `SLOTS?` | Active profile details (protocol, model, link, capabilities), all slots |
 | `MODE LIST` | Modes the keypad mode select accepts on this profile |
 | `STATUS?` | A status summary of the radio and device |
 | `VOICE <name>`, `LISTVOICES`, `TEST` | Play one clip, list all clips, play every clip |
@@ -157,8 +158,8 @@ behaviour can be reproduced without touching the keypad. `DBG_PRINT` /
 `firmware/tools/ftdx10_simulator.py` is an FTDX-10 CAT simulator (Tkinter plus
 `pyserial`).
 
-1. Connect a USB-UART adapter (TTL level) to the radio port. `ftdx10.ini`
-   uses UART2, pins 9/10.
+1. Connect a USB-UART adapter (TTL level) to the radio port. The FTDX-10
+   profile uses UART2, pins 9/10.
 2. Start it: `pip install pyserial`, then `python firmware/tools/ftdx10_simulator.py`.
 3. Pick the COM port at 38400 baud and select the FTDX-10 slot on HamTRC.
 
@@ -473,13 +474,13 @@ every step below names its NB counterpart.
 
 **1. Capability.** The NB counterpart is `getNb` / `setNb`.
 
-- `radio_types.h`: add `getPreamp` and `setPreamp` to `RadioCapabilities`.
-- `profile_loader.cpp`: set them to false in the defaults, and to true for
-  the built-in full-feature CI-V profile if it applies.
-- `sd_profile_parser.cpp`: parse the ini keys.
+- `radio_profile_types.h`: add `getPreamp` and `setPreamp` to
+  `RadioCapabilities`. Left out of a profile, they are false.
+- `radio_profile_table.cpp`: set them in the capability sets of the radios
+  that have a preamp.
 
   ```cpp
-  else if (key == "get_preamp") sp.caps.getPreamp = parseIniBool(val, sp.caps.getPreamp);
+  .getPreamp = true, .setPreamp = true,
   ```
 
 - `radio_profile.cpp`: add the new caps to the capability print, so
@@ -487,11 +488,9 @@ every step below names its NB counterpart.
 
 **2. Command strings (ASCII protocols only).** The NB counterparts are
 `nbGet`, `nbOnCmd` and `nb_get`. Preamp already has these:
-`sp.ascii.preampGet`, `preampOnCmd`, `preampOffCmd` and
-`preampReplyPrefix`, with ini keys `preamp_get`, `preamp_on`, `preamp_off`
-and `preamp_prefix`. For a new command, add the fields to
-`AsciiCommandProfile`, give them defaults in `profile_loader.cpp`, and add
-`[commands]` / `[responses]` keys in the parser.
+`sp.commands->preampGet`, `preampOnCmd`, `preampOffCmd` and
+`preampReplyPrefix`. For a new command, add the fields to `AsciiCommandSet`
+and set them in the command tables of `radio_profile_table.cpp`.
 
 **3. Protocol ops.** Each op takes the profile and checks the capability
 first. The CI-V ops are hard-coded bytes; the ASCII ops are driven by the
@@ -506,7 +505,7 @@ bool civQueryPreamp(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
 
 // protocol_ops_ascii.cpp — asciiQueryPreamp exists; add the caps check like asciiQueryNb
 bool asciiQueryPreamp(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
-  if (!sp.caps.getPreamp || !sp.ascii.preampGet[0] || !sp.ascii.preampReplyPrefix[0]) return false;
+  if (!sp.caps.getPreamp || !sp.commands->preampGet[0] || !sp.commands->preampReplyPrefix[0]) return false;
   ...
 ```
 
@@ -572,72 +571,65 @@ second implementation.
 
 **9. Profiles and docs.**
 
-- Add `get_preamp=1` / `set_preamp=1` to each ini whose radio has a preamp.
+- Set `getPreamp` / `setPreamp` for each radio with a preamp (step 1).
 - Update `docs/radio-support-matrix.md` and the radio pages.
 - Add a user-facing entry to the `CHANGELOG.md`.
 
 ### 4.5 Add a radio that speaks an existing protocol
 
-This needs only an ini file, no code.
+This needs only a profile entry, no other code.
 
-**1. Copy the closest profile** in `firmware/SDCard/`:
+**1. Copy the closest entry** in `kProfiles` (`firmware/radio_profile_table.cpp`):
 
 | Family | Template |
 |---|---|
-| Icom CI-V | `ic7300.ini` |
-| Kenwood | `ts480.ini` |
-| Elecraft | `kx2.ini` |
-| Yaesu new ASCII | `ftdx10.ini` |
-| Yaesu FT-817/857/897 | `ft817.ini` / `ft857.ini` |
+| Icom CI-V | IC-7300 (slot 1) |
+| Kenwood | TS-480 (slot 7) |
+| Elecraft | KX2 (slot 6) |
+| Yaesu new ASCII | FTDX-10 (slot 11) |
+| Yaesu FT-817/857/897 | FT-817 (slot 8) / FT-857 (slot 9) |
 
-**2. Edit it.** Mind the order:
+**2. Edit it.** Give it a free slot and keep `kProfiles` in slot order. The
+comment above `kProfiles` lists the free slots and which family each is kept
+for.
 
-```ini
-[profile]
-name=Icom IC-9700          ; up to 31 chars, shown and logged
-voice_vendor=icom          ; spoken: xiegu, icom, kenwood, yaesu, elecraft
-voice_digits=9700          ; spoken digit by digit
-;variant=ic7760            ; only if an existing quirk path applies (see below)
-
-[connection]
-civ_addr=0xA2
-baud=19200
-uart_num=1
-rx_pin=18
-tx_pin=17
-tx_invert=1
-rx_invert=0
-
-[protocol]                 ; MUST come before the sections below
-type=CIV                   ; CIV | KENWOOD_ASCII | ELECRAFT_ASCII | YAESU_FTDX_ASCII | YAESU_FT8X7
-
-[capabilities]             ; list only what the radio really does
-get_freq=1
-set_freq=1
-...
-
-[modes]                    ; ASCII / FT-8x7 only: the COMPLETE list of the radio's modes
-lsb=1
-usb=2
+```cpp
+{.slot = 25, .name = "Icom IC-9700", .vendor = VoiceVendor::Icom, .voiceDigits = "9700",
+ .protocol = PROTO_CIV,
+ .link = {.port = RadioPort::CivJack, .baud = 19200, .bauds = kCivBauds, .civAddr = 0xA2},
+ .caps = kCivBasicCaps},
 ```
 
-Three traps:
+- `name` is shown and logged; `vendor` and `voiceDigits` are spoken when the
+  profile is picked.
+- `link` is the port (`CivJack`, `Rs232`, `CatTtl`), the default baud, the
+  rates the radio itself offers, and the CI-V address on CI-V radios. The user
+  can pick another rate from the list (`BAUD`, Bank 8 key `2`). For a radio
+  with other rates, add a `constexpr uint32_t k…Bauds[]` to its family.
+- `caps` lists only what the radio really does. Reuse a family set when it
+  fits; otherwise add a `constexpr RadioCapabilities` to the family section.
+- ASCII radios need `commands` and `modes`; FT-8x7 radios need `modes`. A mode
+  left empty is gone from the keypad mode select and from `MODE LIST`.
+- Leave `model` out unless an existing quirk path applies (see below).
 
-- **`type=` resets the profile to that protocol's defaults.** Any
-  capabilities, commands or modes above `[protocol]` are lost.
-- **`[modes]` is the full list.** A mode you leave out is gone, and it
-  disappears from the keypad mode select and from `MODE LIST`. Without a
-  `[modes]` section, the protocol defaults apply.
-- **Unknown keys are silently ignored.** A typo means the feature is off.
-  Check the result with `PROFILE?`.
+Two traps:
 
-**3. Register the slot** in `SDCard/slots.ini` using a free number, e.g.
-`23=ic9700.ini`. The comments in `slots.ini` say which ranges are reserved
-for which family.
+- **Fields go in declaration order.** Designated initializers must follow the
+  order in `radio_profile_types.h`, or the build fails.
+- **A field you leave out is off or empty.** A forgotten capability is "not
+  available" on the radio. Check the result with `PROFILE?`.
 
-**4. Verify it on the console.** Run `SLOTS?`, then `PROFILE?` (it shows
-protocol, variant and capabilities), then `MODE LIST`, `FREQ?`, `MODE?`, and
-one feature such as `NR?`. Then try every bank on the keypad.
+The checks at the end of `radio_profile_table.cpp` stop the build on a
+duplicate slot, a default baud missing from the radio's list, a CI-V radio
+without an address, or an ASCII radio without frequency and mode commands.
+
+**3. Test it.** Run `make -C tests/profiles`. If the radio has something easy
+to lose, add a spot check to `tests/profiles/test_profiles.cpp`.
+
+**4. Verify it on the console.** Run `SLOTS?`, then `PROFILE n` and
+`PROFILE?` (it shows protocol, model, link and capabilities), then
+`MODE LIST`, `FREQ?`, `MODE?`, and one feature such as `NR?`. Then try every
+bank on the keypad.
 
 **5. Document it.**
 
@@ -645,48 +637,48 @@ one feature such as `NR?`. Then try every bank on the keypad.
 - Add a page under `docs/radios/`, following `icom-ic-7300.md`.
 - Say honestly what was tested on hardware.
 
-**About `variant=`.** It opts into code paths for one radio:
+**About `model`.** It opts into code paths for one radio:
 
-- `ft817`, `ft818` and `ft857_897` select the FT-8x7 model (`ft8x7_model.h`):
+- `Ft817`, `Ft818` and `Ft857` select the FT-8x7 model (`ft8x7_model.h`):
   its EEPROM map, VFO tracking and keypad layout. Code asks
-  `currentFt8x7Model()`, `currentIsFt817Family()` or `currentIsFt857Family()`,
-  never the string.
-- `ic7760` selects the CI-V main/sub handling.
+  `currentFt8x7Model()`, `currentIsFt817Family()` or `currentIsFt857Family()`.
+- `Ic7760` selects the CI-V main/sub handling.
+- `Ts480` selects the two-level NR.
+- `Ftdx10` selects the FTDX10 keypad layout and the console commands it hides.
 
-A new variant name does nothing until code checks it. Prefer a variant or a
-capability to matching the radio's `name`. The TS-480 name check in `radio_features.cpp` is legacy.
+A new model does nothing until code checks it. Prefer a capability to a
+model, and never match the radio's `name`.
 
 ### 4.6 Add a new protocol
 
 This is needed only when no existing protocol can talk to the radio. Work
 through this checklist:
 
-1. **Protocol type.** In `radio_types.h`, add `PROTO_X` to `ProtocolType`. In
+1. **Protocol type.** In `radio_profile_types.h`, add `PROTO_X` to `ProtocolType`. In
    `radio_profile.cpp`, add it to `protocolTypeToString`.
-2. **Parser.** In `sd_profile_parser.cpp`, map `type=X` to it.
-3. **Defaults.** In `profile_loader.cpp`, add a branch to
-   `setProtocolDefaults` with the capabilities every radio of this protocol
-   has.
-4. **Framing.** Add `packet_x.*` and `protocol_x.*` on top of
+2. **Profiles.** Add the radios to `radio_profile_table.cpp`, and extend
+   the checks at its end with what every radio of the protocol needs.
+3. **Framing.** Add `packet_x.*` and `protocol_x.*` on top of
    `transport_serial.h`.
    - Set `g_radioReplyTimedOut` when the radio stays silent; the UI's
      "timeout" depends on it.
    - Flush stale input before each request.
-5. **Ops.** Add `protocol_ops_x.*`. Each function has the form
+4. **Ops.** Add `protocol_ops_x.*`. Each function has the form
    `xQueryFoo(const RadioProfile& sp, …)` and checks `sp.caps` first.
-6. **Dispatch.** In `radio_protocol.cpp`, add a `PROTO_X` line to every
+5. **Dispatch.** In `radio_protocol.cpp`, add a `PROTO_X` line to every
    function it supports, plus `canSetMode`, `sMeterFromRaw` and the
    `protocolSupports*` helpers.
-7. **Serial.** In `serialTransportApplyProfile`
-   (`transport_serial.cpp`), set the frame format (8N1/8N2) and idle level.
+6. **Serial.** In `selectActiveProfile` (`radio_catalog.cpp`), pick the
+   protocol's `SerialFraming`; `serialTransportApplyProfile`
+   (`transport_serial.cpp`) applies it.
    Put any line-open handshake in `applyProfile` (`radio_profile.cpp`); the
    Elecraft `AI0;` is an example.
-8. **Polling.** In `radio_monitor.cpp`, add a `freqPollPolicyFor()` case if
+7. **Polling.** In `radio_monitor.cpp`, add a `freqPollPolicyFor()` case if
    the default interval or timeout does not suit the radio. If the radio sends
    updates on its own, add a pump like `engine_civ.cpp`.
-9. **Keypad.** The radio gets the `Generic` layout. Add a `KeypadLayout` only
+8. **Keypad.** The radio gets the `Generic` layout. Add a `KeypadLayout` only
    if it needs its own keys (recipe 4.2).
-10. **Simulator.** Before touching real hardware, write one, starting from
+9. **Simulator.** Before touching real hardware, write one, starting from
     `ftdx10_simulator.py`.
 
 ### 4.7 Add a spoken word
@@ -794,7 +786,7 @@ setting like `AGC?` is spelled instead).
 
 - Check `sp.caps` in the ops and in `radio_features`.
 - The keymap alone decides the layout.
-- New radio-specific behaviour needs a capability, a `variant`, or a
+- New radio-specific behaviour needs a capability, a `RadioModel`, or a
   `KeypadTraits` flag, never `name.indexOf(...)`.
 
 **Keep the pure core pure.** `keypad_input.*` and `keypad_keymap.*` must not
@@ -842,8 +834,6 @@ pattern):
 
 - Most console commands still have their own implementation beside the keypad
   one. Only NR, NB and notch are shared so far.
-- `isFtdx10KeypadProfile()` recognises the FTDX10 by its `voice_vendor` /
-  `voice_digits`, not by a variant.
 - `radio_api.*` is an empty umbrella header; include the specific `radio_*.h`
   instead.
 - The header of `keymap_expectations.inc` refers to function names from
@@ -864,8 +854,8 @@ pattern):
 | Add a console command | `ui_console.cpp` (plus `printHelp`) |
 | Share an operation between key and console | `radio_features.*` + `ui_features.*` |
 | Talk to the radio in a new way | `protocol_ops_*` + `radio_protocol.*` |
-| Add a capability flag | `radio_types.h`, `profile_loader.cpp`, `sd_profile_parser.cpp`, `radio_profile.cpp` |
-| Support a new radio | `firmware/SDCard/*.ini` + `slots.ini` |
+| Add a capability flag | `radio_profile_types.h`, `radio_profile_table.cpp`, `radio_profile.cpp` |
+| Support a new radio | `kProfiles` in `radio_profile_table.cpp` |
 | Add a spoken word | `voice_phrases.txt` → `generate_voices.py` → `kVoiceClips[]` |
 | Change pins or timing constants | `config_pins.h`, `radio_types.h` |
 
@@ -878,17 +868,19 @@ pattern):
 | `Timeout` | "timeout" | "timeout" |
 | `NoReply`, `Failed` | "error", `"X -> no reply"` / `"X -> failed"` | printed only, no sound |
 
-### Ini sections
+### Profile fields
 
-| Section | Holds | Notes |
+| Field | Holds | Notes |
 |---|---|---|
-| `[profile]` | `name`, `voice_vendor`, `voice_digits`, `variant` | Survives `type=` |
-| `[connection]` | `civ_addr`, `baud`, `uart_num`, `rx_pin`, `tx_pin`, `tx_invert`, `rx_invert` | Survives `type=` |
-| `[protocol]` | `type` | Resets the sections below to the protocol defaults |
-| `[capabilities]` | `get_*`, `set_*`, `start_tune`, `rf_power_max_watts` | Booleans accept `1/0`, `yes/no`, `on/off` |
-| `[commands]` | ASCII command strings, e.g. `nb_on=NB01;`; set formats use `%llu` / `%s` | ASCII protocols only |
-| `[responses]` | Reply prefixes, e.g. `nb_prefix=NB0` | ASCII protocols only |
-| `[modes]` | `lsb usb am cw rtty fm cwr rttyr digi` → the radio's code | The complete list; FT-8x7 codes are hex |
-| `[bank6]` | `rpt_offset_1`, `rpt_offset_2`, `ctcss_default`, `dcs_default` | FT-8x7 repeater keys |
+| `slot`, `name` | The number the user picks it by, the name shown | Unique slots, table in slot order |
+| `vendor`, `voiceDigits` | What is spoken for the profile | Digits only |
+| `model` | `RadioModel` quirk path | `Generic` unless code checks the model |
+| `protocol` | `ProtocolType` | |
+| `link` | `port`, default `baud`, `bauds` offered, `civAddr` | The user's baud and CI-V address are saved per slot |
+| `caps` | `RadioCapabilities` | Left out means false |
+| `commands` | `AsciiCommandSet`: commands and reply prefixes; set formats use `%llu` / `%s` | ASCII protocols only |
+| `modes` | `ModeCodes`: `lsb usb am cw rtty fm cwr rttyR digi` → the radio's code | ASCII and FT-8x7; FT-8x7 codes are hex |
+| `rfPowerMaxWatts` | Full scale of the RF power setting | 100 unless set |
+| `ft8x7Bank6` | Repeater offsets, default CTCSS tone and DCS code | FT-8x7 Bank 6 |
 
-The authoritative key list is `loadSingleProfileIni` in `sd_profile_parser.cpp`.
+The types are in `radio_profile_types.h`.

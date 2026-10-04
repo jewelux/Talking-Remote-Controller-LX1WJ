@@ -4,4 +4,3 @@
 
 void printModeList();
 void printStatusSummary();
-uint8_t findAdjacentValidProfile(int8_t direction);

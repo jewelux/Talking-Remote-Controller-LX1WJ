@@ -35,11 +35,10 @@ KeypadTraits traitsFor(uint16_t family) {
   else if (family == FT817) t.layout = KeypadLayout::Ft817;
   else if (family == FT857) t.layout = KeypadLayout::Ft857;
   else if (family == FT8X7_OTHER) t.layout = KeypadLayout::Ft8x7;
-  t.lightIcomFallback = family == LIGHT;
   // Monitor and transceive are PROTO_CIV only (radio_protocol.cpp).
   t.supportsMonitor = (family & CIV) != 0;
   t.supportsTransceive = (family & CIV) != 0;
-  t.canGetRfPower = family == IC7300 || family == LIGHT;
+  t.canGetRfPower = family == IC7300;
   return t;
 }
 
@@ -192,7 +191,6 @@ void cycleBank8Baud(int d) { record("cycleBank8Baud(%d)", d); }
 void queryBank8Ft8x7Row() { record("queryBank8Ft8x7Row"); }
 void queryBank8Ft8x7Menu() { record("queryBank8Ft8x7Menu"); }
 
-void selectBank9DirectProfile(char key) { record("selectBank9DirectProfile(%c)", key); }
 void queryBank9TuningSpeech() { record("queryBank9TuningSpeech"); }
 void toggleBank9TuningSpeech() { record("toggleBank9TuningSpeech"); }
 void queryBank9Verbose() { record("queryBank9Verbose"); }

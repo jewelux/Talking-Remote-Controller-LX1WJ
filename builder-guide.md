@@ -13,7 +13,7 @@ Use this repository if you need to:
 
 - build the ESP32-S3 controller
 - load the current firmware
-- adjust SD card profiles
+- add or adjust radio profiles
 - extend CAT command handling
 - document real-radio behavior
 
@@ -33,7 +33,7 @@ The project is split into modular source files for:
 - protocol handling
 - keypad and speech UI
 - runtime and live radio state
-- SD card profile loading
+- the built-in radio profiles
 
 ## Online Update Notes
 

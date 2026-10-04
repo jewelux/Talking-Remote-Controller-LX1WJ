@@ -18,7 +18,7 @@ static bool isFt817WithoutDsp() {
 }
 
 static bool isTs480() {
-  return currentProtocolType() == PROTO_KENWOOD_ASCII && String(currentProfile().name).indexOf("TS-480") >= 0;
+  return currentRadioModel() == RadioModel::Ts480;
 }
 
 // ---- Noise reduction ----
@@ -29,8 +29,8 @@ static constexpr uint8_t kTs480NrLevels = 2;
 static bool ts480ReadNrLevel(uint8_t& level) {
   const RadioProfile& sp = currentProfile();
   String line;
-  if (!transactAsciiCommand(sp.ascii.nrGet, line, sp.ascii.nrReplyPrefix, 800)) return false;
-  int start = (int)strlen(sp.ascii.nrReplyPrefix);
+  if (!transactAsciiCommand(sp.commands->nrGet, line, sp.commands->nrReplyPrefix, 800)) return false;
+  int start = (int)strlen(sp.commands->nrReplyPrefix);
   int semi = line.indexOf(';', start);
   if (semi < 0) semi = line.length();
   String value = line.substring(start, semi);

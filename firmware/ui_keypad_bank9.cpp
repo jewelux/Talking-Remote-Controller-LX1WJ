@@ -39,7 +39,7 @@ void beginBank9ProfileSelect() {
 
 void selectNextProfile() {
   printKeypadAction("PROFILE NEXT");
-  uint8_t next = findAdjacentValidProfile(1);
+  uint8_t next = adjacentProfileSlot(g_profileId, 1);
   applyProfile(next);
   printKeypadStatus("PROFILE {}", next);
   speakCurrentProfile();
@@ -47,7 +47,7 @@ void selectNextProfile() {
 
 void selectPrevProfile() {
   printKeypadAction("PROFILE PREV");
-  uint8_t prev = findAdjacentValidProfile(-1);
+  uint8_t prev = adjacentProfileSlot(g_profileId, -1);
   applyProfile(prev);
   printKeypadStatus("PROFILE {}", prev);
   speakCurrentProfile();
@@ -113,17 +113,3 @@ void queryBank9Profile() {
   speakProfileIdentityFromSlot(g_profileId, false);
 }
 
-void selectBank9DirectProfile(char key) {
-  if (key < '1' || key > '9') return;
-  const uint8_t slot = (uint8_t)(key - '0');
-  if (!storedProfileForId(slot)) {
-    printKeypadAction("PROFILE");
-    printKeypadStatus("PROFILE {} EMPTY", slot);
-    speakKeypadFailure("PROFILE", KeypadFailure::NotAvailable);
-    return;
-  }
-  printKeypadAction("PROFILE {}", slot);
-  applyProfile(slot);
-  printKeypadStatus("PROFILE {}", slot);
-  speakCurrentProfile();
-}

@@ -2,10 +2,10 @@
 
 This document summarizes the current CAT support status for the Yaesu FT-817, FT-857, and FT-897 family in this project.
 
-The family is currently handled in two sub-variants:
+The family is currently handled as two models:
 
-- `ft817` (and `ft818`, the same apart from its power levels)
-- `ft857_897`
+- FT-817 (and FT-818, the same apart from its power levels)
+- FT-857/897
 
 The goal of this document is to separate:
 
@@ -206,7 +206,7 @@ The radio saves a band block on events such as key presses, not while the dial t
 
 | Function group | Status |
 |---|---|
-| Variant model | grouped with `ft857_897` |
+| Model | grouped with the FT-857 |
 | Documented CAT assumptions | treated the same as FT-857 |
 | Practical device verification | not yet available |
 

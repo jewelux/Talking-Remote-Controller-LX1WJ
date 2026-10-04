@@ -13,7 +13,7 @@ For the current public state, please use these documents first:
 
 This page is intentionally kept minimal so the repository does not present two conflicting descriptions of the same family.
 
-The FT-857 remains important because it defines much of the `ft857_897` variant behavior, and `V3.5.8` keeps that shared logic around split handling and keypad write safety.
+The FT-857 remains important because it defines much of the behavior the FT-857 and FT-897 share, and `V3.5.8` keeps that shared logic around split handling and keypad write safety.
 
 ## Summary
 

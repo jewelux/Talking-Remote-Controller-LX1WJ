@@ -6,7 +6,6 @@
 #include "radio_protocol.h"
 #include "radio_state.h"
 #include "radio_utils.h"
-#include "sd_slots.h"
 #include "transport_serial.h"
 #include "ui_speech.h"
 
@@ -159,10 +158,7 @@ void reportFtdx10HiddenKey() {
 }
 
 bool isFtdx10KeypadProfile() {
-  const RadioProfile& sp = currentProfile();
-  return sp.protocolType == PROTO_YAESU_FTDX_ASCII &&
-         strcmp(sp.voiceVendor, "yaesu") == 0 &&
-         strcmp(sp.voiceDigits, "10") == 0;
+  return currentRadioModel() == RadioModel::Ftdx10;
 }
 
 bool isFt8x7Ft817Keypad() {
@@ -338,10 +334,6 @@ void speakFeatureValue(const uint8_t* featureData, size_t featureLen, uint8_t va
   if (!g_speechEnabled) return;
   speakLabelClip(featureData, featureLen);
   speakDigitsAndPoint(String((int)value));
-}
-
-bool lightIcomFallbackActive() {
-  return getLastSdLoadStatus() != SD_LOAD_OK;
 }
 
 void speakKeypadCommandWord(const String& cmd) {

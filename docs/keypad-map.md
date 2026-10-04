@@ -8,8 +8,7 @@ Columns:
 - **Icom**: CI-V radios (IC-7300, IC-705, IC-706 and others)
 - **FTDX10**: the FTDX10 family profile; most keys run a console command
 - **Kenwood, Elecraft, other FTDX**: TS-480, KX2, KX3, FT-891 and other Yaesu FTDX radios
-- **FT-817/818** and **FT-857/897**: the Yaesu FT-8x7 radios. An FT-8x7 profile without a
-  `variant` gets the Kenwood column plus Bank 6.
+- **FT-817/818** and **FT-857/897**: the Yaesu FT-8x7 radios
 
 Besides the functions, the tables say:
 
@@ -146,7 +145,7 @@ switches RIT on Bank 3 `5`.
 
 ## Bank 6 - Repeater and Tone
 
-FT-8x7 only (FT-817/818, FT-857/897 and FT-8x7 profiles without a variant); on every other radio
+FT-8x7 only (FT-817/818 and FT-857/897); on every other radio
 these keys are free.
 
 | Key | FT-8x7 |
@@ -154,15 +153,15 @@ these keys are free.
 | `0` short | repeater shift off |
 | `0` long | repeater shift minus |
 | `0` double | repeater shift plus |
-| `1` short | repeater offset preset 1 (SD card `rpt_offset_1`, default 0.6 MHz) |
-| `1` long | repeater offset preset 2 (SD card `rpt_offset_2`, default 7.6 MHz) |
+| `1` short | repeater offset preset 1 (0.6 MHz) |
+| `1` long | repeater offset preset 2 (7.6 MHz) |
 | `1` double | repeater offset entry in kHz |
 | `2` short | tone off |
 | `2` long | CTCSS on |
 | `2` double | DCS on |
-| `3` short | CTCSS tone (the last set, or the SD card default) |
+| `3` short | CTCSS tone (the last set, or 88.5 Hz) |
 | `3` long | CTCSS tone entry |
-| `4` short | DCS code (the last set, or the SD card default) |
+| `4` short | DCS code (the last set, or 023) |
 | `4` long | DCS code entry |
 
 ## Bank 7
@@ -198,5 +197,4 @@ The same on every radio.
 | `B` short | next profile |
 | `C` short | previous profile |
 
-`1`–`3` and `6` are free. When the SD card profiles did not load (built-in Icom profiles only), `1`–`9`
-short pick that built-in profile instead, and `4`, `5`, `7`, `8` keep only their long press.
+`1`–`3` and `6` are free.

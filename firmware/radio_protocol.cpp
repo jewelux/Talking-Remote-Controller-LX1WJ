@@ -9,7 +9,7 @@
 #include "radio_utils.h"
 
 static bool isYaesuFtdxAsciiProfile(const RadioProfile& sp) {
-  return sp.protocolType == PROTO_YAESU_FTDX_ASCII;
+  return sp.protocol == PROTO_YAESU_FTDX_ASCII;
 }
 
 static bool ensureYaesuFtdxActiveVfoKnown(const RadioProfile& sp, uint32_t timeoutMs) {
@@ -122,7 +122,7 @@ bool canSetMode(uint8_t mode) {
   if (pt == PROTO_CIV) return true;
   String code;
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) {
-    return sp.ascii.modeSetFormat[0] && profileModeCodeForInternal(sp, mode, code);
+    return sp.commands->modeSetFormat[0] && profileModeCodeForInternal(sp, mode, code);
   }
   if (pt == PROTO_YAESU_FT8X7) return profileModeCodeForInternal(sp, mode, code);
   return false;
@@ -578,7 +578,7 @@ bool canSetVfoFrequency(bool targetVfoA) {
   const RadioProfile& sp = currentProfile();
   if (pt == PROTO_CIV) return true;
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) {
-    return (targetVfoA ? sp.ascii.vfoASetFormat : sp.ascii.vfoBSetFormat)[0] != '\0';
+    return (targetVfoA ? sp.commands->vfoASetFormat : sp.commands->vfoBSetFormat)[0] != '\0';
   }
   if (pt == PROTO_YAESU_FT8X7) return sp.caps.setVfo && sp.caps.setFreq && currentIsFt817Family();
   return false;

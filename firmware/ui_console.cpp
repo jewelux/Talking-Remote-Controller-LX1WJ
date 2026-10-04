@@ -15,7 +15,6 @@
 #include "radio_runtime.h"
 #include "radio_state.h"
 #include "radio_utils.h"
-#include "sd_slots.h"
 #include "transport_serial.h"
 #include "ui_features.h"
 #include "ui_speech.h"
@@ -563,10 +562,7 @@ String upperCopy(String s) {
 }
 
 static bool isFtdx10ConsoleProfile() {
-  const RadioProfile& sp = currentProfile();
-  return sp.protocolType == PROTO_YAESU_FTDX_ASCII &&
-         strcmp(sp.voiceVendor, "yaesu") == 0 &&
-         strcmp(sp.voiceDigits, "10") == 0;
+  return currentRadioModel() == RadioModel::Ftdx10;
 }
 
 static bool handleFtdx10BlockedConsoleCommand(const String& upper) {
@@ -952,7 +948,7 @@ static bool handleConsoleInfoCommands(const String& upper) {
 
 static bool handleConsoleProfileCommands(const String& line, const String& upper) {
   if (upper == "PROFILE NEXT") {
-    uint8_t next = findAdjacentValidProfile(1);
+    uint8_t next = adjacentProfileSlot(g_profileId, 1);
     applyProfile(next);
     Serial.print("OK PROFILE ");
     Serial.println((int)next);
@@ -960,7 +956,7 @@ static bool handleConsoleProfileCommands(const String& line, const String& upper
     return true;
   }
   if (upper == "PROFILE PREV") {
-    uint8_t prev = findAdjacentValidProfile(-1);
+    uint8_t prev = adjacentProfileSlot(g_profileId, -1);
     applyProfile(prev);
     Serial.print("OK PROFILE ");
     Serial.println((int)prev);
@@ -969,7 +965,7 @@ static bool handleConsoleProfileCommands(const String& line, const String& upper
   }
   if (upper.startsWith("PROFILE ")) {
     int slot = line.substring(8).toInt();
-    if (slot < 1 || slot > MAX_PROFILE_SLOTS || !storedProfileForId((uint8_t)slot)) {
+    if (slot < 1 || slot > 255 || !profileForSlot((uint8_t)slot)) {
       Serial.println("PROFILE -> invalid or empty slot");
       speakError();
       return true;
@@ -1111,8 +1107,7 @@ static bool handleConsoleConnectionCommands(const String& line, const String& up
 
 static bool handleConsoleToggleCommands(const String& line, const String& upper) {
   if (upper == "EXPERIMENTAL ON" || upper == "EXPERIMENTAL OFF") {
-    g_experimentalCaps = (upper == "EXPERIMENTAL ON");
-    invalidateExperimentalProfile();
+    setExperimentalCaps(upper == "EXPERIMENTAL ON");
     Serial.println(g_experimentalCaps ? "OK EXPERIMENTAL ON  (all caps on until OFF or restart)" : "OK EXPERIMENTAL OFF");
     return true;
   }
@@ -1287,8 +1282,8 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
 
   if (upper == "YALL?") {
     Serial.println("[YAESU FT8X7]");
-    Serial.print("  VARIANT: ");
-    Serial.println(currentProfileVariant()[0] ? currentProfileVariant() : "(default)");
+    Serial.print("  MODEL: ");
+    Serial.println(radioModelName(currentRadioModel()));
     const bool isFt817 = currentIsFt817Family();
     const bool isFt857Family = currentIsFt857Family();
 
@@ -1375,9 +1370,8 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
   }
 
   if (upper == "YVAR?") {
-    const char* variant = currentProfileVariant();
     Serial.print("YVAR: ");
-    Serial.println(variant[0] ? variant : "(default)");
+    Serial.println(radioModelName(currentRadioModel()));
     if (currentIsFt817Family()) {
       Serial.println("  Tone/DCS family: FT-817 style (simple Tone/DCS layout)");
     } else if (currentIsFt857Family()) {
@@ -2312,7 +2306,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     String rsp;
     if (!asciiQueryIdLine(sp, rsp, 800)) { reportCommandFailure("ID?", "no reply"); return true; }
     Serial.print("ID: ");
-    printAsciiReplyPayload(rsp, sp.ascii.idReplyPrefix);
+    printAsciiReplyPayload(rsp, sp.commands->idReplyPrefix);
     speakConsoleTokenOrGap("id");
     return true;
   }
@@ -2320,7 +2314,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     String rsp;
     if (!asciiQueryOmLine(sp, rsp, 800)) { reportCommandFailure("OM?", "no reply"); return true; }
     Serial.print("OM: ");
-    printAsciiReplyPayload(rsp, sp.ascii.omReplyPrefix);
+    printAsciiReplyPayload(rsp, sp.commands->omReplyPrefix);
     return true;
   }
   if (upper == "FR?") {
@@ -2955,12 +2949,12 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     String rsp;
     if (!asciiQueryAgcLine(sp, rsp, 800)) { reportCommandFailure("GT?", "no reply"); return true; }
     Serial.print("GT: ");
-    printAsciiReplyPayload(rsp, sp.ascii.agcReplyPrefix);
+    printAsciiReplyPayload(rsp, sp.commands->agcReplyPrefix);
     speakConsoleTokenOrGap("gt");
     return true;
   }
   if (upper == "GT FAST") {
-    if (!asciiSetAgcCommand(sp, sp.ascii.agcFastCmd)) { reportCommandFailure("GT FAST", "failed"); return true; }
+    if (!asciiSetAgcCommand(sp, sp.commands->agcFastCmd)) { reportCommandFailure("GT FAST", "failed"); return true; }
     Serial.println("GT FAST");
     speakConsoleTokenOrGap("gt");
     playSilenceMs(60);
@@ -2968,7 +2962,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     return true;
   }
   if (upper == "GT SLOW") {
-    if (!asciiSetAgcCommand(sp, sp.ascii.agcSlowCmd)) { reportCommandFailure("GT SLOW", "failed"); return true; }
+    if (!asciiSetAgcCommand(sp, sp.commands->agcSlowCmd)) { reportCommandFailure("GT SLOW", "failed"); return true; }
     Serial.println("GT SLOW");
     speakConsoleTokenOrGap("gt");
     playSilenceMs(60);
@@ -2976,7 +2970,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     return true;
   }
   if (upper == "GT OFF") {
-    if (!asciiSetAgcCommand(sp, sp.ascii.agcOffCmd)) { reportCommandFailure("GT OFF", "failed"); return true; }
+    if (!asciiSetAgcCommand(sp, sp.commands->agcOffCmd)) { reportCommandFailure("GT OFF", "failed"); return true; }
     Serial.println("GT OFF");
     if (g_speechEnabled) speakTokenState("gt", false);
     return true;

@@ -4,7 +4,11 @@
 
 const char* protocolTypeToString(ProtocolType pt);
 void printActiveProfileDetails();
-void applyProfile(uint8_t profileId);
+// Makes the profile in slot the active radio (the default profile for a free
+// slot), with the baud and CI-V address saved for it, and reopens the link.
+void applyProfile(uint8_t slot);
+// SLOTS?: every slot and its radio.
+void printProfileSlots();
 void speakCurrentProfile();
 
 // CI-V baud rates the connection setup offers, slowest first.

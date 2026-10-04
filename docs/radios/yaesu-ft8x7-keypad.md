@@ -11,7 +11,7 @@ The intention is:
 - keep the overall bank structure consistent across the FT8x7 family
 - only expose functions that are documented and practically usable
 - move repeater and tone functions into a dedicated Bank 6
-- Bank 6 now favors direct manual entry for repeater offset, CTCSS, and DCS, with only a small set of SD-card defaults in `[bank6]`
+- Bank 6 now favors direct manual entry for repeater offset, CTCSS, and DCS, with only a small set of built-in defaults
 
 Important practical note:
 
@@ -116,7 +116,7 @@ For Bank 6 tone handling, `2` is an explicit mode selector:
 - `2` long = CTCSS on
 - `2` double click = DCS on
 
-`3` short and `4` short do not read the radio: they speak the last CTCSS tone or DCS code set from the keypad, or the `[bank6]` SD-card default (`88.5`, `023` unless changed) when nothing has been set yet.
+`3` short and `4` short do not read the radio: they speak the last CTCSS tone or DCS code set from the keypad, or the built-in default (`88.5`, `023`) when nothing has been set yet.
 
 ## Bank 8 - Radio Menu
 

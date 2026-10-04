@@ -10,14 +10,14 @@ firmware. It supports:
 
 - spoken keypad control
 - serial monitor control
-- SD card profile definition
+- two built-in profiles, for the CI-V jack and for RS-232
 - CI-V based status queries and control functions
 
 The implementation is designed around the current modular architecture:
 
 - protocol handling in the firmware core
 - radio capability flags in the profile layer
-- SD card profile files for radio-specific configuration
+- built-in radio profiles for radio-specific configuration
 - bank-based keypad interaction with short, long, and double-click actions
 
 ---
@@ -40,15 +40,15 @@ spoken operating profile.
 
 ---
 
-## SD Card Profile Files
+## Profiles
 
-The current public SD card profile files for the IC-7300 are:
+The IC-7300 has two built-in profiles:
 
-- `firmware/SDCard/ic7300.ini`
-- `firmware/SDCard/ic7300_rs232.ini`
+- slot 1: the CI-V jack
+- slot 3: RS-232
 
-These files now declare the extended capability set for the radio, including
-features such as:
+Both declare the extended capability set for the radio, including features
+such as:
 
 - `RXTX`
 - `TXFREQ`
@@ -69,12 +69,7 @@ features such as:
 - `RIT`
 - `BSTACK`
 
-Important note:
-
-- New firmware features still require a new flash.
-- The SD card profile files do **not** replace the firmware.
-- The SD card files define how an already-supported radio is described and
-  enabled inside the running firmware.
+New features and new radios come with a new firmware.
 
 ---
 
@@ -252,5 +247,5 @@ profile is already well beyond a minimal proof of concept.
 - `double click` refers to a profile-specific double-press action where
   supported.
 - The IC-7300 profile is one of the best references for how the `V3.5.8`
-  architecture is intended to work across protocol, runtime, keypad, and SD
-  card layers.
+  architecture is intended to work across protocol, runtime, keypad, and
+  profile layers.

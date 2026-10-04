@@ -81,7 +81,7 @@ static void commitBank() {
 static void commitProfile(const char* digits) {
   printKeypadCommand("ENTER -> PROFILE");
   int slot = atoi(digits);
-  if (slot >= 1 && slot <= MAX_PROFILE_SLOTS && storedProfileForId((uint8_t)slot)) {
+  if (slot >= 1 && slot <= 255 && profileForSlot((uint8_t)slot)) {
     applyProfile((uint8_t)slot);
     printKeypadStatus("PROFILE {}", slot);
     speakCurrentProfile();

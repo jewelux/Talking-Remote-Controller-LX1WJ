@@ -107,6 +107,16 @@
   break-in, keyer and IF shift, on the FT-857/897 also PROC, CW speed, the gains and the DSP filter
   widths. `CLAR ON | OFF` say when the radio did not switch RIT
 
+### Radio profiles
+
+- the radio profiles are built into the firmware: no SD card or SD card reader is needed, and a
+  firmware update brings every profile up to date. The profile numbers are those of the SD card's
+  `slots.ini`: 1 IC-7300, 2 IC-706, 3 IC-7300 RS-232, 4 IC-706 RS-232, 5 G106, 6 KX2, 7 TS-480,
+  8 FT-817, 9 FT-857, 10 FT-897, 11 FTDX10, 12 FTDX101D, 13 FTDX101MP, 14 FT-818, 15 FT-891,
+  17 IC-705, 18 IC-7760
+- the six Icom profiles HamTRC offered when the SD card did not load are gone, and with them
+  Bank 9 `1`–`9` picking a profile directly; on Bank 9, `1`–`3` and `6` beep
+
 ### Radios
 
 - FT-817/818/857/897: the frequency is polled in the background again. When the radio is off or
@@ -172,11 +182,6 @@
 
 ### Firmware updates
 
-- FT-817/818/857/897: copy the new `ft817.ini`, `ft818.ini`, `ft857.ini` and `ft897.ini` from
-  `firmware/SDCard` to the SD card. With the old files, power, SWR, TX power and the noise
-  blanker (on the FT-857/897 also noise reduction and notch) stay "not available", the FT-817's
-  RX/TX state too, and the FT-857/897 VFO keys do not read the active VFO from the radio. With the
-  old `ft818.ini` an FT-818 says the FT-817's TX power levels
 - every push builds the firmware as a factory image with a manifest for the online updater;
   version tags attach them to a GitHub release
 
@@ -192,6 +197,9 @@
 - building needs the ESP32 Arduino core 3.x or newer; an older core stops with a message saying so
 - keypad handling is one state machine (`firmware/keypad_input.{h,cpp}`) with a keymap per bank
   and radio (`firmware/keypad_keymap.cpp`); host unit tests in `tests/keypad` run in CI
+- the radio profiles are one table, `kProfiles` in `firmware/radio_profile_table.cpp`, checked
+  at build time and by host unit tests in `tests/profiles`; a new radio is one entry. The SD
+  card loader and its ini files are gone. The host unit tests build as C++20
 - the FT-8x7 CAT fields and EEPROM map (`firmware/ft8x7_*`) are plain C++ with host unit tests in
   `tests/ft8x7`; the on/off settings each model keeps in its EEPROM are one table per model
 - `generate_voices.py`, `say.py` and `setup_venv.ps1` default to `en_US-lessac-medium` with both

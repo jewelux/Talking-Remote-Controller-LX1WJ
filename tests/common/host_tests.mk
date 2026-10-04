@@ -7,7 +7,7 @@
 #
 # The suites sit outside firmware/ so arduino-cli never compiles them.
 
-CXXFLAGS := -std=c++17 -Wall -Wextra -Werror -O1 -g
+CXXFLAGS := -std=c++20 -Wall -Wextra -Werror -O1 -g
 FIRMWARE := ../../firmware
 COMMON := ../common
 CPPFLAGS := -I. -I$(COMMON) -I$(FIRMWARE)

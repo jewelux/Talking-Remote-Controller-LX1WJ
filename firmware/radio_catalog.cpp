@@ -1,56 +1,54 @@
 #include "radio_catalog.h"
 
-#include "radio_globals.h"
+static const RadioProfile* s_base = profileForSlot(kDefaultProfileSlot);
+static RadioProfile s_active = *s_base;
+static ConnectionProfile s_connection = {s_base->link.port, s_base->link.baud, s_base->link.civAddr,
+                                         SerialFraming::Standard};
 
-bool isValidProfileId(uint8_t id) {
-  return id >= 1 && id <= MAX_PROFILE_SLOTS;
+// RadioCapabilities has only bool members, so it can be walked as a bool array.
+static RadioCapabilities allCapsOn() {
+  RadioCapabilities caps{};
+  bool* flags = reinterpret_cast<bool*>(&caps);
+  for (size_t i = 0; i < sizeof(RadioCapabilities) / sizeof(bool); ++i) flags[i] = true;
+  return caps;
 }
 
-const RadioProfile* storedProfileForId(uint8_t id) {
-  if (!isValidProfileId(id)) return nullptr;
-  const RadioProfile& sp = g_slotProfiles[id - 1];
-  return sp.valid ? &sp : nullptr;
+static void applyCaps() {
+  s_active.caps = g_experimentalCaps ? allCapsOn() : s_base->caps;
 }
 
-static RadioProfile s_experimentalProfile;
-static const RadioProfile* s_experimentalSource = nullptr;
-
-void invalidateExperimentalProfile() {
-  s_experimentalSource = nullptr;
-}
-
-static const RadioProfile& withAllCaps(const RadioProfile& base) {
-  if (s_experimentalSource != &base) {
-    s_experimentalProfile = base;
-    bool* flags = reinterpret_cast<bool*>(&s_experimentalProfile.caps);
-    for (size_t i = 0; i < sizeof(RadioCapabilities) / sizeof(bool); ++i) flags[i] = true;
-    s_experimentalSource = &base;
-  }
-  return s_experimentalProfile;
+void selectActiveProfile(const RadioProfile& profile, uint32_t baud, uint8_t civAddr) {
+  s_base = &profile;
+  s_active = profile;
+  applyCaps();
+  const SerialFraming framing =
+      profile.protocol == PROTO_YAESU_FT8X7 ? SerialFraming::Ft8x7Cat : SerialFraming::Standard;
+  s_connection = {profile.link.port, baud, civAddr, framing};
 }
 
 const RadioProfile& currentProfile() {
-  const RadioProfile* sp = storedProfileForId(g_profileId);
-  const RadioProfile& base = sp ? *sp : g_slotProfiles[0];
-  return g_experimentalCaps ? withAllCaps(base) : base;
+  return s_active;
+}
+
+void setExperimentalCaps(bool on) {
+  g_experimentalCaps = on;
+  applyCaps();
 }
 
 const ConnectionProfile& currentConnectionProfile() {
-  return currentProfile().connection;
+  return s_connection;
 }
 
 ProtocolType currentProtocolType() {
-  return currentProfile().protocolType;
+  return s_active.protocol;
 }
 
-const char* currentProfileVariant() {
-  return currentProfile().variant;
+RadioModel currentRadioModel() {
+  return s_active.model;
 }
 
 Ft8x7Model currentFt8x7Model() {
-  const RadioProfile& sp = currentProfile();
-  if (sp.protocolType != PROTO_YAESU_FT8X7) return Ft8x7Model::None;
-  return ft8x7ModelForVariant(sp.variant);
+  return ft8x7ModelFor(s_active.model);
 }
 
 bool currentIsFt817Family() {

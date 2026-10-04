@@ -30,8 +30,7 @@ which lets the checked update path avoid flashing a wrong COM port.
 ```text
 firmware/
   TalkingRemoteControllerLX1WJ_V3_5_8.ino
-  modular source files
-  SDCard/*.ini radio profiles
+  modular source files, with the radio profiles built in
 
 docs/
   user-facing and technical notes

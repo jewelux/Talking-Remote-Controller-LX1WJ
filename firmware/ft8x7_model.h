@@ -1,24 +1,26 @@
 #pragma once
 
-// The FT-8x7 radio a profile is for, from its ini "variant". Every model check goes through
-// this, so a misspelt variant cannot pass for a model in one place and not in another.
+// The FT-8x7 radio a profile is for, from its RadioModel. The FT-8x7 code
+// (EEPROM map, VFO handling, keypad layout) asks this, not the RadioModel.
 
 #include <stdint.h>
-#include <string.h>
+
+#include "radio_profile_types.h"
 
 enum class Ft8x7Model : uint8_t {
-  None,  // not an FT-8x7 profile, or a variant HamTRC does not know
+  None,  // not an FT-8x7 profile
   Ft817,
   Ft818,
   Ft857,  // FT-857 and FT-897, which share a CAT and an EEPROM map
 };
 
-inline Ft8x7Model ft8x7ModelForVariant(const char* variant) {
-  if (!variant) return Ft8x7Model::None;
-  if (!strcmp(variant, "ft817")) return Ft8x7Model::Ft817;
-  if (!strcmp(variant, "ft818")) return Ft8x7Model::Ft818;
-  if (!strcmp(variant, "ft857_897")) return Ft8x7Model::Ft857;
-  return Ft8x7Model::None;
+inline Ft8x7Model ft8x7ModelFor(RadioModel model) {
+  switch (model) {
+    case RadioModel::Ft817: return Ft8x7Model::Ft817;
+    case RadioModel::Ft818: return Ft8x7Model::Ft818;
+    case RadioModel::Ft857: return Ft8x7Model::Ft857;
+    default: return Ft8x7Model::None;
+  }
 }
 
 // The FT-818 is an FT-817 with more power; everything else is the same.

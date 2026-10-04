@@ -68,7 +68,6 @@ static KeypadTraits currentKeypadTraits() {
   else if (isFt8x7Ft857FamilyKeypad()) t.layout = KeypadLayout::Ft857;
   else if (currentProtocolType() == PROTO_YAESU_FT8X7) t.layout = KeypadLayout::Ft8x7;
   else if (currentProtocolType() == PROTO_CIV) t.layout = KeypadLayout::Civ;
-  t.lightIcomFallback = lightIcomFallbackActive();
   t.supportsMonitor = protocolSupportsMonitor();
   t.supportsTransceive = protocolSupportsTransceive();
   t.canGetRfPower = currentProfile().caps.getRfPower;
