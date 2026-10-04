@@ -1105,7 +1105,7 @@ static bool handleConsoleConnectionCommands(const String& line, const String& up
   if (upper == "BAUD?") {
     Serial.print("BAUD ");
     Serial.println((unsigned long)p.baud);
-    if (g_speechEnabled) speakDigitsAndPoint(String((unsigned long)p.baud));
+    speakBaudValue(p.baud, false);
     return true;
   }
   const uint32_t baud = (uint32_t)line.substring(5).toInt();
@@ -1121,10 +1121,7 @@ static bool handleConsoleConnectionCommands(const String& line, const String& up
   }
   Serial.print("OK BAUD ");
   Serial.println((unsigned long)baud);
-  if (g_speechEnabled) {
-    speakDigitsAndPoint(String((unsigned long)baud));
-    speakValueOk();
-  }
+  speakBaudValue(baud, true);
   return true;
 }
 
@@ -1362,7 +1359,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     } else if (isFt857Family) {
       Serial.println("  VOL: unsupported on verified FT-857/897 path");
     } else {
-      Serial.println("  VOL: variant unknown");
+      Serial.println("  VOL: model unknown");
     }
     if (isFt817) {
       if (yaesuCatQuerySquelchRaw(raw, 800)) {
@@ -1374,7 +1371,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     } else if (isFt857Family) {
       Serial.println("  SQL: unsupported on verified FT-857/897 path");
     } else {
-      Serial.println("  SQL: variant unknown");
+      Serial.println("  SQL: model unknown");
     }
 
     if (isFt817 || isFt857Family) {
@@ -1387,7 +1384,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
         Serial.println("  STATUS: no reply");
       }
     } else {
-      Serial.println("  STATUS: variant unknown");
+      Serial.println("  STATUS: model unknown");
     }
     return true;
   }
@@ -1400,7 +1397,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     } else if (currentIsFt857Family()) {
       Serial.println("  Tone/DCS family: FT-857/897 style (separate TX/RX Tone/DCS layout)");
     } else {
-      Serial.println("  Tone/DCS family: unknown variant");
+      Serial.println("  Tone/DCS family: unknown model");
     }
     return true;
   }
@@ -1426,16 +1423,16 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     }
     if (currentIsFt817Family()) {
       if (!(modeByte == 0x0A || modeByte == 0x2A || modeByte == 0x4A || modeByte == 0x8A)) {
-        Serial.println("YTMODE -> mode not documented for FT-817 variant");
+        Serial.println("YTMODE -> mode not documented for the FT-817");
         return true;
       }
     } else if (currentIsFt857Family()) {
       if (!(modeByte == 0x0A || modeByte == 0x0B || modeByte == 0x0C || modeByte == 0x2A || modeByte == 0x3A || modeByte == 0x4A || modeByte == 0x8A)) {
-        Serial.println("YTMODE -> mode not documented for FT-857/897 variant");
+        Serial.println("YTMODE -> mode not documented for the FT-857/897");
         return true;
       }
     } else {
-      Serial.println("YTMODE -> unknown FT8x7 variant");
+      Serial.println("YTMODE -> unknown FT-8x7 model");
       return true;
     }
     yaesuCatSetToneDcsModeRaw(modeByte);
@@ -1573,7 +1570,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
 
   if (upper == "YPOWER ON" || upper == "YPOWER OFF") {
     if (!currentIsFt817Family()) {
-      Serial.println("YPOWER -> documented only for FT-817 variant");
+      Serial.println("YPOWER -> documented only for the FT-817/818");
       return true;
     }
     const bool on = (upper == "YPOWER ON");

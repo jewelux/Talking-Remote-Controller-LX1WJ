@@ -314,7 +314,7 @@ bool queryDialLock(bool& onOut, uint32_t timeoutMs) {
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiQueryLock(sp, onOut, timeoutMs);
   if (pt == PROTO_YAESU_FT8X7) {
     // The FT-817/818 and FT-857/897 keep the lock in their EEPROM, so a lock set on the front
-    // panel counts too. Other variants get the state HamTRC last set.
+    // panel counts too. Other models get the state HamTRC last set.
     if (!yaesuFt8x7HasFlag(Ft8x7Flag::Lock)) {
       if (!live.lockKnown) return false;
       onOut = live.lockOn;

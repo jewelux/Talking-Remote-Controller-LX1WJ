@@ -14,59 +14,60 @@ enum ProtocolType : uint8_t {
   PROTO_YAESU_FTDX_ASCII = 4
 };
 
-// Only bool members: EXPERIMENTAL ON sets them all through a bool array (radio_catalog.cpp).
+// Only bool members, all off unless a profile sets them: EXPERIMENTAL ON sets
+// them all through a bool array (radio_catalog.cpp).
 struct RadioCapabilities {
-  bool getFreq;
-  bool setFreq;
-  bool getMode;
-  bool setMode;
-  bool getSmeter;
-  bool getPower;
-  bool getRfPower;
-  bool setRfPower;
-  bool getSwr;
-  bool getRxTx;
-  bool getTxFreq;
-  bool getNr;
-  bool setNr;
-  bool getNrLevel;
-  bool setNrLevel;
-  bool getNb;
-  bool setNb;
-  bool getNbLevel;
-  bool setNbLevel;
-  bool getNotch;
-  bool setNotch;
-  bool getNotchWidth;
-  bool setNotchWidth;
-  bool getPbtInner;
-  bool setPbtInner;
-  bool getPbtOuter;
-  bool setPbtOuter;
-  bool getFilterShape;
-  bool setFilterShape;
-  bool getFilterWidth;
-  bool setFilterWidth;
-  bool getDialLock;
-  bool setDialLock;
-  bool getMonitor;
-  bool setMonitor;
-  bool getMonitorLevel;
-  bool setMonitorLevel;
-  bool getTransceive;
-  bool setTransceive;
-  bool getTuner;
-  bool setTuner;
-  bool startTune;
-  bool getVfo;
-  bool setVfo;
-  bool getVfoMode;
-  bool setVfoMode;
-  bool getSplit;
-  bool setSplit;
-  bool getRit;
-  bool setRit;
-  bool getBandStack;
+  bool getFreq = false;
+  bool setFreq = false;
+  bool getMode = false;
+  bool setMode = false;
+  bool getSmeter = false;
+  bool getPower = false;
+  bool getRfPower = false;
+  bool setRfPower = false;
+  bool getSwr = false;
+  bool getRxTx = false;
+  bool getTxFreq = false;
+  bool getNr = false;
+  bool setNr = false;
+  bool getNrLevel = false;
+  bool setNrLevel = false;
+  bool getNb = false;
+  bool setNb = false;
+  bool getNbLevel = false;
+  bool setNbLevel = false;
+  bool getNotch = false;
+  bool setNotch = false;
+  bool getNotchWidth = false;
+  bool setNotchWidth = false;
+  bool getPbtInner = false;
+  bool setPbtInner = false;
+  bool getPbtOuter = false;
+  bool setPbtOuter = false;
+  bool getFilterShape = false;
+  bool setFilterShape = false;
+  bool getFilterWidth = false;
+  bool setFilterWidth = false;
+  bool getDialLock = false;
+  bool setDialLock = false;
+  bool getMonitor = false;
+  bool setMonitor = false;
+  bool getMonitorLevel = false;
+  bool setMonitorLevel = false;
+  bool getTransceive = false;
+  bool setTransceive = false;
+  bool getTuner = false;
+  bool setTuner = false;
+  bool startTune = false;
+  bool getVfo = false;
+  bool setVfo = false;
+  bool getVfoMode = false;
+  bool setVfoMode = false;
+  bool getSplit = false;
+  bool setSplit = false;
+  bool getRit = false;
+  bool setRit = false;
+  bool getBandStack = false;
 };
 
 // The controller's serial connector the radio is wired to. Its UART, pins and
@@ -99,7 +100,7 @@ struct BaudRates {
 struct LinkDefaults {
   RadioPort port = RadioPort::Rs232;
   uint32_t baud = 0;
-  BaudRates bauds;
+  BaudRates bauds{};
   uint8_t civAddr = 0;  // CI-V radios only
 };
 
@@ -221,10 +222,10 @@ struct RadioProfile {
   const char* voiceDigits = "";  // spoken digit by digit after the vendor
   RadioModel model = RadioModel::Generic;
   ProtocolType protocol = PROTO_CIV;
-  LinkDefaults link;
+  LinkDefaults link{};
   RadioCapabilities caps{};
   const AsciiCommandSet* commands = &kNoAsciiCommands;
   const ModeCodes* modes = &kNoModeCodes;
   uint16_t rfPowerMaxWatts = 100;
-  Ft8x7Bank6Profile ft8x7Bank6;
+  Ft8x7Bank6Profile ft8x7Bank6{};
 };

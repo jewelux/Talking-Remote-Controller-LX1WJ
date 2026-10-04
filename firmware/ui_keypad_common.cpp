@@ -224,7 +224,7 @@ void speakCivAddressValue(uint8_t addr, bool ok) {
 
 void speakBaudValue(uint32_t baud, bool ok) {
   if (!g_speechEnabled) return;
-  if (!ok) speakLabel("baud");
+  speakLabel("baud");
   speakDigitsAndPoint(String((unsigned long)baud));
   if (ok) speakValueOk();
 }

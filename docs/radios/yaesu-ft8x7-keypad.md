@@ -122,17 +122,21 @@ For Bank 6 tone handling, `2` is an explicit mode selector:
 
 | Key | FT-817 | FT-857/897 |
 |---|---|---|
+| `2` short | `BAUD?` | `BAUD?` |
+| `2` long / double | previous / next baud rate (4800, 9600, 38400) | previous / next baud rate (4800, 9600, 38400) |
 | `7` short | `ROW?` (function row) | `ROW?` (soft key row) |
 | `8` short | `MENU?` (last menu item) | `MENU?` (last menu item) |
 
-`MENU?` and `ROW?` are saved only when the radio's menu is exited.
+`MENU?` and `ROW?` are saved only when the radio's menu is exited. Set the same baud rate in the
+radio's CAT RATE menu.
 
 ## Bank 9 - Profile / System
 
 | Key | FT-817 | FT-857/897 |
 |---|---|---|
 | `A` short | `PROFILE?` | `PROFILE?` |
-| `A` long | `PROFILE SELECT` (`1..24`, one or two digits, then `Enter`) | `PROFILE SELECT` (`1..24`, one or two digits, then `Enter`) |
+| `A` long | `PROFILE SELECT` (slot number, one or two digits, then `Enter`) | `PROFILE SELECT` (slot number, one or two digits, then `Enter`) |
+| `A` double | `PROFILE RESET` | `PROFILE RESET` |
 | `B` short | `PROFILE NEXT` | `PROFILE NEXT` |
 | `C` short | `PROFILE PREV` | `PROFILE PREV` |
 | `4` short | `TUNINGSPEECH?` | `TUNINGSPEECH?` |
