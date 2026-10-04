@@ -3,4 +3,4 @@
 #include "radio_globals.h"
 
 bool initSdProfiles();
-bool loadSingleProfileIni(const String& path, StoredProfile& out);
+bool loadSingleProfileIni(const String& path, RadioProfile& out);

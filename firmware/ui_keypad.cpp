@@ -71,7 +71,7 @@ static KeypadTraits currentKeypadTraits() {
   t.lightIcomFallback = lightIcomFallbackActive();
   t.supportsMonitor = protocolSupportsMonitor();
   t.supportsTransceive = protocolSupportsTransceive();
-  t.canGetRfPower = currentStoredProfile().caps.getRfPower;
+  t.canGetRfPower = currentProfile().caps.getRfPower;
   return t;
 }
 

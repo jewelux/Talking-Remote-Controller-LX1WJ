@@ -159,7 +159,7 @@ void reportFtdx10HiddenKey() {
 }
 
 bool isFtdx10KeypadProfile() {
-  const StoredProfile& sp = currentStoredProfile();
+  const RadioProfile& sp = currentProfile();
   return sp.protocolType == PROTO_YAESU_FTDX_ASCII &&
          strcmp(sp.voiceVendor, "yaesu") == 0 &&
          strcmp(sp.voiceDigits, "10") == 0;

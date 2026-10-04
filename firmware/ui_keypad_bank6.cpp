@@ -6,15 +6,15 @@
 
 static uint32_t currentFt8x7RepeaterOffsetHz(uint8_t index) {
   if (index >= 2) return 0;
-  return currentStoredProfile().ft8x7Bank6.repeaterOffsetsHz[index];
+  return currentProfile().ft8x7Bank6.repeaterOffsetsHz[index];
 }
 
 static uint16_t currentFt8x7DefaultCtcssTenths() {
-  return currentStoredProfile().ft8x7Bank6.ctcssDefaultTenths;
+  return currentProfile().ft8x7Bank6.ctcssDefaultTenths;
 }
 
 static uint16_t currentFt8x7DefaultDcsCode() {
-  return currentStoredProfile().ft8x7Bank6.dcsDefaultCode;
+  return currentProfile().ft8x7Bank6.dcsDefaultCode;
 }
 
 static void setBank6Ft8x7RepeaterShift(uint8_t shiftByte, const char* label) {

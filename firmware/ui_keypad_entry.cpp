@@ -19,7 +19,7 @@
 static bool rejectFt8x7WriteWhileTx(const char* statusLabel) {
   if (currentProtocolType() != PROTO_YAESU_FT8X7) return false;
   if (currentIsFt857Family()) return false;
-  if (!currentStoredProfile().caps.getRxTx) return false;
+  if (!currentProfile().caps.getRxTx) return false;
   bool tx = false;
   if (!queryRxTxStatus(tx, 800) || !tx) return false;
   printKeypadStatus("{} -> TX", statusLabel);

@@ -2,7 +2,7 @@
 
 #include "radio_types.h"
 
-extern StoredProfile g_slotProfiles[MAX_PROFILE_SLOTS];
+extern RadioProfile g_slotProfiles[MAX_PROFILE_SLOTS];
 extern uint8_t g_profileId;
 extern uint8_t g_lastSavedProfile;
 extern uint8_t g_civRadioAddr;

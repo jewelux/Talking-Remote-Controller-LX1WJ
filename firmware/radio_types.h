@@ -68,7 +68,7 @@ enum ProtocolType : uint8_t {
 
 // The link to the radio, as the profile's [connection] section sets it: which
 // UART and pins, the line settings, and the CI-V address (CI-V radios only).
-// The profile's name is StoredProfile::name.
+// The profile's name is RadioProfile::name.
 struct ConnectionProfile {
   uint8_t civAddr;
   uint32_t baud;
@@ -258,7 +258,7 @@ static constexpr uint8_t PROFILE_ID_706_RS232 = PROFILE_ID_SLOT4;
 static constexpr uint8_t PROFILE_ID_705 = PROFILE_ID_SLOT5;
 static constexpr uint8_t PROFILE_ID_7760 = PROFILE_ID_SLOT6;
 
-struct StoredProfile {
+struct RadioProfile {
   ConnectionProfile connection;
   ProtocolType protocolType;
   RadioCapabilities caps;

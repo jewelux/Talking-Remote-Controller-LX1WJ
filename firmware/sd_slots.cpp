@@ -44,7 +44,7 @@ bool loadProfilesFromSd() {
     if (slot < 1 || slot > MAX_PROFILE_SLOTS || !file.length()) continue;
 
     String path = buildSdProfilePath(file);
-    StoredProfile sp;
+    RadioProfile sp;
     if (loadSingleProfileIni(path, sp)) {
       g_slotProfiles[slot - 1] = sp;
       Serial.print("[SD] slot ");

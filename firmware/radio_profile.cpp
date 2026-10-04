@@ -20,14 +20,14 @@ const char* protocolTypeToString(ProtocolType pt) {
 }
 
 void printActiveProfileDetails() {
-  const StoredProfile* sp = storedProfileForId(g_profileId);
+  const RadioProfile* sp = storedProfileForId(g_profileId);
   const ConnectionProfile& p = currentConnectionProfile();
 
   Serial.println("[PROFILE DETAILS]");
   Serial.print("  slot: ");
   Serial.println((int)g_profileId);
   Serial.print("  name: ");
-  Serial.println(currentStoredProfile().name);
+  Serial.println(currentProfile().name);
   Serial.print("  source: ");
   Serial.println((sp && sp->fromSd) ? "SD" : "built-in");
   Serial.print("  protocol: ");
@@ -159,7 +159,7 @@ void applyProfile(uint8_t profileId) {
   }
 
   Serial.print("[PROFILE] Active: ");
-  Serial.print(currentStoredProfile().name);
+  Serial.print(currentProfile().name);
   if (currentProtocolType() == PROTO_CIV) {
     Serial.print("  CI-V addr=0x");
     Serial.print(g_civRadioAddr, HEX);
@@ -186,7 +186,7 @@ const size_t kCivBaudRateCount = sizeof(kCivBaudRates) / sizeof(kCivBaudRates[0]
 
 bool setCurrentCivConnection(uint8_t civAddr, uint32_t baud) {
   if (!isValidProfileId(g_profileId)) return false;
-  StoredProfile& sp = g_slotProfiles[g_profileId - 1];
+  RadioProfile& sp = g_slotProfiles[g_profileId - 1];
   if (!sp.valid || sp.protocolType != PROTO_CIV) return false;
   sp.connection.civAddr = civAddr;
   sp.connection.baud = baud;

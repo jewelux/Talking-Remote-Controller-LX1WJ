@@ -35,7 +35,7 @@ static void speakTunedFrequencyHz(uint64_t hz) {
 void queryBank1RxTx() {
   printKeypadAction("RXTX?");
   // An FT-8x7 profile without get_rxtx, e.g. an ft817.ini from before RXTX? was verified.
-  if (currentProtocolType() == PROTO_YAESU_FT8X7 && !currentStoredProfile().caps.getRxTx) {
+  if (currentProtocolType() == PROTO_YAESU_FT8X7 && !currentProfile().caps.getRxTx) {
     printKeypadStatus("RXTX -> unavailable");
     speakKeypadFailure("RXTX", KeypadFailure::NotAvailable);
     return;
@@ -145,7 +145,7 @@ void roundActiveFrequency(uint32_t stepHz) {
 }
 
 void beginBank1RfPowerSet() {
-  if (!currentStoredProfile().caps.setRfPower) {
+  if (!currentProfile().caps.setRfPower) {
     printKeypadStatus("RFPOWER -> unavailable");
     speakKeypadFailure("RFPOWER", KeypadFailure::NotAvailable);
     return;

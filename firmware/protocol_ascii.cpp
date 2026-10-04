@@ -48,7 +48,7 @@ bool parseAsciiSignedResponse(const String& line, const char* prefix, int32_t& v
   return true;
 }
 
-bool profileModeCodeForInternal(const StoredProfile& sp, uint8_t mode, String& codeOut) {
+bool profileModeCodeForInternal(const RadioProfile& sp, uint8_t mode, String& codeOut) {
   const char* code = nullptr;
   switch (mode) {
     case 0x00: code = sp.ascii.modeLsb; break;
@@ -67,7 +67,7 @@ bool profileModeCodeForInternal(const StoredProfile& sp, uint8_t mode, String& c
   return true;
 }
 
-bool profileInternalModeForCode(const StoredProfile& sp, const String& code, uint8_t& modeOut) {
+bool profileInternalModeForCode(const RadioProfile& sp, const String& code, uint8_t& modeOut) {
   if (code.equalsIgnoreCase(sp.ascii.modeLsb)) { modeOut = 0x00; return true; }
   if (code.equalsIgnoreCase(sp.ascii.modeUsb)) { modeOut = 0x01; return true; }
   if (code.equalsIgnoreCase(sp.ascii.modeAm)) { modeOut = 0x02; return true; }

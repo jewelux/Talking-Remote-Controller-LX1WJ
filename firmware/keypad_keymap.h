@@ -29,7 +29,7 @@ struct KeypadTraits {
   bool lightIcomFallback = false;   // lightIcomFallbackActive()
   bool supportsMonitor = false;     // protocolSupportsMonitor()
   bool supportsTransceive = false;  // protocolSupportsTransceive()
-  bool canGetRfPower = false;       // currentStoredProfile().caps.getRfPower
+  bool canGetRfPower = false;       // currentProfile().caps.getRfPower
 };
 
 // What key does on bank for this radio. An empty binding for keys the keymap

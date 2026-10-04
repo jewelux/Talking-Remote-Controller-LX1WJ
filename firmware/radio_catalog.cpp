@@ -6,20 +6,20 @@ bool isValidProfileId(uint8_t id) {
   return id >= 1 && id <= MAX_PROFILE_SLOTS;
 }
 
-const StoredProfile* storedProfileForId(uint8_t id) {
+const RadioProfile* storedProfileForId(uint8_t id) {
   if (!isValidProfileId(id)) return nullptr;
-  const StoredProfile& sp = g_slotProfiles[id - 1];
+  const RadioProfile& sp = g_slotProfiles[id - 1];
   return sp.valid ? &sp : nullptr;
 }
 
-static StoredProfile s_experimentalProfile;
-static const StoredProfile* s_experimentalSource = nullptr;
+static RadioProfile s_experimentalProfile;
+static const RadioProfile* s_experimentalSource = nullptr;
 
 void invalidateExperimentalProfile() {
   s_experimentalSource = nullptr;
 }
 
-static const StoredProfile& withAllCaps(const StoredProfile& base) {
+static const RadioProfile& withAllCaps(const RadioProfile& base) {
   if (s_experimentalSource != &base) {
     s_experimentalProfile = base;
     bool* flags = reinterpret_cast<bool*>(&s_experimentalProfile.caps);
@@ -29,26 +29,26 @@ static const StoredProfile& withAllCaps(const StoredProfile& base) {
   return s_experimentalProfile;
 }
 
-const StoredProfile& currentStoredProfile() {
-  const StoredProfile* sp = storedProfileForId(g_profileId);
-  const StoredProfile& base = sp ? *sp : g_slotProfiles[0];
+const RadioProfile& currentProfile() {
+  const RadioProfile* sp = storedProfileForId(g_profileId);
+  const RadioProfile& base = sp ? *sp : g_slotProfiles[0];
   return g_experimentalCaps ? withAllCaps(base) : base;
 }
 
 const ConnectionProfile& currentConnectionProfile() {
-  return currentStoredProfile().connection;
+  return currentProfile().connection;
 }
 
 ProtocolType currentProtocolType() {
-  return currentStoredProfile().protocolType;
+  return currentProfile().protocolType;
 }
 
 const char* currentProfileVariant() {
-  return currentStoredProfile().variant;
+  return currentProfile().variant;
 }
 
 Ft8x7Model currentFt8x7Model() {
-  const StoredProfile& sp = currentStoredProfile();
+  const RadioProfile& sp = currentProfile();
   if (sp.protocolType != PROTO_YAESU_FT8X7) return Ft8x7Model::None;
   return ft8x7ModelForVariant(sp.variant);
 }

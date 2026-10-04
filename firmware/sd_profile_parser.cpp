@@ -1,7 +1,7 @@
 #include "sd_profile_parser.h"
 
-void profileLoaderAssignIniProfile(StoredProfile& out, const ConnectionProfile& connection, const char* name, ProtocolType proto, const char* voiceVendor, const char* voiceDigits, const StoredProfile& parsedDefaults);
-void profileLoaderPrepareDefaults(StoredProfile& sp, ProtocolType proto);
+void profileLoaderAssignIniProfile(RadioProfile& out, const ConnectionProfile& connection, const char* name, ProtocolType proto, const char* voiceVendor, const char* voiceDigits, const RadioProfile& parsedDefaults);
+void profileLoaderPrepareDefaults(RadioProfile& sp, ProtocolType proto);
 void profileLoaderCopyCString(char* dst, size_t dstSize, const char* src);
 
 static int parseIniInt(const String& s, int fallback = 0) {
@@ -35,7 +35,7 @@ static uint16_t parseIniTenths(const String& s, uint16_t fallback = 0) {
   return (uint16_t)(whole * 10 + frac);
 }
 
-static void clearProfileModeCodes(StoredProfile& sp) {
+static void clearProfileModeCodes(RadioProfile& sp) {
   sp.ascii.modeLsb[0] = '\0';
   sp.ascii.modeUsb[0] = '\0';
   sp.ascii.modeAm[0] = '\0';
@@ -61,7 +61,7 @@ bool initSdProfiles() {
   return SD.begin(SD_CS_PIN);
 }
 
-bool loadSingleProfileIni(const String& path, StoredProfile& out) {
+bool loadSingleProfileIni(const String& path, RadioProfile& out) {
   File f = SD.open(path.c_str());
   if (!f) return false;
 
@@ -71,7 +71,7 @@ bool loadSingleProfileIni(const String& path, StoredProfile& out) {
   char voiceVendor[16] = "icom";
   char voiceDigits[16] = "";
   char variant[16] = "";
-  StoredProfile sp;
+  RadioProfile sp;
   profileLoaderPrepareDefaults(sp, proto);
   String section;
 

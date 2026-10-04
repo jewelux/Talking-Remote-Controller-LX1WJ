@@ -633,7 +633,7 @@ static void playDigitsFromCString(const char* s) {
 }
 
 void speakProfileIdentityFromSlot(uint8_t id, bool withOk) {
-  const StoredProfile* sp = storedProfileForId(id);
+  const RadioProfile* sp = storedProfileForId(id);
   if (!sp || !g_speechEnabled) return;
 
   String vendor = sp->voiceVendor;

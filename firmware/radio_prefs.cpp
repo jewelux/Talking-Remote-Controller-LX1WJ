@@ -96,7 +96,7 @@ void saveConnectionOverrideToNvs(uint8_t id, uint8_t civAddr, uint32_t baud) {
 
 void applyConnectionOverridesFromNvs() {
   for (uint8_t id = 1; id <= MAX_PROFILE_SLOTS; ++id) {
-    StoredProfile& sp = g_slotProfiles[id - 1];
+    RadioProfile& sp = g_slotProfiles[id - 1];
     if (!sp.valid || sp.protocolType != PROTO_CIV) continue;
     uint8_t civAddr = sp.connection.civAddr;
     uint32_t baud = sp.connection.baud;

@@ -25,13 +25,13 @@
 #include "firmware_version.h"
 
 static uint16_t rfPowerRawToWatts(uint16_t raw) {
-  const uint16_t maxWatts = currentStoredProfile().rfPowerMaxWatts ? currentStoredProfile().rfPowerMaxWatts : 100;
+  const uint16_t maxWatts = currentProfile().rfPowerMaxWatts ? currentProfile().rfPowerMaxWatts : 100;
   if (raw >= 255) return maxWatts;
   return (uint16_t)((raw * (uint32_t)maxWatts + 127U) / 255U);
 }
 
 static uint16_t rfPowerWattsToRaw(int watts) {
-  const uint16_t maxWatts = currentStoredProfile().rfPowerMaxWatts ? currentStoredProfile().rfPowerMaxWatts : 100;
+  const uint16_t maxWatts = currentProfile().rfPowerMaxWatts ? currentProfile().rfPowerMaxWatts : 100;
   if (watts < 0) watts = 0;
   if (watts > maxWatts) watts = maxWatts;
   return (uint16_t)((watts * 255UL + (maxWatts / 2U)) / maxWatts);
@@ -563,7 +563,7 @@ String upperCopy(String s) {
 }
 
 static bool isFtdx10ConsoleProfile() {
-  const StoredProfile& sp = currentStoredProfile();
+  const RadioProfile& sp = currentProfile();
   return sp.protocolType == PROTO_YAESU_FTDX_ASCII &&
          strcmp(sp.voiceVendor, "yaesu") == 0 &&
          strcmp(sp.voiceDigits, "10") == 0;
@@ -723,7 +723,7 @@ void printHelp() {
     Serial.println("    PBT2 <-128..127> | CENTER | STEP <+-n>");
     Serial.println("    PBT2?");
     Serial.print("    RFPOWER <0..");
-    Serial.print((int)(currentStoredProfile().rfPowerMaxWatts ? currentStoredProfile().rfPowerMaxWatts : 100));
+    Serial.print((int)(currentProfile().rfPowerMaxWatts ? currentProfile().rfPowerMaxWatts : 100));
     Serial.println(" W>");
     Serial.println("    RFPOWER?");
     Serial.println("    RIT <Hz> | RIT STEP <+-Hz>");
@@ -1202,7 +1202,7 @@ static void speakFt8x7HighSwr() {
 
 static bool handleConsoleFt8x7Meters(const String& upper) {
   if (upper == "PO?") {
-    if (!currentStoredProfile().caps.getPower) { reportNotAvailable("PO? -> not enabled in this profile"); return true; }
+    if (!currentProfile().caps.getPower) { reportNotAvailable("PO? -> not enabled in this profile"); return true; }
     YaesuTxMeters meters;
     if (!yaesuCatQueryTxMeters(meters, false, 800)) { reportCommandFailure("PO?", "no reply"); return true; }
     if (!meters.transmitting) { reportFt8x7MeterInReceive("PO", "power"); return true; }
@@ -1221,7 +1221,7 @@ static bool handleConsoleFt8x7Meters(const String& upper) {
     return true;
   }
   if (upper == "SWR?") {
-    if (!currentStoredProfile().caps.getSwr) { reportNotAvailable("SWR? -> not enabled in this profile"); return true; }
+    if (!currentProfile().caps.getSwr) { reportNotAvailable("SWR? -> not enabled in this profile"); return true; }
     YaesuTxMeters meters;
     if (!yaesuCatQueryTxMeters(meters, true, 800)) { reportCommandFailure("SWR?", "no reply"); return true; }
     if (!meters.transmitting) { reportFt8x7MeterInReceive("SWR", "swr"); return true; }
@@ -1310,19 +1310,19 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     }
 
     int32_t raw = 0;
-    if (yaesuCatQuerySMeterRaw(currentStoredProfile(), raw, 800)) {
+    if (yaesuCatQuerySMeterRaw(currentProfile(), raw, 800)) {
       Serial.print("  SM: ");
       Serial.println(raw);
     } else {
       Serial.println("  SM: no reply");
     }
-    if (yaesuCatQueryPoMeterRaw(currentStoredProfile(), raw, 800)) {
+    if (yaesuCatQueryPoMeterRaw(currentProfile(), raw, 800)) {
       Serial.print("  PO: ");
       Serial.println(raw);
     } else {
       Serial.println("  PO: no reply");
     }
-    if (yaesuCatQuerySWRRaw(currentStoredProfile(), raw, 800)) {
+    if (yaesuCatQuerySWRRaw(currentProfile(), raw, 800)) {
       Serial.print("  SWR: ");
       Serial.println(raw);
     } else {
@@ -1455,7 +1455,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
 
   if (upper == "CTCSS?") {
     const uint16_t toneTenths =
-        live.ctcssValid ? live.ctcssTenths : currentStoredProfile().ft8x7Bank6.ctcssDefaultTenths;
+        live.ctcssValid ? live.ctcssTenths : currentProfile().ft8x7Bank6.ctcssDefaultTenths;
     char label[12] = "";
     formatCtcssTenthsLabel(toneTenths, label, sizeof(label));
     Serial.print("CTCSS ");
@@ -1487,7 +1487,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     return true;
   }
   if (upper == "DCS?") {
-    const uint16_t dcsCode = live.dcsValid ? live.dcsCode : currentStoredProfile().ft8x7Bank6.dcsDefaultCode;
+    const uint16_t dcsCode = live.dcsValid ? live.dcsCode : currentProfile().ft8x7Bank6.dcsDefaultCode;
     char label[8] = "";
     snprintf(label, sizeof(label), "%03u", (unsigned)dcsCode);
     Serial.print("DCS ");
@@ -2215,7 +2215,7 @@ static bool handleConsoleAdjustCommands(const String& line, const String& upper)
 }
 
 static bool handleConsoleRadioCommands(const String& line, const String& upper) {
-  const StoredProfile& sp = currentStoredProfile();
+  const RadioProfile& sp = currentProfile();
   if (upper == "LFREQ") {
     if (!live.freqValid) { Serial.println("No live frequency yet."); return true; }
     Serial.print("Last live: ");
@@ -2434,7 +2434,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   }
   if (upper.startsWith("RFPOWER ")) {
     int watts = line.substring(8).toInt();
-    const uint16_t maxWatts = currentStoredProfile().rfPowerMaxWatts ? currentStoredProfile().rfPowerMaxWatts : 100;
+    const uint16_t maxWatts = currentProfile().rfPowerMaxWatts ? currentProfile().rfPowerMaxWatts : 100;
     if (watts < 0 || watts > maxWatts) {
       Serial.print("RFPOWER -> invalid (use 0..");
       Serial.print((int)maxWatts);

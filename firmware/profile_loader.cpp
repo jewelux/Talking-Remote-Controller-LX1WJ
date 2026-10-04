@@ -1,6 +1,6 @@
 #include "profile_loader.h"
 
-static void clearStoredProfile(StoredProfile& sp) {
+static void clearStoredProfile(RadioProfile& sp) {
   memset(&sp, 0, sizeof(sp));
 }
 
@@ -12,7 +12,7 @@ static void copyCString(char* dst, size_t dstSize, const char* src) {
   dst[i] = '\0';
 }
 
-static void setAsciiDefaults(StoredProfile& sp) {
+static void setAsciiDefaults(RadioProfile& sp) {
   copyCString(sp.ascii.freqGet, sizeof(sp.ascii.freqGet), "FA;");
   copyCString(sp.ascii.freqSetFormat, sizeof(sp.ascii.freqSetFormat), "FA%011llu;");
   copyCString(sp.ascii.modeGet, sizeof(sp.ascii.modeGet), "MD;");
@@ -89,18 +89,18 @@ static void setAsciiDefaults(StoredProfile& sp) {
   copyCString(sp.ascii.modeDigi, sizeof(sp.ascii.modeDigi), "6");
 }
 
-static void setFt8x7Bank6Defaults(StoredProfile& sp) {
+static void setFt8x7Bank6Defaults(RadioProfile& sp) {
   sp.ft8x7Bank6.repeaterOffsetsHz[0] = 600000UL;
   sp.ft8x7Bank6.repeaterOffsetsHz[1] = 7600000UL;
   sp.ft8x7Bank6.ctcssDefaultTenths = 885;
   sp.ft8x7Bank6.dcsDefaultCode = 23;
 }
 
-static void setPowerDefaults(StoredProfile& sp) {
+static void setPowerDefaults(RadioProfile& sp) {
   sp.rfPowerMaxWatts = 100;
 }
 
-static void setProtocolDefaults(StoredProfile& sp) {
+static void setProtocolDefaults(RadioProfile& sp) {
   sp.caps.getFreq = true;
   sp.caps.setFreq = true;
   sp.caps.getMode = true;
@@ -252,7 +252,7 @@ static void setProtocolDefaults(StoredProfile& sp) {
   }
 }
 
-static void assignStoredProfile(StoredProfile& sp, const ConnectionProfile& connection, const char* name, ProtocolType proto, const char* voiceVendor, const char* voiceDigits, bool fromSd) {
+static void assignStoredProfile(RadioProfile& sp, const ConnectionProfile& connection, const char* name, ProtocolType proto, const char* voiceVendor, const char* voiceDigits, bool fromSd) {
   clearStoredProfile(sp);
   sp.connection = connection;
   sp.protocolType = proto;
@@ -336,13 +336,13 @@ void seedBuiltInSlots() {
 }
 
 void profileLoaderAssignIniProfile(
-  StoredProfile& out,
+  RadioProfile& out,
   const ConnectionProfile& connection,
   const char* name,
   ProtocolType proto,
   const char* voiceVendor,
   const char* voiceDigits,
-  const StoredProfile& parsedDefaults
+  const RadioProfile& parsedDefaults
 ) {
   assignStoredProfile(out, connection, name, proto, voiceVendor, voiceDigits, true);
   out.caps = parsedDefaults.caps;
@@ -351,7 +351,7 @@ void profileLoaderAssignIniProfile(
   out.rfPowerMaxWatts = parsedDefaults.rfPowerMaxWatts;
 }
 
-void profileLoaderPrepareDefaults(StoredProfile& sp, ProtocolType proto) {
+void profileLoaderPrepareDefaults(RadioProfile& sp, ProtocolType proto) {
   clearStoredProfile(sp);
   sp.protocolType = proto;
   setProtocolDefaults(sp);

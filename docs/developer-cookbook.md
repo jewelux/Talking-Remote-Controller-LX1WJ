@@ -69,7 +69,7 @@ to completion, and that action talks to the radio synchronously.
 
 **Five concepts to learn first:**
 
-- **Profile** (`StoredProfile`): one radio in one slot (1–24). Slots come
+- **Profile** (`RadioProfile`): one radio in one slot (1–24). Slots come
   from `SDCard/slots.ini`, with built-in CI-V profiles as the fallback.
 - **Protocol** (`ProtocolType`): `PROTO_CIV`, `PROTO_KENWOOD_ASCII`,
   `PROTO_ELECRAFT_ASCII`, `PROTO_YAESU_FTDX_ASCII`, `PROTO_YAESU_FT8X7`.
@@ -499,13 +499,13 @@ profile's strings.
 
 ```cpp
 // protocol_ops_civ.cpp — 0x16 0x02 is the CI-V preamp
-bool civQueryPreamp(const StoredProfile& sp, bool& onOut, uint32_t timeoutMs) {
+bool civQueryPreamp(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
   if (!sp.caps.getPreamp) return false;
   return civQueryToggleSub(0x02, onOut, timeoutMs);
 }
 
 // protocol_ops_ascii.cpp — asciiQueryPreamp exists; add the caps check like asciiQueryNb
-bool asciiQueryPreamp(const StoredProfile& sp, bool& onOut, uint32_t timeoutMs) {
+bool asciiQueryPreamp(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
   if (!sp.caps.getPreamp || !sp.ascii.preampGet[0] || !sp.ascii.preampReplyPrefix[0]) return false;
   ...
 ```
@@ -525,7 +525,7 @@ declare it in the header:
 ```cpp
 bool setPreamp(bool on) {
   ProtocolType pt = currentProtocolType();
-  const StoredProfile& sp = currentStoredProfile();
+  const RadioProfile& sp = currentProfile();
   if (pt == PROTO_CIV) return civSetPreamp(sp, on);
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiSetPreamp(sp, on);
   return false;
@@ -549,7 +549,7 @@ console cannot drift apart:
 
 ```cpp
 FeatureStatus preampToggle(bool& on) {
-  if (!currentStoredProfile().caps.setPreamp) return FeatureStatus::Unsupported;
+  if (!currentProfile().caps.setPreamp) return FeatureStatus::Unsupported;
   if (!live.preampValid && !refreshLivePreamp()) return failure(FeatureStatus::NoReply);
   const bool next = !live.preampOn;
   if (!applyPreampAndTrack(next)) return failure(FeatureStatus::Failed);
@@ -673,7 +673,7 @@ through this checklist:
      "timeout" depends on it.
    - Flush stale input before each request.
 5. **Ops.** Add `protocol_ops_x.*`. Each function has the form
-   `xQueryFoo(const StoredProfile& sp, …)` and checks `sp.caps` first.
+   `xQueryFoo(const RadioProfile& sp, …)` and checks `sp.caps` first.
 6. **Dispatch.** In `radio_protocol.cpp`, add a `PROTO_X` line to every
    function it supports, plus `canSetMode`, `sMeterFromRaw` and the
    `protocolSupports*` helpers.
