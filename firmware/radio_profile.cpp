@@ -208,13 +208,20 @@ void speakCurrentProfile() {
   speakValueOk();
 }
 
-const uint32_t kCivBaudRates[] = {4800, 9600, 19200, 38400, 57600, 115200};
-const size_t kCivBaudRateCount = sizeof(kCivBaudRates) / sizeof(kCivBaudRates[0]);
-
-bool setCurrentCivConnection(uint8_t civAddr, uint32_t baud) {
-  if (currentProtocolType() != PROTO_CIV) return false;
+static void saveConnectionAndReapply(uint8_t civAddr, uint32_t baud) {
   saveConnectionOverrideToNvs(g_profileId, civAddr, baud);
   applyProfile(g_profileId);
+}
+
+bool setCurrentBaud(uint32_t baud) {
+  if (!currentProfile().link.bauds.contains(baud)) return false;
+  saveConnectionAndReapply(currentConnectionProfile().civAddr, baud);
+  return true;
+}
+
+bool setCurrentCivAddress(uint8_t civAddr) {
+  if (currentProtocolType() != PROTO_CIV) return false;
+  saveConnectionAndReapply(civAddr, currentConnectionProfile().baud);
   return true;
 }
 

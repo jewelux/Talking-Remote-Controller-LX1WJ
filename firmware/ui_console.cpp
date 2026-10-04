@@ -648,6 +648,7 @@ void printHelp() {
   Serial.println("    BANK?");
   Serial.println("    BANK <1..9>");
   Serial.println("    BANK NEXT | PREV");
+  Serial.println("    BAUD <rate> | BAUD?");
   if (!ftdx10) {
     Serial.println("    BSTACK <1..3>  (hamTRC internal)");
     Serial.println("    BSTACK? <1..3>  (hamTRC internal)");
@@ -667,7 +668,7 @@ void printHelp() {
   Serial.println("    MODE <n|name>");
   Serial.println("    MODE LIST");
   Serial.println("    MODE?");
-  Serial.println("    PROFILE <1..24>");
+  Serial.println("    PROFILE <slot>  (SLOTS? lists them)");
   Serial.println("    PROFILE NEXT | PREV");
   Serial.println("    PROFILE?");
   Serial.println("    QUIET OFF | QUIET ON");
@@ -691,7 +692,6 @@ void printHelp() {
   Serial.println();
   if (!ftdx10 && !ft8x7) {
     Serial.println("  IC-7300 / CI-V Extensions:");
-    Serial.println("    BAUD <rate> | BAUD?");
     Serial.println("    CIVADDR <hex> | CIVADDR?");
     Serial.println("    NBLEVEL <0..100> | NBLEVEL STEP <+-n>");
     Serial.println("    NBLEVEL?");
@@ -1047,13 +1047,13 @@ static void printCivAddress(const char* prefix, uint8_t addr) {
   Serial.println(hex);
 }
 
-// CI-V address and baud of the current profile, saved as its connection override.
+// Baud and CI-V address of the current profile, saved for its slot.
 static bool handleConsoleConnectionCommands(const String& line, const String& upper) {
   const bool civAddrCmd = upper == "CIVADDR?" || upper.startsWith("CIVADDR ");
   const bool baudCmd = upper == "BAUD?" || upper.startsWith("BAUD ");
   if (!civAddrCmd && !baudCmd) return false;
-  if (currentProtocolType() != PROTO_CIV) {
-    reportNotAvailable(civAddrCmd ? "CIVADDR -> CI-V profile required" : "BAUD -> CI-V profile required");
+  if (civAddrCmd && currentProtocolType() != PROTO_CIV) {
+    reportNotAvailable("CIVADDR -> CI-V profile required");
     return true;
   }
   const ConnectionProfile& p = currentConnectionProfile();
@@ -1070,7 +1070,7 @@ static bool handleConsoleConnectionCommands(const String& line, const String& up
       Serial.println("CIVADDR -> use a hex byte, e.g. CIVADDR 94");
       return true;
     }
-    setCurrentCivConnection(addr, p.baud);
+    setCurrentCivAddress(addr);
     printCivAddress("OK CIVADDR ", addr);
     speakCivAddressValue(addr, true);
     return true;
@@ -1082,20 +1082,16 @@ static bool handleConsoleConnectionCommands(const String& line, const String& up
     return true;
   }
   const uint32_t baud = (uint32_t)line.substring(5).toInt();
-  bool supported = false;
-  for (size_t i = 0; i < kCivBaudRateCount; ++i) {
-    if (kCivBaudRates[i] == baud) supported = true;
-  }
-  if (!supported) {
+  if (!setCurrentBaud(baud)) {
+    const BaudRates& bauds = currentProfile().link.bauds;
     Serial.print("BAUD -> invalid (use");
-    for (size_t i = 0; i < kCivBaudRateCount; ++i) {
+    for (uint8_t i = 0; i < bauds.count; ++i) {
       Serial.print(i ? ", " : " ");
-      Serial.print((unsigned long)kCivBaudRates[i]);
+      Serial.print((unsigned long)bauds.rates[i]);
     }
     Serial.println(")");
     return true;
   }
-  setCurrentCivConnection(p.civAddr, baud);
   Serial.print("OK BAUD ");
   Serial.println((unsigned long)baud);
   if (g_speechEnabled) {

@@ -130,6 +130,9 @@ New features and new radios come with a new firmware.
 - `CIVADDR?`, `CIVADDR <hex>`
 - `BAUD?`, `BAUD <rate>` (4800, 9600, 19200, 38400, 57600, 115200)
 
+The IC-7300's CI-V jack itself goes up to 19200 baud; set the same rate in the
+radio's CI-V menu.
+
 ---
 
 ## Keypad Layout

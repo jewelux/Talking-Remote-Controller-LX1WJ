@@ -138,7 +138,7 @@ static void commitRfPower(const char* digits) {
 static void commitCivAddress(const char* digits) {
   printKeypadCommand("ENTER -> CIVADDR");
   int addr = atoi(digits);
-  if (addr < 0 || addr > 255 || !setCurrentCivConnection((uint8_t)addr, currentConnectionProfile().baud)) {
+  if (addr < 0 || addr > 255 || !setCurrentCivAddress((uint8_t)addr)) {
     printKeypadStatus("CIVADDR -> invalid");
     speakKeypadFailure("CIVADDR", KeypadFailure::Error);
     return;

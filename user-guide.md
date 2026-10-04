@@ -84,14 +84,18 @@ Mode digits:
 - `8` CW-R
 - `9` RTTY-R
 
-## CI-V Connection Setup
+## Connection Setup
 
-For CI-V profiles, Bank 8 can adjust the stored connection settings for the selected profile.
+Bank 8 adjusts the connection settings stored for the selected profile.
 
-- Bank 8, `1` short: speak the current CI-V address
-- Bank 8, `1` long, digits, `D`: set CI-V address as a decimal value from `0` to `255`
-- Bank 8, `2` short: move to the next baud rate
+- Bank 8, `2` short: move to the next baud rate the radio offers
 - Bank 8, `2` long: move to the previous baud rate
+- CI-V radios only: Bank 8, `1` short: speak the current CI-V address
+- CI-V radios only: Bank 8, `1` long, digits, `D`: set CI-V address as a decimal value from `0`
+  to `255`
+
+Set the same baud rate on the radio. The FT-817, FT-818, FT-857 and FT-897 offer 4800, 9600 and
+38400 baud.
 
 ## FTDX10 Family First Test
 

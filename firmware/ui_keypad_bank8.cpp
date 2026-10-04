@@ -1,4 +1,4 @@
-// Bank 8 keypad actions: CI-V address and baud rate, and the FT-8x7 menu item and row.
+// Bank 8 keypad actions: baud rate, CI-V address, and the FT-8x7 menu item and row.
 #include "ui_keypad_bank.h"
 #include "radio_profile.h"
 
@@ -44,34 +44,28 @@ void beginBank8CivAddressEntry() {
   }
 }
 
-static int currentBaudIndex() {
+// Where the link's baud sits in bauds; 0 if it is not there.
+static int currentBaudIndex(const BaudRates& bauds) {
   const uint32_t baud = currentConnectionProfile().baud;
-  int best = 0;
-  uint32_t bestDiff = 0xFFFFFFFFUL;
-  for (size_t i = 0; i < kCivBaudRateCount; ++i) {
-    uint32_t candidate = kCivBaudRates[i];
-    uint32_t diff = (baud > candidate) ? (baud - candidate) : (candidate - baud);
-    if (diff < bestDiff) {
-      best = (int)i;
-      bestDiff = diff;
-    }
+  for (uint8_t i = 0; i < bauds.count; ++i) {
+    if (bauds.rates[i] == baud) return i;
   }
-  return best;
+  return 0;
 }
 
+// The next (delta > 0) or previous rate the radio offers, wrapping around.
 void cycleBank8Baud(int delta) {
   printKeypadAction("BAUD");
-  if (!currentProfileAllowsCivSetup()) {
+  const BaudRates& bauds = currentProfile().link.bauds;
+  if (bauds.count < 2) {
     printKeypadStatus("BAUD -> unavailable");
     speakKeypadFailure("BAUD", KeypadFailure::NotAvailable);
     return;
   }
-  const int count = (int)kCivBaudRateCount;
-  int next = currentBaudIndex() + delta;
-  if (next < 0) next = count - 1;
-  if (next >= count) next = 0;
-  const uint32_t baud = kCivBaudRates[next];
-  if (!setCurrentCivConnection(currentConnectionProfile().civAddr, baud)) return;
+  const int count = bauds.count;
+  const int next = (currentBaudIndex(bauds) + (delta < 0 ? count - 1 : 1)) % count;
+  const uint32_t baud = bauds.rates[next];
+  if (!setCurrentBaud(baud)) return;
   printKeypadStatus("BAUD {}", baud);
   speakBaudValue(baud, true);
 }

@@ -56,7 +56,7 @@ Example target: MAX98357A or a comparable I2S audio module.
 
 - `CIV_TX_PIN = GPIO17`
 - `CIV_RX_PIN = GPIO18`
-- Baud rate: `9600`
+- Baud rate: set per radio profile (see `docs/radio-support-matrix.md`)
 
 The ICOM CI-V interface uses a shared single-wire open-collector bus.
 A transistor stage is used to interface the ESP32-S3 safely with the CI-V line.
@@ -98,7 +98,7 @@ Directly connecting the CI-V line to an ESP32 GPIO pin without protection is not
 
 - `CAT_TX_PIN = 11`
 - `CAT_RX_PIN = 12`
-- Baud rate: `19200`
+- Baud rate: set per radio profile (see `docs/radio-support-matrix.md`)
 
 ### Wiring
 

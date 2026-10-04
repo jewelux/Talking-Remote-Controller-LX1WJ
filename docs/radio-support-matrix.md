@@ -20,7 +20,34 @@ It is meant as a short engineering overview, not as a promise list.
 | Yaesu FTDX101D | ASCII CAT | implemented | implemented | implemented | implemented | implemented | implemented | assisted field test pending | Uses the same first-block documentation as FTDX10. |
 | Yaesu FTDX101MP | ASCII CAT | implemented | implemented | implemented | implemented | implemented | implemented | assisted field test pending | Uses the same first-block documentation as FTDX10. |
 
-CI-V profiles also support Bank 8 connection setup in `V3.5.8`: `T1` speaks or sets the CI-V address, and `T2` cycles the baud rate stored for the selected profile.
+## Profiles and baud rates
+
+Every profile is built into the firmware. Bank 8 `2` (console `BAUD`) steps through the rates the
+radio offers and keeps the choice for the profile; set the same rate on the radio. On CI-V radios,
+Bank 8 `1` (console `CIVADDR`) speaks or sets the CI-V address.
+
+| Slot | Radio | Port | Default baud | Selectable baud |
+|---|---|---|---|---|
+| 1 | Icom IC-7300 | CI-V jack | 9600 | 4800, 9600, 19200, 38400, 57600, 115200 |
+| 2 | Icom IC-706 | CI-V jack | 9600 | 4800, 9600, 19200, 38400, 57600, 115200 |
+| 3 | Icom IC-7300 | RS-232 | 9600 | 4800, 9600, 19200, 38400, 57600, 115200 |
+| 4 | Icom IC-706 | RS-232 | 9600 | 4800, 9600, 19200, 38400, 57600, 115200 |
+| 5 | Xiegu G106 | TTL CAT | 19200 | 4800, 9600, 19200, 38400, 57600, 115200 |
+| 6 | Elecraft KX2 | RS-232 | 38400 | 4800, 9600, 19200, 38400 |
+| 7 | Kenwood TS-480 | RS-232 | 9600 | 4800, 9600, 19200, 38400, 57600 |
+| 8 | Yaesu FT-817 | RS-232 | 4800 | 4800, 9600, 38400 |
+| 9 | Yaesu FT-857 | RS-232 | 4800 | 4800, 9600, 38400 |
+| 10 | Yaesu FT-897 | RS-232 | 4800 | 4800, 9600, 38400 |
+| 11 | Yaesu FTDX10 | RS-232 | 38400 | 4800, 9600, 19200, 38400 |
+| 12 | Yaesu FTDX101D | RS-232 | 38400 | 4800, 9600, 19200, 38400 |
+| 13 | Yaesu FTDX101MP | RS-232 | 38400 | 4800, 9600, 19200, 38400 |
+| 14 | Yaesu FT-818 | RS-232 | 4800 | 4800, 9600, 38400 |
+| 15 | Yaesu FT-891 | RS-232 | 4800 | 4800, 9600, 19200, 38400 |
+| 17 | Icom IC-705 | CI-V jack | 9600 | 4800, 9600, 19200, 38400, 57600, 115200 |
+| 18 | Icom IC-7760 | CI-V jack | 19200 | 4800, 9600, 19200, 38400, 57600, 115200 |
+
+The Icom CI-V jack itself goes up to 19200 baud on the IC-7300, IC-705 and IC-706; HamTRC
+still offers the faster rates on every CI-V profile.
 
 Frequency handling is common to all profiles: entry, announcement and display now work to 10 Hz
 resolution via the shared `RadioFrequency` class (number = MHz, `*` = decimal point), and Bank 1
