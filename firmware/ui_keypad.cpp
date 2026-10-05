@@ -68,10 +68,9 @@ static KeypadTraits currentKeypadTraits() {
   else if (isFt8x7Ft857FamilyKeypad()) t.layout = KeypadLayout::Ft857;
   else if (currentProtocolType() == PROTO_YAESU_FT8X7) t.layout = KeypadLayout::Ft8x7;
   else if (currentProtocolType() == PROTO_CIV) t.layout = KeypadLayout::Civ;
-  t.lightIcomFallback = lightIcomFallbackActive();
   t.supportsMonitor = protocolSupportsMonitor();
   t.supportsTransceive = protocolSupportsTransceive();
-  t.canGetRfPower = currentStoredProfile().caps.getRfPower;
+  t.canGetRfPower = currentProfile().caps.getRfPower;
   return t;
 }
 
@@ -94,8 +93,8 @@ class KeypadUiListener : public KeypadInputListener {
   void onActivity(bool pressed) override {
     // Actions run on release, hold or after the double-click wait (in entries
     // and selections on press), with background polling in between: a timeout
-    // it left must not be blamed on this key.
-    g_radioReplyTimedOut = false;
+    // or a write it left must not be blamed on this key.
+    keypadForgetRadioActivity();
     if (pressed) silenceSpeechForKeyPress();
   }
 
@@ -105,7 +104,7 @@ class KeypadUiListener : public KeypadInputListener {
 
   void onBankQuery(uint8_t bank) override {
     printKeypadCommand("* SHORT -> BANK?");
-    printKeypadStatus(String("BANK ") + String((int)bank));
+    printKeypadStatus("BANK {}", bank);
     speakBankNumber();
   }
 
@@ -117,8 +116,8 @@ class KeypadUiListener : public KeypadInputListener {
 
   // Just the digit: "bank N" would sound like a lasting switch.
   void onOneShotBank(uint8_t bank) override {
-    printKeypadCommand(String("BANK SELECT DIGIT -> ONCE ") + String((int)bank));
-    printKeypadStatus(String("BANK ") + String((int)bank) + " ONCE");
+    printKeypadCommand("BANK SELECT DIGIT -> ONCE {}", bank);
+    printKeypadStatus("BANK {} ONCE", bank);
     if (g_speechEnabled) playDigit(bank);
   }
 
@@ -142,7 +141,7 @@ class KeypadUiListener : public KeypadInputListener {
 
   void onEntryTimeout(InputMode mode) override {
     const EntrySpec* entry = keypadEntrySpec(mode);
-    printKeypadCommand(String(entry ? entry->name : "MODE SELECT") + " TIMEOUT");
+    printKeypadCommand("{} TIMEOUT", entry ? entry->name : "MODE SELECT");
     if (g_speechEnabled) speakTimeout();
   }
 };

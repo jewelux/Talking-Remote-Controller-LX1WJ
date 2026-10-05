@@ -22,11 +22,6 @@ static const int CAT_RX_PIN = 12;
 static const bool CAT_TX_INVERT = false;
 static const bool CAT_RX_INVERT = false;
 
-static const int SD_CS_PIN = 14;
-static const int SD_MOSI_PIN = 35;
-static const int SD_MISO_PIN = 37;
-static const int SD_SCK_PIN = 36;
-
 static const byte KP_ROW_PINS[4] = {4, 8, 15, 16};
 static const byte KP_COL_PINS[4] = {1, 2, 13, 21};
 

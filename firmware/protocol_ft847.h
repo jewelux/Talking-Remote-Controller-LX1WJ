@@ -44,14 +44,14 @@ void ft847SendRaw(const uint8_t frame[5]);
 bool ft847QueryRaw1(const uint8_t frame[5], uint8_t& rsp, uint32_t timeoutMs);
 bool ft847QueryRaw5(const uint8_t frame[5], uint8_t rsp[5], uint32_t timeoutMs);
 
-bool ft847QueryFrequency(const StoredProfile& sp, uint64_t& hzOut, uint32_t timeoutMs);
-bool ft847SetFrequency(const StoredProfile& sp, uint64_t hz);
-bool ft847QueryMode(const StoredProfile& sp, uint8_t& modeOut, uint32_t timeoutMs);
-bool ft847SetMode(const StoredProfile& sp, uint8_t mode);
+bool ft847QueryFrequency(const RadioProfile& sp, uint64_t& hzOut, uint32_t timeoutMs);
+bool ft847SetFrequency(const RadioProfile& sp, uint64_t hz);
+bool ft847QueryMode(const RadioProfile& sp, uint8_t& modeOut, uint32_t timeoutMs);
+bool ft847SetMode(const RadioProfile& sp, uint8_t mode);
 // The mode byte as the radio reports it, narrow flag included.
 bool ft847QueryModeByte(uint8_t& modeByteOut, uint32_t timeoutMs);
 bool ft847QueryRxStatus(uint8_t& rxStatusOut, uint32_t timeoutMs);
 bool ft847QueryTxStatus(uint8_t& txStatusOut, uint32_t timeoutMs);
-bool ft847QuerySMeterRaw(const StoredProfile& sp, int32_t& rawOut, uint32_t timeoutMs);
+bool ft847QuerySMeterRaw(const RadioProfile& sp, int32_t& rawOut, uint32_t timeoutMs);
 SMeterReading ft847SMeterFromRaw(uint8_t rxStatus);
-bool ft847QueryRxTx(const StoredProfile& sp, bool& txOut, uint32_t timeoutMs);
+bool ft847QueryRxTx(const RadioProfile& sp, bool& txOut, uint32_t timeoutMs);

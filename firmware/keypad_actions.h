@@ -137,15 +137,14 @@ void beginBank6DcsEntry();
 // ---- Bank 8 ----
 void queryBank8CivAddress();
 void beginBank8CivAddressEntry();
+void queryBank8Baud();  // "BAUD?", says "baud 4800"
+// 1: the next rate the radio offers, -1: the previous one, wrapping around.
 void cycleBank8Baud(int delta);
 // FT-8x7: the soft key (function) row and menu item saved when the radio's menu was last exited.
 void queryBank8Ft8x7Row();
 void queryBank8Ft8x7Menu();
 
 // ---- Bank 9 ----
-// Light-Icom fallback: key '1'-'9' picks that built-in profile. The keymap
-// binds it only while the fallback is active.
-void selectBank9DirectProfile(char key);
 void queryBank9TuningSpeech();
 void toggleBank9TuningSpeech();
 void queryBank9Verbose();   // "VERBOSE?", says "verbose on/off"
@@ -155,6 +154,8 @@ void adjustBank9Volume(int delta);
 void queryBank9Volume();   // "VOLUME?", speaks the volume
 void queryBank9Profile();  // "PROFILE?", speaks the profile
 void beginBank9ProfileSelect();
+// "PROFILE RESET": the saved baud and CI-V address back to the profile's defaults.
+void resetBank9Profile();
 void selectNextProfile();
 void selectPrevProfile();
 

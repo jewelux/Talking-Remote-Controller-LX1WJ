@@ -40,11 +40,12 @@ Sources: FT-847 operating manual, pp. 91-93 (CAT System Programming), and Hamlib
    one. This differs from other Yaesu radios.
 3. **Tuner.** CAT does not work while an FC-20 tuner is connected to the TUNER jack. Unplug the
    FC-20 control cable.
-4. **Baud rate.** Menu 37 on the radio (4800 / 9600 / 57600, default 4800) must match `baud=`
-   in `ft847.ini` (4800).
-5. **SD card.** Copy `firmware/SDCard/ft847.ini` and `slots.ini` to the card, then choose
-   profile 16 (keypad profile select or console `PROFILE 16`). `PROFILE?` must show
+4. **Profile.** The FT-847 is built into the firmware as profile 16; no SD card is needed.
+   Choose it with the keypad profile select or console `PROFILE 16`. `PROFILE?` must show
    `protocol: YAESU_FT847_CAT`.
+5. **Baud rate.** HamTRC starts at 4800, the radio's default in menu 37. If the radio is set to
+   9600 or 57600, set the same in HamTRC: Bank 8 `2` long or double press, or console
+   `BAUD 9600`. HamTRC keeps it for profile 16; `PROFILE RESET` goes back to 4800.
 
 ## Test steps (serial console, 115200 baud)
 

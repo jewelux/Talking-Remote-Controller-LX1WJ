@@ -36,7 +36,7 @@
 - an entry or bank, profile or mode select left for 30 seconds without a key ends and says
   "timeout". Before, it waited forever, and tuning on the radio was not announced meanwhile
 - a key that does nothing gives a short beep instead of silence: keys with no action on the current
-  bank, keys whose feature the radio lacks, and keys an entry or selection does not take
+  bank, and keys an entry or selection does not take
 - choosing a profile number with no stored profile says "not available"
 
 ### Frequency
@@ -61,6 +61,18 @@
 - "timeout" when the radio does not answer, and "not available" for features the radio or profile
   cannot provide (e.g. keys hidden on FTDX10, an empty profile slot); both used to say "error" or
   nothing
+- a frequency or mode the radio did not take says "error" on Icom, Kenwood, Elecraft and FTDX
+  radios too. Before, only the FT-8x7 said it; the others stayed silent
+- TS-480 and KX2: the Bank 3 VFO A/B frequency and mode set keys say "not available" at once
+  instead of asking for the entry and then staying silent
+- FT-8x7: a CTCSS tone or DCS code that is not a standard one says "error". Before, it was silent.
+- a key whose radio command fails always answers: "timeout" when the radio does not reply, "error"
+  when it refuses or answers wrongly, and "not available" when the radio or profile has no such
+  command. Before, many keys (VFO, split, RIT, tuner, PBT and others) stayed silent unless it was a
+  timeout, and keys for a feature the radio lacks (tuner, monitor, RIT, band stack) beeped
+- with verbose on, "not available", "timeout" and "error" from a key start with the function's
+  name, e.g. "tuner not available", "split timeout", "c t c s s error"
+- a CI-V address with the hex digit E (e.g. E0) says "e" instead of "error"
 - the S-meter says dB over S9 as a word ("S meter nine plus twenty")
 - WFM is said as "wfm" instead of being spelled out
 - the RX/TX query (Bank 1 `1`, and Bank 3 `6` on radios other than the FT-8x7 and FTDX10) says
@@ -73,8 +85,8 @@
 
 - new commands for what only the keypad could do: `ROUND [<Hz>]`, `NRLEVEL`, `NBLEVEL`,
   `MONLEVEL`, `PBT1`, `PBT2`, `RIT` and `VOLUME STEP <+-n>`; `FILWIDTH NEXT | PREV`; `TOGGLE` for
-  `MONITOR`, `TRANSCEIVE`, `RIT`, `FILSHAPE` and `TUNINGSPEECH`; `CIVADDR? | <hex>` and
-  `BAUD? | <rate>` (CI-V); on FT-8x7 `CTCSS? | <Hz>`, `DCS? | <code>` and `VFO SYNC A | B`; on
+  `MONITOR`, `TRANSCEIVE`, `RIT`, `FILSHAPE` and `TUNINGSPEECH`; `CIVADDR? | <hex>` (CI-V) and
+  `BAUD? | <rate>`; on FT-8x7 `CTCSS? | <Hz>`, `DCS? | <code>` and `VFO SYNC A | B`; on
   FT-817 `VFO A=B`
 - `FREQHZ`, `VFOAHZ` and `VFOBHZ` set a frequency in Hz
 - `BANK <n>`, `BANK NEXT` and `BANK PREV` cover banks 1–9 like the keypad (they stopped at 3)
@@ -94,6 +106,25 @@
   and `YSETTINGS?` lists more settings read from the radio, e.g. VOX, lock, fast tuning, NB,
   break-in, keyer and IF shift, on the FT-857/897 also PROC, CW speed, the gains and the DSP filter
   widths. `CLAR ON | OFF` say when the radio did not switch RIT
+
+### Radio profiles
+
+- the radio profiles are built into the firmware: no SD card or SD card reader is needed, and a
+  firmware update brings every profile up to date. The profile numbers are those of the SD card's
+  `slots.ini`: 1 IC-7300, 2 IC-706, 3 IC-7300 RS-232, 4 IC-706 RS-232, 5 G106, 6 KX2, 7 TS-480,
+  8 FT-817, 9 FT-857, 10 FT-897, 11 FTDX10, 12 FTDX101D, 13 FTDX101MP, 14 FT-818, 15 FT-891,
+  17 IC-705, 18 IC-7760
+- the baud rate can be set on every radio, not only on CI-V radios. Bank 8 `2` short says it
+  ("baud 4 8 0 0"), long and double press step down and up through the rates the radio offers
+  (FT-817/818/857/897: 4800, 9600, 38400; FTDX10, FTDX101 and FT-891: 4800 to 38400; TS-480:
+  4800 to 57600; KX2: 4800 to 38400). Before, `2` short and long stepped up and down. Console
+  `BAUD <rate>` refuses other rates and lists them. The choice is kept for each profile, and
+  `PROFILE?` lists the rates
+- Bank 9 `A` double press resets the profile: its baud rate and CI-V address go back to the
+  defaults, and HamTRC says "profile reset". Console `PROFILE RESET`, and `PROFILE RESET ALL`
+  for every profile
+- the six Icom profiles HamTRC offered when the SD card did not load are gone, and with them
+  Bank 9 `1`–`9` picking a profile directly; on Bank 9, `1`–`3` and `6` beep
 
 ### Radios
 
@@ -153,12 +184,15 @@
 - NR, NB and notch keys say so when the radio rejects the change or does not answer; this was silent
 - FTDX10: frequency entry and 500 Hz rounding announce the new frequency once and report a write
   the radio rejects. Bank 2 `8` and `9` say "not available" like the other hidden keys
+- FTDX10: setting the current VFO's mode says it once (it was said twice), and a failed VFO A/B
+  mode set says "error" or "timeout" instead of the mode name
 - Bank 6 on radios other than the FT-8x7 family is empty: its keys beep like any unassigned key
   (they said "BANK6 reserved")
 
 ### Yaesu FT-847 (new, not yet tested on the radio)
 
-- new profile `ft847.ini` (slot 16) with its own protocol `YAESU_FT847`. The FT-847 shares the
+- new built-in profile 16 with its own protocol `YAESU_FT847` (baud 4800, 9600 or 57600, like
+  the radio's menu 37). The FT-847 shares the
   5-byte CAT frame of the FT-817/857/897 but not all of its commands (`0x80` is CAT OFF, not
   lock off), so no FT-8x7 code runs for it
 - frequency and mode read and set, S-meter (5-bit, 0..31 dots), RX/TX status. HamTRC sends CAT ON
@@ -174,11 +208,6 @@
 
 ### Firmware updates
 
-- FT-817/818/857/897: copy the new `ft817.ini`, `ft818.ini`, `ft857.ini` and `ft897.ini` from
-  `firmware/SDCard` to the SD card. With the old files, power, SWR, TX power and the noise
-  blanker (on the FT-857/897 also noise reduction and notch) stay "not available", the FT-817's
-  RX/TX state too, and the FT-857/897 VFO keys do not read the active VFO from the radio. With the
-  old `ft818.ini` an FT-818 says the FT-817's TX power levels
 - every push builds the firmware as a factory image with a manifest for the online updater;
   version tags attach them to a GitHub release
 
@@ -194,6 +223,9 @@
 - building needs the ESP32 Arduino core 3.x or newer; an older core stops with a message saying so
 - keypad handling is one state machine (`firmware/keypad_input.{h,cpp}`) with a keymap per bank
   and radio (`firmware/keypad_keymap.cpp`); host unit tests in `tests/keypad` run in CI
+- the radio profiles are one table, `kProfiles` in `firmware/radio_profile_table.cpp`, checked
+  at build time and by host unit tests in `tests/profiles`; a new radio is one entry. The SD
+  card loader and its ini files are gone. The host unit tests build as C++20
 - the FT-8x7 CAT fields and EEPROM map (`firmware/ft8x7_*`) are plain C++ with host unit tests in
   `tests/ft8x7`; the on/off settings each model keeps in its EEPROM are one table per model
 - `generate_voices.py`, `say.py` and `setup_venv.ps1` default to `en_US-lessac-medium` with both

@@ -8,8 +8,8 @@ This is the shortest technical path for the current firmware line **V3.5.8**.
 2. Build for the intended ESP32-S3 target with the ESP32 Arduino core 3.x or newer
    (Boards Manager: esp32 by Espressif Systems).
 3. Keep `voice_data.h` in the firmware folder.
-4. Copy the contents of `firmware/SDCard` to the controller SD card.
-5. Insert the SD card before normal operation.
+
+The radio profiles are built into the firmware; no SD card is needed.
 
 ## Browser Update
 

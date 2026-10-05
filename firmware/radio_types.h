@@ -4,11 +4,10 @@
 #include <Preferences.h>
 #include "driver/uart.h"
 #include <Keypad.h>
-#include <SPI.h>
-#include <SD.h>
 
 #include "civ_frame.h"
 #include "config_pins.h"
+#include "radio_profile_types.h"
 #include "voice_data.h"
 
 struct VoiceClip {
@@ -17,7 +16,6 @@ struct VoiceClip {
   size_t len;
 };
 
-static constexpr uint8_t MAX_PROFILE_SLOTS = 24;
 static constexpr uint8_t CIV_MY_ADDR = 0xE0;
 static constexpr uint8_t CIV_CTRL_ADDR = CIV_MY_ADDR;
 // Command byte of the radio's "NG" (command rejected) reply.
@@ -51,171 +49,19 @@ static const uint32_t SMETER_SPEAK_MIN_INTERVAL_MS = 2500;
 static const int32_t SMETER_RAW_AT_S0 = 21;
 static const int32_t SMETER_RAW_AT_S9 = 297;
 
-enum IcomModel : uint8_t {
-  ICOM_IC_7300,
-  ICOM_IC_706MKIIG
+// Line settings the protocol needs.
+enum class SerialFraming : uint8_t {
+  Standard,  // 8N1
+  Ft8x7Cat,  // 8N2, with TX driven idle before the UART opens (FT-8x7 and FT-847)
 };
 
-static constexpr IcomModel ICOM_MODEL = ICOM_IC_7300;
-
-enum ProtocolType : uint8_t {
-  PROTO_CIV = 0,
-  PROTO_KENWOOD_ASCII = 1,
-  PROTO_ELECRAFT_ASCII = 2,
-  PROTO_YAESU_FT8X7 = 3,
-  PROTO_YAESU_FTDX_ASCII = 4,
-  PROTO_YAESU_FT847 = 5
-};
-
-// The link to the radio, as the profile's [connection] section sets it: which
-// UART and pins, the line settings, and the CI-V address (CI-V radios only).
-// The profile's name is StoredProfile::name.
+// The active link to the radio: the profile's port, and the baud and CI-V
+// address in use, which the user may have changed from the profile's defaults.
 struct ConnectionProfile {
-  uint8_t civAddr;
+  RadioPort port;
   uint32_t baud;
-  int8_t uartNum;
-  int8_t rxPin;
-  int8_t txPin;
-  bool txInvert;
-  bool rxInvert;
-};
-
-// Only bool members: EXPERIMENTAL ON sets them all through a bool array (radio_catalog.cpp).
-struct RadioCapabilities {
-  bool getFreq;
-  bool setFreq;
-  bool getMode;
-  bool setMode;
-  bool getSmeter;
-  bool getPower;
-  bool getRfPower;
-  bool setRfPower;
-  bool getSwr;
-  bool getRxTx;
-  bool getTxFreq;
-  bool getNr;
-  bool setNr;
-  bool getNrLevel;
-  bool setNrLevel;
-  bool getNb;
-  bool setNb;
-  bool getNbLevel;
-  bool setNbLevel;
-  bool getNotch;
-  bool setNotch;
-  bool getNotchWidth;
-  bool setNotchWidth;
-  bool getPbtInner;
-  bool setPbtInner;
-  bool getPbtOuter;
-  bool setPbtOuter;
-  bool getFilterShape;
-  bool setFilterShape;
-  bool getFilterWidth;
-  bool setFilterWidth;
-  bool getDialLock;
-  bool setDialLock;
-  bool getMonitor;
-  bool setMonitor;
-  bool getMonitorLevel;
-  bool setMonitorLevel;
-  bool getTransceive;
-  bool setTransceive;
-  bool getTuner;
-  bool setTuner;
-  bool startTune;
-  bool getVfo;
-  bool setVfo;
-  bool getVfoMode;
-  bool setVfoMode;
-  bool getSplit;
-  bool setSplit;
-  bool getRit;
-  bool setRit;
-  bool getBandStack;
-};
-
-struct AsciiCommandProfile {
-  char freqGet[20];
-  char freqSetFormat[32];
-  char modeGet[20];
-  char modeSetFormat[20];
-  char vfoAGet[20];
-  char vfoASetFormat[32];
-  char vfoBGet[20];
-  char vfoBSetFormat[32];
-  char ifGet[20];
-  char idGet[20];
-  char omGet[20];
-  char smeterGet[20];
-  char powerGet[20];
-  char swrGet[20];
-  char nrGet[20];
-  char nrOnCmd[20];
-  char nrOffCmd[20];
-  char nbGet[20];
-  char nbOnCmd[20];
-  char nbOffCmd[20];
-  char preampGet[20];
-  char preampOnCmd[20];
-  char preampOffCmd[20];
-  char agcGet[20];
-  char agcFastCmd[20];
-  char agcSlowCmd[20];
-  char agcOffCmd[20];
-  char powerStateGet[20];
-  char powerStateOnCmd[20];
-  char powerStateOffCmd[20];
-  char tunerGet[20];
-  char tunerOnCmd[20];
-  char tunerOffCmd[20];
-  char tuneStartCmd[20];
-  char splitGet[20];
-  char splitOnCmd[20];
-  char splitOffCmd[20];
-  char vfoGet[20];
-  char vfoACmd[20];
-  char vfoBCmd[20];
-  char vfoSwapCmd[20];
-  char notchGet[20];
-  char notchOnCmd[20];
-  char notchOffCmd[20];
-  char lockGet[20];
-  char lockOnCmd[20];
-  char lockOffCmd[20];
-  char freqReplyPrefix[8];
-  char modeReplyPrefix[8];
-  char ifReplyPrefix[8];
-  char idReplyPrefix[8];
-  char omReplyPrefix[8];
-  char smeterReplyPrefix[8];
-  char powerReplyPrefix[8];
-  char swrReplyPrefix[8];
-  char nrReplyPrefix[8];
-  char nbReplyPrefix[8];
-  char preampReplyPrefix[8];
-  char agcReplyPrefix[8];
-  char powerStateReplyPrefix[8];
-  char tunerReplyPrefix[8];
-  char splitReplyPrefix[8];
-  char vfoReplyPrefix[8];
-  char notchReplyPrefix[8];
-  char lockReplyPrefix[8];
-  char modeLsb[4];
-  char modeUsb[4];
-  char modeAm[4];
-  char modeCw[4];
-  char modeRtty[4];
-  char modeFm[4];
-  char modeCwr[4];
-  char modeRttyR[4];
-  char modeDigi[4];
-};
-
-struct Ft8x7Bank6Profile {
-  uint32_t repeaterOffsetsHz[2];
-  uint16_t ctcssDefaultTenths;
-  uint16_t dcsDefaultCode;
+  uint8_t civAddr;  // CI-V radios only
+  SerialFraming framing;
 };
 
 enum NotchWidth : uint8_t {
@@ -223,55 +69,6 @@ enum NotchWidth : uint8_t {
   NOTCH_WIDTH_MID = 1,
   NOTCH_WIDTH_WIDE = 2,
   NOTCH_WIDTH_UNKNOWN = 0xFF
-};
-
-enum ProfileId : uint8_t {
-  PROFILE_ID_SLOT1 = 1,
-  PROFILE_ID_SLOT2 = 2,
-  PROFILE_ID_SLOT3 = 3,
-  PROFILE_ID_SLOT4 = 4,
-  PROFILE_ID_SLOT5 = 5,
-  PROFILE_ID_SLOT6 = 6,
-  PROFILE_ID_SLOT7 = 7,
-  PROFILE_ID_SLOT8 = 8,
-  PROFILE_ID_SLOT9 = 9,
-  PROFILE_ID_SLOT10 = 10,
-  PROFILE_ID_SLOT11 = 11,
-  PROFILE_ID_SLOT12 = 12,
-  PROFILE_ID_SLOT13 = 13,
-  PROFILE_ID_SLOT14 = 14,
-  PROFILE_ID_SLOT15 = 15,
-  PROFILE_ID_SLOT16 = 16,
-  PROFILE_ID_SLOT17 = 17,
-  PROFILE_ID_SLOT18 = 18,
-  PROFILE_ID_SLOT19 = 19,
-  PROFILE_ID_SLOT20 = 20,
-  PROFILE_ID_SLOT21 = 21,
-  PROFILE_ID_SLOT22 = 22,
-  PROFILE_ID_SLOT23 = 23,
-  PROFILE_ID_SLOT24 = 24
-};
-
-static constexpr uint8_t PROFILE_ID_7300 = PROFILE_ID_SLOT1;
-static constexpr uint8_t PROFILE_ID_7300_RS232 = PROFILE_ID_SLOT2;
-static constexpr uint8_t PROFILE_ID_706_CIV = PROFILE_ID_SLOT3;
-static constexpr uint8_t PROFILE_ID_706_RS232 = PROFILE_ID_SLOT4;
-static constexpr uint8_t PROFILE_ID_705 = PROFILE_ID_SLOT5;
-static constexpr uint8_t PROFILE_ID_7760 = PROFILE_ID_SLOT6;
-
-struct StoredProfile {
-  ConnectionProfile connection;
-  ProtocolType protocolType;
-  RadioCapabilities caps;
-  AsciiCommandProfile ascii;
-  Ft8x7Bank6Profile ft8x7Bank6;
-  uint16_t rfPowerMaxWatts;
-  bool valid;
-  bool fromSd;
-  char name[32];
-  char voiceVendor[16];
-  char voiceDigits[16];
-  char variant[16];
 };
 
 struct BandStackEntry {

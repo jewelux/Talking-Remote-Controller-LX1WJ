@@ -77,6 +77,5 @@ TEST(expectations_lookup_picks_the_family_row) {
   CHECK_EQ(lookup(FTDX10, 2, '4').shortAction, "send(GT?)");
   CHECK_EQ(lookup(IC706, 2, '4').shortAction, "queryBank2NrLevel");
   CHECK_EQ(lookup(TS480, 2, '4').shortAction, "unassigned");
-  CHECK_EQ(lookup(LIGHT, 9, '4').shortAction, "selectBank9DirectProfile(4)");
   CHECK_EQ(lookup(IC7300, 9, '4').shortAction, "queryBank9TuningSpeech");
 }

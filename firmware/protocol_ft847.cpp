@@ -132,7 +132,7 @@ static bool ft847ReadFreqModeFrame(uint8_t rsp[5], uint32_t timeoutMs) {
   return true;
 }
 
-bool ft847QueryFrequency(const StoredProfile& sp, uint64_t& hzOut, uint32_t timeoutMs) {
+bool ft847QueryFrequency(const RadioProfile& sp, uint64_t& hzOut, uint32_t timeoutMs) {
   if (!sp.caps.getFreq) return false;
   uint8_t rsp[5] = {0};
   if (!ft847ReadFreqModeFrame(rsp, timeoutMs)) return false;
@@ -140,7 +140,7 @@ bool ft847QueryFrequency(const StoredProfile& sp, uint64_t& hzOut, uint32_t time
   return true;
 }
 
-bool ft847SetFrequency(const StoredProfile& sp, uint64_t hz) {
+bool ft847SetFrequency(const RadioProfile& sp, uint64_t hz) {
   if (!sp.caps.setFreq) return false;
   if (hz < FT847_MIN_FREQ_HZ || hz > FT847_MAX_FREQ_HZ) return false;
   uint8_t frame[5];
@@ -157,7 +157,7 @@ bool ft847QueryModeByte(uint8_t& modeByteOut, uint32_t timeoutMs) {
   return true;
 }
 
-bool ft847QueryMode(const StoredProfile& sp, uint8_t& modeOut, uint32_t timeoutMs) {
+bool ft847QueryMode(const RadioProfile& sp, uint8_t& modeOut, uint32_t timeoutMs) {
   if (!sp.caps.getMode) return false;
   uint8_t modeByte = 0;
   if (!ft847QueryModeByte(modeByte, timeoutMs)) return false;
@@ -165,7 +165,7 @@ bool ft847QueryMode(const StoredProfile& sp, uint8_t& modeOut, uint32_t timeoutM
   return profileInternalModeForCode(sp, byteToUpperHex(ft847ModeBase(modeByte)), modeOut);
 }
 
-bool ft847SetMode(const StoredProfile& sp, uint8_t mode) {
+bool ft847SetMode(const RadioProfile& sp, uint8_t mode) {
   if (!sp.caps.setMode) return false;
   String code;
   uint8_t modeByte = 0;
@@ -191,7 +191,7 @@ bool ft847QueryTxStatus(uint8_t& txStatusOut, uint32_t timeoutMs) {
   return ft847Transact1(frame, txStatusOut, timeoutMs);
 }
 
-bool ft847QuerySMeterRaw(const StoredProfile& sp, int32_t& rawOut, uint32_t timeoutMs) {
+bool ft847QuerySMeterRaw(const RadioProfile& sp, int32_t& rawOut, uint32_t timeoutMs) {
   if (!sp.caps.getSmeter) return false;
   uint8_t rxStatus = 0;
   if (!ft847QueryRxStatus(rxStatus, timeoutMs)) return false;
@@ -205,7 +205,7 @@ SMeterReading ft847SMeterFromRaw(uint8_t rxStatus) {
   return reading;
 }
 
-bool ft847QueryRxTx(const StoredProfile& sp, bool& txOut, uint32_t timeoutMs) {
+bool ft847QueryRxTx(const RadioProfile& sp, bool& txOut, uint32_t timeoutMs) {
   if (!sp.caps.getRxTx) return false;
   uint8_t txStatus = 0;
   if (!ft847QueryTxStatus(txStatus, timeoutMs)) return false;

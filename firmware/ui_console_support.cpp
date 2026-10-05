@@ -27,7 +27,7 @@ void printStatusSummary() {
   Serial.print("  profile slot: ");
   Serial.println((int)g_profileId);
   Serial.print("  profile name: ");
-  Serial.println(currentStoredProfile().name);
+  Serial.println(currentProfile().name);
   Serial.print("  protocol: ");
   Serial.println(protocolTypeToString(currentProtocolType()));
   Serial.print("  speech: ");
@@ -71,15 +71,4 @@ void printStatusSummary() {
   } else {
     Serial.println("  last swr raw: (unknown)");
   }
-}
-
-uint8_t findAdjacentValidProfile(int8_t direction) {
-  if (direction == 0) return g_profileId;
-  for (uint8_t step = 0; step < MAX_PROFILE_SLOTS; ++step) {
-    int next = (int)g_profileId + direction * (step + 1);
-    while (next < 1) next += MAX_PROFILE_SLOTS;
-    while (next > MAX_PROFILE_SLOTS) next -= MAX_PROFILE_SLOTS;
-    if (storedProfileForId((uint8_t)next)) return (uint8_t)next;
-  }
-  return g_profileId;
 }

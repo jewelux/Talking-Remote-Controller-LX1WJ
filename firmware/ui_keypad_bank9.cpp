@@ -39,43 +39,43 @@ void beginBank9ProfileSelect() {
 
 void selectNextProfile() {
   printKeypadAction("PROFILE NEXT");
-  uint8_t next = findAdjacentValidProfile(1);
+  uint8_t next = adjacentProfileSlot(g_profileId, 1);
   applyProfile(next);
-  printKeypadStatus(String("PROFILE ") + String((int)next));
+  printKeypadStatus("PROFILE {}", next);
   speakCurrentProfile();
 }
 
 void selectPrevProfile() {
   printKeypadAction("PROFILE PREV");
-  uint8_t prev = findAdjacentValidProfile(-1);
+  uint8_t prev = adjacentProfileSlot(g_profileId, -1);
   applyProfile(prev);
-  printKeypadStatus(String("PROFILE ") + String((int)prev));
+  printKeypadStatus("PROFILE {}", prev);
   speakCurrentProfile();
 }
 
 void queryBank9TuningSpeech() {
   printKeypadAction("TUNINGSPEECH?");
-  printKeypadStatus(String("TUNINGSPEECH ") + (g_tuningSpeakEnabled ? "ON" : "OFF"));
+  printKeypadStatus("TUNINGSPEECH {}", g_tuningSpeakEnabled ? "ON" : "OFF");
   speakTuningSpeechState();
 }
 
 void toggleBank9TuningSpeech() {
   printKeypadAction("TUNINGSPEECH");
   setTuningSpeechEnabled(!g_tuningSpeakEnabled);
-  printKeypadStatus(String("TUNINGSPEECH ") + (g_tuningSpeakEnabled ? "ON" : "OFF"));
+  printKeypadStatus("TUNINGSPEECH {}", g_tuningSpeakEnabled ? "ON" : "OFF");
   speakTuningSpeechState();
 }
 
 void queryBank9Verbose() {
   printKeypadAction("VERBOSE?");
-  printKeypadStatus(String("VERBOSE ") + (g_verboseSpeech ? "ON" : "OFF"));
+  printKeypadStatus("VERBOSE {}", g_verboseSpeech ? "ON" : "OFF");
   speakVerboseState();
 }
 
 void toggleBank9Verbose() {
   printKeypadAction("VERBOSE");
   setVerboseSpeech(!g_verboseSpeech);
-  printKeypadStatus(String("VERBOSE ") + (g_verboseSpeech ? "ON" : "OFF"));
+  printKeypadStatus("VERBOSE {}", g_verboseSpeech ? "ON" : "OFF");
   speakVerboseState();
 }
 
@@ -86,13 +86,13 @@ static void speakVolumeWithLevel(uint8_t lvl) {
 }
 
 void adjustBank9Volume(int delta) {
-  printKeypadAction(String(delta < 0 ? "VOLUME DOWN" : "VOLUME UP") + (delta < -1 || delta > 1 ? " FAST" : ""));
+  printKeypadAction("VOLUME {}{}", delta < 0 ? "DOWN" : "UP", delta < -1 || delta > 1 ? " FAST" : "");
   int next = (int)g_volumeLevel + delta;
   if (next < 1) next = 1;
   if (next > 9) next = 9;
   applyVolumeLevel((uint8_t)next);
   saveVolumeToNvs((uint8_t)next);
-  printKeypadStatus(String("VOLUME ") + String(next));
+  printKeypadStatus("VOLUME {}", next);
   if (g_speechEnabled) {
     speakVolumeWithLevel((uint8_t)next);
     speakValueOk();
@@ -101,8 +101,22 @@ void adjustBank9Volume(int delta) {
 
 void queryBank9Volume() {
   printKeypadAction("VOLUME?");
-  printKeypadStatus(String("VOLUME ") + String((int)g_volumeLevel));
+  printKeypadStatus("VOLUME {}", g_volumeLevel);
   if (g_speechEnabled) speakVolumeWithLevel(g_volumeLevel);
+}
+
+void resetBank9Profile() {
+  printKeypadAction("PROFILE RESET");
+  resetCurrentConnection();
+  const ConnectionProfile& link = currentConnectionProfile();
+  if (currentProtocolType() == PROTO_CIV) {
+    char hex[3] = "";
+    formatHexByte(link.civAddr, hex, sizeof(hex));
+    printKeypadStatus("BAUD {} CI {}", link.baud, hex);
+  } else {
+    printKeypadStatus("BAUD {}", link.baud);
+  }
+  speakProfileReset();
 }
 
 void queryBank9Profile() {
@@ -113,17 +127,3 @@ void queryBank9Profile() {
   speakProfileIdentityFromSlot(g_profileId, false);
 }
 
-void selectBank9DirectProfile(char key) {
-  if (key < '1' || key > '9') return;
-  const uint8_t slot = (uint8_t)(key - '0');
-  if (!storedProfileForId(slot)) {
-    printKeypadAction("PROFILE");
-    printKeypadStatus(String("PROFILE ") + String((int)slot) + " EMPTY");
-    if (g_speechEnabled) speakNotAvailable();
-    return;
-  }
-  printKeypadAction(String("PROFILE ") + String((int)slot));
-  applyProfile(slot);
-  printKeypadStatus(String("PROFILE ") + String((int)slot));
-  speakCurrentProfile();
-}

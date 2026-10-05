@@ -4,13 +4,21 @@
 
 const char* protocolTypeToString(ProtocolType pt);
 void printActiveProfileDetails();
-void applyProfile(uint8_t profileId);
+// Makes the profile in slot the active radio (the default profile for a free
+// slot), with the baud and CI-V address saved for it, and reopens the link.
+void applyProfile(uint8_t slot);
+// SLOTS?: every slot and its radio.
+void printProfileSlots();
 void speakCurrentProfile();
 
-// CI-V baud rates the connection setup offers, slowest first.
-extern const uint32_t kCivBaudRates[];
-extern const size_t kCivBaudRateCount;
-// Sets the CI-V address and baud of the current profile, saves them as its
-// connection override and reapplies the profile. False when the current profile
-// is not a CI-V one.
-bool setCurrentCivConnection(uint8_t civAddr, uint32_t baud);
+// Sets the baud of the active profile, saves it for its slot and reopens the
+// link. False for a rate the radio does not offer (link.bauds).
+bool setCurrentBaud(uint32_t baud);
+// Sets the CI-V address of the active profile, saves it for its slot and
+// reopens the link. False when the active profile is not a CI-V one.
+bool setCurrentCivAddress(uint8_t civAddr);
+// PROFILE RESET: forgets the baud and CI-V address saved for the active slot,
+// so its profile's defaults apply, and reopens the link.
+void resetCurrentConnection();
+// PROFILE RESET ALL: the same for every slot.
+void resetAllConnections();

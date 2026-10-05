@@ -21,124 +21,155 @@ const char* protocolTypeToString(ProtocolType pt) {
   }
 }
 
+static const char* radioPortName(RadioPort port) {
+  switch (port) {
+    case RadioPort::CivJack: return "CI-V jack";
+    case RadioPort::Rs232: return "RS-232";
+    case RadioPort::CatTtl: return "CAT TTL";
+  }
+  return "?";
+}
+
+static const char* voiceVendorName(VoiceVendor vendor) {
+  switch (vendor) {
+    case VoiceVendor::Icom: return "icom";
+    case VoiceVendor::Yaesu: return "yaesu";
+    case VoiceVendor::Kenwood: return "kenwood";
+    case VoiceVendor::Elecraft: return "elecraft";
+    case VoiceVendor::Xiegu: return "xiegu";
+  }
+  return "?";
+}
+
 void printActiveProfileDetails() {
-  const StoredProfile* sp = storedProfileForId(g_profileId);
+  const RadioProfile& sp = currentProfile();
   const ConnectionProfile& p = currentConnectionProfile();
+  const SerialPortPins& pins = serialPortPins(p.port);
 
   Serial.println("[PROFILE DETAILS]");
   Serial.print("  slot: ");
   Serial.println((int)g_profileId);
   Serial.print("  name: ");
-  Serial.println(currentStoredProfile().name);
-  Serial.print("  source: ");
-  Serial.println((sp && sp->fromSd) ? "SD" : "built-in");
+  Serial.println(sp.name);
   Serial.print("  protocol: ");
-  Serial.println(protocolTypeToString(currentProtocolType()));
-  if (currentProtocolType() == PROTO_CIV) {
+  Serial.println(protocolTypeToString(sp.protocol));
+  Serial.print("  model: ");
+  Serial.println(radioModelName(sp.model));
+  if (sp.protocol == PROTO_CIV) {
     Serial.print("  civ_addr: 0x");
     Serial.println(g_civRadioAddr, HEX);
   }
+  Serial.print("  port: ");
+  Serial.println(radioPortName(p.port));
   Serial.print("  uart: ");
-  Serial.println((int)p.uartNum);
+  Serial.println((int)pins.uartNum);
   Serial.print("  baud: ");
   Serial.println((unsigned long)p.baud);
-  Serial.print("  rx_pin: ");
-  Serial.println((int)p.rxPin);
-  Serial.print("  tx_pin: ");
-  Serial.println((int)p.txPin);
-  Serial.print("  tx_invert: ");
-  Serial.println(p.txInvert ? "1" : "0");
-  Serial.print("  rx_invert: ");
-  Serial.println(p.rxInvert ? "1" : "0");
-
-  if (sp) {
-    Serial.print("  voice_vendor: ");
-    Serial.println(sp->voiceVendor);
-    Serial.print("  voice_digits: ");
-    Serial.println(sp->voiceDigits);
-    Serial.print("  variant: ");
-    Serial.println(sp->variant[0] ? sp->variant : "(default)");
-    Serial.print("  caps: freq=");
-    Serial.print(sp->caps.getFreq ? "R" : "-");
-    Serial.print(sp->caps.setFreq ? "W" : "-");
-    Serial.print(" mode=");
-    Serial.print(sp->caps.getMode ? "R" : "-");
-    Serial.print(sp->caps.setMode ? "W" : "-");
-    Serial.print(" smeter=");
-    Serial.print(sp->caps.getSmeter ? "1" : "0");
-    Serial.print(" power=");
-    Serial.print(sp->caps.getPower ? "1" : "0");
-    Serial.print(" rfpower=");
-    Serial.print(sp->caps.getRfPower ? "R" : "-");
-    Serial.print(sp->caps.setRfPower ? "W" : "-");
-    Serial.print(" swr=");
-    Serial.print(sp->caps.getSwr ? "1" : "0");
-    Serial.print(" rxtx=");
-    Serial.print(sp->caps.getRxTx ? "1" : "0");
-    Serial.print(" txf=");
-    Serial.print(sp->caps.getTxFreq ? "1" : "0");
-    Serial.print(" nr=");
-    Serial.print(sp->caps.getNr ? "R" : "-");
-    Serial.print(sp->caps.setNr ? "W" : "-");
-    Serial.print(" nrlvl=");
-    Serial.print(sp->caps.getNrLevel ? "R" : "-");
-    Serial.print(sp->caps.setNrLevel ? "W" : "-");
-    Serial.print(" nb=");
-    Serial.print(sp->caps.getNb ? "R" : "-");
-    Serial.print(sp->caps.setNb ? "W" : "-");
-    Serial.print(" nblvl=");
-    Serial.print(sp->caps.getNbLevel ? "R" : "-");
-    Serial.print(sp->caps.setNbLevel ? "W" : "-");
-    Serial.print(" notch=");
-    Serial.print(sp->caps.getNotch ? "R" : "-");
-    Serial.print(sp->caps.setNotch ? "W" : "-");
-    Serial.print(" pbt=");
-    Serial.print(sp->caps.getPbtInner ? "1" : "0");
-    Serial.print(sp->caps.getPbtOuter ? "1" : "0");
-    Serial.print(" filter=");
-    Serial.print(sp->caps.getFilterShape ? "S" : "-");
-    Serial.print(sp->caps.getFilterWidth ? "W" : "-");
-    Serial.print(" lock=");
-    Serial.print(sp->caps.getDialLock ? "R" : "-");
-    Serial.print(sp->caps.setDialLock ? "W" : "-");
-    Serial.print(" mon=");
-    Serial.print(sp->caps.getMonitor ? "R" : "-");
-    Serial.print(sp->caps.setMonitor ? "W" : "-");
-    Serial.print(" monlvl=");
-    Serial.print(sp->caps.getMonitorLevel ? "R" : "-");
-    Serial.print(sp->caps.setMonitorLevel ? "W" : "-");
-    Serial.print(" xcv=");
-    Serial.print(sp->caps.getTransceive ? "R" : "-");
-    Serial.print(sp->caps.setTransceive ? "W" : "-");
-    Serial.print(" tuner=");
-    Serial.print(sp->caps.getTuner ? "R" : "-");
-    Serial.print(sp->caps.setTuner ? "W" : "-");
-    Serial.print(sp->caps.startTune ? "T" : "-");
-    Serial.print(" vfo=");
-    Serial.print(sp->caps.getVfo ? "R" : "-");
-    Serial.print(sp->caps.setVfo ? "W" : "-");
-    Serial.print(" vmode=");
-    Serial.print(sp->caps.getVfoMode ? "R" : "-");
-    Serial.print(sp->caps.setVfoMode ? "W" : "-");
-    Serial.print(" split=");
-    Serial.print(sp->caps.getSplit ? "R" : "-");
-    Serial.print(sp->caps.setSplit ? "W" : "-");
-    Serial.print(" rit=");
-    Serial.print(sp->caps.getRit ? "R" : "-");
-    Serial.print(sp->caps.setRit ? "W" : "-");
-    Serial.print(" bstack=");
-    Serial.print(sp->caps.getBandStack ? "1" : "0");
-    Serial.println();
+  Serial.print("  bauds:");
+  for (uint8_t i = 0; i < sp.link.bauds.count; ++i) {
+    Serial.print(" ");
+    Serial.print((unsigned long)sp.link.bauds.rates[i]);
   }
+  Serial.println();
+  Serial.print("  rx_pin: ");
+  Serial.println((int)pins.rxPin);
+  Serial.print("  tx_pin: ");
+  Serial.println((int)pins.txPin);
+  Serial.print("  tx_invert: ");
+  Serial.println(pins.txInvert ? "1" : "0");
+  Serial.print("  rx_invert: ");
+  Serial.println(pins.rxInvert ? "1" : "0");
+
+  Serial.print("  voice_vendor: ");
+  Serial.println(voiceVendorName(sp.vendor));
+  Serial.print("  voice_digits: ");
+  Serial.println(sp.voiceDigits);
+  Serial.print("  caps: freq=");
+  Serial.print(sp.caps.getFreq ? "R" : "-");
+  Serial.print(sp.caps.setFreq ? "W" : "-");
+  Serial.print(" mode=");
+  Serial.print(sp.caps.getMode ? "R" : "-");
+  Serial.print(sp.caps.setMode ? "W" : "-");
+  Serial.print(" smeter=");
+  Serial.print(sp.caps.getSmeter ? "1" : "0");
+  Serial.print(" power=");
+  Serial.print(sp.caps.getPower ? "1" : "0");
+  Serial.print(" rfpower=");
+  Serial.print(sp.caps.getRfPower ? "R" : "-");
+  Serial.print(sp.caps.setRfPower ? "W" : "-");
+  Serial.print(" swr=");
+  Serial.print(sp.caps.getSwr ? "1" : "0");
+  Serial.print(" rxtx=");
+  Serial.print(sp.caps.getRxTx ? "1" : "0");
+  Serial.print(" txf=");
+  Serial.print(sp.caps.getTxFreq ? "1" : "0");
+  Serial.print(" nr=");
+  Serial.print(sp.caps.getNr ? "R" : "-");
+  Serial.print(sp.caps.setNr ? "W" : "-");
+  Serial.print(" nrlvl=");
+  Serial.print(sp.caps.getNrLevel ? "R" : "-");
+  Serial.print(sp.caps.setNrLevel ? "W" : "-");
+  Serial.print(" nb=");
+  Serial.print(sp.caps.getNb ? "R" : "-");
+  Serial.print(sp.caps.setNb ? "W" : "-");
+  Serial.print(" nblvl=");
+  Serial.print(sp.caps.getNbLevel ? "R" : "-");
+  Serial.print(sp.caps.setNbLevel ? "W" : "-");
+  Serial.print(" notch=");
+  Serial.print(sp.caps.getNotch ? "R" : "-");
+  Serial.print(sp.caps.setNotch ? "W" : "-");
+  Serial.print(" pbt=");
+  Serial.print(sp.caps.getPbtInner ? "1" : "0");
+  Serial.print(sp.caps.getPbtOuter ? "1" : "0");
+  Serial.print(" filter=");
+  Serial.print(sp.caps.getFilterShape ? "S" : "-");
+  Serial.print(sp.caps.getFilterWidth ? "W" : "-");
+  Serial.print(" lock=");
+  Serial.print(sp.caps.getDialLock ? "R" : "-");
+  Serial.print(sp.caps.setDialLock ? "W" : "-");
+  Serial.print(" mon=");
+  Serial.print(sp.caps.getMonitor ? "R" : "-");
+  Serial.print(sp.caps.setMonitor ? "W" : "-");
+  Serial.print(" monlvl=");
+  Serial.print(sp.caps.getMonitorLevel ? "R" : "-");
+  Serial.print(sp.caps.setMonitorLevel ? "W" : "-");
+  Serial.print(" xcv=");
+  Serial.print(sp.caps.getTransceive ? "R" : "-");
+  Serial.print(sp.caps.setTransceive ? "W" : "-");
+  Serial.print(" tuner=");
+  Serial.print(sp.caps.getTuner ? "R" : "-");
+  Serial.print(sp.caps.setTuner ? "W" : "-");
+  Serial.print(sp.caps.startTune ? "T" : "-");
+  Serial.print(" vfo=");
+  Serial.print(sp.caps.getVfo ? "R" : "-");
+  Serial.print(sp.caps.setVfo ? "W" : "-");
+  Serial.print(" vmode=");
+  Serial.print(sp.caps.getVfoMode ? "R" : "-");
+  Serial.print(sp.caps.setVfoMode ? "W" : "-");
+  Serial.print(" split=");
+  Serial.print(sp.caps.getSplit ? "R" : "-");
+  Serial.print(sp.caps.setSplit ? "W" : "-");
+  Serial.print(" rit=");
+  Serial.print(sp.caps.getRit ? "R" : "-");
+  Serial.print(sp.caps.setRit ? "W" : "-");
+  Serial.print(" bstack=");
+  Serial.print(sp.caps.getBandStack ? "1" : "0");
+  Serial.println();
   if (g_experimentalCaps) Serial.println("  EXPERIMENTAL: all caps on");
 }
 
-void applyProfile(uint8_t profileId) {
-  if (!isValidProfileId(profileId) || !storedProfileForId(profileId)) {
-    profileId = PROFILE_ID_7300;
-  }
-  g_profileId = profileId;
-  invalidateExperimentalProfile();
+void applyProfile(uint8_t slot) {
+  const RadioProfile* profile = profileForSlot(slot);
+  if (!profile) profile = profileForSlot(kDefaultProfileSlot);
+  g_profileId = profile->slot;
+
+  // The baud and CI-V address saved for this slot, if any; a baud the radio
+  // does not offer falls back to its default.
+  uint8_t civAddr = profile->link.civAddr;
+  uint32_t baud = profile->link.baud;
+  (void)loadConnectionOverrideFromNvs(g_profileId, civAddr, baud);
+  if (!profile->link.bauds.contains(baud)) baud = profile->link.baud;
+  selectActiveProfile(*profile, baud, civAddr);
 
   const ConnectionProfile& p = currentConnectionProfile();
   g_civRadioAddr = p.civAddr;
@@ -162,19 +193,15 @@ void applyProfile(uint8_t profileId) {
   }
 
   Serial.print("[PROFILE] Active: ");
-  Serial.print(currentStoredProfile().name);
+  Serial.print(currentProfile().name);
   if (currentProtocolType() == PROTO_CIV) {
     Serial.print("  CI-V addr=0x");
     Serial.print(g_civRadioAddr, HEX);
   }
-  Serial.print("  UART");
-  Serial.print(p.uartNum);
+  Serial.print("  ");
+  Serial.print(radioPortName(p.port));
   Serial.print("  baud=");
-  Serial.print(p.baud);
-  Serial.print("  RX=");
-  Serial.print(p.rxPin);
-  Serial.print("  TX=");
-  Serial.println(p.txPin);
+  Serial.println((unsigned long)p.baud);
 
   printActiveProfileDetails();
 }
@@ -184,16 +211,40 @@ void speakCurrentProfile() {
   speakValueOk();
 }
 
-const uint32_t kCivBaudRates[] = {4800, 9600, 19200, 38400, 57600, 115200};
-const size_t kCivBaudRateCount = sizeof(kCivBaudRates) / sizeof(kCivBaudRates[0]);
-
-bool setCurrentCivConnection(uint8_t civAddr, uint32_t baud) {
-  if (!isValidProfileId(g_profileId)) return false;
-  StoredProfile& sp = g_slotProfiles[g_profileId - 1];
-  if (!sp.valid || sp.protocolType != PROTO_CIV) return false;
-  sp.connection.civAddr = civAddr;
-  sp.connection.baud = baud;
+static void saveConnectionAndReapply(uint8_t civAddr, uint32_t baud) {
   saveConnectionOverrideToNvs(g_profileId, civAddr, baud);
   applyProfile(g_profileId);
+}
+
+bool setCurrentBaud(uint32_t baud) {
+  if (!currentProfile().link.bauds.contains(baud)) return false;
+  saveConnectionAndReapply(currentConnectionProfile().civAddr, baud);
   return true;
+}
+
+bool setCurrentCivAddress(uint8_t civAddr) {
+  if (currentProtocolType() != PROTO_CIV) return false;
+  saveConnectionAndReapply(civAddr, currentConnectionProfile().baud);
+  return true;
+}
+
+void resetCurrentConnection() {
+  clearConnectionOverrideInNvs(g_profileId);
+  applyProfile(g_profileId);
+}
+
+void resetAllConnections() {
+  for (size_t i = 0; i < profileCount(); ++i) clearConnectionOverrideInNvs(profileAt(i).slot);
+  applyProfile(g_profileId);
+}
+
+void printProfileSlots() {
+  Serial.println("[SLOTS]");
+  for (size_t i = 0; i < profileCount(); ++i) {
+    const RadioProfile& profile = profileAt(i);
+    Serial.print("  ");
+    Serial.print((int)profile.slot);
+    Serial.print(" -> ");
+    Serial.println(profile.name);
+  }
 }

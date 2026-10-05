@@ -50,28 +50,13 @@ Example target: MAX98357A or a comparable I2S audio module.
 
 ---
 
-## 3. ESP32-S3 to SD Card Module
-
-### Wiring
-
-| SD Signal | ESP32-S3 GPIO |
-|---|---|
-| GND | GND |
-| MISO | GPIO 37 |
-| SCK | GPIO 36 |
-| MOSI | GPIO 35 |
-| CS | GPIO 14 |
-| VIN | board supply, typically 3.3 V depending on the module |
-
----
-
-## 4. ESP32-S3 to ICOM CI-V Interface
+## 3. ESP32-S3 to ICOM CI-V Interface
 
 ### Firmware Pin Assignment
 
 - `CIV_TX_PIN = GPIO17`
 - `CIV_RX_PIN = GPIO18`
-- Baud rate: `9600`
+- Baud rate: set per radio profile (see `docs/radio-support-matrix.md`)
 
 The ICOM CI-V interface uses a shared single-wire open-collector bus.
 A transistor stage is used to interface the ESP32-S3 safely with the CI-V line.
@@ -96,7 +81,7 @@ Directly connecting the CI-V line to an ESP32 GPIO pin without protection is not
 
 ---
 
-## 5. ESP32-S3 to RS-232 Interface
+## 4. ESP32-S3 to RS-232 Interface
 
 ### Wiring
 
@@ -107,13 +92,13 @@ Directly connecting the CI-V line to an ESP32 GPIO pin without protection is not
 
 ---
 
-## 6. ESP32-S3 to TTL CAT Interface
+## 5. ESP32-S3 to TTL CAT Interface
 
 ### Firmware Pin Assignment
 
 - `CAT_TX_PIN = 11`
 - `CAT_RX_PIN = 12`
-- Baud rate: `19200`
+- Baud rate: set per radio profile (see `docs/radio-support-matrix.md`)
 
 ### Wiring
 

@@ -31,17 +31,15 @@
 // own tests.
 //
 // Families and the traits the old code reads for them:
-//   IC7300  PROTO_CIV, caps.getRfPower (ic7300.ini, built-in slots 1, 2, 6)
-//   IC706   PROTO_CIV, no getRfPower (ic706_*.ini, built-in slots 3, 4)
-//   LIGHT   PROTO_CIV fallback when the SD profiles did not load
-//           (lightIcomFallbackActive); built-in slot 1, IC-7300, getRfPower
+//   IC7300  PROTO_CIV, caps.getRfPower (slots 1, 3, 18)
+//   IC706   PROTO_CIV, no getRfPower (slots 2, 4, 5, 17)
 //   TS480   PROTO_KENWOOD_ASCII
-//   FTDX10  PROTO_YAESU_FTDX_ASCII, voice "yaesu" "10" (isFtdx10KeypadProfile)
-//   FT891   PROTO_YAESU_FTDX_ASCII, other voice digits
-//   FT817   PROTO_YAESU_FT8X7, variant "ft817" (also FT-818)
-//   FT857   PROTO_YAESU_FT8X7, variant "ft857_897" (FT-857, FT-897)
-//   FT8X7_OTHER  PROTO_YAESU_FT8X7 with no known variant (e.g. an SD profile
-//           without one): the generic keys plus Bank 6
+//   FTDX10  PROTO_YAESU_FTDX_ASCII, RadioModel::Ftdx10 (isFtdx10KeypadProfile)
+//   FT891   PROTO_YAESU_FTDX_ASCII, another model
+//   FT817   PROTO_YAESU_FT8X7, RadioModel::Ft817 (also Ft818)
+//   FT857   PROTO_YAESU_FT8X7, RadioModel::Ft857 (FT-857, FT-897)
+//   FT8X7_OTHER  PROTO_YAESU_FT8X7 with no known model (no built-in profile
+//           today): the generic keys plus Bank 6
 // Monitor, transceive, band stack and RIT support are PROTO_CIV only
 // (radio_protocol.cpp), so they follow the family and need no trait of their own.
 //
@@ -94,7 +92,7 @@ KEYMAP_ROW(ALL,             1, '4', "queryBank1Power",       "none",            
 KEYMAP_ROW(FTDX10,          1, '5', "send(TUNER?)",          "send(TUNER TOGGLE)",     "send(TUNE)")
 KEYMAP_ROW(NOT(FTDX10),     1, '5', "unassigned",            "none",                   "-")
 KEYMAP_ROW(FTDX10,          1, '6', "send(PA?)",             "send(PA TOGGLE)",        "-")
-KEYMAP_ROW(IC7300 | LIGHT,  1, '6', "queryBank1RfPower",     "beginBank1RfPowerSet",   "-")
+KEYMAP_ROW(IC7300,          1, '6', "queryBank1RfPower",     "beginBank1RfPowerSet",   "-")
 KEYMAP_ROW(IC706,           1, '6', "unassigned",            "beginBank1RfPowerSet",   "-")
 KEYMAP_ROW(FT817 | FT857,   1, '6', "queryBank1RfPower",     "none",                   "-")
 KEYMAP_ROW(NOT(FTDX10 | CIV | FT817 | FT857), 1, '6', "unassigned", "none",            "-")
@@ -204,32 +202,18 @@ KEYMAP_ROW(NOT(FT8X7),      6, '4', "unassigned",            "none",            
 
 // ---- Bank 8 ----------------------------------------------------------------
 KEYMAP_ROW(ALL,             8, '1', "queryBank8CivAddress",  "beginBank8CivAddressEntry", "-")
-KEYMAP_ROW(ALL,             8, '2', "cycleBank8Baud(1)",     "cycleBank8Baud(-1)",     "none")
+KEYMAP_ROW(ALL,             8, '2', "queryBank8Baud",        "cycleBank8Baud(-1)",     "cycleBank8Baud(1)")
 KEYMAP_ROW(FT817 | FT857,   8, '7', "queryBank8Ft8x7Row",    "none",                   "-")
 KEYMAP_ROW(NOT(FT817 | FT857), 8, '7', "unassigned",       "none",                   "-")
 KEYMAP_ROW(FT817 | FT857,   8, '8', "queryBank8Ft8x7Menu",   "none",                   "-")
 KEYMAP_ROW(NOT(FT817 | FT857), 8, '8', "unassigned",       "none",                   "-")
 
 // ---- Bank 9 ----------------------------------------------------------------
-// LIGHT: digits 1-9 pick a built-in profile directly, ahead of any other short.
-KEYMAP_ROW(LIGHT,           9, '1', "selectBank9DirectProfile(1)", "none",            "-")
-KEYMAP_ROW(LIGHT,           9, '2', "selectBank9DirectProfile(2)", "none",            "-")
-KEYMAP_ROW(LIGHT,           9, '3', "selectBank9DirectProfile(3)", "none",            "-")
-KEYMAP_ROW(LIGHT,           9, '4', "selectBank9DirectProfile(4)", "toggleBank9TuningSpeech", "-")
-KEYMAP_ROW(LIGHT,           9, '5', "selectBank9DirectProfile(5)", "toggleBank9Verbose", "-")
-KEYMAP_ROW(LIGHT,           9, '6', "selectBank9DirectProfile(6)", "none",            "-")
-KEYMAP_ROW(LIGHT,           9, '7', "selectBank9DirectProfile(7)", "adjustBank9Volume(-2)", "-")
-KEYMAP_ROW(LIGHT,           9, '8', "selectBank9DirectProfile(8)", "adjustBank9Volume(2)", "-")
-KEYMAP_ROW(LIGHT,           9, '9', "selectBank9DirectProfile(9)", "none",            "-")
-KEYMAP_ROW(NOT(LIGHT),      9, '1', "unassigned",            "none",                   "-")
-KEYMAP_ROW(NOT(LIGHT),      9, '2', "unassigned",            "none",                   "-")
-KEYMAP_ROW(NOT(LIGHT),      9, '3', "unassigned",            "none",                   "-")
-KEYMAP_ROW(NOT(LIGHT),      9, '4', "queryBank9TuningSpeech", "toggleBank9TuningSpeech", "-")
-KEYMAP_ROW(NOT(LIGHT),      9, '5', "queryBank9Verbose",     "toggleBank9Verbose",     "-")
-KEYMAP_ROW(NOT(LIGHT),      9, '6', "unassigned",            "none",                   "-")
-KEYMAP_ROW(NOT(LIGHT),      9, '7', "adjustBank9Volume(-1)", "adjustBank9Volume(-2)",  "-")
-KEYMAP_ROW(NOT(LIGHT),      9, '8', "adjustBank9Volume(1)",  "adjustBank9Volume(2)",   "-")
-KEYMAP_ROW(NOT(LIGHT),      9, '9', "queryBank9Volume",      "none",                   "-")
-KEYMAP_ROW(ALL,             9, 'A', "queryBank9Profile",     "beginBank9ProfileSelect", "-")
+KEYMAP_ROW(ALL,             9, '4', "queryBank9TuningSpeech", "toggleBank9TuningSpeech", "-")
+KEYMAP_ROW(ALL,             9, '5', "queryBank9Verbose",     "toggleBank9Verbose",     "-")
+KEYMAP_ROW(ALL,             9, '7', "adjustBank9Volume(-1)", "adjustBank9Volume(-2)",  "-")
+KEYMAP_ROW(ALL,             9, '8', "adjustBank9Volume(1)",  "adjustBank9Volume(2)",   "-")
+KEYMAP_ROW(ALL,             9, '9', "queryBank9Volume",      "none",                   "-")
+KEYMAP_ROW(ALL,             9, 'A', "queryBank9Profile",     "beginBank9ProfileSelect", "resetBank9Profile")
 KEYMAP_ROW(ALL,             9, 'B', "selectNextProfile",     "none",                   "-")
 KEYMAP_ROW(ALL,             9, 'C', "selectPrevProfile",     "none",                   "-")

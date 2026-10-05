@@ -34,19 +34,15 @@ static void speakTunedFrequencyHz(uint64_t hz) {
 
 void queryBank1RxTx() {
   printKeypadAction("RXTX?");
-  // An FT-8x7 profile without get_rxtx, e.g. an ft817.ini from before RXTX? was verified.
-  if (currentProtocolType() == PROTO_YAESU_FT8X7 && !currentStoredProfile().caps.getRxTx) {
+  // An FT-8x7 profile that leaves out getRxTx.
+  if (currentProtocolType() == PROTO_YAESU_FT8X7 && !currentProfile().caps.getRxTx) {
     printKeypadStatus("RXTX -> unavailable");
-    if (g_speechEnabled) {
-      speakToken("transceiver");
-      playSilenceMs(60);
-      speakNotAvailable();
-    }
+    speakKeypadFailure("RXTX", KeypadFailure::NotAvailable);
     return;
   }
   bool tx = false;
-  if (!queryRxTxStatus(tx, 800)) { keypadReportIfTimedOut("RXTX?"); return; }
-  printKeypadStatus(tx ? "TX" : "RX");
+  if (!queryRxTxStatus(tx, 800)) { keypadReportFailure("RXTX?"); return; }
+  printKeypadStatus("{}", tx ? "TX" : "RX");
   speakRxTxState(tx);
 }
 
@@ -54,13 +50,10 @@ void queryBank1Frequency() {
   printKeypadAction("FREQ?");
   uint64_t hz = 0;
   if (!queryFrequency(hz, 800)) {
-    if (!keypadReportIfTimedOut("FREQ?")) {
-      printKeypadStatus("FREQ? -> no reply");
-      if (g_speechEnabled) speakError();
-    }
+    keypadReportFailure("FREQ?");
     return;
   }
-  printKeypadStatus(String("FREQ: ") + hzToMHzString3(hz) + " MHz");
+  printKeypadStatus("FREQ: {} MHz", RadioFrequency::fromHz(hz));
   speakQueriedFrequencyHz(hz);
   rememberAnnouncedFrequency(hz);
 }
@@ -72,16 +65,18 @@ void queryBank1TxFrequency() {
     // FT-8x7 without a TX frequency reply: say the frequency instead.
     if (currentProtocolType() == PROTO_YAESU_FT8X7) {
       if (queryFrequency(hz, 800)) {
-        printKeypadStatus(String("TXFREQ: ") + hzToMHzString3(hz) + " MHz");
+        printKeypadStatus("TXFREQ: {} MHz", RadioFrequency::fromHz(hz));
         speakQueriedFrequencyHz(hz);
       } else {
         printKeypadStatus("TXFREQ -> unavailable");
-        if (g_speechEnabled) speakNotAvailable();
+        speakKeypadFailure("TXFREQ", KeypadFailure::NotAvailable);
       }
+    } else {
+      keypadReportFailure("TXFREQ?");
     }
     return;
   }
-  printKeypadStatus(String("TXFREQ: ") + hzToMHzString3(hz) + " MHz");
+  printKeypadStatus("TXFREQ: {} MHz", RadioFrequency::fromHz(hz));
   speakQueriedFrequencyHz(hz);
 }
 
@@ -90,11 +85,11 @@ void queryBank1Ft857TxFrequency() {
   uint64_t hz = 0;
   bool splitOn = false;
   if (querySplit(splitOn, 800) && !splitOn && queryFrequency(hz, 800)) {
-    printKeypadStatus(String("TXFREQ: ") + hzToMHzString3(hz) + " MHz");
+    printKeypadStatus("TXFREQ: {} MHz", RadioFrequency::fromHz(hz));
     speakQueriedFrequencyHz(hz);
   } else {
     printKeypadStatus("TXFREQ unavailable on FT-857/897");
-    if (g_speechEnabled) speakNotAvailable();
+    speakKeypadFailure("TXFREQ", KeypadFailure::NotAvailable);
   }
 }
 
@@ -105,14 +100,10 @@ void queryBank1Lock() {
   if (!queryDialLockReliable(on)) {
     if (keypadReportIfTimedOut("LOCK?")) return;
     printKeypadStatus("LOCK UNKNOWN");
-    if (g_speechEnabled) {
-      speakToken("lock");
-      playSilenceMs(60);
-      speakError();
-    }
+    speakKeypadFailure("LOCK", KeypadFailure::Error);
     return;
   }
-  printKeypadStatus(on ? "LOCK ON" : "LOCK OFF");
+  printKeypadStatus("LOCK {}", on ? "ON" : "OFF");
   speakTokenState("lock", on);
 }
 
@@ -123,16 +114,13 @@ void beginBank1FrequencySet() {
 }
 
 void roundActiveFrequency(uint32_t stepHz) {
-  printKeypadAction(String("ROUND ") + String((unsigned long)stepHz) + " Hz");
+  printKeypadAction("ROUND {} Hz", stepHz);
   prepareKeypadRadioWrite();
 
   uint64_t hz = 0;
   if (!queryFrequency(hz, 800)) {
     // Radio not responding: do not round or announce a stale value.
-    if (!keypadReportIfTimedOut("ROUND")) {
-      printKeypadStatus("ROUND -> no reply");
-      if (g_speechEnabled) speakError();
-    }
+    keypadReportFailure("ROUND");
     return;
   }
 
@@ -140,26 +128,26 @@ void roundActiveFrequency(uint32_t stepHz) {
   // Serial monitor reports old -> new; speech reports only the new frequency.
   if (rounded == hz) {
     // Already on a step boundary.
-    printKeypadStatus(String("FREQ: ") + hzToMHzString3(rounded) + " MHz (already rounded)");
+    printKeypadStatus("FREQ: {} MHz (already rounded)", RadioFrequency::fromHz(rounded));
     speakTunedFrequencyHz(rounded);
     rememberAnnouncedFrequency(rounded);
     return;
   }
 
   if (keypadApplyFrequencyHz(rounded, TargetVfo::Current)) {
-    printKeypadStatus(String("ROUND: ") + hzToMHzString3(hz) + " -> " + hzToMHzString3(rounded) + " MHz");
+    printKeypadStatus("ROUND: {} -> {} MHz", RadioFrequency::fromHz(hz), RadioFrequency::fromHz(rounded));
     speakTunedFrequencyHz(rounded);
     rememberAnnouncedFrequency(rounded);
   } else if (!keypadReportIfTimedOut("ROUND")) {
-    printKeypadStatus(currentProtocolType() == PROTO_YAESU_FT8X7 ? "ROUND -> no change" : "ROUND -> failed");
-    if (g_speechEnabled) speakError();
+    printKeypadStatus("ROUND -> {}", currentProtocolType() == PROTO_YAESU_FT8X7 ? "no change" : "failed");
+    speakKeypadFailure("ROUND", KeypadFailure::Error);
   }
 }
 
 void beginBank1RfPowerSet() {
-  if (!currentStoredProfile().caps.setRfPower) {
+  if (!currentProfile().caps.setRfPower) {
     printKeypadStatus("RFPOWER -> unavailable");
-    if (g_speechEnabled) speakNotAvailable();
+    speakKeypadFailure("RFPOWER", KeypadFailure::NotAvailable);
     return;
   }
   printKeypadAction("RFPOWER");
@@ -175,20 +163,16 @@ void toggleBank1Lock() {
   if (!queryDialLockReliable(on)) {
     if (keypadReportIfTimedOut("LOCK?")) return;
     printKeypadStatus("LOCK UNKNOWN");
-    if (g_speechEnabled) {
-      speakToken("lock");
-      playSilenceMs(60);
-      speakError();
-    }
+    speakKeypadFailure("LOCK", KeypadFailure::Error);
     return;
   }
-  if (!setDialLock(!on)) { keypadReportIfTimedOut("LOCK"); return; }
-  printKeypadStatus(!on ? "LOCK ON" : "LOCK OFF");
+  if (!setDialLock(!on)) { keypadReportFailure("LOCK"); return; }
+  printKeypadStatus("LOCK {}", !on ? "ON" : "OFF");
   speakTokenState("lock", !on);
 }
 
 static void sendBank1Query(const String& cmd) {
-  printKeypadAction(cmd);
+  printKeypadAction("{}", cmd.c_str());
   // The SWR and RF power replies say their own word, so saying it here too doubles it.
   if (cmd != "SWR?" && cmd != "RFPOWER?") speakKeypadCommandWord(cmd);
   keypadSendNow(cmd);

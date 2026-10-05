@@ -117,7 +117,9 @@ static const VoiceClip kVoiceClips[] = {
   VOICE_CLIP(antenna),
   VOICE_CLIP(auto),
   VOICE_CLIP(b),
+  VOICE_CLIP(band),
   VOICE_CLIP(bank),
+  VOICE_CLIP(baud),
   VOICE_CLIP(both),
   VOICE_CLIP(c),
   VOICE_CLIP(cancel),
@@ -192,6 +194,7 @@ static const VoiceClip kVoiceClips[] = {
   VOICE_CLIP(r),
   VOICE_CLIP(rear),
   VOICE_CLIP(repeater),
+  VOICE_CLIP(reset),
   VOICE_CLIP(rit),
   VOICE_CLIP(row),
   VOICE_CLIP(rtty),
@@ -631,23 +634,15 @@ static void playDigitsFromCString(const char* s) {
 }
 
 void speakProfileIdentityFromSlot(uint8_t id, bool withOk) {
-  const StoredProfile* sp = storedProfileForId(id);
+  const RadioProfile* sp = profileForSlot(id);
   if (!sp || !g_speechEnabled) return;
 
-  String vendor = sp->voiceVendor;
-  vendor.toLowerCase();
-  if (vendor == "xiegu") {
-    playClipProgmem(voice_xiegu, voice_xiegu_len);
-  } else if (vendor == "icom") {
-    playClipProgmem(voice_icom, voice_icom_len);
-  } else if (vendor == "kenwood") {
-    playClipProgmem(voice_kenwood, voice_kenwood_len);
-  } else if (vendor == "yaesu") {
-    playClipProgmem(voice_yaesu, voice_yaesu_len);
-  } else if (vendor == "elecraft") {
-    playClipProgmem(voice_elecraft, voice_elecraft_len);
-  } else {
-    playClipProgmem(voice_icom, voice_icom_len);
+  switch (sp->vendor) {
+    case VoiceVendor::Icom: playClipProgmem(voice_icom, voice_icom_len); break;
+    case VoiceVendor::Yaesu: playClipProgmem(voice_yaesu, voice_yaesu_len); break;
+    case VoiceVendor::Kenwood: playClipProgmem(voice_kenwood, voice_kenwood_len); break;
+    case VoiceVendor::Elecraft: playClipProgmem(voice_elecraft, voice_elecraft_len); break;
+    case VoiceVendor::Xiegu: playClipProgmem(voice_xiegu, voice_xiegu_len); break;
   }
 
   playSilenceMs(80);

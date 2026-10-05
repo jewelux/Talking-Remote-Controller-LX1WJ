@@ -19,10 +19,10 @@
 static bool rejectFt8x7WriteWhileTx(const char* statusLabel) {
   if (currentProtocolType() != PROTO_YAESU_FT8X7) return false;
   if (currentIsFt857Family()) return false;
-  if (!currentStoredProfile().caps.getRxTx) return false;
+  if (!currentProfile().caps.getRxTx) return false;
   bool tx = false;
   if (!queryRxTxStatus(tx, 800) || !tx) return false;
-  printKeypadStatus(String(statusLabel) + " -> TX");
+  printKeypadStatus("{} -> TX", statusLabel);
   speakRxTxState(true);
   return true;
 }
@@ -53,19 +53,19 @@ static void speakRepeaterOffsetHz(uint64_t hz) {
 
 void keypadEntryDigit(const EntrySpec& entry, char key, const char* digits) {
   if (key == '*') {
-    printKeypadCommand(String(entry.name) + " POINT -> *");
-    printKeypadStatus(String(entry.name) + " STAGE: " + digits);
+    printKeypadCommand("{} POINT -> *", entry.name);
+    printKeypadStatus("{} STAGE: {}", entry.name, digits);
     if (g_speechEnabled) speakToken("point");
     return;
   }
-  printKeypadCommand(String(entry.name) + " DIGIT -> " + String(key));
+  printKeypadCommand("{} DIGIT -> {}", entry.name, key);
   switch (entry.mode) {
     case InputMode::ProfileSelect:
-      printKeypadStatus(String("PROFILE ") + digits);
+      printKeypadStatus("PROFILE {}", digits);
       if (g_speechEnabled) playDigit((uint8_t)(key - '0'));
       return;
     default:
-      printKeypadStatus(String(entry.name) + " STAGE: " + digits + entry.unit);
+      printKeypadStatus("{} STAGE: {}{}", entry.name, digits, entry.unit);
       if (g_speechEnabled) speakDigitsAndPoint(String(key));
       return;
   }
@@ -73,21 +73,21 @@ void keypadEntryDigit(const EntrySpec& entry, char key, const char* digits) {
 
 // Bank select commits on its digit, without Enter.
 static void commitBank() {
-  printKeypadCommand(String("BANK SELECT DIGIT -> ") + String((int)uiGetBank()));
-  printKeypadStatus(String("BANK ") + String((int)uiGetBank()));
+  printKeypadCommand("BANK SELECT DIGIT -> {}", uiGetBank());
+  printKeypadStatus("BANK {}", uiGetBank());
   speakBankNumber();
 }
 
 static void commitProfile(const char* digits) {
   printKeypadCommand("ENTER -> PROFILE");
   int slot = atoi(digits);
-  if (slot >= 1 && slot <= MAX_PROFILE_SLOTS && storedProfileForId((uint8_t)slot)) {
+  if (slot >= 1 && slot <= 255 && profileForSlot((uint8_t)slot)) {
     applyProfile((uint8_t)slot);
-    printKeypadStatus(String("PROFILE ") + String(slot));
+    printKeypadStatus("PROFILE {}", slot);
     speakCurrentProfile();
   } else {
     printKeypadStatus("PROFILE -> not available");
-    if (g_speechEnabled) speakNotAvailable();
+    speakKeypadFailure("PROFILE", KeypadFailure::NotAvailable);
   }
 }
 
@@ -97,7 +97,7 @@ static void commitFrequency(const char* digits, TargetVfo targetVfo) {
   RadioFrequency parsedFreq;
   if (!RadioFrequency::parseEntry(String(digits), parsedFreq)) {
     printKeypadStatus("FREQ -> invalid");
-    if (g_speechEnabled) speakError();
+    speakKeypadFailure("FREQ", KeypadFailure::Error);
     return;
   }
   const uint64_t hz = parsedFreq.hz();
@@ -105,28 +105,28 @@ static void commitFrequency(const char* digits, TargetVfo targetVfo) {
   else if (targetVfo == TargetVfo::B) printKeypadCommand("ENTER -> VFOB FREQ");
   else if (targetVfo == TargetVfo::Other) {
     const char which = ft8x7OtherVfoLabel();
-    printKeypadCommand(String("ENTER -> VFO") + which + " FREQ");
+    printKeypadCommand("ENTER -> VFO{} FREQ", which);
   } else if (isFt8x7Ft817Keypad() || isFt8x7Ft857FamilyKeypad()) {
     const char which = ft8x7CurrentVfoLabel();
-    printKeypadCommand(String("ENTER -> VFO") + which + " FREQ");
+    printKeypadCommand("ENTER -> VFO{} FREQ", which);
   }
   else printKeypadCommand("ENTER -> FREQ");
   bool ok = keypadApplyFrequencyHz(hz, targetVfo);
   if (ok) {
-    if (targetVfo == TargetVfo::A) printKeypadStatus(String("VFOA: ") + hzToMHzString3(hz) + " MHz");
-    else if (targetVfo == TargetVfo::B) printKeypadStatus(String("VFOB: ") + hzToMHzString3(hz) + " MHz");
+    if (targetVfo == TargetVfo::A) printKeypadStatus("VFOA: {} MHz", RadioFrequency::fromHz(hz));
+    else if (targetVfo == TargetVfo::B) printKeypadStatus("VFOB: {} MHz", RadioFrequency::fromHz(hz));
     else if (targetVfo == TargetVfo::Other) {
       const char which = ft8x7OtherVfoLabel();
-      printKeypadStatus(String("VFO") + which + ": " + hzToMHzString3(hz) + " MHz");
+      printKeypadStatus("VFO{}: {} MHz", which, RadioFrequency::fromHz(hz));
     } else if (isFt8x7Ft817Keypad() || isFt8x7Ft857FamilyKeypad()) {
       const char which = ft8x7CurrentVfoLabel();
-      printKeypadStatus(String("VFO") + which + ": " + hzToMHzString3(hz) + " MHz");
+      printKeypadStatus("VFO{}: {} MHz", which, RadioFrequency::fromHz(hz));
     }
-    else printKeypadStatus(String("FREQ: ") + hzToMHzString3(hz) + " MHz");
+    else printKeypadStatus("FREQ: {} MHz", RadioFrequency::fromHz(hz));
     if (g_speechEnabled) speakDigitsAndPoint(hzToMHzString3(hz));
   } else if (!keypadReportIfTimedOut("FREQ")) {
-    printKeypadStatus(currentProtocolType() == PROTO_YAESU_FT8X7 ? "FREQ -> no change" : "FREQ -> failed");
-    if (g_speechEnabled && currentProtocolType() == PROTO_YAESU_FT8X7) speakError();
+    printKeypadStatus("FREQ -> {}", currentProtocolType() == PROTO_YAESU_FT8X7 ? "no change" : "failed");
+    speakKeypadFailure("FREQ", KeypadFailure::Error);
   }
 }
 
@@ -138,62 +138,58 @@ static void commitRfPower(const char* digits) {
 static void commitCivAddress(const char* digits) {
   printKeypadCommand("ENTER -> CIVADDR");
   int addr = atoi(digits);
-  if (addr < 0 || addr > 255 || !setCurrentCivConnection((uint8_t)addr, currentConnectionProfile().baud)) {
+  if (addr < 0 || addr > 255 || !setCurrentCivAddress((uint8_t)addr)) {
     printKeypadStatus("CIVADDR -> invalid");
-    if (g_speechEnabled) speakError();
+    speakKeypadFailure("CIVADDR", KeypadFailure::Error);
     return;
   }
   char hex[3] = "";
   formatHexByte((uint8_t)addr, hex, sizeof(hex));
-  printKeypadStatus(String("CI ") + hex);
+  printKeypadStatus("CI {}", hex);
   speakCivAddressValue((uint8_t)addr, true);
 }
 
 static void commitRepeaterOffset(const char* digits) {
   printKeypadCommand("ENTER -> RPTSHIFT");
   uint64_t hz = (uint64_t)atoi(digits) * 1000ULL;
-  if (hz > 0) {
-    yaesuCatSetRepeaterOffsetHzRaw(hz);
-    printKeypadStatus(String("RPTSHIFT ") + hzToMHzString3(hz) + " MHz");
-    speakRepeaterOffsetHz(hz);
-  } else {
-    printKeypadStatus("RPTSHIFT -> failed");
-  }
+  yaesuCatSetRepeaterOffsetHzRaw(hz);
+  printKeypadStatus("RPTSHIFT {} MHz", RadioFrequency::fromHz(hz));
+  speakRepeaterOffsetHz(hz);
 }
 
+// The FT-8x7 tone and DCS writes are write-only: they fail only on a value
+// that is not a standard tone or code.
 static void commitCtcss(const char* digits) {
   printKeypadCommand("ENTER -> CTCSS");
   uint16_t toneTenths = (uint16_t)atoi(digits);
+  if (!yaesuCatSetCtcssTenths(toneTenths)) {
+    printKeypadStatus("CTCSS -> invalid");
+    speakKeypadFailure("CTCSS", KeypadFailure::Error);
+    return;
+  }
   char label[12] = "";
   formatCtcssTenthsLabel(toneTenths, label, sizeof(label));
-  if (toneTenths > 0 && yaesuCatSetCtcssTenths(toneTenths)) {
-    printKeypadStatus(String("CTCSS ") + label);
-    if (g_speechEnabled) {
-      speakLabel("ctcss");
-      speakDigitsAndPoint(label);
-    }
-  } else if (!yaesuCtcssTenthsValid(toneTenths)) {
-    printKeypadStatus("CTCSS -> invalid");
-  } else {
-    printKeypadStatus("CTCSS -> failed");
+  printKeypadStatus("CTCSS {}", label);
+  if (g_speechEnabled) {
+    speakLabel("ctcss");
+    speakDigitsAndPoint(label);
   }
 }
 
 static void commitDcs(const char* digits) {
   printKeypadCommand("ENTER -> DCS");
   uint16_t dcsCode = (uint16_t)atoi(digits);
+  if (!yaesuCatSetDcsCode(dcsCode)) {
+    printKeypadStatus("DCS -> invalid");
+    speakKeypadFailure("DCS", KeypadFailure::Error);
+    return;
+  }
   char label[8] = "";
   snprintf(label, sizeof(label), "%03u", (unsigned)dcsCode);
-  if (yaesuCatSetDcsCode(dcsCode)) {
-    printKeypadStatus(String("DCS ") + label);
-    if (g_speechEnabled) {
-      speakLabel("dcs");
-      speakDigitsAndPoint(label);
-    }
-  } else if (!yaesuDcsCodeValid(dcsCode)) {
-    printKeypadStatus("DCS -> invalid");
-  } else {
-    printKeypadStatus("DCS -> failed");
+  printKeypadStatus("DCS {}", label);
+  if (g_speechEnabled) {
+    speakLabel("dcs");
+    speakDigitsAndPoint(label);
   }
 }
 
@@ -216,8 +212,8 @@ void keypadEntryCommit(InputMode mode, const char* digits, TargetVfo targetVfo) 
 // the state machine.
 bool keypadModeDigit(char key, uint8_t& mode) {
   if (!modeFromDigit(key, mode) || !canSetMode(mode)) return false;
-  printKeypadCommand(String("MODE DIGIT -> ") + String(key));
-  printKeypadStatus(String("MODE STAGE: ") + modeToString(mode));
+  printKeypadCommand("MODE DIGIT -> {}", key);
+  printKeypadStatus("MODE STAGE: {}", modeToString(mode));
   speakModeName(mode);
   return true;
 }
@@ -229,23 +225,16 @@ void keypadModeCommit(uint8_t mode, TargetVfo targetVfo) {
   else if (targetVfo == TargetVfo::B) printKeypadCommand("ENTER -> VFOB MODE");
   else printKeypadCommand("ENTER -> MODE");
   bool ok = false;
-  if (isFtdx10KeypadProfile()) {
-    String cmd;
-    if (targetVfo == TargetVfo::A) cmd = String("VFOA MODE ") + modeToString(mode);
-    else if (targetVfo == TargetVfo::B) cmd = String("VFOB MODE ") + modeToString(mode);
-    else cmd = String("MODE ") + modeToString(mode);
-    keypadSendNow(cmd);
-    ok = true;
-  } else if (targetVfo == TargetVfo::A) ok = setVfoMode(true, mode, 1);
+  if (targetVfo == TargetVfo::A) ok = setVfoMode(true, mode, 1);
   else if (targetVfo == TargetVfo::B) ok = setVfoMode(false, mode, 1);
   else ok = applyModeAndTrack(mode, 1);
   if (ok) {
-    if (targetVfo == TargetVfo::A) printKeypadStatus(String("VFOA MODE: ") + modeToString(mode));
-    else if (targetVfo == TargetVfo::B) printKeypadStatus(String("VFOB MODE: ") + modeToString(mode));
-    else printKeypadStatus(String("MODE: ") + modeToString(mode));
+    if (targetVfo == TargetVfo::A) printKeypadStatus("VFOA MODE: {}", modeToString(mode));
+    else if (targetVfo == TargetVfo::B) printKeypadStatus("VFOB MODE: {}", modeToString(mode));
+    else printKeypadStatus("MODE: {}", modeToString(mode));
     if (g_speechEnabled) speakModeName(mode);
   } else if (!keypadReportIfTimedOut("MODE")) {
-    printKeypadStatus(currentProtocolType() == PROTO_YAESU_FT8X7 ? "MODE -> no change" : "MODE -> failed");
-    if (g_speechEnabled && currentProtocolType() == PROTO_YAESU_FT8X7) speakError();
+    printKeypadStatus("MODE -> {}", currentProtocolType() == PROTO_YAESU_FT8X7 ? "no change" : "failed");
+    speakKeypadFailure("MODE", KeypadFailure::Error);
   }
 }

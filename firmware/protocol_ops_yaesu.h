@@ -15,13 +15,13 @@ static constexpr uint32_t YAESU_CAT_VFO_RETURN_GAP_MS = 180;
 // How long a read for the keypad or the console waits for its reply.
 static constexpr uint32_t YAESU_CAT_REPLY_TIMEOUT_MS = 800;
 
-bool yaesuCatQueryFrequency(const StoredProfile& sp, uint64_t& hzOut, uint32_t timeoutMs);
+bool yaesuCatQueryFrequency(const RadioProfile& sp, uint64_t& hzOut, uint32_t timeoutMs);
 bool yaesuCatQueryModeRawByte(uint8_t& modeByteOut, uint32_t timeoutMs);
-bool yaesuCatSetFrequency(const StoredProfile& sp, uint64_t hz);
-bool yaesuCatQueryMode(const StoredProfile& sp, uint8_t& modeOut, uint32_t timeoutMs);
-bool yaesuCatSetMode(const StoredProfile& sp, uint8_t mode);
+bool yaesuCatSetFrequency(const RadioProfile& sp, uint64_t hz);
+bool yaesuCatQueryMode(const RadioProfile& sp, uint8_t& modeOut, uint32_t timeoutMs);
+bool yaesuCatSetMode(const RadioProfile& sp, uint8_t mode);
 void yaesuCatSetModeRawByte(uint8_t modeByte);
-bool yaesuCatQuerySMeterRaw(const StoredProfile& sp, int32_t& rawOut, uint32_t timeoutMs);
+bool yaesuCatQuerySMeterRaw(const RadioProfile& sp, int32_t& rawOut, uint32_t timeoutMs);
 SMeterReading yaesuCatDecodeSMeter(uint8_t rxStatus);
 // Meters are 0..15 bars and stay 0 in receive.
 struct YaesuTxMeters {
@@ -32,8 +32,8 @@ struct YaesuTxMeters {
   uint8_t swr = 0;       // 0xBD, only queried withBdMeters
 };
 bool yaesuCatQueryTxMeters(YaesuTxMeters& out, bool withBdMeters, uint32_t timeoutMs);
-bool yaesuCatQueryPoMeterRaw(const StoredProfile& sp, int32_t& rawOut, uint32_t timeoutMs);
-bool yaesuCatQuerySWRRaw(const StoredProfile& sp, int32_t& rawOut, uint32_t timeoutMs);
+bool yaesuCatQueryPoMeterRaw(const RadioProfile& sp, int32_t& rawOut, uint32_t timeoutMs);
+bool yaesuCatQuerySWRRaw(const RadioProfile& sp, int32_t& rawOut, uint32_t timeoutMs);
 bool yaesuCatQueryAlcRaw(int32_t& rawOut, uint32_t timeoutMs);
 bool yaesuCatQueryVolumeRaw(int32_t& rawOut, uint32_t timeoutMs);
 bool yaesuCatQuerySquelchRaw(int32_t& rawOut, uint32_t timeoutMs);

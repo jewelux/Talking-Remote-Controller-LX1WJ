@@ -14,7 +14,7 @@ static bool yaesuCatQueryMeterByte(uint8_t cmdByte, int32_t& rawOut, uint32_t ti
   return true;
 }
 
-bool yaesuCatQueryFrequency(const StoredProfile& sp, uint64_t& hzOut, uint32_t timeoutMs) {
+bool yaesuCatQueryFrequency(const RadioProfile& sp, uint64_t& hzOut, uint32_t timeoutMs) {
   if (!sp.caps.getFreq) return false;
   const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, 0x03};
   uint8_t rsp[5] = {0};
@@ -35,7 +35,7 @@ bool yaesuCatQueryModeRawByte(uint8_t& modeByteOut, uint32_t timeoutMs) {
   return true;
 }
 
-bool yaesuCatSetFrequency(const StoredProfile& sp, uint64_t hz) {
+bool yaesuCatSetFrequency(const RadioProfile& sp, uint64_t hz) {
   if (!sp.caps.setFreq) return false;
   uint8_t cmd[5] = {0, 0, 0, 0, 0x01};
   yaesuCatEncodeFreqHz(hz, cmd);
@@ -46,7 +46,7 @@ bool yaesuCatSetFrequency(const StoredProfile& sp, uint64_t hz) {
   return true;
 }
 
-bool yaesuCatQueryMode(const StoredProfile& sp, uint8_t& modeOut, uint32_t timeoutMs) {
+bool yaesuCatQueryMode(const RadioProfile& sp, uint8_t& modeOut, uint32_t timeoutMs) {
   if (!sp.caps.getMode) return false;
   const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, 0x03};
   uint8_t rsp[5] = {0};
@@ -60,7 +60,7 @@ bool yaesuCatQueryMode(const StoredProfile& sp, uint8_t& modeOut, uint32_t timeo
   return profileInternalModeForCode(sp, code, modeOut);
 }
 
-bool yaesuCatSetMode(const StoredProfile& sp, uint8_t mode) {
+bool yaesuCatSetMode(const RadioProfile& sp, uint8_t mode) {
   if (!sp.caps.setMode) return false;
   String code;
   uint8_t modeByte = 0;
@@ -76,7 +76,7 @@ void yaesuCatSetModeRawByte(uint8_t modeByte) {
   yaesuCatSendWriteOnly(cmd);
 }
 
-bool yaesuCatQuerySMeterRaw(const StoredProfile& sp, int32_t& rawOut, uint32_t timeoutMs) {
+bool yaesuCatQuerySMeterRaw(const RadioProfile& sp, int32_t& rawOut, uint32_t timeoutMs) {
   if (!sp.caps.getSmeter) return false;
   uint8_t rxStatus = 0;
   if (!yaesuCatQueryRxStatusRaw(rxStatus, timeoutMs)) return false;
@@ -114,7 +114,7 @@ bool yaesuCatQueryTxMeters(YaesuTxMeters& out, bool withBdMeters, uint32_t timeo
   return true;
 }
 
-bool yaesuCatQueryPoMeterRaw(const StoredProfile& sp, int32_t& rawOut, uint32_t timeoutMs) {
+bool yaesuCatQueryPoMeterRaw(const RadioProfile& sp, int32_t& rawOut, uint32_t timeoutMs) {
   if (!sp.caps.getPower) return false;
   YaesuTxMeters meters;
   if (!yaesuCatQueryTxMeters(meters, false, timeoutMs)) return false;
@@ -122,7 +122,7 @@ bool yaesuCatQueryPoMeterRaw(const StoredProfile& sp, int32_t& rawOut, uint32_t 
   return true;
 }
 
-bool yaesuCatQuerySWRRaw(const StoredProfile& sp, int32_t& rawOut, uint32_t timeoutMs) {
+bool yaesuCatQuerySWRRaw(const RadioProfile& sp, int32_t& rawOut, uint32_t timeoutMs) {
   if (!sp.caps.getSwr) return false;
   YaesuTxMeters meters;
   if (!yaesuCatQueryTxMeters(meters, true, timeoutMs)) return false;

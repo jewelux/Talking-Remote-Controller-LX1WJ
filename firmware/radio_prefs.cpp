@@ -1,17 +1,17 @@
 #include "radio_prefs.h"
 
-#include "radio_catalog.h"
+#include "radio_profile_table.h"
 
 uint8_t loadProfileFromNvs(uint8_t fallback) {
   Preferences prefs;
   if (!prefs.begin("talkingrc", false)) return fallback;
   uint8_t v = prefs.getUChar("profile", fallback);
   prefs.end();
-  return isValidProfileId(v) ? v : fallback;
+  return profileForSlot(v) ? v : fallback;
 }
 
 void saveProfileToNvs(uint8_t id) {
-  if (!isValidProfileId(id)) return;
+  if (!profileForSlot(id)) return;
   Preferences prefs;
   if (!prefs.begin("talkingrc", false)) return;
   prefs.putUChar("profile", id);
@@ -70,7 +70,7 @@ static String connectionKey(const char* prefix, uint8_t id) {
 }
 
 bool loadConnectionOverrideFromNvs(uint8_t id, uint8_t& civAddr, uint32_t& baud) {
-  if (!isValidProfileId(id)) return false;
+  if (!profileForSlot(id)) return false;
   Preferences prefs;
   if (!prefs.begin("talkingrc", false)) return false;
   String civKey = connectionKey("civ", id);
@@ -84,7 +84,7 @@ bool loadConnectionOverrideFromNvs(uint8_t id, uint8_t& civAddr, uint32_t& baud)
 }
 
 void saveConnectionOverrideToNvs(uint8_t id, uint8_t civAddr, uint32_t baud) {
-  if (!isValidProfileId(id)) return;
+  if (!profileForSlot(id)) return;
   Preferences prefs;
   if (!prefs.begin("talkingrc", false)) return;
   String civKey = connectionKey("civ", id);
@@ -94,14 +94,12 @@ void saveConnectionOverrideToNvs(uint8_t id, uint8_t civAddr, uint32_t baud) {
   prefs.end();
 }
 
-void applyConnectionOverridesFromNvs() {
-  for (uint8_t id = 1; id <= MAX_PROFILE_SLOTS; ++id) {
-    StoredProfile& sp = g_slotProfiles[id - 1];
-    if (!sp.valid || sp.protocolType != PROTO_CIV) continue;
-    uint8_t civAddr = sp.connection.civAddr;
-    uint32_t baud = sp.connection.baud;
-    if (!loadConnectionOverrideFromNvs(id, civAddr, baud)) continue;
-    sp.connection.civAddr = civAddr;
-    sp.connection.baud = baud;
-  }
+void clearConnectionOverrideInNvs(uint8_t id) {
+  Preferences prefs;
+  if (!prefs.begin("talkingrc", false)) return;
+  const String civKey = connectionKey("civ", id);
+  const String baudKey = connectionKey("baud", id);
+  if (prefs.isKey(civKey.c_str())) prefs.remove(civKey.c_str());
+  if (prefs.isKey(baudKey.c_str())) prefs.remove(baudKey.c_str());
+  prefs.end();
 }

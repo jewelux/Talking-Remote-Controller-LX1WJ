@@ -16,7 +16,6 @@
 #include "radio_runtime.h"
 #include "radio_state.h"
 #include "radio_utils.h"
-#include "sd_slots.h"
 #include "transport_serial.h"
 #include "ui_features.h"
 #include "ui_speech.h"
@@ -26,13 +25,13 @@
 #include "firmware_version.h"
 
 static uint16_t rfPowerRawToWatts(uint16_t raw) {
-  const uint16_t maxWatts = currentStoredProfile().rfPowerMaxWatts ? currentStoredProfile().rfPowerMaxWatts : 100;
+  const uint16_t maxWatts = currentProfile().rfPowerMaxWatts ? currentProfile().rfPowerMaxWatts : 100;
   if (raw >= 255) return maxWatts;
   return (uint16_t)((raw * (uint32_t)maxWatts + 127U) / 255U);
 }
 
 static uint16_t rfPowerWattsToRaw(int watts) {
-  const uint16_t maxWatts = currentStoredProfile().rfPowerMaxWatts ? currentStoredProfile().rfPowerMaxWatts : 100;
+  const uint16_t maxWatts = currentProfile().rfPowerMaxWatts ? currentProfile().rfPowerMaxWatts : 100;
   if (watts < 0) watts = 0;
   if (watts > maxWatts) watts = maxWatts;
   return (uint16_t)((watts * 255UL + (maxWatts / 2U)) / maxWatts);
@@ -564,10 +563,7 @@ String upperCopy(String s) {
 }
 
 static bool isFtdx10ConsoleProfile() {
-  const StoredProfile& sp = currentStoredProfile();
-  return sp.protocolType == PROTO_YAESU_FTDX_ASCII &&
-         strcmp(sp.voiceVendor, "yaesu") == 0 &&
-         strcmp(sp.voiceDigits, "10") == 0;
+  return currentRadioModel() == RadioModel::Ftdx10;
 }
 
 static bool handleFtdx10BlockedConsoleCommand(const String& upper) {
@@ -654,6 +650,7 @@ void printHelp() {
   Serial.println("    BANK?");
   Serial.println("    BANK <1..9>");
   Serial.println("    BANK NEXT | PREV");
+  Serial.println("    BAUD <rate> | BAUD?");
   if (!ftdx10) {
     Serial.println("    BSTACK <1..3>  (hamTRC internal)");
     Serial.println("    BSTACK? <1..3>  (hamTRC internal)");
@@ -673,8 +670,9 @@ void printHelp() {
   Serial.println("    MODE <n|name>");
   Serial.println("    MODE LIST");
   Serial.println("    MODE?");
-  Serial.println("    PROFILE <1..24>");
+  Serial.println("    PROFILE <slot>  (SLOTS? lists them)");
   Serial.println("    PROFILE NEXT | PREV");
+  Serial.println("    PROFILE RESET [ALL]  (saved baud and CI-V address back to the defaults)");
   Serial.println("    PROFILE?");
   Serial.println("    QUIET OFF | QUIET ON");
   Serial.println("    QUIET?");
@@ -697,7 +695,6 @@ void printHelp() {
   Serial.println();
   if (!ftdx10 && !ft8x7 && !ft847) {
     Serial.println("  IC-7300 / CI-V Extensions:");
-    Serial.println("    BAUD <rate> | BAUD?");
     Serial.println("    CIVADDR <hex> | CIVADDR?");
     Serial.println("    NBLEVEL <0..100> | NBLEVEL STEP <+-n>");
     Serial.println("    NBLEVEL?");
@@ -725,7 +722,7 @@ void printHelp() {
     Serial.println("    PBT2 <-128..127> | CENTER | STEP <+-n>");
     Serial.println("    PBT2?");
     Serial.print("    RFPOWER <0..");
-    Serial.print((int)(currentStoredProfile().rfPowerMaxWatts ? currentStoredProfile().rfPowerMaxWatts : 100));
+    Serial.print((int)(currentProfile().rfPowerMaxWatts ? currentProfile().rfPowerMaxWatts : 100));
     Serial.println(" W>");
     Serial.println("    RFPOWER?");
     Serial.println("    RIT <Hz> | RIT STEP <+-Hz>");
@@ -956,9 +953,35 @@ static bool handleConsoleInfoCommands(const String& upper) {
   return false;
 }
 
+static void printConnectionSettings(const char* prefix) {
+  const ConnectionProfile& link = currentConnectionProfile();
+  Serial.print(prefix);
+  Serial.print("BAUD ");
+  Serial.print((unsigned long)link.baud);
+  if (currentProtocolType() == PROTO_CIV) {
+    char hex[3] = "";
+    formatHexByte(link.civAddr, hex, sizeof(hex));
+    Serial.print(" CIVADDR ");
+    Serial.print(hex);
+  }
+  Serial.println();
+}
+
 static bool handleConsoleProfileCommands(const String& line, const String& upper) {
+  if (upper == "PROFILE RESET") {
+    resetCurrentConnection();
+    printConnectionSettings("OK PROFILE RESET  ");
+    speakProfileReset();
+    return true;
+  }
+  if (upper == "PROFILE RESET ALL") {
+    resetAllConnections();
+    printConnectionSettings("OK PROFILE RESET ALL  active: ");
+    speakProfileReset();
+    return true;
+  }
   if (upper == "PROFILE NEXT") {
-    uint8_t next = findAdjacentValidProfile(1);
+    uint8_t next = adjacentProfileSlot(g_profileId, 1);
     applyProfile(next);
     Serial.print("OK PROFILE ");
     Serial.println((int)next);
@@ -966,7 +989,7 @@ static bool handleConsoleProfileCommands(const String& line, const String& upper
     return true;
   }
   if (upper == "PROFILE PREV") {
-    uint8_t prev = findAdjacentValidProfile(-1);
+    uint8_t prev = adjacentProfileSlot(g_profileId, -1);
     applyProfile(prev);
     Serial.print("OK PROFILE ");
     Serial.println((int)prev);
@@ -975,7 +998,7 @@ static bool handleConsoleProfileCommands(const String& line, const String& upper
   }
   if (upper.startsWith("PROFILE ")) {
     int slot = line.substring(8).toInt();
-    if (slot < 1 || slot > MAX_PROFILE_SLOTS || !storedProfileForId((uint8_t)slot)) {
+    if (slot < 1 || slot > 255 || !profileForSlot((uint8_t)slot)) {
       Serial.println("PROFILE -> invalid or empty slot");
       speakError();
       return true;
@@ -1057,13 +1080,13 @@ static void printCivAddress(const char* prefix, uint8_t addr) {
   Serial.println(hex);
 }
 
-// CI-V address and baud of the current profile, saved as its connection override.
+// Baud and CI-V address of the current profile, saved for its slot.
 static bool handleConsoleConnectionCommands(const String& line, const String& upper) {
   const bool civAddrCmd = upper == "CIVADDR?" || upper.startsWith("CIVADDR ");
   const bool baudCmd = upper == "BAUD?" || upper.startsWith("BAUD ");
   if (!civAddrCmd && !baudCmd) return false;
-  if (currentProtocolType() != PROTO_CIV) {
-    reportNotAvailable(civAddrCmd ? "CIVADDR -> CI-V profile required" : "BAUD -> CI-V profile required");
+  if (civAddrCmd && currentProtocolType() != PROTO_CIV) {
+    reportNotAvailable("CIVADDR -> CI-V profile required");
     return true;
   }
   const ConnectionProfile& p = currentConnectionProfile();
@@ -1080,7 +1103,7 @@ static bool handleConsoleConnectionCommands(const String& line, const String& up
       Serial.println("CIVADDR -> use a hex byte, e.g. CIVADDR 94");
       return true;
     }
-    setCurrentCivConnection(addr, p.baud);
+    setCurrentCivAddress(addr);
     printCivAddress("OK CIVADDR ", addr);
     speakCivAddressValue(addr, true);
     return true;
@@ -1088,37 +1111,29 @@ static bool handleConsoleConnectionCommands(const String& line, const String& up
   if (upper == "BAUD?") {
     Serial.print("BAUD ");
     Serial.println((unsigned long)p.baud);
-    if (g_speechEnabled) speakDigitsAndPoint(String((unsigned long)p.baud));
+    speakBaudValue(p.baud, false);
     return true;
   }
   const uint32_t baud = (uint32_t)line.substring(5).toInt();
-  bool supported = false;
-  for (size_t i = 0; i < kCivBaudRateCount; ++i) {
-    if (kCivBaudRates[i] == baud) supported = true;
-  }
-  if (!supported) {
+  if (!setCurrentBaud(baud)) {
+    const BaudRates& bauds = currentProfile().link.bauds;
     Serial.print("BAUD -> invalid (use");
-    for (size_t i = 0; i < kCivBaudRateCount; ++i) {
+    for (uint8_t i = 0; i < bauds.count; ++i) {
       Serial.print(i ? ", " : " ");
-      Serial.print((unsigned long)kCivBaudRates[i]);
+      Serial.print((unsigned long)bauds.rates[i]);
     }
     Serial.println(")");
     return true;
   }
-  setCurrentCivConnection(p.civAddr, baud);
   Serial.print("OK BAUD ");
   Serial.println((unsigned long)baud);
-  if (g_speechEnabled) {
-    speakDigitsAndPoint(String((unsigned long)baud));
-    speakValueOk();
-  }
+  speakBaudValue(baud, true);
   return true;
 }
 
 static bool handleConsoleToggleCommands(const String& line, const String& upper) {
   if (upper == "EXPERIMENTAL ON" || upper == "EXPERIMENTAL OFF") {
-    g_experimentalCaps = (upper == "EXPERIMENTAL ON");
-    invalidateExperimentalProfile();
+    setExperimentalCaps(upper == "EXPERIMENTAL ON");
     Serial.println(g_experimentalCaps ? "OK EXPERIMENTAL ON  (all caps on until OFF or restart)" : "OK EXPERIMENTAL OFF");
     return true;
   }
@@ -1208,7 +1223,7 @@ static void speakFt8x7HighSwr() {
 
 static bool handleConsoleFt8x7Meters(const String& upper) {
   if (upper == "PO?") {
-    if (!currentStoredProfile().caps.getPower) { reportNotAvailable("PO? -> not enabled in this profile"); return true; }
+    if (!currentProfile().caps.getPower) { reportNotAvailable("PO? -> not enabled in this profile"); return true; }
     YaesuTxMeters meters;
     if (!yaesuCatQueryTxMeters(meters, false, 800)) { reportCommandFailure("PO?", "no reply"); return true; }
     if (!meters.transmitting) { reportFt8x7MeterInReceive("PO", "power"); return true; }
@@ -1227,7 +1242,7 @@ static bool handleConsoleFt8x7Meters(const String& upper) {
     return true;
   }
   if (upper == "SWR?") {
-    if (!currentStoredProfile().caps.getSwr) { reportNotAvailable("SWR? -> not enabled in this profile"); return true; }
+    if (!currentProfile().caps.getSwr) { reportNotAvailable("SWR? -> not enabled in this profile"); return true; }
     YaesuTxMeters meters;
     if (!yaesuCatQueryTxMeters(meters, true, 800)) { reportCommandFailure("SWR?", "no reply"); return true; }
     if (!meters.transmitting) { reportFt8x7MeterInReceive("SWR", "swr"); return true; }
@@ -1293,8 +1308,8 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
 
   if (upper == "YALL?") {
     Serial.println("[YAESU FT8X7]");
-    Serial.print("  VARIANT: ");
-    Serial.println(currentProfileVariant()[0] ? currentProfileVariant() : "(default)");
+    Serial.print("  MODEL: ");
+    Serial.println(radioModelName(currentRadioModel()));
     const bool isFt817 = currentIsFt817Family();
     const bool isFt857Family = currentIsFt857Family();
 
@@ -1316,19 +1331,19 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     }
 
     int32_t raw = 0;
-    if (yaesuCatQuerySMeterRaw(currentStoredProfile(), raw, 800)) {
+    if (yaesuCatQuerySMeterRaw(currentProfile(), raw, 800)) {
       Serial.print("  SM: ");
       Serial.println(raw);
     } else {
       Serial.println("  SM: no reply");
     }
-    if (yaesuCatQueryPoMeterRaw(currentStoredProfile(), raw, 800)) {
+    if (yaesuCatQueryPoMeterRaw(currentProfile(), raw, 800)) {
       Serial.print("  PO: ");
       Serial.println(raw);
     } else {
       Serial.println("  PO: no reply");
     }
-    if (yaesuCatQuerySWRRaw(currentStoredProfile(), raw, 800)) {
+    if (yaesuCatQuerySWRRaw(currentProfile(), raw, 800)) {
       Serial.print("  SWR: ");
       Serial.println(raw);
     } else {
@@ -1350,7 +1365,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     } else if (isFt857Family) {
       Serial.println("  VOL: unsupported on verified FT-857/897 path");
     } else {
-      Serial.println("  VOL: variant unknown");
+      Serial.println("  VOL: model unknown");
     }
     if (isFt817) {
       if (yaesuCatQuerySquelchRaw(raw, 800)) {
@@ -1362,7 +1377,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     } else if (isFt857Family) {
       Serial.println("  SQL: unsupported on verified FT-857/897 path");
     } else {
-      Serial.println("  SQL: variant unknown");
+      Serial.println("  SQL: model unknown");
     }
 
     if (isFt817 || isFt857Family) {
@@ -1375,21 +1390,20 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
         Serial.println("  STATUS: no reply");
       }
     } else {
-      Serial.println("  STATUS: variant unknown");
+      Serial.println("  STATUS: model unknown");
     }
     return true;
   }
 
   if (upper == "YVAR?") {
-    const char* variant = currentProfileVariant();
     Serial.print("YVAR: ");
-    Serial.println(variant[0] ? variant : "(default)");
+    Serial.println(radioModelName(currentRadioModel()));
     if (currentIsFt817Family()) {
       Serial.println("  Tone/DCS family: FT-817 style (simple Tone/DCS layout)");
     } else if (currentIsFt857Family()) {
       Serial.println("  Tone/DCS family: FT-857/897 style (separate TX/RX Tone/DCS layout)");
     } else {
-      Serial.println("  Tone/DCS family: unknown variant");
+      Serial.println("  Tone/DCS family: unknown model");
     }
     return true;
   }
@@ -1415,16 +1429,16 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     }
     if (currentIsFt817Family()) {
       if (!(modeByte == 0x0A || modeByte == 0x2A || modeByte == 0x4A || modeByte == 0x8A)) {
-        Serial.println("YTMODE -> mode not documented for FT-817 variant");
+        Serial.println("YTMODE -> mode not documented for the FT-817");
         return true;
       }
     } else if (currentIsFt857Family()) {
       if (!(modeByte == 0x0A || modeByte == 0x0B || modeByte == 0x0C || modeByte == 0x2A || modeByte == 0x3A || modeByte == 0x4A || modeByte == 0x8A)) {
-        Serial.println("YTMODE -> mode not documented for FT-857/897 variant");
+        Serial.println("YTMODE -> mode not documented for the FT-857/897");
         return true;
       }
     } else {
-      Serial.println("YTMODE -> unknown FT8x7 variant");
+      Serial.println("YTMODE -> unknown FT-8x7 model");
       return true;
     }
     yaesuCatSetToneDcsModeRaw(modeByte);
@@ -1461,7 +1475,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
 
   if (upper == "CTCSS?") {
     const uint16_t toneTenths =
-        live.ctcssValid ? live.ctcssTenths : currentStoredProfile().ft8x7Bank6.ctcssDefaultTenths;
+        live.ctcssValid ? live.ctcssTenths : currentProfile().ft8x7Bank6.ctcssDefaultTenths;
     char label[12] = "";
     formatCtcssTenthsLabel(toneTenths, label, sizeof(label));
     Serial.print("CTCSS ");
@@ -1493,7 +1507,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     return true;
   }
   if (upper == "DCS?") {
-    const uint16_t dcsCode = live.dcsValid ? live.dcsCode : currentStoredProfile().ft8x7Bank6.dcsDefaultCode;
+    const uint16_t dcsCode = live.dcsValid ? live.dcsCode : currentProfile().ft8x7Bank6.dcsDefaultCode;
     char label[8] = "";
     snprintf(label, sizeof(label), "%03u", (unsigned)dcsCode);
     Serial.print("DCS ");
@@ -1562,7 +1576,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
 
   if (upper == "YPOWER ON" || upper == "YPOWER OFF") {
     if (!currentIsFt817Family()) {
-      Serial.println("YPOWER -> documented only for FT-817 variant");
+      Serial.println("YPOWER -> documented only for the FT-817/818");
       return true;
     }
     const bool on = (upper == "YPOWER ON");
@@ -1586,9 +1600,10 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
   if (upper.startsWith("YRPTSHIFT ")) {
     String arg = line.substring(10);
     arg.trim();
-    double mhz = arg.toDouble();
-    if (mhz <= 0.0) {
-      Serial.println("YRPTSHIFT -> use MHz, e.g. 0.600 or 5.000");
+    char* endPtr = nullptr;
+    const double mhz = strtod(arg.c_str(), &endPtr);
+    if (!arg.length() || *endPtr != '\0' || mhz < 0.0) {
+      Serial.println("YRPTSHIFT -> use MHz, e.g. 0, 0.600 or 5.000");
       return true;
     }
     uint64_t hz = (uint64_t)(mhz * 1000000.0 + 0.5);
@@ -2220,7 +2235,7 @@ static bool handleConsoleAdjustCommands(const String& line, const String& upper)
 }
 
 static bool handleConsoleRadioCommands(const String& line, const String& upper) {
-  const StoredProfile& sp = currentStoredProfile();
+  const RadioProfile& sp = currentProfile();
   if (upper == "LFREQ") {
     if (!live.freqValid) { Serial.println("No live frequency yet."); return true; }
     Serial.print("Last live: ");
@@ -2317,7 +2332,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     String rsp;
     if (!asciiQueryIdLine(sp, rsp, 800)) { reportCommandFailure("ID?", "no reply"); return true; }
     Serial.print("ID: ");
-    printAsciiReplyPayload(rsp, sp.ascii.idReplyPrefix);
+    printAsciiReplyPayload(rsp, sp.commands->idReplyPrefix);
     speakConsoleTokenOrGap("id");
     return true;
   }
@@ -2325,7 +2340,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     String rsp;
     if (!asciiQueryOmLine(sp, rsp, 800)) { reportCommandFailure("OM?", "no reply"); return true; }
     Serial.print("OM: ");
-    printAsciiReplyPayload(rsp, sp.ascii.omReplyPrefix);
+    printAsciiReplyPayload(rsp, sp.commands->omReplyPrefix);
     return true;
   }
   if (upper == "FR?") {
@@ -2439,7 +2454,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   }
   if (upper.startsWith("RFPOWER ")) {
     int watts = line.substring(8).toInt();
-    const uint16_t maxWatts = currentStoredProfile().rfPowerMaxWatts ? currentStoredProfile().rfPowerMaxWatts : 100;
+    const uint16_t maxWatts = currentProfile().rfPowerMaxWatts ? currentProfile().rfPowerMaxWatts : 100;
     if (watts < 0 || watts > maxWatts) {
       Serial.print("RFPOWER -> invalid (use 0..");
       Serial.print((int)maxWatts);
@@ -2960,12 +2975,12 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     String rsp;
     if (!asciiQueryAgcLine(sp, rsp, 800)) { reportCommandFailure("GT?", "no reply"); return true; }
     Serial.print("GT: ");
-    printAsciiReplyPayload(rsp, sp.ascii.agcReplyPrefix);
+    printAsciiReplyPayload(rsp, sp.commands->agcReplyPrefix);
     speakConsoleTokenOrGap("gt");
     return true;
   }
   if (upper == "GT FAST") {
-    if (!asciiSetAgcCommand(sp, sp.ascii.agcFastCmd)) { reportCommandFailure("GT FAST", "failed"); return true; }
+    if (!asciiSetAgcCommand(sp, sp.commands->agcFastCmd)) { reportCommandFailure("GT FAST", "failed"); return true; }
     Serial.println("GT FAST");
     speakConsoleTokenOrGap("gt");
     playSilenceMs(60);
@@ -2973,7 +2988,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     return true;
   }
   if (upper == "GT SLOW") {
-    if (!asciiSetAgcCommand(sp, sp.ascii.agcSlowCmd)) { reportCommandFailure("GT SLOW", "failed"); return true; }
+    if (!asciiSetAgcCommand(sp, sp.commands->agcSlowCmd)) { reportCommandFailure("GT SLOW", "failed"); return true; }
     Serial.println("GT SLOW");
     speakConsoleTokenOrGap("gt");
     playSilenceMs(60);
@@ -2981,7 +2996,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     return true;
   }
   if (upper == "GT OFF") {
-    if (!asciiSetAgcCommand(sp, sp.ascii.agcOffCmd)) { reportCommandFailure("GT OFF", "failed"); return true; }
+    if (!asciiSetAgcCommand(sp, sp.commands->agcOffCmd)) { reportCommandFailure("GT OFF", "failed"); return true; }
     Serial.println("GT OFF");
     if (g_speechEnabled) speakTokenState("gt", false);
     return true;

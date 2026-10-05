@@ -1,6 +1,8 @@
 # FT8x7 Keypad Layout
 
 This document describes the current keypad layout for the Yaesu FT-817, FT-857, and FT-897 family.
+It lists the keys these radios have of their own; [the keypad map](../keypad-map.md) has every
+bank, Bank 4, 5 and 7 included, for all radios.
 
 > The layout is experimental and may still change.
 
@@ -9,7 +11,7 @@ The intention is:
 - keep the overall bank structure consistent across the FT8x7 family
 - only expose functions that are documented and practically usable
 - move repeater and tone functions into a dedicated Bank 6
-- Bank 6 now favors direct manual entry for repeater offset, CTCSS, and DCS, with only a small set of SD-card defaults in `[bank6]`
+- Bank 6 now favors direct manual entry for repeater offset, CTCSS, and DCS, with only a small set of built-in defaults
 
 Important practical note:
 
@@ -114,23 +116,27 @@ For Bank 6 tone handling, `2` is an explicit mode selector:
 - `2` long = CTCSS on
 - `2` double click = DCS on
 
-`3` short and `4` short do not read the radio: they speak the last CTCSS tone or DCS code set from the keypad, or the `[bank6]` SD-card default (`88.5`, `023` unless changed) when nothing has been set yet.
+`3` short and `4` short do not read the radio: they speak the last CTCSS tone or DCS code set from the keypad, or the built-in default (`88.5`, `023`) when nothing has been set yet.
 
 ## Bank 8 - Radio Menu
 
 | Key | FT-817 | FT-857/897 |
 |---|---|---|
+| `2` short | `BAUD?` | `BAUD?` |
+| `2` long / double | previous / next baud rate (4800, 9600, 38400) | previous / next baud rate (4800, 9600, 38400) |
 | `7` short | `ROW?` (function row) | `ROW?` (soft key row) |
 | `8` short | `MENU?` (last menu item) | `MENU?` (last menu item) |
 
-`MENU?` and `ROW?` are saved only when the radio's menu is exited.
+`MENU?` and `ROW?` are saved only when the radio's menu is exited. Set the same baud rate in the
+radio's CAT RATE menu.
 
 ## Bank 9 - Profile / System
 
 | Key | FT-817 | FT-857/897 |
 |---|---|---|
 | `A` short | `PROFILE?` | `PROFILE?` |
-| `A` long | `PROFILE SELECT` (`1..24`, one or two digits, then `Enter`) | `PROFILE SELECT` (`1..24`, one or two digits, then `Enter`) |
+| `A` long | `PROFILE SELECT` (slot number, one or two digits, then `Enter`) | `PROFILE SELECT` (slot number, one or two digits, then `Enter`) |
+| `A` double | `PROFILE RESET` | `PROFILE RESET` |
 | `B` short | `PROFILE NEXT` | `PROFILE NEXT` |
 | `C` short | `PROFILE PREV` | `PROFILE PREV` |
 | `4` short | `TUNINGSPEECH?` | `TUNINGSPEECH?` |

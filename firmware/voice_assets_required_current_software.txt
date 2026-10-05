@@ -52,7 +52,9 @@ voice_w.wav
 voice_y.wav
 
 3. Core control words
+voice_band.wav
 voice_bank.wav
+voice_baud.wav
 voice_choose.wav
 voice_frequency.wav
 voice_mode.wav

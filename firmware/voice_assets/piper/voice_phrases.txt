@@ -79,7 +79,9 @@ v f o
 
 # Core control words
 auto
+band
 bank
+baud
 both
 cancel
 choose
@@ -105,6 +107,7 @@ please
 plus
 power
 profile
+reset
 row
 slow
 stack

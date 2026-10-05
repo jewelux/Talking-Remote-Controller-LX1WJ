@@ -18,7 +18,7 @@ static bool isFt817WithoutDsp() {
 }
 
 static bool isTs480() {
-  return currentProtocolType() == PROTO_KENWOOD_ASCII && String(currentStoredProfile().name).indexOf("TS-480") >= 0;
+  return currentRadioModel() == RadioModel::Ts480;
 }
 
 // ---- Noise reduction ----
@@ -27,10 +27,10 @@ static bool isTs480() {
 static constexpr uint8_t kTs480NrLevels = 2;
 
 static bool ts480ReadNrLevel(uint8_t& level) {
-  const StoredProfile& sp = currentStoredProfile();
+  const RadioProfile& sp = currentProfile();
   String line;
-  if (!transactAsciiCommand(sp.ascii.nrGet, line, sp.ascii.nrReplyPrefix, 800)) return false;
-  int start = (int)strlen(sp.ascii.nrReplyPrefix);
+  if (!transactAsciiCommand(sp.commands->nrGet, line, sp.commands->nrReplyPrefix, 800)) return false;
+  int start = (int)strlen(sp.commands->nrReplyPrefix);
   int semi = line.indexOf(';', start);
   if (semi < 0) semi = line.length();
   String value = line.substring(start, semi);
@@ -59,7 +59,7 @@ static FeatureStatus ts480NrStep(NrState& out) {
 }
 
 FeatureStatus nrQuery(NrState& out) {
-  if (!currentStoredProfile().caps.getNr || isFt817WithoutDsp()) return FeatureStatus::Unsupported;
+  if (!currentProfile().caps.getNr || isFt817WithoutDsp()) return FeatureStatus::Unsupported;
   if (isTs480()) {
     uint8_t level = 0;
     if (!ts480ReadNrLevel(level)) return failure(FeatureStatus::NoReply);
@@ -75,7 +75,7 @@ FeatureStatus nrQuery(NrState& out) {
 }
 
 FeatureStatus nrSet(bool on) {
-  if (!currentStoredProfile().caps.setNr) return FeatureStatus::Unsupported;
+  if (!currentProfile().caps.setNr) return FeatureStatus::Unsupported;
   if (!applyNrAndTrack(on)) return failure(FeatureStatus::Failed);
   return FeatureStatus::Ok;
 }
@@ -85,12 +85,12 @@ uint8_t nrLevelCount() {
 }
 
 FeatureStatus nrSetLevel(uint8_t level, NrState& out) {
-  if (!currentStoredProfile().caps.setNr || nrLevelCount() == 0 || level > nrLevelCount()) return FeatureStatus::Unsupported;
+  if (!currentProfile().caps.setNr || nrLevelCount() == 0 || level > nrLevelCount()) return FeatureStatus::Unsupported;
   return ts480WriteNrLevel(level, out);
 }
 
 FeatureStatus nrToggle(NrState& out) {
-  if (!currentStoredProfile().caps.setNr || isFt817WithoutDsp()) return FeatureStatus::Unsupported;
+  if (!currentProfile().caps.setNr || isFt817WithoutDsp()) return FeatureStatus::Unsupported;
   if (isTs480()) return ts480NrStep(out);
   if (!live.nrValid && !refreshLiveNr()) return failure(FeatureStatus::NoReply);
   const bool next = !live.nrOn;
@@ -103,20 +103,20 @@ FeatureStatus nrToggle(NrState& out) {
 // ---- Noise blanker ----
 
 FeatureStatus nbQuery(bool& on) {
-  if (!currentStoredProfile().caps.getNb) return FeatureStatus::Unsupported;
+  if (!currentProfile().caps.getNb) return FeatureStatus::Unsupported;
   if (!refreshLiveNb()) return failure(FeatureStatus::NoReply);
   on = live.nbOn;
   return FeatureStatus::Ok;
 }
 
 FeatureStatus nbSet(bool on) {
-  if (!currentStoredProfile().caps.setNb) return FeatureStatus::Unsupported;
+  if (!currentProfile().caps.setNb) return FeatureStatus::Unsupported;
   if (!applyNbAndTrack(on)) return failure(FeatureStatus::Failed);
   return FeatureStatus::Ok;
 }
 
 FeatureStatus nbToggle(bool& on) {
-  if (!currentStoredProfile().caps.setNb) return FeatureStatus::Unsupported;
+  if (!currentProfile().caps.setNb) return FeatureStatus::Unsupported;
   if (!live.nbValid && !refreshLiveNb()) return failure(FeatureStatus::NoReply);
   const bool next = !live.nbOn;
   if (!applyNbAndTrack(next)) return failure(FeatureStatus::Failed);
@@ -127,7 +127,7 @@ FeatureStatus nbToggle(bool& on) {
 // ---- Notch filter ----
 
 FeatureStatus notchQuery(NotchState& out) {
-  if (!currentStoredProfile().caps.getNotch || isFt817WithoutDsp()) return FeatureStatus::Unsupported;
+  if (!currentProfile().caps.getNotch || isFt817WithoutDsp()) return FeatureStatus::Unsupported;
   if (!refreshLiveNotch()) return failure(FeatureStatus::NoReply);
   out.on = live.notchOn;
   out.width = (live.notchOn && live.notchWidthValid) ? live.notchWidth : NOTCH_WIDTH_UNKNOWN;
@@ -135,13 +135,13 @@ FeatureStatus notchQuery(NotchState& out) {
 }
 
 FeatureStatus notchSet(bool on) {
-  if (!currentStoredProfile().caps.setNotch) return FeatureStatus::Unsupported;
+  if (!currentProfile().caps.setNotch) return FeatureStatus::Unsupported;
   if (!applyNotchAndTrack(on)) return failure(FeatureStatus::Failed);
   return FeatureStatus::Ok;
 }
 
 FeatureStatus notchSetWidth(NotchWidth width) {
-  if (currentProtocolType() != PROTO_CIV || !currentStoredProfile().caps.setNotch) return FeatureStatus::Unsupported;
+  if (currentProtocolType() != PROTO_CIV || !currentProfile().caps.setNotch) return FeatureStatus::Unsupported;
   if (!applyNotchAndTrack(true) || !applyNotchWidthAndTrack(width)) return failure(FeatureStatus::Failed);
   return FeatureStatus::Ok;
 }
@@ -164,7 +164,7 @@ static FeatureStatus applyNotchWidth(NotchWidth width, NotchState& out) {
 }
 
 FeatureStatus notchToggle(NotchState& out) {
-  if (!currentStoredProfile().caps.setNotch || isFt817WithoutDsp()) return FeatureStatus::Unsupported;
+  if (!currentProfile().caps.setNotch || isFt817WithoutDsp()) return FeatureStatus::Unsupported;
   if (!live.notchValid && !refreshLiveNotch()) return failure(FeatureStatus::NoReply);
   if (currentProtocolType() != PROTO_CIV) return applyNotchState(!live.notchOn, NOTCH_WIDTH_UNKNOWN, out);
 
@@ -254,7 +254,7 @@ static bool ft8x7SettingSupported(Ft8x7Setting setting, Ft8x7Model model) {
 FeatureStatus ft8x7SettingQuery(Ft8x7Setting setting, Ft8x7SettingState& out) {
   const Ft8x7Model model = currentFt8x7Model();
   if (!ft8x7SettingSupported(setting, model)) return FeatureStatus::Unsupported;
-  if (setting == Ft8x7Setting::RfPower && !currentStoredProfile().caps.getRfPower) return FeatureStatus::Unsupported;
+  if (setting == Ft8x7Setting::RfPower && !currentProfile().caps.getRfPower) return FeatureStatus::Unsupported;
   out = Ft8x7SettingState();
   out.setting = setting;
   Ft8x7Flag flag = Ft8x7Flag::Nb;

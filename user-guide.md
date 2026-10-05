@@ -77,21 +77,30 @@ Mode digits:
 - `1` LSB
 - `2` USB
 - `3` CW
-- `4` FM
-- `5` AM
-- `6` RTTY
-- `7` CWR
-- `8` DIGI
-- `9` RTTYR
+- `4` AM
+- `5` FM
+- `6` DATA/DIGI
+- `7` RTTY
+- `8` CW-R
+- `9` RTTY-R
 
-## CI-V Connection Setup
+## Connection Setup
 
-For CI-V profiles, Bank 8 can adjust the stored connection settings for the selected profile.
+Bank 8 adjusts the connection settings stored for the selected profile.
 
-- Bank 8, `1` short: speak the current CI-V address
-- Bank 8, `1` long, digits, `D`: set CI-V address as a decimal value from `0` to `255`
-- Bank 8, `2` short: move to the next baud rate
-- Bank 8, `2` long: move to the previous baud rate
+- Bank 8, `2` short: speak the current baud rate
+- Bank 8, `2` long: move to the previous baud rate the radio offers
+- Bank 8, `2` double press: move to the next baud rate
+- CI-V radios only: Bank 8, `1` short: speak the current CI-V address
+- CI-V radios only: Bank 8, `1` long, digits, `D`: set CI-V address as a decimal value from `0`
+  to `255`
+
+Set the same baud rate on the radio. The FT-817, FT-818, FT-857 and FT-897 offer 4800, 9600 and
+38400 baud.
+
+Bank 9, `A` double press resets the selected profile: its baud rate and CI-V address go back to
+the profile's defaults, and HamTRC says "profile reset". The console command is
+`PROFILE RESET`; `PROFILE RESET ALL` resets every profile.
 
 ## FTDX10 Family First Test
 
@@ -135,11 +144,14 @@ Keep the first field test simple:
 - Press `#` to cancel the current action.
 - Ask the current frequency again with Bank 1, `0` short.
 - Ask the current bank again with `*` short.
-- A key with nothing to do on the active profile gives a short beep. Some say "not available"
-  instead, for example keys hidden on FTDX10.
+- A key with no action on the current bank gives a short beep. A key whose feature the radio or
+  profile lacks says "not available", for example the tuner keys on an FT-817 or keys hidden on
+  FTDX10. With verbose on, the function's name comes first: "tuner not available", "split
+  timeout", "frequency error".
 
 ## More Help
 
 - Short setup path: [QUICKSTART.md](QUICKSTART.md)
+- Every key on every radio: [docs/keypad-map.md](docs/keypad-map.md)
 - Current per-radio support: [docs/radio-support-matrix.md](docs/radio-support-matrix.md)
 - FTDX10 family helper list: [docs/radios/yaesu-ftdx10-blind-test-list.txt](docs/radios/yaesu-ftdx10-blind-test-list.txt)

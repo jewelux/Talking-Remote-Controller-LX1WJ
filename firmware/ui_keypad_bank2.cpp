@@ -33,7 +33,7 @@ void queryBank2Nr() {
   prepareKeypadSpeechResponse();
   NrState state;
   if (keypadReportFeatureFailure(nrQuery(state), "NR?")) return;
-  printKeypadStatus(nrStateText(state));
+  printKeypadStatus("{}", nrStateText(state).c_str());
   speakNrState(state);
 }
 
@@ -42,7 +42,7 @@ void queryBank2Nb() {
   prepareKeypadSpeechResponse();
   bool on = false;
   if (keypadReportFeatureFailure(nbQuery(on), "NB?")) return;
-  printKeypadStatus(nbStateText(on));
+  printKeypadStatus("{}", nbStateText(on).c_str());
   speakNbState(on);
 }
 
@@ -51,7 +51,7 @@ void queryBank2Notch() {
   prepareKeypadSpeechResponse();
   NotchState state;
   if (keypadReportFeatureFailure(notchQuery(state), "NOTCH?")) return;
-  printKeypadStatus(notchStateText(state));
+  printKeypadStatus("{}", notchStateText(state).c_str());
   speakNotchState(state);
 }
 
@@ -71,7 +71,7 @@ void toggleBank2Nr() {
   prepareKeypadSpeechResponse();
   NrState state;
   if (keypadReportFeatureFailure(nrToggle(state), "NR")) return;
-  printKeypadStatus(nrStateText(state));
+  printKeypadStatus("{}", nrStateText(state).c_str());
   speakNrState(state);
 }
 
@@ -80,7 +80,7 @@ void toggleBank2Nb() {
   prepareKeypadSpeechResponse();
   bool on = false;
   if (keypadReportFeatureFailure(nbToggle(on), "NB")) return;
-  printKeypadStatus(nbStateText(on));
+  printKeypadStatus("{}", nbStateText(on).c_str());
   speakNbState(on);
 }
 
@@ -89,7 +89,7 @@ void toggleBank2Notch() {
   prepareKeypadSpeechResponse();
   NotchState state;
   if (keypadReportFeatureFailure(notchToggle(state), "NOTCH")) return;
-  printKeypadStatus(notchStateText(state));
+  printKeypadStatus("{}", notchStateText(state).c_str());
   speakNotchState(state);
 }
 
@@ -97,21 +97,18 @@ void queryBank2NrLevel() {
   printKeypadAction("NRLEVEL?");
   uint16_t raw = 0;
   if (!queryNrLevel(raw, 800)) {
-    if (!keypadReportIfTimedOut("NRLEVEL?")) {
-      printKeypadStatus("NRLEVEL? -> no reply");
-      if (g_speechEnabled) speakError();
-    }
+    keypadReportFailure("NRLEVEL?");
     return;
   }
   uint8_t percent = levelRawToPercent(raw);
-  printKeypadStatus(String("NRLEVEL ") + String((int)percent) + "%");
+  printKeypadStatus("NRLEVEL {}%", percent);
   speakFeatureValue(voice_noisereduction, voice_noisereduction_len, percent);
 }
 
 void adjustBank2NrLevel(int deltaPercent) {
   printKeypadAction("NRLEVEL");
   uint16_t raw = 0;
-  if (!queryNrLevel(raw, 800)) { keypadReportIfTimedOut("NRLEVEL"); return; }
+  if (!queryNrLevel(raw, 800)) { keypadReportFailure("NRLEVEL"); return; }
   int percent = (int)levelRawToPercent(raw) + deltaPercent;
   if (percent < 0) percent = 0;
   if (percent > 100) percent = 100;
@@ -128,12 +125,12 @@ void adjustBank2NrLevel(int deltaPercent) {
 
   uint16_t readBack = 0;
   if (!queryNrLevel(readBack, 800)) {
-    if (!keypadReportIfTimedOut("NRLEVEL")) printKeypadStatus("NRLEVEL -> failed");
+    keypadReportFailure("NRLEVEL");
     return;
   }
 
   const uint8_t readPercent = levelRawToPercent(readBack);
-  printKeypadStatus(String("NRLEVEL ") + String((int)readPercent) + "%");
+  printKeypadStatus("NRLEVEL {}%", readPercent);
   if (!wrote && (bool)Serial) {
     Serial.println("WARN NRLEVEL write not confirmed; using readback value");
   }
@@ -144,26 +141,23 @@ void queryBank2NbLevel() {
   printKeypadAction("NBLEVEL?");
   uint16_t raw = 0;
   if (!queryNbLevel(raw, 800)) {
-    if (!keypadReportIfTimedOut("NBLEVEL?")) {
-      printKeypadStatus("NBLEVEL? -> no reply");
-      if (g_speechEnabled) speakError();
-    }
+    keypadReportFailure("NBLEVEL?");
     return;
   }
   uint8_t percent = levelRawToPercent(raw);
-  printKeypadStatus(String("NBLEVEL ") + String((int)percent) + "%");
+  printKeypadStatus("NBLEVEL {}%", percent);
   speakTokenPercent("noiseblanker", percent);
 }
 
 void adjustBank2NbLevel(int deltaPercent) {
   printKeypadAction("NBLEVEL");
   uint16_t raw = 0;
-  if (!queryNbLevel(raw, 800)) { keypadReportIfTimedOut("NBLEVEL"); return; }
+  if (!queryNbLevel(raw, 800)) { keypadReportFailure("NBLEVEL"); return; }
   int percent = (int)levelRawToPercent(raw) + deltaPercent;
   if (percent < 0) percent = 0;
   if (percent > 100) percent = 100;
-  if (!setNbLevel(levelPercentToRaw(percent))) { keypadReportIfTimedOut("NBLEVEL"); return; }
-  printKeypadStatus(String("NBLEVEL ") + String(percent) + "%");
+  if (!setNbLevel(levelPercentToRaw(percent))) { keypadReportFailure("NBLEVEL"); return; }
+  printKeypadStatus("NBLEVEL {}%", percent);
   speakTokenPercent("noiseblanker", (uint8_t)percent);
 }
 
@@ -183,48 +177,45 @@ void queryBank2PbtInner() {
   printKeypadAction("PBT1?");
   uint16_t raw = 0;
   if (!queryPbtInner(raw, 800)) {
-    if (!keypadReportIfTimedOut("PBT1?")) {
-      printKeypadStatus("PBT1? -> no reply");
-      if (g_speechEnabled) speakError();
-    }
+    keypadReportFailure("PBT1?");
     return;
   }
-  printKeypadStatus(String("PBT1 ") + String(pbtRawToOffset(raw)) + " step");
+  printKeypadStatus("PBT1 {} step", pbtRawToOffset(raw));
   speakSignedStepValue("pbt", pbtRawToOffset(raw));
 }
 
 void adjustBank2PbtInner(int delta) {
   printKeypadAction("PBT1");
   uint16_t raw = 0;
-  if (!queryPbtInner(raw, 800)) { keypadReportIfTimedOut("PBT1"); return; }
+  if (!queryPbtInner(raw, 800)) { keypadReportFailure("PBT1"); return; }
   const int next = pbtRawToOffset(raw) + delta;
-  if (!setPbtInner(pbtOffsetToRaw(next))) { keypadReportIfTimedOut("PBT1"); return; }
+  if (!setPbtInner(pbtOffsetToRaw(next))) { keypadReportFailure("PBT1"); return; }
   queryBank2PbtInner();
 }
 
 void queryBank2PbtOuter() {
   printKeypadAction("PBT2?");
   uint16_t raw = 0;
-  if (!queryPbtOuter(raw, 800)) { keypadReportIfTimedOut("PBT2?"); return; }
-  printKeypadStatus(String("PBT2 ") + String(pbtRawToOffset(raw)) + " step");
+  if (!queryPbtOuter(raw, 800)) { keypadReportFailure("PBT2?"); return; }
+  printKeypadStatus("PBT2 {} step", pbtRawToOffset(raw));
   speakSignedStepValue("pbt", pbtRawToOffset(raw));
 }
 
 void adjustBank2PbtOuter(int delta) {
   printKeypadAction("PBT2");
   uint16_t raw = 0;
-  if (!queryPbtOuter(raw, 800)) { keypadReportIfTimedOut("PBT2"); return; }
+  if (!queryPbtOuter(raw, 800)) { keypadReportFailure("PBT2"); return; }
   const int next = pbtRawToOffset(raw) + delta;
-  if (!setPbtOuter(pbtOffsetToRaw(next))) { keypadReportIfTimedOut("PBT2"); return; }
+  if (!setPbtOuter(pbtOffsetToRaw(next))) { keypadReportFailure("PBT2"); return; }
   queryBank2PbtOuter();
 }
 
 void toggleBank2FilterShape() {
   printKeypadAction("FILSHAPE");
   bool soft = false;
-  if (!queryFilterShape(soft, 800)) { keypadReportIfTimedOut("FILSHAPE"); return; }
-  if (!setFilterShape(!soft)) { keypadReportIfTimedOut("FILSHAPE"); return; }
-  printKeypadStatus(!soft ? "FILSHAPE SOFT" : "FILSHAPE SHARP");
+  if (!queryFilterShape(soft, 800)) { keypadReportFailure("FILSHAPE"); return; }
+  if (!setFilterShape(!soft)) { keypadReportFailure("FILSHAPE"); return; }
+  printKeypadStatus("FILSHAPE {}", !soft ? "SOFT" : "SHARP");
   if (g_speechEnabled) {
     speakLabel("filtershape");
     speakToken(!soft ? "soft" : "sharp");
@@ -234,8 +225,8 @@ void toggleBank2FilterShape() {
 void queryBank2FilterWidth() {
   printKeypadAction("FILWIDTH?");
   uint8_t filter = 0xFF;
-  if (!queryCurrentFilterSlotForKeypad(filter)) { keypadReportIfTimedOut("FILWIDTH?"); return; }
-  printKeypadStatus(String("FILWIDTH ") + String((int)filter));
+  if (!queryCurrentFilterSlotForKeypad(filter)) { keypadReportFailure("FILWIDTH?"); return; }
+  printKeypadStatus("FILWIDTH {}", filter);
   if (g_speechEnabled) {
     speakLabel("filterwidth");
     playDigit(filter);
@@ -246,13 +237,13 @@ void cycleBank2FilterWidth(int delta) {
   printKeypadAction("FILWIDTH");
   uint8_t mode = 0xFF;
   uint8_t filter = 0xFF;
-  if (!ensureActiveVfoKnownForKeypad()) { keypadReportIfTimedOut("FILWIDTH"); return; }
-  if (!queryVfoMode(live.activeVfoA, mode, filter, 800)) { keypadReportIfTimedOut("FILWIDTH"); return; }
+  if (!ensureActiveVfoKnownForKeypad()) { keypadReportFailure("FILWIDTH"); return; }
+  if (!queryVfoMode(live.activeVfoA, mode, filter, 800)) { keypadReportFailure("FILWIDTH"); return; }
   int next = (int)filter + delta;
   if (next < 1) next = 3;
   if (next > 3) next = 1;
-  if (!setMode(mode, (uint8_t)next)) { keypadReportIfTimedOut("FILWIDTH"); return; }
-  printKeypadStatus(String("FILWIDTH ") + String(next));
+  if (!setMode(mode, (uint8_t)next)) { keypadReportFailure("FILWIDTH"); return; }
+  printKeypadStatus("FILWIDTH {}", next);
   if (g_speechEnabled) {
     speakLabel("filterwidth");
     playDigit((uint8_t)next);

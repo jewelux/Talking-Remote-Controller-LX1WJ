@@ -252,7 +252,7 @@ KeyBinding bank8(const KeypadTraits& t, char key) {
   const bool ft8x7Menu = t.layout == L::Ft817 || t.layout == L::Ft857;
   switch (key) {
     case '1': return bind(queryBank8CivAddress, beginBank8CivAddressEntry);
-    case '2': return bind([] { cycleBank8Baud(1); }, [] { cycleBank8Baud(-1); }, waitOnly);
+    case '2': return bind(queryBank8Baud, [] { cycleBank8Baud(-1); }, [] { cycleBank8Baud(1); });
     case '7':
       if (ft8x7Menu) return bind(queryBank8Ft8x7Row);
       return {};
@@ -263,38 +263,18 @@ KeyBinding bank8(const KeypadTraits& t, char key) {
   }
 }
 
-// Light-Icom fallback: digit Key picks built-in profile Key.
-template <char Key>
-void selectDirectProfile() {
-  selectBank9DirectProfile(Key);
-}
-
-constexpr Action kDirectProfile[] = {
-    selectDirectProfile<'1'>, selectDirectProfile<'2'>, selectDirectProfile<'3'>,
-    selectDirectProfile<'4'>, selectDirectProfile<'5'>, selectDirectProfile<'6'>,
-    selectDirectProfile<'7'>, selectDirectProfile<'8'>, selectDirectProfile<'9'>,
-};
-
-KeyBinding bank9Keys(char key) {
+KeyBinding bank9(char key) {
   switch (key) {
     case '4': return bind(queryBank9TuningSpeech, toggleBank9TuningSpeech);
     case '5': return bind(queryBank9Verbose, toggleBank9Verbose);
     case '7': return bind([] { adjustBank9Volume(-1); }, [] { adjustBank9Volume(-2); });
     case '8': return bind([] { adjustBank9Volume(1); }, [] { adjustBank9Volume(2); });
     case '9': return bind(queryBank9Volume);
-    case 'A': return bind(queryBank9Profile, beginBank9ProfileSelect);
+    case 'A': return bind(queryBank9Profile, beginBank9ProfileSelect, resetBank9Profile);
     case 'B': return bind(selectNextProfile);
     case 'C': return bind(selectPrevProfile);
     default: return {};
   }
-}
-
-KeyBinding bank9(const KeypadTraits& t, char key) {
-  KeyBinding b = bank9Keys(key);
-  // Light-Icom fallback: the digits pick a built-in profile instead of their
-  // other short actions.
-  if (t.lightIcomFallback && key >= '1' && key <= '9') b.shortAction = kDirectProfile[key - '1'];
-  return b;
 }
 
 #undef SEND
@@ -310,7 +290,7 @@ KeyBinding keymapLookup(const KeypadTraits& traits, uint8_t bank, char key) {
     case 5: return bank5(key);
     case 6: return bank6(traits, key);
     case 8: return bank8(traits, key);
-    case 9: return bank9(traits, key);
+    case 9: return bank9(key);
     default: return {};
   }
 }

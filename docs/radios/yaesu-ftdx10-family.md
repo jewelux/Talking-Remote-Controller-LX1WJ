@@ -2,11 +2,11 @@
 
 This page is the short technical summary for the current **V3.5.8** FTDX10 family state.
 
-Profiles:
+Profiles (built in):
 
-- `ftdx10.ini`
-- `ftdx101d.ini`
-- `ftdx101mp.ini`
+- slot 11: FTDX-10
+- slot 12: FTDX-101D
+- slot 13: FTDX-101MP
 
 ## Current First Block
 

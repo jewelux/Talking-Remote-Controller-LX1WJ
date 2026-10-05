@@ -1,8 +1,9 @@
 #pragma once
 
+#include "radio_profile_table.h"
 #include "radio_types.h"
 
-extern StoredProfile g_slotProfiles[MAX_PROFILE_SLOTS];
+// The slot of the active profile.
 extern uint8_t g_profileId;
 extern uint8_t g_lastSavedProfile;
 extern uint8_t g_civRadioAddr;
