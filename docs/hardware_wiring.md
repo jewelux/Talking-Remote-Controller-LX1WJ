@@ -46,7 +46,7 @@ Example target: MAX98357A or a comparable I2S audio module.
 | DIN | GPIO 7 |
 | GND | GND |
 | VIN | board supply, depending on the module |
-| SD / EN | optional HIGH or open, depending on the module |
+| SD / EN | optional HIGH 3.3V or open, depending on the module |
 
 ---
 
