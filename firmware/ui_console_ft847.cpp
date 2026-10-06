@@ -212,10 +212,14 @@ bool handleConsoleFt847Commands(const String& upper) {
     return true;
   }
   if (upper == "F847POLL OFF" || upper == "F847POLL ON") {
-    ft847SetBackgroundPollPaused(upper.endsWith("OFF"));
-    if (ft847FmGuardActive()) Serial.println("F847 radio was in FM: the poll restarts after a query finds another mode");
-    Serial.println(ft847BackgroundPollPaused() ? "F847 background poll paused (CAT stays on)"
-                                               : "F847 background poll running");
+    const bool pause = upper.endsWith("OFF");
+    ft847SetBackgroundPollPaused(pause);
+    if (ft847FmGuardActive()) {
+      Serial.println(pause ? "F847 background poll paused (CAT stays on); the radio is also in FM"
+                           : "F847 background poll stays stopped: the radio is in FM. Switch to another mode, then FREQ?");
+      return true;
+    }
+    Serial.println(pause ? "F847 background poll paused (CAT stays on)" : "F847 background poll running");
     return true;
   }
   if (upper == "F847GAP?") {

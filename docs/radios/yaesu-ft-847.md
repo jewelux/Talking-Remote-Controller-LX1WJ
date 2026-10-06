@@ -5,24 +5,34 @@
 Tested on Richard's FT-847 (serial 8H0901.., June 1998) by Jean LX1WJ on 5-6 Oct 2026, with a
 Mini-HamTRC (no SD card) on profile 16:
 
-| Works | Notes |
-|---|---|
-| Frequency read and set | 10 Hz steps; turning the dial is announced |
-| Mode read and set | LSB, USB, CW, CW-R, AM; narrow variants read as their mode |
-| RX/TX status | `F847TX?`, `RXTX?` |
-| S-meter | read in SSB; in FM the radio does not answer it (FM is not supported anyway) |
-| CAT ON after the radio was switched off and on | automatic |
-| FM guard | radio switched to FM: short transmit, then receive and "FM not available" |
+All serial console commands were tested on 6 Oct 2026 (dummy load, no antenna):
 
-Added after the first test, not yet tried on the radio:
-
-| Function | Console | Keypad |
+| Works | Console | Notes |
 |---|---|---|
-| Power while transmitting: the radio's PO/ALC meter, 0..31 ("power 12"; "power rx" in receive) | `PO?` | Bank 1 `4` |
-| Narrow filter in CW, CW-R and AM, like the radio's NAR key ("cw n" when on; "not available" in SSB). CW-N needs the optional YF-115C filter and menu 33 on | `NAR?`, `NAR ON`, `NAR OFF`, `NAR TOGGLE` | not yet (needs a key in the keypad layout, to agree with Jan) |
+| Frequency read and set | `FREQ?`, `FREQ <kHz>` | 10 Hz steps, HF to 70 cm (7.074 and 145.500 MHz tried); turning the dial is announced |
+| Mode read and set | `MODE?`, `MODE LIST`, `MODE <name>`, `F847MODE?` | LSB, USB, CW, CW-R, AM; narrow variants read as their mode; `MODE FM` is rejected |
+| RX/TX status | `F847TX?`, `RXTX?` | RX and TX (MOX) both read correctly |
+| S-meter | `SM?`, `F847RX?` | read in SSB and AM; in FM the radio does not answer it. Not yet compared with a real signal |
+| Power while transmitting: the radio's PO/ALC meter, 0..31 ("power 12"; "power rx" in receive) | `PO?` | keypad Bank 1 `4` |
+| Narrow filter in CW, CW-R and AM, like the radio's NAR key ("cw n" when on; "not available" in SSB). CW-N needs the optional YF-115C filter and menu 33 on | `NAR?`, `NAR ON`, `NAR OFF`, `NAR TOGGLE` | AM-N and CW-N tried. No keypad key yet (to agree with Jan) |
+| CAT OFF and ON by hand | `F847CAT OFF`, `F847CAT ON` | no reply while off, works again after on |
+| CAT ON after the radio was switched off and on | | automatic |
+| FM guard | | radio switched to FM: short transmit, then receive and "FM not available" |
+| Test aids | `F847?`, `F847TRACE`, `F847POLL`, `F847GAP`, `F847RAW…`, `BAUD?`, `HELP` | |
+
+Not yet tested: the keypad (the test board has none), and the S-meter against a real signal on
+an antenna.
 
 **FM is not supported** on this radio, see below. Not yet: PTT, satellite mode, repeater shift,
 CTCSS and DCS.
+
+Two things to know when operating:
+
+- Choose AM with HamTRC (`MODE AM` or the keypad), not with the radio's FM/AM key. That key
+  passes through FM on its way to AM, and if a poll catches the radio in FM, the FM guard
+  trips (short transmit, "FM not available", poll stopped until the next query).
+- `F847RAW5? 0000000003` is a raw frame and has no FM guard. In FM it keys the radio, which
+  then keeps transmitting until `F847RAW 0000000088` (PTT OFF).
 
 The FT-847 has its own protocol, `YAESU_FT847` (`firmware/protocol_ft847.*`,
 `firmware/ft847_codec.*`). It uses the same 5-byte CAT frame as the FT-817/857/897, but several

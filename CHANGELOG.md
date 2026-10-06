@@ -204,8 +204,9 @@
 - console commands for testing: `F847?`, `F847CAT ON | OFF`, `F847GAP`, `F847RX?`, `F847TX?`,
   `F847MODE?`, `F847TRACE`, `F847RAW`, `F847RAW1?`, `F847RAW5?`; see
   `docs/radios/yaesu-ft-847.md`. Host tests in `tests/ft847`
-- tested on Richard's FT-847 (serial 8H09.., June 1998): frequency and mode read and set, RX/TX
-  status, S-meter in SSB, CAT ON after a power cycle
+- tested on Richard's FT-847 (serial 8H09.., June 1998), every console command: frequency and
+  mode read and set, RX/TX status, S-meter, PO meter, narrow (AM-N, CW-N), CAT OFF/ON, CAT ON
+  after a power cycle, FM guard. Not yet: keypad, S-meter against a real signal
 - FM is not supported: in FM this FT-847 goes into transmit on every frequency/mode read. HamTRC
   never selects FM; if the radio is switched to FM on its front panel, HamTRC sends PTT OFF at
   once, says "FM not available" and stops polling until a query finds another mode. Details and
