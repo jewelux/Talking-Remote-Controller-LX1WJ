@@ -3,6 +3,7 @@
 #include "protocol_ascii.h"
 #include "protocol_yaesu_cat.h"
 #include "transport_serial.h"
+#include "ui_speech.h"
 
 // Minimum gap after a frame before the next one may start.
 static constexpr uint32_t FT847_MIN_COMMAND_GAP_MS = 20;
@@ -16,8 +17,12 @@ static bool s_catOnPending = true;
 static bool s_catHeldOff = false;
 // Set by F847POLL OFF from the console.
 static bool s_backgroundPollPaused = false;
+// Set when a frequency/mode read found the radio in FM; see ft847FmGuardActive().
+static bool s_fmGuardActive = false;
 
-bool ft847BackgroundPollPaused() { return s_backgroundPollPaused; }
+bool ft847BackgroundPollPaused() { return s_backgroundPollPaused || s_fmGuardActive; }
+
+bool ft847FmGuardActive() { return s_fmGuardActive; }
 
 void ft847SetBackgroundPollPaused(bool paused) { s_backgroundPollPaused = paused; }
 
@@ -126,7 +131,27 @@ bool ft847QueryRaw5(const uint8_t frame[5], uint8_t rsp[5], uint32_t timeoutMs) 
   return ft847Transact5(frame, rsp, timeoutMs);
 }
 
-// Reads the main VFO's frequency and mode frame and checks that it is aligned.
+// The read found the radio in FM, where it has just started to transmit (see ft847FmGuardActive):
+// PTT OFF at once, stop the background poll and say so.
+static void ft847TripFmGuard() {
+  uint8_t frame[5];
+  ft847BuildFrame(FT847_OP_PTT_OFF, frame);
+  ft847WriteFrame(frame);
+  delay(FT847_WRITE_SETTLE_MS);
+  s_fmGuardActive = true;
+  if (Serial) {
+    Serial.println("[F847] radio is in FM: a frequency/mode read keys this FT-847 in FM. Sent PTT OFF;");
+    Serial.println("[F847] background poll stopped until a query finds another mode. FM is not supported.");
+  }
+  if (g_speechEnabled) {
+    speakToken("fm");
+    playSilenceMs(60);
+    speakNotAvailable();
+  }
+}
+
+// Reads the main VFO's frequency and mode frame and checks that it is aligned. False in FM, after
+// the FM guard has stopped the transmit the read caused.
 static bool ft847ReadFreqModeFrame(uint8_t rsp[5], uint32_t timeoutMs) {
   uint8_t frame[5];
   ft847BuildFrame(FT847_OP_READ_FREQ_MODE, frame);
@@ -135,6 +160,11 @@ static bool ft847ReadFreqModeFrame(uint8_t rsp[5], uint32_t timeoutMs) {
     yaesuCatMarkLineDirty();
     return false;
   }
+  if (ft847ModeBase(rsp[4]) == FT847_MODE_FM) {
+    ft847TripFmGuard();
+    return false;
+  }
+  s_fmGuardActive = false;
   return true;
 }
 

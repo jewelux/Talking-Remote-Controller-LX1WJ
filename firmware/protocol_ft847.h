@@ -39,8 +39,17 @@ void ft847CatOn();
 void ft847CatOff();
 bool ft847CatHeldOff();
 
-// Pauses the background frequency poll (radio_monitor.cpp) for testing; CAT stays on, and
-// console queries still go out.
+// FM is not supported. Richard's FT-847 (serial 8H09..., June 1998) goes into transmit on every
+// frequency/mode read (0x03) while it is in FM, whatever the four parameter bytes; PTT OFF (0x88)
+// ends it, and with no read it stays in receive (tests of 5-6 Oct 2026, docs/radios/yaesu-ft-847.md).
+// So the profile has no FM mode code, and a read that finds FM sends PTT OFF at once, says
+// "FM not available" and stops the background poll. The guard stays active until a query the
+// user starts (keypad or console) finds another mode; that query causes the same short transmit
+// while the radio is still in FM.
+bool ft847FmGuardActive();
+
+// True while the background frequency poll (radio_monitor.cpp) must not run: paused by
+// F847POLL OFF for testing (CAT stays on, console queries still go out), or by the FM guard.
 bool ft847BackgroundPollPaused();
 void ft847SetBackgroundPollPaused(bool paused);
 

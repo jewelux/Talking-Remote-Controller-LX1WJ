@@ -135,9 +135,10 @@ constexpr RadioCapabilities kFt847Caps = {
     .getSmeter = true, .getRxTx = true,
 };
 
-// The mode bytes; the narrow variants (0x82 CW-N ...) read as their mode. No RTTY or DIGI.
+// The mode bytes; the narrow variants (0x82 CW-N ...) read as their mode. No RTTY or DIGI, and
+// no FM: a frequency/mode read keys the FT-847 in FM (see ft847FmGuardActive in protocol_ft847.h).
 constexpr ModeCodes kFt847Modes = {
-    .lsb = "00", .usb = "01", .am = "04", .cw = "02", .fm = "08", .cwr = "03",
+    .lsb = "00", .usb = "01", .am = "04", .cw = "02", .cwr = "03",
 };
 
 // --- Yaesu FTDX10, FTDX101, FT-891 (ASCII CAT) -------------------------------

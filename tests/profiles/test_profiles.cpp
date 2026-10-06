@@ -151,7 +151,9 @@ TEST(ft847_is_its_own_protocol_on_rs232) {
   CHECK(!ft847.caps.getSplit && !ft847.caps.setSplit);
   CHECK(!ft847.caps.getVfo && !ft847.caps.setVfo);
   CHECK_EQ(ft847.modes->usb, "01");
-  CHECK_EQ(ft847.modes->fm, "08");
+  CHECK_EQ(ft847.modes->am, "04");
+  // No FM: a frequency/mode read keys this FT-847 in FM (protocol_ft847.h).
+  CHECK_EQ(ft847.modes->fm, "");
   CHECK_EQ(ft847.modes->rtty, "");
   CHECK_EQ(ft847.modes->digi, "");
 }

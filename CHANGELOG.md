@@ -189,7 +189,7 @@
 - Bank 6 on radios other than the FT-8x7 family is empty: its keys beep like any unassigned key
   (they said "BANK6 reserved")
 
-### Yaesu FT-847 (new, not yet tested on the radio)
+### Yaesu FT-847 (new, tested on one radio)
 
 - new built-in profile 16 with its own protocol `YAESU_FT847` (baud 4800, 9600 or 57600, like
   the radio's menu 37). The FT-847 shares the
@@ -204,6 +204,12 @@
 - console commands for testing: `F847?`, `F847CAT ON | OFF`, `F847GAP`, `F847RX?`, `F847TX?`,
   `F847MODE?`, `F847TRACE`, `F847RAW`, `F847RAW1?`, `F847RAW5?`; see
   `docs/radios/yaesu-ft-847.md`. Host tests in `tests/ft847`
+- tested on Richard's FT-847 (serial 8H09.., June 1998): frequency and mode read and set, RX/TX
+  status, S-meter in SSB, CAT ON after a power cycle
+- FM is not supported: in FM this FT-847 goes into transmit on every frequency/mode read. HamTRC
+  never selects FM; if the radio is switched to FM on its front panel, HamTRC sends PTT OFF at
+  once, says "FM not available" and stops polling until a query finds another mode. Details and
+  the tests in `docs/radios/yaesu-ft-847.md`. Console `F847POLL OFF | ON` pauses the poll
 - not yet: PTT, satellite mode, repeater shift, CTCSS and DCS
 
 ### Firmware updates

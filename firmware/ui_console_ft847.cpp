@@ -88,6 +88,8 @@ void printFt847ConsoleHelp() {
   Serial.println("    F847RAW1? <10 hex digits>  (send a frame, read 1 byte)");
   Serial.println("    F847RAW5? <10 hex digits>  (send a frame, read 5 bytes)");
   Serial.println("    CAUTION: F847RAW sends anything, e.g. 0000000008 = PTT ON (transmit).");
+  Serial.println("    FM is not supported: in FM a frequency/mode read (03) keys this FT-847;");
+  Serial.println("    0000000088 = PTT OFF ends it.");
 }
 
 bool handleConsoleFt847Commands(const String& upper) {
@@ -103,7 +105,8 @@ bool handleConsoleFt847Commands(const String& upper) {
     Serial.print(", byte gap ");
     Serial.print(ft847ByteGapMs());
     Serial.print(" ms, background poll ");
-    Serial.print(ft847BackgroundPollPaused() ? "paused" : "running");
+    Serial.print(ft847FmGuardActive() ? "stopped (radio in FM, not supported)"
+                                      : (ft847BackgroundPollPaused() ? "paused" : "running"));
     Serial.print(", trace ");
     Serial.println(g_yaesuCatTrace ? "on" : "off");
     return true;
@@ -120,6 +123,7 @@ bool handleConsoleFt847Commands(const String& upper) {
   }
   if (upper == "F847POLL OFF" || upper == "F847POLL ON") {
     ft847SetBackgroundPollPaused(upper.endsWith("OFF"));
+    if (ft847FmGuardActive()) Serial.println("F847 radio was in FM: the poll restarts after a query finds another mode");
     Serial.println(ft847BackgroundPollPaused() ? "F847 background poll paused (CAT stays on)"
                                                : "F847 background poll running");
     return true;
