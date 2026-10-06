@@ -103,6 +103,7 @@ void cancelPendingFreqAnnouncement() {
 void pollFrequencyIfDue() {
   if (!FREQ_POLL_ENABLE) return;
   if (!currentProfile().caps.getFreq) return;
+  if (currentProtocolType() == PROTO_YAESU_FT847 && ft847BackgroundPollPaused()) return;
 
   const FreqPollPolicy policy = freqPollPolicyFor(currentProtocolType());
   const uint32_t intervalMs = (live.freqPollFailures >= FREQ_POLL_BACKOFF_AFTER_FAILURES) ? FREQ_POLL_BACKOFF_MS : policy.intervalMs;

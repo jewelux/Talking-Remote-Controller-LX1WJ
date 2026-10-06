@@ -83,6 +83,7 @@ void printFt847ConsoleHelp() {
   Serial.println("    F847TX?                    (transmit status 0xF7, decoded)");
   Serial.println("    F847MODE?                  (mode byte, narrow filter included)");
   Serial.println("    F847TRACE ON | OFF         (print every frame sent and received)");
+  Serial.println("    F847POLL OFF | ON          (pause the background frequency poll; CAT stays on)");
   Serial.println("    F847RAW <10 hex digits>    (send a frame, no reply expected)");
   Serial.println("    F847RAW1? <10 hex digits>  (send a frame, read 1 byte)");
   Serial.println("    F847RAW5? <10 hex digits>  (send a frame, read 5 bytes)");
@@ -101,7 +102,9 @@ bool handleConsoleFt847Commands(const String& upper) {
     Serial.print(ft847CatHeldOff() ? "held OFF (F847CAT ON to resume)" : "on (sent automatically)");
     Serial.print(", byte gap ");
     Serial.print(ft847ByteGapMs());
-    Serial.print(" ms, trace ");
+    Serial.print(" ms, background poll ");
+    Serial.print(ft847BackgroundPollPaused() ? "paused" : "running");
+    Serial.print(", trace ");
     Serial.println(g_yaesuCatTrace ? "on" : "off");
     return true;
   }
@@ -113,6 +116,12 @@ bool handleConsoleFt847Commands(const String& upper) {
   if (upper == "F847CAT OFF") {
     ft847CatOff();
     Serial.println("F847 CAT OFF sent; nothing more is sent until F847CAT ON");
+    return true;
+  }
+  if (upper == "F847POLL OFF" || upper == "F847POLL ON") {
+    ft847SetBackgroundPollPaused(upper.endsWith("OFF"));
+    Serial.println(ft847BackgroundPollPaused() ? "F847 background poll paused (CAT stays on)"
+                                               : "F847 background poll running");
     return true;
   }
   if (upper == "F847GAP?") {

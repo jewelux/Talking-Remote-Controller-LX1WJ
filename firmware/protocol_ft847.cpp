@@ -14,6 +14,12 @@ static uint32_t s_nextTxAllowedMs = 0;
 static bool s_catOnPending = true;
 // Set by CAT OFF from the console: nothing is sent until CAT ON.
 static bool s_catHeldOff = false;
+// Set by F847POLL OFF from the console.
+static bool s_backgroundPollPaused = false;
+
+bool ft847BackgroundPollPaused() { return s_backgroundPollPaused; }
+
+void ft847SetBackgroundPollPaused(bool paused) { s_backgroundPollPaused = paused; }
 
 static void ft847Trace(const char* label, const uint8_t frame[5]) {
   if (!g_yaesuCatTrace || !Serial) return;

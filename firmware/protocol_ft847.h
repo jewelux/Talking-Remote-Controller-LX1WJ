@@ -39,6 +39,11 @@ void ft847CatOn();
 void ft847CatOff();
 bool ft847CatHeldOff();
 
+// Pauses the background frequency poll (radio_monitor.cpp) for testing; CAT stays on, and
+// console queries still go out.
+bool ft847BackgroundPollPaused();
+void ft847SetBackgroundPollPaused(bool paused);
+
 // Raw frames for the console. The query forms read a 1- or 5-byte reply.
 void ft847SendRaw(const uint8_t frame[5]);
 bool ft847QueryRaw1(const uint8_t frame[5], uint8_t& rsp, uint32_t timeoutMs);
