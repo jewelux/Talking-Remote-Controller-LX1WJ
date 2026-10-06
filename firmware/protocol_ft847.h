@@ -69,3 +69,10 @@ bool ft847QueryTxStatus(uint8_t& txStatusOut, uint32_t timeoutMs);
 bool ft847QuerySMeterRaw(const RadioProfile& sp, int32_t& rawOut, uint32_t timeoutMs);
 SMeterReading ft847SMeterFromRaw(uint8_t rxStatus);
 bool ft847QueryRxTx(const RadioProfile& sp, bool& txOut, uint32_t timeoutMs);
+
+// Narrow filter (the radio's NAR key) for CW, CW-R and AM.
+enum class Ft847NarrowResult : uint8_t { Ok, NoReply, NotAvailable };
+// The mode base and whether the narrow filter is on.
+Ft847NarrowResult ft847QueryNarrow(uint8_t& modeBaseOut, bool& narrowOut, uint32_t timeoutMs);
+// Sets narrow on or off in the current mode; NotAvailable in a mode without narrow (SSB).
+Ft847NarrowResult ft847SetNarrow(bool narrow, uint8_t& modeBaseOut);

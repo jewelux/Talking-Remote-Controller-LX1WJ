@@ -146,6 +146,8 @@ TEST(ft847_is_its_own_protocol_on_rs232) {
   CHECK(ft847.link.bauds.contains(9600) && ft847.link.bauds.contains(57600));
   CHECK(!ft847.link.bauds.contains(38400));
   CHECK(ft847.caps.setFreq && ft847.caps.setMode && ft847.caps.getSmeter && ft847.caps.getRxTx);
+  CHECK(ft847.caps.getPower);
+  CHECK(!ft847.caps.getSwr);
   // Nothing the first FT-847 step cannot do yet.
   CHECK(!ft847.caps.getDialLock && !ft847.caps.setDialLock);
   CHECK(!ft847.caps.getSplit && !ft847.caps.setSplit);

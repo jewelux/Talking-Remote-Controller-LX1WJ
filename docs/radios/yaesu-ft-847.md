@@ -12,6 +12,14 @@ Mini-HamTRC (no SD card) on profile 16:
 | RX/TX status | `F847TX?`, `RXTX?` |
 | S-meter | read in SSB; in FM the radio does not answer it (FM is not supported anyway) |
 | CAT ON after the radio was switched off and on | automatic |
+| FM guard | radio switched to FM: short transmit, then receive and "FM not available" |
+
+Added after the first test, not yet tried on the radio:
+
+| Function | Console | Keypad |
+|---|---|---|
+| Power while transmitting: the radio's PO/ALC meter, 0..31 ("power 12"; "power rx" in receive) | `PO?` | Bank 1 `4` |
+| Narrow filter in CW, CW-R and AM, like the radio's NAR key ("cw n" when on; "not available" in SSB). CW-N needs the optional YF-115C filter and menu 33 on | `NAR?`, `NAR ON`, `NAR OFF`, `NAR TOGGLE` | not yet (needs a key in the keypad layout, to agree with Jan) |
 
 **FM is not supported** on this radio, see below. Not yet: PTT, satellite mode, repeater shift,
 CTCSS and DCS.
@@ -124,6 +132,10 @@ Turn the trace on first, so every frame shows: `F847TRACE ON`.
 | 12 | FM guard: switch the radio to FM on its front panel | a short transmit, then receive; HamTRC says "FM not available" and the console shows the FM note; `F847?` says the poll is stopped | Radio keeps transmitting: `F847RAW 0000000088`, report it |
 | 13 | Back to USB on the radio, then `FREQ?` | the frequency; `F847?` says the poll is running again | |
 | 14 | Keypad: Bank 1 keys (frequency, mode, S-meter) | spoken answers; keys for features the FT-847 lacks say "not available" | |
+| 15 | `PO?` in receive | `PO: RX (not transmitting)`, spoken "power rx" | |
+| 16 | Press MOX on the radio (dummy load), `PO?`, release MOX | `PO: n of 31`, spoken "power n"; compare with the radio's meter | |
+| 17 | Radio in AM: `NAR ON`, `NAR?`, `NAR OFF` | the radio's NAR icon follows; "am n", then "am" | |
+| 18 | Radio in USB: `NAR ON` | `NAR -> not available in USB` | |
 
 Test aids: `F847POLL OFF | ON` pauses the background poll (CAT stays on); `F847GAP <ms>` changes the
 pause between the five bytes (0 worked for reads in SSB).

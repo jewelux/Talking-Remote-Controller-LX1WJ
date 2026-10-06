@@ -3,6 +3,8 @@
 #include "protocol_ft847.h"
 #include "protocol_yaesu_cat.h"
 #include "radio_catalog.h"
+#include "radio_state.h"
+#include "ui_speech.h"
 
 static constexpr uint32_t FT847_CONSOLE_TIMEOUT_MS = 800;
 
@@ -73,9 +75,87 @@ static const char* modeName(uint8_t base) {
   }
 }
 
+static const char* modeToken(uint8_t base) {
+  switch (base) {
+    case FT847_MODE_CW: return "cw";
+    case FT847_MODE_CWR: return "cwr";
+    case FT847_MODE_AM: return "am";
+    case FT847_MODE_LSB: return "lsb";
+    case FT847_MODE_USB: return "usb";
+    default: return "";
+  }
+}
+
+// "cw" or "cw n": the mode, then "n" when the narrow filter is on.
+static void speakNarrowState(uint8_t base, bool narrow) {
+  if (!g_speechEnabled) return;
+  speakToken(modeToken(base));
+  if (narrow) {
+    playSilenceMs(60);
+    speakToken("n");
+  }
+}
+
+// PO?: the PO/ALC meter (0..31) while transmitting, like the FT-8x7's PO? (Bank 1 4).
+static void handlePowerQuery() {
+  uint8_t tx = 0;
+  if (!ft847QueryTxStatus(tx, FT847_CONSOLE_TIMEOUT_MS)) {
+    Serial.println("PO? -> no reply");
+    if (g_speechEnabled) speakTimeout();
+    return;
+  }
+  if (!ft847TxStatusTransmitting(tx)) {
+    Serial.println("PO: RX (not transmitting)");
+    if (g_speechEnabled) {
+      speakLabel("power");
+      speakToken("rx");
+    }
+    return;
+  }
+  const uint8_t meter = ft847TxMeter(tx);
+  rememberLivePower(meter, millis());
+  Serial.print("PO: ");
+  Serial.print(meter);
+  Serial.println(" of 31 (the radio's PO/ALC meter, as its METER switch selects)");
+  if (g_speechEnabled) {
+    speakLabel("power");
+    speakDigitsAndPoint(String(meter));
+  }
+}
+
+// NAR? | NAR ON | NAR OFF | NAR TOGGLE: the narrow filter in CW, CW-R and AM.
+static void handleNarrowCommand(const String& upper) {
+  uint8_t base = 0;
+  bool narrow = false;
+  Ft847NarrowResult r = ft847QueryNarrow(base, narrow, FT847_CONSOLE_TIMEOUT_MS);
+  if (r == Ft847NarrowResult::Ok && upper != "NAR?") {
+    const bool want = upper == "NAR ON" ? true : upper == "NAR OFF" ? false : !narrow;
+    r = ft847SetNarrow(want, base);
+    if (r == Ft847NarrowResult::Ok) narrow = want;
+  }
+  if (r == Ft847NarrowResult::NoReply) {
+    Serial.println("NAR -> no reply");
+    if (g_speechEnabled) speakTimeout();
+    return;
+  }
+  if (!ft847ModeCanBeNarrow(base)) {
+    Serial.print("NAR -> not available in ");
+    Serial.println(modeName(base));
+    if (g_speechEnabled) speakNotAvailable();
+    return;
+  }
+  Serial.print("NAR ");
+  Serial.print(narrow ? "ON (" : "OFF (");
+  Serial.print(modeName(base));
+  Serial.println(narrow ? "-N)" : ")");
+  speakNarrowState(base, narrow);
+}
+
 void printFt847ConsoleHelp() {
   Serial.println("  Yaesu FT-847:");
   Serial.println("    RXTX?  SM?  (also FREQ, MODE and the keypad)");
+  Serial.println("    PO?                        (PO/ALC meter 0..31 while transmitting)");
+  Serial.println("    NAR? | NAR ON | OFF | TOGGLE  (narrow filter in CW, CW-R, AM; CW-N needs the YF-115C)");
   Serial.println("    F847?                      (CAT state and byte gap)");
   Serial.println("    F847CAT ON | OFF           (OFF: nothing is sent until ON)");
   Serial.println("    F847GAP <0..200> | F847GAP?  (ms between the 5 bytes, default 50)");
@@ -93,6 +173,16 @@ void printFt847ConsoleHelp() {
 }
 
 bool handleConsoleFt847Commands(const String& upper) {
+  if (isFt847Profile()) {
+    if (upper == "PO?") {
+      handlePowerQuery();
+      return true;
+    }
+    if (upper == "NAR?" || upper == "NAR ON" || upper == "NAR OFF" || upper == "NAR TOGGLE") {
+      handleNarrowCommand(upper);
+      return true;
+    }
+  }
   if (!upper.startsWith("F847")) return false;
   if (!isFt847Profile()) {
     Serial.println("F847 -> FT-847 profile required");

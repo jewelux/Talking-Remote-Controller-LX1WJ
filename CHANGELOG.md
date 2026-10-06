@@ -210,6 +210,9 @@
   never selects FM; if the radio is switched to FM on its front panel, HamTRC sends PTT OFF at
   once, says "FM not available" and stops polling until a query finds another mode. Details and
   the tests in `docs/radios/yaesu-ft-847.md`. Console `F847POLL OFF | ON` pauses the poll
+- `PO?` and Bank 1 `4` say the PO/ALC meter (0..31) while transmitting, "power rx" in receive
+- `NAR? | ON | OFF | TOGGLE` switch the narrow filter in CW, CW-R and AM, like the radio's NAR
+  key ("cw n"); no key yet
 - not yet: PTT, satellite mode, repeater shift, CTCSS and DCS
 
 ### Firmware updates

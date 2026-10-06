@@ -61,6 +61,14 @@ bool ft847ModeBaseKnown(uint8_t modeBase) {
   }
 }
 
+bool ft847ModeCanBeNarrow(uint8_t modeBase) {
+  return modeBase == FT847_MODE_CW || modeBase == FT847_MODE_CWR || modeBase == FT847_MODE_AM;
+}
+
+uint8_t ft847ModeByte(uint8_t modeBase, bool narrow) {
+  return (uint8_t)(ft847ModeBase(modeBase) | (narrow ? FT847_MODE_NARROW_FLAG : 0));
+}
+
 uint8_t ft847SMeterDots(uint8_t rxStatus) { return (uint8_t)(rxStatus & 0x1F); }
 
 void ft847DecodeSMeter(uint8_t rxStatus, uint8_t& sUnitsOut, uint8_t& dbOverS9Out) {

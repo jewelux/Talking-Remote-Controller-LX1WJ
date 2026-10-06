@@ -129,10 +129,10 @@ constexpr ModeCodes kFt8x7Modes = {
 // Menu 37 offers 4800, 9600 and 57600.
 constexpr uint32_t kFt847Bauds[] = {4800, 9600, 57600};
 
-// First step: frequency, mode, S-meter and RX/TX (protocol_ft847.*).
+// Frequency, mode, S-meter, RX/TX and the PO meter while transmitting (protocol_ft847.*).
 constexpr RadioCapabilities kFt847Caps = {
     .getFreq = true, .setFreq = true, .getMode = true, .setMode = true,
-    .getSmeter = true, .getRxTx = true,
+    .getSmeter = true, .getPower = true, .getRxTx = true,
 };
 
 // The mode bytes; the narrow variants (0x82 CW-N ...) read as their mode. No RTTY or DIGI, and

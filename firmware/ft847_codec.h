@@ -69,6 +69,11 @@ uint8_t ft847ModeBase(uint8_t modeByte);
 bool ft847ModeNarrow(uint8_t modeByte);
 // True for the six mode bases the radio reports (LSB, USB, CW, CWR, AM, FM).
 bool ft847ModeBaseKnown(uint8_t modeBase);
+// True for the modes HamTRC switches between wide and narrow: CW, CW-R and AM. (FM-N exists too,
+// but HamTRC leaves FM alone, and SSB has no narrow mode.) CW-N needs the optional YF-115C filter.
+bool ft847ModeCanBeNarrow(uint8_t modeBase);
+// The mode byte for modeBase, narrow or wide.
+uint8_t ft847ModeByte(uint8_t modeBase, bool narrow);
 
 // RX status (0xE7): bit 7 = squelch closed (1) / open (0), bits 4..0 = S-meter display dots
 // 0..31. Dots map to S units the way Hamlib's ft847_get_smeter_level does: 0..3 = S0..S1,

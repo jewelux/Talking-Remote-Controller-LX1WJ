@@ -241,6 +241,26 @@ SMeterReading ft847SMeterFromRaw(uint8_t rxStatus) {
   return reading;
 }
 
+Ft847NarrowResult ft847QueryNarrow(uint8_t& modeBaseOut, bool& narrowOut, uint32_t timeoutMs) {
+  uint8_t modeByte = 0;
+  if (!ft847QueryModeByte(modeByte, timeoutMs)) return Ft847NarrowResult::NoReply;
+  modeBaseOut = ft847ModeBase(modeByte);
+  narrowOut = ft847ModeNarrow(modeByte);
+  return Ft847NarrowResult::Ok;
+}
+
+Ft847NarrowResult ft847SetNarrow(bool narrow, uint8_t& modeBaseOut) {
+  bool wasNarrow = false;
+  const Ft847NarrowResult read = ft847QueryNarrow(modeBaseOut, wasNarrow, 800);
+  if (read != Ft847NarrowResult::Ok) return read;
+  if (!ft847ModeCanBeNarrow(modeBaseOut)) return Ft847NarrowResult::NotAvailable;
+  uint8_t frame[5];
+  ft847BuildSetModeFrame(ft847ModeByte(modeBaseOut, narrow), frame);
+  if (!ft847SendWriteOnly(frame)) return Ft847NarrowResult::NoReply;
+  delay(FT847_FREQ_MODE_SETTLE_MS);
+  return Ft847NarrowResult::Ok;
+}
+
 bool ft847QueryRxTx(const RadioProfile& sp, bool& txOut, uint32_t timeoutMs) {
   if (!sp.caps.getRxTx) return false;
   uint8_t txStatus = 0;

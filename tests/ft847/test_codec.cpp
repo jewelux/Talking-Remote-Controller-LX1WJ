@@ -94,6 +94,24 @@ TEST(mode_bases_the_radio_reports) {
   for (uint8_t m : unknown) CHECK(!ft847ModeBaseKnown(m));
 }
 
+TEST(narrow_only_for_cw_cwr_and_am) {
+  CHECK(ft847ModeCanBeNarrow(FT847_MODE_CW));
+  CHECK(ft847ModeCanBeNarrow(FT847_MODE_CWR));
+  CHECK(ft847ModeCanBeNarrow(FT847_MODE_AM));
+  CHECK(!ft847ModeCanBeNarrow(FT847_MODE_LSB));
+  CHECK(!ft847ModeCanBeNarrow(FT847_MODE_USB));
+  CHECK(!ft847ModeCanBeNarrow(FT847_MODE_FM));
+}
+
+TEST(mode_byte_sets_and_clears_the_narrow_flag) {
+  // Manual p. 92: 82 CW(N), 83 CW-R(N), 84 AM(N).
+  CHECK_EQ(ft847ModeByte(FT847_MODE_CW, true), 0x82);
+  CHECK_EQ(ft847ModeByte(FT847_MODE_CWR, true), 0x83);
+  CHECK_EQ(ft847ModeByte(FT847_MODE_AM, true), 0x84);
+  CHECK_EQ(ft847ModeByte(FT847_MODE_AM, false), 0x04);
+  CHECK_EQ(ft847ModeByte(0x82, false), 0x02);
+}
+
 namespace {
 
 void decode(uint8_t rx, uint8_t &s, uint8_t &over) { ft847DecodeSMeter(rx, s, over); }
