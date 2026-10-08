@@ -3,6 +3,7 @@
 #include "protocol_ascii.h"
 #include "protocol_ops_ascii.h"
 #include "protocol_ops_civ.h"
+#include "protocol_ft847.h"
 #include "protocol_ops_yaesu.h"
 #include "radio_protocol.h"
 #include "radio_state.h"
@@ -84,6 +85,7 @@ bool queryFrequency(uint64_t& hzOut, uint32_t timeoutMs) {
   if (pt == PROTO_CIV) return civQueryFrequency(sp, hzOut, timeoutMs);
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiQueryFrequency(sp, hzOut, timeoutMs);
   if (pt == PROTO_YAESU_FT8X7) return yaesuCatQueryFrequency(sp, hzOut, timeoutMs);
+  if (pt == PROTO_YAESU_FT847) return ft847QueryFrequency(sp, hzOut, timeoutMs);
   return false;
 }
 
@@ -93,6 +95,7 @@ bool setFrequency(uint64_t hz) {
   if (pt == PROTO_CIV) return civSetFrequency(sp, hz);
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiSetFrequency(sp, hz);
   if (pt == PROTO_YAESU_FT8X7) return yaesuCatSetFrequency(sp, hz);
+  if (pt == PROTO_YAESU_FT847) return ft847SetFrequency(sp, hz);
   return false;
 }
 
@@ -102,6 +105,7 @@ bool queryMode(uint8_t& modeOut, uint32_t timeoutMs) {
   if (pt == PROTO_CIV) return civQueryMode(sp, modeOut, timeoutMs);
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiQueryMode(sp, modeOut, timeoutMs);
   if (pt == PROTO_YAESU_FT8X7) return yaesuCatQueryMode(sp, modeOut, timeoutMs);
+  if (pt == PROTO_YAESU_FT847) return ft847QueryMode(sp, modeOut, timeoutMs);
   return false;
 }
 
@@ -111,6 +115,7 @@ bool setMode(uint8_t mode, uint8_t filter) {
   if (pt == PROTO_CIV) return civSetMode(sp, mode, filter);
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiSetMode(sp, mode);
   if (pt == PROTO_YAESU_FT8X7) return yaesuCatSetMode(sp, mode);
+  if (pt == PROTO_YAESU_FT847) return ft847SetMode(sp, mode);
   return false;
 }
 
@@ -124,7 +129,7 @@ bool canSetMode(uint8_t mode) {
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) {
     return sp.commands->modeSetFormat[0] && profileModeCodeForInternal(sp, mode, code);
   }
-  if (pt == PROTO_YAESU_FT8X7) return profileModeCodeForInternal(sp, mode, code);
+  if (pt == PROTO_YAESU_FT8X7 || pt == PROTO_YAESU_FT847) return profileModeCodeForInternal(sp, mode, code);
   return false;
 }
 
@@ -134,11 +139,13 @@ bool querySMeterRaw(int32_t& rawOut, uint32_t timeoutMs) {
   if (pt == PROTO_CIV) return civQuerySMeterRaw(sp, rawOut, timeoutMs);
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiQuerySMeterRaw(sp, rawOut, timeoutMs);
   if (pt == PROTO_YAESU_FT8X7) return yaesuCatQuerySMeterRaw(sp, rawOut, timeoutMs);
+  if (pt == PROTO_YAESU_FT847) return ft847QuerySMeterRaw(sp, rawOut, timeoutMs);
   return false;
 }
 
 SMeterReading sMeterFromRaw(int32_t raw) {
   if (currentProtocolType() == PROTO_YAESU_FT8X7) return yaesuCatDecodeSMeter((uint8_t)raw);
+  if (currentProtocolType() == PROTO_YAESU_FT847) return ft847SMeterFromRaw((uint8_t)raw);
   SMeterReading reading;
   reading.sUnits = smRawToS(raw);
   return reading;
@@ -458,6 +465,7 @@ bool queryRxTxStatus(bool& txOut, uint32_t timeoutMs) {
     txOut = false;
     return true;
   }
+  if (pt == PROTO_YAESU_FT847) return ft847QueryRxTx(sp, txOut, timeoutMs);
   if (pt == PROTO_YAESU_FT8X7 && sp.caps.getRxTx) {
     uint8_t raw = 0;
     if (!yaesuCatQueryTxStatusRaw(raw, timeoutMs)) return false;

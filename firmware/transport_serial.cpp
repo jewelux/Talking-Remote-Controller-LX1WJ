@@ -1,5 +1,7 @@
 #include "transport_serial.h"
 
+#include "radio_catalog.h"
+
 static uint32_t s_writeCount = 0;
 
 static constexpr SerialPortPins kCivJackPins = {1, CIV_RX_PIN, CIV_TX_PIN, true, false};
@@ -62,17 +64,31 @@ int serialTransportRead() {
   return g_civSerial->read();
 }
 
+static bool s_ft847WriteGateOpen = false;
+
+void serialTransportSetFt847WriteGate(bool open) { s_ft847WriteGateOpen = open; }
+
+// See serialTransportSetFt847WriteGate. A dropped write is not counted: it never reached the radio.
+static bool serialTransportWriteAllowed() {
+  if (currentProtocolType() != PROTO_YAESU_FT847 || s_ft847WriteGateOpen) return true;
+  if (Serial) Serial.println("[F847] blocked a write that is not an FT-847 CAT frame");
+  return false;
+}
+
 size_t serialTransportWrite(const uint8_t* data, size_t len) {
+  if (!serialTransportWriteAllowed()) return 0;
   ++s_writeCount;
   return g_civSerial->write(data, len);
 }
 
 size_t serialTransportWriteByte(uint8_t value) {
+  if (!serialTransportWriteAllowed()) return 0;
   ++s_writeCount;
   return g_civSerial->write(value);
 }
 
 size_t serialTransportPrint(const char* text) {
+  if (!serialTransportWriteAllowed()) return 0;
   ++s_writeCount;
   return g_civSerial->print(text);
 }

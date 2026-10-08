@@ -124,6 +124,23 @@ constexpr ModeCodes kFt8x7Modes = {
     .lsb = "00", .usb = "01", .am = "04", .cw = "02", .fm = "08", .cwr = "03", .digi = "0A",
 };
 
+// --- Yaesu FT-847 (5-byte CAT, its own opcodes) ------------------------------
+
+// Menu 37 offers 4800, 9600 and 57600.
+constexpr uint32_t kFt847Bauds[] = {4800, 9600, 57600};
+
+// Frequency, mode, S-meter, RX/TX and the PO meter while transmitting (protocol_ft847.*).
+constexpr RadioCapabilities kFt847Caps = {
+    .getFreq = true, .setFreq = true, .getMode = true, .setMode = true,
+    .getSmeter = true, .getPower = true, .getRxTx = true,
+};
+
+// The mode bytes; the narrow variants (0x82 CW-N ...) read as their mode. No RTTY or DIGI, and
+// no FM: a frequency/mode read keys the FT-847 in FM (see ft847FmGuardActive in protocol_ft847.h).
+constexpr ModeCodes kFt847Modes = {
+    .lsb = "00", .usb = "01", .am = "04", .cw = "02", .cwr = "03",
+};
+
 // --- Yaesu FTDX10, FTDX101, FT-891 (ASCII CAT) -------------------------------
 
 constexpr uint32_t kYaesuAsciiBauds[] = {4800, 9600, 19200, 38400};
@@ -216,7 +233,6 @@ constexpr ModeCodes kYaesuAsciiModes = {
 // --- The profiles, in slot order ---------------------------------------------
 //
 // Free slots, and what they are kept for:
-//   16      Yaesu legacy or compact CAT (FT-100)
 //   19-20   Kenwood and Elecraft (TS-590, K3/K3S)
 //   21-22   Xiegu and other compact radios (G90, X6200)
 //   23-24   experimental and protocol test profiles
@@ -282,6 +298,10 @@ constexpr RadioProfile kProfiles[] = {
      .protocol = PROTO_YAESU_FTDX_ASCII,
      .link = {.port = RadioPort::Rs232, .baud = 4800, .bauds = kYaesuAsciiBauds},
      .caps = kFt891Caps, .commands = &kFt891Commands, .modes = &kYaesuAsciiModes},
+    {.slot = 16, .name = "Yaesu FT-847", .vendor = VoiceVendor::Yaesu, .voiceDigits = "847",
+     .protocol = PROTO_YAESU_FT847,
+     .link = {.port = RadioPort::Rs232, .baud = 4800, .bauds = kFt847Bauds},
+     .caps = kFt847Caps, .modes = &kFt847Modes},
     {.slot = 17, .name = "Icom IC-705", .vendor = VoiceVendor::Icom, .voiceDigits = "705",
      .protocol = PROTO_CIV,
      .link = {.port = RadioPort::CivJack, .baud = 9600, .bauds = kCivBauds, .civAddr = 0xA4},

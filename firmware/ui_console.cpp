@@ -6,6 +6,7 @@
 #include "packet_ascii.h"
 #include "protocol_ascii.h"
 #include "protocol_civ.h"
+#include "ui_console_ft847.h"
 #include "protocol_ops_ascii.h"
 #include "protocol_ops_yaesu.h"
 #include "protocol_yaesu_cat.h"
@@ -641,6 +642,7 @@ void printHelp() {
   const bool ft8x7 = currentProtocolType() == PROTO_YAESU_FT8X7;
   const bool ft817 = ft8x7 && currentIsFt817Family();
   const bool ft857Family = ft8x7 && currentIsFt857Family();
+  const bool ft847 = currentProtocolType() == PROTO_YAESU_FT847;
   Serial.println();
   Serial.println("Commands (case-insensitive):");
   Serial.println("  General:");
@@ -691,7 +693,7 @@ void printHelp() {
   Serial.println("    VOLUME <1..9> | VOLUME STEP <+-n>");
   Serial.println("    VOLUME?");
   Serial.println();
-  if (!ftdx10 && !ft8x7) {
+  if (!ftdx10 && !ft8x7 && !ft847) {
     Serial.println("  IC-7300 / CI-V Extensions:");
     Serial.println("    CIVADDR <hex> | CIVADDR?");
     Serial.println("    NBLEVEL <0..100> | NBLEVEL STEP <+-n>");
@@ -746,6 +748,8 @@ void printHelp() {
     Serial.println("    VFOB MODE <n> | VFOB MODE?");
     Serial.println();
     Serial.println("  ASCII / Yaesu Extensions:");
+  } else if (ft847) {
+    printFt847ConsoleHelp();
   } else if (ft8x7) {
     Serial.println("  Yaesu FT8x7:");
     Serial.println("    RXTX?");
@@ -798,7 +802,9 @@ void printHelp() {
     Serial.println();
     Serial.println("  FTDX10 ASCII / Yaesu:");
   }
-  if (!ftdx10 && !ft8x7) {
+  if (ft847) {
+    // Listed above.
+  } else if (!ftdx10 && !ft8x7) {
     Serial.println("    ALC? | VOL? | SQL?");
     Serial.println("    AGC <hex byte>");
     Serial.println("    CIVRAW? <cmd hex> [payload hex bytes]");
@@ -3110,6 +3116,7 @@ void processCommand(String line) {
   if (handleFtdx10BlockedConsoleCommand(upper)) return;
   if (handleConsoleToggleCommands(line, upper)) return;
   if (handleConsoleYaesuFt8x7Commands(line, upper)) return;
+  if (handleConsoleFt847Commands(upper)) return;
   if (handleConsoleAdjustCommands(line, upper)) return;
   if (handleConsoleRadioCommands(line, upper)) return;
   if (handleConsoleBankCommands(line, upper)) return;

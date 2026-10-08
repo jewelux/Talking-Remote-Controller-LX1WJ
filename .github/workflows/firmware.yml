@@ -28,6 +28,9 @@ jobs:
       - name: Radio profile unit tests
         run: make -C tests/profiles
 
+      - name: FT-847 unit tests
+        run: make -C tests/ft847
+
   build:
     runs-on: ubuntu-latest
     outputs:

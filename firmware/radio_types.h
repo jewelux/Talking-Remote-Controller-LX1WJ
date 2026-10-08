@@ -52,7 +52,7 @@ static const int32_t SMETER_RAW_AT_S9 = 297;
 // Line settings the protocol needs.
 enum class SerialFraming : uint8_t {
   Standard,  // 8N1
-  Ft8x7Cat,  // 8N2, with TX driven idle before the UART opens
+  Ft8x7Cat,  // 8N2, with TX driven idle before the UART opens (FT-8x7 and FT-847)
 };
 
 // The active link to the radio: the profile's port, and the baud and CI-V

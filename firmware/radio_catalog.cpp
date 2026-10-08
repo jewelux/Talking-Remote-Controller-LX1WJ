@@ -21,8 +21,8 @@ void selectActiveProfile(const RadioProfile& profile, uint32_t baud, uint8_t civ
   s_base = &profile;
   s_active = profile;
   applyCaps();
-  const SerialFraming framing =
-      profile.protocol == PROTO_YAESU_FT8X7 ? SerialFraming::Ft8x7Cat : SerialFraming::Standard;
+  const bool yaesu5ByteCat = profile.protocol == PROTO_YAESU_FT8X7 || profile.protocol == PROTO_YAESU_FT847;
+  const SerialFraming framing = yaesu5ByteCat ? SerialFraming::Ft8x7Cat : SerialFraming::Standard;
   s_connection = {profile.link.port, baud, civAddr, framing};
 }
 

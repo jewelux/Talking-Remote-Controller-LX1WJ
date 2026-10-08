@@ -16,6 +16,7 @@ It is meant as a short engineering overview, not as a promise list.
 | Yaesu FT-818 | CAT | implemented | implemented | partial | implemented | partial | implemented | not recently verified | Mirrors the FT-817 family path. |
 | Yaesu FT-857 | CAT | implemented | implemented | partial | implemented | partial | implemented | tested on hardware | Split and VFO handling are already documented and tested. |
 | Yaesu FT-897 | CAT | partial | partial | partial | partial | partial | implemented | not recently verified | Shares the FT-857/897 family handling. |
+| Yaesu FT-847 | CAT (own protocol) | implemented | implemented (no FM) | meter 0..31 | implemented | n/a | implemented | tested on hardware | Frequency, mode, S-meter, RX/TX. FM is not supported: a frequency read keys the radio in FM. See `docs/radios/yaesu-ft-847.md`. |
 | Yaesu FTDX10 | ASCII CAT | implemented | implemented | implemented | implemented | implemented | implemented | assisted field test pending | Current `V3.5.8` block includes VFO, VFO mode, split, lock, tuner, preamp, AGC, IF, ID, and power-state paths. See `docs/radios/yaesu-ftdx10-family.md`. |
 | Yaesu FTDX101D | ASCII CAT | implemented | implemented | implemented | implemented | implemented | implemented | assisted field test pending | Uses the same first-block documentation as FTDX10. |
 | Yaesu FTDX101MP | ASCII CAT | implemented | implemented | implemented | implemented | implemented | implemented | assisted field test pending | Uses the same first-block documentation as FTDX10. |
@@ -45,6 +46,7 @@ speaks or sets the CI-V address. Bank 9 `A` double press (console `PROFILE RESET
 | 13 | Yaesu FTDX101MP | RS-232 | 38400 | 4800, 9600, 19200, 38400 |
 | 14 | Yaesu FT-818 | RS-232 | 4800 | 4800, 9600, 38400 |
 | 15 | Yaesu FT-891 | RS-232 | 4800 | 4800, 9600, 19200, 38400 |
+| 16 | Yaesu FT-847 | RS-232 | 4800 | 4800, 9600, 57600 |
 | 17 | Icom IC-705 | CI-V jack | 9600 | 4800, 9600, 19200, 38400, 57600, 115200 |
 | 18 | Icom IC-7760 | CI-V jack | 19200 | 4800, 9600, 19200, 38400, 57600, 115200 |
 

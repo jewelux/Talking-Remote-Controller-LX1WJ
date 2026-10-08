@@ -2,6 +2,7 @@
 
 #include "radio_catalog.h"
 #include "radio_mode.h"
+#include "protocol_ft847.h"
 #include "radio_protocol.h"
 #include "radio_state.h"
 #include "ui_speech.h"
@@ -74,6 +75,7 @@ static FreqPollPolicy freqPollPolicyFor(ProtocolType pt) {
   // The frame checks (BCD, range, quiet line) are enough on their own; set to
   // true to require two identical readings if misread frequencies show up.
   if (pt == PROTO_YAESU_FT8X7) return {FREQ_POLL_MS_FT8X7, FREQ_POLL_TIMEOUT_MS_FT8X7, false};
+  if (pt == PROTO_YAESU_FT847) return {FREQ_POLL_MS_FT847, FREQ_POLL_TIMEOUT_MS_FT847, false};
   return {FREQ_POLL_MS, FREQ_POLL_TIMEOUT_MS, false};
 }
 
@@ -101,6 +103,7 @@ void cancelPendingFreqAnnouncement() {
 void pollFrequencyIfDue() {
   if (!FREQ_POLL_ENABLE) return;
   if (!currentProfile().caps.getFreq) return;
+  if (currentProtocolType() == PROTO_YAESU_FT847 && ft847BackgroundPollPaused()) return;
 
   const FreqPollPolicy policy = freqPollPolicyFor(currentProtocolType());
   const uint32_t intervalMs = (live.freqPollFailures >= FREQ_POLL_BACKOFF_AFTER_FAILURES) ? FREQ_POLL_BACKOFF_MS : policy.intervalMs;

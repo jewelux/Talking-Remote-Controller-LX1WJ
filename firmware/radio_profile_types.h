@@ -11,7 +11,8 @@ enum ProtocolType : uint8_t {
   PROTO_KENWOOD_ASCII = 1,
   PROTO_ELECRAFT_ASCII = 2,
   PROTO_YAESU_FT8X7 = 3,
-  PROTO_YAESU_FTDX_ASCII = 4
+  PROTO_YAESU_FTDX_ASCII = 4,
+  PROTO_YAESU_FT847 = 5  // 5-byte CAT like the FT-8x7, but its own opcodes (protocol_ft847.*)
 };
 
 // Only bool members, all off unless a profile sets them: EXPERIMENTAL ON sets

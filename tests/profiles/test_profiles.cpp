@@ -89,7 +89,8 @@ TEST(profile_for_slot_finds_used_slots_only) {
   CHECK_EQ(slot(11).name, "Yaesu FTDX-10");
   CHECK_EQ(slot(18).name, "Icom IC-7760");
   CHECK(profileForSlot(0) == nullptr);
-  CHECK(profileForSlot(16) == nullptr);
+  CHECK_EQ(slot(16).name, "Yaesu FT-847");
+  CHECK(profileForSlot(19) == nullptr);
   CHECK(profileForSlot(255) == nullptr);
 }
 
@@ -97,11 +98,13 @@ TEST(default_slot_is_used) {
   CHECK(profileForSlot(kDefaultProfileSlot) != nullptr);
 }
 
+// Slots 1-18 are all in use since the FT-847 took 16; 19-24 are free.
 TEST(adjacent_slot_skips_free_slots) {
-  CHECK_EQ(adjacentProfileSlot(15, 1), 17);
-  CHECK_EQ(adjacentProfileSlot(17, -1), 15);
+  CHECK_EQ(adjacentProfileSlot(15, 1), 16);
   CHECK_EQ(adjacentProfileSlot(16, 1), 17);
-  CHECK_EQ(adjacentProfileSlot(16, -1), 15);
+  CHECK_EQ(adjacentProfileSlot(17, -1), 16);
+  CHECK_EQ(adjacentProfileSlot(19, -1), 18);
+  CHECK_EQ(adjacentProfileSlot(19, 1), 1);
 }
 
 TEST(adjacent_slot_wraps_around) {
@@ -132,6 +135,29 @@ TEST(g106_is_ttl_civ_with_freq_and_mode_only) {
   CHECK(g106.caps.setMode);
   CHECK(!g106.caps.getSmeter);
   CHECK(!g106.caps.getSwr);
+}
+
+TEST(ft847_is_its_own_protocol_on_rs232) {
+  const RadioProfile& ft847 = slot(16);
+  CHECK(ft847.protocol == PROTO_YAESU_FT847);
+  CHECK(ft847.model == RadioModel::Generic);
+  CHECK(ft847.link.port == RadioPort::Rs232);
+  CHECK_EQ(ft847.link.baud, 4800u);
+  CHECK(ft847.link.bauds.contains(9600) && ft847.link.bauds.contains(57600));
+  CHECK(!ft847.link.bauds.contains(38400));
+  CHECK(ft847.caps.setFreq && ft847.caps.setMode && ft847.caps.getSmeter && ft847.caps.getRxTx);
+  CHECK(ft847.caps.getPower);
+  CHECK(!ft847.caps.getSwr);
+  // Nothing the first FT-847 step cannot do yet.
+  CHECK(!ft847.caps.getDialLock && !ft847.caps.setDialLock);
+  CHECK(!ft847.caps.getSplit && !ft847.caps.setSplit);
+  CHECK(!ft847.caps.getVfo && !ft847.caps.setVfo);
+  CHECK_EQ(ft847.modes->usb, "01");
+  CHECK_EQ(ft847.modes->am, "04");
+  // No FM: a frequency/mode read keys this FT-847 in FM (protocol_ft847.h).
+  CHECK_EQ(ft847.modes->fm, "");
+  CHECK_EQ(ft847.modes->rtty, "");
+  CHECK_EQ(ft847.modes->digi, "");
 }
 
 TEST(kx2_has_nb_and_no_rtty_code) {
