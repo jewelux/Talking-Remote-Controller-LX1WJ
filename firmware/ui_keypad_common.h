@@ -38,7 +38,7 @@ void speakSimpleBinaryState(bool on);
 // "transceiver rx" or "transceiver tx".
 void speakRxTxState(bool tx);
 void speakQueriedFrequencyHz(uint64_t hz);
-void speakFeatureValue(const uint8_t* featureData, size_t featureLen, uint8_t value);
+void speakFeatureValue(const char* featureToken, uint8_t value);
 uint8_t levelRawToPercent(uint16_t raw);
 uint16_t levelPercentToRaw(int percent);
 

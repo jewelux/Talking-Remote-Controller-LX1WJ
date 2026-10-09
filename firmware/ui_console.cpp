@@ -2123,7 +2123,7 @@ static bool handleConsoleAdjustCommands(const String& line, const String& upper)
     Serial.print("NRLEVEL ");
     Serial.print(percent);
     Serial.println("%");
-    speakFeatureValue(voice_noisereduction, voice_noisereduction_len, (uint8_t)percent);
+    speakFeatureValue("noisereduction", (uint8_t)percent);
     return true;
   }
   if (upper.startsWith("NBLEVEL STEP")) {
@@ -2147,7 +2147,7 @@ static bool handleConsoleAdjustCommands(const String& line, const String& upper)
     Serial.print("MONLEVEL ");
     Serial.print(percent);
     Serial.println("%");
-    speakFeatureValue(voice_monitor, voice_monitor_len, (uint8_t)percent);
+    speakFeatureValue("monitor", (uint8_t)percent);
     return true;
   }
   const bool pbt1Step = upper.startsWith("PBT1 STEP");
@@ -2432,7 +2432,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     if (!refreshLivePower()) { reportCommandFailure("PO?", "no reply"); return true; }
     Serial.println(live.powerRaw);
     if (g_speechEnabled) {
-      speakLabelClip(voice_power, voice_power_len);
+      speakLabel("power");
       speakDigitsAndPoint(String(live.powerRaw));
     }
     return true;
@@ -2828,7 +2828,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     Serial.print("MONLEVEL ");
     Serial.print((int)levelRawToPercent(raw));
     Serial.println("%");
-    speakFeatureValue(voice_monitor, voice_monitor_len, levelRawToPercent(raw));
+    speakFeatureValue("monitor", levelRawToPercent(raw));
     return true;
   }
   if (upper == "TRANSCEIVE?") {
@@ -2844,7 +2844,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     Serial.print("NRLEVEL ");
     Serial.print((int)levelRawToPercent(raw));
     Serial.println("%");
-    speakFeatureValue(voice_noisereduction, voice_noisereduction_len, levelRawToPercent(raw));
+    speakFeatureValue("noisereduction", levelRawToPercent(raw));
     return true;
   }
   if (upper.startsWith("NRLEVEL ")) {
@@ -2854,7 +2854,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     Serial.print("NRLEVEL ");
     Serial.print(percent);
     Serial.println("%");
-    speakFeatureValue(voice_noisereduction, voice_noisereduction_len, (uint8_t)percent);
+    speakFeatureValue("noisereduction", (uint8_t)percent);
     return true;
   }
   if (upper == "NBLEVEL?") {
@@ -2864,7 +2864,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     Serial.print((int)levelRawToPercent(raw));
     Serial.println("%");
     if (g_speechEnabled) {
-      speakLabelClip(voice_noiseblanker, voice_noiseblanker_len);
+      speakLabel("noiseblanker");
       speakDigitsAndPoint(String((int)levelRawToPercent(raw)));
       playSilenceMs(60);
       speakToken("percent");
@@ -2879,7 +2879,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     Serial.print(percent);
     Serial.println("%");
     if (g_speechEnabled) {
-      speakLabelClip(voice_noiseblanker, voice_noiseblanker_len);
+      speakLabel("noiseblanker");
       speakDigitsAndPoint(String(percent));
       playSilenceMs(60);
       speakToken("percent");
@@ -2929,7 +2929,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     Serial.print("MONLEVEL ");
     Serial.print(percent);
     Serial.println("%");
-    speakFeatureValue(voice_monitor, voice_monitor_len, (uint8_t)percent);
+    speakFeatureValue("monitor", (uint8_t)percent);
     return true;
   }
   if (upper == "TRANSCEIVE ON") {

@@ -6,11 +6,11 @@ Reads voice_phrases.txt, synthesizes every phrase, trims the silence Piper
 adds around it, resamples to the firmware clip format (mono, PCM16, 8000 Hz
 by default), normalizes the peak and appends a short trailing silence.
 
-Optionally merges the result into firmware/voice_data.h via build_voice_data.py.
+Optionally builds the voice pack (voices.bin) via build_voice_pack.py.
 
 Usage (from this folder, after setup_venv.ps1):
   .venv\\Scripts\\python generate_voices.py
-  .venv\\Scripts\\python generate_voices.py --only cw,fm --header
+  .venv\\Scripts\\python generate_voices.py --only cw,fm --pack
 """
 
 from __future__ import annotations
@@ -155,7 +155,7 @@ def main() -> None:
     ap.add_argument("--trim-db", type=float, default=-40.0, help="Silence threshold relative to peak (default: -40)")
     ap.add_argument("--peak-db", type=float, default=-1.0, help="Peak level in dBFS (default: -1)")
     add_synth_args(ap)
-    ap.add_argument("--header", action="store_true", help="Also merge the clips into firmware/voice_data.h")
+    ap.add_argument("--pack", action="store_true", help="Also build voice_assets/voices.bin from all clips")
     args = ap.parse_args()
 
     entries = load_phrases(Path(args.phrases))
@@ -189,12 +189,10 @@ def main() -> None:
     print(f"Clips: {len(entries)}  PCM total: {total_bytes} B ({total_bytes / 1024:.1f} KiB)  "
           f"format: mono PCM16 {args.rate} Hz  voice: {args.voice}")
 
-    if args.header:
-        header = HERE.parent.parent / "voice_data.h"
+    if args.pack:
         cmd = [
-            sys.executable, str(HERE.parent / "build_voice_data.py"),
-            "--in", str(out_dir), "--base", str(header), "--out", str(header),
-            "--target-sr", str(args.rate),
+            sys.executable, str(HERE.parent / "build_voice_pack.py"),
+            "--in", str(out_dir), "--rate", str(args.rate),
         ]
         subprocess.run(cmd, check=True)
 

@@ -12,5 +12,8 @@ __pycache__/
 *.pyc
 firmware/voice_assets/piper/models/
 
+# Voice pack, built by build_voice_pack.py
+firmware/voice_assets/voices.bin
+
 # Host unit tests
 tests/*/build/

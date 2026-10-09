@@ -17,8 +17,6 @@ String nrStateText(const NrState& state) {
   return "NR ON";
 }
 
-// Speech by token, not by clip: a clip named in a new file is another copy of
-// it in flash (voice_data.h).
 void speakNrState(const NrState& state) {
   if (!g_speechEnabled) return;
   if (state.level == 0) {

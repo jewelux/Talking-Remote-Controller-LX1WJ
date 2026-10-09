@@ -7,6 +7,8 @@
 
 #include "driver/i2s_std.h"
 #include "radio_catalog.h"
+#include "voice_fallback.h"
+#include "voice_pack.h"
 
 static float g_speechVolume = 0.45f;
 uint8_t g_volumeLevel = 1;
@@ -108,153 +110,6 @@ static inline float volumeLevelToGain(uint8_t lvl) {
   }
 }
 
-#define VOICE_CLIP(n) {#n, voice_##n, voice_##n##_len}
-
-// Sorted by name; every clip here must exist in voice_data.h.
-static const VoiceClip kVoiceClips[] = {
-  VOICE_CLIP(a),
-  VOICE_CLIP(am),
-  VOICE_CLIP(antenna),
-  VOICE_CLIP(auto),
-  VOICE_CLIP(b),
-  VOICE_CLIP(band),
-  VOICE_CLIP(bank),
-  VOICE_CLIP(baud),
-  VOICE_CLIP(both),
-  VOICE_CLIP(c),
-  VOICE_CLIP(cancel),
-  VOICE_CLIP(choose),
-  VOICE_CLIP(clarifier),
-  VOICE_CLIP(ctcss),
-  VOICE_CLIP(cw),
-  VOICE_CLIP(cwr),
-  VOICE_CLIP(d),
-  VOICE_CLIP(db),
-  VOICE_CLIP(dcs),
-  VOICE_CLIP(digi),
-  VOICE_CLIP(e),
-  VOICE_CLIP(eight),
-  VOICE_CLIP(elecraft),
-  VOICE_CLIP(equalizer),
-  VOICE_CLIP(equals),
-  VOICE_CLIP(error),
-  VOICE_CLIP(f),
-  VOICE_CLIP(fast),
-  VOICE_CLIP(fifty),
-  VOICE_CLIP(filter),
-  VOICE_CLIP(filtershape),
-  VOICE_CLIP(filterwidth),
-  VOICE_CLIP(five),
-  VOICE_CLIP(fm),
-  VOICE_CLIP(forty),
-  VOICE_CLIP(four),
-  VOICE_CLIP(front),
-  VOICE_CLIP(frequency),
-  VOICE_CLIP(g),
-  VOICE_CLIP(h),
-  VOICE_CLIP(hertz),
-  VOICE_CLIP(high),
-  VOICE_CLIP(i),
-  VOICE_CLIP(icom),
-  VOICE_CLIP(j),
-  VOICE_CLIP(k),
-  VOICE_CLIP(kenwood),
-  VOICE_CLIP(kilohertz),
-  VOICE_CLIP(l),
-  VOICE_CLIP(level),
-  VOICE_CLIP(lock),
-  VOICE_CLIP(lsb),
-  VOICE_CLIP(m),
-  VOICE_CLIP(megahertz),
-  VOICE_CLIP(menu),
-  VOICE_CLIP(minus),
-  VOICE_CLIP(mode),
-  VOICE_CLIP(monitor),
-  VOICE_CLIP(n),
-  VOICE_CLIP(nine),
-  VOICE_CLIP(noiseblanker),
-  VOICE_CLIP(noisereduction),
-  VOICE_CLIP(notavailable),
-  VOICE_CLIP(notch),
-  VOICE_CLIP(o),
-  VOICE_CLIP(off),
-  VOICE_CLIP(ok),
-  VOICE_CLIP(on),
-  VOICE_CLIP(one),
-  VOICE_CLIP(p),
-  VOICE_CLIP(pbt),
-  VOICE_CLIP(percent),
-  VOICE_CLIP(please),
-  VOICE_CLIP(plus),
-  VOICE_CLIP(point),
-  VOICE_CLIP(power),
-  VOICE_CLIP(profile),
-  VOICE_CLIP(ptt),
-  VOICE_CLIP(q),
-  VOICE_CLIP(r),
-  VOICE_CLIP(rear),
-  VOICE_CLIP(repeater),
-  VOICE_CLIP(reset),
-  VOICE_CLIP(rit),
-  VOICE_CLIP(row),
-  VOICE_CLIP(rtty),
-  VOICE_CLIP(rttyr),
-  VOICE_CLIP(rx),
-  VOICE_CLIP(s),
-  VOICE_CLIP(s_meter),
-  VOICE_CLIP(seven),
-  VOICE_CLIP(sharp),
-  VOICE_CLIP(six),
-  VOICE_CLIP(sixty),
-  VOICE_CLIP(slow),
-  VOICE_CLIP(soft),
-  VOICE_CLIP(split),
-  VOICE_CLIP(stack),
-  VOICE_CLIP(step),
-  VOICE_CLIP(swr),
-  VOICE_CLIP(sync),
-  VOICE_CLIP(t),
-  VOICE_CLIP(ten),
-  VOICE_CLIP(thankyou),
-  VOICE_CLIP(thirty),
-  VOICE_CLIP(three),
-  VOICE_CLIP(timeout),
-  VOICE_CLIP(tone),
-  VOICE_CLIP(transceive),
-  VOICE_CLIP(transceiver),
-  VOICE_CLIP(tune),
-  VOICE_CLIP(tuner),
-  VOICE_CLIP(twenty),
-  VOICE_CLIP(two),
-  VOICE_CLIP(tx),
-  VOICE_CLIP(u),
-  VOICE_CLIP(usb),
-  VOICE_CLIP(v),
-  VOICE_CLIP(verbose),
-  VOICE_CLIP(vfo),
-  VOICE_CLIP(volume),
-  VOICE_CLIP(w),
-  VOICE_CLIP(watts),
-  VOICE_CLIP(wfm),
-  VOICE_CLIP(x),
-  VOICE_CLIP(xiegu),
-  VOICE_CLIP(y),
-  VOICE_CLIP(yaesu),
-  VOICE_CLIP(z),
-  VOICE_CLIP(zero),
-};
-
-#undef VOICE_CLIP
-static const size_t kVoiceClipsCount = sizeof(kVoiceClips) / sizeof(kVoiceClips[0]);
-
-// token must already be normalized (trimmed, lowercase) by speakToken().
-static const VoiceClip* findVoiceClip(const String& token) {
-  for (size_t i = 0; i < kVoiceClipsCount; ++i) {
-    if (strcmp(token.c_str(), kVoiceClips[i].name) == 0) return &kVoiceClips[i];
-  }
-  return nullptr;
-}
-
 struct VoiceAlias {
   const char* token;
   const char* parts[5];
@@ -278,10 +133,16 @@ static const VoiceAlias kVoiceAliases[] = {
   {"filwidth", {"filterwidth"}, 1},
 };
 
-static bool speakClipToken(const String& token) {
-  const VoiceClip* c = findVoiceClip(token);
-  if (!c) return false;
-  return playClipProgmem(c->data, c->len);
+static bool playClip(const uint8_t* data, size_t length) {
+  if (!g_speechEnabled) return false;
+  return audioEnqueueClip(data, length);
+}
+
+// token must already be normalized (trimmed, lowercase) by speakToken().
+static bool speakClipToken(const char* token) {
+  VoiceClip c;
+  if (!voicePackFindClip(token, &c)) return false;
+  return playClip(c.data, c.len);
 }
 
 bool speakTokens(const char* const* tokens, size_t count, uint16_t gapMs) {
@@ -350,7 +211,7 @@ static void initBeep() {
   }
 }
 
-static bool playClipProgmemBlocking(const uint8_t* data, size_t length) {
+static bool playClipBlocking(const uint8_t* data, size_t length) {
   const size_t CHUNK = 512;
   static uint8_t buffer[CHUNK];
   size_t offset = 0;
@@ -358,7 +219,7 @@ static bool playClipProgmemBlocking(const uint8_t* data, size_t length) {
     if (audioStopRequested()) return false;
     size_t n = length - offset;
     if (n > CHUNK) n = CHUNK;
-    memcpy_P(buffer, data + offset, n);
+    memcpy(buffer, data + offset, n);
     int16_t* samples = (int16_t*)buffer;
     size_t sampleCount = n / 2;
     for (size_t i = 0; i < sampleCount; ++i) {
@@ -427,7 +288,7 @@ static void audioTask(void* pv) {
     g_aqHead = (g_aqHead + 1) % AUDIO_QUEUE_LEN;
     if (!tuningIdCancelled(it.tuningId)) {
       g_playingTuningId = it.tuningId;
-      if (it.type == AUDIO_CLIP) (void)playClipProgmemBlocking(it.data, it.len);
+      if (it.type == AUDIO_CLIP) (void)playClipBlocking(it.data, it.len);
       else playSilenceMsBlocking((int)it.silenceMs);
       g_playingTuningId = 0;
     }
@@ -441,6 +302,7 @@ static void audioTask(void* pv) {
 
 void initSpeech() {
   if (AMP_SD_PIN >= 0) pinMode(AMP_SD_PIN, OUTPUT);
+  voicePackInit();
 
   i2s_chan_config_t chanCfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_0, I2S_ROLE_MASTER);
   chanCfg.dma_desc_num = I2S_DMA_BUF_COUNT;
@@ -470,36 +332,22 @@ void initSpeech() {
   initBeep();
 }
 
-bool playClipProgmem(const uint8_t* data, size_t length) {
-  if (!g_speechEnabled) return false;
-  return audioEnqueueClip(data, length);
-}
-
 void playSilenceMs(int ms) {
   if (ms <= 0) return;
   (void)audioEnqueueSilence((uint16_t)ms);
 }
 
 void playDigit(int d) {
-  switch (d) {
-    case 0: playClipProgmem(voice_zero, voice_zero_len); break;
-    case 1: playClipProgmem(voice_one, voice_one_len); break;
-    case 2: playClipProgmem(voice_two, voice_two_len); break;
-    case 3: playClipProgmem(voice_three, voice_three_len); break;
-    case 4: playClipProgmem(voice_four, voice_four_len); break;
-    case 5: playClipProgmem(voice_five, voice_five_len); break;
-    case 6: playClipProgmem(voice_six, voice_six_len); break;
-    case 7: playClipProgmem(voice_seven, voice_seven_len); break;
-    case 8: playClipProgmem(voice_eight, voice_eight_len); break;
-    case 9: playClipProgmem(voice_nine, voice_nine_len); break;
-  }
+  static const char* const kDigits[] = {"zero", "one", "two", "three", "four",
+                                        "five", "six", "seven", "eight", "nine"};
+  if (d >= 0 && d <= 9) speakClipToken(kDigits[d]);
 }
 
 void speakDigitsAndPoint(const String& s) {
   for (size_t i = 0; i < s.length(); ++i) {
     char c = s[i];
     if (c >= '0' && c <= '9') playDigit(c - '0');
-    else if (c == '.' || c == ',') playClipProgmem(voice_point, voice_point_len);
+    else if (c == '.' || c == ',') speakClipToken("point");
     else if (c == ' ') playSilenceMs(60);
   }
   playSilenceMs(250);
@@ -557,7 +405,7 @@ bool speakToken(const String& token) {
     return ok;
   }
 
-  if (speakClipToken(normalized)) return true;
+  if (speakClipToken(normalized.c_str())) return true;
 
   for (size_t i = 0; i < sizeof(kVoiceAliases) / sizeof(kVoiceAliases[0]); ++i) {
     if (normalized.equals(kVoiceAliases[i].token)) {
@@ -565,7 +413,7 @@ bool speakToken(const String& token) {
     }
   }
 
-  playClipProgmem(voice_error, voice_error_len);
+  speakClipToken("error");
   return false;
 }
 
@@ -574,12 +422,6 @@ bool speakLabel(const String& token) {
   bool ok = speakToken(token);
   playSilenceMs(60);
   return ok;
-}
-
-void speakLabelClip(const uint8_t* data, size_t length) {
-  if (!g_speechEnabled || !g_verboseSpeech) return;
-  playClipProgmem(data, length);
-  playSilenceMs(60);
 }
 
 bool speakTokenState(const String& token, bool on) {
@@ -606,7 +448,7 @@ void speakOk() { speakToken("ok"); }
 void speakError() { speakToken("error"); }
 void speakTimeout() { speakToken("timeout"); }
 void speakNotAvailable() { speakToken("notavailable"); }
-void playBeep() { (void)playClipProgmem((const uint8_t*)s_beepPcm, sizeof(s_beepPcm)); }
+void playBeep() { (void)playClip((const uint8_t*)s_beepPcm, sizeof(s_beepPcm)); }
 
 void applyVolumeLevel(uint8_t lvl) {
   if (lvl < 1) lvl = 1;
@@ -638,27 +480,32 @@ void speakProfileIdentityFromSlot(uint8_t id, bool withOk) {
   if (!sp || !g_speechEnabled) return;
 
   switch (sp->vendor) {
-    case VoiceVendor::Icom: playClipProgmem(voice_icom, voice_icom_len); break;
-    case VoiceVendor::Yaesu: playClipProgmem(voice_yaesu, voice_yaesu_len); break;
-    case VoiceVendor::Kenwood: playClipProgmem(voice_kenwood, voice_kenwood_len); break;
-    case VoiceVendor::Elecraft: playClipProgmem(voice_elecraft, voice_elecraft_len); break;
-    case VoiceVendor::Xiegu: playClipProgmem(voice_xiegu, voice_xiegu_len); break;
+    case VoiceVendor::Icom: speakClipToken("icom"); break;
+    case VoiceVendor::Yaesu: speakClipToken("yaesu"); break;
+    case VoiceVendor::Kenwood: speakClipToken("kenwood"); break;
+    case VoiceVendor::Elecraft: speakClipToken("elecraft"); break;
+    case VoiceVendor::Xiegu: speakClipToken("xiegu"); break;
   }
 
   playSilenceMs(80);
   playDigitsFromCString(sp->voiceDigits);
   if (withOk) {
     playSilenceMs(60);
-    playClipProgmem(voice_ok, voice_ok_len);
+    speakClipToken("ok");
   }
 }
 
 void speakBootProfile() {
+  if (!voicePackReady()) {
+    (void)playClip((const uint8_t*)kVoicePackMissingPcm, sizeof(kVoicePackMissingPcm));
+    return;
+  }
   speakProfileIdentityFromSlot(g_profileId, true);
 }
 
 void listVoices() {
-  for (size_t i = 0; i < kVoiceClipsCount; ++i) Serial.println(kVoiceClips[i].name);
+  VoiceClip c;
+  for (size_t i = 0; voicePackClipAt(i, &c); ++i) Serial.println(c.name);
 }
 
 bool playNamedVoice(const String& token) {
@@ -667,10 +514,11 @@ bool playNamedVoice(const String& token) {
 
 void voiceTest() {
   Serial.println("Voice TEST...");
-  for (size_t i = 0; i < kVoiceClipsCount; ++i) {
+  VoiceClip c;
+  for (size_t i = 0; voicePackClipAt(i, &c); ++i) {
     Serial.print("  ");
-    Serial.println(kVoiceClips[i].name);
-    playClipProgmemBlocking(kVoiceClips[i].data, kVoiceClips[i].len);
+    Serial.println(c.name);
+    playClipBlocking(c.data, c.len);
     playSilenceMsBlocking(120);
   }
   Serial.println("Voice TEST done.");

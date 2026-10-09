@@ -1,0 +1,6 @@
+# The one clip built into the firmware (firmware/voice_fallback.h), spoken at boot
+# when the voice pack is missing or rejected. Regenerate with:
+#   .venv\Scripts\python generate_voices.py --phrases fallback_phrases.txt --out ..\fallback
+#   python ..\build_fallback_clip.py
+
+voice pack missing | voicepackmissing

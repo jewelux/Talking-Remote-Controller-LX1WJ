@@ -31,6 +31,9 @@ jobs:
       - name: FT-847 unit tests
         run: make -C tests/ft847
 
+      - name: Audio unit tests
+        run: make -C tests/audio
+
   build:
     runs-on: ubuntu-latest
     outputs:
@@ -78,8 +81,9 @@ jobs:
           esptool=$(ls -d $core/tools/esptool_py/*/ | sort -V | tail -1)esptool
           p="out/$INO.ino"
           factory="hamtrc-$SLUG.factory.bin"
+          voices="hamtrc-$SLUG.voices.bin"
           mkdir -p dist
-          # Same layout as the core's .merged.bin, but not padded to 16MB so the ffat partition is left alone
+          # Same layout as the core's .merged.bin, but not padded to 16MB; the voice pack is its own part
           "$esptool" --chip esp32s3 merge-bin -o "dist/$factory" \
             --flash-mode keep --flash-freq keep --flash-size keep \
             0x0 "$p.bootloader.bin" \
@@ -87,6 +91,8 @@ jobs:
             0xe000 "$core/hardware/esp32/$ESP32_CORE/tools/partitions/boot_app0.bin" \
             0x10000 "$p.bin"
           test "$(head -c1 "dist/$factory" | od -An -tx1 | tr -d ' ')" = e9
+          # Goes to the "voices" partition in partitions.csv: 0x810000 = 8454144
+          python3 firmware/voice_assets/build_voice_pack.py --out "dist/$voices"
           cat > dist/manifest.json <<EOF
           {
             "name": "HAMTRC",
@@ -95,7 +101,10 @@ jobs:
             "builds": [
               {
                 "chipFamily": "ESP32-S3",
-                "parts": [{ "path": "$factory", "offset": 0 }]
+                "parts": [
+                  { "path": "$factory", "offset": 0 },
+                  { "path": "$voices", "offset": 8454144 }
+                ]
               }
             ]
           }

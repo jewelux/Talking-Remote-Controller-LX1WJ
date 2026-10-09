@@ -8,13 +8,6 @@
 #include "civ_frame.h"
 #include "config_pins.h"
 #include "radio_profile_types.h"
-#include "voice_data.h"
-
-struct VoiceClip {
-  const char* name;
-  const uint8_t* data;
-  size_t len;
-};
 
 static constexpr uint8_t CIV_MY_ADDR = 0xE0;
 static constexpr uint8_t CIV_CTRL_ADDR = CIV_MY_ADDR;
