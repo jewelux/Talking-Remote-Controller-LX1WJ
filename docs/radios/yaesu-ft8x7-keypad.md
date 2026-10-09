@@ -143,6 +143,8 @@ radio's CAT RATE menu.
 | `4` long | `TUNINGSPEECH TOGGLE` | `TUNINGSPEECH TOGGLE` |
 | `5` short | `VERBOSE?` | `VERBOSE?` |
 | `5` long | `VERBOSE TOGGLE` | `VERBOSE TOGGLE` |
+| `6` short | `SPEED?` | `SPEED?` |
+| `6` long | next speed (slow, normal, fast) | next speed (slow, normal, fast) |
 | `7` short / long | `VOLUME DOWN` / `VOLUME DOWN FAST` | `VOLUME DOWN` / `VOLUME DOWN FAST` |
 | `8` short / long | `VOLUME UP` / `VOLUME UP FAST` | `VOLUME UP` / `VOLUME UP FAST` |
 | `9` short | `VOLUME?` | `VOLUME?` |

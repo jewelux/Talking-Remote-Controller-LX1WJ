@@ -73,6 +73,10 @@ voice_percent.wav
 voice_profile.wav
 voice_verbose.wav
 voice_volume.wav
+voice_speed.wav
+voice_slow.wav
+voice_normal.wav
+voice_fast.wav
 
 4. Radio operating words
 voice_vfo.wav

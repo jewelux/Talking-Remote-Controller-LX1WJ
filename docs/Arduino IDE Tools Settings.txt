@@ -7,6 +7,7 @@ CPU Frequency: 240MHz (WiFi)
 Core Debug Level: None
 USB DFU On Boot: disabled
 Erase all flash ...: enabled
+  (loescht auch das Sprachpaket: danach voices.bin neu flashen, siehe QUICKSTART.md)
 Events Run On: Core 1
 Flash Mode: DIO 80MHz
 Flash Size: 16MB (128Mb)

@@ -195,6 +195,8 @@ The same on every radio.
 | `4` long | tuning speech on/off |
 | `5` short | verbose |
 | `5` long | verbose on/off |
+| `6` short | speech speed |
+| `6` long | next speech speed (slow, normal, fast) |
 | `7` short / long | volume down / down fast |
 | `8` short / long | volume up / up fast |
 | `9` short | volume |
@@ -204,4 +206,4 @@ The same on every radio.
 | `B` short | next profile |
 | `C` short | previous profile |
 
-`1`–`3` and `6` are free.
+`1`–`3` are free.

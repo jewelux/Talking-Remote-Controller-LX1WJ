@@ -64,7 +64,7 @@ to completion, and that action talks to the radio synchronously.
 | Protocols | `protocol_ops_*`, `protocol_*`, `packet_*`, `transport_serial.*` | CI-V, Kenwood/Elecraft/FTDX ASCII, Yaesu FT-8x7 5-byte CAT |
 | FT-8x7 fields | `ft8x7_codec.*`, `ft8x7_eeprom_map.*`, `ft8x7_model.h` | CAT frame fields, the EEPROM map per model, the FT-8x7 model from the `RadioModel`. No `Arduino.h`; `protocol_ft8x7_eeprom.*` reads the EEPROM with them |
 | Profiles | `radio_profile_types.h`, `radio_profile_table.*`, `radio_catalog.*`, `radio_profile.*` | What a radio is (connection, protocol, capabilities, command strings), the built-in radios, the active one, and switching between them. The types and the table have no `Arduino.h` |
-| Speech | `ui_speech.*`, `voice_pack*` | Tokens, the audio queue, and the clips in the voice pack partition. `voice_pack_format.*` has no `Arduino.h` |
+| Speech | `ui_speech.*`, `voice_pack*`, `audio_stretch.*` | Tokens, the audio queue, the clips in the voice pack partition, and the speech speed (time-stretch). `voice_pack_format.*` and `audio_stretch.*` have no `Arduino.h` |
 | Settings | `radio_prefs.*` | NVS: profile, volume, tuning speech, CI-V address and baud per slot |
 
 **Five concepts to learn first:**
@@ -112,7 +112,8 @@ arduino-cli compile \
 
 **The voice clips are not in the firmware.** They are a separate image, the
 voice pack, in the `voices` partition. Build and flash it once, and again
-whenever the clips change; uploading the firmware leaves it alone:
+whenever the clips change. Uploading the firmware leaves it alone, unless the
+Arduino IDE's "Erase all flash" is on:
 
 ```sh
 python firmware/voice_assets/build_voice_pack.py
@@ -133,7 +134,7 @@ are tested with g++:
 make -C tests/keypad               # build and run everything
 make -C tests/keypad FILTER=hold   # only tests whose name contains "hold"
 make -C tests/ft8x7                # FT-817/857/897 CAT fields and EEPROM map
-make -C tests/audio                # voice pack layout
+make -C tests/audio                # voice pack layout, speech speed
 ```
 
 A source under test must not include `Arduino.h`; its suite's `Makefile`
