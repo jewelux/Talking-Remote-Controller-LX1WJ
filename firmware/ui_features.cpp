@@ -139,7 +139,7 @@ void speakFt8x7Setting(const Ft8x7SettingState& state) {
   if (!g_speechEnabled) return;
   if (state.setting == Ft8x7Setting::RfPower) {
     speakLabel("power");
-    speakDigitsAndPoint(wattsText(state.wattsTenths));
+    speakNumber(wattsText(state.wattsTenths));
     playSilenceMs(60);
     speakToken("watts");
     return;
@@ -158,7 +158,7 @@ void speakFt8x7Setting(const Ft8x7SettingState& state) {
   // "h p f 300 hertz": the radio's menu name, low cut being the high pass filter.
   if (state.setting == Ft8x7Setting::LowCut || state.setting == Ft8x7Setting::HighCut) {
     speakLabel(spelledLetters(ft8x7SettingName(state.setting)));
-    speakDigitsAndPoint(String(state.value));
+    speakNumber(String(state.value));
     playSilenceMs(60);
     speakToken("hertz");
     return;

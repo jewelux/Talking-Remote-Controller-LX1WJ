@@ -368,7 +368,7 @@ static void speakRitStateAndOffset(bool on, int32_t offset) {
     playSilenceMs(60);
     offset = -offset;
   }
-  speakDigitsAndPoint(String(offset));
+  speakNumber(String(offset));
   playSilenceMs(60);
   speakToken("hertz");
 }
@@ -381,7 +381,7 @@ static void speakSignedStepValue(const String& label, int value) {
     playSilenceMs(60);
     value = -value;
   }
-  speakDigitsAndPoint(String(value));
+  speakNumber(String(value));
   playSilenceMs(60);
   speakToken("step");
 }
@@ -682,6 +682,8 @@ void printHelp() {
   Serial.println("    SLOTS?");
   Serial.println("    SPEECH OFF | SPEECH ON");
   Serial.println("    SPEECH?");
+  Serial.println("    SPEED SLOW | NORMAL | FAST");
+  Serial.println("    SPEED?");
   Serial.println("    STATUS?");
   Serial.println("    SWT <nn> | SWH <nn>");
   Serial.println("    TEST");
@@ -950,6 +952,12 @@ static bool handleConsoleInfoCommands(const String& upper) {
     if (g_speechEnabled) speakVolumeLevel(g_volumeLevel);
     return true;
   }
+  if (upper == "SPEED?") {
+    Serial.print("SPEED ");
+    Serial.println(speechSpeedName(g_speechSpeed));
+    speakSpeechSpeed();
+    return true;
+  }
   return false;
 }
 
@@ -1164,6 +1172,21 @@ static bool handleConsoleToggleCommands(const String& line, const String& upper)
     else setVerboseSpeech(upper == "VERBOSE ON");
     Serial.println(g_verboseSpeech ? "OK VERBOSE ON" : "OK VERBOSE OFF");
     speakVerboseState();
+    return true;
+  }
+  if (upper.startsWith("SPEED ")) {
+    SpeechSpeed speed;
+    if (!parseSpeechSpeed(upper.substring(6), speed)) {
+      Serial.println("SPEED -> invalid (use SLOW, NORMAL or FAST)");
+      speakError();
+      return true;
+    }
+    applySpeechSpeed(speed);
+    saveSpeechSpeedToNvs((uint8_t)speed);
+    Serial.print("OK SPEED ");
+    Serial.println(speechSpeedName(speed));
+    speakSpeechSpeed();
+    speakValueOk();
     return true;
   }
   if (upper.startsWith("VOLUME STEP")) {
@@ -2446,7 +2469,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     Serial.println(" W");
     if (g_speechEnabled) {
       speakLabel("power");
-      speakDigitsAndPoint(String((int)watts));
+      speakNumber(String((int)watts));
       playSilenceMs(60);
       speakToken("watts");
     }
@@ -2467,7 +2490,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     Serial.println(" W");
     if (g_speechEnabled) {
       speakLabel("power");
-      speakDigitsAndPoint(String(watts));
+      speakNumber(String(watts));
       playSilenceMs(60);
       speakToken("watts");
     }
@@ -2865,7 +2888,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     Serial.println("%");
     if (g_speechEnabled) {
       speakLabel("noiseblanker");
-      speakDigitsAndPoint(String((int)levelRawToPercent(raw)));
+      speakNumber(String((int)levelRawToPercent(raw)));
       playSilenceMs(60);
       speakToken("percent");
     }
@@ -2880,7 +2903,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     Serial.println("%");
     if (g_speechEnabled) {
       speakLabel("noiseblanker");
-      speakDigitsAndPoint(String(percent));
+      speakNumber(String(percent));
       playSilenceMs(60);
       speakToken("percent");
     }

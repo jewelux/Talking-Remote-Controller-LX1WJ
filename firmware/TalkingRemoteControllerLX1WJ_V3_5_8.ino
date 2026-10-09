@@ -49,6 +49,7 @@ void setup() {
 
   initSpeech();
   applyVolumeLevel(loadVolumeFromNvs(DEFAULT_VOLUME_LEVEL));
+  applySpeechSpeed((SpeechSpeed)loadSpeechSpeedFromNvs((uint8_t)SpeechSpeed::Normal));
 
   g_profileId = loadProfileFromNvs(g_profileId);
   g_tuningSpeakEnabled = loadTuningSpeakFromNvs(true);

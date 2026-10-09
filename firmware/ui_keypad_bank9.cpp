@@ -1,4 +1,4 @@
-// Bank 9 keypad actions: profiles, tuning speech and volume.
+// Bank 9 keypad actions: profiles, tuning speech, volume and speech speed.
 #include "ui_keypad_bank.h"
 #include "radio_monitor.h"
 #include "radio_prefs.h"
@@ -103,6 +103,23 @@ void queryBank9Volume() {
   printKeypadAction("VOLUME?");
   printKeypadStatus("VOLUME {}", g_volumeLevel);
   if (g_speechEnabled) speakVolumeWithLevel(g_volumeLevel);
+}
+
+void queryBank9Speed() {
+  printKeypadAction("SPEED?");
+  printKeypadStatus("SPEED {}", speechSpeedName(g_speechSpeed));
+  speakSpeechSpeed();
+}
+
+// Slow, normal, fast, slow again; said at the new speed.
+void stepBank9Speed() {
+  printKeypadAction("SPEED NEXT");
+  const SpeechSpeed next = (SpeechSpeed)(((uint8_t)g_speechSpeed + 1) % SPEECH_SPEED_COUNT);
+  applySpeechSpeed(next);
+  saveSpeechSpeedToNvs((uint8_t)next);
+  printKeypadStatus("SPEED {}", speechSpeedName(next));
+  speakSpeechSpeed();
+  speakValueOk();
 }
 
 void resetBank9Profile() {

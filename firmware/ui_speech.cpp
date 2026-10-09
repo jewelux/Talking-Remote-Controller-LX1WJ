@@ -6,12 +6,19 @@
 #endif
 
 #include "driver/i2s_std.h"
+#include "audio_stretch.h"
 #include "radio_catalog.h"
 #include "voice_fallback.h"
 #include "voice_pack.h"
 
 static float g_speechVolume = 0.45f;
 uint8_t g_volumeLevel = 1;
+
+// Input samples per output sample for each SpeechSpeed, set by ear on the device.
+static constexpr float kSpeechSpeedFactors[SPEECH_SPEED_COUNT] = {0.8f, 1.0f, 1.3f};
+SpeechSpeed g_speechSpeed = SpeechSpeed::Normal;
+// Read by the audio task at the start of each item.
+static volatile float g_speechSpeedFactor = 1.0f;
 static const byte KP_ROWS = 4;
 static const byte KP_COLS = 4;
 #if USE_BUTTONS_KEYPAD
@@ -223,29 +230,33 @@ static esp_err_t i2sWrite(const void* data, size_t n, size_t* written) {
   return err;
 }
 
-static bool playClipBlocking(const uint8_t* data, size_t length) {
-  const size_t CHUNK = 512;
-  static uint8_t buffer[CHUNK];
-  size_t offset = 0;
-  while (offset < length) {
+// False when stopped or on a write error.
+static bool writeAll(const void* data, size_t bytes) {
+  const uint8_t* p = (const uint8_t*)data;
+  while (bytes > 0) {
     if (audioStopRequested()) return false;
-    size_t n = length - offset;
-    if (n > CHUNK) n = CHUNK;
-    memcpy(buffer, data + offset, n);
-    int16_t* samples = (int16_t*)buffer;
-    size_t sampleCount = n / 2;
-    for (size_t i = 0; i < sampleCount; ++i) {
-      int32_t v = samples[i];
-      v = (int32_t)(v * g_speechVolume);
+    size_t written = 0;
+    esp_err_t err = i2sWrite(p, bytes, &written);
+    if (err != ESP_OK && err != ESP_ERR_TIMEOUT) return false;
+    p += written;
+    bytes -= written;
+  }
+  return !audioStopRequested();
+}
+
+// data is PCM16 (clips in the pack are 4-byte aligned); speed 1 plays it as it is.
+static bool playClipBlocking(const uint8_t* data, size_t length, float speed) {
+  static AudioStretch stretch;
+  static int16_t block[I2S_DMA_BUF_LEN];
+  stretchBegin(stretch, (const int16_t*)data, length / sizeof(int16_t), speed);
+  for (size_t n; (n = stretchNext(stretch, block, I2S_DMA_BUF_LEN)) > 0;) {
+    for (size_t i = 0; i < n; ++i) {
+      int32_t v = (int32_t)(block[i] * g_speechVolume);
       if (v > 32767) v = 32767;
       if (v < -32768) v = -32768;
-      samples[i] = (int16_t)v;
+      block[i] = (int16_t)v;
     }
-    size_t written = 0;
-    esp_err_t err = i2sWrite(buffer, n, &written);
-    if (audioStopRequested()) return false;
-    if (err != ESP_OK && err != ESP_ERR_TIMEOUT) return false;
-    offset += written;
+    if (!writeAll(block, n * sizeof(int16_t))) return false;
   }
   return true;
 }
@@ -312,8 +323,14 @@ static void audioTask(void* pv) {
     g_aqHead = (g_aqHead + 1) % AUDIO_QUEUE_LEN;
     if (!tuningIdCancelled(it.tuningId)) {
       g_playingTuningId = it.tuningId;
-      if (it.type == AUDIO_SILENCE) playSilenceMsBlocking((int)it.silenceMs);
-      else if (playClipBlocking(it.data, it.len) && it.type == AUDIO_CLIP) playSilenceMsBlocking(CLIP_GAP_MS);
+      const float speed = g_speechSpeedFactor;
+      if (it.type == AUDIO_SILENCE) {
+        playSilenceMsBlocking((int)lrintf(it.silenceMs / speed));
+      } else if (it.type == AUDIO_TONE) {
+        (void)playClipBlocking(it.data, it.len, 1.0f);
+      } else if (playClipBlocking(it.data, it.len, speed)) {
+        playSilenceMsBlocking((int)lrintf(CLIP_GAP_MS / speed));
+      }
       g_playingTuningId = 0;
     }
     // A tuning announcement ends with its last queued item.
@@ -367,13 +384,17 @@ void playDigit(int d) {
   if (d >= 0 && d <= 9) speakClipToken(kDigits[d]);
 }
 
-void speakDigitsAndPoint(const String& s) {
+void speakNumber(const String& s) {
   for (size_t i = 0; i < s.length(); ++i) {
     char c = s[i];
     if (c >= '0' && c <= '9') playDigit(c - '0');
     else if (c == '.' || c == ',') speakClipToken("point");
     else if (c == ' ') playSilenceMs(60);
   }
+}
+
+void speakDigitsAndPoint(const String& s) {
+  speakNumber(s);
   playSilenceMs(250);
 }
 
@@ -457,7 +478,7 @@ bool speakTokenState(const String& token, bool on) {
 bool speakTokenPercent(const String& token, uint8_t percent) {
   if (!g_speechEnabled) return false;
   bool ok = speakLabel(token);
-  speakDigitsAndPoint(String((int)percent));
+  speakNumber(String((int)percent));
   playSilenceMs(60);
   return speakToken("percent") && ok;
 }
@@ -490,6 +511,36 @@ void speakVolumeLevel(uint8_t lvl) {
   if (lvl < 1) lvl = 1;
   if (lvl > 9) lvl = 9;
   playDigit(lvl);
+}
+
+static const char* const kSpeechSpeedNames[SPEECH_SPEED_COUNT] = {"SLOW", "NORMAL", "FAST"};
+
+void applySpeechSpeed(SpeechSpeed speed) {
+  if ((uint8_t)speed >= SPEECH_SPEED_COUNT) speed = SpeechSpeed::Normal;
+  g_speechSpeed = speed;
+  g_speechSpeedFactor = kSpeechSpeedFactors[(uint8_t)speed];
+}
+
+const char* speechSpeedName(SpeechSpeed speed) {
+  return (uint8_t)speed < SPEECH_SPEED_COUNT ? kSpeechSpeedNames[(uint8_t)speed] : "NORMAL";
+}
+
+bool parseSpeechSpeed(const String& word, SpeechSpeed& out) {
+  String w = word;
+  w.trim();
+  for (uint8_t i = 0; i < SPEECH_SPEED_COUNT; ++i) {
+    if (w.equalsIgnoreCase(kSpeechSpeedNames[i])) {
+      out = (SpeechSpeed)i;
+      return true;
+    }
+  }
+  return false;
+}
+
+void speakSpeechSpeed() {
+  if (!g_speechEnabled) return;
+  speakLabel("speed");
+  speakToken(speechSpeedName(g_speechSpeed));
 }
 
 static void playDigitsFromCString(const char* s) {
@@ -542,7 +593,7 @@ void voiceTest() {
   for (size_t i = 0; voicePackClipAt(i, &c); ++i) {
     Serial.print("  ");
     Serial.println(c.name);
-    playClipBlocking(c.data, c.len);
+    playClipBlocking(c.data, c.len, g_speechSpeedFactor);
     playSilenceMsBlocking(CLIP_GAP_MS + 120);
   }
   padToDmaBufferBoundary();

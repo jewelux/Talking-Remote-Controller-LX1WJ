@@ -198,6 +198,8 @@ void queryBank9Verbose() { record("queryBank9Verbose"); }
 void toggleBank9Verbose() { record("toggleBank9Verbose"); }
 void adjustBank9Volume(int d) { record("adjustBank9Volume(%d)", d); }
 void queryBank9Volume() { record("queryBank9Volume"); }
+void queryBank9Speed() { record("queryBank9Speed"); }
+void stepBank9Speed() { record("stepBank9Speed"); }
 void queryBank9Profile() { record("queryBank9Profile"); }
 void beginBank9ProfileSelect() { record("beginBank9ProfileSelect"); }
 void resetBank9Profile() { record("resetBank9Profile"); }

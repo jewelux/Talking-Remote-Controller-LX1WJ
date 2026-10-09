@@ -225,8 +225,9 @@ void speakCivAddressValue(uint8_t addr, bool ok) {
 void speakBaudValue(uint32_t baud, bool ok) {
   if (!g_speechEnabled) return;
   speakLabel("baud");
-  speakDigitsAndPoint(String((unsigned long)baud));
-  if (ok) speakValueOk();
+  speakNumber(String((unsigned long)baud));
+  if (ok && g_verboseSpeech) speakValueOk();
+  else playSilenceMs(250);
 }
 
 void speakProfileReset() {

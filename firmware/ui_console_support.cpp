@@ -6,6 +6,7 @@
 #include "radio_protocol.h"
 #include "radio_utils.h"
 #include "ui_keypad.h"
+#include "ui_speech.h"
 #include "voice_pack.h"
 
 // Lists what mode select accepts: the mode digits the current profile can set.
@@ -41,6 +42,8 @@ void printStatusSummary() {
   Serial.println(g_verboseSpeech ? "ON" : "OFF");
   Serial.print("  volume: ");
   Serial.println((int)g_volumeLevel);
+  Serial.print("  speed: ");
+  Serial.println(speechSpeedName(g_speechSpeed));
   Serial.print("  voice pack: ");
   voicePackPrintStatus();
   if (live.freqValid) {

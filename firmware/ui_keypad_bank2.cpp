@@ -23,7 +23,7 @@ static void speakSignedStepValue(const String& label, int value) {
     playSilenceMs(60);
     value = -value;
   }
-  speakDigitsAndPoint(String(value));
+  speakNumber(String(value));
   playSilenceMs(60);
   speakToken("step");
 }
