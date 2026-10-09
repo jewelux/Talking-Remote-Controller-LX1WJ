@@ -38,9 +38,16 @@ Keypad keypad = Keypad(makeKeymap(kpKeys), kpRowPins, kpColPins, KP_ROWS, KP_COL
 // is the delay before the answer to the key starts.
 static constexpr int I2S_DMA_BUF_COUNT = 6;
 static constexpr int I2S_DMA_BUF_LEN = 128;
+static constexpr size_t I2S_DMA_BUF_BYTES = I2S_DMA_BUF_LEN * sizeof(int16_t);
 static i2s_chan_handle_t s_i2sTx = nullptr;
+// Bytes written into the DMA buffer being filled, 0 at a buffer boundary.
+static size_t s_dmaBufFill = 0;
 
-enum AudioItemType : uint8_t { AUDIO_CLIP = 0, AUDIO_SILENCE = 1 };
+// The clips carry no silence around the word; this gap follows each one.
+static constexpr int CLIP_GAP_MS = 60;
+
+// AUDIO_CLIP is a spoken word, followed by CLIP_GAP_MS; AUDIO_TONE (the beep) is not.
+enum AudioItemType : uint8_t { AUDIO_CLIP = 0, AUDIO_SILENCE = 1, AUDIO_TONE = 2 };
 
 struct AudioItem {
   AudioItemType type;
@@ -77,11 +84,11 @@ static void audioQueueClear() {
   g_aqHead = 0;
   g_aqTail = 0;
 }
-static bool audioEnqueueClip(const uint8_t* data, size_t len) {
+static bool audioEnqueueClip(AudioItemType type, const uint8_t* data, size_t len) {
   if (!data || !len) return false;
   int next = (g_aqTail + 1) % AUDIO_QUEUE_LEN;
   if (next == g_aqHead) return false;
-  g_audioQ[g_aqTail] = {AUDIO_CLIP, data, len, 0, g_enqueueTuningId};
+  g_audioQ[g_aqTail] = {type, data, len, 0, g_enqueueTuningId};
   g_aqTail = next;
   if (g_enqueueTuningId) g_tuningItemQueued = true;
   return true;
@@ -133,9 +140,9 @@ static const VoiceAlias kVoiceAliases[] = {
   {"filwidth", {"filterwidth"}, 1},
 };
 
-static bool playClip(const uint8_t* data, size_t length) {
+static bool playClip(const uint8_t* data, size_t length, AudioItemType type = AUDIO_CLIP) {
   if (!g_speechEnabled) return false;
-  return audioEnqueueClip(data, length);
+  return audioEnqueueClip(type, data, length);
 }
 
 // token must already be normalized (trimmed, lowercase) by speakToken().
@@ -192,23 +199,28 @@ static constexpr int BEEP_FREQ_HZ = 660;
 static constexpr int BEEP_MS = 70;
 static constexpr int BEEP_FADE_MS = 5;
 static constexpr float BEEP_AMPLITUDE = 0.2f;
-// The I2S driver resumes writing into the DMA buffer the previous playback left
-// half full, and that buffer plays whenever the DMA ring reaches it, out of order
-// with the rest. One DMA buffer of leading silence guarantees only silence lands
-// there and the tone starts in fresh buffers.
-static constexpr int BEEP_LEAD_SAMPLES = I2S_DMA_BUF_LEN;
-static constexpr int BEEP_TONE_SAMPLES = I2S_SAMPLE_RATE * BEEP_MS / 1000;
-static int16_t s_beepPcm[BEEP_LEAD_SAMPLES + BEEP_TONE_SAMPLES];
+static constexpr int BEEP_SAMPLES = I2S_SAMPLE_RATE * BEEP_MS / 1000;
+static int16_t s_beepPcm[BEEP_SAMPLES];
 
 static void initBeep() {
-  const int n = BEEP_TONE_SAMPLES;
+  const int n = BEEP_SAMPLES;
   const int fade = I2S_SAMPLE_RATE * BEEP_FADE_MS / 1000;
   for (int i = 0; i < n; ++i) {
     float gain = BEEP_AMPLITUDE * 32767.0f;
     if (i < fade) gain *= (float)i / fade;
     else if (n - 1 - i < fade) gain *= (float)(n - 1 - i) / fade;
-    s_beepPcm[BEEP_LEAD_SAMPLES + i] = (int16_t)(gain * sinf(2.0f * (float)M_PI * BEEP_FREQ_HZ * i / I2S_SAMPLE_RATE));
+    s_beepPcm[i] = (int16_t)(gain * sinf(2.0f * (float)M_PI * BEEP_FREQ_HZ * i / I2S_SAMPLE_RATE));
   }
+}
+
+// Every write goes through here, so s_dmaBufFill follows the driver's position in
+// its DMA buffer. A timeout only means no DMA buffer came free yet; *written says
+// how much went in.
+static esp_err_t i2sWrite(const void* data, size_t n, size_t* written) {
+  *written = 0;
+  esp_err_t err = i2s_channel_write(s_i2sTx, data, n, written, 20);
+  s_dmaBufFill = (s_dmaBufFill + *written) % I2S_DMA_BUF_BYTES;
+  return err;
 }
 
 static bool playClipBlocking(const uint8_t* data, size_t length) {
@@ -230,8 +242,7 @@ static bool playClipBlocking(const uint8_t* data, size_t length) {
       samples[i] = (int16_t)v;
     }
     size_t written = 0;
-    // A timeout only means no DMA buffer came free yet; keep what was written.
-    esp_err_t err = i2s_channel_write(s_i2sTx, buffer, n, &written, 20);
+    esp_err_t err = i2sWrite(buffer, n, &written);
     if (audioStopRequested()) return false;
     if (err != ESP_OK && err != ESP_ERR_TIMEOUT) return false;
     offset += written;
@@ -239,15 +250,26 @@ static bool playClipBlocking(const uint8_t* data, size_t length) {
   return true;
 }
 
-static void playSilenceMsBlocking(int ms) {
-  int16_t z[80];
-  memset(z, 0, sizeof(z));
-  size_t written = 0;
-  int loops = max(1, ms / 10);
-  for (int i = 0; i < loops; ++i) {
-    if (audioStopRequested()) break;
-    i2s_channel_write(s_i2sTx, z, sizeof(z), &written, 20);
+static void writeSilenceBytes(size_t bytes) {
+  static const int16_t zeros[I2S_DMA_BUF_LEN] = {};
+  while (bytes > 0 && !audioStopRequested()) {
+    size_t written = 0;
+    esp_err_t err = i2sWrite(zeros, min(bytes, sizeof(zeros)), &written);
+    if (err != ESP_OK && err != ESP_ERR_TIMEOUT) break;
+    bytes -= written;
   }
+}
+
+static void playSilenceMsBlocking(int ms) {
+  writeSilenceBytes((size_t)ms * I2S_SAMPLE_RATE / 1000 * sizeof(int16_t));
+}
+
+// The driver keeps a half-filled DMA buffer between writes, and the next write
+// continues in it while it is still queued for playing. A playback starting just
+// as the DMA reaches that buffer would be written into a buffer being played.
+// Ending every playback on a buffer boundary starts the next in a free buffer.
+static void padToDmaBufferBoundary() {
+  if (s_dmaBufFill) writeSilenceBytes(I2S_DMA_BUF_BYTES - s_dmaBufFill);
 }
 
 // Stopping the channel cuts the sound at once but leaves the unplayed buffers as
@@ -259,6 +281,8 @@ static void i2sDropBufferedAudio() {
   i2s_channel_disable(s_i2sTx);
   i2s_channel_preload_data(s_i2sTx, silence, sizeof(silence), &loaded);
   i2s_channel_enable(s_i2sTx);
+  // The preload filled every buffer, so the next write takes a fresh one.
+  s_dmaBufFill = 0;
 }
 
 static void audioTask(void* pv) {
@@ -271,7 +295,7 @@ static void audioTask(void* pv) {
 
     if (audioQueueIsEmpty()) {
       if (g_audioPlaying) {
-        playSilenceMsBlocking(40);
+        padToDmaBufferBoundary();
         g_audioPlaying = false;
       }
       vTaskDelay(pdMS_TO_TICKS(5));
@@ -288,8 +312,8 @@ static void audioTask(void* pv) {
     g_aqHead = (g_aqHead + 1) % AUDIO_QUEUE_LEN;
     if (!tuningIdCancelled(it.tuningId)) {
       g_playingTuningId = it.tuningId;
-      if (it.type == AUDIO_CLIP) (void)playClipBlocking(it.data, it.len);
-      else playSilenceMsBlocking((int)it.silenceMs);
+      if (it.type == AUDIO_SILENCE) playSilenceMsBlocking((int)it.silenceMs);
+      else if (playClipBlocking(it.data, it.len) && it.type == AUDIO_CLIP) playSilenceMsBlocking(CLIP_GAP_MS);
       g_playingTuningId = 0;
     }
     // A tuning announcement ends with its last queued item.
@@ -448,7 +472,7 @@ void speakOk() { speakToken("ok"); }
 void speakError() { speakToken("error"); }
 void speakTimeout() { speakToken("timeout"); }
 void speakNotAvailable() { speakToken("notavailable"); }
-void playBeep() { (void)playClip((const uint8_t*)s_beepPcm, sizeof(s_beepPcm)); }
+void playBeep() { (void)playClip((const uint8_t*)s_beepPcm, sizeof(s_beepPcm), AUDIO_TONE); }
 
 void applyVolumeLevel(uint8_t lvl) {
   if (lvl < 1) lvl = 1;
@@ -519,7 +543,8 @@ void voiceTest() {
     Serial.print("  ");
     Serial.println(c.name);
     playClipBlocking(c.data, c.len);
-    playSilenceMsBlocking(120);
+    playSilenceMsBlocking(CLIP_GAP_MS + 120);
   }
+  padToDmaBufferBoundary();
   Serial.println("Voice TEST done.");
 }

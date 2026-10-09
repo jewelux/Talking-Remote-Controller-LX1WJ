@@ -4,7 +4,8 @@
 
 Reads voice_phrases.txt, synthesizes every phrase, trims the silence Piper
 adds around it, resamples to the firmware clip format (mono, PCM16, 8000 Hz
-by default), normalizes the peak and appends a short trailing silence.
+by default) and normalizes the peak. No silence is added: the firmware puts
+the gap between words itself.
 
 Optionally builds the voice pack (voices.bin) via build_voice_pack.py.
 
@@ -150,8 +151,8 @@ def main() -> None:
     ap.add_argument("--out", default=str(HERE.parent / "voice_clips"), help="Output folder for voice_*.wav")
     ap.add_argument("--only", default="", help="Comma-separated symbols to regenerate (e.g. cw,fm)")
     ap.add_argument("--rate", type=int, default=DEFAULT_RATE, help=f"Output sample rate (default: {DEFAULT_RATE})")
-    ap.add_argument("--lead-ms", type=float, default=10.0, help="Leading silence in ms (default: 10)")
-    ap.add_argument("--trail-ms", type=float, default=60.0, help="Trailing silence in ms (default: 60)")
+    ap.add_argument("--lead-ms", type=float, default=0.0, help="Leading silence in ms (default: 0)")
+    ap.add_argument("--trail-ms", type=float, default=0.0, help="Trailing silence in ms (default: 0)")
     ap.add_argument("--trim-db", type=float, default=-40.0, help="Silence threshold relative to peak (default: -40)")
     ap.add_argument("--peak-db", type=float, default=-1.0, help="Peak level in dBFS (default: -1)")
     add_synth_args(ap)

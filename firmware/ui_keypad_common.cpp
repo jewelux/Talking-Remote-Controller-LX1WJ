@@ -248,7 +248,6 @@ void speakFrequencyWord() {
 
 void speakPlease() {
   if (!g_speechEnabled) return;
-  playSilenceMs(20);
   speakToken("please");
 }
 

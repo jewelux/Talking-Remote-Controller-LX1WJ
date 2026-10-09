@@ -2,7 +2,7 @@
 
 Regenerates `../voice_clips/voice_*.wav` with [Piper TTS](https://github.com/OHF-Voice/piper1-gpl).
 Output format: mono, PCM16, 8000 Hz (the firmware I2S rate), trimmed, peak-normalized to -1 dBFS,
-10 ms lead and 60 ms trailing silence.
+no silence around the word (the firmware adds the gap between words).
 
 ## Setup (once)
 

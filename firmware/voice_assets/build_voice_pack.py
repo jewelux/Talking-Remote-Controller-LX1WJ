@@ -12,6 +12,10 @@ must match firmware/voice_pack_format.h:
   index          count x (char name[20], u32 offset, u32 length), sorted by name
   data           PCM16 mono clips, each starting 4-byte aligned
 
+The clips are stored without silence around them: leading and trailing zeros
+are dropped, and so is a trailing tail quieter than --tail-db (with a short
+fade-out where it is cut). The firmware adds the gap between words itself.
+
 Only the standard library is used, so CI can build the pack without a venv.
 
 Usage:
@@ -24,6 +28,8 @@ Flash:
 from __future__ import annotations
 
 import argparse
+import array
+import math
 import re
 import struct
 import wave
@@ -54,6 +60,35 @@ def clip_name(path: Path) -> str:
     base = re.sub(r"_+", "_", base).strip("_")
     base = base.removeprefix("voice_")
     return ALIASES.get(base, base)
+
+
+def trim_silence(pcm: bytes, rate: int, tail_db: float) -> bytes:
+    """Drop leading/trailing zeros and a trailing tail quieter than tail_db below the peak."""
+    s = array.array("h", pcm)
+    start, end = 0, len(s)
+    while start < end and s[start] == 0:
+        start += 1
+    while end > start and s[end - 1] == 0:
+        end -= 1
+    s = s[start:end]
+    if not s:
+        return b""
+
+    peak = max(abs(x) for x in s)
+    threshold = peak * 10 ** (tail_db / 20.0)
+    win = rate * 5 // 1000
+    keep = len(s)
+    while keep >= win:
+        w = s[keep - win:keep]
+        if math.sqrt(sum(x * x for x in w) / win) >= threshold:
+            break
+        keep -= win
+    if keep < len(s):
+        s = s[:keep]
+        fade = min(len(s), rate * 3 // 1000)
+        for i in range(fade):
+            s[len(s) - 1 - i] = int(s[len(s) - 1 - i] * i / fade)
+    return s.tobytes()
 
 
 def load_pcm16_mono(path: Path, rate: int) -> bytes:
@@ -97,16 +132,24 @@ def main() -> None:
     ap.add_argument("--in", dest="in_dir", default=str(HERE / "voice_clips"), help="Folder with voice_*.wav")
     ap.add_argument("--out", default=str(HERE / "voices.bin"), help="Output pack (default: voices.bin here)")
     ap.add_argument("--rate", type=int, default=8000, help="Sample rate of the clips (I2S_SAMPLE_RATE)")
+    ap.add_argument("--tail-db", type=float, default=-45.0,
+                    help="Cut a trailing tail quieter than this, relative to the peak (default: -45). "
+                         "Word-final s, f, z sit around -40 dB, so a higher value cuts them off")
     args = ap.parse_args()
 
     clips: dict[str, bytes] = {}
+    raw_total = 0
     for path in sorted(Path(args.in_dir).glob("voice_*.wav")):
         name = clip_name(path)
         if len(name) >= NAME_LEN:
             raise SystemExit(f"{path.name}: name '{name}' longer than {NAME_LEN - 1} characters")
         if name in clips:
             raise SystemExit(f"{path.name}: duplicate clip name '{name}'")
-        clips[name] = load_pcm16_mono(path, args.rate)
+        raw = load_pcm16_mono(path, args.rate)
+        clips[name] = trim_silence(raw, args.rate, args.tail_db)
+        if not clips[name]:
+            raise SystemExit(f"{path.name}: silent")
+        raw_total += len(raw)
     if not clips:
         raise SystemExit(f"No voice_*.wav in {args.in_dir}")
 
@@ -117,7 +160,8 @@ def main() -> None:
 
     pcm_total = sum(len(pcm) for pcm in clips.values())
     print(f"OK: wrote {args.out}")
-    print(f"Clips: {len(clips)}  PCM: {pcm_total} B ({pcm_total / args.rate / 2:.1f} s)  "
+    print(f"Clips: {len(clips)}  PCM: {pcm_total} B ({pcm_total / args.rate / 2:.1f} s), "
+          f"{raw_total - pcm_total} B of silence dropped  "
           f"pack: {len(pack)} B ({len(pack) / 1024:.1f} KiB)")
 
 
