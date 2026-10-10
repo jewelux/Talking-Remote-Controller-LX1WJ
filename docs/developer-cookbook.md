@@ -64,7 +64,7 @@ to completion, and that action talks to the radio synchronously.
 | Protocols | `protocol_ops_*`, `protocol_*`, `packet_*`, `transport_serial.*` | CI-V, Kenwood/Elecraft/FTDX ASCII, Yaesu FT-8x7 5-byte CAT |
 | FT-8x7 fields | `ft8x7_codec.*`, `ft8x7_eeprom_map.*`, `ft8x7_model.h` | CAT frame fields, the EEPROM map per model, the FT-8x7 model from the `RadioModel`. No `Arduino.h`; `protocol_ft8x7_eeprom.*` reads the EEPROM with them |
 | Profiles | `radio_profile_types.h`, `radio_profile_table.*`, `radio_catalog.*`, `radio_profile.*` | What a radio is (connection, protocol, capabilities, command strings), the built-in radios, the active one, and switching between them. The types and the table have no `Arduino.h` |
-| Speech | `ui_speech.*`, `voice_data.h` (generated) | Clips, tokens, the audio queue |
+| Speech | `ui_speech.*`, `voice_pack*`, `audio_stretch.*` | Tokens, the audio queue, the clips in the voice pack partition, and the speech speed (time-stretch). `voice_pack_format.*` and `audio_stretch.*` have no `Arduino.h` |
 | Settings | `radio_prefs.*` | NVS: profile, volume, tuning speech, CI-V address and baud per slot |
 
 **Five concepts to learn first:**
@@ -110,6 +110,21 @@ arduino-cli compile \
 - **In the Arduino IDE**, use the settings in
   `docs/Arduino IDE Tools Settings.txt`.
 
+**The voice clips are not in the firmware.** They are a separate image, the
+voice pack, in the `voices` partition. Build and flash it once, and again
+whenever the clips change. Uploading the firmware leaves it alone, unless the
+Arduino IDE's "Erase all flash" is on:
+
+```sh
+python firmware/voice_assets/build_voice_pack.py
+esptool --chip esp32s3 -p COM6 write-flash 0x810000 firmware/voice_assets/voices.bin
+```
+
+`esptool` comes with the ESP32 core (`packages/esp32/tools/esptool_py/`).
+Without the pack the device says "voice pack missing" at boot (the one clip
+built into the firmware, `voice_fallback.h`) and prints `VOICE PACK MISSING`;
+`STATUS?` shows the pack's state.
+
 ### Host tests (no hardware)
 
 The keypad logic and the FT-8x7 frame and EEPROM decoding are plain C++ and
@@ -119,6 +134,7 @@ are tested with g++:
 make -C tests/keypad               # build and run everything
 make -C tests/keypad FILTER=hold   # only tests whose name contains "hold"
 make -C tests/ft8x7                # FT-817/857/897 CAT fields and EEPROM map
+make -C tests/audio                # voice pack layout, speech speed
 ```
 
 A source under test must not include `Arduino.h`; its suite's `Makefile`
@@ -694,39 +710,32 @@ Clips are looked up by **name** at run time. There is no enum.
    The format is `phrase | symbol | say`. The symbol defaults to the phrase
    without spaces, and `say` fixes pronunciation.
 
-2. Generate the clip and merge it into the header. The Piper setup is in its
+2. Generate the clip and rebuild the voice pack. The Piper setup is in its
    README.
 
    ```powershell
    cd firmware\voice_assets\piper
-   .\.venv\Scripts\python generate_voices.py --only preamp --header
+   .\.venv\Scripts\python generate_voices.py --only preamp --pack
    ```
 
-   This writes `voice_clips/voice_preamp.wav` and appends `voice_preamp[]` to
-   `firmware/voice_data.h`. The `HAS_VOICE_voice_preamp` line that comes with
-   it only marks the block for the merge script; firmware doesn't check it.
+   This writes `voice_clips/voice_preamp.wav` and builds
+   `voice_assets/voices.bin` from all clips. Flash the pack (section 2), not
+   the firmware: the clip name is the file name without `voice_`.
 
-3. Register it in `kVoiceClips[]` in `ui_speech.cpp`, in alphabetical
-   position:
-
-   ```cpp
-     VOICE_CLIP(preamp),
-   ```
-
-   Every clip in the table is required, so the build fails if the clip is
-   missing from `voice_data.h`. Words spoken as a sequence of existing clips,
-   such as `"pa"` (p, a), go in `kVoiceAliases[]` instead; they need no new
-   clip.
+3. Words spoken as a sequence of existing clips, such as `"pa"` (p, a), go in
+   `kVoiceAliases[]` in `ui_speech.cpp` instead; they need no new clip.
 
 4. Speak it: `speakToken("preamp")` or `speakTokenState("preamp", on)`.
    Check it by ear with `VOICE preamp`. An unknown token plays the error
-   sound, so a typo is audible.
+   sound, so a typo is audible. CI runs
+   `python firmware/voice_assets/check_voice_tokens.py`, which fails on a
+   token written out in the code that has no clip or alias, and lists the
+   clips and aliases nothing speaks by name.
 
-5. Commit the phrase, the `.wav`, `voice_data.h` and `ui_speech.cpp` together.
+5. Commit the phrase, the `.wav` and the code that speaks it together.
+   `voices.bin` is built, not committed; CI builds it for each release.
 
-Use tokens (`speakToken`) rather than the raw arrays (`voice_x`,
-`voice_x_len`) in new code; naming a clip's array in a new file can add
-another copy of it to flash. Keep to the speech style in
+Keep to the speech style in
 `firmware/voice_assets_required_current_software.txt`: digits one by one,
 abbreviations spelled out, a function word then on/off.
 
@@ -826,9 +835,6 @@ thing, both call one function in `radio_features`, which returns a
 - Label experimental features as experimental (see the documentation rule in
   `builder-guide.md`).
 
-**Flash is finite.** `voice_data.h` is several megabytes. Reuse clips and
-aliases before generating new ones.
-
 **Known rough edges** (improve them when you're nearby, but don't copy the
 pattern):
 
@@ -856,7 +862,7 @@ pattern):
 | Talk to the radio in a new way | `protocol_ops_*` + `radio_protocol.*` |
 | Add a capability flag | `radio_profile_types.h`, `radio_profile_table.cpp`, `radio_profile.cpp` |
 | Support a new radio | `kProfiles` in `radio_profile_table.cpp` |
-| Add a spoken word | `voice_phrases.txt` → `generate_voices.py` → `kVoiceClips[]` |
+| Add a spoken word | `voice_phrases.txt` → `generate_voices.py --pack` → flash `voices.bin` |
 | Change pins or timing constants | `config_pins.h`, `radio_types.h` |
 
 ### `FeatureStatus` → feedback

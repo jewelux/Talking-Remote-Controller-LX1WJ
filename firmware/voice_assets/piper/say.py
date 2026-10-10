@@ -23,8 +23,8 @@ from pathlib import Path
 import soundfile as sf
 from piper import PiperVoice, SynthesisConfig
 
-from generate_voices import (DEFAULT_RATE, DEFAULT_VOICE, HERE, add_synth_args, ensure_voice,
-                             make_syn_config, process, synthesize)
+from generate_voices import (DEFAULT_RATE, DEFAULT_VOICE, DEFAULT_VOLUME, HERE, add_synth_args,
+                             ensure_voice, make_syn_config, process, synthesize)
 
 
 def play(audio, sr: int) -> None:
@@ -60,7 +60,7 @@ def main() -> None:
     ap.add_argument("--save", default="", help="Also save each utterance as WAV into this folder")
     args = ap.parse_args()
     # process() settings, same defaults as generate_voices.py
-    args.lead_ms, args.trail_ms, args.trim_db, args.peak_db = 10.0, 60.0, -40.0, -1.0
+    args.lead_ms, args.trail_ms, args.trim_db, args.volume = 0.0, 0.0, -40.0, DEFAULT_VOLUME
 
     voice = PiperVoice.load(ensure_voice(args.voice, Path(args.models_dir)))
     syn_config = make_syn_config(args)

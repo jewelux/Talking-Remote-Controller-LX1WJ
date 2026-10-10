@@ -57,6 +57,16 @@ Every answer first says what it is, then the value: "power 50 watts", "noise bla
 The setting is kept after power off. Prompts such as "frequency please" and messages such as
 "not available" stay the same. Console: `VERBOSE?` and `VERBOSE ON | OFF | TOGGLE`.
 
+## Speech Speed
+
+The words can be spoken slow, normal or fast. The pauses between them follow, and the voice keeps
+its pitch.
+
+- Bank 9, `6` short: says the speed, e.g. "speed normal"
+- Bank 9, `6` long: the next speed (slow, normal, fast, then slow again), said at the new speed
+
+The setting is kept after power off. Console: `SPEED?` and `SPEED SLOW | NORMAL | FAST`.
+
 ## Practical Everyday Use
 
 These actions are the normal starting point on many profiles:
@@ -148,6 +158,8 @@ Keep the first field test simple:
   profile lacks says "not available", for example the tuner keys on an FT-817 or keys hidden on
   FTDX10. With verbose on, the function's name comes first: "tuner not available", "split
   timeout", "frequency error".
+- "voice pack missing" at power on: the spoken words are a separate part of the firmware and are
+  not installed. Run the online update again; it installs both.
 
 ## More Help
 

@@ -52,6 +52,8 @@
 
 ### Speech and sounds
 
+- speech speed slow, normal or fast: Bank 9 `6`, console `SPEED`
+- no long pause between a number and its unit or "ok" ("power 50 watts")
 - verbose off says only the value: "50 watts" instead of "power 50 watts", "five" instead of
   "volume five ok". Units stay; the name and the "ok" after a change are left out. Bank 9 `5`
   short says "verbose on" or "verbose off", `5` long switches it; console `VERBOSE?` and
@@ -220,6 +222,8 @@
 
 - every push builds the firmware as a factory image with a manifest for the online updater;
   version tags attach them to a GitHub release
+- the spoken words are a separate voice pack, installed by the online update; without it the
+  controller says "voice pack missing"
 
 ### For testers: serial trace
 
@@ -240,6 +244,8 @@
   `tests/ft8x7`; the on/off settings each model keeps in its EEPROM are one table per model
 - `generate_voices.py`, `say.py` and `setup_venv.ps1` default to `en_US-lessac-medium` with both
   noise scales at 0, so regenerating the clips gives identical files
+- `voice_data.h` is replaced by `voices.bin` (`build_voice_pack.py`), flashed to the `voices`
+  partition at `0x810000`
 
 ## V3.5.8 FTDX10 and Keypad Refinement
 

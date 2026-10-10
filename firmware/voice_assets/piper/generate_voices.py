@@ -4,13 +4,14 @@
 
 Reads voice_phrases.txt, synthesizes every phrase, trims the silence Piper
 adds around it, resamples to the firmware clip format (mono, PCM16, 8000 Hz
-by default), normalizes the peak and appends a short trailing silence.
+by default) and normalizes the peak. No silence is added: the firmware puts
+the gap between words itself.
 
-Optionally merges the result into firmware/voice_data.h via build_voice_data.py.
+Optionally builds the voice pack (voices.bin) via build_voice_pack.py.
 
 Usage (from this folder, after setup_venv.ps1):
   .venv\\Scripts\\python generate_voices.py
-  .venv\\Scripts\\python generate_voices.py --only cw,fm --header
+  .venv\\Scripts\\python generate_voices.py --only cw,fm --pack
 """
 
 from __future__ import annotations
@@ -31,6 +32,7 @@ from scipy.signal import resample_poly
 HERE = Path(__file__).resolve().parent
 DEFAULT_VOICE = "en_US-lessac-medium"
 DEFAULT_RATE = 8000  # I2S_SAMPLE_RATE in firmware/config_pins.h
+DEFAULT_VOLUME = 0.5  # peak level of a clip, as a fraction of full scale
 
 
 def phrase_to_symbol(phrase: str) -> str:
@@ -135,7 +137,7 @@ def process(audio: np.ndarray, src_sr: int, args: argparse.Namespace) -> np.ndar
     audio = resample(audio, src_sr, args.rate)
     peak = float(np.max(np.abs(audio))) if audio.size else 0.0
     if peak > 0.0:
-        audio = audio * (10 ** (args.peak_db / 20.0) / peak)
+        audio = audio * (args.volume / peak)
     audio = fade_edges(audio, args.rate, fade_ms=3.0)
     lead = np.zeros(int(args.rate * args.lead_ms / 1000.0), dtype=np.float32)
     trail = np.zeros(int(args.rate * args.trail_ms / 1000.0), dtype=np.float32)
@@ -150,12 +152,13 @@ def main() -> None:
     ap.add_argument("--out", default=str(HERE.parent / "voice_clips"), help="Output folder for voice_*.wav")
     ap.add_argument("--only", default="", help="Comma-separated symbols to regenerate (e.g. cw,fm)")
     ap.add_argument("--rate", type=int, default=DEFAULT_RATE, help=f"Output sample rate (default: {DEFAULT_RATE})")
-    ap.add_argument("--lead-ms", type=float, default=10.0, help="Leading silence in ms (default: 10)")
-    ap.add_argument("--trail-ms", type=float, default=60.0, help="Trailing silence in ms (default: 60)")
+    ap.add_argument("--lead-ms", type=float, default=0.0, help="Leading silence in ms (default: 0)")
+    ap.add_argument("--trail-ms", type=float, default=0.0, help="Trailing silence in ms (default: 0)")
     ap.add_argument("--trim-db", type=float, default=-40.0, help="Silence threshold relative to peak (default: -40)")
-    ap.add_argument("--peak-db", type=float, default=-1.0, help="Peak level in dBFS (default: -1)")
+    ap.add_argument("--volume", type=float, default=DEFAULT_VOLUME,
+                    help=f"Peak level as a fraction of full scale (default: {DEFAULT_VOLUME})")
     add_synth_args(ap)
-    ap.add_argument("--header", action="store_true", help="Also merge the clips into firmware/voice_data.h")
+    ap.add_argument("--pack", action="store_true", help="Also build voice_assets/voices.bin from all clips")
     args = ap.parse_args()
 
     entries = load_phrases(Path(args.phrases))
@@ -189,12 +192,10 @@ def main() -> None:
     print(f"Clips: {len(entries)}  PCM total: {total_bytes} B ({total_bytes / 1024:.1f} KiB)  "
           f"format: mono PCM16 {args.rate} Hz  voice: {args.voice}")
 
-    if args.header:
-        header = HERE.parent.parent / "voice_data.h"
+    if args.pack:
         cmd = [
-            sys.executable, str(HERE.parent / "build_voice_data.py"),
-            "--in", str(out_dir), "--base", str(header), "--out", str(header),
-            "--target-sr", str(args.rate),
+            sys.executable, str(HERE.parent / "build_voice_pack.py"),
+            "--in", str(out_dir), "--rate", str(args.rate),
         ]
         subprocess.run(cmd, check=True)
 

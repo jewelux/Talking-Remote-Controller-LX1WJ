@@ -59,6 +59,8 @@
 //   queryBank9Volume        "VOLUME?", speaks the volume
 //   adjustBank9Volume(-1/1) "VOLUME DOWN/UP" + adjustVolumeLevel
 //   adjustBank9Volume(-2/2) "VOLUME DOWN/UP FAST" + adjustBank9Volume
+//   queryBank9Speed         "SPEED?", says the speech speed
+//   stepBank9Speed          "SPEED NEXT", the next speech speed
 //   reportFtdx10HiddenKey(K) also stands for reportFtdx10HiddenKeypadAction;
 //                           K is the key the action is bound to (keypadActiveKey())
 //
@@ -211,6 +213,7 @@ KEYMAP_ROW(NOT(FT817 | FT857), 8, '8', "unassigned",       "none",              
 // ---- Bank 9 ----------------------------------------------------------------
 KEYMAP_ROW(ALL,             9, '4', "queryBank9TuningSpeech", "toggleBank9TuningSpeech", "-")
 KEYMAP_ROW(ALL,             9, '5', "queryBank9Verbose",     "toggleBank9Verbose",     "-")
+KEYMAP_ROW(ALL,             9, '6', "queryBank9Speed",       "stepBank9Speed",         "-")
 KEYMAP_ROW(ALL,             9, '7', "adjustBank9Volume(-1)", "adjustBank9Volume(-2)",  "-")
 KEYMAP_ROW(ALL,             9, '8', "adjustBank9Volume(1)",  "adjustBank9Volume(2)",   "-")
 KEYMAP_ROW(ALL,             9, '9', "queryBank9Volume",      "none",                   "-")

@@ -7,7 +7,11 @@ This is the shortest technical path for the current firmware line **V3.5.8**.
 1. Open `firmware/TalkingRemoteControllerLX1WJ_V3_5_8.ino` in Arduino IDE.
 2. Build for the intended ESP32-S3 target with the ESP32 Arduino core 3.x or newer
    (Boards Manager: esp32 by Espressif Systems).
-3. Keep `voice_data.h` in the firmware folder.
+3. Flash the voice pack (the spoken words) once, and again after the clips change or after an
+   upload with "Erase all flash" enabled:
+   `python firmware/voice_assets/build_voice_pack.py`, then
+   `esptool --chip esp32s3 -p <port> write-flash 0x810000 firmware/voice_assets/voices.bin`.
+   Without it the controller says "voice pack missing" at power on.
 
 The radio profiles are built into the firmware; no SD card is needed.
 

@@ -6,10 +6,19 @@
 #endif
 
 #include "driver/i2s_std.h"
+#include "audio_stretch.h"
 #include "radio_catalog.h"
+#include "voice_fallback.h"
+#include "voice_pack.h"
 
 static float g_speechVolume = 0.45f;
 uint8_t g_volumeLevel = 1;
+
+// Input samples per output sample for each SpeechSpeed, set by ear on the device.
+static constexpr float kSpeechSpeedFactors[SPEECH_SPEED_COUNT] = {0.8f, 1.0f, 1.3f};
+SpeechSpeed g_speechSpeed = SpeechSpeed::Normal;
+// Read by the audio task at the start of each item.
+static volatile float g_speechSpeedFactor = 1.0f;
 static const byte KP_ROWS = 4;
 static const byte KP_COLS = 4;
 #if USE_BUTTONS_KEYPAD
@@ -36,9 +45,16 @@ Keypad keypad = Keypad(makeKeymap(kpKeys), kpRowPins, kpColPins, KP_ROWS, KP_COL
 // is the delay before the answer to the key starts.
 static constexpr int I2S_DMA_BUF_COUNT = 6;
 static constexpr int I2S_DMA_BUF_LEN = 128;
+static constexpr size_t I2S_DMA_BUF_BYTES = I2S_DMA_BUF_LEN * sizeof(int16_t);
 static i2s_chan_handle_t s_i2sTx = nullptr;
+// Bytes written into the DMA buffer being filled, 0 at a buffer boundary.
+static size_t s_dmaBufFill = 0;
 
-enum AudioItemType : uint8_t { AUDIO_CLIP = 0, AUDIO_SILENCE = 1 };
+// The clips carry no silence around the word; this gap follows each one.
+static constexpr int CLIP_GAP_MS = 60;
+
+// AUDIO_CLIP is a spoken word, followed by CLIP_GAP_MS; AUDIO_TONE (the beep) is not.
+enum AudioItemType : uint8_t { AUDIO_CLIP = 0, AUDIO_SILENCE = 1, AUDIO_TONE = 2 };
 
 struct AudioItem {
   AudioItemType type;
@@ -75,11 +91,11 @@ static void audioQueueClear() {
   g_aqHead = 0;
   g_aqTail = 0;
 }
-static bool audioEnqueueClip(const uint8_t* data, size_t len) {
+static bool audioEnqueueClip(AudioItemType type, const uint8_t* data, size_t len) {
   if (!data || !len) return false;
   int next = (g_aqTail + 1) % AUDIO_QUEUE_LEN;
   if (next == g_aqHead) return false;
-  g_audioQ[g_aqTail] = {AUDIO_CLIP, data, len, 0, g_enqueueTuningId};
+  g_audioQ[g_aqTail] = {type, data, len, 0, g_enqueueTuningId};
   g_aqTail = next;
   if (g_enqueueTuningId) g_tuningItemQueued = true;
   return true;
@@ -108,153 +124,6 @@ static inline float volumeLevelToGain(uint8_t lvl) {
   }
 }
 
-#define VOICE_CLIP(n) {#n, voice_##n, voice_##n##_len}
-
-// Sorted by name; every clip here must exist in voice_data.h.
-static const VoiceClip kVoiceClips[] = {
-  VOICE_CLIP(a),
-  VOICE_CLIP(am),
-  VOICE_CLIP(antenna),
-  VOICE_CLIP(auto),
-  VOICE_CLIP(b),
-  VOICE_CLIP(band),
-  VOICE_CLIP(bank),
-  VOICE_CLIP(baud),
-  VOICE_CLIP(both),
-  VOICE_CLIP(c),
-  VOICE_CLIP(cancel),
-  VOICE_CLIP(choose),
-  VOICE_CLIP(clarifier),
-  VOICE_CLIP(ctcss),
-  VOICE_CLIP(cw),
-  VOICE_CLIP(cwr),
-  VOICE_CLIP(d),
-  VOICE_CLIP(db),
-  VOICE_CLIP(dcs),
-  VOICE_CLIP(digi),
-  VOICE_CLIP(e),
-  VOICE_CLIP(eight),
-  VOICE_CLIP(elecraft),
-  VOICE_CLIP(equalizer),
-  VOICE_CLIP(equals),
-  VOICE_CLIP(error),
-  VOICE_CLIP(f),
-  VOICE_CLIP(fast),
-  VOICE_CLIP(fifty),
-  VOICE_CLIP(filter),
-  VOICE_CLIP(filtershape),
-  VOICE_CLIP(filterwidth),
-  VOICE_CLIP(five),
-  VOICE_CLIP(fm),
-  VOICE_CLIP(forty),
-  VOICE_CLIP(four),
-  VOICE_CLIP(front),
-  VOICE_CLIP(frequency),
-  VOICE_CLIP(g),
-  VOICE_CLIP(h),
-  VOICE_CLIP(hertz),
-  VOICE_CLIP(high),
-  VOICE_CLIP(i),
-  VOICE_CLIP(icom),
-  VOICE_CLIP(j),
-  VOICE_CLIP(k),
-  VOICE_CLIP(kenwood),
-  VOICE_CLIP(kilohertz),
-  VOICE_CLIP(l),
-  VOICE_CLIP(level),
-  VOICE_CLIP(lock),
-  VOICE_CLIP(lsb),
-  VOICE_CLIP(m),
-  VOICE_CLIP(megahertz),
-  VOICE_CLIP(menu),
-  VOICE_CLIP(minus),
-  VOICE_CLIP(mode),
-  VOICE_CLIP(monitor),
-  VOICE_CLIP(n),
-  VOICE_CLIP(nine),
-  VOICE_CLIP(noiseblanker),
-  VOICE_CLIP(noisereduction),
-  VOICE_CLIP(notavailable),
-  VOICE_CLIP(notch),
-  VOICE_CLIP(o),
-  VOICE_CLIP(off),
-  VOICE_CLIP(ok),
-  VOICE_CLIP(on),
-  VOICE_CLIP(one),
-  VOICE_CLIP(p),
-  VOICE_CLIP(pbt),
-  VOICE_CLIP(percent),
-  VOICE_CLIP(please),
-  VOICE_CLIP(plus),
-  VOICE_CLIP(point),
-  VOICE_CLIP(power),
-  VOICE_CLIP(profile),
-  VOICE_CLIP(ptt),
-  VOICE_CLIP(q),
-  VOICE_CLIP(r),
-  VOICE_CLIP(rear),
-  VOICE_CLIP(repeater),
-  VOICE_CLIP(reset),
-  VOICE_CLIP(rit),
-  VOICE_CLIP(row),
-  VOICE_CLIP(rtty),
-  VOICE_CLIP(rttyr),
-  VOICE_CLIP(rx),
-  VOICE_CLIP(s),
-  VOICE_CLIP(s_meter),
-  VOICE_CLIP(seven),
-  VOICE_CLIP(sharp),
-  VOICE_CLIP(six),
-  VOICE_CLIP(sixty),
-  VOICE_CLIP(slow),
-  VOICE_CLIP(soft),
-  VOICE_CLIP(split),
-  VOICE_CLIP(stack),
-  VOICE_CLIP(step),
-  VOICE_CLIP(swr),
-  VOICE_CLIP(sync),
-  VOICE_CLIP(t),
-  VOICE_CLIP(ten),
-  VOICE_CLIP(thankyou),
-  VOICE_CLIP(thirty),
-  VOICE_CLIP(three),
-  VOICE_CLIP(timeout),
-  VOICE_CLIP(tone),
-  VOICE_CLIP(transceive),
-  VOICE_CLIP(transceiver),
-  VOICE_CLIP(tune),
-  VOICE_CLIP(tuner),
-  VOICE_CLIP(twenty),
-  VOICE_CLIP(two),
-  VOICE_CLIP(tx),
-  VOICE_CLIP(u),
-  VOICE_CLIP(usb),
-  VOICE_CLIP(v),
-  VOICE_CLIP(verbose),
-  VOICE_CLIP(vfo),
-  VOICE_CLIP(volume),
-  VOICE_CLIP(w),
-  VOICE_CLIP(watts),
-  VOICE_CLIP(wfm),
-  VOICE_CLIP(x),
-  VOICE_CLIP(xiegu),
-  VOICE_CLIP(y),
-  VOICE_CLIP(yaesu),
-  VOICE_CLIP(z),
-  VOICE_CLIP(zero),
-};
-
-#undef VOICE_CLIP
-static const size_t kVoiceClipsCount = sizeof(kVoiceClips) / sizeof(kVoiceClips[0]);
-
-// token must already be normalized (trimmed, lowercase) by speakToken().
-static const VoiceClip* findVoiceClip(const String& token) {
-  for (size_t i = 0; i < kVoiceClipsCount; ++i) {
-    if (strcmp(token.c_str(), kVoiceClips[i].name) == 0) return &kVoiceClips[i];
-  }
-  return nullptr;
-}
-
 struct VoiceAlias {
   const char* token;
   const char* parts[5];
@@ -278,10 +147,16 @@ static const VoiceAlias kVoiceAliases[] = {
   {"filwidth", {"filterwidth"}, 1},
 };
 
-static bool speakClipToken(const String& token) {
-  const VoiceClip* c = findVoiceClip(token);
-  if (!c) return false;
-  return playClipProgmem(c->data, c->len);
+static bool playClip(const uint8_t* data, size_t length, AudioItemType type = AUDIO_CLIP) {
+  if (!g_speechEnabled) return false;
+  return audioEnqueueClip(type, data, length);
+}
+
+// token must already be normalized (trimmed, lowercase) by speakToken().
+static bool speakClipToken(const char* token) {
+  VoiceClip c;
+  if (!voicePackFindClip(token, &c)) return false;
+  return playClip(c.data, c.len);
 }
 
 bool speakTokens(const char* const* tokens, size_t count, uint16_t gapMs) {
@@ -330,63 +205,82 @@ uint32_t tuningSpeechEndedMs() { return g_tuningEndMs; }
 static constexpr int BEEP_FREQ_HZ = 660;
 static constexpr int BEEP_MS = 70;
 static constexpr int BEEP_FADE_MS = 5;
-static constexpr float BEEP_AMPLITUDE = 0.2f;
-// The I2S driver resumes writing into the DMA buffer the previous playback left
-// half full, and that buffer plays whenever the DMA ring reaches it, out of order
-// with the rest. One DMA buffer of leading silence guarantees only silence lands
-// there and the tone starts in fresh buffers.
-static constexpr int BEEP_LEAD_SAMPLES = I2S_DMA_BUF_LEN;
-static constexpr int BEEP_TONE_SAMPLES = I2S_SAMPLE_RATE * BEEP_MS / 1000;
-static int16_t s_beepPcm[BEEP_LEAD_SAMPLES + BEEP_TONE_SAMPLES];
+static constexpr float BEEP_AMPLITUDE = 0.112f;
+static constexpr int BEEP_SAMPLES = I2S_SAMPLE_RATE * BEEP_MS / 1000;
+static int16_t s_beepPcm[BEEP_SAMPLES];
 
 static void initBeep() {
-  const int n = BEEP_TONE_SAMPLES;
+  const int n = BEEP_SAMPLES;
   const int fade = I2S_SAMPLE_RATE * BEEP_FADE_MS / 1000;
   for (int i = 0; i < n; ++i) {
     float gain = BEEP_AMPLITUDE * 32767.0f;
     if (i < fade) gain *= (float)i / fade;
     else if (n - 1 - i < fade) gain *= (float)(n - 1 - i) / fade;
-    s_beepPcm[BEEP_LEAD_SAMPLES + i] = (int16_t)(gain * sinf(2.0f * (float)M_PI * BEEP_FREQ_HZ * i / I2S_SAMPLE_RATE));
+    s_beepPcm[i] = (int16_t)(gain * sinf(2.0f * (float)M_PI * BEEP_FREQ_HZ * i / I2S_SAMPLE_RATE));
   }
 }
 
-static bool playClipProgmemBlocking(const uint8_t* data, size_t length) {
-  const size_t CHUNK = 512;
-  static uint8_t buffer[CHUNK];
-  size_t offset = 0;
-  while (offset < length) {
+// Every write goes through here, so s_dmaBufFill follows the driver's position in
+// its DMA buffer. A timeout only means no DMA buffer came free yet; *written says
+// how much went in.
+static esp_err_t i2sWrite(const void* data, size_t n, size_t* written) {
+  *written = 0;
+  esp_err_t err = i2s_channel_write(s_i2sTx, data, n, written, 20);
+  s_dmaBufFill = (s_dmaBufFill + *written) % I2S_DMA_BUF_BYTES;
+  return err;
+}
+
+// False when stopped or on a write error.
+static bool writeAll(const void* data, size_t bytes) {
+  const uint8_t* p = (const uint8_t*)data;
+  while (bytes > 0) {
     if (audioStopRequested()) return false;
-    size_t n = length - offset;
-    if (n > CHUNK) n = CHUNK;
-    memcpy_P(buffer, data + offset, n);
-    int16_t* samples = (int16_t*)buffer;
-    size_t sampleCount = n / 2;
-    for (size_t i = 0; i < sampleCount; ++i) {
-      int32_t v = samples[i];
-      v = (int32_t)(v * g_speechVolume);
+    size_t written = 0;
+    esp_err_t err = i2sWrite(p, bytes, &written);
+    if (err != ESP_OK && err != ESP_ERR_TIMEOUT) return false;
+    p += written;
+    bytes -= written;
+  }
+  return !audioStopRequested();
+}
+
+// data is PCM16 (clips in the pack are 4-byte aligned); speed 1 plays it as it is.
+static bool playClipBlocking(const uint8_t* data, size_t length, float speed) {
+  static AudioStretch stretch;
+  static int16_t block[I2S_DMA_BUF_LEN];
+  stretchBegin(stretch, (const int16_t*)data, length / sizeof(int16_t), speed);
+  for (size_t n; (n = stretchNext(stretch, block, I2S_DMA_BUF_LEN)) > 0;) {
+    for (size_t i = 0; i < n; ++i) {
+      int32_t v = (int32_t)(block[i] * g_speechVolume);
       if (v > 32767) v = 32767;
       if (v < -32768) v = -32768;
-      samples[i] = (int16_t)v;
+      block[i] = (int16_t)v;
     }
-    size_t written = 0;
-    // A timeout only means no DMA buffer came free yet; keep what was written.
-    esp_err_t err = i2s_channel_write(s_i2sTx, buffer, n, &written, 20);
-    if (audioStopRequested()) return false;
-    if (err != ESP_OK && err != ESP_ERR_TIMEOUT) return false;
-    offset += written;
+    if (!writeAll(block, n * sizeof(int16_t))) return false;
   }
   return true;
 }
 
-static void playSilenceMsBlocking(int ms) {
-  int16_t z[80];
-  memset(z, 0, sizeof(z));
-  size_t written = 0;
-  int loops = max(1, ms / 10);
-  for (int i = 0; i < loops; ++i) {
-    if (audioStopRequested()) break;
-    i2s_channel_write(s_i2sTx, z, sizeof(z), &written, 20);
+static void writeSilenceBytes(size_t bytes) {
+  static const int16_t zeros[I2S_DMA_BUF_LEN] = {};
+  while (bytes > 0 && !audioStopRequested()) {
+    size_t written = 0;
+    esp_err_t err = i2sWrite(zeros, min(bytes, sizeof(zeros)), &written);
+    if (err != ESP_OK && err != ESP_ERR_TIMEOUT) break;
+    bytes -= written;
   }
+}
+
+static void playSilenceMsBlocking(int ms) {
+  writeSilenceBytes((size_t)ms * I2S_SAMPLE_RATE / 1000 * sizeof(int16_t));
+}
+
+// The driver keeps a half-filled DMA buffer between writes, and the next write
+// continues in it while it is still queued for playing. A playback starting just
+// as the DMA reaches that buffer would be written into a buffer being played.
+// Ending every playback on a buffer boundary starts the next in a free buffer.
+static void padToDmaBufferBoundary() {
+  if (s_dmaBufFill) writeSilenceBytes(I2S_DMA_BUF_BYTES - s_dmaBufFill);
 }
 
 // Stopping the channel cuts the sound at once but leaves the unplayed buffers as
@@ -398,6 +292,8 @@ static void i2sDropBufferedAudio() {
   i2s_channel_disable(s_i2sTx);
   i2s_channel_preload_data(s_i2sTx, silence, sizeof(silence), &loaded);
   i2s_channel_enable(s_i2sTx);
+  // The preload filled every buffer, so the next write takes a fresh one.
+  s_dmaBufFill = 0;
 }
 
 static void audioTask(void* pv) {
@@ -410,7 +306,7 @@ static void audioTask(void* pv) {
 
     if (audioQueueIsEmpty()) {
       if (g_audioPlaying) {
-        playSilenceMsBlocking(40);
+        padToDmaBufferBoundary();
         g_audioPlaying = false;
       }
       vTaskDelay(pdMS_TO_TICKS(5));
@@ -427,8 +323,14 @@ static void audioTask(void* pv) {
     g_aqHead = (g_aqHead + 1) % AUDIO_QUEUE_LEN;
     if (!tuningIdCancelled(it.tuningId)) {
       g_playingTuningId = it.tuningId;
-      if (it.type == AUDIO_CLIP) (void)playClipProgmemBlocking(it.data, it.len);
-      else playSilenceMsBlocking((int)it.silenceMs);
+      const float speed = g_speechSpeedFactor;
+      if (it.type == AUDIO_SILENCE) {
+        playSilenceMsBlocking((int)lrintf(it.silenceMs / speed));
+      } else if (it.type == AUDIO_TONE) {
+        (void)playClipBlocking(it.data, it.len, 1.0f);
+      } else if (playClipBlocking(it.data, it.len, speed)) {
+        playSilenceMsBlocking((int)lrintf(CLIP_GAP_MS / speed));
+      }
       g_playingTuningId = 0;
     }
     // A tuning announcement ends with its last queued item.
@@ -441,6 +343,7 @@ static void audioTask(void* pv) {
 
 void initSpeech() {
   if (AMP_SD_PIN >= 0) pinMode(AMP_SD_PIN, OUTPUT);
+  voicePackInit();
 
   i2s_chan_config_t chanCfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_0, I2S_ROLE_MASTER);
   chanCfg.dma_desc_num = I2S_DMA_BUF_COUNT;
@@ -470,38 +373,28 @@ void initSpeech() {
   initBeep();
 }
 
-bool playClipProgmem(const uint8_t* data, size_t length) {
-  if (!g_speechEnabled) return false;
-  return audioEnqueueClip(data, length);
-}
-
 void playSilenceMs(int ms) {
   if (ms <= 0) return;
   (void)audioEnqueueSilence((uint16_t)ms);
 }
 
 void playDigit(int d) {
-  switch (d) {
-    case 0: playClipProgmem(voice_zero, voice_zero_len); break;
-    case 1: playClipProgmem(voice_one, voice_one_len); break;
-    case 2: playClipProgmem(voice_two, voice_two_len); break;
-    case 3: playClipProgmem(voice_three, voice_three_len); break;
-    case 4: playClipProgmem(voice_four, voice_four_len); break;
-    case 5: playClipProgmem(voice_five, voice_five_len); break;
-    case 6: playClipProgmem(voice_six, voice_six_len); break;
-    case 7: playClipProgmem(voice_seven, voice_seven_len); break;
-    case 8: playClipProgmem(voice_eight, voice_eight_len); break;
-    case 9: playClipProgmem(voice_nine, voice_nine_len); break;
+  static const char* const kDigits[] = {"zero", "one", "two", "three", "four",
+                                        "five", "six", "seven", "eight", "nine"};
+  if (d >= 0 && d <= 9) speakClipToken(kDigits[d]);
+}
+
+void speakNumber(const String& s) {
+  for (size_t i = 0; i < s.length(); ++i) {
+    char c = s[i];
+    if (c >= '0' && c <= '9') playDigit(c - '0');
+    else if (c == '.' || c == ',') speakClipToken("point");
+    else if (c == ' ') playSilenceMs(60);
   }
 }
 
 void speakDigitsAndPoint(const String& s) {
-  for (size_t i = 0; i < s.length(); ++i) {
-    char c = s[i];
-    if (c >= '0' && c <= '9') playDigit(c - '0');
-    else if (c == '.' || c == ',') playClipProgmem(voice_point, voice_point_len);
-    else if (c == ' ') playSilenceMs(60);
-  }
+  speakNumber(s);
   playSilenceMs(250);
 }
 
@@ -557,7 +450,7 @@ bool speakToken(const String& token) {
     return ok;
   }
 
-  if (speakClipToken(normalized)) return true;
+  if (speakClipToken(normalized.c_str())) return true;
 
   for (size_t i = 0; i < sizeof(kVoiceAliases) / sizeof(kVoiceAliases[0]); ++i) {
     if (normalized.equals(kVoiceAliases[i].token)) {
@@ -565,7 +458,7 @@ bool speakToken(const String& token) {
     }
   }
 
-  playClipProgmem(voice_error, voice_error_len);
+  speakClipToken("error");
   return false;
 }
 
@@ -574,12 +467,6 @@ bool speakLabel(const String& token) {
   bool ok = speakToken(token);
   playSilenceMs(60);
   return ok;
-}
-
-void speakLabelClip(const uint8_t* data, size_t length) {
-  if (!g_speechEnabled || !g_verboseSpeech) return;
-  playClipProgmem(data, length);
-  playSilenceMs(60);
 }
 
 bool speakTokenState(const String& token, bool on) {
@@ -591,7 +478,7 @@ bool speakTokenState(const String& token, bool on) {
 bool speakTokenPercent(const String& token, uint8_t percent) {
   if (!g_speechEnabled) return false;
   bool ok = speakLabel(token);
-  speakDigitsAndPoint(String((int)percent));
+  speakNumber(String((int)percent));
   playSilenceMs(60);
   return speakToken("percent") && ok;
 }
@@ -606,7 +493,7 @@ void speakOk() { speakToken("ok"); }
 void speakError() { speakToken("error"); }
 void speakTimeout() { speakToken("timeout"); }
 void speakNotAvailable() { speakToken("notavailable"); }
-void playBeep() { (void)playClipProgmem((const uint8_t*)s_beepPcm, sizeof(s_beepPcm)); }
+void playBeep() { (void)playClip((const uint8_t*)s_beepPcm, sizeof(s_beepPcm), AUDIO_TONE); }
 
 void applyVolumeLevel(uint8_t lvl) {
   if (lvl < 1) lvl = 1;
@@ -626,6 +513,36 @@ void speakVolumeLevel(uint8_t lvl) {
   playDigit(lvl);
 }
 
+static const char* const kSpeechSpeedNames[SPEECH_SPEED_COUNT] = {"SLOW", "NORMAL", "FAST"};
+
+void applySpeechSpeed(SpeechSpeed speed) {
+  if ((uint8_t)speed >= SPEECH_SPEED_COUNT) speed = SpeechSpeed::Normal;
+  g_speechSpeed = speed;
+  g_speechSpeedFactor = kSpeechSpeedFactors[(uint8_t)speed];
+}
+
+const char* speechSpeedName(SpeechSpeed speed) {
+  return (uint8_t)speed < SPEECH_SPEED_COUNT ? kSpeechSpeedNames[(uint8_t)speed] : "NORMAL";
+}
+
+bool parseSpeechSpeed(const String& word, SpeechSpeed& out) {
+  String w = word;
+  w.trim();
+  for (uint8_t i = 0; i < SPEECH_SPEED_COUNT; ++i) {
+    if (w.equalsIgnoreCase(kSpeechSpeedNames[i])) {
+      out = (SpeechSpeed)i;
+      return true;
+    }
+  }
+  return false;
+}
+
+void speakSpeechSpeed() {
+  if (!g_speechEnabled) return;
+  speakLabel("speed");
+  speakToken(speechSpeedName(g_speechSpeed));
+}
+
 static void playDigitsFromCString(const char* s) {
   if (!s) return;
   for (const char* p = s; *p; ++p) {
@@ -638,40 +555,51 @@ void speakProfileIdentityFromSlot(uint8_t id, bool withOk) {
   if (!sp || !g_speechEnabled) return;
 
   switch (sp->vendor) {
-    case VoiceVendor::Icom: playClipProgmem(voice_icom, voice_icom_len); break;
-    case VoiceVendor::Yaesu: playClipProgmem(voice_yaesu, voice_yaesu_len); break;
-    case VoiceVendor::Kenwood: playClipProgmem(voice_kenwood, voice_kenwood_len); break;
-    case VoiceVendor::Elecraft: playClipProgmem(voice_elecraft, voice_elecraft_len); break;
-    case VoiceVendor::Xiegu: playClipProgmem(voice_xiegu, voice_xiegu_len); break;
+    case VoiceVendor::Icom: speakClipToken("icom"); break;
+    case VoiceVendor::Yaesu: speakClipToken("yaesu"); break;
+    case VoiceVendor::Kenwood: speakClipToken("kenwood"); break;
+    case VoiceVendor::Elecraft: speakClipToken("elecraft"); break;
+    case VoiceVendor::Xiegu: speakClipToken("xiegu"); break;
   }
 
   playSilenceMs(80);
   playDigitsFromCString(sp->voiceDigits);
   if (withOk) {
     playSilenceMs(60);
-    playClipProgmem(voice_ok, voice_ok_len);
+    speakClipToken("ok");
   }
 }
 
 void speakBootProfile() {
+  if (!voicePackReady()) {
+    (void)playClip((const uint8_t*)kVoicePackMissingPcm, sizeof(kVoicePackMissingPcm));
+    return;
+  }
   speakProfileIdentityFromSlot(g_profileId, true);
 }
 
 void listVoices() {
-  for (size_t i = 0; i < kVoiceClipsCount; ++i) Serial.println(kVoiceClips[i].name);
+  VoiceClip c;
+  for (size_t i = 0; voicePackClipAt(i, &c); ++i) Serial.println(c.name);
 }
 
 bool playNamedVoice(const String& token) {
   return speakToken(token);
 }
 
+// Plays the clips from the calling task, so the audio task must be done first:
+// both would write to I2S and share playClipBlocking's buffers. Only the main
+// loop queues speech, and it is busy here, so nothing new starts meanwhile.
 void voiceTest() {
+  while (!audioQueueIsEmpty() || g_audioPlaying) delay(5);
   Serial.println("Voice TEST...");
-  for (size_t i = 0; i < kVoiceClipsCount; ++i) {
+  VoiceClip c;
+  for (size_t i = 0; voicePackClipAt(i, &c); ++i) {
     Serial.print("  ");
-    Serial.println(kVoiceClips[i].name);
-    playClipProgmemBlocking(kVoiceClips[i].data, kVoiceClips[i].len);
-    playSilenceMsBlocking(120);
+    Serial.println(c.name);
+    playClipBlocking(c.data, c.len, g_speechSpeedFactor);
+    playSilenceMsBlocking(CLIP_GAP_MS + 120);
   }
+  padToDmaBufferBoundary();
   Serial.println("Voice TEST done.");
 }

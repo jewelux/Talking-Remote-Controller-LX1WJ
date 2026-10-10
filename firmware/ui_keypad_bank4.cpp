@@ -45,7 +45,7 @@ void queryBank4MonitorLevel() {
   if (!queryMonitorLevel(raw, 800)) { keypadReportFailure("MONLEVEL?"); return; }
   const uint8_t percent = levelRawToPercent(raw);
   printKeypadStatus("MONLEVEL {}%", percent);
-  speakFeatureValue(voice_monitor, voice_monitor_len, percent);
+  speakFeatureValue("monitor", percent);
 }
 
 void adjustBank4MonitorLevel(int deltaPercent) {

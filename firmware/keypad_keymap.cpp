@@ -267,6 +267,7 @@ KeyBinding bank9(char key) {
   switch (key) {
     case '4': return bind(queryBank9TuningSpeech, toggleBank9TuningSpeech);
     case '5': return bind(queryBank9Verbose, toggleBank9Verbose);
+    case '6': return bind(queryBank9Speed, stepBank9Speed);
     case '7': return bind([] { adjustBank9Volume(-1); }, [] { adjustBank9Volume(-2); });
     case '8': return bind([] { adjustBank9Volume(1); }, [] { adjustBank9Volume(2); });
     case '9': return bind(queryBank9Volume);

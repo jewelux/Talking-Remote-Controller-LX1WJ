@@ -65,6 +65,21 @@ void saveVolumeToNvs(uint8_t level) {
   prefs.end();
 }
 
+uint8_t loadSpeechSpeedFromNvs(uint8_t fallback) {
+  Preferences prefs;
+  if (!prefs.begin("talkingrc", false)) return fallback;
+  uint8_t v = prefs.getUChar("speed", fallback);
+  prefs.end();
+  return v;
+}
+
+void saveSpeechSpeedToNvs(uint8_t speed) {
+  Preferences prefs;
+  if (!prefs.begin("talkingrc", false)) return;
+  prefs.putUChar("speed", speed);
+  prefs.end();
+}
+
 static String connectionKey(const char* prefix, uint8_t id) {
   return String(prefix) + String((int)id);
 }

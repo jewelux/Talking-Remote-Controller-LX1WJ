@@ -23,7 +23,7 @@ static void speakSignedStepValue(const String& label, int value) {
     playSilenceMs(60);
     value = -value;
   }
-  speakDigitsAndPoint(String(value));
+  speakNumber(String(value));
   playSilenceMs(60);
   speakToken("step");
 }
@@ -102,7 +102,7 @@ void queryBank2NrLevel() {
   }
   uint8_t percent = levelRawToPercent(raw);
   printKeypadStatus("NRLEVEL {}%", percent);
-  speakFeatureValue(voice_noisereduction, voice_noisereduction_len, percent);
+  speakFeatureValue("noisereduction", percent);
 }
 
 void adjustBank2NrLevel(int deltaPercent) {
@@ -134,7 +134,7 @@ void adjustBank2NrLevel(int deltaPercent) {
   if (!wrote && (bool)Serial) {
     Serial.println("WARN NRLEVEL write not confirmed; using readback value");
   }
-  speakFeatureValue(voice_noisereduction, voice_noisereduction_len, readPercent);
+  speakFeatureValue("noisereduction", readPercent);
 }
 
 void queryBank2NbLevel() {

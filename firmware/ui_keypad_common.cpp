@@ -225,8 +225,9 @@ void speakCivAddressValue(uint8_t addr, bool ok) {
 void speakBaudValue(uint32_t baud, bool ok) {
   if (!g_speechEnabled) return;
   speakLabel("baud");
-  speakDigitsAndPoint(String((unsigned long)baud));
-  if (ok) speakValueOk();
+  speakNumber(String((unsigned long)baud));
+  if (ok && g_verboseSpeech) speakValueOk();
+  else playSilenceMs(250);
 }
 
 void speakProfileReset() {
@@ -248,7 +249,6 @@ void speakFrequencyWord() {
 
 void speakPlease() {
   if (!g_speechEnabled) return;
-  playSilenceMs(20);
   speakToken("please");
 }
 
@@ -318,7 +318,7 @@ bool guardFt8x7VfoToggleLock() {
 
 void speakSimpleBinaryState(bool on) {
   if (!g_speechEnabled) return;
-  playClipProgmem(on ? voice_on : voice_off, on ? voice_on_len : voice_off_len);
+  speakToken(on ? "on" : "off");
 }
 
 void speakRxTxState(bool tx) {
@@ -344,9 +344,9 @@ uint16_t levelPercentToRaw(int percent) {
   return (uint16_t)((percent * 255 + 50) / 100);
 }
 
-void speakFeatureValue(const uint8_t* featureData, size_t featureLen, uint8_t value) {
+void speakFeatureValue(const char* featureToken, uint8_t value) {
   if (!g_speechEnabled) return;
-  speakLabelClip(featureData, featureLen);
+  speakLabel(featureToken);
   speakDigitsAndPoint(String((int)value));
 }
 

@@ -13,7 +13,7 @@ static void speakRitOffsetValue(int32_t hz) {
     speakToken("minus");
     playSilenceMs(60);
   }
-  speakDigitsAndPoint(String(hz < 0 ? -hz : hz));
+  speakNumber(String(hz < 0 ? -hz : hz));
   playSilenceMs(60);
   speakToken("hertz");
 }

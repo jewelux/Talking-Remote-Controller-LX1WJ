@@ -152,6 +152,8 @@ void toggleBank9Verbose();
 // -1/1: "VOLUME DOWN/UP"; -2/2: "VOLUME DOWN/UP FAST".
 void adjustBank9Volume(int delta);
 void queryBank9Volume();   // "VOLUME?", speaks the volume
+void queryBank9Speed();    // "SPEED?", says "speed normal"
+void stepBank9Speed();     // "SPEED NEXT": slow, normal, fast, slow again
 void queryBank9Profile();  // "PROFILE?", speaks the profile
 void beginBank9ProfileSelect();
 // "PROFILE RESET": the saved baud and CI-V address back to the profile's defaults.
