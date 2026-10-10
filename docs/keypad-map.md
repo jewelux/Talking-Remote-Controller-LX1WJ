@@ -77,7 +77,7 @@ they say "not available". This is noted where it is always the case.
 | `9` short | filter width | not available | free | not available | TX equalizer |
 | `9` long | next filter | free | free | free | free |
 | `9` double | previous filter | free | free | free | free |
-| `A` short | free | free | free | not available | IPO |
+| `A` short | free | free | free | not available | preamplifier |
 | `A` long | free | free | free | not available | attenuator |
 | `A` double | free | free | free | AGC | AGC |
 

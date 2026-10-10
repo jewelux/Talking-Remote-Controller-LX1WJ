@@ -103,6 +103,8 @@ voice_ctcss.wav
 voice_dcs.wav
 voice_ptt.wav
 voice_monitor.wav
+voice_preamplifier.wav
+voice_attenuator.wav
 voice_transceiver.wav
 voice_sync.wav
 

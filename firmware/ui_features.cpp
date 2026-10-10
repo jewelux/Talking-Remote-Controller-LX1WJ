@@ -195,6 +195,15 @@ void speakFt8x7Setting(const Ft8x7SettingState& state) {
     speakToken(ft8x7AgcText(state.agc));
     return;
   }
-  // "IPO" -> "i p o"
+  // IPO bypasses the preamp: "IPO on" is "preamplifier off".
+  if (state.setting == Ft8x7Setting::Ipo) {
+    speakTokenState("preamplifier", !state.on);
+    return;
+  }
+  if (state.setting == Ft8x7Setting::Att) {
+    speakTokenState("attenuator", state.on);
+    return;
+  }
+  // "BK" -> "b k"
   speakTokenState(spelledLetters(ft8x7SettingName(state.setting)), state.on);
 }

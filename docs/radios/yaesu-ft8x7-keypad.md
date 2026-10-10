@@ -53,8 +53,8 @@ All Bank 2 keys only read settings from the radio's EEPROM. CAT don't change the
 | `7` short | not available (no DSP) | `HPF?`: low cut (menu 46, DSP HPF cutoff) |
 | `8` short | not available (no DSP) | `LPF?`: high cut (menu 47, DSP LPF cutoff) |
 | `9` short | not available (no DSP) | `MICEQ?`: TX equalizer (menu 48) |
-| `A` short | not available | `IPO?` (HF and 6 m) |
-| `A` long | not available | `ATT?` (HF and 6 m) |
+| `A` short | not available | `IPO?`: preamplifier, on when IPO is off (HF and 6 m) |
+| `A` long | not available | `ATT?`: attenuator (HF and 6 m) |
 | `A` double click | `AGC?` | `AGC?` |
 
 IPO and ATT are those of the current band and VFO. The menu settings are read as the radio last saved them. Break-in, keyer and FM narrow have no key; the console commands `BK?`, `KYR?` and `NAR?` read them.

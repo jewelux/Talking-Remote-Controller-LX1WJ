@@ -156,7 +156,8 @@
   blanker (`2`) and AGC (`A` double press, "a g c auto"). The FT-857/897 also reads DSP noise
   reduction (`1`), auto notch (`3`), the NR level (`4`, "noise reduction level 8"), the NB level
   (`5`), the DSP bandpass filter (`6`), the low cut and high cut (`7` and `8`), the TX equalizer
-  (`9`) and IPO and ATT (`A`, long for ATT); the FT-817 has no DSP, so these say "not available".
+  (`9`) and the preamplifier and attenuator (`A`, long for the attenuator; the preamplifier is on
+  when IPO is off); the FT-817 has no DSP, so these say "not available".
   HamTRC only reads these settings; it cannot change them
 - FT-817/818: Bank 2 `0` says which antenna jack the current band uses (menu 07), "antenna front"
   or "antenna rear". The console command is `ANT?`

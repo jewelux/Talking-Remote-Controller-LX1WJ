@@ -128,6 +128,8 @@ front
 rear
 digi | | didgy
 monitor
+preamplifier
+attenuator
 repeater
 rit
 s meter | s_meter
