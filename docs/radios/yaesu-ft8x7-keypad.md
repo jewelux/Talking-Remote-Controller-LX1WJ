@@ -57,7 +57,7 @@ All Bank 2 keys only read settings from the radio's EEPROM. CAT don't change the
 | `A` long | not available | `ATT?`: attenuator (HF and 6 m) |
 | `A` double click | `AGC?` | `AGC?` |
 
-IPO and ATT are those of the current band and VFO. The menu settings are read as the radio last saved them. Break-in, keyer and FM narrow have no key; the console commands `BK?`, `KYR?` and `NAR?` read them. On the FT-857/897, `PROC?` and `PROCLEVEL?` read the speech processor and its level (menu 74).
+IPO and ATT are those of the current band and VFO. The menu settings are read as the radio last saved them. Break-in, keyer and FM narrow have no key; the console commands `BK?`, `KYR?` and `NAR?` read them. On the FT-857/897, `PROC?` and `PROCLEVEL?` read the speech processor and its level (menu 74). `MICGAIN?` reads the mic gain of the current mode: on the FT-857/897 SSB menu 81, AM menu 5, FM menu 51 or DIG gain menu 37, not in CW and PKT; on the FT-817 SSB menu 46, AM menu 5, FM menu 29, DIG menu 25 or PKT menu 39 or 3 by the packet rate, not in CW.
 
 ## Bank 3 - VFO / Split
 

@@ -361,6 +361,13 @@ static bool handleConsoleFeatureCommand(const String& upper) {
     speakProcLevel(level);
     return true;
   }
+  if (upper == "MICGAIN?") {
+    uint8_t level = 0;
+    if (reportFeatureFailure(micGainQuery(level), label)) return true;
+    Serial.println(micGainText(level));
+    speakMicGain(level);
+    return true;
+  }
   return false;
 }
 
@@ -738,6 +745,7 @@ void printHelp() {
     Serial.println("    PBT2 <-128..127> | CENTER | STEP <+-n>");
     Serial.println("    PBT2?");
     Serial.println("    PROC? | PROCLEVEL?  (speech compressor, read only)");
+    Serial.println("    MICGAIN?  (read only)");
     Serial.print("    RFPOWER <0..");
     Serial.print((int)(currentProfile().rfPowerMaxWatts ? currentProfile().rfPowerMaxWatts : 100));
     Serial.println(" W>");
@@ -805,6 +813,7 @@ void printHelp() {
     Serial.println("    NR OFF | ON | TOGGLE");
     Serial.println("    NR?");
     Serial.println("    PROC? | PROCLEVEL?  (speech processor, read only)");
+    Serial.println("    MICGAIN?  (read only)");
     Serial.println("    RXTX?");
     Serial.println("    SPLIT OFF | ON | TOGGLE");
     Serial.println("    SPLIT?");
@@ -862,6 +871,8 @@ void printHelp() {
                          : "    AGC? | IPO? | ATT? | NAR? | DBF? | BK? | KYR?  (radio settings, read only)");
     if (!ft817) Serial.println("    NRLEVEL? | NBLEVEL? | HPF? | LPF? | MICEQ?  (DSP menu settings, read only)");
     if (!ft817) Serial.println("    PROC? | PROCLEVEL?  (speech processor and menu 74, read only)");
+    Serial.println(ft817 ? "    MICGAIN?  (mic gain of the mode: SSB, AM, FM, DIG or PKT menu, read only)"
+                         : "    MICGAIN?  (mic gain of the mode: SSB, AM, FM or DIG menu, read only)");
     Serial.println(ft817 ? "    RFPOWER?  (the TX power setting)" : "    RFPOWER?  (menu 75 power of the current band)");
     Serial.println("    MENU? | ROW?  (menu item and soft key row, saved when the radio's menu is exited)");
     Serial.println("    AGC <hex byte>");

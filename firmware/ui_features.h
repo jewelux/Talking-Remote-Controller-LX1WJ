@@ -26,6 +26,9 @@ void speakProcState(bool on);
 // "PROCLEVEL 50"; "processor level 50".
 String procLevelText(uint8_t level);
 void speakProcLevel(uint8_t level);
+// "MICGAIN 50"; "mic gain 50".
+String micGainText(uint8_t level);
+void speakMicGain(uint8_t level);
 
 // FT-857/897 EEPROM settings: "AGC FAST", "IPO ON", "RFPOWER 100 W", "MENU 76".
 String ft8x7SettingText(const Ft8x7SettingState& state);

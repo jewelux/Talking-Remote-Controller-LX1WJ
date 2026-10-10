@@ -144,6 +144,50 @@ TEST(ft857_byte_0x93_splits_into_three_settings) {
   CHECK_EQ(ft857LevelValue(YaesuFt857Level::BpfWidth, 0x04), 120);
 }
 
+TEST(mic_gain_follows_the_mode) {
+  Ft8x7MicGain gain = Ft8x7MicGain::Pkt;
+  CHECK(ft8x7MicGainForMode(0x00, gain));  // LSB
+  CHECK_EQ(gain, Ft8x7MicGain::Ssb);
+  CHECK(ft8x7MicGainForMode(0x01, gain));  // USB
+  CHECK_EQ(gain, Ft8x7MicGain::Ssb);
+  CHECK(ft8x7MicGainForMode(0x84, gain));  // AM narrow
+  CHECK_EQ(gain, Ft8x7MicGain::Am);
+  CHECK(ft8x7MicGainForMode(0x88, gain));  // FM narrow
+  CHECK_EQ(gain, Ft8x7MicGain::Fm);
+  CHECK(ft8x7MicGainForMode(0x0A, gain));  // DIG
+  CHECK_EQ(gain, Ft8x7MicGain::Dig);
+  CHECK(ft8x7MicGainForMode(0x0C, gain));  // PKT
+  CHECK_EQ(gain, Ft8x7MicGain::Pkt);
+  CHECK(!ft8x7MicGainForMode(0x02, gain));  // CW
+  CHECK(!ft8x7MicGainForMode(0x03, gain));  // CW-R
+  CHECK(!ft8x7MicGainForMode(0x06, gain));  // WFM
+}
+
+TEST(ft857_mic_gain_menus) {
+  YaesuFt857Level level = YaesuFt857Level::CwSpeed;
+  CHECK(ft857MicGainLevel(Ft8x7MicGain::Ssb, level));
+  CHECK_EQ(level, YaesuFt857Level::SsbMicGain);
+  CHECK(ft857MicGainLevel(Ft8x7MicGain::Am, level));
+  CHECK_EQ(level, YaesuFt857Level::AmMicGain);
+  CHECK(ft857MicGainLevel(Ft8x7MicGain::Fm, level));
+  CHECK_EQ(level, YaesuFt857Level::FmMicGain);
+  CHECK(ft857MicGainLevel(Ft8x7MicGain::Dig, level));
+  CHECK_EQ(level, YaesuFt857Level::DigGain);
+  CHECK(!ft857MicGainLevel(Ft8x7MicGain::Pkt, level));
+}
+
+TEST(ft817_mic_gain_addresses) {
+  CHECK_EQ(ft817MicGainAddr(Ft8x7MicGain::Ssb, false), 0x0067);
+  CHECK_EQ(ft817MicGainAddr(Ft8x7MicGain::Am, false), 0x0068);
+  CHECK_EQ(ft817MicGainAddr(Ft8x7MicGain::Fm, false), 0x0069);
+  CHECK_EQ(ft817MicGainAddr(Ft8x7MicGain::Dig, false), 0x006A);
+  CHECK_EQ(ft817MicGainAddr(Ft8x7MicGain::Pkt, false), 0x006B);
+  CHECK_EQ(ft817MicGainAddr(Ft8x7MicGain::Pkt, true), 0x006C);
+  CHECK_EQ(ft817MicGainAddr(Ft8x7MicGain::Ssb, true), 0x0067);  // the rate only picks the PKT one
+  CHECK_EQ(ft817MicGainFromByte(0xE4), 100);  // bit 7 is another setting (0x68: mic key)
+  CHECK_EQ(ft817MicGainFromByte(0x32), 50);
+}
+
 TEST(ft817_rf_power_tenths) {
   CHECK_EQ(ft817RfPowerTenths(0x00, false), 50);
   CHECK_EQ(ft817RfPowerTenths(0x01, false), 25);

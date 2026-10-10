@@ -111,6 +111,10 @@
 - `PROC?` says whether the speech processor is on ("processor on") and `PROCLEVEL?` says its level
   ("processor level 50"), on the FT-857/897 (menu 74), Icom radios (COMP) and the FTDX10. They
   only read; the processor cannot be changed from HamTRC yet
+- `MICGAIN?` says the mic gain ("mic gain 50") on Icom radios, the FTDX10, the FT-817/818 and
+  the FT-857/897. The FT-817 and FT-857/897 have one for each mode, so it says the one of the
+  current mode: SSB, AM, FM, DIG, and on the FT-817 also packet. In CW, and in packet on the
+  FT-857/897, it says "not available". It only reads for now
 
 ### Radio profiles
 

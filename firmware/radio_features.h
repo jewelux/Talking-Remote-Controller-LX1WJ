@@ -59,6 +59,11 @@ FeatureStatus procQuery(bool& on);
 // 0..100.
 FeatureStatus procLevelQuery(uint8_t& level);
 
+// Mic gain, 0..100: Icom, FTDX10, and on the FT-817/818 and FT-857/897 the menu of the current
+// mode (SSB, AM, FM, DIG, on the FT-817 also PKT). Unsupported in CW and WFM, and in the
+// FT-857/897's PKT. Read only for now.
+FeatureStatus micGainQuery(uint8_t& level);
+
 // FT-857/897 settings read from the radio's EEPROM, since CAT has no command for them. They
 // cannot be set. IPO, ATT and NAR are those of the current band. The FT-817/818 has RfPower,
 // Menu, Row, Agc, BreakIn, Keyer, IfShift and Antenna.

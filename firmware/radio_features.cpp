@@ -216,6 +216,37 @@ FeatureStatus procLevelQuery(uint8_t& level) {
   return ok ? FeatureStatus::Ok : failure(FeatureStatus::NoReply);
 }
 
+// ---- Mic gain ----
+
+// The FT-8x7 keeps a mic gain per mode; the raw mode byte also tells PKT and the narrow modes
+// apart, which the profile's mode codes do not.
+static FeatureStatus ft8x7MicGainQuery(uint8_t& level) {
+  uint8_t modeByte = 0;
+  if (!yaesuCatQueryModeRawByte(modeByte, YAESU_CAT_REPLY_TIMEOUT_MS)) return failure(FeatureStatus::NoReply);
+  Ft8x7MicGain gain = Ft8x7MicGain::Ssb;
+  if (!ft8x7MicGainForMode(modeByte, gain) || !yaesuFt8x7HasMicGain(gain)) return FeatureStatus::Unsupported;
+  if (!yaesuFt8x7QueryMicGain(gain, level, YAESU_CAT_REPLY_TIMEOUT_MS)) return failure(FeatureStatus::NoReply);
+  return FeatureStatus::Ok;
+}
+
+FeatureStatus micGainQuery(uint8_t& level) {
+  if (currentProtocolType() != PROTO_CIV && !isFtdx10() && currentFt8x7Model() == Ft8x7Model::None) {
+    return FeatureStatus::Unsupported;
+  }
+  const RadioProfile& sp = currentProfile();
+  bool ok = false;
+  if (currentProtocolType() == PROTO_CIV) {
+    uint16_t raw = 0;
+    ok = civQueryMicGain(sp, raw, 800);
+    level = levelRawToPercent(raw);
+  } else if (isFtdx10()) {
+    ok = asciiQueryYaesuMicGain(sp, level, 800);
+  } else {
+    return ft8x7MicGainQuery(level);
+  }
+  return ok ? FeatureStatus::Ok : failure(FeatureStatus::NoReply);
+}
+
 // ---- FT-8x7 EEPROM settings ----
 
 static constexpr uint32_t kFt8x7TimeoutMs = YAESU_CAT_REPLY_TIMEOUT_MS;

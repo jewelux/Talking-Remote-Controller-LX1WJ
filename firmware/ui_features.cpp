@@ -79,6 +79,16 @@ void speakProcLevel(uint8_t level) {
   speakDigitsAndPoint(String((int)level));
 }
 
+String micGainText(uint8_t level) {
+  return String("MICGAIN ") + String((int)level);
+}
+
+void speakMicGain(uint8_t level) {
+  if (!g_speechEnabled) return;
+  speakLabel("micgain");
+  speakDigitsAndPoint(String((int)level));
+}
+
 static const char* ft8x7AgcText(YaesuAgc agc) {
   switch (agc) {
     case YaesuAgc::Fast: return "FAST";

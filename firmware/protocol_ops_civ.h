@@ -22,6 +22,8 @@ bool civSetNbLevel(const RadioProfile& sp, uint16_t value);
 // Speech compressor (COMP) and its level, 0..255.
 bool civQueryProc(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
 bool civQueryProcLevel(const RadioProfile& sp, uint16_t& valueOut, uint32_t timeoutMs);
+// Mic gain, 0..255.
+bool civQueryMicGain(const RadioProfile& sp, uint16_t& valueOut, uint32_t timeoutMs);
 bool civQueryNotch(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
 bool civSetNotch(const RadioProfile& sp, bool on);
 bool civQueryNotchWidth(const RadioProfile& sp, NotchWidth& widthOut, uint32_t timeoutMs);

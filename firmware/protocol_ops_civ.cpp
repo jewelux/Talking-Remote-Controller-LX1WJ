@@ -366,6 +366,11 @@ bool civQueryProcLevel(const RadioProfile& sp, uint16_t& valueOut, uint32_t time
   return civQuery14Value(0x0E, valueOut, timeoutMs);
 }
 
+bool civQueryMicGain(const RadioProfile& sp, uint16_t& valueOut, uint32_t timeoutMs) {
+  if (sp.protocol != PROTO_CIV) return false;
+  return civQuery14Value(0x0B, valueOut, timeoutMs);
+}
+
 bool civQueryNotch(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
   if (!sp.caps.getNotch) return false;
   return civQueryToggleSub(0x48, onOut, timeoutMs);

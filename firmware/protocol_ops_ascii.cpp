@@ -277,6 +277,16 @@ bool asciiQueryYaesuProcLevel(const RadioProfile& sp, uint8_t& levelOut, uint32_
   return true;
 }
 
+bool asciiQueryYaesuMicGain(const RadioProfile& sp, uint8_t& levelOut, uint32_t timeoutMs) {
+  if (sp.protocol != PROTO_YAESU_FTDX_ASCII) return false;
+  String line;
+  if (!transactAsciiCommand("MG;", line, "MG", timeoutMs)) return false;
+  uint64_t value = 0;
+  if (!parseAsciiUnsignedResponse(line, "MG", value) || value > 100) return false;
+  levelOut = (uint8_t)value;
+  return true;
+}
+
 bool asciiQueryActiveVfoA(const RadioProfile& sp, bool& vfoAOut, uint32_t timeoutMs) {
   if (!sp.commands->vfoGet[0] || !sp.commands->vfoReplyPrefix[0]) return false;
   String line;

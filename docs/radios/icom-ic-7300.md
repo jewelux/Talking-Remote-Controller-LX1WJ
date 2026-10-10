@@ -102,6 +102,7 @@ New features and new radios come with a new firmware.
 ### Transmit
 
 - `PROC?` (speech compressor, COMP), `PROCLEVEL?` (its level, 0..100 %)
+- `MICGAIN?` (mic gain, 0..100 %)
 
 ### VFO / Split / Bandstack
 

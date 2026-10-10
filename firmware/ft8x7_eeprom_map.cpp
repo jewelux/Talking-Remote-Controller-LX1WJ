@@ -173,6 +173,28 @@ uint16_t ft857LevelValue(YaesuFt857Level level, uint8_t b) {
   }
 }
 
+bool ft8x7MicGainForMode(uint8_t modeByte, Ft8x7MicGain& out) {
+  switch (modeByte & 0x7F) {
+    case 0x00:
+    case 0x01: out = Ft8x7MicGain::Ssb; return true;
+    case 0x04: out = Ft8x7MicGain::Am; return true;
+    case 0x08: out = Ft8x7MicGain::Fm; return true;
+    case 0x0A: out = Ft8x7MicGain::Dig; return true;
+    case 0x0C: out = Ft8x7MicGain::Pkt; return true;
+    default: return false;
+  }
+}
+
+bool ft857MicGainLevel(Ft8x7MicGain gain, YaesuFt857Level& out) {
+  switch (gain) {
+    case Ft8x7MicGain::Ssb: out = YaesuFt857Level::SsbMicGain; return true;
+    case Ft8x7MicGain::Am: out = YaesuFt857Level::AmMicGain; return true;
+    case Ft8x7MicGain::Fm: out = YaesuFt857Level::FmMicGain; return true;
+    case Ft8x7MicGain::Dig: out = YaesuFt857Level::DigGain; return true;
+    default: return false;
+  }
+}
+
 uint16_t ft817RfPowerTenths(uint8_t b, bool ft818) {
   static constexpr uint16_t kFt817Tenths[] = {50, 25, 10, 5};
   static constexpr uint16_t kFt818Tenths[] = {60, 50, 25, 10};
@@ -190,6 +212,22 @@ uint8_t ft817MenuFromByte(uint8_t b) {
 
 uint8_t ft817RowFromByte(uint8_t b) {
   return (uint8_t)((b & 0x0F) + 1);
+}
+
+uint16_t ft817MicGainAddr(Ft8x7MicGain gain, bool pkt9600) {
+  switch (gain) {
+    case Ft8x7MicGain::Ssb: return 0x0067;
+    case Ft8x7MicGain::Am: return 0x0068;
+    case Ft8x7MicGain::Fm: return 0x0069;
+    case Ft8x7MicGain::Dig: return 0x006A;
+    case Ft8x7MicGain::Pkt: return pkt9600 ? 0x006C : 0x006B;
+  }
+  return 0x0067;
+}
+
+uint8_t ft817MicGainFromByte(uint8_t b) {
+  const uint8_t value = (uint8_t)(b & 0x7F);
+  return value > 100 ? 100 : value;
 }
 
 uint8_t ft817RearAntennaMask(Ft8x7BandGroup group) {

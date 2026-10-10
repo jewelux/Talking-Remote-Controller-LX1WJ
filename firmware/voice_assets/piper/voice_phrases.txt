@@ -131,6 +131,7 @@ monitor
 preamplifier
 attenuator
 processor
+mic gain | micgain
 repeater
 rit
 s meter | s_meter

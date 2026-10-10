@@ -169,3 +169,29 @@ bool yaesuFt857QueryMicEq(YaesuFt857MicEq& out, uint32_t timeoutMs) {
   out = ft857MicEqFromByte(b);
   return true;
 }
+
+bool yaesuFt8x7HasMicGain(Ft8x7MicGain gain) {
+  YaesuFt857Level level = YaesuFt857Level::SsbMicGain;
+  return currentIsFt817Family() || (currentIsFt857Family() && ft857MicGainLevel(gain, level));
+}
+
+bool yaesuFt8x7QueryMicGain(Ft8x7MicGain gain, uint8_t& valueOut, uint32_t timeoutMs) {
+  if (currentIsFt857Family()) {
+    YaesuFt857Level level = YaesuFt857Level::SsbMicGain;
+    uint16_t value = 0;
+    if (!ft857MicGainLevel(gain, level) || !yaesuFt857QueryLevel(level, value, timeoutMs)) return false;
+    valueOut = value > 100 ? 100 : (uint8_t)value;
+    return true;
+  }
+  if (!currentIsFt817Family()) return false;
+  bool pkt9600 = false;
+  if (gain == Ft8x7MicGain::Pkt) {
+    uint8_t rate = 0;
+    if (!yaesuCatReadEepromByte(FT817_PKT_RATE_ADDR, rate, timeoutMs)) return false;
+    pkt9600 = (rate & FT817_PKT_RATE_9600_MASK) != 0;
+  }
+  uint8_t b = 0;
+  if (!yaesuCatReadEepromByte(ft817MicGainAddr(gain, pkt9600), b, timeoutMs)) return false;
+  valueOut = ft817MicGainFromByte(b);
+  return true;
+}

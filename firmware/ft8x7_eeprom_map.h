@@ -121,6 +121,15 @@ bool ft857LevelAddr(YaesuFt857Level level, uint16_t& addrOut);
 // The level from the byte at its address, in the units the radio shows.
 uint16_t ft857LevelValue(YaesuFt857Level level, uint8_t b);
 
+// The mic gain a mode transmits with; each mode group has its own.
+enum class Ft8x7MicGain : uint8_t { Ssb, Am, Fm, Dig, Pkt };
+// From a CAT mode byte (bit 7, the narrow variant, ignored). False for CW and WFM, which have
+// none.
+bool ft8x7MicGainForMode(uint8_t modeByte, Ft8x7MicGain& out);
+// FT-857/897: SSB menu 81, AM menu 5, FM menu 51, DIG gain menu 37. False for PKT, whose level
+// (menu 71 or 72) depends on the packet rate in menu 70, which is not in the map.
+bool ft857MicGainLevel(Ft8x7MicGain gain, YaesuFt857Level& out);
+
 // FT-817/818 0x79 bits 1..0: TX power High, L3, L2, L1. On an external supply 5, 2.5, 1 and
 // 0.5 W on the FT-817, and 6, 5, 2.5 and 1 W on the FT-818 (not measured on an FT-818).
 static constexpr uint16_t FT817_RF_POWER_ADDR = 0x0079;
@@ -140,3 +149,11 @@ uint8_t ft817RowFromByte(uint8_t b);
 // broadcast, 3 air, 4 2 m, 5 UHF (KA7OEI map). Bit 7 of the same byte is split.
 static constexpr uint16_t FT817_ANTENNA_ADDR = 0x007A;
 uint8_t ft817RearAntennaMask(Ft8x7BandGroup group);
+
+// FT-817 mic gains, bits 6..0, 0..100 (KA7OEI map): SSB 0x67 (menu 46), AM 0x68 (menu 5), FM
+// 0x69 (menu 29), DIG 0x6A (menu 25), PKT 0x6B (menu 39) at 1200 baud and 0x6C (menu 3) at
+// 9600. The packet rate is 0x5D bit 2 (menu 40), 1 = 9600.
+static constexpr uint16_t FT817_PKT_RATE_ADDR = 0x005D;
+static constexpr uint8_t FT817_PKT_RATE_9600_MASK = 0x04;
+uint16_t ft817MicGainAddr(Ft8x7MicGain gain, bool pkt9600);
+uint8_t ft817MicGainFromByte(uint8_t b);

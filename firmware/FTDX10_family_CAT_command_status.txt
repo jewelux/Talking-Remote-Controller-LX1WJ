@@ -50,7 +50,7 @@ MA | Memory channel to VFO-A | nein | keine FTDX10-Implementierung gefunden
 MB | Memory channel to VFO-B | nein | keine FTDX10-Implementierung gefunden
 MC | Memory channel | nein | keine FTDX10-Implementierung gefunden
 MD | Mode | implementiert | lesen/schreiben vorhanden
-MG | Mic gain | nein | keine FTDX10-Implementierung gefunden
+MG | Mic gain | teilweise | MG read ueber Konsole MICGAIN? vorhanden, nicht am Radio getestet
 ML | Monitor level | nein | aktuelle Monitor-Pfade sind nur fuer CI-V umgesetzt
 MR | Memory read | nein | keine FTDX10-Implementierung gefunden
 MS | Meter switch | nein | keine FTDX10-Implementierung gefunden
