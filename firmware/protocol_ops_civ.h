@@ -27,6 +27,8 @@ bool civQueryMicGain(const RadioProfile& sp, uint16_t& valueOut, uint32_t timeou
 // VOX and its gain, 0..255.
 bool civQueryVox(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
 bool civQueryVoxGain(const RadioProfile& sp, uint16_t& valueOut, uint32_t timeoutMs);
+// IC-7300 VOX delay (menu 0x0191, 0.0..2.0 s), in ms.
+bool civQueryVoxDelayMs(const RadioProfile& sp, uint16_t& msOut, uint32_t timeoutMs);
 bool civQueryNotch(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
 bool civSetNotch(const RadioProfile& sp, bool on);
 bool civQueryNotchWidth(const RadioProfile& sp, NotchWidth& widthOut, uint32_t timeoutMs);

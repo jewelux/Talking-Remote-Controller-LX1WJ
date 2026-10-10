@@ -209,3 +209,12 @@ bool yaesuFt8x7QueryVoxGain(uint8_t& valueOut, uint32_t timeoutMs) {
   valueOut = ft817LevelFromByte(b);
   return true;
 }
+
+bool yaesuFt8x7QueryVoxDelayMs(uint16_t& msOut, uint32_t timeoutMs) {
+  if (currentIsFt857Family()) return yaesuFt857QueryLevel(YaesuFt857Level::VoxDelay, msOut, timeoutMs);
+  if (!currentIsFt817Family()) return false;
+  uint8_t b = 0;
+  if (!yaesuCatReadEepromByte(FT817_VOX_DELAY_ADDR, b, timeoutMs)) return false;
+  msOut = ft817VoxDelayMs(b);
+  return true;
+}

@@ -136,6 +136,8 @@ processor
 mic gain | micgain
 vox
 vox gain | voxgain
+vox delay | voxdelay
+m s | | m. s.
 repeater
 rit
 s meter | s_meter

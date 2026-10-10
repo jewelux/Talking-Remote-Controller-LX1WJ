@@ -196,6 +196,19 @@ TEST(vox_gain) {
   CHECK_EQ(ft857LevelValue(YaesuFt857Level::VoxGain, 0xB2), 50);  // bit 7 is not the gain
 }
 
+TEST(vox_delay) {
+  uint16_t addr = 0;
+  CHECK(ft857LevelAddr(YaesuFt857Level::VoxDelay, addr));
+  CHECK_EQ(addr, 0x0077);
+  CHECK_EQ(ft857LevelValue(YaesuFt857Level::VoxDelay, 0x05), 500);
+  CHECK_EQ(FT817_VOX_DELAY_ADDR, 0x0064);
+  CHECK_EQ(ft817VoxDelayMs(0x01), 100);
+  CHECK_EQ(ft817VoxDelayMs(0x19), 2500);
+  CHECK_EQ(ft817VoxDelayMs(0x83), 300);  // bits 7..5 are other settings
+  CHECK_EQ(ft817VoxDelayMs(0x00), 100);
+  CHECK_EQ(ft817VoxDelayMs(0x1F), 2500);
+}
+
 TEST(ft817_rf_power_tenths) {
   CHECK_EQ(ft817RfPowerTenths(0x00, false), 50);
   CHECK_EQ(ft817RfPowerTenths(0x01, false), 25);

@@ -279,6 +279,16 @@ FeatureStatus voxGainQuery(uint8_t& level) {
   return ok ? FeatureStatus::Ok : failure(FeatureStatus::NoReply);
 }
 
+FeatureStatus voxDelayQuery(uint16_t& ms) {
+  if (!voxSupported()) return FeatureStatus::Unsupported;
+  const RadioProfile& sp = currentProfile();
+  bool ok = false;
+  if (currentProtocolType() == PROTO_CIV) ok = civQueryVoxDelayMs(sp, ms, 800);
+  else if (isFtdx10()) ok = asciiQueryYaesuVoxDelayMs(sp, ms, 800);
+  else ok = yaesuFt8x7QueryVoxDelayMs(ms, YAESU_CAT_REPLY_TIMEOUT_MS);
+  return ok ? FeatureStatus::Ok : failure(FeatureStatus::NoReply);
+}
+
 // ---- FT-8x7 EEPROM settings ----
 
 static constexpr uint32_t kFt8x7TimeoutMs = YAESU_CAT_REPLY_TIMEOUT_MS;

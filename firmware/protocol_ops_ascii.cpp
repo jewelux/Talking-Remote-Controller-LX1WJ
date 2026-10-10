@@ -307,6 +307,19 @@ bool asciiQueryYaesuVoxGain(const RadioProfile& sp, uint8_t& levelOut, uint32_t 
   return true;
 }
 
+// VD answers a step, not ms: 00..05 = 30, 50, 100, 150, 200, 250 ms, then 06..33 = 300..3000 ms
+// in 100 ms steps (Hamlib maps it so on the FTDX10, FTDX101 and FT-710).
+bool asciiQueryYaesuVoxDelayMs(const RadioProfile& sp, uint16_t& msOut, uint32_t timeoutMs) {
+  static constexpr uint16_t kFirstSteps[] = {30, 50, 100, 150, 200, 250};
+  if (sp.protocol != PROTO_YAESU_FTDX_ASCII) return false;
+  String line;
+  if (!transactAsciiCommand("VD;", line, "VD", timeoutMs)) return false;
+  uint64_t value = 0;
+  if (!parseAsciiUnsignedResponse(line, "VD", value) || value > 33) return false;
+  msOut = value < 6 ? kFirstSteps[value] : (uint16_t)(300 + (value - 6) * 100);
+  return true;
+}
+
 bool asciiQueryActiveVfoA(const RadioProfile& sp, bool& vfoAOut, uint32_t timeoutMs) {
   if (!sp.commands->vfoGet[0] || !sp.commands->vfoReplyPrefix[0]) return false;
   String line;

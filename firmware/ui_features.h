@@ -35,6 +35,9 @@ void speakVoxState(bool on);
 // "VOXGAIN 50"; "vox gain 50".
 String voxGainText(uint8_t level);
 void speakVoxGain(uint8_t level);
+// "VOXDELAY 500 ms"; "vox delay 500 m s".
+String voxDelayText(uint16_t ms);
+void speakVoxDelay(uint16_t ms);
 
 // FT-857/897 EEPROM settings: "AGC FAST", "IPO ON", "RFPOWER 100 W", "MENU 76".
 String ft8x7SettingText(const Ft8x7SettingState& state);

@@ -107,6 +107,18 @@ void speakVoxGain(uint8_t level) {
   speakDigitsAndPoint(String((int)level));
 }
 
+String voxDelayText(uint16_t ms) {
+  return String("VOXDELAY ") + String((int)ms) + " ms";
+}
+
+void speakVoxDelay(uint16_t ms) {
+  if (!g_speechEnabled) return;
+  speakLabel("voxdelay");
+  speakNumber(String((int)ms));
+  playSilenceMs(60);
+  speakToken("ms");
+}
+
 static const char* ft8x7AgcText(YaesuAgc agc) {
   switch (agc) {
     case YaesuAgc::Fast: return "FAST";

@@ -48,3 +48,5 @@ bool yaesuFt8x7HasMicGain(Ft8x7MicGain gain);
 bool yaesuFt8x7QueryMicGain(Ft8x7MicGain gain, uint8_t& valueOut, uint32_t timeoutMs);
 // FT-857/897 menu 88, FT-817 menu 51; 0..100.
 bool yaesuFt8x7QueryVoxGain(uint8_t& valueOut, uint32_t timeoutMs);
+// FT-857/897 menu 87, FT-817 menu 50; ms.
+bool yaesuFt8x7QueryVoxDelayMs(uint16_t& msOut, uint32_t timeoutMs);

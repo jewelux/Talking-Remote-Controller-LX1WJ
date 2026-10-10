@@ -96,7 +96,7 @@ TS | TXW | nein | keine FTDX10-Implementierung gefunden
 TX | TX set | nein | keine FTDX10-Implementierung gefunden
 UL | Unlock | nein | keine FTDX10-Implementierung gefunden
 UP | Up | nein | keine FTDX10-Implementierung gefunden
-VD | VOX delay time | nein | keine FTDX10-Implementierung gefunden
+VD | VOX delay time | teilweise | VD read ueber Konsole VOXDELAY? vorhanden, nicht am Radio getestet; Stufen 00..33 = 30..3000 ms wie bei Hamlib
 VG | VOX gain | teilweise | VG read ueber Konsole VOXGAIN? vorhanden, nicht am Radio getestet
 VM | [V/M] key function | nein | keine FTDX10-Implementierung gefunden
 VS | VFO select | implementiert | read/select A/select B vorhanden

@@ -46,7 +46,7 @@ The goal of this document is to separate:
 | Lock query (`LOCK?`, Bank 1 `3`) | verified: EEPROM `0x57` bit 6, inverted (0 = locked), following both the front panel key and the CAT lock |
 | Noise blanker query (`NB?`, Bank 2 `2`) | verified: EEPROM `0x57` bit 5 (1 = on), following the front panel. There is no DSP, so `NR?` and `NOTCH?` say unsupported |
 | AGC, BK, KYR and VOX (`AGC?`, `BK?`, `KYR?`, `VOX?`, Bank 2 `A` double click for AGC) and fast tuning and IF shift (`YSETTINGS?`) | verified, read only; addresses below |
-| VOX gain (`VOXGAIN?`) | verified, read only: follows menu 51 |
+| VOX gain and delay (`VOXGAIN?`, `VOXDELAY?`) | verified, read only: follow menus 51 and 50 |
 | Mic gain (`MICGAIN?`) | verified, read only: the one of the current mode, SSB, AM, FM and DIG matched their EEPROM bytes. In PKT the choice between the 1200 and 9600 baud level by the packet rate is not tested |
 | IPO, ATT and NAR | not read: they sit in the per-band VFO blocks (IPO appeared at block +0 bit 5), which the radio saves only on a band change or power-off, so a read would lag the radio |
 | VFO A/B commands (`VFOA?`, `VFOB?`, `VFOA MODE?`, `VFOB MODE?` and their sets) | verified: switch to the VFO, wait 120 ms (one retry for a query) and switch back to the VFO in use |
@@ -67,6 +67,7 @@ Read with `BB`, on demand only. Addresses from the FT8x7Com FT817Setup project, 
 | `0x58` | 4 | KYR (measured, as in the map) |
 | `0x5D` | 2 | packet rate (menu 40), 1 = 9600 (KA7OEI map); picks the PKT mic gain |
 | `0x63` | 6..0 | VOX gain (menu 51), 1..100 (measured, as in the KA7OEI map) |
+| `0x64` | 4..0 | VOX delay (menu 50), × 100 ms, 100..2500 ms (measured: 300 ms is 3; the KA7OEI map's 0 = 100 ms is one step off) |
 | `0x67` | 6..0 | SSB mic gain (menu 46), 0..100 (KA7OEI map) |
 | `0x68` | 6..0 | AM mic gain (menu 5), 0..100 (KA7OEI map) |
 | `0x69` | 6..0 | FM mic gain (menu 29), 0..100 (KA7OEI map) |
@@ -137,7 +138,7 @@ The active VFO cannot be read: `0x55` bit 0, which Hamlib's `get_vfo` and the KA
 | Split status query | verified on an FT-897: EEPROM `0x8D` bit 7 in receive, TX status bit 5 while transmitting (1 = on; the manual says 0 = on, which is wrong) |
 | Repeater and tone/DCS write paths outside normal FM repeater context | CAT bytes are implemented, but practical success can still depend on the radio already being in the appropriate VHF/UHF band and FM context |
 | Active VFO read from the EEPROM (`0x68`) | verified on an FT-897: follows both the front panel A/B key and the CAT toggle; Bank 3 reads it before each VFO action (`get_vfo=1`) |
-| Settings read from the EEPROM (Bank 2, Bank 8 `7`/`8`, `MENU?`, `ROW?`, `AGC?`, `IPO?`, `ATT?`, `NAR?`, `DBF?`, `BK?`, `KYR?`, `NR?`, `NB?`, `NOTCH?`, `NRLEVEL?`, `NBLEVEL?`, `HPF?`, `LPF?`, `MICEQ?`, `PROC?`, `PROCLEVEL?`, `MICGAIN?`, `VOX?`, `VOXGAIN?`, `RFPOWER?`) | verified on an FT-897, read only; addresses in the [EEPROM map](#ft-857897-eeprom-map) |
+| Settings read from the EEPROM (Bank 2, Bank 8 `7`/`8`, `MENU?`, `ROW?`, `AGC?`, `IPO?`, `ATT?`, `NAR?`, `DBF?`, `BK?`, `KYR?`, `NR?`, `NB?`, `NOTCH?`, `NRLEVEL?`, `NBLEVEL?`, `HPF?`, `LPF?`, `MICEQ?`, `PROC?`, `PROCLEVEL?`, `MICGAIN?`, `VOX?`, `VOXGAIN?`, `VOXDELAY?`, `RFPOWER?`) | verified on an FT-897, read only; addresses in the [EEPROM map](#ft-857897-eeprom-map) |
 | Further settings read from the EEPROM (`YSETTINGS?`: VOX, PROC, lock, fast tuning, NB, BK, KYR, DSP row, IF shift, filter, SQL/RF knob, mic EQ, menu levels, the RIT offset) | protocol only, no keys except those in Bank 2; verified on an FT-897 against the values set on the radio |
 
 ### FT-857/897 EEPROM map

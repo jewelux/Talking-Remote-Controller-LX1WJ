@@ -230,6 +230,12 @@ uint8_t ft817LevelFromByte(uint8_t b) {
   return value > 100 ? 100 : value;
 }
 
+uint16_t ft817VoxDelayMs(uint8_t b) {
+  const uint8_t steps = (uint8_t)(b & 0x1F);
+  if (steps < 1) return 100;
+  return (uint16_t)((steps > 25 ? 25 : steps) * 100);
+}
+
 uint8_t ft817RearAntennaMask(Ft8x7BandGroup group) {
   switch (group) {
     case Ft8x7BandGroup::Hf: return 0x01;

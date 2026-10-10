@@ -69,6 +69,8 @@ FeatureStatus micGainQuery(uint8_t& level);
 FeatureStatus voxQuery(bool& on);
 // 0..100.
 FeatureStatus voxGainQuery(uint8_t& level);
+// In ms: FT-857/897 menu 87, FT-817/818 menu 50, IC-7300, FTDX10 VD.
+FeatureStatus voxDelayQuery(uint16_t& ms);
 
 // FT-857/897 settings read from the radio's EEPROM, since CAT has no command for them. They
 // cannot be set. IPO, ATT and NAR are those of the current band. The FT-817/818 has RfPower,

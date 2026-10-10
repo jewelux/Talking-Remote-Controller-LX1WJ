@@ -162,3 +162,9 @@ static constexpr uint16_t FT817_VOX_GAIN_ADDR = 0x0063;
 
 // The mic gains and the VOX gain: bits 6..0, 0..100.
 uint8_t ft817LevelFromByte(uint8_t b);
+
+// FT-817 VOX delay (menu 50), 0x64 bits 4..0: the delay / 100 ms, 1..25 = 100..2500 ms;
+// other values are kept within that range.
+// Measured: 300 ms is 3 and the default 500 ms is 5; the KA7OEI map says 0 = 100 ms.
+static constexpr uint16_t FT817_VOX_DELAY_ADDR = 0x0064;
+uint16_t ft817VoxDelayMs(uint8_t b);

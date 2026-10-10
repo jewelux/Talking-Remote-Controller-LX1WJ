@@ -110,6 +110,8 @@ voice_processor.wav
 voice_micgain.wav
 voice_vox.wav
 voice_voxgain.wav
+voice_voxdelay.wav
+voice_ms.wav
 voice_transceiver.wav
 voice_sync.wav
 

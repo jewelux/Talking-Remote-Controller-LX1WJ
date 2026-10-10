@@ -103,7 +103,7 @@ New features and new radios come with a new firmware.
 
 - `PROC?` (speech compressor, COMP), `PROCLEVEL?` (its level, 0..100 %)
 - `MICGAIN?` (mic gain, 0..100 %)
-- `VOX?` (VOX), `VOXGAIN?` (its gain, 0..100 %)
+- `VOX?` (VOX), `VOXGAIN?` (its gain, 0..100 %), `VOXDELAY?` (its delay, 0..2000 ms)
 
 ### VFO / Split / Bandstack
 

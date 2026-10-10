@@ -381,6 +381,18 @@ bool civQueryVoxGain(const RadioProfile& sp, uint16_t& valueOut, uint32_t timeou
   return civQuery14Value(0x16, valueOut, timeoutMs);
 }
 
+// 00..20 in BCD, tenths of a second (Hamlib's IC-7300 VOXDELAY; the IC-7300 MK2, IC-705 and
+// IC-9700 keep it at other addresses).
+bool civQueryVoxDelayMs(const RadioProfile& sp, uint16_t& msOut, uint32_t timeoutMs) {
+  if (sp.protocol != PROTO_CIV) return false;
+  uint8_t raw = 0;
+  if (!civQueryMenuByte(0x05, 0x0191, raw, timeoutMs)) return false;
+  const int32_t tenths = bcdDigitsToInt(&raw, 1);
+  if (tenths < 0 || tenths > 20) return false;
+  msOut = (uint16_t)(tenths * 100);
+  return true;
+}
+
 bool civQueryNotch(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
   if (!sp.caps.getNotch) return false;
   return civQueryToggleSub(0x48, onOut, timeoutMs);
