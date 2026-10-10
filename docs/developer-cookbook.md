@@ -727,7 +727,10 @@ Clips are looked up by **name** at run time. There is no enum.
 
 4. Speak it: `speakToken("preamp")` or `speakTokenState("preamp", on)`.
    Check it by ear with `VOICE preamp`. An unknown token plays the error
-   sound, so a typo is audible.
+   sound, so a typo is audible. CI runs
+   `python firmware/voice_assets/check_voice_tokens.py`, which fails on a
+   token written out in the code that has no clip or alias, and lists the
+   clips and aliases nothing speaks by name.
 
 5. Commit the phrase, the `.wav` and the code that speaks it together.
    `voices.bin` is built, not committed; CI builds it for each release.

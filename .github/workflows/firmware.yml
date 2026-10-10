@@ -34,6 +34,9 @@ jobs:
       - name: Audio unit tests
         run: make -C tests/audio
 
+      - name: Spoken tokens have clips
+        run: python3 firmware/voice_assets/check_voice_tokens.py
+
   build:
     runs-on: ubuntu-latest
     outputs:
