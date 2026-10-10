@@ -890,7 +890,7 @@ void printHelp() {
     Serial.println("    YSNIFF <ms>");
     Serial.println("    YSTATUS?");
   } else if (ft8x7) {
-    Serial.println("    ALC?");
+    Serial.println("    ALC? | MOD?");
     Serial.println(ft817 ? "    AGC? | BK? | KYR?  (radio settings, read only)"
                          : "    AGC? | IPO? | ATT? | NAR? | DBF? | BK? | KYR?  (radio settings, read only)");
     if (!ft817) Serial.println("    NRLEVEL? | NBLEVEL? | HPF? | LPF? | MICEQ?  (DSP menu settings, read only)");
@@ -1351,6 +1351,18 @@ static bool handleConsoleFt8x7Meters(const String& upper) {
     }
     Serial.print("ALC: ");
     Serial.print(meters.alc);
+    Serial.println(" of 15");
+    return true;
+  }
+  if (upper == "MOD?") {
+    YaesuTxMeters meters;
+    if (!yaesuCatQueryTxMeters(meters, true, 800)) { reportCommandFailure("MOD?", "no reply"); return true; }
+    if (!meters.transmitting) {
+      Serial.println("MOD: RX (not transmitting)");
+      return true;
+    }
+    Serial.print("MOD: ");
+    Serial.print(meters.mod);
     Serial.println(" of 15");
     return true;
   }

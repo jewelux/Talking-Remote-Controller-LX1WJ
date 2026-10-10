@@ -90,7 +90,7 @@ SMeterReading yaesuCatDecodeSMeter(uint8_t rxStatus) {
   return reading;
 }
 
-// Power and the high-SWR flag come from the TX status. ALC and SWR need the undocumented 0xBD,
+// Power and the high-SWR flag come from the TX status. ALC, SWR and MOD need the undocumented 0xBD,
 // answered by the FT-817/818 and FT-857/897 while transmitting: two bytes of 0..15 meters,
 // byte 0 = PWR (high nibble) | ALC (low), byte 1 = SWR (high) | MOD (low), as Hamlib's ft817.c
 // reads them. In receive the FT-897 does not answer 0xBD and misses the next polls, so it is sent
@@ -111,6 +111,7 @@ bool yaesuCatQueryTxMeters(YaesuTxMeters& out, bool withBdMeters, uint32_t timeo
   if (!yaesuCatRead1(meters[0], timeoutMs) || !yaesuCatRead1(meters[1], timeoutMs)) return false;
   out.alc = meters[0] & 0x0F;
   out.swr = (meters[1] >> 4) & 0x0F;
+  out.mod = meters[1] & 0x0F;
   return true;
 }
 

@@ -41,7 +41,7 @@ The goal of this document is to separate:
 | Bank 3 active `VFO A/B` selection on `T6` | implemented and verified |
 | RX/TX state query (Bank 1 `1`, `RXTX?`) | verified: TX status bit 7 (0 = transmitting), `0xFF` in receive |
 | Split status query | verified: EEPROM `0x7A` bit 7 in receive, following both CAT and the front panel; TX status bit 5 (1 = on) while transmitting |
-| PO / ALC / SWR meters | verified at 5 W FM into a dummy load (PO 8, ALC 2, SWR 1.0): PO from TX status bits 3..0, ALC and SWR from the undocumented `BD` (bytes `82 08`), sent only while transmitting. With split on the radio transmits on the other VFO, so its mode decides whether there is power to read |
+| PO / ALC / SWR meters | verified at 5 W FM into a dummy load (PO 8, ALC 2, SWR 1.0): PO from TX status bits 3..0, ALC and SWR from the undocumented `BD` (bytes `82 08`), sent only while transmitting. With split on the radio transmits on the other VFO, so its mode decides whether there is power to read. MOD (`MOD?`, the low nibble of the second `BD` byte) is read the same way; not yet checked against the radio's MOD meter |
 | RIT query and toggle (Bank 3 `5`, `RIT?`, `RIT TOGGLE`) | verified: like the FT-897, `05`/`85` switch RIT (a short press of CLAR), and answer `00` when they switched, `F0` when it was already in that state, also after a front panel change and with IF shift (the long press of CLAR) on, which they leave alone |
 | Lock query (`LOCK?`, Bank 1 `3`) | verified: EEPROM `0x57` bit 6, inverted (0 = locked), following both the front panel key and the CAT lock |
 | Noise blanker query (`NB?`, Bank 2 `2`) | verified: EEPROM `0x57` bit 5 (1 = on), following the front panel. There is no DSP, so `NR?` and `NOTCH?` say unsupported |
@@ -208,7 +208,7 @@ The radio saves a band block on events such as key presses, not while the dial t
 | Function | Status |
 |---|---|
 | Memory read/write raw path | experimental |
-| PO / ALC / SWR meters | verified on an FT-897 into a dummy load (PO 10, ALC 8, SWR 1.0): PO from TX status bits 3..0, ALC and SWR from the undocumented `BD`, sent only while transmitting since the radio does not answer it in receive. High-SWR flag (TX status bit 6) verified: "swr high" is said when the radio flags it |
+| PO / ALC / SWR meters | verified on an FT-897 into a dummy load (PO 10, ALC 8, SWR 1.0): PO from TX status bits 3..0, ALC and SWR from the undocumented `BD`, sent only while transmitting since the radio does not answer it in receive. High-SWR flag (TX status bit 6) verified: "swr high" is said when the radio flags it. MOD (`MOD?`, the low nibble of the second `BD` byte) is read the same way; not yet checked against the radio's MOD meter |
 | Volume / SQL extras | not cleanly validated |
 
 ## FT-897

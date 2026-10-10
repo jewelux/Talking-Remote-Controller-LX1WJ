@@ -30,6 +30,7 @@ struct YaesuTxMeters {
   uint8_t po = 0;        // TX status bits 3..0
   uint8_t alc = 0;       // 0xBD, only queried withBdMeters
   uint8_t swr = 0;       // 0xBD, only queried withBdMeters
+  uint8_t mod = 0;       // 0xBD, only queried withBdMeters
 };
 bool yaesuCatQueryTxMeters(YaesuTxMeters& out, bool withBdMeters, uint32_t timeoutMs);
 bool yaesuCatQueryPoMeterRaw(const RadioProfile& sp, int32_t& rawOut, uint32_t timeoutMs);
