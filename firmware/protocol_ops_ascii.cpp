@@ -254,6 +254,29 @@ bool asciiQueryYaesuRadioInfoFlag(const RadioProfile& sp, const char* code, bool
   return false;
 }
 
+// The FTDX10 manual says 1 = off and 2 = on. Hamlib found that the FTDX101, FT-891 and
+// FT-991, whose manuals say the same, answer 0 = off and 1 = on; the FTDX10 is untested, so
+// this follows them. 2 can only mean on.
+bool asciiQueryYaesuProc(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
+  if (sp.protocol != PROTO_YAESU_FTDX_ASCII) return false;
+  String line;
+  if (!transactAsciiCommand("PR0;", line, "PR0", timeoutMs)) return false;
+  if (line.length() < 4) return false;
+  if (line[3] == '0') { onOut = false; return true; }
+  if (line[3] == '1' || line[3] == '2') { onOut = true; return true; }
+  return false;
+}
+
+bool asciiQueryYaesuProcLevel(const RadioProfile& sp, uint8_t& levelOut, uint32_t timeoutMs) {
+  if (sp.protocol != PROTO_YAESU_FTDX_ASCII) return false;
+  String line;
+  if (!transactAsciiCommand("PL;", line, "PL", timeoutMs)) return false;
+  uint64_t value = 0;
+  if (!parseAsciiUnsignedResponse(line, "PL", value) || value > 100) return false;
+  levelOut = (uint8_t)value;
+  return true;
+}
+
 bool asciiQueryActiveVfoA(const RadioProfile& sp, bool& vfoAOut, uint32_t timeoutMs) {
   if (!sp.commands->vfoGet[0] || !sp.commands->vfoReplyPrefix[0]) return false;
   String line;

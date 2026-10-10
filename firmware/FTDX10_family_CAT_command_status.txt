@@ -66,8 +66,8 @@ OS | Offset (repeater shift) | nein | keine FTDX10-Implementierung gefunden
 PA | Pre-amp (IPO) | teilweise | PA read/on/off ueber serielle ASCII-Konsole vorhanden
 PB | Play back | nein | keine FTDX10-Implementierung gefunden
 PC | Power control | nein | nur Meterabfrage vorhanden, keine Power-Control-Implementierung
-PL | Speech processor level | nein | keine FTDX10-Implementierung gefunden
-PR | Speech processor | nein | keine FTDX10-Implementierung gefunden
+PL | Speech processor level | teilweise | PL read ueber Konsole PROCLEVEL? vorhanden, nicht am Radio getestet
+PR | Speech processor | teilweise | PR0 read ueber Konsole PROC? vorhanden, nicht am Radio getestet; Handbuch: 1 = aus, 2 = ein, gelesen wird 0 = aus, 1 = ein wie Hamlib es beim FTDX101/FT-991 fand
 PS | Power switch | teilweise | PS read/on/off in ASCII-Konsole vorhanden, spezieller FTDX10/101 Power-on-Workaround implementiert
 QI | QMB store | nein | keine FTDX10-Implementierung gefunden
 QR | QMB recall | nein | keine FTDX10-Implementierung gefunden

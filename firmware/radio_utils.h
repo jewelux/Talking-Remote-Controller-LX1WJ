@@ -7,3 +7,6 @@ String hzToMHzString3(uint64_t hz);
 int32_t bcdDigitsToInt(const uint8_t* b, size_t n);
 uint8_t smRawToS(int32_t raw);
 float swrRawToValue(int32_t raw);
+// A CI-V 0x14 level (0..255) as 0..100 %, and back.
+uint8_t levelRawToPercent(uint16_t raw);
+uint16_t levelPercentToRaw(int percent);

@@ -130,6 +130,7 @@ digi | | didgy
 monitor
 preamplifier
 attenuator
+processor
 repeater
 rit
 s meter | s_meter

@@ -1,11 +1,14 @@
 #include "radio_features.h"
 #include "packet_ascii.h"
 #include "protocol_ascii.h"
+#include "protocol_ops_ascii.h"
+#include "protocol_ops_civ.h"
 #include "radio_catalog.h"
 #include "radio_globals.h"
 #include "radio_protocol.h"
 #include "radio_runtime.h"
 #include "radio_state.h"
+#include "radio_utils.h"
 
 // A radio exchange that went wrong: a timeout when the radio said nothing.
 static FeatureStatus failure(FeatureStatus status) {
@@ -173,6 +176,44 @@ FeatureStatus notchToggle(NotchState& out) {
   if (live.notchWidth == NOTCH_WIDTH_NAR) return applyNotchWidth(NOTCH_WIDTH_MID, out);
   if (live.notchWidth == NOTCH_WIDTH_MID) return applyNotchWidth(NOTCH_WIDTH_WIDE, out);
   return applyNotchState(false, NOTCH_WIDTH_UNKNOWN, out);
+}
+
+// ---- Speech processor ----
+
+static bool isFtdx10() {
+  return currentRadioModel() == RadioModel::Ftdx10;
+}
+
+static bool procSupported() {
+  return currentProtocolType() == PROTO_CIV || isFtdx10() || currentFt8x7Model() == Ft8x7Model::Ft857;
+}
+
+FeatureStatus procQuery(bool& on) {
+  if (!procSupported()) return FeatureStatus::Unsupported;
+  const RadioProfile& sp = currentProfile();
+  bool ok = false;
+  if (currentProtocolType() == PROTO_CIV) ok = civQueryProc(sp, on, 800);
+  else if (isFtdx10()) ok = asciiQueryYaesuProc(sp, on, 800);
+  else ok = yaesuFt8x7QueryFlag(Ft8x7Flag::Proc, on, YAESU_CAT_REPLY_TIMEOUT_MS);
+  return ok ? FeatureStatus::Ok : failure(FeatureStatus::NoReply);
+}
+
+FeatureStatus procLevelQuery(uint8_t& level) {
+  if (!procSupported()) return FeatureStatus::Unsupported;
+  const RadioProfile& sp = currentProfile();
+  bool ok = false;
+  if (currentProtocolType() == PROTO_CIV) {
+    uint16_t raw = 0;
+    ok = civQueryProcLevel(sp, raw, 800);
+    level = levelRawToPercent(raw);
+  } else if (isFtdx10()) {
+    ok = asciiQueryYaesuProcLevel(sp, level, 800);
+  } else {
+    uint16_t value = 0;
+    ok = yaesuFt857QueryLevel(YaesuFt857Level::ProcLevel, value, YAESU_CAT_REPLY_TIMEOUT_MS);
+    level = value > 100 ? 100 : (uint8_t)value;
+  }
+  return ok ? FeatureStatus::Ok : failure(FeatureStatus::NoReply);
 }
 
 // ---- FT-8x7 EEPROM settings ----

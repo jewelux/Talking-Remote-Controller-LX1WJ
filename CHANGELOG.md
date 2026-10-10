@@ -108,6 +108,9 @@
   and `YSETTINGS?` lists more settings read from the radio, e.g. VOX, lock, fast tuning, NB,
   break-in, keyer and IF shift, on the FT-857/897 also PROC, CW speed, the gains and the DSP filter
   widths. `CLAR ON | OFF` is gone, use `RIT ON | OFF`; `CLAR OFFSET` is now `RIT OFFSET`
+- `PROC?` says whether the speech processor is on ("processor on") and `PROCLEVEL?` says its level
+  ("processor level 50"), on the FT-857/897 (menu 74), Icom radios (COMP) and the FTDX10. They
+  only read; the processor cannot be changed from HamTRC yet
 
 ### Radio profiles
 

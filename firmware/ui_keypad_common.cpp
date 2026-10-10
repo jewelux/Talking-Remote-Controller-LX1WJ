@@ -340,17 +340,6 @@ void speakQueriedFrequencyHz(uint64_t hz) {
   speakDigitsAndPoint(hzToMHzString3(hz));
 }
 
-uint8_t levelRawToPercent(uint16_t raw) {
-  if (raw >= 255) return 100;
-  return (uint8_t)((raw * 100U + 127U) / 255U);
-}
-
-uint16_t levelPercentToRaw(int percent) {
-  if (percent < 0) percent = 0;
-  if (percent > 100) percent = 100;
-  return (uint16_t)((percent * 255 + 50) / 100);
-}
-
 void speakFeatureValue(const char* featureToken, uint8_t value) {
   if (!g_speechEnabled) return;
   speakLabel(featureToken);

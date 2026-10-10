@@ -61,6 +61,24 @@ void speakNotchState(const NotchState& state) {
   }
 }
 
+String procStateText(bool on) {
+  return on ? "PROC ON" : "PROC OFF";
+}
+
+void speakProcState(bool on) {
+  speakTokenState("processor", on);
+}
+
+String procLevelText(uint8_t level) {
+  return String("PROCLEVEL ") + String((int)level);
+}
+
+void speakProcLevel(uint8_t level) {
+  if (!g_speechEnabled) return;
+  speakLabel("processor level");
+  speakDigitsAndPoint(String((int)level));
+}
+
 static const char* ft8x7AgcText(YaesuAgc agc) {
   switch (agc) {
     case YaesuAgc::Fast: return "FAST";

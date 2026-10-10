@@ -7,5 +7,6 @@
 #include "keypad_actions.h"
 #include "radio_catalog.h"
 #include "radio_protocol.h"
+#include "radio_utils.h"
 #include "ui_keypad_common.h"
 #include "ui_speech.h"

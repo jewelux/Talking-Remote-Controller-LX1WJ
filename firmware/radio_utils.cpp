@@ -52,3 +52,14 @@ float swrRawToValue(int32_t raw) {
   if (raw <= 120) return 2.0f + ((raw - 80) / 40.0f) * 1.0f;
   return 3.0f + ((raw - 120) / 135.0f) * 3.0f;
 }
+
+uint8_t levelRawToPercent(uint16_t raw) {
+  if (raw >= 255) return 100;
+  return (uint8_t)((raw * 100U + 127U) / 255U);
+}
+
+uint16_t levelPercentToRaw(int percent) {
+  if (percent < 0) percent = 0;
+  if (percent > 100) percent = 100;
+  return (uint16_t)((percent * 255 + 50) / 100);
+}

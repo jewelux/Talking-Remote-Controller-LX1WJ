@@ -99,6 +99,10 @@ New features and new radios come with a new firmware.
 - `FILSHAPE?`, `FILSHAPE SHARP`, `FILSHAPE SOFT`, `FILSHAPE TOGGLE`
 - `FILWIDTH?`, `FILWIDTH <1..3>`, `FILWIDTH NEXT`, `FILWIDTH PREV`
 
+### Transmit
+
+- `PROC?` (speech compressor, COMP), `PROCLEVEL?` (its level, 0..100 %)
+
 ### VFO / Split / Bandstack
 
 - `SPLIT?`, `SPLIT ON`, `SPLIT OFF`

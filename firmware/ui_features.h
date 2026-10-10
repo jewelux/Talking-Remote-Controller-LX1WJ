@@ -20,6 +20,13 @@ void speakNbState(bool on);
 String notchStateText(const NotchState& state);
 void speakNotchState(const NotchState& state);
 
+// "PROC ON", "PROC OFF"; "processor on".
+String procStateText(bool on);
+void speakProcState(bool on);
+// "PROCLEVEL 50"; "processor level 50".
+String procLevelText(uint8_t level);
+void speakProcLevel(uint8_t level);
+
 // FT-857/897 EEPROM settings: "AGC FAST", "IPO ON", "RFPOWER 100 W", "MENU 76".
 String ft8x7SettingText(const Ft8x7SettingState& state);
 // The radio's soft key label spelled, then the state: "a g c fast", "i p o on", "power 100 watts".

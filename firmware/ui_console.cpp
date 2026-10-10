@@ -347,6 +347,20 @@ static bool handleConsoleFeatureCommand(const String& upper) {
     if (!reportFeatureFailure(notchSetWidth(state.width), label)) printNotchState(state);
     return true;
   }
+  if (upper == "PROC?") {
+    bool on = false;
+    if (reportFeatureFailure(procQuery(on), label)) return true;
+    Serial.println(procStateText(on));
+    speakProcState(on);
+    return true;
+  }
+  if (upper == "PROCLEVEL?") {
+    uint8_t level = 0;
+    if (reportFeatureFailure(procLevelQuery(level), label)) return true;
+    Serial.println(procLevelText(level));
+    speakProcLevel(level);
+    return true;
+  }
   return false;
 }
 
@@ -723,6 +737,7 @@ void printHelp() {
     Serial.println("    PBT1?");
     Serial.println("    PBT2 <-128..127> | CENTER | STEP <+-n>");
     Serial.println("    PBT2?");
+    Serial.println("    PROC? | PROCLEVEL?  (speech compressor, read only)");
     Serial.print("    RFPOWER <0..");
     Serial.print((int)(currentProfile().rfPowerMaxWatts ? currentProfile().rfPowerMaxWatts : 100));
     Serial.println(" W>");
@@ -789,6 +804,7 @@ void printHelp() {
     Serial.println("    NOTCH?");
     Serial.println("    NR OFF | ON | TOGGLE");
     Serial.println("    NR?");
+    Serial.println("    PROC? | PROCLEVEL?  (speech processor, read only)");
     Serial.println("    RXTX?");
     Serial.println("    SPLIT OFF | ON | TOGGLE");
     Serial.println("    SPLIT?");
@@ -845,6 +861,7 @@ void printHelp() {
     Serial.println(ft817 ? "    AGC? | BK? | KYR?  (radio settings, read only)"
                          : "    AGC? | IPO? | ATT? | NAR? | DBF? | BK? | KYR?  (radio settings, read only)");
     if (!ft817) Serial.println("    NRLEVEL? | NBLEVEL? | HPF? | LPF? | MICEQ?  (DSP menu settings, read only)");
+    if (!ft817) Serial.println("    PROC? | PROCLEVEL?  (speech processor and menu 74, read only)");
     Serial.println(ft817 ? "    RFPOWER?  (the TX power setting)" : "    RFPOWER?  (menu 75 power of the current band)");
     Serial.println("    MENU? | ROW?  (menu item and soft key row, saved when the radio's menu is exited)");
     Serial.println("    AGC <hex byte>");

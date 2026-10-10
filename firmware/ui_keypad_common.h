@@ -39,8 +39,6 @@ void speakSimpleBinaryState(bool on);
 void speakRxTxState(bool tx);
 void speakQueriedFrequencyHz(uint64_t hz);
 void speakFeatureValue(const char* featureToken, uint8_t value);
-uint8_t levelRawToPercent(uint16_t raw);
-uint16_t levelPercentToRaw(int percent);
 
 // Serial traces. Each takes a format with {} placeholders and its arguments (see
 // FormattedLine); text that is not a literal goes through "{}":
