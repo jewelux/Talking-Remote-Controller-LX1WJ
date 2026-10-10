@@ -247,6 +247,38 @@ FeatureStatus micGainQuery(uint8_t& level) {
   return ok ? FeatureStatus::Ok : failure(FeatureStatus::NoReply);
 }
 
+// ---- VOX ----
+
+static bool voxSupported() {
+  return currentProtocolType() == PROTO_CIV || isFtdx10() || currentFt8x7Model() != Ft8x7Model::None;
+}
+
+FeatureStatus voxQuery(bool& on) {
+  if (!voxSupported()) return FeatureStatus::Unsupported;
+  const RadioProfile& sp = currentProfile();
+  bool ok = false;
+  if (currentProtocolType() == PROTO_CIV) ok = civQueryVox(sp, on, 800);
+  else if (isFtdx10()) ok = asciiQueryYaesuVox(sp, on, 800);
+  else ok = yaesuFt8x7QueryFlag(Ft8x7Flag::Vox, on, YAESU_CAT_REPLY_TIMEOUT_MS);
+  return ok ? FeatureStatus::Ok : failure(FeatureStatus::NoReply);
+}
+
+FeatureStatus voxGainQuery(uint8_t& level) {
+  if (!voxSupported()) return FeatureStatus::Unsupported;
+  const RadioProfile& sp = currentProfile();
+  bool ok = false;
+  if (currentProtocolType() == PROTO_CIV) {
+    uint16_t raw = 0;
+    ok = civQueryVoxGain(sp, raw, 800);
+    level = levelRawToPercent(raw);
+  } else if (isFtdx10()) {
+    ok = asciiQueryYaesuVoxGain(sp, level, 800);
+  } else {
+    ok = yaesuFt8x7QueryVoxGain(level, YAESU_CAT_REPLY_TIMEOUT_MS);
+  }
+  return ok ? FeatureStatus::Ok : failure(FeatureStatus::NoReply);
+}
+
 // ---- FT-8x7 EEPROM settings ----
 
 static constexpr uint32_t kFt8x7TimeoutMs = YAESU_CAT_REPLY_TIMEOUT_MS;

@@ -134,6 +134,8 @@ preamplifier
 attenuator
 processor
 mic gain | micgain
+vox
+vox gain | voxgain
 repeater
 rit
 s meter | s_meter

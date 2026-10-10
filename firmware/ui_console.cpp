@@ -368,6 +368,20 @@ static bool handleConsoleFeatureCommand(const String& upper) {
     speakMicGain(level);
     return true;
   }
+  if (upper == "VOX?") {
+    bool on = false;
+    if (reportFeatureFailure(voxQuery(on), label)) return true;
+    Serial.println(voxStateText(on));
+    speakVoxState(on);
+    return true;
+  }
+  if (upper == "VOXGAIN?") {
+    uint8_t level = 0;
+    if (reportFeatureFailure(voxGainQuery(level), label)) return true;
+    Serial.println(voxGainText(level));
+    speakVoxGain(level);
+    return true;
+  }
   return false;
 }
 
@@ -747,6 +761,7 @@ void printHelp() {
     Serial.println("    PBT2?");
     Serial.println("    PROC? | PROCLEVEL?  (speech compressor, read only)");
     Serial.println("    MICGAIN?  (read only)");
+    Serial.println("    VOX? | VOXGAIN?  (read only)");
     Serial.print("    RFPOWER <0..");
     Serial.print((int)(currentProfile().rfPowerMaxWatts ? currentProfile().rfPowerMaxWatts : 100));
     Serial.println(" W>");
@@ -815,6 +830,7 @@ void printHelp() {
     Serial.println("    NR?");
     Serial.println("    PROC? | PROCLEVEL?  (speech processor, read only)");
     Serial.println("    MICGAIN?  (read only)");
+    Serial.println("    VOX? | VOXGAIN?  (read only)");
     Serial.println("    RXTX?");
     Serial.println("    SPLIT OFF | ON | TOGGLE");
     Serial.println("    SPLIT?");
@@ -874,6 +890,8 @@ void printHelp() {
     if (!ft817) Serial.println("    PROC? | PROCLEVEL?  (speech processor and menu 74, read only)");
     Serial.println(ft817 ? "    MICGAIN?  (mic gain of the mode: SSB, AM, FM, DIG or PKT menu, read only)"
                          : "    MICGAIN?  (mic gain of the mode: SSB, AM, FM or DIG menu, read only)");
+    Serial.println(ft817 ? "    VOX? | VOXGAIN?  (VOX and menu 51, read only)"
+                         : "    VOX? | VOXGAIN?  (VOX and menu 88, read only)");
     Serial.println(ft817 ? "    RFPOWER?  (the TX power setting)" : "    RFPOWER?  (menu 75 power of the current band)");
     Serial.println("    MENU? | ROW?  (menu item and soft key row, saved when the radio's menu is exited)");
     Serial.println("    AGC <hex byte>");

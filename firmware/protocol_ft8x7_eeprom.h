@@ -46,3 +46,5 @@ bool yaesuFt857QueryMicEq(YaesuFt857MicEq& out, uint32_t timeoutMs);
 bool yaesuFt8x7HasMicGain(Ft8x7MicGain gain);
 // 0..100. The FT-817 reads its packet rate to pick the PKT one.
 bool yaesuFt8x7QueryMicGain(Ft8x7MicGain gain, uint8_t& valueOut, uint32_t timeoutMs);
+// FT-857/897 menu 88, FT-817 menu 51; 0..100.
+bool yaesuFt8x7QueryVoxGain(uint8_t& valueOut, uint32_t timeoutMs);

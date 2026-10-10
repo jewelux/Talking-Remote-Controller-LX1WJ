@@ -192,6 +192,20 @@ bool yaesuFt8x7QueryMicGain(Ft8x7MicGain gain, uint8_t& valueOut, uint32_t timeo
   }
   uint8_t b = 0;
   if (!yaesuCatReadEepromByte(ft817MicGainAddr(gain, pkt9600), b, timeoutMs)) return false;
-  valueOut = ft817MicGainFromByte(b);
+  valueOut = ft817LevelFromByte(b);
+  return true;
+}
+
+bool yaesuFt8x7QueryVoxGain(uint8_t& valueOut, uint32_t timeoutMs) {
+  if (currentIsFt857Family()) {
+    uint16_t value = 0;
+    if (!yaesuFt857QueryLevel(YaesuFt857Level::VoxGain, value, timeoutMs)) return false;
+    valueOut = value > 100 ? 100 : (uint8_t)value;
+    return true;
+  }
+  if (!currentIsFt817Family()) return false;
+  uint8_t b = 0;
+  if (!yaesuCatReadEepromByte(FT817_VOX_GAIN_ADDR, b, timeoutMs)) return false;
+  valueOut = ft817LevelFromByte(b);
   return true;
 }

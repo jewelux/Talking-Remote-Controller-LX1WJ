@@ -108,6 +108,8 @@ voice_preamplifier.wav
 voice_attenuator.wav
 voice_processor.wav
 voice_micgain.wav
+voice_vox.wav
+voice_voxgain.wav
 voice_transceiver.wav
 voice_sync.wav
 

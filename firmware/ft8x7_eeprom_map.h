@@ -156,4 +156,9 @@ uint8_t ft817RearAntennaMask(Ft8x7BandGroup group);
 static constexpr uint16_t FT817_PKT_RATE_ADDR = 0x005D;
 static constexpr uint8_t FT817_PKT_RATE_9600_MASK = 0x04;
 uint16_t ft817MicGainAddr(Ft8x7MicGain gain, bool pkt9600);
-uint8_t ft817MicGainFromByte(uint8_t b);
+
+// FT-817 VOX gain (menu 51), 0x63 bits 6..0, 1..100 (KA7OEI map, measured).
+static constexpr uint16_t FT817_VOX_GAIN_ADDR = 0x0063;
+
+// The mic gains and the VOX gain: bits 6..0, 0..100.
+uint8_t ft817LevelFromByte(uint8_t b);

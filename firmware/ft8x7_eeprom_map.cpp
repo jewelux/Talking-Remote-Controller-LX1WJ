@@ -225,7 +225,7 @@ uint16_t ft817MicGainAddr(Ft8x7MicGain gain, bool pkt9600) {
   return 0x0067;
 }
 
-uint8_t ft817MicGainFromByte(uint8_t b) {
+uint8_t ft817LevelFromByte(uint8_t b) {
   const uint8_t value = (uint8_t)(b & 0x7F);
   return value > 100 ? 100 : value;
 }

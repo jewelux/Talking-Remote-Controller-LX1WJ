@@ -64,6 +64,12 @@ FeatureStatus procLevelQuery(uint8_t& level);
 // FT-857/897's PKT. Read only for now.
 FeatureStatus micGainQuery(uint8_t& level);
 
+// VOX: Icom, FTDX10 VX and VG, FT-857/897 and its menu 88 gain, FT-817/818 and its menu 51
+// gain. Read only for now.
+FeatureStatus voxQuery(bool& on);
+// 0..100.
+FeatureStatus voxGainQuery(uint8_t& level);
+
 // FT-857/897 settings read from the radio's EEPROM, since CAT has no command for them. They
 // cannot be set. IPO, ATT and NAR are those of the current band. The FT-817/818 has RfPower,
 // Menu, Row, Agc, BreakIn, Keyer, IfShift and Antenna.

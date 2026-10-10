@@ -184,8 +184,16 @@ TEST(ft817_mic_gain_addresses) {
   CHECK_EQ(ft817MicGainAddr(Ft8x7MicGain::Pkt, false), 0x006B);
   CHECK_EQ(ft817MicGainAddr(Ft8x7MicGain::Pkt, true), 0x006C);
   CHECK_EQ(ft817MicGainAddr(Ft8x7MicGain::Ssb, true), 0x0067);  // the rate only picks the PKT one
-  CHECK_EQ(ft817MicGainFromByte(0xE4), 100);  // bit 7 is another setting (0x68: mic key)
-  CHECK_EQ(ft817MicGainFromByte(0x32), 50);
+  CHECK_EQ(ft817LevelFromByte(0xE4), 100);  // bit 7 is another setting (0x68: mic key)
+  CHECK_EQ(ft817LevelFromByte(0x32), 50);
+}
+
+TEST(vox_gain) {
+  CHECK_EQ(FT817_VOX_GAIN_ADDR, 0x0063);
+  uint16_t addr = 0;
+  CHECK(ft857LevelAddr(YaesuFt857Level::VoxGain, addr));
+  CHECK_EQ(addr, 0x0076);
+  CHECK_EQ(ft857LevelValue(YaesuFt857Level::VoxGain, 0xB2), 50);  // bit 7 is not the gain
 }
 
 TEST(ft817_rf_power_tenths) {

@@ -89,6 +89,24 @@ void speakMicGain(uint8_t level) {
   speakDigitsAndPoint(String((int)level));
 }
 
+String voxStateText(bool on) {
+  return on ? "VOX ON" : "VOX OFF";
+}
+
+void speakVoxState(bool on) {
+  speakTokenState("vox", on);
+}
+
+String voxGainText(uint8_t level) {
+  return String("VOXGAIN ") + String((int)level);
+}
+
+void speakVoxGain(uint8_t level) {
+  if (!g_speechEnabled) return;
+  speakLabel("voxgain");
+  speakDigitsAndPoint(String((int)level));
+}
+
 static const char* ft8x7AgcText(YaesuAgc agc) {
   switch (agc) {
     case YaesuAgc::Fast: return "FAST";

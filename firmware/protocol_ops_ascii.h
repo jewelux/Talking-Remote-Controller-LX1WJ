@@ -37,6 +37,9 @@ bool asciiQueryYaesuProc(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs
 bool asciiQueryYaesuProcLevel(const RadioProfile& sp, uint8_t& levelOut, uint32_t timeoutMs);
 // Yaesu FTDX mic gain (MG, 0..100).
 bool asciiQueryYaesuMicGain(const RadioProfile& sp, uint8_t& levelOut, uint32_t timeoutMs);
+// Yaesu FTDX VOX (VX) and its gain (VG, 0..100).
+bool asciiQueryYaesuVox(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
+bool asciiQueryYaesuVoxGain(const RadioProfile& sp, uint8_t& levelOut, uint32_t timeoutMs);
 bool asciiQueryActiveVfoA(const RadioProfile& sp, bool& vfoAOut, uint32_t timeoutMs);
 bool asciiSelectVfoA(const RadioProfile& sp);
 bool asciiSelectVfoB(const RadioProfile& sp);

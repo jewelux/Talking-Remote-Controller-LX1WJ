@@ -116,6 +116,8 @@
   the FT-857/897. The FT-817 and FT-857/897 have one for each mode, so it says the one of the
   current mode: SSB, AM, FM, DIG, and on the FT-817 also packet. In CW, and in packet on the
   FT-857/897, it says "not available". It only reads for now
+- `VOX?` says whether VOX is on ("vox on") and `VOXGAIN?` says its gain ("vox gain 50"), on Icom
+  radios, the FTDX10, the FT-817/818 (menu 51) and the FT-857/897 (menu 88). They only read for now
 
 ### Radio profiles
 

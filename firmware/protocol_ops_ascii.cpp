@@ -287,6 +287,26 @@ bool asciiQueryYaesuMicGain(const RadioProfile& sp, uint8_t& levelOut, uint32_t 
   return true;
 }
 
+bool asciiQueryYaesuVox(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
+  if (sp.protocol != PROTO_YAESU_FTDX_ASCII) return false;
+  String line;
+  if (!transactAsciiCommand("VX;", line, "VX", timeoutMs)) return false;
+  uint64_t value = 0;
+  if (!parseAsciiUnsignedResponse(line, "VX", value) || value > 1) return false;
+  onOut = value == 1;
+  return true;
+}
+
+bool asciiQueryYaesuVoxGain(const RadioProfile& sp, uint8_t& levelOut, uint32_t timeoutMs) {
+  if (sp.protocol != PROTO_YAESU_FTDX_ASCII) return false;
+  String line;
+  if (!transactAsciiCommand("VG;", line, "VG", timeoutMs)) return false;
+  uint64_t value = 0;
+  if (!parseAsciiUnsignedResponse(line, "VG", value) || value > 100) return false;
+  levelOut = (uint8_t)value;
+  return true;
+}
+
 bool asciiQueryActiveVfoA(const RadioProfile& sp, bool& vfoAOut, uint32_t timeoutMs) {
   if (!sp.commands->vfoGet[0] || !sp.commands->vfoReplyPrefix[0]) return false;
   String line;

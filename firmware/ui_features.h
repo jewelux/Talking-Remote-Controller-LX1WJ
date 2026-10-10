@@ -29,6 +29,12 @@ void speakProcLevel(uint8_t level);
 // "MICGAIN 50"; "mic gain 50".
 String micGainText(uint8_t level);
 void speakMicGain(uint8_t level);
+// "VOX ON", "VOX OFF"; "vox on".
+String voxStateText(bool on);
+void speakVoxState(bool on);
+// "VOXGAIN 50"; "vox gain 50".
+String voxGainText(uint8_t level);
+void speakVoxGain(uint8_t level);
 
 // FT-857/897 EEPROM settings: "AGC FAST", "IPO ON", "RFPOWER 100 W", "MENU 76".
 String ft8x7SettingText(const Ft8x7SettingState& state);

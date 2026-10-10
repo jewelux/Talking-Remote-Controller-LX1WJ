@@ -97,9 +97,9 @@ TX | TX set | nein | keine FTDX10-Implementierung gefunden
 UL | Unlock | nein | keine FTDX10-Implementierung gefunden
 UP | Up | nein | keine FTDX10-Implementierung gefunden
 VD | VOX delay time | nein | keine FTDX10-Implementierung gefunden
-VG | VOX gain | nein | keine FTDX10-Implementierung gefunden
+VG | VOX gain | teilweise | VG read ueber Konsole VOXGAIN? vorhanden, nicht am Radio getestet
 VM | [V/M] key function | nein | keine FTDX10-Implementierung gefunden
 VS | VFO select | implementiert | read/select A/select B vorhanden
-VX | VOX | nein | keine FTDX10-Implementierung gefunden
+VX | VOX | teilweise | VX read ueber Konsole VOX? vorhanden, nicht am Radio getestet
 XT | XIT | nein | keine FTDX10-Implementierung gefunden
 ZI | Zero in | nein | keine FTDX10-Implementierung gefunden
