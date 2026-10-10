@@ -88,6 +88,7 @@ cancel
 choose
 equals
 error
+experimental
 fast
 frequency
 hertz

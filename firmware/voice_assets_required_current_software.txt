@@ -72,6 +72,7 @@ voice_hertz.wav
 voice_percent.wav
 voice_profile.wav
 voice_verbose.wav
+voice_experimental.wav
 voice_volume.wav
 voice_speed.wav
 voice_slow.wav

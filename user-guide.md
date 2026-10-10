@@ -67,6 +67,17 @@ its pitch.
 
 The setting is kept after power off. Console: `SPEED?` and `SPEED SLOW | NORMAL | FAST`.
 
+## Experimental Mode
+
+For testing: every feature counts as supported by the radio profile, also those the profile turns
+off, so you can try keys that would otherwise say "not available".
+
+- Bank 9, `0` short: says "experimental on" or "experimental off"
+- Bank 9, `0` long: switches between the two
+
+The setting is not saved; after power off the profile applies again. Console: `EXPERIMENTAL?` and
+`EXPERIMENTAL ON | OFF | TOGGLE`.
+
 ## Practical Everyday Use
 
 These actions are the normal starting point on many profiles:

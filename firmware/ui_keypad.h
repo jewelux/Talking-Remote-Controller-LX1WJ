@@ -10,6 +10,7 @@ void setTuningSpeechEnabled(bool enabled);
 void speakTuningSpeechState();
 void setVerboseSpeech(bool verbose);
 void speakVerboseState();
+void speakExperimentalState();
 void speakBankNumber();
 void initKeypadUi();
 void pollKeypadUi();

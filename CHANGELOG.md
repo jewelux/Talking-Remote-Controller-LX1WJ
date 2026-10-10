@@ -95,9 +95,10 @@
 - `NR`, `NB` and `NOTCH` behave like the Bank 2 keys: `TOGGLE` starts from the radio's known state,
   on the TS-480 `NR TOGGLE` steps off → 1 → 2 → off, and on CI-V `NOTCH TOGGLE` steps off → NAR →
   MID → WIDE → off
-- `EXPERIMENTAL ON | OFF` and `EXPERIMENTAL?`, for testing: every feature counts as supported by
-  the radio profile, also those the profile turns off. It is not saved, so after a restart the
-  profile applies again
+- `EXPERIMENTAL ON | OFF | TOGGLE` and `EXPERIMENTAL?`, for testing: every feature counts as
+  supported by the radio profile, also those the profile turns off. It is not saved, so after a
+  restart the profile applies again. On the keypad, Bank 9 `0` short says "experimental on" or
+  "off", `0` long switches it
 - FT-817/818/857/897: `YEEPROM! <addr> <byte> <byte>` writes two bytes of the radio's EEPROM, at
   the address and the one after it, the counterpart of `YEEPROM?`. **Use with caution:** a wrong address or value
   can wipe the radio's memories and calibration. It is refused while transmitting

@@ -265,6 +265,7 @@ KeyBinding bank8(const KeypadTraits& t, char key) {
 
 KeyBinding bank9(char key) {
   switch (key) {
+    case '0': return bind(queryBank9Experimental, toggleBank9Experimental);
     case '4': return bind(queryBank9TuningSpeech, toggleBank9TuningSpeech);
     case '5': return bind(queryBank9Verbose, toggleBank9Verbose);
     case '6': return bind(queryBank9Speed, stepBank9Speed);

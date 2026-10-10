@@ -211,6 +211,7 @@ KEYMAP_ROW(FT817 | FT857,   8, '8', "queryBank8Ft8x7Menu",   "none",            
 KEYMAP_ROW(NOT(FT817 | FT857), 8, '8', "unassigned",       "none",                   "-")
 
 // ---- Bank 9 ----------------------------------------------------------------
+KEYMAP_ROW(ALL,             9, '0', "queryBank9Experimental", "toggleBank9Experimental", "-")
 KEYMAP_ROW(ALL,             9, '4', "queryBank9TuningSpeech", "toggleBank9TuningSpeech", "-")
 KEYMAP_ROW(ALL,             9, '5', "queryBank9Verbose",     "toggleBank9Verbose",     "-")
 KEYMAP_ROW(ALL,             9, '6', "queryBank9Speed",       "stepBank9Speed",         "-")

@@ -139,6 +139,8 @@ radio's CAT RATE menu.
 | `A` double | `PROFILE RESET` | `PROFILE RESET` |
 | `B` short | `PROFILE NEXT` | `PROFILE NEXT` |
 | `C` short | `PROFILE PREV` | `PROFILE PREV` |
+| `0` short | `EXPERIMENTAL?` | `EXPERIMENTAL?` |
+| `0` long | `EXPERIMENTAL TOGGLE` | `EXPERIMENTAL TOGGLE` |
 | `4` short | `TUNINGSPEECH?` | `TUNINGSPEECH?` |
 | `4` long | `TUNINGSPEECH TOGGLE` | `TUNINGSPEECH TOGGLE` |
 | `5` short | `VERBOSE?` | `VERBOSE?` |

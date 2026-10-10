@@ -1,5 +1,6 @@
-// Bank 9 keypad actions: profiles, tuning speech, volume and speech speed.
+// Bank 9 keypad actions: profiles, tuning speech, volume, speech speed and experimental mode.
 #include "ui_keypad_bank.h"
+#include "radio_catalog.h"
 #include "radio_monitor.h"
 #include "radio_prefs.h"
 #include "radio_profile.h"
@@ -28,6 +29,11 @@ void speakVerboseState() {
 void setVerboseSpeech(bool verbose) {
   g_verboseSpeech = verbose;
   saveVerboseToNvs(g_verboseSpeech);
+}
+
+void speakExperimentalState() {
+  if (!g_speechEnabled) return;
+  speakTokenState("experimental", g_experimentalCaps);
 }
 
 void beginBank9ProfileSelect() {
@@ -77,6 +83,19 @@ void toggleBank9Verbose() {
   setVerboseSpeech(!g_verboseSpeech);
   printKeypadStatus("VERBOSE {}", g_verboseSpeech ? "ON" : "OFF");
   speakVerboseState();
+}
+
+void queryBank9Experimental() {
+  printKeypadAction("EXPERIMENTAL?");
+  printKeypadStatus("EXPERIMENTAL {}", g_experimentalCaps ? "ON" : "OFF");
+  speakExperimentalState();
+}
+
+void toggleBank9Experimental() {
+  printKeypadAction("EXPERIMENTAL");
+  setExperimentalCaps(!g_experimentalCaps);
+  printKeypadStatus("EXPERIMENTAL {}", g_experimentalCaps ? "ON" : "OFF");
+  speakExperimentalState();
 }
 
 // "volume" and the level.

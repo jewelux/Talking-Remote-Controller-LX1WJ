@@ -677,7 +677,7 @@ void printHelp() {
     Serial.println("    BSTACK <1..3>  (hamTRC internal)");
     Serial.println("    BSTACK? <1..3>  (hamTRC internal)");
   }
-  Serial.println("    EXPERIMENTAL ON | OFF  (all caps on for testing, not saved)");
+  Serial.println("    EXPERIMENTAL ON | OFF | TOGGLE  (all caps on for testing, not saved)");
   Serial.println("    EXPERIMENTAL?");
   Serial.println("    FB? | FB <kHz> | FBMHZ <MHz>");
   Serial.println("    FREQ <kHz>");
@@ -939,6 +939,7 @@ static bool handleConsoleInfoCommands(const String& upper) {
   if (upper == "EXPERIMENTAL?") {
     Serial.print("EXPERIMENTAL ");
     Serial.println(g_experimentalCaps ? "ON" : "OFF");
+    speakExperimentalState();
     return true;
   }
   if (upper == "QUIET?") {
@@ -1166,9 +1167,11 @@ static bool handleConsoleConnectionCommands(const String& line, const String& up
 }
 
 static bool handleConsoleToggleCommands(const String& line, const String& upper) {
-  if (upper == "EXPERIMENTAL ON" || upper == "EXPERIMENTAL OFF") {
-    setExperimentalCaps(upper == "EXPERIMENTAL ON");
+  if (upper == "EXPERIMENTAL ON" || upper == "EXPERIMENTAL OFF" || upper == "EXPERIMENTAL TOGGLE") {
+    if (upper == "EXPERIMENTAL TOGGLE") setExperimentalCaps(!g_experimentalCaps);
+    else setExperimentalCaps(upper == "EXPERIMENTAL ON");
     Serial.println(g_experimentalCaps ? "OK EXPERIMENTAL ON  (all caps on until OFF or restart)" : "OK EXPERIMENTAL OFF");
+    speakExperimentalState();
     return true;
   }
   if (upper == "QUIET ON") { g_quiet = true; Serial.println("OK QUIET ON"); return true; }

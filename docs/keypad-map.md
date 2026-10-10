@@ -191,6 +191,8 @@ The same on every radio.
 
 | Key | All radios |
 |---|---|
+| `0` short | experimental mode |
+| `0` long | experimental mode on/off |
 | `4` short | tuning speech |
 | `4` long | tuning speech on/off |
 | `5` short | verbose |

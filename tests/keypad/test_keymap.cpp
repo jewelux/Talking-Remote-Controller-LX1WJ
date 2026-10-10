@@ -196,6 +196,8 @@ void queryBank9TuningSpeech() { record("queryBank9TuningSpeech"); }
 void toggleBank9TuningSpeech() { record("toggleBank9TuningSpeech"); }
 void queryBank9Verbose() { record("queryBank9Verbose"); }
 void toggleBank9Verbose() { record("toggleBank9Verbose"); }
+void queryBank9Experimental() { record("queryBank9Experimental"); }
+void toggleBank9Experimental() { record("toggleBank9Experimental"); }
 void adjustBank9Volume(int d) { record("adjustBank9Volume(%d)", d); }
 void queryBank9Volume() { record("queryBank9Volume"); }
 void queryBank9Speed() { record("queryBank9Speed"); }

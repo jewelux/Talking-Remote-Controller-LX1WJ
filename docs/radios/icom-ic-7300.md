@@ -218,6 +218,7 @@ The current keypad concept uses radio-specific banks with:
 | Profile / System | `PROFILE RESET` (baud and CI-V address to the defaults) | Bank 9: `A` double click |
 | Profile / System | `PROFILE NEXT` | Bank 9: `B` short |
 | Profile / System | `PROFILE PREV` | Bank 9: `C` short |
+| Profile / System | `EXPERIMENTAL?`, `EXPERIMENTAL TOGGLE` | Bank 9: `0` short / `0` long |
 | Profile / System | `TUNINGSPEECH?`, `TUNINGSPEECH TOGGLE` | Bank 9: `4` short / `4` long |
 | Profile / System | `VERBOSE?`, `VERBOSE TOGGLE` | Bank 9: `5` short / `5` long |
 | Profile / System | `SPEED?`, next speed (slow, normal, fast) | Bank 9: `6` short / `6` long |
