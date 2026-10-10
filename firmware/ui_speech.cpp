@@ -587,7 +587,11 @@ bool playNamedVoice(const String& token) {
   return speakToken(token);
 }
 
+// Plays the clips from the calling task, so the audio task must be done first:
+// both would write to I2S and share playClipBlocking's buffers. Only the main
+// loop queues speech, and it is busy here, so nothing new starts meanwhile.
 void voiceTest() {
+  while (!audioQueueIsEmpty() || g_audioPlaying) delay(5);
   Serial.println("Voice TEST...");
   VoiceClip c;
   for (size_t i = 0; voicePackClipAt(i, &c); ++i) {
