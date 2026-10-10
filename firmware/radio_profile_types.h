@@ -203,6 +203,9 @@ struct ModeCodes {
   const char* rttyR = "";
   const char* digi = "";
   const char* pkt = "";
+  // Read only: a radio in WFM is reported, but HamTRC never sets it (on the FT-817
+  // WFM outside FM broadcast stopped CAT until a power cycle).
+  const char* wfm = "";
 };
 
 // FT-8x7 Bank 6 presets: repeater offsets, and the tone and DCS code offered
