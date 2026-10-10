@@ -1,7 +1,7 @@
 # Piper voice generator
 
 Regenerates `../voice_clips/voice_*.wav` with [Piper TTS](https://github.com/OHF-Voice/piper1-gpl).
-Output format: mono, PCM16, 8000 Hz (the firmware I2S rate), trimmed, peak-normalized to -1 dBFS,
+Output format: mono, PCM16, 8000 Hz (the firmware I2S rate), trimmed, peak at 0.5 of full scale,
 no silence around the word (the firmware adds the gap between words).
 
 ## Setup (once)
@@ -25,7 +25,7 @@ Defaults are `--noise-scale 0 --noise-w-scale 0`, so clips are repeatable from r
 For a livelier voice raise them (the voice's own values are ~0.667 / ~0.8; `0.2` is a compromise), at the
 cost of slight run-to-run variation. Same flags work in `say.py`.
 
-Run `generate_voices.py --help` for all options (sample rate, silence, trim threshold, peak level).
+Run `generate_voices.py --help` for all options (sample rate, silence, trim threshold, volume).
 
 ## Try phrases
 
