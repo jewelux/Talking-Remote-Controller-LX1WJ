@@ -760,8 +760,7 @@ void printHelp() {
     Serial.println("    PTT OFF | ON");
     Serial.println("    SM?");
     Serial.println("    SWR?");
-    Serial.println("    CLAR OFF | ON  (the CAT clarifier commands, which switch RIT)");
-    Serial.println("    CLAR OFFSET <8 hex digits>");
+    Serial.println("    RIT OFFSET <8 hex digits>");
     if (ft817 || ft857Family) Serial.println("    IFSHIFT?  (IF shift on or off, which CAT cannot switch; not spoken)");
     if (ft817 || ft857Family) Serial.println("    RIT? | RIT OFF | ON | TOGGLE");
     Serial.println("    CTCSS <Hz> | CTCSS?");
@@ -811,8 +810,6 @@ void printHelp() {
     Serial.println("    AGC <hex byte>");
     Serial.println("    CIVRAW? <cmd hex> [payload hex bytes]");
     Serial.println("    CIVRAW <cmd hex> [payload hex bytes]");
-    Serial.println("    CLAR OFFSET <8 hex digits>");
-    Serial.println("    CLAR OFF | ON");
     Serial.println("    GT? | GT FAST | SLOW | OFF");
     Serial.println("    LOCKDOC OFF | ON");
     Serial.println("    PA? | PA OFF | ON | TOGGLE");
@@ -1842,23 +1839,14 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     Serial.println("SPLIT OFF");
     return true;
   }
-  // The clarifier commands switch RIT; the radio answers whether it switched.
-  if (upper == "CLAR ON" || upper == "CLAR OFF") {
-    if (!yaesuFt8x7SetRit(upper == "CLAR ON", YAESU_CAT_REPLY_TIMEOUT_MS)) {
-      reportCommandFailure(upper.c_str(), "failed");
-      return true;
-    }
-    Serial.println(upper);
-    return true;
-  }
-  if (upper.startsWith("CLAR OFFSET ")) {
+  if (upper.startsWith("RIT OFFSET ")) {
     uint8_t data[4] = {0};
-    if (!parseHexNybbleString(line.substring(12), data, 4)) {
-      Serial.println("CLAR OFFSET -> use 8 hex digits, e.g. 00000123");
+    if (!parseHexNybbleString(line.substring(11), data, 4)) {
+      Serial.println("RIT OFFSET -> use 8 hex digits, e.g. 00000123");
       return true;
     }
-    yaesuCatSetClarifierOffsetRaw(data);
-    Serial.print("CLAR OFFSET RAW: ");
+    yaesuCatSetRitOffsetRaw(data);
+    Serial.print("RIT OFFSET RAW: ");
     const uint8_t frame[5] = {data[0], data[1], data[2], data[3], 0xF5};
     yaesuCatPrintFrame(frame);
     Serial.println();

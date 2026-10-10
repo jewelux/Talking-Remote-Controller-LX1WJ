@@ -107,7 +107,7 @@
   on the FT-857/897, `NAR?` read break-in, keyer and FM narrow. `IFSHIFT?` prints whether IF shift is on,
   and `YSETTINGS?` lists more settings read from the radio, e.g. VOX, lock, fast tuning, NB,
   break-in, keyer and IF shift, on the FT-857/897 also PROC, CW speed, the gains and the DSP filter
-  widths. `CLAR ON | OFF` say when the radio did not switch RIT
+  widths. `CLAR ON | OFF` is gone, use `RIT ON | OFF`; `CLAR OFFSET` is now `RIT OFFSET`
 
 ### Radio profiles
 
@@ -167,9 +167,9 @@
   current band ("power 10 watts"), on the FT-817/818 the power setting (on the FT-818 6, 5, 2.5
   and 1 watts)
 - FT-817/818/857/897: Bank 3 `5` short says whether RIT is on ("rit on"), long toggles it, also
-  after RIT was switched with the radio's CLAR key. Before, the key sent "clarifier on" and
-  "clarifier off" without knowing the state. If RIT is on, asking switches it off and straight
-  back on; on the FT-857/897 the clarifier knob then tunes RIT even if it was tuning IF shift.
+  after RIT was switched with the radio's CLAR key. Before, the key switched RIT on or off
+  without knowing the state. If RIT is on, asking switches it off and straight back on; on the
+  FT-857/897 the knob then tunes RIT even if it was tuning IF shift.
   On the FT-817/818 this replaces VFO B mode: for VFO B's mode, switch with Bank 3 `1`
   long and use Bank 1 `9`
 - FT-857/897: the Bank 3 VFO keys read which VFO is active from the radio, also after A/B was

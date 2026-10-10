@@ -96,7 +96,6 @@ voice_antenna.wav
 voice_front.wav
 voice_rear.wav
 voice_rit.wav
-voice_clarifier.wav
 voice_repeater.wav
 voice_tone.wav
 voice_ctcss.wav

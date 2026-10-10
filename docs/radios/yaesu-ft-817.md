@@ -21,7 +21,7 @@ Current FT-817 strengths in the project include:
 
 - documented CAT core functions verified on real hardware
 - reliable handling of frequency and mode control with keypad-side write verification
-- verified lock, split, VFO, clarifier, repeater, tone, DCS, and power test paths
+- verified lock, split, VFO, RIT, repeater, tone, DCS, and power test paths
 - alignment with the shared FT8x7 keypad structure where practical
 - the newer FT-817 Bank 3 layout that now gives `VFOA MODE` its own direct keypad position while keeping `SYNC` and explicit active-`VFO A/B` selection
 

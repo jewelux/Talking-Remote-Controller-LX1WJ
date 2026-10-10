@@ -18,7 +18,7 @@ BP | Manual notch | teilweise | BP0/BP0000/BP0001 fuer on/off implementiert, vol
 BS | Band select | nein | keine FTDX10-Implementierung gefunden
 BU | Band up | nein | keine FTDX10-Implementierung gefunden
 BY | Busy | nein | keine FTDX10-Implementierung gefunden
-CF | Clarifier | nein | keine FTDX10-Implementierung gefunden
+CF | RIT/XIT | nein | keine FTDX10-Implementierung gefunden
 CH | Channel up/down | nein | keine FTDX10-Implementierung gefunden
 CN | CTCSS number | nein | keine FTDX10-Implementierung gefunden
 CO | Contour/APF | nein | keine FTDX10-Implementierung gefunden
@@ -73,16 +73,16 @@ QI | QMB store | nein | keine FTDX10-Implementierung gefunden
 QR | QMB recall | nein | keine FTDX10-Implementierung gefunden
 QS | Quick split | nein | keine FTDX10-Implementierung gefunden
 RA | RF attenuator | nein | keine FTDX10-Implementierung gefunden
-RC | Clarifier clear | nein | keine FTDX10-Implementierung gefunden
-RD | Clarifier down | nein | keine FTDX10-Implementierung gefunden
+RC | RIT clear | nein | keine FTDX10-Implementierung gefunden
+RD | RIT down | nein | keine FTDX10-Implementierung gefunden
 RF | Roofing filter | nein | keine FTDX10-Implementierung gefunden
 RG | RF gain | nein | keine FTDX10-Implementierung gefunden
 RI | Radio information | nein | keine FTDX10-Implementierung gefunden
 RL | Noise reduction level | nein | keine FTDX10-Implementierung gefunden
 RM | Read meter | teilweise | konkret RM5 power und RM6 swr vorhanden, kein generischer RM-Zugriff
 RS | Radio status | nein | keine FTDX10-Implementierung gefunden
-RT | RX clarifier | nein | keine FTDX10-Implementierung gefunden
-RU | Clarifier up | nein | keine FTDX10-Implementierung gefunden
+RT | RIT | nein | keine FTDX10-Implementierung gefunden
+RU | RIT up | nein | keine FTDX10-Implementierung gefunden
 SC | Scan | nein | keine FTDX10-Implementierung gefunden
 SD | Semi break-in delay time | nein | keine FTDX10-Implementierung gefunden
 SF | Sub dial | nein | keine FTDX10-Implementierung gefunden
@@ -101,5 +101,5 @@ VG | VOX gain | nein | keine FTDX10-Implementierung gefunden
 VM | [V/M] key function | nein | keine FTDX10-Implementierung gefunden
 VS | VFO select | implementiert | read/select A/select B vorhanden
 VX | VOX | nein | keine FTDX10-Implementierung gefunden
-XT | TX clarifier | nein | keine FTDX10-Implementierung gefunden
+XT | XIT | nein | keine FTDX10-Implementierung gefunden
 ZI | Zero in | nein | keine FTDX10-Implementierung gefunden

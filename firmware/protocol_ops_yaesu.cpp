@@ -167,9 +167,9 @@ bool yaesuCatQuerySplit(bool& onOut, uint32_t timeoutMs) {
   return yaesuFt8x7QueryFlag(Ft8x7Flag::Split, onOut, timeoutMs);
 }
 
-// The CAT clarifier commands (05 on, 85 off) switch RIT, the short press of the CLAR key, which
-// the manuals also call the clarifier. The radio answers 00 when it switched and F0 when RIT was
-// already in that state, also after a front panel change.
+// The CAT commands 05 (on) and 85 (off) switch RIT, the short press of the CLAR key. The radio
+// answers 00 when it switched and F0 when RIT was already in that state, also after a front
+// panel change.
 static bool ft8x7SetRitReply(bool on, bool& changedOut, uint32_t timeoutMs) {
   if (!currentIsFt857Family() && !currentIsFt817Family()) return false;
   const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, (uint8_t)(on ? 0x05 : 0x85)};
@@ -261,7 +261,7 @@ void yaesuCatSetAgcMode(uint8_t modeByte) {
   yaesuCatSendWriteOnly(cmd);
 }
 
-void yaesuCatSetClarifierOffsetRaw(const uint8_t data[4]) {
+void yaesuCatSetRitOffsetRaw(const uint8_t data[4]) {
   const uint8_t cmd[5] = {data[0], data[1], data[2], data[3], 0xF5};
   yaesuCatSendWriteOnly(cmd);
 }

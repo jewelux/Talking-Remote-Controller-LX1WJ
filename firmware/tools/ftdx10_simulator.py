@@ -357,9 +357,9 @@ class CommandRegistry:
     def _build_if_reply(self) -> str:
         freq = self.state.rx_hz
         mem = "000"
-        clar = "+0000"
-        rx_clar = "0"
-        tx_clar = "0"
+        rit_offset = "+0000"
+        rit = "0"
+        xit = "0"
         tx = "1" if self.state.tx_on else "0"
         mode = self.state.mode_code
         vfo = "0"
@@ -367,7 +367,7 @@ class CommandRegistry:
         fixed = "00"
         repeater = self.state.repeater_shift
         split = "1" if self.state.split_on else "0"
-        return f"IF{mem}{freq:09d}{clar}{rx_clar}{tx_clar}{mode}{vfo}{ctcss}{fixed}{repeater}{tx}{split};"
+        return f"IF{mem}{freq:09d}{rit_offset}{rit}{xit}{mode}{vfo}{ctcss}{fixed}{repeater}{tx}{split};"
 
     @staticmethod
     def _parse_number(text: str, expected_len: int) -> Optional[int]:

@@ -86,11 +86,11 @@ FT-817 Bank 3 note:
 - The FT-817 branch currently mixes a tracked `current/other VFO` workflow with explicit `SYNC VFOA/VFOB` and explicit active-`VFO A/B` selection.
 - `1`/`2` double click lead into staged frequency entry for the tracked current/other VFO, `1` long toggles `A/B` and `2` long copies the active VFO to the other (`A=B`, also the console command `VFO A=B`), and `3` handles `VFOA MODE`, then returns to the VFO in use. VFO B's mode: `1` long, then Bank 1 `9`.
 - The FT-817 cannot report its active VFO, so `4` sync is still important after any unknown front-panel A/B change.
-- `5` works as on the FT-857/897: RIT is the clarifier, the short press of the radio's CLAR key; IF shift (the long press) is left alone. If RIT is on, asking switches it off and straight back on.
+- `5` works as on the FT-857/897: RIT is the short press of the radio's CLAR key; IF shift (the long press) is left alone. If RIT is on, asking switches it off and straight back on.
 
 FT-857/897 Bank 3 note:
 
-- `5` short switches RIT off and straight back on when RIT is on, since the radio cannot report RIT otherwise. If the clarifier knob was tuning IF shift at that moment, it tunes RIT afterwards (EEPROM `0x6A` bit 3). `5` long does not do this: it moves the knob to RIT only when it switches RIT on.
+- `5` short switches RIT off and straight back on when RIT is on, since the radio cannot report RIT otherwise. If the knob was tuning IF shift at that moment, it tunes RIT afterwards (EEPROM `0x6A` bit 3). `5` long does not do this: it moves the knob to RIT only when it switches RIT on.
 
 ## Bank 6 - Repeater / Tone
 
@@ -154,7 +154,7 @@ radio's CAT RATE menu.
 | Function | FT-817 | FT-857/897 |
 |---|---|---|
 | `Bank 6 repeater/tone writes` | expect best results only on `2 m` or `70 cm` and already in `FM`; other contexts can make valid CAT writes look unreliable | expect best results only on the intended `VHF/UHF` band and already in `FM`; other contexts can make valid CAT writes look unreliable |
-| `CLAR OFF` | replaced by `RIT?` / `RIT TOGGLE`; the CAT clarifier commands switch RIT | replaced by `RIT?` / `RIT TOGGLE`; the CAT clarifier commands switch RIT |
+| `RIT OFF` | replaced by `RIT?` / `RIT TOGGLE`; the CAT commands `05`/`85` switch RIT | replaced by `RIT?` / `RIT TOGGLE`; the CAT commands `05`/`85` switch RIT |
 | `VFO A/B tracking` | usable with sync support; the radio has no readable VFO | read from the EEPROM |
 | `manual front-panel A/B changes` | resync recommended | followed; no sync needed |
 | FT-817 hidden background conditions | documented CAT commands can work well, but some success still appears to depend on not-yet-characterized radio state; more testing is needed | not the main current concern |

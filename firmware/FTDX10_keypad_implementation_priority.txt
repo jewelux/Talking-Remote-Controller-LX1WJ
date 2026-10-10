@@ -112,7 +112,7 @@ Bank 5
 - RIT offset setzen/lesen
 - XT?
 - XT toggle
-- CLAR clear/down/up falls sauber auf FTDX10 umgesetzt
+- RIT clear/down/up falls sauber auf FTDX10 umgesetzt
 
 Bank 6
 - RI?

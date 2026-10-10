@@ -41,9 +41,9 @@ bool yaesuCatQueryRxStatusRaw(uint8_t& rawOut, uint32_t timeoutMs);
 bool yaesuCatQueryTxStatusRaw(uint8_t& rawOut, uint32_t timeoutMs);
 // Split from the TX status while transmitting, else from the EEPROM.
 bool yaesuCatQuerySplit(bool& onOut, uint32_t timeoutMs);
-// RIT (a short press of the CLAR key, which the manuals also call the clarifier), which the CAT
-// clarifier commands switch. Also right after a front panel change. IF shift (a long press)
-// can be read (Ft8x7Flag::IfShift) but not switched.
+// RIT (a short press of the CLAR key), which the CAT commands 05 and 85 switch. Also right after
+// a front panel change. IF shift (a long press) can be read (Ft8x7Flag::IfShift) but not
+// switched.
 bool yaesuFt8x7QueryRit(bool& onOut, uint32_t timeoutMs);
 bool yaesuFt8x7SetRit(bool on, uint32_t timeoutMs);
 bool yaesuFt8x7ToggleRit(bool& onOut, uint32_t timeoutMs);
@@ -59,7 +59,7 @@ void yaesuCatSetRepeaterShiftRaw(uint8_t shiftByte);
 void yaesuCatSetRepeaterOffsetHzRaw(uint64_t hz);
 void yaesuCatSetPowerDocumentedRaw(bool on);
 void yaesuCatSetAgcMode(uint8_t modeByte);
-void yaesuCatSetClarifierOffsetRaw(const uint8_t data[4]);
+void yaesuCatSetRitOffsetRaw(const uint8_t data[4]);
 void yaesuCatSetToneDcsModeRaw(uint8_t modeByte);
 void yaesuCatSetCtcssToneRaw(const uint8_t data[4]);
 void yaesuCatSetDcsCodeRaw(const uint8_t data[4]);

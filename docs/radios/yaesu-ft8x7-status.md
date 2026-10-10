@@ -25,8 +25,8 @@ The goal of this document is to separate:
 | Lock on/off | implemented and verified |
 | Split on/off | implemented and verified |
 | VFO A/B handling | implemented and verified |
-| Clarifier on/off | implemented and verified |
-| Clarifier offset | implemented and verified |
+| RIT on/off | implemented and verified |
+| RIT offset | implemented and verified |
 | Repeater shift | implemented and verified |
 | Repeater offset | implemented and verified |
 | Tone/DCS mode | implemented and verified |
@@ -42,7 +42,7 @@ The goal of this document is to separate:
 | RX/TX state query (Bank 1 `1`, `RXTX?`) | verified: TX status bit 7 (0 = transmitting), `0xFF` in receive |
 | Split status query | verified: EEPROM `0x7A` bit 7 in receive, following both CAT and the front panel; TX status bit 5 (1 = on) while transmitting |
 | PO / ALC / SWR meters | verified at 5 W FM into a dummy load (PO 8, ALC 2, SWR 1.0): PO from TX status bits 3..0, ALC and SWR from the undocumented `BD` (bytes `82 08`), sent only while transmitting. With split on the radio transmits on the other VFO, so its mode decides whether there is power to read |
-| RIT query and toggle (Bank 3 `5`, `RIT?`, `RIT TOGGLE`) | verified: like the FT-897, `05`/`85` switch the clarifier, which the FT-817 manual calls RIT (a short press of CLAR), and answer `00` when they switched, `F0` when it was already in that state, also after a front panel change and with IF shift (the long press of CLAR) on, which they leave alone |
+| RIT query and toggle (Bank 3 `5`, `RIT?`, `RIT TOGGLE`) | verified: like the FT-897, `05`/`85` switch RIT (a short press of CLAR), and answer `00` when they switched, `F0` when it was already in that state, also after a front panel change and with IF shift (the long press of CLAR) on, which they leave alone |
 | Lock query (`LOCK?`, Bank 1 `3`) | verified: EEPROM `0x57` bit 6, inverted (0 = locked), following both the front panel key and the CAT lock |
 | Noise blanker query (`NB?`, Bank 2 `2`) | verified: EEPROM `0x57` bit 5 (1 = on), following the front panel. There is no DSP, so `NR?` and `NOTCH?` say unsupported |
 | AGC, BK and KYR (`AGC?`, `BK?`, `KYR?`, Bank 2 `A` double click for AGC) and VOX, fast tuning and IF shift (`YSETTINGS?`) | verified, read only; addresses below |
@@ -99,10 +99,10 @@ The active VFO cannot be read: `0x55` bit 0, which Hamlib's `get_vfo` and the KA
 | PTT on/off | implemented and verified |
 | Lock on/off | implemented and verified |
 | VFO toggle | implemented and verified |
-| RIT on/off (the CAT clarifier commands `05`/`85`) | verified on an FT-897: they switch RIT, the short press of the radio's CLAR key (the manual's clarifier); IF shift (long press) has no CAT command |
+| RIT on/off (the CAT commands `05`/`85`) | verified on an FT-897: they switch RIT, the short press of the radio's CLAR key; IF shift (long press) has no CAT command |
 | RIT query and toggle (Bank 3 `5`, `RIT?`, `RIT TOGGLE`) | verified on an FT-897, also after a front panel change. RIT on/off is not in the EEPROM, but the radio answers `05`/`85` with `00` when it switched and `F0` when RIT was already in that state. `RIT?` sends `85`: `F0` means off; `00` means it was on, and `05` switches it back at once. That brief switch hands the knob to RIT if IF shift had it |
-| IF shift read (`IFSHIFT?`, printed, not spoken) | verified on an FT-897, EEPROM `0x6A` bit 4; read only. Earlier documented as a second clarifier: the long press of CLAR is IF shift |
-| Clarifier offset | implemented and verified |
+| IF shift read (`IFSHIFT?`, printed, not spoken) | verified on an FT-897, EEPROM `0x6A` bit 4; read only. Earlier documented as a second RIT: the long press of CLAR is IF shift |
+| RIT offset | implemented and verified |
 | Repeater shift | implemented and verified |
 | Repeater offset | implemented and verified |
 | Tone/DCS mode | implemented and verified |

@@ -125,7 +125,6 @@ watts
 antenna
 front
 rear
-clarifier
 digi | | didgy
 monitor
 repeater

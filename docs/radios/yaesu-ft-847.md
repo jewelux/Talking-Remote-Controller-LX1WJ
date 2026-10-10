@@ -44,7 +44,7 @@ commands mean something else, so it never runs FT-8x7 code:
 | `00 00 00 00 80` | lock off | **CAT OFF** |
 | `00 00 00 00 13` | read a meter, 1 byte | read the satellite RX VFO, 5 bytes |
 | `00 00 00 00 E7` | S-meter in 4 bits | S-meter in **5 bits** (0..31 dots) |
-| `0x81`, `0x05`, `0x0F`, `0xBB` | VFO A/B, clarifier, power, EEPROM | do not exist |
+| `0x81`, `0x05`, `0x0F`, `0xBB` | VFO A/B, RIT, power, EEPROM | do not exist |
 
 Sources: FT-847 operating manual, pp. 91-93 (CAT System Programming), and Hamlib
 `rigs/yaesu/ft847.c`. The manual's status bit charts on p. 92 have their titles swapped; see

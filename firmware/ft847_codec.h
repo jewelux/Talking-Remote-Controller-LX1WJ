@@ -11,7 +11,7 @@
 //   - 0x03 / 0x13 / 0x23 read frequency and mode of the main, satellite RX and satellite TX VFO
 //     (0x13 is a 1-byte meter read on the FT-8x7).
 //   - the RX status (0xE7) S-meter is 5 bits (0..31 display dots), not 4.
-//   - no lock, VFO A/B, clarifier, power on/off or EEPROM commands.
+//   - no lock, VFO A/B, RIT, power on/off or EEPROM commands.
 //   - units built before the 8G05 production run (May 1998) cannot be read at all.
 // Sources: FT-847 operating manual pp. 91-93 (CAT System Programming) and Hamlib
 // rigs/yaesu/ft847.c. The manual's status bit charts on p. 92 have their titles swapped:
