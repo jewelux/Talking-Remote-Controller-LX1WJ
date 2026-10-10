@@ -306,3 +306,12 @@ bool yaesuCatSetDcsCode(uint16_t dcsCode) {
   live.dcsCode = dcsCode;
   return true;
 }
+
+bool yaesuCatSetToneMode(YaesuToneMode mode) {
+  uint8_t modeByte = 0;
+  if (!yaesuToneModeByte(mode, currentIsFt857Family(), modeByte)) return false;
+  yaesuCatSetToneDcsModeRaw(modeByte);
+  live.toneModeValid = true;
+  live.toneMode = mode;
+  return true;
+}

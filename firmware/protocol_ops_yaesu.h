@@ -67,3 +67,6 @@ void yaesuCatSetDcsCodeRaw(const uint8_t data[4]);
 // A write of a standard tone or code (ft8x7_codec.h) updates the live tone cache.
 bool yaesuCatSetCtcssTenths(uint16_t toneTenths);
 bool yaesuCatSetDcsCode(uint16_t dcsCode);
+// Sets the tone mode and updates the live tone mode. False, sending nothing, for a mode the
+// radio cannot be set to by CAT (yaesuToneModeByte); only the FT-857/897 gets the full set.
+bool yaesuCatSetToneMode(YaesuToneMode mode);

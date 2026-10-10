@@ -102,19 +102,30 @@ FT-857/897 Bank 3 note:
 | `1` short | `RPTSHIFT` preset 1 (`rpt_offset_1`, default `0.600`) | `RPTSHIFT` preset 1 (`rpt_offset_1`, default `0.600`) |
 | `1` long | `RPTSHIFT` preset 2 (`rpt_offset_2`, default `7.600`) | `RPTSHIFT` preset 2 (`rpt_offset_2`, default `7.600`) |
 | `1` double click | `RPTSHIFT <kHz>`, then digits, then `Enter` | `RPTSHIFT <kHz>`, then digits, then `Enter` |
-| `2` short | `TONE OFF` | `TONE OFF` |
+| `2` short | `TONE?`: the mode last set from HamTRC | `TONE?` (read from the radio) |
 | `2` long | `TONE CTCSS` | `TONE CTCSS` |
-| `2` double click | `TONE DCS` | `TONE DCS` |
+| `2` double click | `TONE OFF` | `TONE OFF` |
+| `2` short, then hold | `TONE DCS` | `TONE DCS` |
 | `3` short | `CTCSS?` (speak only) | `CTCSS?` (speak only) |
 | `3` long | `CTCSS <tone>`, then digits, then `Enter` | `CTCSS <tone>`, then digits, then `Enter` |
 | `4` short | `DCS?` (speak only) | `DCS?` (speak only) |
 | `4` long | `DCS <code>`, then digits, then `Enter` | `DCS <code>`, then digits, then `Enter` |
+| `5` short | `TONEDIR?`: the mode last set from HamTRC | `TONEDIR?` (read from the radio) |
+| `5` long | `TONEDIR TOGGLE` (CTCSS only) | `TONEDIR TOGGLE` |
 
-For Bank 6 tone handling, `2` is an explicit mode selector:
+Bank 6 tone handling:
 
-- `2` short = tone off
-- `2` long = CTCSS on
-- `2` double click = DCS on
+- `2` short = tone type: off, CTCSS or DCS
+- `2` long = CTCSS, `2` short then hold = DCS, `2` double click = off
+- `5` short = TX (encode only: the tone is sent, the squelch does not wait for it), BOTH (encode
+  and decode, tone squelch) or RX (decode only, set on the radio)
+- `5` long = switches between TX and BOTH, keeping the type; with the tone off it changes nothing
+- switching the type keeps TX or BOTH; from off it starts with BOTH
+
+The FT-857/897 reads the tone mode of the current band and VFO from its EEPROM, also after a
+change on the radio. The FT-817 keeps it where it cannot be read live, so there `2` and `5`
+short say the mode last set from HamTRC, and "not available" before one was set. The FT-817 has
+no DCS encode only: DCS is always BOTH there.
 
 `3` short and `4` short do not read the radio: they speak the last CTCSS tone or DCS code set from the keypad, or the built-in default (`88.5`, `023`) when nothing has been set yet.
 

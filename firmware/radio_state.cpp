@@ -27,6 +27,8 @@ void resetLiveRadioState() {
   live.ctcssTenths = 0;
   live.dcsValid = false;
   live.dcsCode = 0;
+  live.toneModeValid = false;
+  live.toneMode = YaesuToneMode();
   live.activeVfoKnown = false;
   live.activeVfoA = true;
   live.lockKnown = false;

@@ -162,6 +162,21 @@ bool yaesuFt857QueryRitOffsetHz(uint64_t hz, int32_t& offsetOut, uint32_t timeou
   return true;
 }
 
+bool yaesuFt857QueryToneMode(uint64_t hz, bool& bandKnownOut, YaesuToneMode& out,
+                             uint32_t timeoutMs) {
+  if (!currentIsFt857Family()) return false;
+  out = YaesuToneMode();
+  const Ft857BandSlot* slot = nullptr;
+  uint16_t block = 0;
+  if (!ft857ActiveBandBlock(hz, slot, block, timeoutMs)) return false;
+  bandKnownOut = slot != nullptr;
+  if (!slot) return true;
+  uint8_t b = 0;
+  if (!yaesuCatReadEepromByte(block + FT857_BAND_TONE_OFFSET, b, timeoutMs)) return false;
+  out = ft857ToneModeFromByte(b);
+  return true;
+}
+
 bool yaesuFt857QueryMicEq(YaesuFt857MicEq& out, uint32_t timeoutMs) {
   if (!currentIsFt857Family()) return false;
   uint8_t b = 0;

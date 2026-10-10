@@ -407,3 +407,65 @@ FeatureStatus ft8x7SettingQuery(Ft8x7Setting setting, Ft8x7SettingState& out) {
   }
   return ok ? FeatureStatus::Ok : failure(FeatureStatus::NoReply);
 }
+
+// ---- FT-8x7 tone squelch ----
+
+static bool toneSupported() {
+  return currentProtocolType() == PROTO_YAESU_FT8X7;
+}
+
+static bool toneIsOff(const YaesuToneMode& mode) {
+  return mode.tx == YaesuToneType::None && mode.rx == YaesuToneType::None;
+}
+
+FeatureStatus toneModeQuery(YaesuToneMode& out) {
+  if (!toneSupported()) return FeatureStatus::Unsupported;
+  if (!currentIsFt857Family()) {
+    if (!live.toneModeValid) return FeatureStatus::Unsupported;
+    out = live.toneMode;
+    return FeatureStatus::Ok;
+  }
+  uint64_t hz = 0;
+  bool bandKnown = false;
+  if (!queryFrequency(hz, kFt8x7TimeoutMs) || !yaesuFt857QueryToneMode(hz, bandKnown, out, kFt8x7TimeoutMs)) {
+    return failure(FeatureStatus::NoReply);
+  }
+  return bandKnown ? FeatureStatus::Ok : FeatureStatus::Unsupported;
+}
+
+FeatureStatus toneOff() {
+  if (!toneSupported()) return FeatureStatus::Unsupported;
+  return yaesuCatSetToneMode(YaesuToneMode()) ? FeatureStatus::Ok : FeatureStatus::Unsupported;
+}
+
+FeatureStatus toneTypeSet(YaesuToneType type, YaesuToneMode& out) {
+  if (!toneSupported() || type == YaesuToneType::None) return FeatureStatus::Unsupported;
+  YaesuToneMode current;
+  const FeatureStatus status = toneModeQuery(current);
+  if (status != FeatureStatus::Ok && status != FeatureStatus::Unsupported) return status;
+  // Not known: as from off.
+  if (status != FeatureStatus::Ok) current = YaesuToneMode();
+  const bool txOnly = current.tx != YaesuToneType::None && current.rx == YaesuToneType::None;
+  const bool rxOnly = current.tx == YaesuToneType::None && current.rx != YaesuToneType::None;
+  out.tx = rxOnly ? YaesuToneType::None : type;
+  out.rx = txOnly ? YaesuToneType::None : type;
+  if (yaesuCatSetToneMode(out)) return FeatureStatus::Ok;
+  out.tx = type;
+  out.rx = type;
+  return yaesuCatSetToneMode(out) ? FeatureStatus::Ok : FeatureStatus::Unsupported;
+}
+
+FeatureStatus toneEncodeToggle(YaesuToneMode& out) {
+  if (!toneSupported()) return FeatureStatus::Unsupported;
+  YaesuToneMode current;
+  const FeatureStatus status = toneModeQuery(current);
+  if (status != FeatureStatus::Ok) return status;
+  if (toneIsOff(current)) {
+    out = current;
+    return FeatureStatus::Ok;
+  }
+  const bool txOnly = current.tx != YaesuToneType::None && current.rx == YaesuToneType::None;
+  out.tx = current.tx != YaesuToneType::None ? current.tx : current.rx;
+  out.rx = txOnly ? out.tx : YaesuToneType::None;
+  return yaesuCatSetToneMode(out) ? FeatureStatus::Ok : FeatureStatus::Unsupported;
+}

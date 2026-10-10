@@ -174,6 +174,14 @@
   (`9`) and the preamplifier and attenuator (`A`, long for the attenuator; the preamplifier is on
   when IPO is off); the FT-817 has no DSP, so these say "not available".
   HamTRC only reads these settings; it cannot change them
+- FT-817/818/857/897: CTCSS and DCS can be set to encode only: the tone is sent, but the squelch
+  does not wait for it. Bank 6 `5` short says "tone tx" for encode only or "tone both", `5` long
+  switches between them. The FT-817/818 has no DCS encode only
+- FT-817/818/857/897: Bank 6 `2` short says the tone type ("tone ctcss", "tone dcs", "tone off").
+  The FT-857/897 reads it from the radio; the FT-817/818 says what HamTRC last set. Tone off has
+  moved to `2` double press, DCS to `2` short press then hold; `2` long is still CTCSS. Switching
+  between CTCSS and DCS keeps encode only. Console: `TONE? | OFF | CTCSS | DCS`,
+  `TONEDIR? | TOGGLE`
 - FT-817/818: Bank 2 `0` says which antenna jack the current band uses (menu 07), "antenna front"
   or "antenna rear". The console command is `ANT?`
 - FT-817/818/857/897: Bank 8 `8` says the menu item the radio's menu was last left on ("menu 7 6"),

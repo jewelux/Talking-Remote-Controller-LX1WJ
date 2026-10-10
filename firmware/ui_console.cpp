@@ -389,6 +389,31 @@ static bool handleConsoleFeatureCommand(const String& upper) {
     speakVoxDelay(ms);
     return true;
   }
+  if (upper == "TONE?") {
+    YaesuToneMode mode;
+    if (reportFeatureFailure(toneModeQuery(mode), label)) return true;
+    Serial.println(toneTypeText(mode));
+    speakToneType(mode);
+    return true;
+  }
+  if (upper == "TONEDIR?") {
+    YaesuToneMode mode;
+    if (reportFeatureFailure(toneModeQuery(mode), label)) return true;
+    Serial.println(toneDirText(mode));
+    speakToneDir(mode);
+    return true;
+  }
+  if (upper == "TONE OFF" || upper == "TONE CTCSS" || upper == "TONE DCS" || upper == "TONEDIR TOGGLE") {
+    YaesuToneMode mode;
+    FeatureStatus status = FeatureStatus::Ok;
+    if (upper == "TONE OFF") status = toneOff();
+    else if (upper == "TONEDIR TOGGLE") status = toneEncodeToggle(mode);
+    else status = toneTypeSet(upper == "TONE CTCSS" ? YaesuToneType::Ctcss : YaesuToneType::Dcs, mode);
+    if (reportFeatureFailure(status, label)) return true;
+    Serial.println(toneModeText(mode));
+    speakToneMode(mode);
+    return true;
+  }
   return false;
 }
 
@@ -811,6 +836,9 @@ void printHelp() {
     if (ft817 || ft857Family) Serial.println("    RIT? | RIT OFF | ON | TOGGLE");
     Serial.println("    CTCSS <Hz> | CTCSS?");
     Serial.println("    DCS <code> | DCS?");
+    Serial.println(ft857Family ? "    TONE? | TONE OFF | CTCSS | DCS  (read from the radio)"
+                               : "    TONE? | TONE OFF | CTCSS | DCS  (TONE? says the mode last set)");
+    Serial.println("    TONEDIR? | TONEDIR TOGGLE  (encode only TX, or BOTH)");
     Serial.println("    GT? | GT FAST | SLOW | OFF");
     Serial.println("    PA? | PA OFF | ON | TOGGLE");
     Serial.println("    PS? | PS OFF | ON");

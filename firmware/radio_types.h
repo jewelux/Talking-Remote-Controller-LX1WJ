@@ -7,6 +7,7 @@
 
 #include "civ_frame.h"
 #include "config_pins.h"
+#include "ft8x7_codec.h"
 #include "radio_profile_types.h"
 
 static constexpr uint8_t CIV_MY_ADDR = 0xE0;
@@ -130,6 +131,9 @@ struct LiveState {
   uint16_t ctcssTenths = 0;
   bool dcsValid = false;
   uint16_t dcsCode = 0;
+  // FT-8x7 tone mode last set; the FT-817/818 tone mode cannot be read live.
+  bool toneModeValid = false;
+  YaesuToneMode toneMode;
   bool activeVfoKnown = false;
   bool activeVfoA = true;
   bool lockKnown = false;

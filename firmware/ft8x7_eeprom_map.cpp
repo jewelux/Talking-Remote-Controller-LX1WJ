@@ -99,6 +99,21 @@ int32_t ft857RitOffsetHz(const uint8_t word[2]) {
   return (int32_t)(int16_t)(((uint16_t)word[0] << 8) | word[1]) * 10;
 }
 
+static YaesuToneType ft857ToneType(uint8_t bits) {
+  switch (bits & 0x03) {
+    case 0x01: return YaesuToneType::Ctcss;
+    case 0x02: return YaesuToneType::Dcs;
+    default: return YaesuToneType::None;
+  }
+}
+
+YaesuToneMode ft857ToneModeFromByte(uint8_t b) {
+  YaesuToneMode mode;
+  mode.tx = ft857ToneType((uint8_t)(b >> 2));
+  mode.rx = ft857ToneType(b);
+  return mode;
+}
+
 uint16_t ft857RfPowerAddr(Ft8x7BandGroup group) {
   switch (group) {
     case Ft8x7BandGroup::Hf: return 0x009B;

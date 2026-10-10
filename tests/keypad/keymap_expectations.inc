@@ -195,12 +195,15 @@ KEYMAP_ROW(FT8X7,           6, '0', "setBank6RepeaterOff",   "setBank6RepeaterMi
 KEYMAP_ROW(NOT(FT8X7),      6, '0', "unassigned",            "none",                   "-")
 KEYMAP_ROW(FT8X7,           6, '1', "setBank6RepeaterOffsetPreset(1)", "setBank6RepeaterOffsetPreset(2)", "beginBank6RepeaterOffsetEntry")
 KEYMAP_ROW(NOT(FT8X7),      6, '1', "unassigned",            "none",                   "-")
-KEYMAP_ROW(FT8X7,           6, '2', "setBank6ToneOff",       "setBank6ToneModeCtcss",  "setBank6ToneModeDcs")
+// '2' double hold (a short press, then a hold): setBank6ToneModeDcs, checked in test_keymap.cpp.
+KEYMAP_ROW(FT8X7,           6, '2', "queryBank6Tone",        "setBank6ToneModeCtcss",  "setBank6ToneOff")
 KEYMAP_ROW(NOT(FT8X7),      6, '2', "unassigned",            "none",                   "-")
 KEYMAP_ROW(FT8X7,           6, '3', "queryBank6CtcssDefault", "beginBank6CtcssEntry",  "-")
 KEYMAP_ROW(NOT(FT8X7),      6, '3', "unassigned",            "none",                   "-")
 KEYMAP_ROW(FT8X7,           6, '4', "queryBank6DcsDefault",  "beginBank6DcsEntry",     "-")
 KEYMAP_ROW(NOT(FT8X7),      6, '4', "unassigned",            "none",                   "-")
+KEYMAP_ROW(FT8X7,           6, '5', "queryBank6ToneDir",     "toggleBank6ToneDir",     "-")
+KEYMAP_ROW(NOT(FT8X7),      6, '5', "unassigned",            "none",                   "-")
 
 // ---- Bank 8 ----------------------------------------------------------------
 KEYMAP_ROW(ALL,             8, '1', "queryBank8CivAddress",  "beginBank8CivAddressEntry", "-")

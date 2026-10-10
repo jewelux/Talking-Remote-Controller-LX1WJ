@@ -146,3 +146,52 @@ TEST(tone_data_encodes_four_bcd_digits) {
   CHECK_EQ(data[0], 0x00);
   CHECK_EQ(data[1], 0x23);
 }
+
+static YaesuToneMode toneMode(YaesuToneType tx, YaesuToneType rx) {
+  YaesuToneMode mode;
+  mode.tx = tx;
+  mode.rx = rx;
+  return mode;
+}
+
+TEST(tone_mode_bytes_on_the_ft857) {
+  using T = YaesuToneType;
+  struct Case {
+    T tx;
+    T rx;
+    uint8_t byte;
+  };
+  const Case cases[] = {
+    {T::None, T::None, 0x8A},  {T::Ctcss, T::Ctcss, 0x2A}, {T::Ctcss, T::None, 0x4A},
+    {T::None, T::Ctcss, 0x3A}, {T::Dcs, T::Dcs, 0x0A},     {T::Dcs, T::None, 0x0C},
+    {T::None, T::Dcs, 0x0B},
+  };
+  for (const Case& c : cases) {
+    uint8_t out = 0;
+    CHECK(yaesuToneModeByte(toneMode(c.tx, c.rx), true, out));
+    CHECK_EQ(out, c.byte);
+  }
+}
+
+TEST(tone_mode_bytes_on_the_ft817) {
+  using T = YaesuToneType;
+  uint8_t out = 0;
+  CHECK(yaesuToneModeByte(toneMode(T::None, T::None), false, out));
+  CHECK_EQ(out, 0x8A);
+  CHECK(yaesuToneModeByte(toneMode(T::Ctcss, T::Ctcss), false, out));
+  CHECK_EQ(out, 0x2A);
+  CHECK(yaesuToneModeByte(toneMode(T::Ctcss, T::None), false, out));
+  CHECK_EQ(out, 0x4A);
+  CHECK(yaesuToneModeByte(toneMode(T::Dcs, T::Dcs), false, out));
+  CHECK_EQ(out, 0x0A);
+  CHECK(!yaesuToneModeByte(toneMode(T::Dcs, T::None), false, out));
+  CHECK(!yaesuToneModeByte(toneMode(T::None, T::Ctcss), false, out));
+  CHECK(!yaesuToneModeByte(toneMode(T::None, T::Dcs), false, out));
+}
+
+TEST(tone_mode_byte_refuses_mixed_types) {
+  using T = YaesuToneType;
+  uint8_t out = 0;
+  CHECK(!yaesuToneModeByte(toneMode(T::Ctcss, T::Dcs), true, out));
+  CHECK(!yaesuToneModeByte(toneMode(T::Dcs, T::Ctcss), true, out));
+}

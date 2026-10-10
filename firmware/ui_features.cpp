@@ -119,6 +119,69 @@ void speakVoxDelay(uint16_t ms) {
   speakToken("ms");
 }
 
+static bool toneOffMode(const YaesuToneMode& mode) {
+  return mode.tx == YaesuToneType::None && mode.rx == YaesuToneType::None;
+}
+
+static const char* toneTypeWord(YaesuToneType type) {
+  return type == YaesuToneType::Ctcss ? "ctcss" : "dcs";
+}
+
+// "off", "ctcss", "dcs", or the sent type then the awaited one.
+static String toneTypeWords(const YaesuToneMode& mode) {
+  if (toneOffMode(mode)) return "off";
+  if (mode.tx == YaesuToneType::None) return toneTypeWord(mode.rx);
+  if (mode.rx == YaesuToneType::None || mode.rx == mode.tx) return toneTypeWord(mode.tx);
+  return String(toneTypeWord(mode.tx)) + " " + toneTypeWord(mode.rx);
+}
+
+static const char* toneDirWord(const YaesuToneMode& mode) {
+  if (mode.rx == YaesuToneType::None) return "tx";
+  if (mode.tx == YaesuToneType::None) return "rx";
+  return "both";
+}
+
+static String toneModeWords(const YaesuToneMode& mode) {
+  if (toneOffMode(mode)) return "off";
+  return toneTypeWords(mode) + " " + toneDirWord(mode);
+}
+
+static String upper(String s) {
+  s.toUpperCase();
+  return s;
+}
+
+static void speakTone(const String& words) {
+  if (!g_speechEnabled) return;
+  speakLabel("tone");
+  speakToken(words);
+}
+
+String toneTypeText(const YaesuToneMode& mode) {
+  return upper(String("TONE ") + toneTypeWords(mode));
+}
+
+void speakToneType(const YaesuToneMode& mode) {
+  speakTone(toneTypeWords(mode));
+}
+
+String toneDirText(const YaesuToneMode& mode) {
+  if (toneOffMode(mode)) return "TONE OFF";
+  return upper(String("TONEDIR ") + toneDirWord(mode));
+}
+
+void speakToneDir(const YaesuToneMode& mode) {
+  speakTone(toneOffMode(mode) ? "off" : toneDirWord(mode));
+}
+
+String toneModeText(const YaesuToneMode& mode) {
+  return upper(String("TONE ") + toneModeWords(mode));
+}
+
+void speakToneMode(const YaesuToneMode& mode) {
+  speakTone(toneModeWords(mode));
+}
+
 static const char* ft8x7AgcText(YaesuAgc agc) {
   switch (agc) {
     case YaesuAgc::Fast: return "FAST";

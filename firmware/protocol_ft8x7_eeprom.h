@@ -41,6 +41,10 @@ bool yaesuFt857QueryLevel(YaesuFt857Level level, uint16_t& valueOut, uint32_t ti
 // band change saves it; turning the knob or switching RIT off does not). The offset stays when
 // RIT is switched off. The IF shift offset is not kept there.
 bool yaesuFt857QueryRitOffsetHz(uint64_t hz, int32_t& offsetOut, uint32_t timeoutMs);
+// The tone mode in the band block of hz on the active VFO, live. bandKnownOut is false outside
+// the amateur bands.
+bool yaesuFt857QueryToneMode(uint64_t hz, bool& bandKnownOut, YaesuToneMode& out,
+                             uint32_t timeoutMs);
 bool yaesuFt857QueryMicEq(YaesuFt857MicEq& out, uint32_t timeoutMs);
 // True when the active model keeps gain where it can be read (not the FT-857/897's PKT).
 bool yaesuFt8x7HasMicGain(Ft8x7MicGain gain);

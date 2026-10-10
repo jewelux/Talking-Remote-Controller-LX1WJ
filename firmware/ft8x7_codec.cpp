@@ -97,3 +97,26 @@ void yaesuEncodeToneData(uint16_t value, bool separateTxRx, uint8_t data[4]) {
   data[2] = separateTxRx ? data[0] : 0x00;
   data[3] = separateTxRx ? data[1] : 0x00;
 }
+
+bool yaesuToneModeByte(YaesuToneMode mode, bool full, uint8_t& out) {
+  using T = YaesuToneType;
+  if (mode.tx == T::None && mode.rx == T::None) {
+    out = 0x8A;
+    return true;
+  }
+  if (mode.tx != T::None && mode.rx != T::None && mode.tx != mode.rx) return false;
+  const bool ctcss = (mode.tx == T::None ? mode.rx : mode.tx) == T::Ctcss;
+  if (mode.tx == mode.rx) {
+    out = ctcss ? 0x2A : 0x0A;
+    return true;
+  }
+  const bool encode = mode.rx == T::None;
+  if (encode && ctcss) {
+    out = 0x4A;
+    return true;
+  }
+  if (!full) return false;
+  if (encode) out = 0x0C;
+  else out = ctcss ? 0x3A : 0x0B;
+  return true;
+}

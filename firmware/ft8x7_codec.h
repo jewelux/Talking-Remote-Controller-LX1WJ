@@ -35,3 +35,15 @@ bool yaesuDcsCodeValid(uint16_t dcsCode);
 // 08 85), then the same again when the radio takes separate TX and RX values (FT-857/897), else
 // 00 00 (FT-817).
 void yaesuEncodeToneData(uint16_t value, bool separateTxRx, uint8_t data[4]);
+
+// Tone squelch: what is sent (tx) and what the squelch waits for (rx). Both the same type is
+// the usual tone squelch, tx alone is encode only, rx alone decode only.
+enum class YaesuToneType : uint8_t { None, Ctcss, Dcs };
+struct YaesuToneMode {
+  YaesuToneType tx = YaesuToneType::None;
+  YaesuToneType rx = YaesuToneType::None;
+};
+// The mode byte of the tone mode command (opcode 0x0A): 8A off, 2A CTCSS, 4A CTCSS encode, 3A
+// CTCSS decode, 0A DCS, 0C DCS encode, 0B DCS decode. False for a mode CAT cannot set: tx and rx
+// of different types, and without full (the FT-817/818) decode only and DCS encode only.
+bool yaesuToneModeByte(YaesuToneMode mode, bool full, uint8_t& out);

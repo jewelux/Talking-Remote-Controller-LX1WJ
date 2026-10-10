@@ -180,6 +180,9 @@ void beginBank6RepeaterOffsetEntry() { record("beginBank6RepeaterOffsetEntry"); 
 void setBank6ToneOff() { record("setBank6ToneOff"); }
 void setBank6ToneModeCtcss() { record("setBank6ToneModeCtcss"); }
 void setBank6ToneModeDcs() { record("setBank6ToneModeDcs"); }
+void queryBank6Tone() { record("queryBank6Tone"); }
+void queryBank6ToneDir() { record("queryBank6ToneDir"); }
+void toggleBank6ToneDir() { record("toggleBank6ToneDir"); }
 void queryBank6CtcssDefault() { record("queryBank6CtcssDefault"); }
 void beginBank6CtcssEntry() { record("beginBank6CtcssEntry"); }
 void queryBank6DcsDefault() { record("queryBank6DcsDefault"); }
@@ -253,6 +256,16 @@ TEST(keymap_double_click_matches_expectations) {
     }
     checkOutcome(f, bank, key, "double",
                  outcome(b.doubleAction, bank, key, "DOUBLE", waits ? "none" : "-"), expected);
+  });
+}
+
+// The matrix has no double hold column: Bank 6 '2' is the one key with a double hold.
+TEST(keymap_double_hold) {
+  forEachKey([](const Family &f, const KeypadTraits &t, uint8_t bank, char key) {
+    const bool expected = (f.bit & FT8X7) && bank == 6 && key == '2';
+    const KeyAction action = keymapLookup(t, bank, key).doubleHoldAction;
+    checkOutcome(f, bank, key, "double hold", outcome(action, bank, key, "DOUBLE LONG", "none"),
+                 expected ? "setBank6ToneModeDcs" : "none");
   });
 }
 

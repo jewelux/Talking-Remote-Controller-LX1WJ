@@ -97,3 +97,15 @@ struct Ft8x7SettingState {
 const char* ft8x7SettingLabel(Ft8x7Setting setting);
 // Unsupported on other radios, and for IPO/ATT/NAR where the band has none (or is not known).
 FeatureStatus ft8x7SettingQuery(Ft8x7Setting setting, Ft8x7SettingState& out);
+
+// FT-8x7 tone squelch. The FT-857/897 reads it from the current band in the EEPROM, live;
+// the FT-817/818 cannot, so there it is the mode HamTRC last set. Unsupported on other radios,
+// outside the amateur bands, on the FT-817/818 before HamTRC has set a mode, and for a mode the
+// radio has no CAT command for (on the FT-817/818 DCS encode only).
+FeatureStatus toneModeQuery(YaesuToneMode& out);
+FeatureStatus toneOff();
+// CTCSS or DCS, keeping encode only (tx only) and decode only (rx only); from off, both. Where
+// the radio cannot keep it (FT-817/818 DCS), both.
+FeatureStatus toneTypeSet(YaesuToneType type, YaesuToneMode& out);
+// Encode only <-> both, keeping the type. With the tone off nothing is sent and out is off.
+FeatureStatus toneEncodeToggle(YaesuToneMode& out);

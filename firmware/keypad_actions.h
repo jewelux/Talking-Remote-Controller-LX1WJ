@@ -126,9 +126,15 @@ void setBank6RepeaterPlus();
 // and 7.6 MHz).
 void setBank6RepeaterOffsetPreset(uint8_t preset);
 void beginBank6RepeaterOffsetEntry();
+// The tone squelch type ("TONE?"), and off, CTCSS or DCS; CTCSS and DCS keep
+// encode only.
+void queryBank6Tone();
 void setBank6ToneOff();
 void setBank6ToneModeCtcss();
 void setBank6ToneModeDcs();
+// Encode only or both ("TONEDIR?"), and the switch between them.
+void queryBank6ToneDir();
+void toggleBank6ToneDir();
 void queryBank6CtcssDefault();
 void beginBank6CtcssEntry();
 void queryBank6DcsDefault();

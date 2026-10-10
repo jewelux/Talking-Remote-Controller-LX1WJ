@@ -11,6 +11,7 @@
 
 #include <stdint.h>
 
+#include "ft8x7_codec.h"
 #include "ft8x7_model.h"
 
 // Settings kept as one bit, or as a group of bits of which any set means on.
@@ -91,6 +92,11 @@ static constexpr uint16_t FT857_BAND_IPO_ATT_OFFSET = 2;
 static constexpr uint8_t FT857_BAND_IPO_MASK = 0x20;
 static constexpr uint8_t FT857_BAND_ATT_MASK = 0x10;
 static constexpr uint16_t FT857_BAND_RIT_OFFSET = 10;
+// Band block +4 bits 3..0: the tone mode, written as soon as it changes. Bits 3..2 are what is
+// sent, bits 1..0 what the squelch waits for, each 01 = CTCSS and 10 = DCS. Measured on an
+// FT-897 by setting each CAT tone mode; bit 7 is something else.
+static constexpr uint16_t FT857_BAND_TONE_OFFSET = 4;
+YaesuToneMode ft857ToneModeFromByte(uint8_t b);
 
 // Only the amateur bands: the band edges the radio uses outside them are not known. Null
 // outside them.

@@ -3,6 +3,7 @@
 #include "protocol_ops_yaesu.h"
 #include "radio_frequency.h"
 #include "radio_utils.h"
+#include "ui_features.h"
 
 static uint32_t currentFt8x7RepeaterOffsetHz(uint8_t index) {
   if (index >= 2) return 0;
@@ -37,23 +38,13 @@ static void setBank6Ft8x7RepeaterOffsetHz(uint64_t hz) {
   speakDigitsAndPoint(hzToMHzString3(hz));
 }
 
-static void setBank6Ft8x7ToneMode(uint8_t modeByte, const char* label) {
-  printKeypadAction("TONE {}", label);
-  yaesuCatSetToneDcsModeRaw(modeByte);
-  printKeypadStatus("TONE {}", label);
-  if (!g_speechEnabled) return;
-  speakLabel("tone");
-  if (String(label) == "OFF") {
-    speakToken("off");
-  } else if (String(label) == "CTCSS") {
-    speakToken("ctcss");
-    playSilenceMs(60);
-    speakToken("on");
-  } else {
-    speakToken("dcs");
-    playSilenceMs(60);
-    speakToken("on");
-  }
+static void setBank6ToneType(YaesuToneType type) {
+  printKeypadAction("TONE {}", type == YaesuToneType::Ctcss ? "CTCSS" : "DCS");
+  prepareKeypadSpeechResponse();
+  YaesuToneMode mode;
+  if (keypadReportFeatureFailure(toneTypeSet(type, mode), "TONE")) return;
+  printKeypadStatus("{}", toneModeText(mode).c_str());
+  speakToneMode(mode);
 }
 
 void beginBank6RepeaterOffsetEntry() {
@@ -98,16 +89,48 @@ void setBank6RepeaterOffsetPreset(uint8_t preset) {
   setBank6Ft8x7RepeaterOffsetHz(currentFt8x7RepeaterOffsetHz(preset - 1));
 }
 
+void queryBank6Tone() {
+  printKeypadAction("TONE?");
+  prepareKeypadSpeechResponse();
+  YaesuToneMode mode;
+  if (keypadReportFeatureFailure(toneModeQuery(mode), "TONE?")) return;
+  printKeypadStatus("{}", toneTypeText(mode).c_str());
+  speakToneType(mode);
+}
+
 void setBank6ToneOff() {
-  setBank6Ft8x7ToneMode(0x8A, "OFF");
+  printKeypadAction("TONE OFF");
+  prepareKeypadSpeechResponse();
+  if (keypadReportFeatureFailure(toneOff(), "TONE")) return;
+  const YaesuToneMode off;
+  printKeypadStatus("{}", toneModeText(off).c_str());
+  speakToneMode(off);
 }
 
 void setBank6ToneModeCtcss() {
-  setBank6Ft8x7ToneMode(0x2A, "CTCSS");
+  setBank6ToneType(YaesuToneType::Ctcss);
 }
 
 void setBank6ToneModeDcs() {
-  setBank6Ft8x7ToneMode(0x0A, "DCS");
+  setBank6ToneType(YaesuToneType::Dcs);
+}
+
+void queryBank6ToneDir() {
+  printKeypadAction("TONEDIR?");
+  prepareKeypadSpeechResponse();
+  YaesuToneMode mode;
+  if (keypadReportFeatureFailure(toneModeQuery(mode), "TONEDIR?")) return;
+  printKeypadStatus("{}", toneDirText(mode).c_str());
+  speakToneDir(mode);
+}
+
+void toggleBank6ToneDir() {
+  printKeypadAction("TONEDIR");
+  prepareKeypadSpeechResponse();
+  YaesuToneMode mode;
+  if (keypadReportFeatureFailure(toneEncodeToggle(mode), "TONEDIR")) return;
+  printKeypadStatus("{}", toneModeText(mode).c_str());
+  speakToneMode(mode);
 }
 
 void queryBank6CtcssDefault() {

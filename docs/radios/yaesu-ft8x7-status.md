@@ -32,6 +32,7 @@ The goal of this document is to separate:
 | Tone/DCS mode | implemented and verified |
 | CTCSS tone write | implemented and verified |
 | DCS code write | implemented and verified |
+| Tone mode (`TONE?`, `TONEDIR?`, Bank 6 `2` and `5`) | tested on an FT-817: the mode HamTRC last set, "not available" before one is set. The band block (2 m at `0x1B5`, +4) did not change while CTCSS, CTCSS encode, DCS and off were set by CAT, so the radio's mode cannot be read live. No DCS encode only: `TONE DCS` sets DCS with its squelch, `TONEDIR TOGGLE` on DCS says not available |
 | Power on/off | implemented and verified |
 | Bank 3 split keypad workflow | implemented and verified |
 | Bank 3 current/other VFO frequency read workflow | implemented and verified |
@@ -121,6 +122,7 @@ The active VFO cannot be read: `0x55` bit 0, which Hamlib's `get_vfo` and the KA
 | DCS code write | implemented and verified |
 | Extended CTCSS encode/decode modes | implemented and verified |
 | Extended DCS encode/decode modes | implemented and verified |
+| Tone mode query (`TONE?`, `TONEDIR?`, Bank 6 `2` and `5` short) | verified on an FT-897 for CAT changes: band block +4, see the [EEPROM map](#ft-857897-eeprom-map). The CAT tone command answers `00` whether or not the mode changed, so the reply tells nothing. Changes on the front panel are read at once too (checked through CTCSS and DCS, encode only and both, and off) |
 | S-meter read | implemented and verified |
 | RX status raw read | implemented and verified |
 | TX status raw read | implemented and verified |
@@ -198,6 +200,7 @@ Per band and VFO, a 28-byte block. VFO A blocks: 160 m `0xBA`, 80 m `0xD6`, 5 MH
 | +2 | 5 | IPO |
 | +2 | 4 | ATT |
 | +4 | 7 | unknown; not RIT (set in blocks with a zero RIT offset too). Saved with the band's working state |
+| +4 | 3..0 | tone mode, saved as soon as it changes: bits 3..2 what is sent, bits 1..0 what the squelch waits for, each 01 = CTCSS, 10 = DCS (CTCSS 5, CTCSS encode 4, CTCSS decode 1, DCS A, DCS encode 8, DCS decode 2, off 0). Measured by setting each CAT tone mode on 2 m FM; front panel changes show the same. `TONE?`, `TONEDIR?`, Bank 6 `2` and `5` |
 | +10..+11 | all | the RIT offset, signed, 10 Hz units, big-endian (`FF AA` = −860 Hz), measured on 20 m against the frequency the radio reports with RIT on. Kept when RIT is switched off. Current only after the radio saves the block: a band change saves it, turning the knob or a short press of CLAR does not. The IF shift offset is not here. `YSETTINGS?` shows it as `RITOFFSET` |
 | +12..+15 | all | frequency, 10 Hz units, big-endian |
 

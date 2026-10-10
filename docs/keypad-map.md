@@ -156,13 +156,16 @@ these keys are free.
 | `1` short | repeater offset preset 1 (0.6 MHz) |
 | `1` long | repeater offset preset 2 (7.6 MHz) |
 | `1` double | repeater offset entry in kHz |
-| `2` short | tone off |
-| `2` long | CTCSS on |
-| `2` double | DCS on |
+| `2` short | tone type: off, CTCSS or DCS |
+| `2` long | CTCSS |
+| `2` double | tone off |
+| `2` short, then hold | DCS |
 | `3` short | CTCSS tone (the last set, or 88.5 Hz) |
 | `3` long | CTCSS tone entry |
 | `4` short | DCS code (the last set, or 023) |
 | `4` long | DCS code entry |
+| `5` short | encode only (TX) or encode and decode (both) |
+| `5` long | switch between encode only and both (FT-817/818: CTCSS only) |
 
 ## Bank 7
 

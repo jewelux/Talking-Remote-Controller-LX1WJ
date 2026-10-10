@@ -69,6 +69,26 @@ TEST(ft857_rit_offset_is_signed_10_hz_units) {
   CHECK_EQ(ft857RitOffsetHz(zero), 0);
 }
 
+// The bytes the FT-897 stored for each CAT tone mode, with bit 7 set as it was there.
+TEST(ft857_tone_mode_from_the_band_block) {
+  using T = YaesuToneType;
+  struct Case {
+    uint8_t b;
+    T tx;
+    T rx;
+  };
+  const Case cases[] = {
+    {0x80, T::None, T::None},  {0x85, T::Ctcss, T::Ctcss}, {0x84, T::Ctcss, T::None},
+    {0x81, T::None, T::Ctcss}, {0x8A, T::Dcs, T::Dcs},     {0x88, T::Dcs, T::None},
+    {0x82, T::None, T::Dcs},   {0x06, T::Ctcss, T::Dcs},   {0x00, T::None, T::None},
+  };
+  for (const Case& c : cases) {
+    const YaesuToneMode mode = ft857ToneModeFromByte(c.b);
+    CHECK_EQ(mode.tx, c.tx);
+    CHECK_EQ(mode.rx, c.rx);
+  }
+}
+
 TEST(ft857_rf_power_address_per_band_group) {
   CHECK_EQ(ft857RfPowerAddr(Ft8x7BandGroup::Hf), 0x009B);
   CHECK_EQ(ft857RfPowerAddr(Ft8x7BandGroup::SixM), 0x00AA);
