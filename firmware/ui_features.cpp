@@ -190,12 +190,11 @@ void speakFt8x7Setting(const Ft8x7SettingState& state) {
   }
   // No "shift" clip yet: printed only.
   if (state.setting == Ft8x7Setting::IfShift) return;
-  // "AGC" -> "a g c"
-  const String spelled = spelledLetters(ft8x7SettingName(state.setting));
   if (state.setting == Ft8x7Setting::Agc) {
-    speakLabel(spelled);
+    speakLabel("agc");
     speakToken(ft8x7AgcText(state.agc));
     return;
   }
-  speakTokenState(spelled, state.on);
+  // "IPO" -> "i p o"
+  speakTokenState(spelledLetters(ft8x7SettingName(state.setting)), state.on);
 }

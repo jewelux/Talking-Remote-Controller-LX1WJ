@@ -27,6 +27,7 @@ struct SpokenLabel {
 
 static constexpr SpokenLabel kSpokenLabels[] = {
   {"A=B", "a equals b"},
+  {"AGC", "agc"},
   {"ANT", "antenna"},
   {"BAUD", "baud"},
   {"BSTACK", "band stack"},
@@ -72,7 +73,7 @@ static constexpr SpokenLabel kSpokenLabels[] = {
   {"VFOB MODE", "vfo b mode"},
 };
 
-// The FT-8x7 EEPROM settings not in the table (AGC?, IPO?, ATT? ...) are
+// The FT-8x7 EEPROM settings not in the table (IPO?, ATT? ...) are
 // spelled, as their answers say them.
 static String spokenLabel(const char* label) {
   String name(label);
