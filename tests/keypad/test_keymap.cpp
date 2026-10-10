@@ -195,6 +195,8 @@ void queryBank8Baud() { record("queryBank8Baud"); }
 void cycleBank8Baud(int d) { record("cycleBank8Baud(%d)", d); }
 void queryBank8Ft8x7Row() { record("queryBank8Ft8x7Row"); }
 void queryBank8Ft8x7Menu() { record("queryBank8Ft8x7Menu"); }
+void beginBank8Ft8x7RowEntry() { record("beginBank8Ft8x7RowEntry"); }
+void beginBank8Ft8x7MenuEntry() { record("beginBank8Ft8x7MenuEntry"); }
 
 void queryBank9TuningSpeech() { record("queryBank9TuningSpeech"); }
 void toggleBank9TuningSpeech() { record("toggleBank9TuningSpeech"); }

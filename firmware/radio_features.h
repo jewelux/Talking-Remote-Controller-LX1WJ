@@ -14,6 +14,7 @@ enum class FeatureStatus : uint8_t {
   Timeout,      // the radio did not answer (g_radioReplyTimedOut)
   NoReply,      // a read got no usable answer
   Failed,       // a write was not accepted
+  Invalid,      // the value is out of range; nothing was sent
 };
 
 // Noise reduction. level is 1 or 2 on the TS-480, whose NR has two levels, and
@@ -97,6 +98,10 @@ struct Ft8x7SettingState {
 const char* ft8x7SettingLabel(Ft8x7Setting setting);
 // Unsupported on other radios, and for IPO/ATT/NAR where the band has none (or is not known).
 FeatureStatus ft8x7SettingQuery(Ft8x7Setting setting, Ft8x7SettingState& out);
+// Experimental (caps.setRadioMenu): sets Menu or Row, counted from 1, in the EEPROM; out holds
+// the value read back. Invalid outside 1..the last item or row; Failed while transmitting, when
+// the stored bytes are not as expected (nothing written) or when the read-back differs.
+FeatureStatus ft8x7MenuRowSet(Ft8x7Setting setting, uint8_t number, Ft8x7SettingState& out);
 
 // FT-8x7 tone squelch. The FT-857/897 reads it from the current band in the EEPROM, live;
 // the FT-817/818 cannot, so there it is the mode HamTRC last set. Unsupported on other radios,

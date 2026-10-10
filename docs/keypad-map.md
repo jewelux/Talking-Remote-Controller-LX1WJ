@@ -182,7 +182,9 @@ Empty on every radio: all keys are free.
 | `2` long | previous baud rate | previous baud rate | previous baud rate | previous baud rate | previous baud rate |
 | `2` double | next baud rate | next baud rate | next baud rate | next baud rate | next baud rate |
 | `7` short | free | free | free | function row | soft key row |
+| `7` long | free | free | free | function row entry (experimental) | soft key row entry (experimental) |
 | `8` short | free | free | free | last menu item | last menu item |
+| `8` long | free | free | free | menu item entry (experimental) | menu item entry (experimental) |
 
 `2` long and double step through the rates the radio offers (see the
 [radio support matrix](radio-support-matrix.md)) and keep the choice for the profile. Set the same

@@ -221,12 +221,40 @@ YaesuAgc ft817AgcFromByte(uint8_t b) {
   return kAgc[b & 0x03];
 }
 
-uint8_t ft817MenuFromByte(uint8_t b) {
-  return (uint8_t)((b & 0x3F) + 1);
+bool ft8x7MenuRowMap(Ft8x7Model model, Ft8x7MenuRowMap& out) {
+  if (model == Ft8x7Model::Ft857) {
+    out = {0x0088, 0xFF, 0xFF, 17, 88, 91, 0x0091, 0x80};
+    return true;
+  }
+  if (!ft8x7IsFt817Family(model)) return false;
+  out = {0x0075, 0x3F, 0x0F, 12, 52, 57, 0x006B, 0x80};
+  return true;
 }
 
-uint8_t ft817RowFromByte(uint8_t b) {
-  return (uint8_t)((b & 0x0F) + 1);
+uint8_t ft8x7MenuFromPair(const Ft8x7MenuRowMap& map, const uint8_t pair[2]) {
+  return (uint8_t)((pair[0] & map.menuMask) + 1);
+}
+
+uint8_t ft8x7RowFromPair(const Ft8x7MenuRowMap& map, const uint8_t pair[2]) {
+  return (uint8_t)((pair[1] & map.rowMask) + 1);
+}
+
+uint8_t ft8x7MenuRowLast(const Ft8x7MenuRowMap& map, bool row, bool extOn) {
+  if (row) return map.rows;
+  return extOn ? map.extMenus : map.menus;
+}
+
+bool ft8x7MenuRowPair(const Ft8x7MenuRowMap& map, bool row, uint8_t number, bool extOn,
+                      const uint8_t old[2], uint8_t out[2]) {
+  // The fields as stored, from 0: adding 1 would wrap a whole-byte 0xFF to 0.
+  if ((old[0] & map.menuMask) >= map.extMenus || (old[1] & map.rowMask) >= map.rows) return false;
+  if (number < 1 || number > ft8x7MenuRowLast(map, row, extOn)) return false;
+  const uint8_t i = row ? 1 : 0;
+  const uint8_t mask = row ? map.rowMask : map.menuMask;
+  out[0] = old[0];
+  out[1] = old[1];
+  out[i] = (uint8_t)((old[i] & ~mask) | ((number - 1) & mask));
+  return true;
 }
 
 uint16_t ft817MicGainAddr(Ft8x7MicGain gain, bool pkt9600) {

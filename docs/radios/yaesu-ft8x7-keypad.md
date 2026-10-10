@@ -144,10 +144,18 @@ no DCS encode only: DCS is always BOTH there.
 | `2` short | `BAUD?` | `BAUD?` |
 | `2` long / double | previous / next baud rate (4800, 9600, 38400) | previous / next baud rate (4800, 9600, 38400) |
 | `7` short | `ROW?` (function row) | `ROW?` (soft key row) |
+| `7` long | experimental: `ROW <n>`, then digits, then `Enter` (1–12) | experimental: `ROW <n>`, then digits, then `Enter` (1–17) |
 | `8` short | `MENU?` (last menu item) | `MENU?` (last menu item) |
+| `8` long | experimental: `MENU <n>`, then digits, then `Enter` (1–52, 1–57 with menu 52 EXTEND on) | experimental: `MENU <n>`, then digits, then `Enter` (1–88, 1–91 with menu 1 EXT MENU on) |
 
 `MENU?` and `ROW?` are saved only when the radio's menu is exited. Set the same baud rate in the
 radio's CAT RATE menu.
+
+`7` long and `8` long are experimental and work only with experimental mode on (Bank 9 `0` long);
+otherwise they say "not available". They write the radio's EEPROM, where it keeps the menu item
+and row, and say the value read back, e.g. "menu 12". A number out of range says "error" and
+nothing is written. Leave the radio's menu closed while setting them: the radio saves its own
+values when the menu is exited.
 
 ## Bank 9 - Profile / System
 

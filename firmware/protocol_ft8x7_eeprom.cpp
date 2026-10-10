@@ -64,23 +64,45 @@ bool yaesuFt8x7QueryAgc(YaesuAgc& out, uint32_t timeoutMs) {
   return true;
 }
 
+// The bytes at addr and addr + 1: one word, or two when addr is odd.
+static bool readEepromPair(uint16_t addr, uint8_t out[2], uint32_t timeoutMs) {
+  if ((addr & 0x01) == 0) return yaesuCatReadEepromWord(addr, out, timeoutMs);
+  return yaesuCatReadEepromByte(addr, out[0], timeoutMs) &&
+         yaesuCatReadEepromByte((uint16_t)(addr + 1), out[1], timeoutMs);
+}
+
 bool yaesuFt8x7QueryMenuAndRow(uint8_t& menuOut, uint8_t& rowOut, uint32_t timeoutMs) {
-  const Ft8x7Model model = currentFt8x7Model();
-  if (ft8x7IsFt817Family(model)) {
-    uint8_t menu = 0;
-    uint8_t row = 0;
-    if (!yaesuCatReadEepromByte(FT817_MENU_ADDR, menu, timeoutMs)) return false;
-    if (!yaesuCatReadEepromByte(FT817_ROW_ADDR, row, timeoutMs)) return false;
-    menuOut = ft817MenuFromByte(menu);
-    rowOut = ft817RowFromByte(row);
-    return true;
-  }
-  if (model != Ft8x7Model::Ft857) return false;
-  uint8_t word[2] = {0};
-  if (!yaesuCatReadEepromWord(FT857_MENU_ROW_ADDR, word, timeoutMs)) return false;
-  menuOut = (uint8_t)(word[0] + 1);
-  rowOut = (uint8_t)(word[1] + 1);
+  Ft8x7MenuRowMap map;
+  if (!ft8x7MenuRowMap(currentFt8x7Model(), map)) return false;
+  uint8_t pair[2] = {0};
+  if (!readEepromPair(map.addr, pair, timeoutMs)) return false;
+  menuOut = ft8x7MenuFromPair(map, pair);
+  rowOut = ft8x7RowFromPair(map, pair);
   return true;
+}
+
+YaesuMenuRowWrite yaesuFt8x7SetMenuOrRow(bool row, uint8_t number, uint8_t& numberOut,
+                                         uint32_t timeoutMs) {
+  Ft8x7MenuRowMap map;
+  if (!ft8x7MenuRowMap(currentFt8x7Model(), map)) return YaesuMenuRowWrite::Unsupported;
+  if (number < 1 || number > ft8x7MenuRowLast(map, row, true)) return YaesuMenuRowWrite::OutOfRange;
+  bool extOn = true;
+  if (!row) {
+    uint8_t ext = 0;
+    if (!yaesuCatReadEepromByte(map.extAddr, ext, timeoutMs)) return YaesuMenuRowWrite::NoReply;
+    extOn = (ext & map.extMask) != 0;
+    if (number > ft8x7MenuRowLast(map, row, extOn)) return YaesuMenuRowWrite::OutOfRange;
+  }
+  uint8_t old[2] = {0};
+  if (!readEepromPair(map.addr, old, timeoutMs)) return YaesuMenuRowWrite::NoReply;
+  uint8_t pair[2] = {0};
+  if (!ft8x7MenuRowPair(map, row, number, extOn, old, pair)) return YaesuMenuRowWrite::UnexpectedBytes;
+  yaesuCatWriteEeprom2(map.addr, pair);
+  uint8_t check[2] = {0};
+  if (!readEepromPair(map.addr, check, timeoutMs)) return YaesuMenuRowWrite::NoReply;
+  if (check[0] != pair[0] || check[1] != pair[1]) return YaesuMenuRowWrite::NotVerified;
+  numberOut = row ? ft8x7RowFromPair(map, check) : ft8x7MenuFromPair(map, check);
+  return YaesuMenuRowWrite::Ok;
 }
 
 // The band slot of hz (null outside the amateur bands) and its block on the active VFO.

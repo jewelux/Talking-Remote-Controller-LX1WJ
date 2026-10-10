@@ -151,6 +151,9 @@ void cycleBank8Baud(int delta);
 // FT-8x7: the soft key (function) row and menu item saved when the radio's menu was last exited.
 void queryBank8Ft8x7Row();
 void queryBank8Ft8x7Menu();
+// Experimental: a row or menu item number, then Enter, written to the radio's EEPROM.
+void beginBank8Ft8x7RowEntry();
+void beginBank8Ft8x7MenuEntry();
 
 // ---- Bank 9 ----
 void queryBank9TuningSpeech();

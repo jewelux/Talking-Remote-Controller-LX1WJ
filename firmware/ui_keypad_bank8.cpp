@@ -5,6 +5,18 @@
 void queryBank8Ft8x7Row() { queryKeypadFt8x7Setting(Ft8x7Setting::Row); }
 void queryBank8Ft8x7Menu() { queryKeypadFt8x7Setting(Ft8x7Setting::Menu); }
 
+// Experimental: "not available" at once unless EXPERIMENTAL is on.
+static void beginBank8Ft8x7MenuRowEntry(InputMode mode, const char* label, const char* token) {
+  printKeypadAction("{} ENTRY", label);
+  if (keypadReportIfUnsupported(currentProfile().caps.setRadioMenu, label)) return;
+  keypadBeginEntry(mode);
+  printKeypadStatus("{} PLEASE", label);
+  speakPrompt(token);
+}
+
+void beginBank8Ft8x7RowEntry() { beginBank8Ft8x7MenuRowEntry(InputMode::RowEntry, "ROW", "row"); }
+void beginBank8Ft8x7MenuEntry() { beginBank8Ft8x7MenuRowEntry(InputMode::MenuEntry, "MENU", "menu"); }
+
 static bool currentProfileAllowsCivSetup() {
   return currentProtocolType() == PROTO_CIV;
 }

@@ -154,6 +154,8 @@ void printActiveProfileDetails() {
   Serial.print(sp.caps.setRit ? "W" : "-");
   Serial.print(" bstack=");
   Serial.print(sp.caps.getBandStack ? "1" : "0");
+  Serial.print(" menu=");
+  Serial.print(sp.caps.setRadioMenu ? "W" : "-");
   Serial.println();
   if (g_experimentalCaps) Serial.println("  EXPERIMENTAL: all caps on");
 }

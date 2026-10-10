@@ -274,11 +274,140 @@ TEST(ft817_agc) {
   CHECK_EQ(ft817AgcFromByte(0xF3), YaesuAgc::Off);
 }
 
-TEST(ft817_menu_and_row_count_from_1) {
-  CHECK_EQ(ft817MenuFromByte(0x00), 1);
-  CHECK_EQ(ft817MenuFromByte(0xFF), 64);
-  CHECK_EQ(ft817RowFromByte(0x00), 1);
-  CHECK_EQ(ft817RowFromByte(0xFF), 16);
+TEST(menu_row_map_per_model) {
+  Ft8x7MenuRowMap map{};
+  CHECK(!ft8x7MenuRowMap(Ft8x7Model::None, map));
+  CHECK(ft8x7MenuRowMap(Ft8x7Model::Ft857, map));
+  CHECK_EQ(map.addr, 0x0088);
+  CHECK_EQ(map.extAddr, 0x0091);
+  CHECK_EQ(map.extMask, 0x80);
+  CHECK_EQ(ft8x7MenuRowLast(map, true, false), 17);
+  CHECK_EQ(ft8x7MenuRowLast(map, true, true), 17);
+  CHECK_EQ(ft8x7MenuRowLast(map, false, false), 88);
+  CHECK_EQ(ft8x7MenuRowLast(map, false, true), 91);
+  const Ft8x7Model ft817Family[] = {Ft8x7Model::Ft817, Ft8x7Model::Ft818};
+  for (Ft8x7Model model : ft817Family) {
+    CHECK(ft8x7MenuRowMap(model, map));
+    CHECK_EQ(map.addr, 0x0075);
+    CHECK_EQ(map.extAddr, 0x006B);
+    CHECK_EQ(map.extMask, 0x80);
+    CHECK_EQ(ft8x7MenuRowLast(map, true, true), 12);
+    CHECK_EQ(ft8x7MenuRowLast(map, false, false), 52);
+    CHECK_EQ(ft8x7MenuRowLast(map, false, true), 57);
+  }
+}
+
+// Every value up to the last fits in the field, so writing it cannot reach another bit.
+TEST(menu_row_last_fits_the_field) {
+  const Ft8x7Model models[] = {Ft8x7Model::Ft817, Ft8x7Model::Ft857};
+  for (Ft8x7Model model : models) {
+    Ft8x7MenuRowMap map{};
+    CHECK(ft8x7MenuRowMap(model, map));
+    CHECK((uint8_t)(map.extMenus - 1) <= map.menuMask);
+    CHECK((uint8_t)(map.rows - 1) <= map.rowMask);
+    CHECK(map.menus <= map.extMenus);
+  }
+}
+
+TEST(menu_and_row_from_pair_count_from_1) {
+  Ft8x7MenuRowMap map{};
+  CHECK(ft8x7MenuRowMap(Ft8x7Model::Ft817, map));
+  const uint8_t ft817Pair[2] = {0xF1, 0xF3};  // menu 50, row 4, foreign bits set
+  CHECK_EQ(ft8x7MenuFromPair(map, ft817Pair), 50);
+  CHECK_EQ(ft8x7RowFromPair(map, ft817Pair), 4);
+  CHECK(ft8x7MenuRowMap(Ft8x7Model::Ft857, map));
+  const uint8_t ft897Pair[2] = {0x4E, 0x04};  // measured: menu 79, row 5
+  CHECK_EQ(ft8x7MenuFromPair(map, ft897Pair), 79);
+  CHECK_EQ(ft8x7RowFromPair(map, ft897Pair), 5);
+}
+
+TEST(ft817_menu_row_pair_keeps_the_other_bits) {
+  Ft8x7MenuRowMap map{};
+  CHECK(ft8x7MenuRowMap(Ft8x7Model::Ft817, map));
+  const uint8_t old[2] = {0xC5, 0xF3};  // menu 6, row 4, every foreign bit set
+  uint8_t out[2] = {0, 0};
+  CHECK(ft8x7MenuRowPair(map, false, 57, true, old, out));
+  CHECK_EQ(out[0], 0xF8);
+  CHECK_EQ(out[1], 0xF3);
+  CHECK(ft8x7MenuRowPair(map, false, 1, false, old, out));
+  CHECK_EQ(out[0], 0xC0);
+  CHECK_EQ(out[1], 0xF3);
+  CHECK(ft8x7MenuRowPair(map, true, 12, false, old, out));
+  CHECK_EQ(out[0], 0xC5);
+  CHECK_EQ(out[1], 0xFB);
+  CHECK(ft8x7MenuRowPair(map, true, 1, false, old, out));
+  CHECK_EQ(out[0], 0xC5);
+  CHECK_EQ(out[1], 0xF0);
+  const uint8_t clear[2] = {0x31, 0x03};
+  CHECK(ft8x7MenuRowPair(map, true, 8, false, clear, out));
+  CHECK_EQ(out[0], 0x31);
+  CHECK_EQ(out[1], 0x07);
+}
+
+TEST(ft857_menu_row_pair_changes_one_byte) {
+  Ft8x7MenuRowMap map{};
+  CHECK(ft8x7MenuRowMap(Ft8x7Model::Ft857, map));
+  const uint8_t old[2] = {0x4E, 0x04};
+  uint8_t out[2] = {0, 0};
+  CHECK(ft8x7MenuRowPair(map, false, 91, true, old, out));
+  CHECK_EQ(out[0], 0x5A);
+  CHECK_EQ(out[1], 0x04);
+  CHECK(ft8x7MenuRowPair(map, true, 17, true, old, out));
+  CHECK_EQ(out[0], 0x4E);
+  CHECK_EQ(out[1], 0x10);
+  CHECK(ft8x7MenuRowPair(map, true, 1, false, old, out));
+  CHECK_EQ(out[0], 0x4E);
+  CHECK_EQ(out[1], 0x00);
+}
+
+TEST(menu_row_pair_rejects_numbers_out_of_range) {
+  Ft8x7MenuRowMap map{};
+  CHECK(ft8x7MenuRowMap(Ft8x7Model::Ft857, map));
+  const uint8_t old[2] = {0x4E, 0x04};
+  uint8_t out[2] = {0xAA, 0xBB};
+  CHECK(!ft8x7MenuRowPair(map, false, 0, true, old, out));
+  CHECK(!ft8x7MenuRowPair(map, false, 92, true, old, out));
+  CHECK(!ft8x7MenuRowPair(map, false, 89, false, old, out));
+  CHECK(ft8x7MenuRowPair(map, false, 88, false, old, out));
+  out[0] = 0xAA;
+  out[1] = 0xBB;
+  CHECK(!ft8x7MenuRowPair(map, true, 0, true, old, out));
+  CHECK(!ft8x7MenuRowPair(map, true, 18, true, old, out));
+  CHECK_EQ(out[0], 0xAA);
+  CHECK_EQ(out[1], 0xBB);
+  CHECK(ft8x7MenuRowMap(Ft8x7Model::Ft817, map));
+  CHECK(!ft8x7MenuRowPair(map, false, 53, false, old, out));
+  CHECK(!ft8x7MenuRowPair(map, false, 58, true, old, out));
+  CHECK(!ft8x7MenuRowPair(map, true, 13, true, old, out));
+  CHECK_EQ(out[0], 0xAA);
+  CHECK_EQ(out[1], 0xBB);
+}
+
+// A stored pair out of range means the map does not fit the radio: nothing is written.
+TEST(menu_row_pair_rejects_unexpected_stored_bytes) {
+  Ft8x7MenuRowMap map{};
+  CHECK(ft8x7MenuRowMap(Ft8x7Model::Ft857, map));
+  uint8_t out[2] = {0xAA, 0xBB};
+  const uint8_t ft857Cases[][2] = {{0x5B, 0x04}, {0xFF, 0x04}, {0x4E, 0x11}, {0x4E, 0x80}};
+  for (const auto& old : ft857Cases) {
+    CHECK(!ft8x7MenuRowPair(map, false, 5, true, old, out));
+    CHECK(!ft8x7MenuRowPair(map, true, 5, true, old, out));
+  }
+  // The last item with the extended menu on stays valid when it is off.
+  const uint8_t ext[2] = {0x5A, 0x10};
+  CHECK(ft8x7MenuRowPair(map, true, 2, false, ext, out));
+  CHECK_EQ(out[0], 0x5A);
+  CHECK_EQ(out[1], 0x01);
+  out[0] = 0xAA;
+  out[1] = 0xBB;
+  CHECK(ft8x7MenuRowMap(Ft8x7Model::Ft817, map));
+  const uint8_t ft817Cases[][2] = {{0x39, 0x03}, {0x3F, 0x03}, {0x31, 0x0C}, {0x31, 0x0F}};
+  for (const auto& old : ft817Cases) {
+    CHECK(!ft8x7MenuRowPair(map, false, 5, true, old, out));
+    CHECK(!ft8x7MenuRowPair(map, true, 5, true, old, out));
+  }
+  CHECK_EQ(out[0], 0xAA);
+  CHECK_EQ(out[1], 0xBB);
 }
 
 TEST(ft817_rear_antenna_bit_per_band_group) {

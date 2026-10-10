@@ -12,6 +12,7 @@
 #include "radio_state.h"
 #include "radio_utils.h"
 #include "ui_console_support.h"
+#include "ui_features.h"
 #include "ui_keypad.h"
 #include "ui_keypad_common.h"
 #include "ui_speech.h"
@@ -193,6 +194,17 @@ static void commitDcs(const char* digits) {
   }
 }
 
+// Experimental FT-8x7 EEPROM write; says the value read back.
+static void commitMenuRow(Ft8x7Setting setting, const char* digits) {
+  const char* label = setting == Ft8x7Setting::Row ? "ROW" : "MENU";
+  printKeypadCommand("ENTER -> {} {}", label, digits);
+  prepareKeypadRadioWrite();
+  Ft8x7SettingState state;
+  if (keypadReportFeatureFailure(ft8x7MenuRowSet(setting, (uint8_t)atoi(digits), state), label)) return;
+  printKeypadStatus("{}", ft8x7SettingText(state).c_str());
+  speakFt8x7Setting(state);
+}
+
 void keypadEntryCommit(InputMode mode, const char* digits, TargetVfo targetVfo) {
   switch (mode) {
     case InputMode::BankSelect: commitBank(); return;
@@ -203,6 +215,8 @@ void keypadEntryCommit(InputMode mode, const char* digits, TargetVfo targetVfo) 
     case InputMode::RptOffsetEntry: commitRepeaterOffset(digits); return;
     case InputMode::CtcssEntry: commitCtcss(digits); return;
     case InputMode::DcsEntry: commitDcs(digits); return;
+    case InputMode::MenuEntry: commitMenuRow(Ft8x7Setting::Menu, digits); return;
+    case InputMode::RowEntry: commitMenuRow(Ft8x7Setting::Row, digits); return;
     case InputMode::Normal:
     case InputMode::ModeSelect: return;
   }

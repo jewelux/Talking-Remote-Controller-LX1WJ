@@ -1,6 +1,6 @@
 #pragma once
 
-// Reads (and the one write) of the FT-8x7 EEPROM, where the radio keeps the settings CAT has no
+// Reads (and the few writes) of the FT-8x7 EEPROM, where the radio keeps the settings CAT has no
 // command for. The addresses and their decoding are in ft8x7_eeprom_map.h.
 
 #include "ft8x7_eeprom_map.h"
@@ -21,6 +21,19 @@ bool yaesuFt8x7QueryAgc(YaesuAgc& out, uint32_t timeoutMs);
 // The menu item and the soft key row (FT-817: function row) as the radio saved them when its
 // menu was last exited, counted from 1 like on the display.
 bool yaesuFt8x7QueryMenuAndRow(uint8_t& menuOut, uint8_t& rowOut, uint32_t timeoutMs);
+enum class YaesuMenuRowWrite : uint8_t {
+  Ok,
+  Unsupported,      // not an FT-8x7
+  OutOfRange,       // not 1..the last row or menu item; nothing written
+  NoReply,
+  UnexpectedBytes,  // the stored pair is not an item and a row in range; nothing written
+  NotVerified,      // written, but the pair read back differs
+};
+// Sets the row (row true) or the menu item, counted from 1, by rewriting the two bytes that
+// hold both (ft8x7MenuRowPair keeps every other bit), then reads them back. numberOut is the
+// value read back. The radio overwrites it when its menu is open and then exited.
+YaesuMenuRowWrite yaesuFt8x7SetMenuOrRow(bool row, uint8_t number, uint8_t& numberOut,
+                                         uint32_t timeoutMs);
 // IPO, ATT and FM narrow are kept per band. bandKnown is false outside the amateur bands.
 struct YaesuFt857BandFlags {
   bool bandKnown = false;

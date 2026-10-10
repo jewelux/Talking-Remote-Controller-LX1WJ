@@ -117,9 +117,38 @@ uint8_t ft857RfPowerWatts(uint8_t b);
 static constexpr uint16_t FT857_AGC_SPEED_ADDR = 0x006A;
 YaesuAgc ft857AgcFromSpeed(uint8_t b);
 
-// 0x88 = menu item, 0x89 = soft key row, both from 0. Measured on an FT-897: the radio writes
-// them when its menu is exited, not while the rows are stepped.
-static constexpr uint16_t FT857_MENU_ROW_ADDR = 0x0088;
+// The menu item and the soft key row (FT-817: function row), counted from 0 in two neighbouring
+// bytes that one 0xBC writes together. The FT-857/897 saves both when its menu is exited; the
+// FT-817 saves its row at once. The last item depends on the extended menu (FT-857/897 menu 1
+// EXT MENU, FT-817 menu 52 EXTEND). Measured at both ends on an FT-897 and an FT-817; the
+// FT-857 and FT-818 are taken to match.
+//   FT-857/897: 0x88 = item, 0x89 = row, whole bytes; 17 rows; 88 items, 91 with 0x91 bit 7
+//   (EXT MENU) on.
+//   FT-817/818: 0x75 bits 5..0 = item, 0x76 bits 3..0 = row (FT8x7Com keeps the other bits);
+//   12 rows; 52 items, 57 with 0x6B bit 7 (EXTEND) on. 0x6B bits 6..0 are the PKT mic gain.
+struct Ft8x7MenuRowMap {
+  uint16_t addr;     // the item byte; the row byte is at addr + 1
+  uint8_t menuMask;  // the bits of the item byte that hold the item
+  uint8_t rowMask;
+  uint8_t rows;
+  uint8_t menus;     // the last item with the extended menu off
+  uint8_t extMenus;  // and with it on
+  uint16_t extAddr;  // the extended menu switch
+  uint8_t extMask;
+};
+// False for Ft8x7Model::None.
+bool ft8x7MenuRowMap(Ft8x7Model model, Ft8x7MenuRowMap& out);
+// pair: the bytes at addr and addr + 1. Counted from 1 like on the display.
+uint8_t ft8x7MenuFromPair(const Ft8x7MenuRowMap& map, const uint8_t pair[2]);
+uint8_t ft8x7RowFromPair(const Ft8x7MenuRowMap& map, const uint8_t pair[2]);
+// The last row (row true) or menu item, extOn when the extended menu is on.
+uint8_t ft8x7MenuRowLast(const Ft8x7MenuRowMap& map, bool row, bool extOn);
+// The pair that sets the row (row true) or the menu item to number, made from old, the pair as
+// read, with every other bit of both bytes kept. False, and out untouched, when number is not
+// 1..ft8x7MenuRowLast, or when old does not hold an item and a row in range: the map then does
+// not fit the radio, and nothing may be written.
+bool ft8x7MenuRowPair(const Ft8x7MenuRowMap& map, bool row, uint8_t number, bool extOn,
+                      const uint8_t old[2], uint8_t out[2]);
 
 // 0x93 bits 1..0.
 static constexpr uint16_t FT857_MIC_EQ_ADDR = 0x0093;
@@ -147,12 +176,6 @@ uint16_t ft817RfPowerTenths(uint8_t b, bool ft818);
 // FT-817 0x57 bits 1..0: 00 auto, 01 fast, 10 slow, 11 off.
 static constexpr uint16_t FT817_AGC_ADDR = 0x0057;
 YaesuAgc ft817AgcFromByte(uint8_t b);
-
-// FT-817 0x75 bits 5..0 = menu item, 0x76 bits 3..0 = function row, both counted from 0.
-static constexpr uint16_t FT817_MENU_ADDR = 0x0075;
-static constexpr uint16_t FT817_ROW_ADDR = 0x0076;
-uint8_t ft817MenuFromByte(uint8_t b);
-uint8_t ft817RowFromByte(uint8_t b);
 
 // FT-817 0x7A bits 5..0: the antenna of each band group, 1 = rear. Bit 0 HF, 1 6 m, 2 FM
 // broadcast, 3 air, 4 2 m, 5 UHF (KA7OEI map). Bit 7 of the same byte is split.

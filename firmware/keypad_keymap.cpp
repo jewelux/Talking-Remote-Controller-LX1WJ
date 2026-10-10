@@ -256,10 +256,10 @@ KeyBinding bank8(const KeypadTraits& t, char key) {
     case '1': return bind(queryBank8CivAddress, beginBank8CivAddressEntry);
     case '2': return bind(queryBank8Baud, [] { cycleBank8Baud(-1); }, [] { cycleBank8Baud(1); });
     case '7':
-      if (ft8x7Menu) return bind(queryBank8Ft8x7Row);
+      if (ft8x7Menu) return bind(queryBank8Ft8x7Row, beginBank8Ft8x7RowEntry);
       return {};
     case '8':
-      if (ft8x7Menu) return bind(queryBank8Ft8x7Menu);
+      if (ft8x7Menu) return bind(queryBank8Ft8x7Menu, beginBank8Ft8x7MenuEntry);
       return {};
     default: return {};
   }

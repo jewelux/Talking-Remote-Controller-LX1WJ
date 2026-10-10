@@ -25,6 +25,8 @@ const char *modeName(InputMode m) {
     case InputMode::RptOffsetEntry: return "RptOffsetEntry";
     case InputMode::CtcssEntry: return "CtcssEntry";
     case InputMode::DcsEntry: return "DcsEntry";
+    case InputMode::MenuEntry: return "MenuEntry";
+    case InputMode::RowEntry: return "RowEntry";
   }
   return "?";
 }
@@ -1194,6 +1196,8 @@ TEST(input_enter_with_nothing_typed_is_unassigned_and_stays) {
       {InputMode::RptOffsetEntry, "RPTSHIFT D"},
       {InputMode::CtcssEntry, "CTCSS D"},
       {InputMode::DcsEntry, "DCS D"},
+      {InputMode::MenuEntry, "MENU D"},
+      {InputMode::RowEntry, "ROW D"},
       {InputMode::ProfileSelect, "PROFILE D"},
   };
   for (const Case &c : cases) {
@@ -1236,7 +1240,8 @@ TEST(input_clear_leaves_every_mode) {
   const InputMode modes[] = {InputMode::ProfileSelect,  InputMode::FreqEntry,
                              InputMode::RfPowerEntry,   InputMode::CivAddrEntry,
                              InputMode::RptOffsetEntry, InputMode::CtcssEntry,
-                             InputMode::DcsEntry};
+                             InputMode::DcsEntry,       InputMode::MenuEntry,
+                             InputMode::RowEntry};
   for (InputMode m : modes) {
     Fake f;
     KeypadInput in(f);
@@ -1414,7 +1419,8 @@ TEST(input_every_entry_mode_has_its_rules) {
   const InputMode entries[] = {InputMode::BankSelect,     InputMode::ProfileSelect,
                                InputMode::FreqEntry,      InputMode::RfPowerEntry,
                                InputMode::CivAddrEntry,   InputMode::RptOffsetEntry,
-                               InputMode::CtcssEntry,     InputMode::DcsEntry};
+                               InputMode::CtcssEntry,     InputMode::DcsEntry,
+                               InputMode::MenuEntry,      InputMode::RowEntry};
   for (InputMode m : entries) {
     const EntrySpec *e = keypadEntrySpec(m);
     CHECK(e != nullptr);

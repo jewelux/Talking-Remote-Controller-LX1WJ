@@ -28,6 +28,8 @@ enum class InputMode : uint8_t {
   RptOffsetEntry,
   CtcssEntry,
   DcsEntry,
+  MenuEntry,  // FT-8x7 menu item
+  RowEntry,   // FT-8x7 soft key row
 };
 
 // How bank select, profile select or an entry takes digits. One row per mode

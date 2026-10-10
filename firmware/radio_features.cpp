@@ -408,6 +408,31 @@ FeatureStatus ft8x7SettingQuery(Ft8x7Setting setting, Ft8x7SettingState& out) {
   return ok ? FeatureStatus::Ok : failure(FeatureStatus::NoReply);
 }
 
+FeatureStatus ft8x7MenuRowSet(Ft8x7Setting setting, uint8_t number, Ft8x7SettingState& out) {
+  const bool row = setting == Ft8x7Setting::Row;
+  Ft8x7MenuRowMap map;
+  if ((!row && setting != Ft8x7Setting::Menu) || !currentProfile().caps.setRadioMenu ||
+      !ft8x7MenuRowMap(currentFt8x7Model(), map)) {
+    return FeatureStatus::Unsupported;
+  }
+  // The limit with the extended menu on; yaesuFt8x7SetMenuOrRow checks the one in use.
+  if (number < 1 || number > ft8x7MenuRowLast(map, row, true)) return FeatureStatus::Invalid;
+  uint8_t txStatus = 0;
+  if (!yaesuCatQueryTxStatusRaw(txStatus, kFt8x7TimeoutMs)) return failure(FeatureStatus::NoReply);
+  if (yaesuCatTxStatusTransmitting(txStatus)) return FeatureStatus::Failed;
+  out = Ft8x7SettingState();
+  out.setting = setting;
+  switch (yaesuFt8x7SetMenuOrRow(row, number, out.number, kFt8x7TimeoutMs)) {
+    case YaesuMenuRowWrite::Ok: return FeatureStatus::Ok;
+    case YaesuMenuRowWrite::Unsupported: return FeatureStatus::Unsupported;
+    case YaesuMenuRowWrite::OutOfRange: return FeatureStatus::Invalid;
+    case YaesuMenuRowWrite::NoReply: return failure(FeatureStatus::NoReply);
+    case YaesuMenuRowWrite::UnexpectedBytes:
+    case YaesuMenuRowWrite::NotVerified: return FeatureStatus::Failed;
+  }
+  return FeatureStatus::Failed;
+}
+
 // ---- FT-8x7 tone squelch ----
 
 static bool toneSupported() {

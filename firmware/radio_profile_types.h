@@ -69,6 +69,9 @@ struct RadioCapabilities {
   bool getRit = false;
   bool setRit = false;
   bool getBandStack = false;
+  // FT-8x7: set the menu item and soft key row in the EEPROM. No profile sets it: only
+  // EXPERIMENTAL ON.
+  bool setRadioMenu = false;
 };
 
 // The controller's serial connector the radio is wired to. Its UART, pins and

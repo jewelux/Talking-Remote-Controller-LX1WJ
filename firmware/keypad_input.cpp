@@ -41,6 +41,8 @@ constexpr EntrySpec kEntries[] = {
     {InputMode::RptOffsetEntry, "RPTSHIFT",    4,   false,  true,  0,      " kHz"},
     {InputMode::CtcssEntry,     "CTCSS",       4,   false,  true,  0,      ""},
     {InputMode::DcsEntry,       "DCS",         3,   false,  true,  0,      ""},
+    {InputMode::MenuEntry,      "MENU",        2,   false,  false, 0,      ""},
+    {InputMode::RowEntry,       "ROW",         2,   false,  false, 0,      ""},
 };
 
 }  // namespace

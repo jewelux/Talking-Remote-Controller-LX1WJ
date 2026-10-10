@@ -48,6 +48,7 @@ The goal of this document is to separate:
 | Noise blanker query (`NB?`, Bank 2 `2`) | verified: EEPROM `0x57` bit 5 (1 = on), following the front panel. There is no DSP, so `NR?` and `NOTCH?` say unsupported |
 | AGC, BK, KYR and VOX (`AGC?`, `BK?`, `KYR?`, `VOX?`, Bank 2 `A` double click for AGC) and fast tuning and IF shift (`YSETTINGS?`) | verified, read only; addresses below |
 | VOX gain and delay (`VOXGAIN?`, `VOXDELAY?`) | verified, read only: follow menus 51 and 50 |
+| Menu item and function row write (`MENU <n>`, `ROW <n>`, Bank 8 `8`/`7` long) | experimental, only with EXPERIMENTAL on; not yet tested on the radio. Writes `0x75`/`0x76` together (`BC`), keeps the bits that are not the item or row, and reads them back. Menu 1–52, or 1–57 with menu 52 EXTEND on; rows 1–12 (measured). The FT-818 is taken to match |
 | Mic gain (`MICGAIN?`) | verified, read only: the one of the current mode, SSB, AM, FM and DIG matched their EEPROM bytes. In PKT the choice between the 1200 and 9600 baud level by the packet rate is not tested |
 | IPO, ATT and NAR | not read: they sit in the per-band VFO blocks (IPO appeared at block +0 bit 5), which the radio saves only on a band change or power-off, so a read would lag the radio |
 | VFO A/B commands (`VFOA?`, `VFOB?`, `VFOA MODE?`, `VFOB MODE?` and their sets) | verified: switch to the VFO, wait 120 ms (one retry for a query) and switch back to the VFO in use |
@@ -73,10 +74,11 @@ Read with `BB`, on demand only. Addresses from the FT8x7Com FT817Setup project, 
 | `0x68` | 6..0 | AM mic gain (menu 5), 0..100 (KA7OEI map) |
 | `0x69` | 6..0 | FM mic gain (menu 29), 0..100 (KA7OEI map) |
 | `0x6A` | 6..0 | DIG mic gain (menu 25), 0..100 (KA7OEI map) |
+| `0x6B` | 7 | EXTEND (menu 52), 1 = on: shows menu items 53–57 (measured) |
 | `0x6B` | 6..0 | PKT mic gain at 1200 baud (menu 39), 0..100 (KA7OEI map) |
 | `0x6C` | 6..0 | PKT mic gain at 9600 baud (menu 3), 0..100 (KA7OEI map) |
-| `0x75` | 5..0 | menu item (`MENU?`, Bank 8 `8`), said as stored + 1 like the FT-857/897 (measured) |
-| `0x76` | 3..0 | function row (`ROW?`, Bank 8 `7`), said as stored + 1; 7 (row 8) is the NB/AGC row and 9 (row 10) VOX/BK/KYR (measured) |
+| `0x75` | 5..0 | menu item (`MENU?`, Bank 8 `8`), said as stored + 1 like the FT-857/897; last item 52, or 57 with EXTEND on (measured). Bits 7..6 unknown, kept on a write |
+| `0x76` | 3..0 | function row (`ROW?`, Bank 8 `7`), said as stored + 1; 7 (row 8) is the NB/AGC row and 9 (row 10) VOX/BK/KYR, 11 (row 12) the last (measured). Saved at once when the row is stepped. Bits 7..4 unknown, kept on a write |
 | `0x79` | 1..0 | TX power (`RFPOWER?`, Bank 1 `6`): High, L3, L2, L1, said as 5, 2.5, 1 and 0.5 W, on the FT-818 (profile name containing "FT-818") as 6, 5, 2.5 and 1 W (the levels with an external supply; FT-818 not measured) |
 | `0x7A` | 5..0 | antenna jack per band group (menu 07, `ANT?`, Bank 2 `0`), 1 = rear: bit 0 HF (below 33 MHz), 1 6 m (33–76 MHz), 2 FM broadcast (76–108), 3 air (108–137), 4 2 m (137–420), 5 UHF (from 420) (measured, as in the KA7OEI map) |
 | `0x7A` | 7 | split (measured) |
@@ -142,6 +144,7 @@ The active VFO cannot be read: `0x55` bit 0, which Hamlib's `get_vfo` and the KA
 | Repeater and tone/DCS write paths outside normal FM repeater context | CAT bytes are implemented, but practical success can still depend on the radio already being in the appropriate VHF/UHF band and FM context |
 | Active VFO read from the EEPROM (`0x68`) | verified on an FT-897: follows both the front panel A/B key and the CAT toggle; Bank 3 reads it before each VFO action (`get_vfo=1`) |
 | Settings read from the EEPROM (Bank 2, Bank 8 `7`/`8`, `MENU?`, `ROW?`, `AGC?`, `IPO?`, `ATT?`, `NAR?`, `DBF?`, `BK?`, `KYR?`, `NR?`, `NB?`, `NOTCH?`, `NRLEVEL?`, `NBLEVEL?`, `HPF?`, `LPF?`, `MICEQ?`, `PROC?`, `PROCLEVEL?`, `MICGAIN?`, `VOX?`, `VOXGAIN?`, `VOXDELAY?`, `RFPOWER?`) | verified on an FT-897, read only; addresses in the [EEPROM map](#ft-857897-eeprom-map) |
+| Menu item and soft key row write (`MENU <n>`, `ROW <n>`, Bank 8 `8`/`7` long) | experimental, only with EXPERIMENTAL on; verified on an FT-897: the radio's menu opens on the item written and keeps the row, out-of-range numbers write nothing. Writes `0x88`/`0x89` together (`BC`), changing only the one byte, and reads them back. Menu 1–88, or 1–91 with menu 1 EXT MENU on; rows 1–17 (measured). The FT-857 is taken to match. The radio overwrites both when its menu is open and then exited |
 | Further settings read from the EEPROM (`YSETTINGS?`: VOX, PROC, lock, fast tuning, NB, BK, KYR, DSP row, IF shift, filter, SQL/RF knob, mic EQ, menu levels, the RIT offset) | protocol only, no keys except those in Bank 2; verified on an FT-897 against the values set on the radio |
 
 ### FT-857/897 EEPROM map
@@ -172,10 +175,11 @@ Shared by all bands:
 | `0x7D` | all | DIG gain (menu 37), 0..100 |
 | `0x7E` | all | PKT 1200 level (menu 71), 0..100 |
 | `0x7F` | all | PKT 9600 level (menu 72), 0..100 |
-| `0x88` | all | menu item, from 0, saved when the menu is exited |
-| `0x89` | all | soft key row, from 0, saved when the menu is exited |
+| `0x88` | all | menu item, from 0, saved when the menu is exited; last item 88, or 91 with EXT MENU on |
+| `0x89` | all | soft key row, from 0, saved when the menu is exited; 17 rows |
 | `0x8D` | 7 | split (Hamlib) |
 | `0x90` | all | DIG VOX (menu 40), 0..100 |
+| `0x91` | 7 | EXT MENU (menu 1), 1 = on: shows menu items 89–91 |
 | `0x93` | 7..4 | DSP NR level (menu 49), value + 1 = 1..16 |
 | `0x93` | 3..2 | DSP BPF width (menu 45): 0 = 60, 1 = 120, 2 = 240 Hz (1 not seen) |
 | `0x93` | 1..0 | DSP MIC EQ (menu 48): 0 = off, 1 = LPF, 2 = HPF, 3 = both |

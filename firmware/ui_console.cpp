@@ -938,6 +938,7 @@ void printHelp() {
                          : "    VOX? | VOXGAIN? | VOXDELAY?  (VOX, menus 88 and 87, read only)");
     Serial.println(ft817 ? "    RFPOWER?  (the TX power setting)" : "    RFPOWER?  (menu 75 power of the current band)");
     Serial.println("    MENU? | ROW?  (menu item and soft key row, saved when the radio's menu is exited)");
+    Serial.println("    MENU <n> | ROW <n>  (experimental: writes them to the EEPROM, from 1)");
     Serial.println("    AGC <hex byte>");
     Serial.println("    CIVRAW? <cmd hex> [payload hex bytes]");
     Serial.println("    CIVRAW <cmd hex> [payload hex bytes]");
@@ -1424,7 +1425,28 @@ static bool handleConsoleFt8x7Settings(const String& upper) {
     speakFt8x7Setting(state);
     return true;
   }
-  return false;
+  // Experimental: MENU <n>, ROW <n>.
+  const bool row = upper.startsWith("ROW ");
+  if (!row && !upper.startsWith("MENU ")) return false;
+  String arg = upper.substring(row ? 4 : 5);
+  arg.trim();
+  const char* label = row ? "ROW" : "MENU";
+  const long number = arg.toInt();
+  if (!arg.length() || String(number) != arg || number < 1 || number > 255) {
+    Serial.print(label);
+    Serial.print(" -> use a number from 1, e.g. ");
+    Serial.print(label);
+    Serial.println(" 12");
+    return true;
+  }
+  Ft8x7SettingState state;
+  if (reportFeatureFailure(ft8x7MenuRowSet(row ? Ft8x7Setting::Row : Ft8x7Setting::Menu, (uint8_t)number, state),
+                           label)) {
+    return true;
+  }
+  Serial.println(ft8x7SettingText(state));
+  speakFt8x7Setting(state);
+  return true;
 }
 
 static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& upper) {
