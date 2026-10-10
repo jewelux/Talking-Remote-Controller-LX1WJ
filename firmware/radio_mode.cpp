@@ -15,6 +15,7 @@ const char* modeToString(uint8_t mode) {
     case 0x07: return "CWR";
     case 0x08: return "RTTY-R";
     case 0x11: return "DIGI";
+    case 0x12: return "PKT";
     default: return "UNK";
   }
 }
@@ -42,6 +43,7 @@ void speakModeName(uint8_t mode) {
     case 0x07: speakToken("cwr"); break;
     case 0x08: speakToken("rttyr"); break;
     case 0x11: speakToken("digi"); break;
+    case 0x12: speakToken("packet"); break;
     default: break;
   }
   playSilenceMs(200);

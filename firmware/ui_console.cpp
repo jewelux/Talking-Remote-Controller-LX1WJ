@@ -654,7 +654,8 @@ static bool parseConsoleModeToken(String token, uint8_t& modeOut) {
   if (upper == "WFM") { modeOut = 0x06; return true; }
   if (upper == "CWR") { modeOut = 0x07; return true; }
   if (upper == "RTTY-R" || upper == "RTTYR") { modeOut = 0x08; return true; }
-  if (upper == "DIGI" || upper == "DIG" || upper == "PKT") { modeOut = 0x11; return true; }
+  if (upper == "DIGI" || upper == "DIG") { modeOut = 0x11; return true; }
+  if (upper == "PKT") { modeOut = 0x12; return true; }
   return false;
 }
 

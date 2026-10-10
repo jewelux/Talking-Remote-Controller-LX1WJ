@@ -147,6 +147,9 @@
   when the radio is locked
 - FT-817/818/857/897: RTTY and RTTY-R beep in mode select and are not listed by `MODE LIST`, since
   these radios have no such mode. Before, RTTY-R switched the radio to FM and RTTY sent WFM
+- FT-817/818/857/897: packet mode (PKT) is said as "packet" and shown as PKT. Before, the
+  FT-857/897 said "digi" and the FT-817/818 could not read the mode. The console command
+  `MODE PKT` switches the radio to packet; it used to switch to DIG
 - FT-817: Bank 3 `1` long toggles VFO A/B and `2` long copies the active VFO to the other (A=B)
 - FT-817/818/857/897: the SWR reading no longer sends the radio a command that writes to its
   internal memory, and `ALC?` no longer answers with a fixed memory value

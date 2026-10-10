@@ -113,6 +113,7 @@ voice_sync.wav
 5. Mode words that are directly useful as spoken words
 voice_am.wav
 voice_digi.wav
+voice_packet.wav
 
 6. Filter / DSP words
 voice_filter.wav

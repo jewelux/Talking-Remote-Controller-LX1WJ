@@ -121,7 +121,7 @@ constexpr RadioCapabilities kFt857Caps = {
 };
 
 constexpr ModeCodes kFt8x7Modes = {
-    .lsb = "00", .usb = "01", .am = "04", .cw = "02", .fm = "08", .cwr = "03", .digi = "0A",
+    .lsb = "00", .usb = "01", .am = "04", .cw = "02", .fm = "08", .cwr = "03", .digi = "0A", .pkt = "0C",
 };
 
 // --- Yaesu FT-847 (5-byte CAT, its own opcodes) ------------------------------

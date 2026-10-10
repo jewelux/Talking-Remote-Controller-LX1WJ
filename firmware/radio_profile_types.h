@@ -202,6 +202,7 @@ struct ModeCodes {
   const char* cwr = "";
   const char* rttyR = "";
   const char* digi = "";
+  const char* pkt = "";
 };
 
 // FT-8x7 Bank 6 presets: repeater offsets, and the tone and DCS code offered

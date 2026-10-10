@@ -60,6 +60,7 @@ bool profileModeCodeForInternal(const RadioProfile& sp, uint8_t mode, String& co
     case 0x07: code = sp.modes->cwr; break;
     case 0x08: code = sp.modes->rttyR; break;
     case 0x11: code = sp.modes->digi; break;
+    case 0x12: code = sp.modes->pkt; break;
     default: break;
   }
   if (!code || !code[0]) return false;
@@ -77,12 +78,12 @@ bool profileInternalModeForCode(const RadioProfile& sp, const String& code, uint
   if (code.equalsIgnoreCase(sp.modes->cwr) && sp.modes->cwr[0]) { modeOut = 0x07; return true; }
   if (code.equalsIgnoreCase(sp.modes->rttyR) && sp.modes->rttyR[0]) { modeOut = 0x08; return true; }
   if (code.equalsIgnoreCase(sp.modes->digi) && sp.modes->digi[0]) { modeOut = 0x11; return true; }
+  if (code.equalsIgnoreCase(sp.modes->pkt) && sp.modes->pkt[0]) { modeOut = 0x12; return true; }
   if (ft8x7ModelFor(sp.model) == Ft8x7Model::Ft857) {
     // FT-857/897 may report additional undocumented bytes depending on
-    // installed filters and packet handling.
-    if (code.equalsIgnoreCase("0C")) { modeOut = 0x11; return true; }
+    // installed filters and packet handling (PKT as 0xFC, read here without the top bit).
     if (code.equalsIgnoreCase("3F")) { modeOut = 0x03; return true; }
-    if (code.equalsIgnoreCase("7C")) { modeOut = 0x11; return true; }
+    if (code.equalsIgnoreCase("7C")) { modeOut = 0x12; return true; }
   }
   return false;
 }

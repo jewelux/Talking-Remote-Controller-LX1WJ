@@ -127,6 +127,7 @@ antenna
 front
 rear
 digi | | didgy
+packet
 monitor
 preamplifier
 attenuator
