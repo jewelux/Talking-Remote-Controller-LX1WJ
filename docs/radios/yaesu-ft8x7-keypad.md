@@ -43,16 +43,16 @@ All Bank 2 keys only read settings from the radio's EEPROM. CAT don't change the
 
 | Key | FT-817 | FT-857/897 |
 |---|---|---|
-| `0` short | `ANT?`: antenna jack of the current band (menu 07), "antenna front" or "antenna rear" | not available |
+| `0` short | `ANT?`: antenna jack of the current band (menu 07) | not available |
 | `1` short | not available (no DSP) | `NR?` (DSP noise reduction) |
 | `2` short | `NB?` | `NB?` |
 | `3` short | not available (no DSP) | `NOTCH?` (DSP auto notch) |
 | `4` short | not available (no DSP) | `NRLEVEL?` (menu 49, 1–16) |
 | `5` short | not available | `NBLEVEL?` (menu 63, 0–100) |
 | `6` short | not available (no DSP) | `DBF?` (DSP bandpass filter) |
-| `7` short | not available (no DSP) | `HPF?`: low cut (menu 46, DSP HPF cutoff), "h p f 300 hertz" |
-| `8` short | not available (no DSP) | `LPF?`: high cut (menu 47, DSP LPF cutoff), "l p f 2800 hertz" |
-| `9` short | not available (no DSP) | `MICEQ?`: TX equalizer (menu 48), "equalizer off", "l p f", "h p f" or "both" |
+| `7` short | not available (no DSP) | `HPF?`: low cut (menu 46, DSP HPF cutoff) |
+| `8` short | not available (no DSP) | `LPF?`: high cut (menu 47, DSP LPF cutoff) |
+| `9` short | not available (no DSP) | `MICEQ?`: TX equalizer (menu 48) |
 | `A` short | not available | `IPO?` (HF and 6 m) |
 | `A` long | not available | `ATT?` (HF and 6 m) |
 | `A` double click | `AGC?` | `AGC?` |

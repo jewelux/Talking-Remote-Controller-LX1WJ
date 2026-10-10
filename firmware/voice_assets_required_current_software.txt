@@ -113,6 +113,10 @@ voice_digi.wav
 voice_filter.wav
 voice_filtershape.wav
 voice_filterwidth.wav
+voice_bandpassfilter.wav
+voice_highcut.wav
+voice_lowcut.wav
+voice_narrow.wav
 voice_pbt.wav
 voice_notch.wav
 voice_noisereduction.wav

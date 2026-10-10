@@ -32,15 +32,19 @@ static constexpr SpokenLabel kSpokenLabels[] = {
   {"BSTACK", "band stack"},
   {"CIVADDR", "c i"},
   {"CTCSS", "ctcss"},
+  {"DBF", "bandpassfilter"},
   {"DCS", "dcs"},
   {"FILSHAPE", "filtershape"},
   {"FILWIDTH", "filterwidth"},
   {"FREQ", "frequency"},
+  {"HPF", "lowcut"},
   {"LOCK", "lock"},
-  {"MICEQ", "equalizer"},
+  {"LPF", "highcut"},
+  {"MICEQ", "tx equalizer"},
   {"MODE", "mode"},
   {"MONITOR", "monitor"},
   {"MONLEVEL", "monitor level"},
+  {"NAR", "narrow"},
   {"NB", "noiseblanker"},
   {"NBLEVEL", "noiseblanker level"},
   {"NOTCH", "notch"},
@@ -68,7 +72,7 @@ static constexpr SpokenLabel kSpokenLabels[] = {
   {"VFOB MODE", "vfo b mode"},
 };
 
-// The FT-8x7 EEPROM settings not in the table (AGC?, IPO?, HPF? ...) are
+// The FT-8x7 EEPROM settings not in the table (AGC?, IPO?, ATT? ...) are
 // spelled, as their answers say them.
 static String spokenLabel(const char* label) {
   String name(label);

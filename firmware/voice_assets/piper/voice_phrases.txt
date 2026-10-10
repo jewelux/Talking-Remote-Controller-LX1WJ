@@ -138,10 +138,14 @@ tuner
 split
 
 # Filter / DSP
+bandpass filter | bandpassfilter
 equalizer
 filter
 filter shape | filtershape
 filter width | filterwidth
+high cut | highcut
+low cut | lowcut
+narrow
 noise blanker | noiseblanker
 noise reduction | noisereduction
 notch

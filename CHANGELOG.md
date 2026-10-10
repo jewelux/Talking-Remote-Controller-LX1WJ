@@ -155,10 +155,9 @@
 - FT-817/818/857/897: Bank 2 reads the radio's settings, also those changed on the radio: noise
   blanker (`2`) and AGC (`A` double press, "a g c auto"). The FT-857/897 also reads DSP noise
   reduction (`1`), auto notch (`3`), the NR level (`4`, "noise reduction level 8"), the NB level
-  (`5`), the DSP bandpass filter (`6`), the low cut and high cut (`7` and `8`, "h p f 300 hertz",
-  "l p f 2800 hertz"), the TX equalizer (`9`, "equalizer both") and IPO and ATT (`A`, long for
-  ATT); the FT-817 has no DSP, so these say "not available". HamTRC only reads these settings; it
-  cannot change them
+  (`5`), the DSP bandpass filter (`6`), the low cut and high cut (`7` and `8`), the TX equalizer
+  (`9`) and IPO and ATT (`A`, long for ATT); the FT-817 has no DSP, so these say "not available".
+  HamTRC only reads these settings; it cannot change them
 - FT-817/818: Bank 2 `0` says which antenna jack the current band uses (menu 07), "antenna front"
   or "antenna rear". The console command is `ANT?`
 - FT-817/818/857/897: Bank 8 `8` says the menu item the radio's menu was last left on ("menu 7 6"),

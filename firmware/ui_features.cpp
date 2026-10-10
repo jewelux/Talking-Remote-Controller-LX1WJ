@@ -155,22 +155,31 @@ void speakFt8x7Setting(const Ft8x7SettingState& state) {
     speakDigitsAndPoint(String(state.value));
     return;
   }
-  // "h p f 300 hertz": the radio's menu name, low cut being the high pass filter.
+  // "low cut 300 hertz": the radio's HPF cutoff; high cut is its LPF.
   if (state.setting == Ft8x7Setting::LowCut || state.setting == Ft8x7Setting::HighCut) {
-    speakLabel(spelledLetters(ft8x7SettingName(state.setting)));
+    speakLabel(state.setting == Ft8x7Setting::LowCut ? "lowcut" : "highcut");
     speakNumber(String(state.value));
     playSilenceMs(60);
     speakToken("hertz");
     return;
   }
-  // "equalizer both", "equalizer l p f"
+  // "tx equalizer high cut": the radio's LPF cuts the highs, its HPF the lows.
   if (state.setting == Ft8x7Setting::MicEq) {
-    speakLabel("equalizer");
-    if (state.micEq == YaesuFt857MicEq::Lpf || state.micEq == YaesuFt857MicEq::Hpf) {
-      speakToken(spelledLetters(ft8x7MicEqText(state.micEq)));
-    } else {
-      speakToken(ft8x7MicEqText(state.micEq));
+    speakLabel("tx equalizer");
+    switch (state.micEq) {
+      case YaesuFt857MicEq::Lpf: speakToken("highcut"); break;
+      case YaesuFt857MicEq::Hpf: speakToken("lowcut"); break;
+      case YaesuFt857MicEq::Both: speakToken("both"); break;
+      default: speakToken("off"); break;
     }
+    return;
+  }
+  if (state.setting == Ft8x7Setting::Dbf) {
+    speakTokenState("bandpassfilter", state.on);
+    return;
+  }
+  if (state.setting == Ft8x7Setting::Nar) {
+    speakTokenState("narrow", state.on);
     return;
   }
   // "antenna front", "antenna rear"
