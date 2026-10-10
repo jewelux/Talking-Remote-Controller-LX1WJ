@@ -162,18 +162,30 @@ bool yaesuFt857QueryRitOffsetHz(uint64_t hz, int32_t& offsetOut, uint32_t timeou
   return true;
 }
 
-bool yaesuFt857QueryToneMode(uint64_t hz, bool& bandKnownOut, YaesuToneMode& out,
-                             uint32_t timeoutMs) {
+// The band block's tone byte; 0 outside the amateur bands.
+static bool ft857QueryToneByte(uint64_t hz, bool& bandKnownOut, uint8_t& out, uint32_t timeoutMs) {
   if (!currentIsFt857Family()) return false;
-  out = YaesuToneMode();
+  out = 0;
   const Ft857BandSlot* slot = nullptr;
   uint16_t block = 0;
   if (!ft857ActiveBandBlock(hz, slot, block, timeoutMs)) return false;
   bandKnownOut = slot != nullptr;
   if (!slot) return true;
+  return yaesuCatReadEepromByte(block + FT857_BAND_TONE_OFFSET, out, timeoutMs);
+}
+
+bool yaesuFt857QueryToneMode(uint64_t hz, bool& bandKnownOut, YaesuToneMode& out,
+                             uint32_t timeoutMs) {
   uint8_t b = 0;
-  if (!yaesuCatReadEepromByte(block + FT857_BAND_TONE_OFFSET, b, timeoutMs)) return false;
+  if (!ft857QueryToneByte(hz, bandKnownOut, b, timeoutMs)) return false;
   out = ft857ToneModeFromByte(b);
+  return true;
+}
+
+bool yaesuFt857QuerySplitTone(uint64_t hz, bool& bandKnownOut, bool& onOut, uint32_t timeoutMs) {
+  uint8_t b = 0;
+  if (!ft857QueryToneByte(hz, bandKnownOut, b, timeoutMs)) return false;
+  onOut = (b & FT857_BAND_SPLIT_TONE_MASK) != 0;
   return true;
 }
 

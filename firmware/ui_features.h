@@ -39,17 +39,20 @@ void speakVoxGain(uint8_t level);
 String voxDelayText(uint16_t ms);
 void speakVoxDelay(uint16_t ms);
 
-// FT-8x7 tone squelch. The type: "TONE OFF", "TONE CTCSS", "TONE DCS", or "TONE CTCSS DCS" when
-// one is sent and the other awaited; "tone ctcss".
+// FT-8x7 tone squelch. The type: "TONE OFF", "TONE CTCSS", "TONE DCS", or "TONE CTCSS RX DCS TX"
+// when one type is awaited and the other sent (split tone); "tone ctcss".
 String toneTypeText(const YaesuToneMode& mode);
 void speakToneType(const YaesuToneMode& mode);
-// Encode only or both: "TONEDIR TX", "TONEDIR BOTH", "TONEDIR RX" (decode only); "TONE OFF"
-// when off. "tone tx".
+// Encode only, decode only or both: "TONEDIR TX", "TONEDIR RX", "TONEDIR BOTH", "TONEDIR SPLIT"
+// for a mixed mode; "TONE OFF" when off. "tone tx".
 String toneDirText(const YaesuToneMode& mode);
 void speakToneDir(const YaesuToneMode& mode);
-// Both, after a change: "TONE CTCSS TX", "TONE OFF"; "tone ctcss tx".
+// Both, after a change: "TONE CTCSS TX", "TONE OFF", a mixed mode as the type; "tone ctcss tx".
 String toneModeText(const YaesuToneMode& mode);
 void speakToneMode(const YaesuToneMode& mode);
+// FT-857/897 split tone (menu 79): "SPLITTONE ON"; "split tone on".
+String splitToneText(bool on);
+void speakSplitTone(bool on);
 
 // FT-857/897 EEPROM settings: "AGC FAST", "IPO ON", "RFPOWER 100 W", "MENU 76".
 String ft8x7SettingText(const Ft8x7SettingState& state);

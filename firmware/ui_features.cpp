@@ -127,22 +127,28 @@ static const char* toneTypeWord(YaesuToneType type) {
   return type == YaesuToneType::Ctcss ? "ctcss" : "dcs";
 }
 
-// "off", "ctcss", "dcs", or the sent type then the awaited one.
+static bool toneMixedMode(const YaesuToneMode& mode) {
+  return mode.tx != YaesuToneType::None && mode.rx != YaesuToneType::None && mode.tx != mode.rx;
+}
+
+// "off", "ctcss", "dcs", or for a mixed mode the awaited type then the sent one
+// ("ctcss rx dcs tx").
 static String toneTypeWords(const YaesuToneMode& mode) {
   if (toneOffMode(mode)) return "off";
-  if (mode.tx == YaesuToneType::None) return toneTypeWord(mode.rx);
-  if (mode.rx == YaesuToneType::None || mode.rx == mode.tx) return toneTypeWord(mode.tx);
-  return String(toneTypeWord(mode.tx)) + " " + toneTypeWord(mode.rx);
+  if (toneMixedMode(mode)) {
+    return String(toneTypeWord(mode.rx)) + " rx " + toneTypeWord(mode.tx) + " tx";
+  }
+  return toneTypeWord(mode.tx == YaesuToneType::None ? mode.rx : mode.tx);
 }
 
 static const char* toneDirWord(const YaesuToneMode& mode) {
   if (mode.rx == YaesuToneType::None) return "tx";
   if (mode.tx == YaesuToneType::None) return "rx";
-  return "both";
+  return toneMixedMode(mode) ? "split" : "both";
 }
 
 static String toneModeWords(const YaesuToneMode& mode) {
-  if (toneOffMode(mode)) return "off";
+  if (toneOffMode(mode) || toneMixedMode(mode)) return toneTypeWords(mode);
   return toneTypeWords(mode) + " " + toneDirWord(mode);
 }
 
@@ -180,6 +186,14 @@ String toneModeText(const YaesuToneMode& mode) {
 
 void speakToneMode(const YaesuToneMode& mode) {
   speakTone(toneModeWords(mode));
+}
+
+String splitToneText(bool on) {
+  return on ? "SPLITTONE ON" : "SPLITTONE OFF";
+}
+
+void speakSplitTone(bool on) {
+  speakTokenState("split tone", on);
 }
 
 static const char* ft8x7AgcText(YaesuAgc agc) {

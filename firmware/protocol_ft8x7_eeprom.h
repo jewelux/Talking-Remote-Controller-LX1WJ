@@ -45,6 +45,8 @@ bool yaesuFt857QueryRitOffsetHz(uint64_t hz, int32_t& offsetOut, uint32_t timeou
 // the amateur bands.
 bool yaesuFt857QueryToneMode(uint64_t hz, bool& bandKnownOut, YaesuToneMode& out,
                              uint32_t timeoutMs);
+// Split tone (menu 79) of the same band block; the radio keeps it per band.
+bool yaesuFt857QuerySplitTone(uint64_t hz, bool& bandKnownOut, bool& onOut, uint32_t timeoutMs);
 bool yaesuFt857QueryMicEq(YaesuFt857MicEq& out, uint32_t timeoutMs);
 // True when the active model keeps gain where it can be read (not the FT-857/897's PKT).
 bool yaesuFt8x7HasMicGain(Ft8x7MicGain gain);

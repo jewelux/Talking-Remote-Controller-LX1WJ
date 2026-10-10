@@ -111,16 +111,24 @@ FT-857/897 Bank 3 note:
 | `4` short | `DCS?` (speak only) | `DCS?` (speak only) |
 | `4` long | `DCS <code>`, then digits, then `Enter` | `DCS <code>`, then digits, then `Enter` |
 | `5` short | `TONEDIR?`: the mode last set from HamTRC | `TONEDIR?` (read from the radio) |
-| `5` long | `TONEDIR TOGGLE` (CTCSS only) | `TONEDIR TOGGLE` |
+| `5` long | `TONEDIR NEXT` (CTCSS only) | `TONEDIR NEXT` |
+| `6` short | not available | `SPLITTONE?` (read from the radio) |
 
 Bank 6 tone handling:
 
 - `2` short = tone type: off, CTCSS or DCS
 - `2` long = CTCSS, `2` short then hold = DCS, `2` double click = off
-- `5` short = TX (encode only: the tone is sent, the squelch does not wait for it), BOTH (encode
-  and decode, tone squelch) or RX (decode only, set on the radio)
-- `5` long = switches between TX and BOTH, keeping the type; with the tone off it changes nothing
-- switching the type keeps TX or BOTH; from off it starts with BOTH
+- `5` short = TX (encode only: the tone is sent, the squelch does not wait for it), RX (decode
+  only: the squelch waits for the tone, none is sent), BOTH (encode and decode, tone squelch) or
+  SPLIT (one type sent, the other awaited)
+- `5` long = steps BOTH, TX, RX and back to BOTH, keeping the type; from SPLIT it goes to TX with
+  the sent type; with the tone off it changes nothing. The FT-817 has no RX, so there it switches
+  between TX and BOTH
+- switching the type keeps TX, RX or BOTH; from off or SPLIT it sets BOTH
+- `6` short = split tone (menu 79), "split tone on" or "split tone off". With it on, the radio's
+  own keys can send one type and wait for the other; `2` short then says the received type first,
+  e.g. "tone ctcss rx dcs tx". The radio keeps split tone per band, and a mixed mode stays when
+  split tone is switched off. CAT cannot switch it or set a mixed mode
 
 The FT-857/897 reads the tone mode of the current band and VFO from its EEPROM, also after a
 change on the radio. The FT-817 keeps it where it cannot be read live, so there `2` and `5`

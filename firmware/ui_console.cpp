@@ -403,15 +403,22 @@ static bool handleConsoleFeatureCommand(const String& upper) {
     speakToneDir(mode);
     return true;
   }
-  if (upper == "TONE OFF" || upper == "TONE CTCSS" || upper == "TONE DCS" || upper == "TONEDIR TOGGLE") {
+  if (upper == "TONE OFF" || upper == "TONE CTCSS" || upper == "TONE DCS" || upper == "TONEDIR NEXT") {
     YaesuToneMode mode;
     FeatureStatus status = FeatureStatus::Ok;
     if (upper == "TONE OFF") status = toneOff();
-    else if (upper == "TONEDIR TOGGLE") status = toneEncodeToggle(mode);
+    else if (upper == "TONEDIR NEXT") status = toneDirStep(mode);
     else status = toneTypeSet(upper == "TONE CTCSS" ? YaesuToneType::Ctcss : YaesuToneType::Dcs, mode);
     if (reportFeatureFailure(status, label)) return true;
     Serial.println(toneModeText(mode));
     speakToneMode(mode);
+    return true;
+  }
+  if (upper == "SPLITTONE?") {
+    bool on = false;
+    if (reportFeatureFailure(splitToneQuery(on), label)) return true;
+    Serial.println(splitToneText(on));
+    speakSplitTone(on);
     return true;
   }
   return false;
@@ -838,7 +845,9 @@ void printHelp() {
     Serial.println("    DCS <code> | DCS?");
     Serial.println(ft857Family ? "    TONE? | TONE OFF | CTCSS | DCS  (read from the radio)"
                                : "    TONE? | TONE OFF | CTCSS | DCS  (TONE? says the mode last set)");
-    Serial.println("    TONEDIR? | TONEDIR TOGGLE  (encode only TX, or BOTH)");
+    Serial.println(ft857Family ? "    TONEDIR? | TONEDIR NEXT  (BOTH, encode only TX, decode only RX in turn)"
+                               : "    TONEDIR? | TONEDIR NEXT  (BOTH or encode only TX)");
+    if (ft857Family) Serial.println("    SPLITTONE?  (menu 79 of the current band, read only)");
     Serial.println("    GT? | GT FAST | SLOW | OFF");
     Serial.println("    PA? | PA OFF | ON | TOGGLE");
     Serial.println("    PS? | PS OFF | ON");

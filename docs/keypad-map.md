@@ -164,8 +164,9 @@ these keys are free.
 | `3` long | CTCSS tone entry |
 | `4` short | DCS code (the last set, or 023) |
 | `4` long | DCS code entry |
-| `5` short | encode only (TX) or encode and decode (both) |
-| `5` long | switch between encode only and both (FT-817/818: CTCSS only) |
+| `5` short | encode only (TX), decode only (RX), encode and decode (both), or split |
+| `5` long | step from both to TX, RX and back to both (FT-817/818: TX and both, CTCSS only) |
+| `6` short | split tone on or off (FT-857/897 menu 79; FT-817/818: not available) |
 
 ## Bank 7
 

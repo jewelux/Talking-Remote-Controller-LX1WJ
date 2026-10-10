@@ -455,7 +455,7 @@ FeatureStatus toneTypeSet(YaesuToneType type, YaesuToneMode& out) {
   return yaesuCatSetToneMode(out) ? FeatureStatus::Ok : FeatureStatus::Unsupported;
 }
 
-FeatureStatus toneEncodeToggle(YaesuToneMode& out) {
+FeatureStatus toneDirStep(YaesuToneMode& out) {
   if (!toneSupported()) return FeatureStatus::Unsupported;
   YaesuToneMode current;
   const FeatureStatus status = toneModeQuery(current);
@@ -465,7 +465,26 @@ FeatureStatus toneEncodeToggle(YaesuToneMode& out) {
     return FeatureStatus::Ok;
   }
   const bool txOnly = current.tx != YaesuToneType::None && current.rx == YaesuToneType::None;
-  out.tx = current.tx != YaesuToneType::None ? current.tx : current.rx;
-  out.rx = txOnly ? out.tx : YaesuToneType::None;
+  const bool rxOnly = current.tx == YaesuToneType::None && current.rx != YaesuToneType::None;
+  // A mixed mode counts as both: its sent type goes on alone.
+  const YaesuToneType type = rxOnly ? current.rx : current.tx;
+  out = YaesuToneMode();
+  if (!txOnly) out.tx = type;
+  if (txOnly || rxOnly) out.rx = type;
+  if (yaesuCatSetToneMode(out)) return FeatureStatus::Ok;
+  // The FT-817/818 has no RX only: from TX only back to both.
+  if (!txOnly) return FeatureStatus::Unsupported;
+  out.tx = type;
+  out.rx = type;
   return yaesuCatSetToneMode(out) ? FeatureStatus::Ok : FeatureStatus::Unsupported;
+}
+
+FeatureStatus splitToneQuery(bool& on) {
+  if (!toneSupported() || !currentIsFt857Family()) return FeatureStatus::Unsupported;
+  uint64_t hz = 0;
+  bool bandKnown = false;
+  if (!queryFrequency(hz, kFt8x7TimeoutMs) || !yaesuFt857QuerySplitTone(hz, bandKnown, on, kFt8x7TimeoutMs)) {
+    return failure(FeatureStatus::NoReply);
+  }
+  return bandKnown ? FeatureStatus::Ok : FeatureStatus::Unsupported;
 }

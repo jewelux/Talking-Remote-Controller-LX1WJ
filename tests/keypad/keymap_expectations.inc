@@ -202,8 +202,10 @@ KEYMAP_ROW(FT8X7,           6, '3', "queryBank6CtcssDefault", "beginBank6CtcssEn
 KEYMAP_ROW(NOT(FT8X7),      6, '3', "unassigned",            "none",                   "-")
 KEYMAP_ROW(FT8X7,           6, '4', "queryBank6DcsDefault",  "beginBank6DcsEntry",     "-")
 KEYMAP_ROW(NOT(FT8X7),      6, '4', "unassigned",            "none",                   "-")
-KEYMAP_ROW(FT8X7,           6, '5', "queryBank6ToneDir",     "toggleBank6ToneDir",     "-")
+KEYMAP_ROW(FT8X7,           6, '5', "queryBank6ToneDir",     "stepBank6ToneDir",       "-")
 KEYMAP_ROW(NOT(FT8X7),      6, '5', "unassigned",            "none",                   "-")
+KEYMAP_ROW(FT8X7,           6, '6', "queryBank6SplitTone",   "none",                   "-")
+KEYMAP_ROW(NOT(FT8X7),      6, '6', "unassigned",            "none",                   "-")
 
 // ---- Bank 8 ----------------------------------------------------------------
 KEYMAP_ROW(ALL,             8, '1', "queryBank8CivAddress",  "beginBank8CivAddressEntry", "-")

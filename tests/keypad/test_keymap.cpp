@@ -182,7 +182,8 @@ void setBank6ToneModeCtcss() { record("setBank6ToneModeCtcss"); }
 void setBank6ToneModeDcs() { record("setBank6ToneModeDcs"); }
 void queryBank6Tone() { record("queryBank6Tone"); }
 void queryBank6ToneDir() { record("queryBank6ToneDir"); }
-void toggleBank6ToneDir() { record("toggleBank6ToneDir"); }
+void stepBank6ToneDir() { record("stepBank6ToneDir"); }
+void queryBank6SplitTone() { record("queryBank6SplitTone"); }
 void queryBank6CtcssDefault() { record("queryBank6CtcssDefault"); }
 void beginBank6CtcssEntry() { record("beginBank6CtcssEntry"); }
 void queryBank6DcsDefault() { record("queryBank6DcsDefault"); }

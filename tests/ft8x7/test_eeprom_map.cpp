@@ -89,6 +89,29 @@ TEST(ft857_tone_mode_from_the_band_block) {
   }
 }
 
+// The bytes the FT-897 stored with split tone (menu 79) on, set with its own A (encode) and B
+// (decode) keys, and a mixed mode left after split tone was switched off.
+TEST(ft857_split_tone_bytes_from_the_band_block) {
+  using T = YaesuToneType;
+  struct Case {
+    uint8_t b;
+    bool split;
+    T tx;
+    T rx;
+  };
+  const Case cases[] = {
+    {0x90, true, T::None, T::None},   {0x94, true, T::Ctcss, T::None}, {0x98, true, T::Dcs, T::None},
+    {0x91, true, T::None, T::Ctcss},  {0x99, true, T::Dcs, T::Ctcss},  {0x9A, true, T::Dcs, T::Dcs},
+    {0x96, true, T::Ctcss, T::Dcs},   {0x86, false, T::Ctcss, T::Dcs}, {0x80, false, T::None, T::None},
+  };
+  for (const Case& c : cases) {
+    CHECK_EQ((c.b & FT857_BAND_SPLIT_TONE_MASK) != 0, c.split);
+    const YaesuToneMode mode = ft857ToneModeFromByte(c.b);
+    CHECK_EQ(mode.tx, c.tx);
+    CHECK_EQ(mode.rx, c.rx);
+  }
+}
+
 TEST(ft857_rf_power_address_per_band_group) {
   CHECK_EQ(ft857RfPowerAddr(Ft8x7BandGroup::Hf), 0x009B);
   CHECK_EQ(ft857RfPowerAddr(Ft8x7BandGroup::SixM), 0x00AA);

@@ -243,7 +243,8 @@ KeyBinding bank6(const KeypadTraits& t, char key) {
     case '2': return bind(queryBank6Tone, setBank6ToneModeCtcss, setBank6ToneOff, setBank6ToneModeDcs);
     case '3': return bind(queryBank6CtcssDefault, beginBank6CtcssEntry);
     case '4': return bind(queryBank6DcsDefault, beginBank6DcsEntry);
-    case '5': return bind(queryBank6ToneDir, toggleBank6ToneDir);
+    case '5': return bind(queryBank6ToneDir, stepBank6ToneDir);
+    case '6': return bind(queryBank6SplitTone);
     default: return {};
   }
 }

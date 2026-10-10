@@ -94,8 +94,11 @@ static constexpr uint8_t FT857_BAND_ATT_MASK = 0x10;
 static constexpr uint16_t FT857_BAND_RIT_OFFSET = 10;
 // Band block +4 bits 3..0: the tone mode, written as soon as it changes. Bits 3..2 are what is
 // sent, bits 1..0 what the squelch waits for, each 01 = CTCSS and 10 = DCS. Measured on an
-// FT-897 by setting each CAT tone mode; bit 7 is something else.
+// FT-897 by setting each CAT tone mode and, for the mixed types, with the radio's own keys.
+// Bit 4 is split tone (menu 79), kept per band and written on leaving the menu. A mixed mode
+// stays when split tone is switched off. Bit 7 is something else.
 static constexpr uint16_t FT857_BAND_TONE_OFFSET = 4;
+static constexpr uint8_t FT857_BAND_SPLIT_TONE_MASK = 0x10;
 YaesuToneMode ft857ToneModeFromByte(uint8_t b);
 
 // Only the amateur bands: the band edges the radio uses outside them are not known. Null

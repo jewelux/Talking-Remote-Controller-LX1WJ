@@ -132,9 +132,11 @@ void queryBank6Tone();
 void setBank6ToneOff();
 void setBank6ToneModeCtcss();
 void setBank6ToneModeDcs();
-// Encode only or both ("TONEDIR?"), and the switch between them.
+// Encode only, decode only or both ("TONEDIR?"), and the step to the next of them.
 void queryBank6ToneDir();
-void toggleBank6ToneDir();
+void stepBank6ToneDir();
+// FT-857/897 split tone, menu 79 ("SPLITTONE?").
+void queryBank6SplitTone();
 void queryBank6CtcssDefault();
 void beginBank6CtcssEntry();
 void queryBank6DcsDefault();

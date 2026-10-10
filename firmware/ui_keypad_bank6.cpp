@@ -124,13 +124,22 @@ void queryBank6ToneDir() {
   speakToneDir(mode);
 }
 
-void toggleBank6ToneDir() {
+void stepBank6ToneDir() {
   printKeypadAction("TONEDIR");
   prepareKeypadSpeechResponse();
   YaesuToneMode mode;
-  if (keypadReportFeatureFailure(toneEncodeToggle(mode), "TONEDIR")) return;
+  if (keypadReportFeatureFailure(toneDirStep(mode), "TONEDIR")) return;
   printKeypadStatus("{}", toneModeText(mode).c_str());
   speakToneMode(mode);
+}
+
+void queryBank6SplitTone() {
+  printKeypadAction("SPLITTONE?");
+  prepareKeypadSpeechResponse();
+  bool on = false;
+  if (keypadReportFeatureFailure(splitToneQuery(on), "SPLITTONE?")) return;
+  printKeypadStatus("{}", splitToneText(on).c_str());
+  speakSplitTone(on);
 }
 
 void queryBank6CtcssDefault() {
