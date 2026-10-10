@@ -205,7 +205,7 @@ uint32_t tuningSpeechEndedMs() { return g_tuningEndMs; }
 static constexpr int BEEP_FREQ_HZ = 660;
 static constexpr int BEEP_MS = 70;
 static constexpr int BEEP_FADE_MS = 5;
-static constexpr float BEEP_AMPLITUDE = 0.2f;
+static constexpr float BEEP_AMPLITUDE = 0.112f;
 static constexpr int BEEP_SAMPLES = I2S_SAMPLE_RATE * BEEP_MS / 1000;
 static int16_t s_beepPcm[BEEP_SAMPLES];
 
