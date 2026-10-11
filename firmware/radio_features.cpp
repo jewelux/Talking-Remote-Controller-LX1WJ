@@ -410,13 +410,10 @@ FeatureStatus ft8x7SettingQuery(Ft8x7Setting setting, Ft8x7SettingState& out) {
 
 FeatureStatus ft8x7MenuRowSet(Ft8x7Setting setting, uint8_t number, Ft8x7SettingState& out) {
   const bool row = setting == Ft8x7Setting::Row;
-  Ft8x7MenuRowMap map;
   if ((!row && setting != Ft8x7Setting::Menu) || !currentProfile().caps.setRadioMenu ||
-      !ft8x7MenuRowMap(currentFt8x7Model(), map)) {
+      currentFt8x7Model() == Ft8x7Model::None) {
     return FeatureStatus::Unsupported;
   }
-  // The limit with the extended menu on; yaesuFt8x7SetMenuOrRow checks the one in use.
-  if (number < 1 || number > ft8x7MenuRowLast(map, row, true)) return FeatureStatus::Invalid;
   uint8_t txStatus = 0;
   if (!yaesuCatQueryTxStatusRaw(txStatus, kFt8x7TimeoutMs)) return failure(FeatureStatus::NoReply);
   if (yaesuCatTxStatusTransmitting(txStatus)) return FeatureStatus::Failed;
@@ -437,10 +434,6 @@ FeatureStatus ft8x7MenuRowSet(Ft8x7Setting setting, uint8_t number, Ft8x7Setting
 
 static bool toneSupported() {
   return currentProtocolType() == PROTO_YAESU_FT8X7;
-}
-
-static bool toneIsOff(const YaesuToneMode& mode) {
-  return mode.tx == YaesuToneType::None && mode.rx == YaesuToneType::None;
 }
 
 // The FT-817/818 keeps the tone mode per band block, so the one last set holds only on the band
@@ -478,10 +471,8 @@ FeatureStatus toneTypeSet(YaesuToneType type, YaesuToneMode& out) {
   if (status != FeatureStatus::Ok && status != FeatureStatus::Unsupported) return status;
   // Not known: as from off.
   if (status != FeatureStatus::Ok) current = YaesuToneMode();
-  const bool txOnly = current.tx != YaesuToneType::None && current.rx == YaesuToneType::None;
-  const bool rxOnly = current.tx == YaesuToneType::None && current.rx != YaesuToneType::None;
-  out.tx = rxOnly ? YaesuToneType::None : type;
-  out.rx = txOnly ? YaesuToneType::None : type;
+  out.tx = current.rxOnly() ? YaesuToneType::None : type;
+  out.rx = current.txOnly() ? YaesuToneType::None : type;
   if (yaesuCatSetToneMode(out)) return FeatureStatus::Ok;
   out.tx = type;
   out.rx = type;
@@ -493,14 +484,14 @@ FeatureStatus toneDirStep(YaesuToneMode& out) {
   YaesuToneMode current;
   const FeatureStatus status = toneModeQuery(current);
   if (status != FeatureStatus::Ok) return status;
-  if (toneIsOff(current)) {
+  if (current.isOff()) {
     out = current;
     return FeatureStatus::Ok;
   }
-  const bool txOnly = current.tx != YaesuToneType::None && current.rx == YaesuToneType::None;
-  const bool rxOnly = current.tx == YaesuToneType::None && current.rx != YaesuToneType::None;
+  const bool txOnly = current.txOnly();
+  const bool rxOnly = current.rxOnly();
   // A mixed mode counts as both: its sent type goes on alone.
-  const YaesuToneType type = rxOnly ? current.rx : current.tx;
+  const YaesuToneType type = current.type();
   out = YaesuToneMode();
   if (!txOnly) out.tx = type;
   if (txOnly || rxOnly) out.rx = type;

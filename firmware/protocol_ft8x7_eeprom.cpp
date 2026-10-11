@@ -3,13 +3,18 @@
 #include "protocol_yaesu_cat.h"
 #include "radio_catalog.h"
 
-// Undocumented 0xBB reads the EEPROM word at an even address; the byte at an odd address is
-// the second of the pair.
-bool yaesuCatReadEepromWord(uint16_t addr, uint8_t out[2], uint32_t timeoutMs) {
-  const uint8_t cmd[5] = {(uint8_t)(addr >> 8), (uint8_t)(addr & 0xFE), 0x00, 0x00, 0xBB};
+// Undocumented 0xBB reads two EEPROM bytes, at addr and addr + 1; odd addresses work too (0xBB
+// at 0069 returned the bytes at 0069 and 006A on an FT-897, and FT8x7Com reads the FT-817's
+// 0075 and 0076 so).
+static bool readEepromPair(uint16_t addr, uint8_t out[2], uint32_t timeoutMs) {
+  const uint8_t cmd[5] = {(uint8_t)(addr >> 8), (uint8_t)(addr & 0xFF), 0x00, 0x00, 0xBB};
   yaesuCatFlushInput();
   yaesuCatSend5(cmd);
   return yaesuCatRead1(out[0], timeoutMs) && yaesuCatRead1(out[1], timeoutMs);
+}
+
+bool yaesuCatReadEepromWord(uint16_t addr, uint8_t out[2], uint32_t timeoutMs) {
+  return readEepromPair((uint16_t)(addr & 0xFFFE), out, timeoutMs);
 }
 
 bool yaesuCatReadEepromByte(uint16_t addr, uint8_t& out, uint32_t timeoutMs) {
@@ -19,8 +24,8 @@ bool yaesuCatReadEepromByte(uint16_t addr, uint8_t& out, uint32_t timeoutMs) {
   return true;
 }
 
-// Undocumented 0xBC writes two EEPROM bytes, at addr and addr + 1; odd addresses work too
-// (0xBB at 0069 returned the bytes at 0069 and 006A on an FT-897). It takes effect at once.
+// Undocumented 0xBC writes two EEPROM bytes, at addr and addr + 1; odd addresses work too, as
+// for 0xBB. It takes effect at once.
 // CAUTION: a bad write can wipe the radio's memories and calibration. Any reply byte is left
 // for the next flush to drain.
 void yaesuCatWriteEeprom2(uint16_t addr, const uint8_t data[2]) {
@@ -62,13 +67,6 @@ bool yaesuFt8x7QueryAgc(YaesuAgc& out, uint32_t timeoutMs) {
   if (!yaesuCatReadEepromByte(FT857_AGC_SPEED_ADDR, b, timeoutMs)) return false;
   out = ft857AgcFromSpeed(b);
   return true;
-}
-
-// The bytes at addr and addr + 1: one word, or two when addr is odd.
-static bool readEepromPair(uint16_t addr, uint8_t out[2], uint32_t timeoutMs) {
-  if ((addr & 0x01) == 0) return yaesuCatReadEepromWord(addr, out, timeoutMs);
-  return yaesuCatReadEepromByte(addr, out[0], timeoutMs) &&
-         yaesuCatReadEepromByte((uint16_t)(addr + 1), out[1], timeoutMs);
 }
 
 bool yaesuFt8x7QueryMenuAndRow(uint8_t& menuOut, uint8_t& rowOut, uint32_t timeoutMs) {

@@ -42,6 +42,14 @@ enum class YaesuToneType : uint8_t { None, Ctcss, Dcs };
 struct YaesuToneMode {
   YaesuToneType tx = YaesuToneType::None;
   YaesuToneType rx = YaesuToneType::None;
+
+  bool isOff() const { return tx == YaesuToneType::None && rx == YaesuToneType::None; }
+  bool txOnly() const { return tx != YaesuToneType::None && rx == YaesuToneType::None; }
+  bool rxOnly() const { return tx == YaesuToneType::None && rx != YaesuToneType::None; }
+  // One type sent, the other awaited (FT-857/897 split tone).
+  bool mixed() const { return tx != YaesuToneType::None && rx != YaesuToneType::None && tx != rx; }
+  // The sent type, or the awaited one when none is sent.
+  YaesuToneType type() const { return tx == YaesuToneType::None ? rx : tx; }
 };
 // The mode byte of the tone mode command (opcode 0x0A): 8A off, 2A CTCSS, 4A CTCSS encode, 3A
 // CTCSS decode, 0A DCS, 0C DCS encode, 0B DCS decode. False for a mode CAT cannot set: tx and rx

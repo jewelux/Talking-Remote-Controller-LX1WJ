@@ -120,36 +120,28 @@ void speakVoxDelay(uint16_t ms) {
   speakToken("ms");
 }
 
-static bool toneOffMode(const YaesuToneMode& mode) {
-  return mode.tx == YaesuToneType::None && mode.rx == YaesuToneType::None;
-}
-
 static const char* toneTypeWord(YaesuToneType type) {
   return type == YaesuToneType::Ctcss ? "ctcss" : "dcs";
-}
-
-static bool toneMixedMode(const YaesuToneMode& mode) {
-  return mode.tx != YaesuToneType::None && mode.rx != YaesuToneType::None && mode.tx != mode.rx;
 }
 
 // "off", "ctcss", "dcs", or for a mixed mode the awaited type then the sent one
 // ("ctcss rx dcs tx").
 static String toneTypeWords(const YaesuToneMode& mode) {
-  if (toneOffMode(mode)) return "off";
-  if (toneMixedMode(mode)) {
+  if (mode.isOff()) return "off";
+  if (mode.mixed()) {
     return String(toneTypeWord(mode.rx)) + " rx " + toneTypeWord(mode.tx) + " tx";
   }
-  return toneTypeWord(mode.tx == YaesuToneType::None ? mode.rx : mode.tx);
+  return toneTypeWord(mode.type());
 }
 
 static const char* toneDirWord(const YaesuToneMode& mode) {
-  if (mode.rx == YaesuToneType::None) return "tx";
-  if (mode.tx == YaesuToneType::None) return "rx";
-  return toneMixedMode(mode) ? "split" : "both";
+  if (mode.txOnly()) return "tx";
+  if (mode.rxOnly()) return "rx";
+  return mode.mixed() ? "split" : "both";
 }
 
 static String toneModeWords(const YaesuToneMode& mode) {
-  if (toneOffMode(mode) || toneMixedMode(mode)) return toneTypeWords(mode);
+  if (mode.isOff() || mode.mixed()) return toneTypeWords(mode);
   return toneTypeWords(mode) + " " + toneDirWord(mode);
 }
 
@@ -173,12 +165,12 @@ void speakToneType(const YaesuToneMode& mode) {
 }
 
 String toneDirText(const YaesuToneMode& mode) {
-  if (toneOffMode(mode)) return "TONE OFF";
+  if (mode.isOff()) return "TONE OFF";
   return upper(String("TONEDIR ") + toneDirWord(mode));
 }
 
 void speakToneDir(const YaesuToneMode& mode) {
-  speakTone(toneOffMode(mode) ? "off" : toneDirWord(mode));
+  speakTone(mode.isOff() ? "off" : toneDirWord(mode));
 }
 
 String toneModeText(const YaesuToneMode& mode) {
