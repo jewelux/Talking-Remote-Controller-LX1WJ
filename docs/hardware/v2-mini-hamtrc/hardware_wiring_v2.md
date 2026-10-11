@@ -40,7 +40,7 @@ All GPIO assignments below were read from the V2 schematic and cross-checked aga
 - **C5 100 nF** decouples the 5 V rail to GND.
 - The ESP32-S3 board's own 3V3 output (U1 pins 1, 2) feeds the MAX98357A `SD` pin.
 
-**Two ways to power the board**
+**Two ways to power the board – choose one:**
 
 | Option | Supply | D1 position on the PCB |
 |---|---|---|
@@ -50,9 +50,6 @@ All GPIO assignments below were read from the V2 schematic and cross-checked aga
 The schematic no longer contains D1, but the PCB keeps the **D1 footprint** so a diode can be
 fitted when a separate 5 V supply is used. The diode stops the external supply and the USB port from
 feeding into each other. A Schottky diode (e.g. 1N5817, ≈ 0.3 V drop) is preferred over a 1N400x (≈ 0.7 V).
-
-> **Note:** with a wire link in D1 (option A), do **not** connect a 5 V supply to J5 and USB at the
-> same time.
 
 ---
 
