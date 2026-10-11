@@ -20,7 +20,7 @@ All GPIO assignments below were read from the V2 schematic and cross-checked aga
 
 | Topic | V1 | V2 (Mini-HamTRC) |
 |---|---|---|
-| Supply | 12 V input, DC-DC module (U2), power switch (J11), 1000 µF buffer (C6) | **5 V input only** (J5), no DC-DC module, no switch |
+| Supply | 12 V input, DC-DC module (U2), power switch (J11), 1000 µF buffer (C6) | 5 V via ESP32 USB-C, optional separate 5 V on J5; no DC-DC module, no switch |
 | SD card module | J5 SD module (SPI) | **removed** (the firmware does not use it) |
 | CI-V jack | 3-pin header / 3.5 mm | 3.5 mm jack J6 (Tip = CI-V, Ring unused) |
 | CAT-TTL | 3-pin header J3 | 3.5 mm jack footprint J3 |
@@ -36,15 +36,23 @@ All GPIO assignments below were read from the V2 schematic and cross-checked aga
 | J5 "VCC In 5V" | 1 | +5 V |
 | J5 | 2 | GND |
 
-- +5 V from J5 feeds the **5 V rail** directly: MAX98357A (J4 pin 1) and MAX3232 module (J2 pin 1).
-- The ESP32-S3 board is supplied via **D1** (anode on 5 V rail → cathode on U1 pin 21 `5V0`).
-  D1 prevents the ESP32's USB supply from back-feeding the external 5 V rail.
+- The **5 V rail** connects J5 pin 1, U1 pin 21 `5V0`, the MAX98357A (J4 pin 1) and the MAX3232 module (J2 pin 1).
 - **C5 100 nF** decouples the 5 V rail to GND.
 - The ESP32-S3 board's own 3V3 output (U1 pins 1, 2) feeds the MAX98357A `SD` pin.
 
-> **Note:** Because of D1, powering the board **only through the ESP32's USB-C port** does
-> *not* power the audio amplifier or the RS-232 module. For full operation supply 5 V on J5
-> (USB may stay connected for flashing / debugging).
+**Two ways to power the board**
+
+| Option | Supply | D1 position on the PCB |
+|---|---|---|
+| A (default, as in the schematic) | USB-C port of the ESP32-S3 board | **wire link** instead of D1 – USB then also powers the audio and RS-232 modules |
+| B | separate 5 V supply on J5 | **diode** fitted in D1 (1N400x / 1N5817 Schottky), anode towards J5, cathode towards `5V0` |
+
+The schematic no longer contains D1, but the PCB keeps the **D1 footprint** so a diode can be
+fitted when a separate 5 V supply is used. The diode stops the external supply and the USB port from
+feeding into each other. A Schottky diode (e.g. 1N5817, ≈ 0.3 V drop) is preferred over a 1N400x (≈ 0.7 V).
+
+> **Note:** with a wire link in D1 (option A), do **not** connect a 5 V supply to J5 and USB at the
+> same time.
 
 ---
 
@@ -110,6 +118,8 @@ A BC548 or similar small-signal NPN works equally well.
 
 ## 5. ESP32-S3 to RS-232 (J2, MAX3232 TTL↔RS-232 module)
 
+The module is soldered onto the two large pads at the top edge of the PCB (see section 8).
+
 Firmware: `RS232_RX_PIN = 9`, `RS232_TX_PIN = 10`
 
 | J2 Pin | MAX3232 module | Connection |
@@ -151,7 +161,9 @@ They are available for future extensions (keep strapping pins GPIO 0, 3, 45, 46 
 - **6 wire bridges** on the component side (red straight links in the PDF), fitted before the modules.
 - 4 mounting holes in the corners.
 - The ESP32-S3 dev board, MAX98357A and MAX3232 modules plug into female headers.
-- Two large rectangular pads at the top edge have no electrical net (mechanical / mounting).
+- **Two large rectangular pads at the top edge**: solder pads for mounting the **RS-232 (MAX3232) module**
+  (mechanical fixing, no electrical net).
+- **D1 footprint** (left edge): fit a wire link or a diode, see section 1.
 
 ---
 

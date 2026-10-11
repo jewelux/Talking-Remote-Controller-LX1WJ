@@ -13,8 +13,9 @@
 - **new: V2 board "Mini-HamTRC"** (in development) in `docs/hardware/v2-mini-hamtrc/`: schematic, PCB layout,
   wiring description and bill of materials. 5 V input only, no DC-DC module, no SD module, CI-V and CAT on
   3.5 mm jacks. GPIO mapping unchanged, so the current firmware runs on V2 as is
-- open points on V2 (to be confirmed): SD-module leftovers in the schematic, type of D1, peripherals not
-  powered when the board is supplied only through the ESP32 USB port
+- V2 schematic updated: D1 removed (board powered via the ESP32 USB-C port, modules included), SD-module
+  leftovers removed. The PCB keeps the D1 footprint: wire link for USB supply, or a diode (1N400x / Schottky)
+  for a separate 5 V supply on J5. The two large pads at the top of the PCB hold the RS-232 module
 
 ### Keypad
 

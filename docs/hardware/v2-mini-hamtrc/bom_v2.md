@@ -22,7 +22,7 @@
 | R3 | 1 | 1 kΩ | resistor ¼ W, axial THT | CAT-TTL TX series resistor |
 | R4 | 1 | 1 kΩ | resistor ¼ W, axial THT | CAT-TTL RX series resistor |
 | ZD1 | 1 | 3.3 V | Zener diode, e.g. BZX55C3V3 / BZX79C3V3, DO-35 | CI-V RX clamp |
-| D1 | 1 | – | diode, axial THT; Schottky recommended, e.g. 1N5817 (DO-41) | supply to ESP32 5V0, reverse-feed protection |
+| D1 | 0–1 | – | **optional** (PCB footprint only): wire link, or diode 1N5817 Schottky (preferred) / 1N400x, DO-41 | diode only with separate 5 V supply on J5 |
 | Q1 | 1 | BC547 | NPN, TO-92 (BC548 / BC549 also fine) | CI-V open-collector driver |
 | C5 | 1 | 100 nF | ceramic capacitor, THT | 5 V rail decoupling |
 
@@ -43,13 +43,14 @@
 | Qty | Item | Notes |
 |---|---|---|
 | 1 | PCB HamTRC V2, single-sided | per `pcb-layout-V2.pdf` |
-| 6 | wire bridges (tinned copper wire) | red links in the layout PDF |
+| 6 | wire bridges (tinned copper wire) | red links in the layout PDF (+1 for D1 if no diode) |
 | 4 | M3 spacers + screws | corner mounting holes |
-| 1 | 5 V power supply (≥ 1 A) | or USB power bank / regulated supply |
+| 1 | 5 V supply (≥ 1 A) | USB-C to the ESP32 board, or a separate 5 V supply on J5 (then fit D1 as diode) |
 | – | cables: 3.5 mm stereo cable (CI-V / CAT), DB9 cable (RS-232) | depending on radio |
 
 ## Notes
 
-- The diode type for D1 is not specified in the schematic. A Schottky diode keeps the voltage drop
-  low (≈ 0.3 V instead of ≈ 0.7 V with a 1N4001/1N4148).
+- D1 is not in the schematic any more; the PCB keeps its footprint. Fit a wire link for USB supply,
+  or a diode when a separate 5 V supply is used on J5 (Schottky: ≈ 0.3 V drop, 1N400x: ≈ 0.7 V).
+- The MAX3232 module is soldered onto the two large pads at the top edge of the PCB.
 - The SD-card module of V1 is no longer part of V2.
