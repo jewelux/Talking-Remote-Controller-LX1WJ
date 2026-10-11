@@ -5,7 +5,7 @@
 // A radio on the ESP32-S3 native USB socket (RadioPort::UsbHost). HamTRC is the USB host and talks
 // to the first CDC-ACM serial port the radio offers, the CAT port of a QRP Labs QMX. Starting the
 // host takes the socket from the PC console until the next restart; the console on the UART0
-// socket (Serial0) still answers HAMTRC?, USB? and SM?.
+// socket (Serial0) still answers HAMTRC?, USB?, SM?, and PO? and SWR? for the QMX.
 
 // What happened on the socket since the main loop last asked (radio_monitor.cpp reports it).
 enum class UsbLinkEvent : uint8_t {

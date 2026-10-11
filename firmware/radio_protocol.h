@@ -22,6 +22,10 @@ bool querySMeterRaw(int32_t& rawOut, uint32_t timeoutMs = 800);
 SMeterReading sMeterFromRaw(int32_t raw);
 bool queryPoMeterRaw(int32_t& rawOut, uint32_t timeoutMs = 800);
 bool querySWRRaw(int32_t& rawOut, uint32_t timeoutMs = 800);
+// QRP Labs QMX output power (PC, tenths of a watt) and SWR (SW, hundredths). Both are measured
+// only while transmitting; transmittingOut is false on the bare reply the QMX gives in receive.
+bool queryQmxPowerTenths(bool& transmittingOut, int32_t& tenthsOut, uint32_t timeoutMs = 800);
+bool queryQmxSwrHundredths(bool& transmittingOut, int32_t& hundredthsOut, uint32_t timeoutMs = 800);
 bool queryRfPowerLevel(uint16_t& valueOut, uint32_t timeoutMs = 800);
 bool setRfPowerLevel(uint16_t value);
 bool queryNr(bool& onOut, uint32_t timeoutMs = 800);

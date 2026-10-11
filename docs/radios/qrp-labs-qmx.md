@@ -11,14 +11,15 @@ been connected yet.
 | Frequency read and set | `FA` | VFO A, 11 digits |
 | Mode read and set | `MD` | LSB 1, USB 2, CW 3, AM 5, CW-R 7, DIGI 9 (USB; 6, Digi on LSB, is read as DIGI too) |
 | S-meter (Bank 1 `7`, console `SM?`) | `SM` | in dB; said as S0 to S9, then S9 plus tens of dB. `SM?` also answers on the second socket, with the raw reply |
+| Output power (Bank 1 `4`, console `PO?`) | `PC` | in tenths of a watt, said as watts ("power 4.5 watts"); "power rx" in receive. Also on the second socket |
+| SWR (Bank 1 `8`, console `SWR?`) | `SW` | in hundredths, said as "swr 1.21"; "swr rx" in receive. Also on the second socket |
 | Radio ID and model (console `ID?`, `OM?`, `IF?`) | `ID`, `OM`, `IF` | `ID020` (TS-480), `OMQC` |
 | USB connection state (console `USB?`, Bank 9 `1`) | | also on the second USB socket |
 
 While the QMX is connected, the full console is not reachable (see Connecting): use the keypad.
 `ID?`, `OM?` and `IF?` are for a later setup with the console on the second socket.
 
-Not yet: output power and SWR (the QMX sends `PC` in tenths of a watt and `SW` in hundredths, not
-the TS-480 scales), VFO B, split, RIT, PTT and the QMX menu commands.
+Not yet: VFO B, split, RIT, PTT and the QMX menu commands.
 
 ## Connecting
 
@@ -29,7 +30,8 @@ ESP32-S3's native USB socket:
 - the QMX's USB cable goes into the controller's **native USB socket**, the one that is normally
   the PC console (USB JTAG/serial, VID 303A);
 - the PC console then uses the **second USB socket**, the USB-to-serial chip (a CH343 or CP210x)
-  wired to UART0. While the USB host runs, it answers only `HAMTRC?`, `USB?` and `SM?`;
+  wired to UART0. While the USB host runs, it answers only `HAMTRC?`, `USB?`, `SM?`, `PO?` and
+  `SWR?`;
 - flashing works through the second socket as usual.
 
 See `docs/hardware_wiring.md`, section 6, for the 5 V supply on the native socket.
@@ -74,8 +76,14 @@ console. The new profile is announced after the restart.
 5. S-meter: `SM?` on the second socket prints the raw reply and the S value, and says it; Bank 1
    `7` says it from the keypad. With no antenna it should be near S0, with a strong signal S9
    plus. Note the raw value for the developer notes below.
-6. Unplug the QMX: "usb off". Plug it in again: "usb on", and the frequency query works.
-7. Choose another profile: the controller restarts and the PC console is back on the native socket.
+6. Power and SWR in receive: `PO?` and `SWR?` on the second socket print `RX (not transmitting)`;
+   Bank 1 `4` says "power rx", Bank 1 `8` "swr rx".
+7. Power and SWR while transmitting, into a dummy load (key down, or a Digi tone from the PC):
+   `PO?` prints the watts and `SWR?` the SWR; on a dummy load the SWR should be near 1.0. If the
+   QMX answers in receive with a number instead of the bare reply, note it for the developer
+   notes below.
+8. Unplug the QMX: "usb off". Plug it in again: "usb on", and the frequency query works.
+9. Choose another profile: the controller restarts and the PC console is back on the native socket.
 
 ## Developer notes
 
@@ -86,6 +94,12 @@ console. The new profile is announced after the restart.
   (-37 dBm). Until a reply has been seen from a radio, `qmxDecodeSMeter()` (`firmware/qmx_codec.*`,
   tests in `tests/qmx`) reads a negative value as dBm and zero and above as dB over S0. Whole S
   units below S9, tens of dB above, as for the FT-847.
+- Power and SWR: `PC;` returns the measured output in tenths of a watt (`PC45;` is 4.5 W), `SW;`
+  the SWR in hundredths (`SW121;` is 1.21). The CAT manual says `SW;` comes back bare in receive;
+  Hamlib takes a bare `PC;` the same way. `queryQmxPowerTenths()` and `queryQmxSwrHundredths()`
+  (`firmware/radio_protocol.cpp`) report a bare reply as receive, through `qmxParseTxMeter()`
+  (`firmware/qmx_codec.*`, tests in `tests/qmx`); the console's `PO?` and `SWR?` take this path
+  for `RadioModel::Qmx`, before the generic TS-480 meter readings.
 - USB host and CDC-ACM: `firmware/transport_usb_host.*`, on the ESP-IDF USB Host Library of the
   ESP32 core (no extra library). It opens the first CDC data interface with a bulk IN and OUT
   endpoint, sends SET_LINE_CODING and SET_CONTROL_LINE_STATE (DTR on) to the ACM control interface
@@ -98,4 +112,4 @@ console. The new profile is announced after the restart.
 - Cross-checked with Hamlib's QMX backend (`qrplabs_qmx_caps`, `rigs/kenwood/ts480.c`, October
   2026): it is TS-480 Kenwood CAT and an emulation, so digital USB is `MD9` and digital LSB `MD6`,
   as in this profile. Its `SW` and `PC` readings (hundredths, tenths of a watt, empty while
-  receiving) are the model for a later SWR and power step.
+  receiving) match the ones here.

@@ -57,3 +57,44 @@ TEST(db_over_s9_stops_at_sixty) {
   CHECK_EQ(decode(500).sUnits, 9);
   CHECK_EQ(decode(500).dbOverS9, 60);
 }
+
+// PC and SW (firmware/qmx_codec.*): a number while transmitting, a bare reply in receive.
+TEST(tx_meter_reply_with_digits_is_a_reading) {
+  int32_t value = -1;
+  CHECK(qmxParseTxMeter("45;", value) == QmxTxMeter::Reading);
+  CHECK_EQ(value, 45);
+  CHECK(qmxParseTxMeter("121", value) == QmxTxMeter::Reading);
+  CHECK_EQ(value, 121);
+  CHECK(qmxParseTxMeter("000;", value) == QmxTxMeter::Reading);
+  CHECK_EQ(value, 0);
+}
+
+TEST(bare_tx_meter_reply_is_receive) {
+  int32_t value = 7;
+  CHECK(qmxParseTxMeter(";", value) == QmxTxMeter::Receive);
+  CHECK(qmxParseTxMeter("", value) == QmxTxMeter::Receive);
+  CHECK_EQ(value, 7);
+}
+
+TEST(tx_meter_reply_with_other_text_is_invalid) {
+  int32_t value = 7;
+  CHECK(qmxParseTxMeter("?;", value) == QmxTxMeter::Invalid);
+  CHECK(qmxParseTxMeter("-5;", value) == QmxTxMeter::Invalid);
+  CHECK(qmxParseTxMeter("12x;", value) == QmxTxMeter::Invalid);
+  CHECK(qmxParseTxMeter("999999999999;", value) == QmxTxMeter::Invalid);
+  CHECK_EQ(value, 7);
+}
+
+TEST(fixed_point_text_keeps_every_decimal) {
+  char text[16];
+  qmxFormatFixed(45, 1, text, sizeof(text));
+  CHECK_EQ(text, "4.5");
+  qmxFormatFixed(50, 1, text, sizeof(text));
+  CHECK_EQ(text, "5.0");
+  qmxFormatFixed(121, 2, text, sizeof(text));
+  CHECK_EQ(text, "1.21");
+  qmxFormatFixed(105, 2, text, sizeof(text));
+  CHECK_EQ(text, "1.05");
+  qmxFormatFixed(3, 1, text, sizeof(text));
+  CHECK_EQ(text, "0.3");
+}

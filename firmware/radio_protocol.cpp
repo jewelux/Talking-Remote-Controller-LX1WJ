@@ -174,6 +174,29 @@ bool querySWRRaw(int32_t& rawOut, uint32_t timeoutMs) {
   return false;
 }
 
+static bool queryQmxTxMeter(bool enabled, const char* cmd, const char* prefix, bool& transmittingOut,
+                            int32_t& valueOut, uint32_t timeoutMs) {
+  if (currentProfile().model != RadioModel::Qmx || !enabled || !cmd[0]) return false;
+  String line;
+  if (!transactAsciiCommand(cmd, line, prefix, timeoutMs)) return false;
+  const QmxTxMeter meter = qmxParseTxMeter(line.c_str() + strlen(prefix), valueOut);
+  if (meter == QmxTxMeter::Invalid) return false;
+  transmittingOut = meter == QmxTxMeter::Reading;
+  return true;
+}
+
+bool queryQmxPowerTenths(bool& transmittingOut, int32_t& tenthsOut, uint32_t timeoutMs) {
+  const RadioProfile& sp = currentProfile();
+  return queryQmxTxMeter(sp.caps.getPower, sp.commands->powerGet, sp.commands->powerReplyPrefix,
+                         transmittingOut, tenthsOut, timeoutMs);
+}
+
+bool queryQmxSwrHundredths(bool& transmittingOut, int32_t& hundredthsOut, uint32_t timeoutMs) {
+  const RadioProfile& sp = currentProfile();
+  return queryQmxTxMeter(sp.caps.getSwr, sp.commands->swrGet, sp.commands->swrReplyPrefix,
+                         transmittingOut, hundredthsOut, timeoutMs);
+}
+
 bool queryRfPowerLevel(uint16_t& valueOut, uint32_t timeoutMs) {
   ProtocolType pt = currentProtocolType();
   const RadioProfile& sp = currentProfile();

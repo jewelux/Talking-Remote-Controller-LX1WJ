@@ -10,6 +10,7 @@
 #include "protocol_ops_ascii.h"
 #include "protocol_ops_yaesu.h"
 #include "protocol_yaesu_cat.h"
+#include "qmx_codec.h"
 #include "radio_profile.h"
 #include "radio_prefs.h"
 #include "radio_protocol.h"
@@ -259,6 +260,45 @@ static void answerSmeterQuery(Print& output) {
   output.print("  ");
   output.println(live.sm.toString());
   if (g_speechEnabled) speakSValue(live.sm);
+}
+
+// FT-8x7 and QMX transmit meters exist only while transmitting: in receive, say "<meter> rx".
+static void reportTxMeterInReceive(const char* label, const char* meterToken, Print& output = Serial) {
+  output.print(label);
+  output.println(": RX (not transmitting)");
+  if (!g_speechEnabled) return;
+  speakLabel(meterToken);
+  speakToken("rx");
+}
+
+// QMX PO? and SWR? on the console, and on Serial0 (processHamtrcServiceCommand): PC in tenths of
+// a watt, SW in hundredths, both measured only while transmitting.
+static void answerQmxTxMeter(bool swr, Print& output) {
+  const char* command = swr ? "SWR?" : "PO?";
+  const char* label = swr ? "SWR" : "PO";
+  const char* token = swr ? "swr" : "power";
+  bool transmitting = false;
+  int32_t value = 0;
+  const bool ok = swr ? queryQmxSwrHundredths(transmitting, value) : queryQmxPowerTenths(transmitting, value);
+  if (!ok) { reportCommandFailure(command, "no reply", output); return; }
+  if (!transmitting) { reportTxMeterInReceive(label, token, output); return; }
+  if (swr) {
+    rememberLiveSwr(value, millis());
+  } else {
+    rememberLivePower(value, millis());
+  }
+  char text[16];
+  qmxFormatFixed((uint32_t)value, swr ? 2 : 1, text, sizeof(text));
+  output.print(label);
+  output.print(": ");
+  output.print(text);
+  output.println(swr ? "" : " W");
+  if (!g_speechEnabled) return;
+  speakLabel(token);
+  speakDigitsAndPoint(String(text));
+  if (swr) return;
+  playSilenceMs(60);
+  speakToken("watts");
 }
 
 // Report a command the radio or profile cannot do, and say "not available".
@@ -786,7 +826,7 @@ void printHelp() {
   Serial.println("    TEST");
   Serial.println("    TUNINGSPEECH OFF | ON | TOGGLE");
   Serial.println("    TUNINGSPEECH?");
-  Serial.println("    USB?  (USB host and the radio on the native USB socket; also on the UART socket, as is SM?)");
+  Serial.println("    USB?  (USB host and the radio on the native USB socket; also on the UART socket, as are SM? and, for the QMX, PO? and SWR?)");
   Serial.println("    VERBOSE OFF | ON | TOGGLE");
   Serial.println("    VERBOSE?");
   Serial.println("    VOICE <name>");
@@ -1360,15 +1400,6 @@ static bool handleConsoleToggleCommands(const String& line, const String& upper)
   return false;
 }
 
-// FT-8x7 meters exist only while transmitting: in receive, say "<meter> rx".
-static void reportFt8x7MeterInReceive(const char* label, const char* meterToken) {
-  Serial.print(label);
-  Serial.println(": RX (not transmitting)");
-  if (!g_speechEnabled) return;
-  speakLabel(meterToken);
-  speakToken("rx");
-}
-
 // ALC? and MOD?: a 0..15 meter of 0xBD, printed only.
 static void reportFt8x7BdMeter(const char* command, const char* label, uint8_t YaesuTxMeters::*meter) {
   YaesuTxMeters meters;
@@ -1397,7 +1428,7 @@ static bool handleConsoleFt8x7Meters(const String& upper) {
     if (!currentProfile().caps.getPower) { reportNotAvailable("PO? -> not enabled in this profile"); return true; }
     YaesuTxMeters meters;
     if (!yaesuCatQueryTxMeters(meters, false, 800)) { reportCommandFailure("PO?", "no reply"); return true; }
-    if (!meters.transmitting) { reportFt8x7MeterInReceive("PO", "power"); return true; }
+    if (!meters.transmitting) { reportTxMeterInReceive("PO", "power"); return true; }
     rememberLivePower(meters.po, millis());
     Serial.print("PO: ");
     Serial.print(meters.po);
@@ -1416,7 +1447,7 @@ static bool handleConsoleFt8x7Meters(const String& upper) {
     if (!currentProfile().caps.getSwr) { reportNotAvailable("SWR? -> not enabled in this profile"); return true; }
     YaesuTxMeters meters;
     if (!yaesuCatQueryTxMeters(meters, true, 800)) { reportCommandFailure("SWR?", "no reply"); return true; }
-    if (!meters.transmitting) { reportFt8x7MeterInReceive("SWR", "swr"); return true; }
+    if (!meters.transmitting) { reportTxMeterInReceive("SWR", "swr"); return true; }
     rememberLiveSwr(meters.swr, millis());
     const float swr = yaesuSwrFromMeter(meters.swr);
     Serial.print("SWR: ");
@@ -2776,6 +2807,10 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     answerSmeterQuery(Serial);
     return true;
   }
+  if ((upper == "SWR?" || upper == "PO?") && currentRadioModel() == RadioModel::Qmx) {
+    answerQmxTxMeter(upper == "SWR?", Serial);
+    return true;
+  }
   if (upper == "SWR?") {
     if (!refreshLiveSwr()) { reportCommandFailure("SWR?", "no reply"); return true; }
     float swr = swrRawToValue(live.swrRaw);
@@ -3455,14 +3490,17 @@ bool processHamtrcServiceCommand(String line, Print& output) {
   String upper = upperCopy(line);
   if (handleHamtrcServiceCommand(upper, output)) return true;
   // Only Serial0 comes here. While the USB host holds the native socket, this is the one way to
-  // see the radio's raw S-meter reply (the QMX's is not yet confirmed on a radio).
-  if (upper == "SM?") {
-    g_radioReplyTimedOut = false;
-    audioAbortNow();
+  // read the radio's meters (the QMX's replies are not yet confirmed on a radio).
+  const bool qmxTxMeter = currentRadioModel() == RadioModel::Qmx && (upper == "PO?" || upper == "SWR?");
+  if (upper != "SM?" && !qmxTxMeter) return false;
+  g_radioReplyTimedOut = false;
+  audioAbortNow();
+  if (qmxTxMeter) {
+    answerQmxTxMeter(upper == "SWR?", output);
+  } else {
     answerSmeterQuery(output);
-    return true;
   }
-  return false;
+  return true;
 }
 
 void processCommand(String line) {

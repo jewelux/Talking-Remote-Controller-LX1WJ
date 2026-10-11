@@ -308,9 +308,12 @@
   CW-R, AM and DIGI
 - the S-meter (Bank 1 `7`, console `SM?`) is said in S units, and above S9 in tens of dB, as on
   the other radios
+- output power (Bank 1 `4`, console `PO?`) is said in watts, for example "power 4.5 watts", and
+  SWR (Bank 1 `8`, console `SWR?`) as "swr 1.21". The QMX measures both only while transmitting:
+  in receive you hear "power rx" and "swr rx"
 - with this profile the native USB socket belongs to the radio, so the PC console moves to the
-  board's second USB socket (the USB-to-serial one), where only `HAMTRC?`, `SM?` and the new
-  `USB?` answer. Choosing another profile restarts the controller and gives the native socket back to
+  board's second USB socket (the USB-to-serial one), where only `HAMTRC?`, `SM?`, `PO?`, `SWR?`
+  and the new `USB?` answer. Choosing another profile restarts the controller and gives the native socket back to
   the PC
 - you hear "usb on" when the radio's serial port is ready, "usb off" when it is unplugged or
   switched off, and "usb error" for a USB device that is not a radio serial port
@@ -321,8 +324,7 @@
   says "usb error", so the keypad can still pick another radio. Choosing profile 21 again starts it
 - the native socket must supply 5 V for a radio that takes its USB power from the cable; on some
   boards that needs a solder jumper (see `docs/hardware_wiring.md`)
-- not yet: power and SWR (the QMX answers these differently from a Kenwood TS-480), VFO B, split,
-  RIT, PTT. Details in `docs/radios/qrp-labs-qmx.md`
+- not yet: VFO B, split, RIT, PTT. Details in `docs/radios/qrp-labs-qmx.md`
 
 ### Firmware updates
 

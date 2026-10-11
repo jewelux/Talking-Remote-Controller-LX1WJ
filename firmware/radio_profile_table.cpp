@@ -113,19 +113,22 @@ constexpr ModeCodes kTs480Modes = {
 // A USB virtual COM port ignores the baud; the list only satisfies the link checks.
 constexpr uint32_t kQmxBauds[] = {9600};
 
-// Frequency, mode and S-meter for now. Its SM, PC and SW replies are not the TS-480 ones: SM is
-// in dB (RadioModel::Qmx, qmx_codec.*), PC in tenths of a watt and SW in hundredths, and those
-// two are left out. It has no NR or NB command.
+// Frequency, mode and meters for now. Its SM, PC and SW replies are not the TS-480 ones: SM is
+// in dB, PC in tenths of a watt and SW in hundredths, and PC and SW answer only while
+// transmitting (RadioModel::Qmx, qmx_codec.*). It has no NR or NB command.
 constexpr RadioCapabilities kQmxCaps = {
-    .getFreq = true, .setFreq = true, .getMode = true, .setMode = true, .getSmeter = true,
+    .getFreq = true, .setFreq = true, .getMode = true, .setMode = true,
+    .getSmeter = true, .getPower = true, .getSwr = true,
 };
 
 constexpr AsciiCommandSet kQmxCommands = {
     .freqGet = "FA;", .freqSetFormat = "FA%011llu;",
     .modeGet = "MD;", .modeSetFormat = "MD%s;",
-    .ifGet = "IF;", .idGet = "ID;", .omGet = "OM;", .smeterGet = "SM;",
+    .ifGet = "IF;", .idGet = "ID;", .omGet = "OM;",
+    .smeterGet = "SM;", .powerGet = "PC;", .swrGet = "SW;",
     .freqReplyPrefix = "FA", .modeReplyPrefix = "MD", .ifReplyPrefix = "IF",
     .idReplyPrefix = "ID", .omReplyPrefix = "OM", .smeterReplyPrefix = "SM",
+    .powerReplyPrefix = "PC", .swrReplyPrefix = "SW",
 };
 
 // The QMX Digi mode is 9 (FSR) on USB, its default, and 6 (FSK) on LSB; Hamlib and so WSJT-X set
