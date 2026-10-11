@@ -20,6 +20,7 @@ It is meant as a short engineering overview, not as a promise list.
 | Yaesu FTDX10 | ASCII CAT | implemented | implemented | implemented | implemented | implemented | implemented | assisted field test pending | Current `V3.5.8` block includes VFO, VFO mode, split, lock, tuner, preamp, AGC, IF, ID, and power-state paths. See `docs/radios/yaesu-ftdx10-family.md`. |
 | Yaesu FTDX101D | ASCII CAT | implemented | implemented | implemented | implemented | implemented | implemented | assisted field test pending | Uses the same first-block documentation as FTDX10. |
 | Yaesu FTDX101MP | ASCII CAT | implemented | implemented | implemented | implemented | implemented | implemented | assisted field test pending | Uses the same first-block documentation as FTDX10. |
+| QRP Labs QMX / QMX+ | Kenwood ASCII CAT over USB | implemented | implemented | planned | planned | planned | implemented | not tested on a radio | Experimental. USB host on the native USB socket. See `docs/radios/qrp-labs-qmx.md`. |
 
 ## Profiles and baud rates
 
@@ -49,6 +50,7 @@ speaks or sets the CI-V address. Bank 9 `A` double press (console `PROFILE RESET
 | 16 | Yaesu FT-847 | RS-232 | 4800 | 4800, 9600, 57600 |
 | 17 | Icom IC-705 | CI-V jack | 9600 | 4800, 9600, 19200, 38400, 57600, 115200 |
 | 18 | Icom IC-7760 | CI-V jack | 19200 | 4800, 9600, 19200, 38400, 57600, 115200 |
+| 21 | QRP Labs QMX | native USB socket (USB host) | 9600 | 9600 (ignored by the radio) |
 
 The Icom CI-V jack itself goes up to 19200 baud on the IC-7300, IC-705 and IC-706; HamTRC
 still offers the faster rates on every CI-V profile.

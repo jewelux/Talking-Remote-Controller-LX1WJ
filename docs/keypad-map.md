@@ -201,6 +201,7 @@ The same on every radio.
 |---|---|
 | `0` short | experimental mode |
 | `0` long | experimental mode on/off |
+| `1` short | USB radio link |
 | `4` short | tuning speech |
 | `4` long | tuning speech on/off |
 | `5` short | verbose |
@@ -216,4 +217,4 @@ The same on every radio.
 | `B` short | next profile |
 | `C` short | previous profile |
 
-`1`–`3` are free.
+`2` and `3` are free.

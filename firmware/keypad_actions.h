@@ -186,6 +186,8 @@ void beginBank9ProfileSelect();
 void resetBank9Profile();
 void selectNextProfile();
 void selectPrevProfile();
+// "USB?": the USB radio link, "usb on/off/error" with counts, or "usb not available".
+void queryBank9Usb();
 
 // ---- FTDX10 ----
 // A key the FTDX10 layout hides: "<key> hidden on FTDX10", "not available".

@@ -2,9 +2,12 @@
 
 #include "radio_catalog.h"
 #include "radio_mode.h"
+#include "packet_ascii.h"
 #include "protocol_ft847.h"
 #include "radio_protocol.h"
+#include "radio_runtime.h"
 #include "radio_state.h"
+#include "transport_usb_host.h"
 #include "ui_speech.h"
 #include "radio_utils.h"
 #include "debug_log.h"
@@ -174,4 +177,47 @@ void handleObservedMode(uint8_t mode, bool verbose) {
     DBG_PRINTLN(modeToString(mode));
   }
   speakMode(mode);
+}
+
+// A device without a serial port (a sound card, or a hub in front of the radio) may come before
+// the radio's own serial port, so "usb error" waits this long for one to open.
+static constexpr uint32_t kUsbNoSerialGraceMs = 3000;
+static bool s_usbNoSerialPending = false;
+static uint32_t s_usbNoSerialSinceMs = 0;
+
+static void speakUsbState(const char* state) {
+  const char* const tokens[] = {"usb", state};
+  speakTokens(tokens, 2);
+}
+
+void pollRadioLinkEvents() {
+  switch (usbHostTakeEvent()) {
+    case UsbLinkEvent::None:
+      break;
+    case UsbLinkEvent::SerialReady:
+      s_usbNoSerialPending = false;
+      // Auto-info off, in case a PC program left it on: its IF lines would answer our queries.
+      (void)asciiPacketSendCommand("AI0;");
+      delay(10);
+      resetLiveRadioState();
+      (void)refreshLiveFrequency();
+      (void)refreshLiveMode();
+      speakUsbState("on");
+      break;
+    case UsbLinkEvent::SerialGone:
+      resetLiveRadioState();
+      speakUsbState("off");
+      break;
+    case UsbLinkEvent::NoSerialPort:
+      if (!s_usbNoSerialPending) s_usbNoSerialSinceMs = millis();
+      s_usbNoSerialPending = true;
+      break;
+    case UsbLinkEvent::Held:
+      speakUsbState("error");
+      break;
+  }
+  if (s_usbNoSerialPending && millis() - s_usbNoSerialSinceMs >= kUsbNoSerialGraceMs) {
+    s_usbNoSerialPending = false;
+    if (!usbHostSerialReady()) speakUsbState("error");
+  }
 }

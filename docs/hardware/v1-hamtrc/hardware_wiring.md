@@ -120,6 +120,36 @@ Series resistors provide basic protection and can improve signal robustness.
 
 ---
 
+## 6. ESP32-S3 Native USB as USB Host (QRP Labs QMX, experimental)
+
+A radio with only a USB connection (profile 21, QRP Labs QMX) plugs into the ESP32-S3's native
+USB socket, GPIO 19 (D-) and GPIO 20 (D+). HamTRC is then the USB host. No wiring is needed
+beyond the radio's USB cable.
+
+On a board with two USB-C sockets (ESP32-S3-DevKitC-1 and copies such as the YD-ESP32-S3):
+
+| Socket | Chip | Normal profiles | USB radio profile |
+|---|---|---|---|
+| native USB ("USB", "OTG") | ESP32-S3 itself | PC console and flashing | the radio |
+| USB-to-serial ("COM", "UART") | CH343 or CP210x on UART0 | flashing | flashing, `HAMTRC?` and `USB?` only |
+
+### 5 V on the native socket
+
+A USB host supplies 5 V to the device. Most ESP32-S3 boards do not put 5 V out on the native
+socket, because a diode blocks it. A radio that takes its USB power from the cable is then not
+seen at all. The QMX has its own supply, but may still wait for 5 V on its USB socket.
+
+- On the YD-ESP32-S3 and similar boards, close the solder jumper marked `USB-OTG`. It bypasses the
+  diode, so the board's 5 V reaches the native socket.
+- With that jumper closed, **never connect both sockets to a PC at the same time**: the two 5 V
+  supplies would feed into each other.
+- Without soldering, a USB-C OTG adapter with a power input can supply the 5 V instead.
+
+A board with only the native USB socket works too, but then the PC console is gone while the USB
+radio profile is active; flash it by holding BOOT while plugging it in.
+
+---
+
 ## General Notes
 
 - All interfaces share a common ground.

@@ -138,6 +138,7 @@ static const VoiceAlias kVoiceAliases[] = {
   {"if", {"i", "f"}, 2},
   {"pa", {"p", "a"}, 2},
   {"ps", {"p", "s"}, 2},
+  {"qrp", {"q", "r", "p"}, 3},
   {"notchfilter", {"notch", "filter"}, 2},
   {"vfoa", {"vfo", "a"}, 2},
   {"vfob", {"vfo", "b"}, 2},
@@ -543,10 +544,16 @@ void speakSpeechSpeed() {
   speakToken(speechSpeedName(g_speechSpeed));
 }
 
+// A profile's voice digits: digits, and lowercase letters for names like "qmx".
 static void playDigitsFromCString(const char* s) {
   if (!s) return;
   for (const char* p = s; *p; ++p) {
-    if (*p >= '0' && *p <= '9') playDigit((int)(*p - '0'));
+    if (*p >= '0' && *p <= '9') {
+      playDigit((int)(*p - '0'));
+    } else if (*p >= 'a' && *p <= 'z') {
+      const char letter[2] = {*p, '\0'};
+      speakClipToken(letter);
+    }
   }
 }
 
@@ -560,6 +567,7 @@ void speakProfileIdentityFromSlot(uint8_t id, bool withOk) {
     case VoiceVendor::Kenwood: speakClipToken("kenwood"); break;
     case VoiceVendor::Elecraft: speakClipToken("elecraft"); break;
     case VoiceVendor::Xiegu: speakClipToken("xiegu"); break;
+    case VoiceVendor::QrpLabs: speakToken("qrp"); break;
   }
 
   playSilenceMs(80);

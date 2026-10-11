@@ -4,6 +4,7 @@
 #include "radio_prefs.h"
 #include "radio_state.h"
 #include "transport_serial.h"
+#include "transport_usb_host.h"
 #include "ui_speech.h"
 #include "packet_ascii.h"
 #include "protocol_ft847.h"
@@ -26,6 +27,7 @@ static const char* radioPortName(RadioPort port) {
     case RadioPort::CivJack: return "CI-V jack";
     case RadioPort::Rs232: return "RS-232";
     case RadioPort::CatTtl: return "CAT TTL";
+    case RadioPort::UsbHost: return "USB host";
   }
   return "?";
 }
@@ -37,6 +39,7 @@ static const char* voiceVendorName(VoiceVendor vendor) {
     case VoiceVendor::Kenwood: return "kenwood";
     case VoiceVendor::Elecraft: return "elecraft";
     case VoiceVendor::Xiegu: return "xiegu";
+    case VoiceVendor::QrpLabs: return "qrp labs";
   }
   return "?";
 }
@@ -61,8 +64,10 @@ void printActiveProfileDetails() {
   }
   Serial.print("  port: ");
   Serial.println(radioPortName(p.port));
-  Serial.print("  uart: ");
-  Serial.println((int)pins.uartNum);
+  if (p.port != RadioPort::UsbHost) {
+    Serial.print("  uart: ");
+    Serial.println((int)pins.uartNum);
+  }
   Serial.print("  baud: ");
   Serial.println((unsigned long)p.baud);
   Serial.print("  bauds:");
@@ -71,14 +76,18 @@ void printActiveProfileDetails() {
     Serial.print((unsigned long)sp.link.bauds.rates[i]);
   }
   Serial.println();
-  Serial.print("  rx_pin: ");
-  Serial.println((int)pins.rxPin);
-  Serial.print("  tx_pin: ");
-  Serial.println((int)pins.txPin);
-  Serial.print("  tx_invert: ");
-  Serial.println(pins.txInvert ? "1" : "0");
-  Serial.print("  rx_invert: ");
-  Serial.println(pins.rxInvert ? "1" : "0");
+  if (p.port == RadioPort::UsbHost) {
+    usbHostPrintStatus(Serial);
+  } else {
+    Serial.print("  rx_pin: ");
+    Serial.println((int)pins.rxPin);
+    Serial.print("  tx_pin: ");
+    Serial.println((int)pins.txPin);
+    Serial.print("  tx_invert: ");
+    Serial.println(pins.txInvert ? "1" : "0");
+    Serial.print("  rx_invert: ");
+    Serial.println(pins.rxInvert ? "1" : "0");
+  }
 
   Serial.print("  voice_vendor: ");
   Serial.println(voiceVendorName(sp.vendor));
@@ -169,6 +178,17 @@ void printActiveProfileDetails() {
 void applyProfile(uint8_t slot) {
   const RadioProfile* profile = profileForSlot(slot);
   if (!profile) profile = profileForSlot(kDefaultProfileSlot);
+
+  // The USB host keeps the native USB socket until a restart, and the PC console needs it back.
+  // The restart comes up with the new profile, and says its name.
+  if (usbHostStarted() && profile->link.port != RadioPort::UsbHost) {
+    saveProfileToNvs(profile->slot);
+    Serial0.print("[PROFILE] ");
+    Serial0.print(profile->name);
+    Serial0.println(": restarting to give the native USB socket back to the console");
+    Serial0.flush();
+    ESP.restart();
+  }
   g_profileId = profile->slot;
 
   // The baud and CI-V address saved for this slot, if any; a baud the radio

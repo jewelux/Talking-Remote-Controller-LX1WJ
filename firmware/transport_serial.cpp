@@ -1,20 +1,47 @@
 #include "transport_serial.h"
 
 #include "radio_catalog.h"
+#include "transport_usb_host.h"
 
 static uint32_t s_writeCount = 0;
 
 static constexpr SerialPortPins kCivJackPins = {1, CIV_RX_PIN, CIV_TX_PIN, true, false};
 static constexpr SerialPortPins kRs232Pins = {2, RS232_RX_PIN, RS232_TX_PIN, false, false};
 static constexpr SerialPortPins kCatTtlPins = {2, CAT_RX_PIN, CAT_TX_PIN, CAT_TX_INVERT, CAT_RX_INVERT};
+static constexpr SerialPortPins kNoPins = {0, -1, -1, false, false};
 
 const SerialPortPins& serialPortPins(RadioPort port) {
   switch (port) {
     case RadioPort::CivJack: return kCivJackPins;
     case RadioPort::Rs232: return kRs232Pins;
     case RadioPort::CatTtl: return kCatTtlPins;
+    case RadioPort::UsbHost: return kNoPins;
   }
   return kRs232Pins;
+}
+
+static bool usbLink() {
+  return currentConnectionProfile().port == RadioPort::UsbHost;
+}
+
+// Kenwood-style CAT never needs CR or LF, and a CR switches a QMX serial port into its terminal
+// mode, which ends CAT until the radio restarts. Drops them before they reach a USB radio.
+static size_t usbWriteWithoutLineEnds(const uint8_t* data, size_t len) {
+  uint8_t buf[64];
+  size_t accepted = 0;
+  while (len) {
+    size_t n = 0;
+    size_t used = 0;
+    while (used < len && n < sizeof(buf)) {
+      const uint8_t b = data[used++];
+      if (b != '\r' && b != '\n') buf[n++] = b;
+    }
+    if (n && usbHostWrite(buf, n) < n) return accepted;
+    accepted += used;
+    data += used;
+    len -= used;
+  }
+  return accepted;
 }
 
 void serialTransportDriveTxIdle(int pin, bool invert) {
@@ -33,6 +60,11 @@ void serialTransportApplyProfile(const ConnectionProfile& profile) {
   serialTransportDriveTxIdle(RS232_TX_PIN, false);
   pinMode(CAT_TX_PIN, INPUT_PULLUP);
   pinMode(CAT_RX_PIN, INPUT);
+
+  if (profile.port == RadioPort::UsbHost) {
+    (void)usbHostStart();
+    return;
+  }
 
   const SerialPortPins& pins = serialPortPins(profile.port);
   g_civSerial = (pins.uartNum == 2) ? &civUart2 : &civUart1;
@@ -53,14 +85,20 @@ void serialTransportApplyProfile(const ConnectionProfile& profile) {
 }
 
 void serialTransportFlushInput() {
+  if (usbLink()) {
+    usbHostFlushInput();
+    return;
+  }
   while (g_civSerial->available()) (void)g_civSerial->read();
 }
 
 size_t serialTransportAvailable() {
+  if (usbLink()) return usbHostAvailable();
   return g_civSerial->available();
 }
 
 int serialTransportRead() {
+  if (usbLink()) return usbHostRead();
   return g_civSerial->read();
 }
 
@@ -78,19 +116,16 @@ static bool serialTransportWriteAllowed() {
 size_t serialTransportWrite(const uint8_t* data, size_t len) {
   if (!serialTransportWriteAllowed()) return 0;
   ++s_writeCount;
+  if (usbLink()) return usbWriteWithoutLineEnds(data, len);
   return g_civSerial->write(data, len);
 }
 
 size_t serialTransportWriteByte(uint8_t value) {
-  if (!serialTransportWriteAllowed()) return 0;
-  ++s_writeCount;
-  return g_civSerial->write(value);
+  return serialTransportWrite(&value, 1);
 }
 
 size_t serialTransportPrint(const char* text) {
-  if (!serialTransportWriteAllowed()) return 0;
-  ++s_writeCount;
-  return g_civSerial->print(text);
+  return serialTransportWrite(reinterpret_cast<const uint8_t*>(text), strlen(text));
 }
 
 uint32_t serialTransportWriteCount() {
@@ -98,5 +133,9 @@ uint32_t serialTransportWriteCount() {
 }
 
 void serialTransportFlushOutput() {
+  if (usbLink()) {
+    usbHostFlushOutput(200);
+    return;
+  }
   g_civSerial->flush();
 }

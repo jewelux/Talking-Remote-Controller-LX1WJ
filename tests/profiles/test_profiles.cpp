@@ -40,7 +40,7 @@ TEST(every_radio_has_a_name_and_voice_digits) {
     const RadioProfile& p = profileAt(i);
     CHECK(p.name[0] != '\0');
     CHECK(p.voiceDigits[0] != '\0');
-    for (const char* c = p.voiceDigits; *c; ++c) CHECK(*c >= '0' && *c <= '9');
+    for (const char* c = p.voiceDigits; *c; ++c) CHECK((*c >= '0' && *c <= '9') || (*c >= 'a' && *c <= 'z'));
   }
 }
 
@@ -98,18 +98,20 @@ TEST(default_slot_is_used) {
   CHECK(profileForSlot(kDefaultProfileSlot) != nullptr);
 }
 
-// Slots 1-18 are all in use since the FT-847 took 16; 19-24 are free.
+// Slots 1-18 are all in use since the FT-847 took 16, and the QMX has 21; 19-20 and 22-24 are free.
 TEST(adjacent_slot_skips_free_slots) {
   CHECK_EQ(adjacentProfileSlot(15, 1), 16);
   CHECK_EQ(adjacentProfileSlot(16, 1), 17);
   CHECK_EQ(adjacentProfileSlot(17, -1), 16);
+  CHECK_EQ(adjacentProfileSlot(18, 1), 21);
+  CHECK_EQ(adjacentProfileSlot(21, -1), 18);
   CHECK_EQ(adjacentProfileSlot(19, -1), 18);
-  CHECK_EQ(adjacentProfileSlot(19, 1), 1);
+  CHECK_EQ(adjacentProfileSlot(19, 1), 21);
 }
 
 TEST(adjacent_slot_wraps_around) {
-  CHECK_EQ(adjacentProfileSlot(18, 1), 1);
-  CHECK_EQ(adjacentProfileSlot(1, -1), 18);
+  CHECK_EQ(adjacentProfileSlot(21, 1), 1);
+  CHECK_EQ(adjacentProfileSlot(1, -1), 21);
 }
 
 TEST(adjacent_slot_without_direction_stays) {
@@ -187,6 +189,23 @@ TEST(ft847_is_its_own_protocol_on_rs232) {
   CHECK_EQ(ft847.modes->fm, "");
   CHECK_EQ(ft847.modes->rtty, "");
   CHECK_EQ(ft847.modes->digi, "");
+}
+
+TEST(qmx_is_kenwood_cat_over_usb_with_freq_and_mode_only) {
+  const RadioProfile& qmx = slot(21);
+  CHECK(qmx.protocol == PROTO_KENWOOD_ASCII);
+  CHECK(qmx.model == RadioModel::Generic);
+  CHECK(qmx.link.port == RadioPort::UsbHost);
+  CHECK(qmx.caps.getFreq && qmx.caps.setFreq && qmx.caps.getMode && qmx.caps.setMode);
+  // Its SM, PC and SW replies differ from the TS-480 ones, and it has no NR or NB.
+  CHECK(!qmx.caps.getSmeter && !qmx.caps.getPower && !qmx.caps.getSwr);
+  CHECK(!qmx.caps.getNr && !qmx.caps.getNb);
+  CHECK_EQ(qmx.modes->digi, "9");
+  CHECK_EQ(qmx.modes->digiAlso, "6");
+  // MD8 puts the QMX into SWR tune mode, so no mode may send it.
+  const ModeCodes& m = *qmx.modes;
+  const char* const codes[] = {m.lsb, m.usb, m.am, m.cw, m.rtty, m.fm, m.cwr, m.rttyR, m.digi, m.pkt, m.wfm, m.digiAlso};
+  for (const char* code : codes) CHECK(code[0] != '8');
 }
 
 TEST(kx2_has_nb_and_no_rtty_code) {

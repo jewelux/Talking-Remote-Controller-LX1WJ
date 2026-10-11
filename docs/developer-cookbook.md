@@ -25,8 +25,9 @@ Contents:
 
 ## 1. The map
 
-HamTRC is a single cooperative Arduino `loop()` on an ESP32-S3. It has no RTOS
-tasks of its own; audio runs in the background. A key press runs its action
+HamTRC is a single cooperative Arduino `loop()` on an ESP32-S3. Audio runs in a
+background task, and a radio on the native USB socket adds two USB host tasks
+(`transport_usb_host.*`); everything else runs in `loop()`. A key press runs its action
 to completion, and that action talks to the radio synchronously.
 
 ```
@@ -61,7 +62,7 @@ to completion, and that action talks to the radio synchronously.
 | Console | `ui_console*.cpp` | Serial commands (`HELP` lists them) |
 | Shared features | `radio_features.*`, `ui_features.*` | NR, NB and notch, used by both keypad and console |
 | Radio API | `radio_protocol.*`, `radio_runtime.*`, `radio_state.*` | Protocol-independent calls, and the tracked `live` state |
-| Protocols | `protocol_ops_*`, `protocol_*`, `packet_*`, `transport_serial.*` | CI-V, Kenwood/Elecraft/FTDX ASCII, Yaesu FT-8x7 5-byte CAT |
+| Protocols | `protocol_ops_*`, `protocol_*`, `packet_*`, `transport_serial.*`, `transport_usb_host.*` | CI-V, Kenwood/Elecraft/FTDX ASCII, Yaesu FT-8x7 5-byte CAT; the UARTs, or a USB radio's serial port |
 | FT-8x7 fields | `ft8x7_codec.*`, `ft8x7_eeprom_map.*`, `ft8x7_model.h` | CAT frame fields, the EEPROM map per model, the FT-8x7 model from the `RadioModel`. No `Arduino.h`; `protocol_ft8x7_eeprom.*` reads the EEPROM with them |
 | Profiles | `radio_profile_types.h`, `radio_profile_table.*`, `radio_catalog.*`, `radio_profile.*` | What a radio is (connection, protocol, capabilities, command strings), the built-in radios, the active one, and switching between them. The types and the table have no `Arduino.h` |
 | Speech | `ui_speech.*`, `voice_pack*`, `audio_stretch.*` | Tokens, the audio queue, the clips in the voice pack partition, and the speech speed (time-stretch). `voice_pack_format.*` and `audio_stretch.*` have no `Arduino.h` |
@@ -633,7 +634,8 @@ for.
 
 - `name` is shown and logged; `vendor` and `voiceDigits` are spoken when the
   profile is picked.
-- `link` is the port (`CivJack`, `Rs232`, `CatTtl`), the default baud, the
+- `link` is the port (`CivJack`, `Rs232`, `CatTtl`, or `UsbHost` for a radio
+  on the native USB socket), the default baud, the
   rates the radio itself offers, and the CI-V address on CI-V radios. The user
   can pick another rate from the list (`BAUD`, Bank 8 key `2`). For a radio
   with other rates, add a `constexpr uint32_t k…Bauds[]` to its family.
@@ -894,7 +896,7 @@ pattern):
 | Field | Holds | Notes |
 |---|---|---|
 | `slot`, `name` | The number the user picks it by, the name shown | Unique slots, table in slot order |
-| `vendor`, `voiceDigits` | What is spoken for the profile | Digits only |
+| `vendor`, `voiceDigits` | What is spoken for the profile | Digits and lowercase letters, one by one |
 | `model` | `RadioModel` quirk path | `Generic` unless code checks the model |
 | `protocol` | `ProtocolType` | |
 | `link` | `port`, default `baud`, `bauds` offered, `civAddr` | The user's baud and CI-V address are saved per slot |

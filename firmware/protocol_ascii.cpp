@@ -78,6 +78,7 @@ bool profileInternalModeForCode(const RadioProfile& sp, const String& code, uint
   if (code.equalsIgnoreCase(sp.modes->cwr) && sp.modes->cwr[0]) { modeOut = 0x07; return true; }
   if (code.equalsIgnoreCase(sp.modes->rttyR) && sp.modes->rttyR[0]) { modeOut = 0x08; return true; }
   if (code.equalsIgnoreCase(sp.modes->digi) && sp.modes->digi[0]) { modeOut = 0x11; return true; }
+  if (code.equalsIgnoreCase(sp.modes->digiAlso) && sp.modes->digiAlso[0]) { modeOut = 0x11; return true; }
   if (code.equalsIgnoreCase(sp.modes->pkt) && sp.modes->pkt[0]) { modeOut = 0x12; return true; }
   if (code.equalsIgnoreCase(sp.modes->wfm) && sp.modes->wfm[0]) { modeOut = 0x06; return true; }
   if (ft8x7ModelFor(sp.model) == Ft8x7Model::Ft857) {

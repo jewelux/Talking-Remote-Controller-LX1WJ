@@ -1,0 +1,92 @@
+# QRP Labs QMX and QMX+
+
+## Status
+
+**Experimental, not yet tested on a radio.** Profile 21 (`QRP Labs QMX`) was built from the QMX
+CAT manual (firmware 1.04_003) and operating manual (firmware 1.02_000). The QMX itself has not
+been connected yet.
+
+| Function | QMX command | Notes |
+|---|---|---|
+| Frequency read and set | `FA` | VFO A, 11 digits |
+| Mode read and set | `MD` | LSB 1, USB 2, CW 3, AM 5, CW-R 7, DIGI 9 (USB; 6, Digi on LSB, is read as DIGI too) |
+| Radio ID and model (console `ID?`, `OM?`, `IF?`) | `ID`, `OM`, `IF` | `ID020` (TS-480), `OMQC` |
+| USB connection state (console `USB?`, Bank 9 `1`) | | also on the second USB socket |
+
+While the QMX is connected, the full console is not reachable (see Connecting): use the keypad.
+`ID?`, `OM?` and `IF?` are for a later setup with the console on the second socket.
+
+Not yet: S-meter, output power and SWR (the QMX sends `SM` in dB, `PC` in tenths of a watt and
+`SW` in hundredths, not the TS-480 scales), VFO B, split, RIT, PTT and the QMX menu commands.
+
+## Connecting
+
+The QMX has no RS-232 or CI-V port. Its USB-C socket carries a USB sound card and up to three
+virtual COM ports; the first one is the CAT port. HamTRC talks to it as a **USB host** on the
+ESP32-S3's native USB socket:
+
+- the QMX's USB cable goes into the controller's **native USB socket**, the one that is normally
+  the PC console (USB JTAG/serial, VID 303A);
+- the PC console then uses the **second USB socket**, the USB-to-serial chip (a CH343 or CP210x)
+  wired to UART0. While the USB host runs, it answers only `HAMTRC?` and `USB?`;
+- flashing works through the second socket as usual.
+
+See `docs/hardware_wiring.md`, section 6, for the 5 V supply on the native socket.
+
+The QMX ignores the baud rate on its virtual COM port; the profile lists 9600 only. It keys
+nothing on DTR or RTS. HamTRC never sends a carriage return or line feed to it: a carriage return
+switches the QMX port into its terminal mode, which ends CAT until the QMX is switched off and on.
+Mode 8 is never sent either: on the QMX it is SWR tune mode, not RTTY-R.
+
+## What you hear
+
+| Situation | Spoken |
+|---|---|
+| Profile 21 at boot or when chosen | "q r p q m x" |
+| The QMX serial port is ready | "usb on" |
+| The QMX is unplugged or switched off | "usb off" |
+| A USB device without a serial port (sound card, CP210x adapter) | "usb error", after 3 s if no serial port opens meanwhile |
+| The controller restarted after a crash with this profile | "usb error"; the USB host stays off until profile 21 is chosen again |
+
+### Bank 9 `1`: the USB state, without a computer
+
+| Spoken | Meaning | What to try |
+|---|---|---|
+| "usb on", "tx" bytes, "rx" bytes | the serial port is open; bytes sent to and received from the QMX since the start | press Bank 1 `0` (frequency), then Bank 9 `1` again: "tx" grows; if "rx" stays zero, the QMX does not answer CAT (check that its first COM port is the CAT port; switch it off and on) |
+| "usb off zero" | the host runs, but no USB device has reached the controller | check the cable and the 5 V supply on the native socket |
+| "usb off" and a number above zero | devices came, but none is open now: no CDC serial port, or it was unplugged | unplug the QMX and plug it in again; listen for "usb on" |
+| "usb error" | the host could not start, or was held after a crash restart | choose profile 21 again (Bank 9 `A` long, `2` `1`, `D`) |
+| "usb not available" | the active profile does not use USB | choose profile 21 |
+
+Choosing another profile restarts the controller, so the native socket goes back to the PC
+console. The new profile is announced after the restart.
+
+## Test plan
+
+1. On the second USB socket's console, `USB?` says `USB host: on` and `serial port: none`.
+2. Plug in the QMX and switch it on: "usb on". `USB?` shows the device and `serial port: open`.
+   If nothing is heard, `USB?` lists what the controller saw, and Bank 9 `1` says it without a
+   computer (see the table above); with no device at all, check the 5 V supply on the native
+   socket.
+3. Bank 1 `0` short: the frequency. Tune the QMX: the new frequency is announced.
+4. Mode select: LSB, USB, CW, DIGI; Bank 3 mode query after each.
+5. Unplug the QMX: "usb off". Plug it in again: "usb on", and the frequency query works.
+6. Choose another profile: the controller restarts and the PC console is back on the native socket.
+
+## Developer notes
+
+- Profile: `kQmxCaps`, `kQmxCommands`, `kQmxModes` in `firmware/radio_profile_table.cpp`, protocol
+  `KENWOOD_ASCII`, port `RadioPort::UsbHost`.
+- USB host and CDC-ACM: `firmware/transport_usb_host.*`, on the ESP-IDF USB Host Library of the
+  ESP32 core (no extra library). It opens the first CDC data interface with a bulk IN and OUT
+  endpoint, sends SET_LINE_CODING and SET_CONTROL_LINE_STATE (DTR on) to the ACM control interface
+  before it, and moves bytes through two stream buffers. External hubs are supported by the core.
+- `transport_serial.*` routes the radio link to it when the active port is `UsbHost`, and drops CR
+  and LF on the way.
+- `pollRadioLinkEvents()` in `firmware/radio_monitor.cpp` speaks the events, sends `AI0;` and
+  refreshes the frequency and mode when the port opens. Auto-info goes off because a PC program
+  may have left it on, and its `IF` lines would then answer our queries; Hamlib does the same.
+- Cross-checked with Hamlib's QMX backend (`qrplabs_qmx_caps`, `rigs/kenwood/ts480.c`, October
+  2026): it is TS-480 Kenwood CAT and an emulation, so digital USB is `MD9` and digital LSB `MD6`,
+  as in this profile. Its `SW` and `PC` readings (hundredths, tenths of a watt, empty while
+  receiving) are the model for a later SWR and power step.

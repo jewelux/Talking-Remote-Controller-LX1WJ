@@ -85,6 +85,7 @@ enum class RadioPort : uint8_t {
   CivJack,  // Icom CI-V jack
   Rs232,    // RS-232 level shifter
   CatTtl,   // TTL CAT header
+  UsbHost,  // the radio's USB cable on the native USB socket (transport_usb_host.*)
 };
 
 // The baud rates the radio's CAT or CI-V port can be set to.
@@ -114,7 +115,7 @@ struct LinkDefaults {
 };
 
 // Spoken before the profile's voice digits.
-enum class VoiceVendor : uint8_t { Icom, Yaesu, Kenwood, Elecraft, Xiegu };
+enum class VoiceVendor : uint8_t { Icom, Yaesu, Kenwood, Elecraft, Xiegu, QrpLabs };
 
 // The radio, where code has a path for that model alone. Every other radio is
 // Generic, and its profile says all there is to know about it.
@@ -216,6 +217,8 @@ struct ModeCodes {
   // Read only: a radio in WFM is reported, but HamTRC never sets it (on the FT-817
   // WFM outside FM broadcast stopped CAT until a power cycle).
   const char* wfm = "";
+  // Read only: a second code the radio reports as DIGI (the QMX's Digi mode on LSB).
+  const char* digiAlso = "";
 };
 
 // FT-8x7 Bank 6 presets: repeater offsets, and the tone and DCS code offered
@@ -234,7 +237,7 @@ struct RadioProfile {
   uint8_t slot = 0;          // the number the user picks it by
   const char* name = "";     // shown and logged
   VoiceVendor vendor = VoiceVendor::Icom;
-  const char* voiceDigits = "";  // spoken digit by digit after the vendor
+  const char* voiceDigits = "";  // spoken one by one after the vendor: digits and lowercase letters
   RadioModel model = RadioModel::Generic;
   ProtocolType protocol = PROTO_CIV;
   LinkDefaults link{};

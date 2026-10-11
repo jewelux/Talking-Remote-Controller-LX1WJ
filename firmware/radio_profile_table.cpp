@@ -108,6 +108,31 @@ constexpr ModeCodes kTs480Modes = {
     .digi = "9",
 };
 
+// --- QRP Labs QMX (Kenwood TS-480 style CAT over USB) --------------------------
+
+// A USB virtual COM port ignores the baud; the list only satisfies the link checks.
+constexpr uint32_t kQmxBauds[] = {9600};
+
+// Frequency and mode only for now. Its SM, PC and SW replies are not the TS-480 ones (S-meter in
+// dB, output power in tenths of a watt, SWR in hundredths), and it has no NR or NB command.
+constexpr RadioCapabilities kQmxCaps = {
+    .getFreq = true, .setFreq = true, .getMode = true, .setMode = true,
+};
+
+constexpr AsciiCommandSet kQmxCommands = {
+    .freqGet = "FA;", .freqSetFormat = "FA%011llu;",
+    .modeGet = "MD;", .modeSetFormat = "MD%s;",
+    .ifGet = "IF;", .idGet = "ID;", .omGet = "OM;",
+    .freqReplyPrefix = "FA", .modeReplyPrefix = "MD", .ifReplyPrefix = "IF",
+    .idReplyPrefix = "ID", .omReplyPrefix = "OM",
+};
+
+// The QMX Digi mode is 9 (FSR) on USB, its default, and 6 (FSK) on LSB; Hamlib and so WSJT-X set
+// USB data as 9. 8 is left out: on the QMX it is SWR tune mode, not RTTY-R.
+constexpr ModeCodes kQmxModes = {
+    .lsb = "1", .usb = "2", .am = "5", .cw = "3", .cwr = "7", .digi = "9", .digiAlso = "6",
+};
+
 // --- Yaesu FT-817, FT-818, FT-857, FT-897 (5-byte CAT) -----------------------
 
 constexpr uint32_t kFt8x7Bauds[] = {4800, 9600, 38400};
@@ -248,7 +273,7 @@ constexpr ModeCodes kYaesuAsciiModes = {
 //
 // Free slots, and what they are kept for:
 //   19-20   Kenwood and Elecraft (TS-590, K3/K3S)
-//   21-22   Xiegu and other compact radios (G90, X6200)
+//   22      Xiegu and other compact radios (G90, X6200)
 //   23-24   experimental and protocol test profiles
 
 constexpr RadioProfile kProfiles[] = {
@@ -324,6 +349,10 @@ constexpr RadioProfile kProfiles[] = {
      .model = RadioModel::Ic7760, .protocol = PROTO_CIV,
      .link = {.port = RadioPort::CivJack, .baud = 19200, .bauds = kCivBauds, .civAddr = 0xB2},
      .caps = kIcomFullCaps, .rfPowerMaxWatts = 200},
+    {.slot = 21, .name = "QRP Labs QMX", .vendor = VoiceVendor::QrpLabs, .voiceDigits = "qmx",
+     .protocol = PROTO_KENWOOD_ASCII,
+     .link = {.port = RadioPort::UsbHost, .baud = 9600, .bauds = kQmxBauds},
+     .caps = kQmxCaps, .commands = &kQmxCommands, .modes = &kQmxModes},
 };
 
 constexpr size_t kProfileCount = sizeof(kProfiles) / sizeof(kProfiles[0]);

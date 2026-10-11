@@ -1,9 +1,11 @@
-// Bank 9 keypad actions: profiles, tuning speech, volume, speech speed and experimental mode.
+// Bank 9 keypad actions: profiles, tuning speech, volume, speech speed, experimental mode and the
+// USB radio link.
 #include "ui_keypad_bank.h"
 #include "radio_catalog.h"
 #include "radio_monitor.h"
 #include "radio_prefs.h"
 #include "radio_profile.h"
+#include "transport_usb_host.h"
 #include "ui_console_support.h"
 #include "ui_keypad.h"
 
@@ -163,3 +165,35 @@ void queryBank9Profile() {
   speakProfileIdentityFromSlot(g_profileId, false);
 }
 
+static void speakCount(const char* label, uint32_t n) {
+  playSilenceMs(60);
+  speakToken(label);
+  speakNumber(String(n));
+}
+
+// "usb on" with the bytes sent to and received from the radio; "tx 12 rx 0" means the radio does
+// not answer. "usb off" with the USB devices seen since the start; "usb off zero" means nothing
+// plugged into the native socket reached the controller. "usb error": the host could not start
+// or was held after a crash restart.
+void queryBank9Usb() {
+  printKeypadAction("USB?");
+  const UsbHostSummary usb = usbHostSummary();
+  const char* state = usb.failed ? "error" : !usb.started ? "notavailable" : usb.serialOpen ? "on" : "off";
+  if (usb.serialOpen) {
+    printKeypadStatus("USB ON TX {} RX {}", usb.txBytes, usb.rxBytes);
+  } else if (usb.started) {
+    printKeypadStatus("USB OFF DEVICES {}", usb.devicesSeen);
+  } else {
+    printKeypadStatus("USB {}", usb.failed ? "ERROR" : "NOT AVAILABLE");
+  }
+  if (!g_speechEnabled) return;
+  const char* const tokens[] = {"usb", state};
+  speakTokens(tokens, 2);
+  if (usb.serialOpen) {
+    speakCount("tx", usb.txBytes);
+    speakCount("rx", usb.rxBytes);
+  } else if (usb.started) {
+    playSilenceMs(60);
+    speakNumber(String(usb.devicesSeen));
+  }
+}

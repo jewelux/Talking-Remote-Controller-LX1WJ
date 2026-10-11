@@ -18,6 +18,7 @@
 #include "radio_protocol.h"
 #include "radio_runtime.h"
 #include "transport_serial.h"
+#include "transport_usb_host.h"
 #include "engine_civ.h"
 #include "engine_kenwood.h"
 #include "ui_console.h"
@@ -29,6 +30,23 @@
 static bool g_bootSpeakPending = false;
 static uint32_t g_bootSpeakAtMs = 0;
 static String g_serial0ServiceLine;
+
+// A crash restart while the USB host was starting or running may have come from the USB host. Its
+// profile then comes up without it, so the keypad can still pick another radio.
+static void holdUsbHostIfCrashed(uint8_t slot) {
+  const RadioProfile* profile = profileForSlot(slot);
+  if (!profile || profile->link.port != RadioPort::UsbHost) return;
+  switch (esp_reset_reason()) {
+    case ESP_RST_PANIC:
+    case ESP_RST_INT_WDT:
+    case ESP_RST_TASK_WDT:
+    case ESP_RST_WDT:
+      usbHostHoldAfterCrash();
+      break;
+    default:
+      break;
+  }
+}
 
 static void waitForUsbSerial(uint32_t timeoutMs) {
   const uint32_t startMs = millis();
@@ -54,6 +72,7 @@ void setup() {
   g_profileId = loadProfileFromNvs(g_profileId);
   g_tuningSpeakEnabled = loadTuningSpeakFromNvs(true);
   g_verboseSpeech = loadVerboseFromNvs(true);
+  holdUsbHostIfCrashed(g_profileId);
   applyProfile(g_profileId);
 
   DBG_PRINT("Talking Remote Controller LX1WJ (");
@@ -69,7 +88,8 @@ void setup() {
   initKeypadUi();
   printHelp();
 
-  if (currentProtocolType() != PROTO_YAESU_FT8X7) {
+  // A USB radio is read when its serial port opens (pollRadioLinkEvents).
+  if (currentProtocolType() != PROTO_YAESU_FT8X7 && currentConnectionProfile().port != RadioPort::UsbHost) {
     (void)refreshLiveFrequency();
     (void)refreshLiveMode();
   }
@@ -82,6 +102,8 @@ void loop() {
     g_bootSpeakPending = false;
     speakBootProfile();
   }
+  // After the boot announcement, so "usb on" follows the radio's name.
+  if (!g_bootSpeakPending) pollRadioLinkEvents();
 
   pumpIncoming(CIV_PUMP_BUDGET_MS);
   pollFrequencyIfDue();

@@ -17,6 +17,7 @@
 #include "radio_state.h"
 #include "radio_utils.h"
 #include "transport_serial.h"
+#include "transport_usb_host.h"
 #include "ui_features.h"
 #include "ui_speech.h"
 #include "ui_console_support.h"
@@ -775,6 +776,7 @@ void printHelp() {
   Serial.println("    TEST");
   Serial.println("    TUNINGSPEECH OFF | ON | TOGGLE");
   Serial.println("    TUNINGSPEECH?");
+  Serial.println("    USB?  (USB host and the radio on the native USB socket; also on the UART socket)");
   Serial.println("    VERBOSE OFF | ON | TOGGLE");
   Serial.println("    VERBOSE?");
   Serial.println("    VOICE <name>");
@@ -3418,6 +3420,12 @@ static bool handleHamtrcServiceCommand(const String& upper, Print& output) {
   if (upper == "HAMTRC?") {
     output.print("LX1WJ-HAMTRC;protocol=1;chip=esp32;version=");
     output.println(HAMTRC_FIRMWARE_VERSION);
+    return true;
+  }
+
+  // A service command, so that it also answers on Serial0 while the USB host holds the native socket.
+  if (upper == "USB?") {
+    usbHostPrintStatus(output);
     return true;
   }
 

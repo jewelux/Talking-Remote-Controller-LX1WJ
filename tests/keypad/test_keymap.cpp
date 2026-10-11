@@ -217,6 +217,7 @@ void stepBank9Speed() { record("stepBank9Speed"); }
 void queryBank9Profile() { record("queryBank9Profile"); }
 void beginBank9ProfileSelect() { record("beginBank9ProfileSelect"); }
 void resetBank9Profile() { record("resetBank9Profile"); }
+void queryBank9Usb() { record("queryBank9Usb"); }
 void selectNextProfile() { record("selectNextProfile"); }
 void selectPrevProfile() { record("selectPrevProfile"); }
 
