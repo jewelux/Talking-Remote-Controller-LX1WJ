@@ -61,6 +61,8 @@ void yaesuCatSetRepeaterOffsetHzRaw(uint64_t hz);
 void yaesuCatSetPowerDocumentedRaw(bool on);
 void yaesuCatSetAgcMode(uint8_t modeByte);
 void yaesuCatSetRitOffsetRaw(const uint8_t data[4]);
+// Also the console's raw write updates the live tone mode, with the frequency it was set on; a
+// byte that is no tone mode (yaesuToneModeFromByte) clears it.
 void yaesuCatSetToneDcsModeRaw(uint8_t modeByte);
 void yaesuCatSetCtcssToneRaw(const uint8_t data[4]);
 void yaesuCatSetDcsCodeRaw(const uint8_t data[4]);

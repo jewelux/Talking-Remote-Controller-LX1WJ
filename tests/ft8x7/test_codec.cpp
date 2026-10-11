@@ -195,3 +195,28 @@ TEST(tone_mode_byte_refuses_mixed_types) {
   CHECK(!yaesuToneModeByte(toneMode(T::Ctcss, T::Dcs), true, out));
   CHECK(!yaesuToneModeByte(toneMode(T::Dcs, T::Ctcss), true, out));
 }
+
+TEST(tone_mode_from_byte_reverses_the_mode_byte) {
+  const YaesuToneType types[] = {YaesuToneType::None, YaesuToneType::Ctcss, YaesuToneType::Dcs};
+  int decoded = 0;
+  for (YaesuToneType tx : types) {
+    for (YaesuToneType rx : types) {
+      uint8_t b = 0;
+      if (!yaesuToneModeByte(toneMode(tx, rx), true, b)) continue;
+      YaesuToneMode mode;
+      CHECK(yaesuToneModeFromByte(b, mode));
+      CHECK(mode.tx == tx);
+      CHECK(mode.rx == rx);
+      ++decoded;
+    }
+  }
+  CHECK_EQ(decoded, 7);
+}
+
+TEST(tone_mode_from_byte_refuses_other_bytes) {
+  YaesuToneMode mode = toneMode(YaesuToneType::Dcs, YaesuToneType::Dcs);
+  CHECK(!yaesuToneModeFromByte(0x00, mode));
+  CHECK(!yaesuToneModeFromByte(0x4B, mode));
+  CHECK(mode.tx == YaesuToneType::Dcs);
+  CHECK(mode.rx == YaesuToneType::Dcs);
+}

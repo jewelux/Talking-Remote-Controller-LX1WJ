@@ -47,3 +47,5 @@ struct YaesuToneMode {
 // CTCSS decode, 0A DCS, 0C DCS encode, 0B DCS decode. False for a mode CAT cannot set: tx and rx
 // of different types, and without full (the FT-817/818) decode only and DCS encode only.
 bool yaesuToneModeByte(YaesuToneMode mode, bool full, uint8_t& out);
+// The mode a tone mode command byte sets. False, and out untouched, for any other byte.
+bool yaesuToneModeFromByte(uint8_t b, YaesuToneMode& out);

@@ -120,3 +120,20 @@ bool yaesuToneModeByte(YaesuToneMode mode, bool full, uint8_t& out) {
   else out = ctcss ? 0x3A : 0x0B;
   return true;
 }
+
+bool yaesuToneModeFromByte(uint8_t b, YaesuToneMode& out) {
+  using T = YaesuToneType;
+  YaesuToneMode mode;
+  switch (b) {
+    case 0x8A: break;
+    case 0x2A: mode.tx = mode.rx = T::Ctcss; break;
+    case 0x4A: mode.tx = T::Ctcss; break;
+    case 0x3A: mode.rx = T::Ctcss; break;
+    case 0x0A: mode.tx = mode.rx = T::Dcs; break;
+    case 0x0C: mode.tx = T::Dcs; break;
+    case 0x0B: mode.rx = T::Dcs; break;
+    default: return false;
+  }
+  out = mode;
+  return true;
+}

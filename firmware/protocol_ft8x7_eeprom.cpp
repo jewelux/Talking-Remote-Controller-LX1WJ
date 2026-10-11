@@ -184,29 +184,36 @@ bool yaesuFt857QueryRitOffsetHz(uint64_t hz, int32_t& offsetOut, uint32_t timeou
   return true;
 }
 
-// The band block's tone byte; 0 outside the amateur bands.
-static bool ft857QueryToneByte(uint64_t hz, bool& bandKnownOut, uint8_t& out, uint32_t timeoutMs) {
+// The tone byte of the active VFO's band block; 0, and knownOut false, outside the amateur
+// bands and on a memory.
+static bool ft857QueryToneByte(uint64_t hz, bool& knownOut, uint8_t& out, uint32_t timeoutMs) {
   if (!currentIsFt857Family()) return false;
   out = 0;
-  const Ft857BandSlot* slot = nullptr;
-  uint16_t block = 0;
-  if (!ft857ActiveBandBlock(hz, slot, block, timeoutMs)) return false;
-  bandKnownOut = slot != nullptr;
+  knownOut = false;
+  const Ft857BandSlot* slot = ft857BandSlotForHz(hz);
   if (!slot) return true;
-  return yaesuCatReadEepromByte(block + FT857_BAND_TONE_OFFSET, out, timeoutMs);
+  Ft8x7FlagField vfoB;
+  if (!ft8x7FlagField(currentFt8x7Model(), Ft8x7Flag::VfoB, vfoB)) return false;
+  uint8_t vfoMem = 0;
+  if (!yaesuCatReadEepromByte(vfoB.addr, vfoMem, timeoutMs)) return false;
+  if ((vfoMem & FT857_MEMORY_MASK) != 0) return true;
+  const uint16_t block = ft857BandBlock(*slot, ft8x7FlagValue(vfoB, vfoMem));
+  if (!yaesuCatReadEepromByte(block + FT857_BAND_TONE_OFFSET, out, timeoutMs)) return false;
+  knownOut = true;
+  return true;
 }
 
-bool yaesuFt857QueryToneMode(uint64_t hz, bool& bandKnownOut, YaesuToneMode& out,
+bool yaesuFt857QueryToneMode(uint64_t hz, bool& knownOut, YaesuToneMode& out,
                              uint32_t timeoutMs) {
   uint8_t b = 0;
-  if (!ft857QueryToneByte(hz, bandKnownOut, b, timeoutMs)) return false;
+  if (!ft857QueryToneByte(hz, knownOut, b, timeoutMs)) return false;
   out = ft857ToneModeFromByte(b);
   return true;
 }
 
-bool yaesuFt857QuerySplitTone(uint64_t hz, bool& bandKnownOut, bool& onOut, uint32_t timeoutMs) {
+bool yaesuFt857QuerySplitTone(uint64_t hz, bool& knownOut, bool& onOut, uint32_t timeoutMs) {
   uint8_t b = 0;
-  if (!ft857QueryToneByte(hz, bandKnownOut, b, timeoutMs)) return false;
+  if (!ft857QueryToneByte(hz, knownOut, b, timeoutMs)) return false;
   onOut = (b & FT857_BAND_SPLIT_TONE_MASK) != 0;
   return true;
 }

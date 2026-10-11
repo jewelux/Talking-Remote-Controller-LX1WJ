@@ -32,7 +32,7 @@ The goal of this document is to separate:
 | Tone/DCS mode | implemented and verified |
 | CTCSS tone write | implemented and verified |
 | DCS code write | implemented and verified |
-| Tone mode (`TONE?`, `TONEDIR?`, Bank 6 `2` and `5`) | tested on an FT-817: the mode HamTRC last set, "not available" before one is set. The radio does store the mode live: band block +4 bits 1..0 (0 off, 1 encode, 2 TSQ, 3 DCS), written at once by CAT and the front panel, in the active VFO's block (VFO A blocks from `0x7D`, VFO B from `0x203`, 26 bytes each). HamTRC does not read it because the active VFO cannot be read, and the block's frequency lags dial tuning, so it cannot be matched either. No DCS encode only: `TONE DCS` sets DCS with its squelch, `TONEDIR NEXT` on DCS says not available |
+| Tone mode (`TONE?`, `TONEDIR?`, Bank 6 `2` and `5`) | tested on an FT-817: the mode HamTRC last set, "not available" before one is set. Since the radio keeps it per band block, it holds only on the band it was set on (outside the amateur bands, on the same frequency); a switch to the other VFO on the same band is not seen. The radio does store the mode live: band block +4 bits 1..0 (0 off, 1 encode, 2 TSQ, 3 DCS), written at once by CAT and the front panel, in the active VFO's block (VFO A blocks from `0x7D`, VFO B from `0x203`, 26 bytes each). HamTRC does not read it because the active VFO cannot be read, and the block's frequency lags dial tuning, so it cannot be matched either. No DCS encode only: `TONE DCS` sets DCS with its squelch, `TONEDIR NEXT` on DCS says not available |
 | Power on/off | implemented and verified |
 | Bank 3 split keypad workflow | implemented and verified |
 | Bank 3 current/other VFO frequency read workflow | implemented and verified |
@@ -124,7 +124,7 @@ The active VFO cannot be read: `0x55` bit 0, which Hamlib's `get_vfo` and the KA
 | DCS code write | implemented and verified |
 | Extended CTCSS encode/decode modes | implemented and verified |
 | Extended DCS encode/decode modes | implemented and verified |
-| Tone mode query (`TONE?`, `TONEDIR?`, Bank 6 `2` and `5` short) | verified on an FT-897 for CAT changes: band block +4, see the [EEPROM map](#ft-857897-eeprom-map). The CAT tone command answers `00` whether or not the mode changed, so the reply tells nothing. Changes on the front panel are read at once too (checked through CTCSS and DCS, encode only and both, and off) |
+| Tone mode query (`TONE?`, `TONEDIR?`, Bank 6 `2` and `5` short) | verified on an FT-897 for CAT changes: band block +4, see the [EEPROM map](#ft-857897-eeprom-map). The CAT tone command answers `00` whether or not the mode changed, so the reply tells nothing. Changes on the front panel are read at once too (checked through CTCSS and DCS, encode only and both, and off). On a memory channel or one being tuned (`0x68` bit 6) the tone is kept with the channel, not in the band block, so these and `SPLITTONE?` say "not available" (not yet tested on the radio) |
 | Decode only and split tone (`TONEDIR NEXT`, `SPLITTONE?`, Bank 6 `5` long and `6` short) | verified on an FT-897: CAT decode only (CTCSS `3A`, DCS `0B`) works with split tone off. Split tone (menu 79) and the mixed modes set with the radio's A (encode) and B (decode) keys read back from band block +4; the keypad says "tone ctcss rx dcs tx", "tone split" and "split tone on" |
 | S-meter read | implemented and verified |
 | RX status raw read | implemented and verified |

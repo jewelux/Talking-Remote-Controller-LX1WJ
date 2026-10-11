@@ -100,6 +100,10 @@ static constexpr uint16_t FT857_BAND_RIT_OFFSET = 10;
 static constexpr uint16_t FT857_BAND_TONE_OFFSET = 4;
 static constexpr uint8_t FT857_BAND_SPLIT_TONE_MASK = 0x10;
 YaesuToneMode ft857ToneModeFromByte(uint8_t b);
+// FT-857/897 0x68, the byte of Ft8x7Flag::VfoB (bit 0): 0x80 VFO, 0x40 a memory channel, 0x60
+// a memory being tuned. On a memory the radio uses the channel's own record, not the band
+// block, and which channel is in use cannot be read.
+static constexpr uint8_t FT857_MEMORY_MASK = 0x40;
 
 // Only the amateur bands: the band edges the radio uses outside them are not known. Null
 // outside them.

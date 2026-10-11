@@ -443,19 +443,27 @@ static bool toneIsOff(const YaesuToneMode& mode) {
   return mode.tx == YaesuToneType::None && mode.rx == YaesuToneType::None;
 }
 
+// The FT-817/818 keeps the tone mode per band block, so the one last set holds only on the band
+// it was set on (the amateur band edges are the FT-857/897's), and outside the amateur bands
+// only on the same frequency. A switch to the other VFO on the same band is not seen.
+static bool ft817ToneModeHolds(uint64_t hz) {
+  if (!live.toneModeValid) return false;
+  const Ft857BandSlot* slot = ft857BandSlotForHz(live.toneModeHz);
+  return slot ? slot == ft857BandSlotForHz(hz) : hz == live.toneModeHz;
+}
+
 FeatureStatus toneModeQuery(YaesuToneMode& out) {
   if (!toneSupported()) return FeatureStatus::Unsupported;
+  uint64_t hz = 0;
+  if (!queryFrequency(hz, kFt8x7TimeoutMs)) return failure(FeatureStatus::NoReply);
   if (!currentIsFt857Family()) {
-    if (!live.toneModeValid) return FeatureStatus::Unsupported;
+    if (!ft817ToneModeHolds(hz)) return FeatureStatus::Unsupported;
     out = live.toneMode;
     return FeatureStatus::Ok;
   }
-  uint64_t hz = 0;
-  bool bandKnown = false;
-  if (!queryFrequency(hz, kFt8x7TimeoutMs) || !yaesuFt857QueryToneMode(hz, bandKnown, out, kFt8x7TimeoutMs)) {
-    return failure(FeatureStatus::NoReply);
-  }
-  return bandKnown ? FeatureStatus::Ok : FeatureStatus::Unsupported;
+  bool known = false;
+  if (!yaesuFt857QueryToneMode(hz, known, out, kFt8x7TimeoutMs)) return failure(FeatureStatus::NoReply);
+  return known ? FeatureStatus::Ok : FeatureStatus::Unsupported;
 }
 
 FeatureStatus toneOff() {
@@ -507,9 +515,9 @@ FeatureStatus toneDirStep(YaesuToneMode& out) {
 FeatureStatus splitToneQuery(bool& on) {
   if (!toneSupported() || !currentIsFt857Family()) return FeatureStatus::Unsupported;
   uint64_t hz = 0;
-  bool bandKnown = false;
-  if (!queryFrequency(hz, kFt8x7TimeoutMs) || !yaesuFt857QuerySplitTone(hz, bandKnown, on, kFt8x7TimeoutMs)) {
+  bool known = false;
+  if (!queryFrequency(hz, kFt8x7TimeoutMs) || !yaesuFt857QuerySplitTone(hz, known, on, kFt8x7TimeoutMs)) {
     return failure(FeatureStatus::NoReply);
   }
-  return bandKnown ? FeatureStatus::Ok : FeatureStatus::Unsupported;
+  return known ? FeatureStatus::Ok : FeatureStatus::Unsupported;
 }

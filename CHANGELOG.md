@@ -187,7 +187,8 @@
   only or "tone both"; `5` long steps from both to TX, RX and back to both. The FT-817/818 has no
   decode only and no DCS encode only, so there `5` long switches between TX and both
 - FT-817/818/857/897: Bank 6 `2` short says the tone type ("tone ctcss", "tone dcs", "tone off").
-  The FT-857/897 reads it from the radio; the FT-817/818 says what HamTRC last set. Tone off has
+  The FT-857/897 reads it from the radio, except on a memory channel, where it says "not
+  available". The FT-817/818 says what HamTRC last set on the current band. Tone off has
   moved to `2` double press, DCS to `2` short press then hold; `2` long is still CTCSS. Switching
   between CTCSS and DCS keeps encode only and decode only. Console: `TONE? | OFF | CTCSS | DCS`,
   `TONEDIR? | NEXT`

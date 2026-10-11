@@ -134,6 +134,7 @@ struct LiveState {
   // FT-8x7 tone mode last set; the FT-817/818 tone mode cannot be read live.
   bool toneModeValid = false;
   YaesuToneMode toneMode;
+  uint64_t toneModeHz = 0;  // the frequency it was set on; 0 when not known
   bool activeVfoKnown = false;
   bool activeVfoA = true;
   bool lockKnown = false;

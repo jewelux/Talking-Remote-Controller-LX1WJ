@@ -131,9 +131,11 @@ Bank 6 tone handling:
   split tone is switched off. CAT cannot switch it or set a mixed mode
 
 The FT-857/897 reads the tone mode of the current band and VFO from its EEPROM, also after a
-change on the radio. The FT-817 keeps it where it cannot be read live, so there `2` and `5`
-short say the mode last set from HamTRC, and "not available" before one was set. The FT-817 has
-no DCS encode only: DCS is always BOTH there.
+change on the radio. On a memory channel the tone is kept with the channel, where it cannot be
+read, so there `2`, `5` and `6` short and `5` long say "not available". The FT-817 keeps it where
+it cannot be read live, so there `2` and `5` short say the mode last set from HamTRC on the
+current band, and "not available" before one was set or on another band. The FT-817 has no DCS
+encode only: DCS is always BOTH there.
 
 `3` short and `4` short do not read the radio: they speak the last CTCSS tone or DCS code set from the keypad, or the built-in default (`88.5`, `023`) when nothing has been set yet.
 
