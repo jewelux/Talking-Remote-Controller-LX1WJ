@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+### Hardware documentation
+
+- **new folder `docs/hardware/`**: all hardware files moved here (same layout on `main` and `development`).
+  Old links to `docs/hardware_wiring.md` now point to `docs/hardware/v1-hamtrc/hardware_wiring.md`
+  - `v1-hamtrc/`: wiring, schematic `circuit-diagram-V1.pdf` (was `circuit-diagram-under-construction.pdf`),
+    PCB `pcb-layout-V1.pdf` (was `pcb-under-construction.pdf`)
+  - `proto-pcbs/`: prototype photos (was `docs/Proto-PCBs/`)
+  - `README.md`: overview of the hardware versions
+- **new: V2 board "Mini-HamTRC"** (in development) in `docs/hardware/v2-mini-hamtrc/`: schematic, PCB layout,
+  wiring description and bill of materials. 5 V input only, no DC-DC module, no SD module, CI-V and CAT on
+  3.5 mm jacks. GPIO mapping unchanged, so the current firmware runs on V2 as is
+- open points on V2 (to be confirmed): SD-module leftovers in the schematic, type of D1, peripherals not
+  powered when the board is supplied only through the ESP32 USB port
+
 ### Keypad
 
 - in an entry (frequency, RF power, repeater shift, CTCSS, DCS, CI-V address) and in bank,
