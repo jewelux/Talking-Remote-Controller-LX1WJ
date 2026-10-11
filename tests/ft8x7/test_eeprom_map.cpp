@@ -667,3 +667,71 @@ TEST(ft857_level_step_moves_by_the_radios_steps) {
   CHECK_EQ(ft857LevelStep(YaesuFt857Level::LpfCutoff, 2770, 1), ft857LevelValue(YaesuFt857Level::LpfCutoff, 12));
   CHECK_EQ(ft857LevelStep(YaesuFt857Level::CwSpeed, 20, 1), 20);
 }
+
+TEST(ft857_rf_power_range_per_band_group) {
+  uint8_t lo = 0;
+  uint8_t hi = 0;
+  ft857RfPowerRange(Ft8x7BandGroup::Hf, lo, hi);
+  CHECK_EQ(lo, 5);
+  CHECK_EQ(hi, 100);
+  ft857RfPowerRange(Ft8x7BandGroup::SixM, lo, hi);
+  CHECK_EQ(lo, 5);
+  CHECK_EQ(hi, 100);
+  ft857RfPowerRange(Ft8x7BandGroup::Vhf, lo, hi);
+  CHECK_EQ(lo, 5);
+  CHECK_EQ(hi, 50);
+  ft857RfPowerRange(Ft8x7BandGroup::Uhf, lo, hi);
+  CHECK_EQ(lo, 2);
+  CHECK_EQ(hi, 20);
+}
+
+// Stored on an FT-897: 5, 10 and 19 W without bit 7, 20, 50 and 100 W with it; 19 and 20 W
+// measured on HF and UHF.
+TEST(ft857_rf_power_byte_like_the_radio_stores_it) {
+  uint8_t out = 0;
+  CHECK(ft857RfPowerByte(Ft8x7BandGroup::Hf, 10, 0xE4, out));
+  CHECK_EQ(out, 0x0A);
+  CHECK(ft857RfPowerByte(Ft8x7BandGroup::Hf, 100, 0x0A, out));
+  CHECK_EQ(out, 0xE4);
+  CHECK(ft857RfPowerByte(Ft8x7BandGroup::Hf, 5, 0x0A, out));
+  CHECK_EQ(out, 0x05);
+  CHECK(ft857RfPowerByte(Ft8x7BandGroup::Vhf, 50, 0x94, out));
+  CHECK_EQ(out, 0xB2);
+  CHECK(ft857RfPowerByte(Ft8x7BandGroup::Uhf, 20, 0x05, out));
+  CHECK_EQ(out, 0x94);
+  CHECK(ft857RfPowerByte(Ft8x7BandGroup::Uhf, 2, 0x94, out));
+  CHECK_EQ(out, 0x02);
+  CHECK(ft857RfPowerByte(Ft8x7BandGroup::Hf, 19, 0x94, out));
+  CHECK_EQ(out, 0x13);
+  CHECK(ft857RfPowerByte(Ft8x7BandGroup::Uhf, 19, 0x94, out));
+  CHECK_EQ(out, 0x13);
+  CHECK(ft857RfPowerByte(Ft8x7BandGroup::Uhf, 10, 0x94, out));
+  CHECK_EQ(out, 0x0A);
+}
+
+TEST(ft857_rf_power_byte_rejects_values_out_of_range) {
+  uint8_t out = 0xAA;
+  CHECK(!ft857RfPowerByte(Ft8x7BandGroup::Hf, 4, 0x0A, out));
+  CHECK(!ft857RfPowerByte(Ft8x7BandGroup::Hf, 101, 0x0A, out));
+  CHECK(!ft857RfPowerByte(Ft8x7BandGroup::Vhf, 51, 0xB2, out));
+  CHECK(!ft857RfPowerByte(Ft8x7BandGroup::Uhf, 21, 0x94, out));
+  CHECK(!ft857RfPowerByte(Ft8x7BandGroup::Uhf, 1, 0x94, out));
+  // Stored watts outside the range: the map does not fit.
+  CHECK(!ft857RfPowerByte(Ft8x7BandGroup::Hf, 50, 0x7F, out));
+  CHECK(!ft857RfPowerByte(Ft8x7BandGroup::Uhf, 10, 0xB2, out));
+  CHECK_EQ(out, 0xAA);
+}
+
+TEST(ft817_power_level_is_bits_1_0) {
+  CHECK(ft817PowerLevel(0xFC) == Ft817PowerLevel::High);
+  CHECK(ft817PowerLevel(0x01) == Ft817PowerLevel::L3);
+  CHECK(ft817PowerLevel(0x02) == Ft817PowerLevel::L2);
+  CHECK(ft817PowerLevel(0xF3) == Ft817PowerLevel::L1);
+}
+
+TEST(ft817_power_level_byte_keeps_the_other_bits) {
+  CHECK_EQ(ft817PowerLevelByte(Ft817PowerLevel::High, 0xF3), 0xF0);
+  CHECK_EQ(ft817PowerLevelByte(Ft817PowerLevel::L1, 0xF0), 0xF3);
+  CHECK_EQ(ft817PowerLevelByte(Ft817PowerLevel::L3, 0x00), 0x01);
+  CHECK_EQ(ft817PowerLevelByte(Ft817PowerLevel::L2, 0x03), 0x02);
+}

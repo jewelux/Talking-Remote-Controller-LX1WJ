@@ -131,17 +131,13 @@ class KeypadUiListener : public KeypadInputListener {
     keypadEntryCommit(mode, digits, targetVfo);
   }
 
-  bool onModeDigit(char key, uint8_t& mode) override { return keypadModeDigit(key, mode); }
-  void onModeCommit(uint8_t mode, TargetVfo targetVfo) override { keypadModeCommit(mode, targetVfo); }
-
   void onClear() override {
     printKeypadCommand("CLEAR");
     if (g_speechEnabled) speakToken("cancel");
   }
 
-  void onEntryTimeout(InputMode mode) override {
-    const EntrySpec* entry = keypadEntrySpec(mode);
-    printKeypadCommand("{} TIMEOUT", entry ? entry->name : "MODE SELECT");
+  void onEntryTimeout(InputMode, const char* name) override {
+    printKeypadCommand("{} TIMEOUT", name);
     if (g_speechEnabled) speakTimeout();
   }
 };
@@ -172,8 +168,8 @@ void keypadBeginEntry(InputMode mode, TargetVfo targetVfo) {
   s_input.beginEntry(mode, targetVfo);
 }
 
-void keypadBeginModeSelect(TargetVfo targetVfo) {
-  s_input.beginModeSelect(targetVfo);
+void keypadBeginChoiceSelect(const ChoiceSpec& spec, TargetVfo targetVfo) {
+  s_input.beginChoiceSelect(spec, targetVfo);
 }
 
 void keypadBeginProfileSelect() {

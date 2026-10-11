@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ft8x7_eeprom_map.h"
 #include "protocol_ops_yaesu.h"
 #include "radio_types.h"
 
@@ -80,7 +81,7 @@ FeatureStatus voxGainQuery(uint8_t& level);
 FeatureStatus voxDelayQuery(uint16_t& ms);
 
 // FT-857/897 settings read from the radio's EEPROM, since CAT has no command for them. Only
-// Menu, Row, Dbf, NrLevel, NbLevel, LowCut and HighCut can be set, and only experimentally. IPO, ATT and NAR are those of the current band. The FT-817/818 has RfPower,
+// Menu, Row, Dbf, NrLevel, NbLevel, LowCut, HighCut and RfPower can be set, and only experimentally. IPO, ATT and NAR are those of the current band. The FT-817/818 has RfPower,
 // Menu, Row, Agc, BreakIn, Keyer, IfShift and Antenna.
 // Menu and Row are the menu item and soft key row saved when the radio's menu was last exited.
 // NrLevel (menu 49), NbLevel (63), LowCut (46, DSP HPF), HighCut (47, DSP LPF) and MicEq (48)
@@ -94,7 +95,11 @@ struct Ft8x7SettingState {
   Ft8x7Setting setting = Ft8x7Setting::Agc;
   bool on = false;
   YaesuAgc agc = YaesuAgc::Off;  // Agc
-  uint16_t wattsTenths = 0;      // RfPower: FT-857/897 for the current band group
+  // RfPower: FT-857/897 for the current band group; FT-817/818 the level's watts on an
+  // external supply.
+  uint16_t wattsTenths = 0;
+  bool hasPowerLevel = false;    // RfPower: FT-817/818, which has powerLevel
+  Ft817PowerLevel powerLevel = Ft817PowerLevel::High;
   uint8_t number = 0;            // Menu, Row: from 1
   uint16_t value = 0;            // NrLevel 1..16, NbLevel 0..100, LowCut and HighCut in Hz
   YaesuFt857MicEq micEq = YaesuFt857MicEq::Off;  // MicEq
@@ -124,6 +129,14 @@ FeatureStatus ft8x7LevelStep(Ft8x7Setting setting, int delta, Ft8x7SettingState&
 // EEPROM, both its bits as the radio's own key does. Failed while transmitting.
 FeatureStatus ft8x7DbfSet(bool on, Ft8x7SettingState& out);
 FeatureStatus ft8x7DbfToggle(Ft8x7SettingState& out);
+// Experimental (caps.setRfPower): the FT-857/897 TX power in the EEPROM, in tenths of a watt;
+// out holds the value read back. Whole watts of menu 75 for the band group of the current
+// frequency, HF and 6 m 5..100, VHF 5..50, UHF 2..20; Invalid for any other value. Failed while
+// transmitting, when the stored byte is out of range (nothing written) or when the read-back
+// differs. Unsupported on the FT-817/818.
+FeatureStatus ft8x7RfPowerSet(uint16_t wattsTenths, Ft8x7SettingState& out);
+// The same for the FT-817/818 power level; Unsupported on the FT-857/897.
+FeatureStatus ft817PowerLevelSet(Ft817PowerLevel level, Ft8x7SettingState& out);
 
 // FT-8x7 tone squelch. The FT-857/897 reads it from the current band in the EEPROM, live;
 // the FT-817/818 cannot, so there it is the mode HamTRC last set. Unsupported on other radios,

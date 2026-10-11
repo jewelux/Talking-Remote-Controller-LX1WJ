@@ -79,7 +79,7 @@ Read with `BB`, on demand only. Addresses from the FT8x7Com FT817Setup project, 
 | `0x6C` | 6..0 | PKT mic gain at 9600 baud (menu 3), 0..100 (KA7OEI map) |
 | `0x75` | 5..0 | menu item (`MENU?`, Bank 8 `8`), said as stored + 1 like the FT-857/897; last item 52, or 57 with EXTEND on (measured). Bits 7..6 unknown, kept on a write |
 | `0x76` | 3..0 | function row (`ROW?`, Bank 8 `7`), said as stored + 1; 7 (row 8) is the NB/AGC row and 9 (row 10) VOX/BK/KYR, 11 (row 12) the last (measured). Saved at once when the row is stepped. Bits 7..4 unknown, kept on a write |
-| `0x79` | 1..0 | TX power (`RFPOWER?`, Bank 1 `6`): High, L3, L2, L1, said as 5, 2.5, 1 and 0.5 W, on the FT-818 (profile name containing "FT-818") as 6, 5, 2.5 and 1 W (the levels with an external supply; FT-818 not measured) |
+| `0x79` | 1..0 | TX power (`RFPOWER?`, Bank 1 `6`): High, L3, L2, L1; on an external supply FT-817 5, 2.5, 1, 0.5 W, FT-818 6, 5, 2.5, 1 W (not measured) |
 | `0x7A` | 5..0 | antenna jack per band group (menu 07, `ANT?`, Bank 2 `0`), 1 = rear: bit 0 HF (below 33 MHz), 1 6 m (33–76 MHz), 2 FM broadcast (76–108), 3 air (108–137), 4 2 m (137–420), 5 UHF (from 420) (measured, as in the KA7OEI map) |
 | `0x7A` | 7 | split (measured) |
 | `0x7B` | 4, 3..0 | charging on, charge hours (not used) |
@@ -146,6 +146,8 @@ The active VFO cannot be read: `0x55` bit 0, which Hamlib's `get_vfo` and the KA
 | Settings read from the EEPROM (Bank 2, Bank 8 `7`/`8`, `MENU?`, `ROW?`, `AGC?`, `IPO?`, `ATT?`, `NAR?`, `DBF?`, `BK?`, `KYR?`, `NR?`, `NB?`, `NOTCH?`, `NRLEVEL?`, `NBLEVEL?`, `HPF?`, `LPF?`, `MICEQ?`, `PROC?`, `PROCLEVEL?`, `MICGAIN?`, `VOX?`, `VOXGAIN?`, `VOXDELAY?`, `RFPOWER?`) | verified on an FT-897, read only; addresses in the [EEPROM map](#ft-857897-eeprom-map). IPO, ATT, NAR and `RITOFFSET` come from the block of the band the active VFO is on (`0x6C`), also outside the amateur bands |
 | Menu item and soft key row write (`MENU <n>`, `ROW <n>`, Bank 8 `8`/`7` long) | experimental, only with EXPERIMENTAL on; verified on an FT-897: the radio's menu opens on the item written and keeps the row, out-of-range numbers write nothing. Writes `0x88`/`0x89` together (`BC`), changing only the one byte, and reads them back. Menu 1–88, or 1–91 with menu 1 EXT MENU on; rows 1–17 (measured). The FT-857 is taken to match. The radio overwrites both when its menu is open and then exited |
 | DSP settings write (`NR`, `NB`, `NOTCH`, `DBF ON/OFF/TOGGLE`, `NRLEVEL`, `NBLEVEL`, `HPF`, `LPF` with a value or `STEP`, Bank 2 `1`–`8` long and double) | experimental, only with EXPERIMENTAL on; verified on an FT-897 by ear: the radio follows at once. Read-modify-write of the setting's bits (`BC`), refused while transmitting, read back. Ranges NR level 1–16, NB level 0–100, low cut 100–1000 Hz, high cut 1000–6000 Hz; a cut is set to the radio's nearest step. DBF sets or clears both bits, as the radio's key does in SSB and CW (measured). The FT-817 sets NB only |
+| RF power write (`RFPOWER <W>`, FT-817/818 `RFPOWER HIGH/L3/L2/L1`, Bank 1 `6` long) | experimental, only with EXPERIMENTAL on. FT-857/897: whole watts of menu 75 for the band group of the current frequency; verified on an FT-897 (its menu 75 continued from the value written). FT-817/818: the level at `0x79`; verified on an FT-817 by reading it back. TX output not measured |
+| EEPROM write timing (`BC`) | the FT-817 answers a write with one byte after about 110 ms and ignores commands sent before it; HamTRC waits for it, and 120 ms on the FT-857/897. The read-back is tried twice, since the FT-817 missed the first one after a menu item write (measured) |
 | Further settings read from the EEPROM (`YSETTINGS?`: VOX, PROC, lock, fast tuning, NB, BK, KYR, DSP row, IF shift, filter, SQL/RF knob, mic EQ, menu levels, the RIT offset) | protocol only, no keys except those in Bank 2; verified on an FT-897 against the values set on the radio |
 
 ### FT-857/897 EEPROM map
@@ -189,7 +191,7 @@ Shared by all bands:
 | `0x95` | 3..0 | DSP HPF cutoff (menu 46), 100 + 60 × value Hz, 100..1000 Hz |
 | `0x99` | all | NB level (menu 63), 0..100 |
 | `0x9A` | all | PROC level (menu 74), 0..100 |
-| `0x9B` | 6..0 | RF power (menu 75), HF, watts (yo3ggx) |
+| `0x9B` | 7..0 | RF power (menu 75), HF: bits 6..0 watts, 5..100 (yo3ggx); bit 7 set from 20 W up (measured on HF and UHF) |
 | `0xA7` | 7 | filter 2 selected on the CFIL row; clear = built-in. Filter 1 not measured (no filter fitted). Bit 1 was set when the built-in filter was chosen in CW, not in USB |
 | `0xA8` | 7 | DSP soft key row shown, saved at once |
 | `0xA8` | 5 | AGC on (yo3ggx) |
@@ -197,7 +199,7 @@ Shared by all bands:
 | `0xA8` | 1 | DNR (yo3ggx) |
 | `0xA8` | 0 | DNF (yo3ggx) |
 | `0xA9` | 1 | PROC |
-| `0xAA` / `0xAB` / `0xAC` | 6..0 | RF power (menu 75) for 6 m / VHF / UHF, watts (yo3ggx) |
+| `0xAA` / `0xAB` / `0xAC` | 7..0 | RF power (menu 75) for 6 m / VHF / UHF, as `0x9B`: 6 m 5..100, VHF 5..50, UHF 2..20 W (yo3ggx) |
 
 Per band and VFO, a 28-byte block. VFO A blocks: 160 m `0xBA`, 80 m `0xD6`, 5 MHz `0xF2` (not `0x260` as in the yo3ggx map), 40 m `0x10E`, 30 m `0x12A`, 20 m `0x146`, 17 m `0x162`, 15 m `0x17E`, 12 m `0x19A`, 10 m `0x1B6`, 6 m `0x1D2`, FM broadcast `0x1EE`, air band `0x20A`, 2 m `0x226`, 70 cm `0x242`, general coverage `0x25E`. VFO B blocks are `0x1C0` higher.
 

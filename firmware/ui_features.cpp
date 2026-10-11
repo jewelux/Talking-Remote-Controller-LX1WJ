@@ -249,8 +249,31 @@ static String wattsText(uint16_t tenths) {
   return text;
 }
 
+const char* ft817PowerLevelName(Ft817PowerLevel level) {
+  switch (level) {
+    case Ft817PowerLevel::L3: return "L3";
+    case Ft817PowerLevel::L2: return "L2";
+    case Ft817PowerLevel::L1: return "L1";
+    default: return "HIGH";
+  }
+}
+
+void speakFt817PowerLevel(Ft817PowerLevel level) {
+  if (!g_speechEnabled) return;
+  if (level == Ft817PowerLevel::High) {
+    speakToken("high");
+    return;
+  }
+  speakToken("l");
+  playDigit(level == Ft817PowerLevel::L1 ? 1 : level == Ft817PowerLevel::L2 ? 2 : 3);
+}
+
 String ft8x7SettingText(const Ft8x7SettingState& state) {
   String text = String(ft8x7SettingName(state.setting)) + " ";
+  // The watts hold on an external supply only, so they are not said.
+  if (state.setting == Ft8x7Setting::RfPower && state.hasPowerLevel) {
+    return text + ft817PowerLevelName(state.powerLevel) + " (" + wattsText(state.wattsTenths) + " W)";
+  }
   if (state.setting == Ft8x7Setting::RfPower) return text + wattsText(state.wattsTenths) + " W";
   if (state.setting == Ft8x7Setting::Agc) return text + ft8x7AgcText(state.agc);
   if (state.setting == Ft8x7Setting::Menu || state.setting == Ft8x7Setting::Row) return text + String((int)state.number);
@@ -265,6 +288,11 @@ String ft8x7SettingText(const Ft8x7SettingState& state) {
 
 void speakFt8x7Setting(const Ft8x7SettingState& state) {
   if (!g_speechEnabled) return;
+  if (state.setting == Ft8x7Setting::RfPower && state.hasPowerLevel) {
+    speakLabel("power");
+    speakFt817PowerLevel(state.powerLevel);
+    return;
+  }
   if (state.setting == Ft8x7Setting::RfPower) {
     speakLabel("power");
     speakNumber(wattsText(state.wattsTenths));

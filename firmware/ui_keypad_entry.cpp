@@ -131,9 +131,20 @@ static void commitFrequency(const char* digits, TargetVfo targetVfo) {
   }
 }
 
+// FT-8x7 (experimental): written here rather than through the console command, so a value the
+// band does not offer says "error".
 static void commitRfPower(const char* digits) {
-  printKeypadCommand("ENTER -> RFPOWER");
-  keypadSendNow(String("RFPOWER ") + digits);
+  if (currentProtocolType() != PROTO_YAESU_FT8X7) {
+    printKeypadCommand("ENTER -> RFPOWER");
+    keypadSendNow(String("RFPOWER ") + digits);
+    return;
+  }
+  printKeypadCommand("ENTER -> RFPOWER {}", digits);
+  prepareKeypadRadioWrite();
+  Ft8x7SettingState state;
+  if (keypadReportFeatureFailure(ft8x7RfPowerSet((uint16_t)(atoi(digits) * 10), state), "RFPOWER")) return;
+  printKeypadStatus("{}", ft8x7SettingText(state).c_str());
+  speakFt8x7Setting(state);
 }
 
 static void commitCivAddress(const char* digits) {
@@ -218,21 +229,23 @@ void keypadEntryCommit(InputMode mode, const char* digits, TargetVfo targetVfo) 
     case InputMode::MenuEntry: commitMenuRow(Ft8x7Setting::Menu, digits); return;
     case InputMode::RowEntry: commitMenuRow(Ft8x7Setting::Row, digits); return;
     case InputMode::Normal:
-    case InputMode::ModeSelect: return;
+    case InputMode::ChoiceSelect: return;
   }
 }
 
 // A key that picks no mode, or a mode the profile cannot set, is rejected by
 // the state machine.
-bool keypadModeDigit(char key, uint8_t& mode) {
-  if (!modeFromDigit(key, mode) || !canSetMode(mode)) return false;
+static bool pickMode(char key, uint8_t& mode) {
+  return modeFromDigit(key, mode) && canSetMode(mode);
+}
+
+static void sayPickedMode(char key, uint8_t mode) {
   printKeypadCommand("MODE DIGIT -> {}", key);
   printKeypadStatus("MODE STAGE: {}", modeToString(mode));
   speakModeName(mode);
-  return true;
 }
 
-void keypadModeCommit(uint8_t mode, TargetVfo targetVfo) {
+static void commitMode(uint8_t mode, TargetVfo targetVfo) {
   prepareKeypadRadioWrite();
   if (rejectFt8x7WriteWhileTx("MODE")) return;
   if (targetVfo == TargetVfo::A) printKeypadCommand("ENTER -> VFOA MODE");
@@ -252,3 +265,7 @@ void keypadModeCommit(uint8_t mode, TargetVfo targetVfo) {
     speakKeypadFailure("MODE", KeypadFailure::Error);
   }
 }
+
+static constexpr ChoiceSpec kModeChoice = {"MODE SELECT", nullptr, 0, pickMode, sayPickedMode, commitMode};
+
+void keypadBeginModeSelect(TargetVfo targetVfo) { keypadBeginChoiceSelect(kModeChoice, targetVfo); }

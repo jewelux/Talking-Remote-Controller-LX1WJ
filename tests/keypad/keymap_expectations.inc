@@ -96,7 +96,7 @@ KEYMAP_ROW(NOT(FTDX10),     1, '5', "unassigned",            "none",            
 KEYMAP_ROW(FTDX10,          1, '6', "send(PA?)",             "send(PA TOGGLE)",        "-")
 KEYMAP_ROW(IC7300,          1, '6', "queryBank1RfPower",     "beginBank1RfPowerSet",   "-")
 KEYMAP_ROW(IC706,           1, '6', "unassigned",            "beginBank1RfPowerSet",   "-")
-KEYMAP_ROW(FT817 | FT857,   1, '6', "queryBank1RfPower",     "none",                   "-")
+KEYMAP_ROW(FT817 | FT857,   1, '6', "queryBank1RfPower",     "beginBank1RfPowerSet",   "-")
 KEYMAP_ROW(NOT(FTDX10 | CIV | FT817 | FT857), 1, '6', "unassigned", "none",            "-")
 KEYMAP_ROW(ALL,             1, '7', "queryBank1Smeter",      "none",                   "-")
 KEYMAP_ROW(ALL,             1, '8', "queryBank1Swr",         "none",                   "-")

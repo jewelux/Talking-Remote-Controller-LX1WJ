@@ -9,8 +9,10 @@
 // Helpers shared by the keypad UI files.
 
 // What an action may ask of the keypad state machine (ui_keypad.cpp): the keys
-// after it go to an entry, mode select or profile select.
+// after it go to an entry, a choice select or profile select.
 void keypadBeginEntry(InputMode mode, TargetVfo targetVfo = TargetVfo::Current);
+void keypadBeginChoiceSelect(const ChoiceSpec& spec, TargetVfo targetVfo = TargetVfo::Current);
+// The mode keys (ui_keypad_entry.cpp).
 void keypadBeginModeSelect(TargetVfo targetVfo);
 void keypadBeginProfileSelect();
 
@@ -21,8 +23,6 @@ void speakKeypadCommandWord(const String& cmd);
 // Entries and selections (ui_keypad_entry.cpp), called by the state machine.
 void keypadEntryDigit(const EntrySpec& entry, char key, const char* digits);
 void keypadEntryCommit(InputMode mode, const char* digits, TargetVfo targetVfo);
-bool keypadModeDigit(char key, uint8_t& mode);
-void keypadModeCommit(uint8_t mode, TargetVfo targetVfo);
 // Shared frequency writer for entry commit and the round-to-500 Hz action.
 bool keypadApplyFrequencyHz(uint64_t hz, TargetVfo targetVfo);
 

@@ -18,7 +18,7 @@ const char *modeName(InputMode m) {
     case InputMode::Normal: return "Normal";
     case InputMode::BankSelect: return "BankSelect";
     case InputMode::ProfileSelect: return "ProfileSelect";
-    case InputMode::ModeSelect: return "ModeSelect";
+    case InputMode::ChoiceSelect: return "ChoiceSelect";
     case InputMode::FreqEntry: return "FreqEntry";
     case InputMode::RfPowerEntry: return "RfPowerEntry";
     case InputMode::CivAddrEntry: return "CivAddrEntry";
@@ -93,19 +93,9 @@ struct Fake : KeypadInputListener {
     log.push_back(std::string("commit ") + modeName(mode) + " [" + digits + "] vfo" +
                   std::to_string((int)targetVfo));
   }
-  bool onModeDigit(char key, uint8_t &mode) override {
-    if (key == '\0' || validModeDigits.find(key) == std::string::npos) return false;
-    log.push_back(std::string("mode digit ") + key);
-    mode = (uint8_t)(key - '0');
-    return true;
-  }
-  void onModeCommit(uint8_t mode, TargetVfo targetVfo) override {
-    log.push_back("mode commit " + std::to_string(mode) + " vfo" +
-                  std::to_string((int)targetVfo));
-  }
   void onClear() override { log.push_back("clear"); }
-  void onEntryTimeout(InputMode mode) override {
-    log.push_back(std::string("timeout ") + modeName(mode));
+  void onEntryTimeout(InputMode mode, const char *name) override {
+    log.push_back(std::string("timeout ") + modeName(mode) + " " + name);
   }
 
   // The log since the last call, then cleared.
@@ -117,6 +107,26 @@ struct Fake : KeypadInputListener {
 };
 
 void runFakeAction() { g_fake->ran(keypadActiveKey()); }
+
+// Mode select as the firmware has it: pick() decides, here by Fake::validModeDigits.
+bool pickFakeMode(char key, uint8_t &mode) {
+  if (key == '\0' || g_fake->validModeDigits.find(key) == std::string::npos) return false;
+  mode = (uint8_t)(key - '0');
+  return true;
+}
+void pickedFakeMode(char key, uint8_t) { g_fake->log.push_back(std::string("mode digit ") + key); }
+void commitFakeMode(uint8_t mode, TargetVfo targetVfo) {
+  g_fake->log.push_back("mode commit " + std::to_string(mode) + " vfo" + std::to_string((int)targetVfo));
+}
+constexpr ChoiceSpec kModeChoice = {"MODE SELECT", nullptr, 0, pickFakeMode, pickedFakeMode, commitFakeMode};
+
+// A choice from a table of keys and values.
+constexpr ChoiceOption kLevelKeys[] = {{'1', 30}, {'4', 0}};
+void pickedFakeLevel(char key, uint8_t value) {
+  g_fake->log.push_back(std::string("level ") + key + " " + std::to_string(value));
+}
+void commitFakeLevel(uint8_t value, TargetVfo) { g_fake->log.push_back("level commit " + std::to_string(value)); }
+constexpr ChoiceSpec kLevelChoice = {"LEVEL", kLevelKeys, 2, nullptr, pickedFakeLevel, commitFakeLevel};
 
 using Log = std::vector<std::string>;
 
@@ -1052,9 +1062,9 @@ TEST(input_entry_takes_the_key_on_press) {
   CHECK_LOG(f, "digit FreqEntry 1 1");
   in.onKey('1', KeyGesture::Released, 0);
   CHECK_LOG(f);
-  in.beginModeSelect(TargetVfo::Current);
+  in.beginChoiceSelect(kModeChoice, TargetVfo::Current);
   in.onKey('2', KeyGesture::Pressed, 0);
-  CHECK(in.stagedModeActive());
+  CHECK(in.choiceStaged());
   CHECK_LOG(f, "mode digit 2");
 }
 
@@ -1260,9 +1270,9 @@ TEST(input_clear_cancels_staged_mode_and_waiting_short) {
   f.waits = {"1 0"};
   f.shorts = {"1 0"};
   KeypadInput in(f);
-  in.beginModeSelect(TargetVfo::A);
+  in.beginChoiceSelect(kModeChoice, TargetVfo::A);
   tap(in, '3');
-  CHECK(in.stagedModeActive());
+  CHECK(in.choiceStaged());
   tap(in, '#');
   CHECK_EQ(in.mode(), InputMode::Normal);
   tap(in, '0', 1000);
@@ -1275,7 +1285,7 @@ TEST(input_clear_cancels_staged_mode_and_waiting_short) {
 TEST(input_enter_in_normal_mode_after_a_mode_commit_beeps) {
   Fake f;
   KeypadInput in(f);
-  in.beginModeSelect(TargetVfo::B);
+  in.beginChoiceSelect(kModeChoice, TargetVfo::B);
   tap(in, '4');
   tap(in, 'D');
   tap(in, 'D');
@@ -1291,13 +1301,13 @@ TEST(input_staged_mode_is_modal) {
   f.shorts = {"1 7"};
   f.holds = {"1 0"};
   KeypadInput in(f);
-  in.beginModeSelect(TargetVfo::B);
+  in.beginChoiceSelect(kModeChoice, TargetVfo::B);
   tap(in, '2');
   tap(in, '7');
   hold(in, '0');
   hold(in, '*');
-  CHECK_EQ(in.mode(), InputMode::ModeSelect);
-  CHECK(in.stagedModeActive());
+  CHECK_EQ(in.mode(), InputMode::ChoiceSelect);
+  CHECK(in.choiceStaged());
   tap(in, '1');
   tap(in, 'D');
   CHECK_EQ(in.mode(), InputMode::Normal);
@@ -1312,12 +1322,12 @@ TEST(input_mode_select_stages_mode_for_target_vfo) {
   f.waits = {"3 1"};
   KeypadInput in(f);
   in.setBank(3);
-  in.beginModeSelect(TargetVfo::A);
+  in.beginChoiceSelect(kModeChoice, TargetVfo::A);
   tap(in, '1', 1000);  // no double-click wait during mode select
-  CHECK(in.stagedModeActive());
+  CHECK(in.choiceStaged());
   CHECK(!in.doubleClickPending());
   tap(in, 'D');
-  CHECK(!in.stagedModeActive());
+  CHECK(!in.choiceStaged());
   CHECK_LOG(f, "mode digit 1", "mode commit 1 vfo1");
 }
 
@@ -1327,9 +1337,9 @@ TEST(input_mode_select_invalid_key_keeps_it_active) {
   Fake f;
   f.validModeDigits = "12";
   KeypadInput in(f);
-  in.beginModeSelect(TargetVfo::B);
+  in.beginChoiceSelect(kModeChoice, TargetVfo::B);
   typeKeys(in, "7A*");
-  CHECK_EQ(in.mode(), InputMode::ModeSelect);
+  CHECK_EQ(in.mode(), InputMode::ChoiceSelect);
   tap(in, '2');
   tap(in, 'D');
   CHECK_LOG(f, "rejected MODE SELECT 7", "rejected MODE SELECT A", "rejected MODE SELECT *",
@@ -1339,20 +1349,20 @@ TEST(input_mode_select_invalid_key_keeps_it_active) {
 TEST(input_mode_select_enter_beeps_and_keeps_it_active) {
   Fake f;
   KeypadInput in(f);
-  in.beginModeSelect(TargetVfo::Current);
+  in.beginChoiceSelect(kModeChoice, TargetVfo::Current);
   tap(in, 'D');
-  CHECK_EQ(in.mode(), InputMode::ModeSelect);
-  CHECK(!in.stagedModeActive());
+  CHECK_EQ(in.mode(), InputMode::ChoiceSelect);
+  CHECK(!in.choiceStaged());
   CHECK_LOG(f, "rejected MODE SELECT D");
 }
 
 TEST(input_mode_select_clear_cancels_it) {
   Fake f;
   KeypadInput in(f);
-  in.beginModeSelect(TargetVfo::A);
+  in.beginChoiceSelect(kModeChoice, TargetVfo::A);
   tap(in, '#');
   CHECK_EQ(in.mode(), InputMode::Normal);
-  CHECK(!in.stagedModeActive());
+  CHECK(!in.choiceStaged());
   CHECK_LOG(f, "clear");
 }
 
@@ -1362,9 +1372,9 @@ TEST(input_mode_select_target_vfo_is_not_reused) {
   Fake f;
   f.validModeDigits = "5";
   KeypadInput in(f);
-  in.beginModeSelect(TargetVfo::A);
+  in.beginChoiceSelect(kModeChoice, TargetVfo::A);
   typeKeys(in, "0#");
-  in.beginModeSelect(TargetVfo::Current);
+  in.beginChoiceSelect(kModeChoice, TargetVfo::Current);
   tap(in, '5');
   tap(in, 'D');
   CHECK_LOG(f, "rejected MODE SELECT 0", "clear", "mode digit 5", "mode commit 5 vfo0");
@@ -1377,9 +1387,9 @@ TEST(input_mode_select_key_is_mode_digit_not_short_action) {
   f.shorts = {"3 7"};
   KeypadInput in(f);
   in.setBank(3);
-  in.beginModeSelect(TargetVfo::A);
+  in.beginChoiceSelect(kModeChoice, TargetVfo::A);
   tap(in, '7');
-  CHECK(in.stagedModeActive());
+  CHECK(in.choiceStaged());
   CHECK_LOG(f, "mode digit 7");
 }
 
@@ -1389,12 +1399,12 @@ TEST(input_mode_select_ignores_holds) {
   Fake f;
   f.holds = {"1 0", "1 2"};
   KeypadInput in(f);
-  in.beginModeSelect(TargetVfo::Current);
+  in.beginChoiceSelect(kModeChoice, TargetVfo::Current);
   hold(in, '0');
   hold(in, '*');
-  CHECK_EQ(in.mode(), InputMode::ModeSelect);
+  CHECK_EQ(in.mode(), InputMode::ChoiceSelect);
   hold(in, '2');
-  CHECK(in.stagedModeActive());
+  CHECK(in.choiceStaged());
   CHECK_EQ(in.bank(), 1);
   CHECK_LOG(f, "rejected MODE SELECT 0", "rejected MODE SELECT *", "mode digit 2");
 }
@@ -1404,13 +1414,38 @@ TEST(input_mode_select_ignores_holds) {
 TEST(input_mode_select_does_not_keep_an_earlier_pick) {
   Fake f;
   KeypadInput in(f);
-  in.beginModeSelect(TargetVfo::A);
+  in.beginChoiceSelect(kModeChoice, TargetVfo::A);
   typeKeys(in, "3#");
-  in.beginModeSelect(TargetVfo::A);
-  CHECK(!in.stagedModeActive());
+  in.beginChoiceSelect(kModeChoice, TargetVfo::A);
+  CHECK(!in.choiceStaged());
   tap(in, 'D');
-  CHECK_EQ(in.mode(), InputMode::ModeSelect);
+  CHECK_EQ(in.mode(), InputMode::ChoiceSelect);
   CHECK_LOG(f, "mode digit 3", "clear", "rejected MODE SELECT D");
+}
+
+// A choice from a table: its keys pick their values, the last one counts, other keys beep
+// under its name.
+TEST(input_choice_select_takes_the_keys_of_its_table) {
+  Fake f;
+  KeypadInput in(f);
+  in.beginChoiceSelect(kLevelChoice);
+  tap(in, 'D');
+  typeKeys(in, "2");
+  tap(in, '1');
+  tap(in, '4');
+  CHECK(in.choiceStaged());
+  tap(in, 'D');
+  CHECK_EQ(in.mode(), InputMode::Normal);
+  CHECK_LOG(f, "rejected LEVEL D", "rejected LEVEL 2", "level 1 30", "level 4 0", "level commit 0");
+}
+
+TEST(input_choice_select_times_out_under_its_name) {
+  Fake f;
+  KeypadInput in(f);
+  in.beginChoiceSelect(kLevelChoice);
+  in.poll(KeypadInput::kEntryTimeoutMs + 1);
+  CHECK_EQ(in.mode(), InputMode::Normal);
+  CHECK_LOG(f, "timeout ChoiceSelect LEVEL");
 }
 
 // --- Entry table -----------------------------------------------------------------------
@@ -1430,7 +1465,7 @@ TEST(input_every_entry_mode_has_its_rules) {
     CHECK(e->maxLen >= 1 && e->maxLen <= 12);
   }
   CHECK(keypadEntrySpec(InputMode::Normal) == nullptr);
-  CHECK(keypadEntrySpec(InputMode::ModeSelect) == nullptr);
+  CHECK(keypadEntrySpec(InputMode::ChoiceSelect) == nullptr);
 }
 
 // --- Entry timeout ---------------------------------------------------------------------
@@ -1450,7 +1485,7 @@ TEST(input_entry_times_out_after_no_key) {
   // Once is enough, and the next key is a Normal key again.
   in.poll(2000 + KeypadInput::kEntryTimeoutMs);
   tap(in, '5', 3000 + KeypadInput::kEntryTimeoutMs);
-  CHECK_LOG(f, "hold 1 0", "timeout FreqEntry", "short 1 5");
+  CHECK_LOG(f, "hold 1 0", "timeout FreqEntry FREQ", "short 1 5");
 }
 
 TEST(input_entry_timeout_restarts_with_every_key) {
@@ -1467,7 +1502,7 @@ TEST(input_entry_timeout_restarts_with_every_key) {
   in.poll(25001 + KeypadInput::kEntryTimeoutMs);
   CHECK_EQ(in.mode(), InputMode::Normal);
   CHECK_EQ(in.digits(), "");
-  CHECK_LOG(f, "digit RfPowerEntry 5 5", "timeout RfPowerEntry");
+  CHECK_LOG(f, "digit RfPowerEntry 5 5", "timeout RfPowerEntry RFPOWER");
 }
 
 TEST(input_bank_select_times_out) {
@@ -1477,20 +1512,20 @@ TEST(input_bank_select_times_out) {
   in.poll(1001 + KeypadInput::kEntryTimeoutMs);
   CHECK_EQ(in.mode(), InputMode::Normal);
   CHECK_EQ(in.bank(), 1);
-  CHECK_LOG(f, "bank please", "timeout BankSelect");
+  CHECK_LOG(f, "bank please", "timeout BankSelect BANK SELECT");
 }
 
 // A timed-out mode select leaves no picked mode for a later Enter.
 TEST(input_mode_select_times_out_with_its_pick) {
   Fake f;
   KeypadInput in(f);
-  in.beginModeSelect(TargetVfo::B);
+  in.beginChoiceSelect(kModeChoice, TargetVfo::B);
   tap(in, '3', 1000);
   in.poll(1001 + KeypadInput::kEntryTimeoutMs);
   CHECK_EQ(in.mode(), InputMode::Normal);
-  CHECK(!in.stagedModeActive());
+  CHECK(!in.choiceStaged());
   tap(in, 'D', 2000 + KeypadInput::kEntryTimeoutMs);
-  CHECK_LOG(f, "mode digit 3", "timeout ModeSelect", "rejected ENTER");
+  CHECK_LOG(f, "mode digit 3", "timeout ChoiceSelect MODE SELECT", "rejected ENTER");
 }
 
 TEST(input_normal_mode_does_not_time_out) {

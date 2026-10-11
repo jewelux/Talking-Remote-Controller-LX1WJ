@@ -43,7 +43,7 @@ they say "not available". This is noted where it is always the case.
 | `5` long | free | tuner on/off | free | free | free |
 | `5` double | free | tune | free | free | free |
 | `6` short | RF power setting (IC-706: free) | preamp | free | RF power setting | RF power setting |
-| `6` long | RF power entry | preamp on/off | free | free | free |
+| `6` long | RF power entry | preamp on/off | free | RF power level select (experimental) | RF power entry (experimental) |
 | `7` short | S-meter | S-meter | S-meter | S-meter | S-meter |
 | `8` short | SWR | SWR | SWR | SWR | SWR |
 | `9` short | mode | mode | mode | mode | mode |

@@ -60,7 +60,8 @@ KeyBinding bank1(const KeypadTraits& t, char key) {
     case '6':
       if (t.layout == L::Ftdx10) return bind(SEND("PA?"), SEND("PA TOGGLE"));
       if (t.layout == L::Civ) return bind(t.canGetRfPower ? queryBank1RfPower : nullptr, beginBank1RfPowerSet);
-      if (t.layout == L::Ft817 || t.layout == L::Ft857) return bind(queryBank1RfPower);
+      // FT-8x7: experimental; the FT-817/818 picks a level.
+      if (t.layout == L::Ft857 || t.layout == L::Ft817) return bind(queryBank1RfPower, beginBank1RfPowerSet);
       return {};
     case '7': return bind(queryBank1Smeter);
     case '8': return bind(queryBank1Swr);

@@ -337,6 +337,12 @@ const char* ft8x7SettingLabel(Ft8x7Setting setting) {
   return "?";
 }
 
+static void setFt817PowerLevel(Ft817PowerLevel level, Ft8x7SettingState& out) {
+  out.hasPowerLevel = true;
+  out.powerLevel = level;
+  out.wattsTenths = ft817RfPowerTenths((uint8_t)level, currentFt8x7Model() == Ft8x7Model::Ft818);
+}
+
 static FeatureStatus ft8x7BandSettingQuery(Ft8x7Setting setting, Ft8x7SettingState& out) {
   uint64_t hz = 0;
   if (!queryFrequency(hz, kFt8x7TimeoutMs)) return failure(FeatureStatus::NoReply);
@@ -417,12 +423,13 @@ FeatureStatus ft8x7SettingQuery(Ft8x7Setting setting, Ft8x7SettingState& out) {
       ok = queryFrequency(hz, kFt8x7TimeoutMs) && yaesuFt817QueryRearAntenna(hz, out.on, kFt8x7TimeoutMs);
       break;
     }
-    case Ft8x7Setting::RfPower:
-      if (ft8x7IsFt817Family(model)) {
-        ok = yaesuFt817QueryRfPowerTenths(out.wattsTenths, kFt8x7TimeoutMs);
-        break;
-      }
-      return ft8x7BandSettingQuery(setting, out);
+    case Ft8x7Setting::RfPower: {
+      if (!ft8x7IsFt817Family(model)) return ft8x7BandSettingQuery(setting, out);
+      Ft817PowerLevel level = Ft817PowerLevel::High;
+      ok = yaesuFt817QueryPowerLevel(level, kFt8x7TimeoutMs);
+      if (ok) setFt817PowerLevel(level, out);
+      break;
+    }
     default: return ft8x7BandSettingQuery(setting, out);
   }
   return ok ? FeatureStatus::Ok : failure(FeatureStatus::NoReply);
@@ -492,6 +499,30 @@ FeatureStatus ft8x7DbfSet(bool on, Ft8x7SettingState& out) {
   if (status != FeatureStatus::Ok) return status;
   out.on = on;
   return FeatureStatus::Ok;
+}
+
+FeatureStatus ft8x7RfPowerSet(uint16_t wattsTenths, Ft8x7SettingState& out) {
+  if (!currentProfile().caps.setRfPower || !currentIsFt857Family()) return FeatureStatus::Unsupported;
+  out = Ft8x7SettingState();
+  out.setting = Ft8x7Setting::RfPower;
+  if (wattsTenths % 10 != 0 || wattsTenths / 10 > 0xFF) return FeatureStatus::Invalid;
+  uint64_t hz = 0;
+  if (!queryFrequency(hz, kFt8x7TimeoutMs)) return failure(FeatureStatus::NoReply);
+  uint8_t watts = 0;
+  const FeatureStatus status =
+      eepromWriteStatus(yaesuFt857SetRfPowerWatts(hz, (uint8_t)(wattsTenths / 10), watts, kFt8x7TimeoutMs));
+  out.wattsTenths = (uint16_t)(watts * 10);
+  return status;
+}
+
+FeatureStatus ft817PowerLevelSet(Ft817PowerLevel level, Ft8x7SettingState& out) {
+  if (!currentProfile().caps.setRfPower || !currentIsFt817Family()) return FeatureStatus::Unsupported;
+  out = Ft8x7SettingState();
+  out.setting = Ft8x7Setting::RfPower;
+  Ft817PowerLevel read = level;
+  const FeatureStatus status = eepromWriteStatus(yaesuFt817SetPowerLevel(level, read, kFt8x7TimeoutMs));
+  if (status == FeatureStatus::Ok) setFt817PowerLevel(read, out);
+  return status;
 }
 
 FeatureStatus ft8x7DbfToggle(Ft8x7SettingState& out) {

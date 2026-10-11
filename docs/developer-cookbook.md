@@ -247,9 +247,9 @@ Keep it that way.
             ┌────────┐  '*' hold                ┌─────────────┐      │
             │ Normal │ ───────────────────────► │ BankSelect  │ ─ digit commits at once
             └────────┘                          └─────────────┘
-                 │  action calls keypadBeginEntry / BeginModeSelect / BeginProfileSelect
+                 │  action calls keypadBeginEntry / BeginChoiceSelect / BeginProfileSelect
                  ├──────────────────────────► ProfileSelect   (1–2 digits, D)
-                 ├──────────────────────────► ModeSelect      (a mode key, D)
+                 ├──────────────────────────► ChoiceSelect    (a key of its ChoiceSpec, D)
                  └──────────────────────────► FreqEntry, RfPowerEntry, CivAddrEntry,
                                               RptOffsetEntry, CtcssEntry, DcsEntry  (digits, D)
 ```
@@ -482,6 +482,21 @@ Example: typing a CW keyer speed.
    `tests/keypad/test_keypad_input.cpp` covering the digits the entry refuses.
    The existing `input_*` tests show the `tap()`, `hold()` and `typeKeys()`
    helpers.
+
+For a setting with a few values, such as AGC, use a choice select: a key picks
+a value and says it, `D` applies it. It needs only a `ChoiceSpec`: the keys and
+values, what to say and the commit. Example: the FT-817 power level in
+`ui_keypad_bank1.cpp`. Mode select passes a `pick` function instead of the
+table, since its modes depend on the profile.
+
+```cpp
+static constexpr ChoiceOption kFt817PowerKeys[] = {
+    {'1', (uint8_t)Ft817PowerLevel::L1}, ..., {'4', (uint8_t)Ft817PowerLevel::High}};
+static constexpr ChoiceSpec kFt817PowerChoice = {
+    "RFPOWER LEVEL", kFt817PowerKeys, 4, nullptr, sayPickedFt817Power, commitFt817Power};
+...
+keypadBeginChoiceSelect(kFt817PowerChoice);
+```
 
 ### 4.4 Add a radio feature, layer by layer
 

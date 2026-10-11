@@ -125,6 +125,14 @@ int32_t ft857RitOffsetHz(const uint8_t word[2]);
 // 20 W up (100 W is 0xE4).
 uint16_t ft857RfPowerAddr(Ft8x7BandGroup group);
 uint8_t ft857RfPowerWatts(uint8_t b);
+// The watts menu 75 offers for a group: HF and 6 m 5..100, VHF (with FM broadcast and air)
+// 5..50, UHF 2..20 (yo3ggx).
+void ft857RfPowerRange(Ft8x7BandGroup group, uint8_t& minOut, uint8_t& maxOut);
+// The byte that sets the group's power to watts, bit 7 set from 20 W up like the radio's own
+// (measured on an FT-897: 19 W is 0x13 and 20 W 0x94 on HF and on UHF, whose maximum is 20 W).
+// False, and out untouched, when watts is outside ft857RfPowerRange, or when old holds watts
+// outside it: the map then does not fit the radio, and nothing may be written.
+bool ft857RfPowerByte(Ft8x7BandGroup group, uint8_t watts, uint8_t old, uint8_t& out);
 
 // AGC off is its own bit (Ft8x7Flag::AgcOn); the speed is 0x6A bits 1..0.
 static constexpr uint16_t FT857_AGC_SPEED_ADDR = 0x006A;
@@ -196,6 +204,12 @@ bool ft857MicGainLevel(Ft8x7MicGain gain, YaesuFt857Level& out);
 // FT-817/818 0x79 bits 1..0: TX power High, L3, L2, L1. On an external supply 5, 2.5, 1 and
 // 0.5 W on the FT-817, and 6, 5, 2.5 and 1 W on the FT-818 (not measured on an FT-818).
 static constexpr uint16_t FT817_RF_POWER_ADDR = 0x0079;
+// The values of bits 1..0.
+enum class Ft817PowerLevel : uint8_t { High, L3, L2, L1 };
+Ft817PowerLevel ft817PowerLevel(uint8_t b);
+// The byte with the level set, bits 7..2 of old kept.
+uint8_t ft817PowerLevelByte(Ft817PowerLevel level, uint8_t old);
+// The watts of the level on an external supply, in tenths; b holds the level in bits 1..0.
 uint16_t ft817RfPowerTenths(uint8_t b, bool ft818);
 
 // FT-817 0x57 bits 1..0: 00 auto, 01 fast, 10 slow, 11 off.

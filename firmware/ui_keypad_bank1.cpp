@@ -4,6 +4,7 @@
 #include "radio_frequency.h"
 #include "radio_state.h"
 #include "radio_utils.h"
+#include "ui_features.h"
 
 static bool queryDialLockReliable(bool& onOut) {
   // One EEPROM read on the FT-8x7. No stale fallback: a toggle must start from the radio's real
@@ -144,6 +145,32 @@ void roundActiveFrequency(uint32_t stepHz) {
   }
 }
 
+// FT-817/818: a higher key is more power.
+static constexpr ChoiceOption kFt817PowerKeys[] = {
+    {'1', (uint8_t)Ft817PowerLevel::L1},
+    {'2', (uint8_t)Ft817PowerLevel::L2},
+    {'3', (uint8_t)Ft817PowerLevel::L3},
+    {'4', (uint8_t)Ft817PowerLevel::High},
+};
+
+static void sayPickedFt817Power(char key, uint8_t level) {
+  printKeypadCommand("RFPOWER LEVEL -> {}", key);
+  printKeypadStatus("RFPOWER STAGE: {}", ft817PowerLevelName((Ft817PowerLevel)level));
+  speakFt817PowerLevel((Ft817PowerLevel)level);
+}
+
+static void commitFt817Power(uint8_t level, TargetVfo) {
+  printKeypadCommand("ENTER -> RFPOWER {}", ft817PowerLevelName((Ft817PowerLevel)level));
+  prepareKeypadRadioWrite();
+  Ft8x7SettingState state;
+  if (keypadReportFeatureFailure(ft817PowerLevelSet((Ft817PowerLevel)level, state), "RFPOWER")) return;
+  printKeypadStatus("{}", ft8x7SettingText(state).c_str());
+  speakFt8x7Setting(state);
+}
+
+static constexpr ChoiceSpec kFt817PowerChoice = {
+    "RFPOWER LEVEL", kFt817PowerKeys, 4, nullptr, sayPickedFt817Power, commitFt817Power};
+
 void beginBank1RfPowerSet() {
   if (!currentProfile().caps.setRfPower) {
     printKeypadStatus("RFPOWER -> unavailable");
@@ -151,7 +178,11 @@ void beginBank1RfPowerSet() {
     return;
   }
   printKeypadAction("RFPOWER");
-  keypadBeginEntry(InputMode::RfPowerEntry);
+  if (currentProtocolType() == PROTO_YAESU_FT8X7 && currentIsFt817Family()) {
+    keypadBeginChoiceSelect(kFt817PowerChoice);
+  } else {
+    keypadBeginEntry(InputMode::RfPowerEntry);
+  }
   printKeypadStatus("POWER PLEASE");
   speakPrompt("power");
 }

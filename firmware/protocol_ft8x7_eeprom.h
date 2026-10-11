@@ -45,6 +45,13 @@ YaesuEepromWrite yaesuFt8x7SetFlag(Ft8x7Flag flag, bool on, uint32_t timeoutMs);
 // when it already has the value.
 YaesuEepromWrite yaesuFt857SetLevel(YaesuFt857Level level, uint16_t value, uint16_t& valueOut,
                                     uint32_t timeoutMs);
+// FT-857/897: sets menu 75 power of the band group of hz to watts, within ft857RfPowerRange.
+// wattsOut is the value read back.
+YaesuEepromWrite yaesuFt857SetRfPowerWatts(uint64_t hz, uint8_t watts, uint8_t& wattsOut,
+                                           uint32_t timeoutMs);
+// FT-817/818: sets the TX power level. levelOut is the level read back.
+YaesuEepromWrite yaesuFt817SetPowerLevel(Ft817PowerLevel level, Ft817PowerLevel& levelOut,
+                                         uint32_t timeoutMs);
 // IPO, ATT and FM narrow are kept per band; read from the block of the band the active VFO is
 // on, also outside the amateur bands. hz decides whether IPO and ATT exist.
 struct YaesuFt857BandFlags {
@@ -56,8 +63,8 @@ struct YaesuFt857BandFlags {
 bool yaesuFt857QueryBandFlags(uint64_t hz, YaesuFt857BandFlags& out, uint32_t timeoutMs);
 // Menu 75 RF power for the band group of hz: HF, 6 m, VHF or UHF.
 bool yaesuFt857QueryRfPowerWatts(uint64_t hz, uint8_t& wattsOut, uint32_t timeoutMs);
-// FT-817/818: the TX power setting in tenths of a watt (FT-817: 50, 25, 10 or 5).
-bool yaesuFt817QueryRfPowerTenths(uint16_t& tenthsOut, uint32_t timeoutMs);
+// FT-817/818: the TX power level.
+bool yaesuFt817QueryPowerLevel(Ft817PowerLevel& levelOut, uint32_t timeoutMs);
 // FT-817/818: true when the band group of hz uses the rear antenna jack (menu 07).
 bool yaesuFt817QueryRearAntenna(uint64_t hz, bool& rearOut, uint32_t timeoutMs);
 bool yaesuFt857QueryLevel(YaesuFt857Level level, uint16_t& valueOut, uint32_t timeoutMs);

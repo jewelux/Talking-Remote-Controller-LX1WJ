@@ -16,12 +16,13 @@
 // listener. '*' (bank), 'D' (Enter) and '#' (Clear) belong to the state machine.
 
 // Exactly one mode is active. Bank select, profile select and the entries
-// take digits by the rules of their EntrySpec.
+// take digits by the rules of their EntrySpec; choice select takes one key by
+// its ChoiceSpec.
 enum class InputMode : uint8_t {
   Normal,
   BankSelect,
   ProfileSelect,
-  ModeSelect,  // a mode key, validated by the listener; Enter applies it
+  ChoiceSelect,  // a key picks one value of a ChoiceSpec; Enter applies it
   FreqEntry,
   RfPowerEntry,
   CivAddrEntry,
@@ -44,11 +45,8 @@ struct EntrySpec {
   const char* unit;     // shown after the digits while typing
 };
 
-// The rules of mode, or nullptr for Normal and ModeSelect.
+// The rules of mode, or nullptr for Normal and ChoiceSelect.
 const EntrySpec* keypadEntrySpec(InputMode mode);
-
-// Keypad library KeyState, without the Arduino types.
-enum class KeyGesture : uint8_t { Pressed, Held, Released, Idle };
 
 // Target VFO for a frequency entry and mode select.
 enum class TargetVfo : uint8_t {
@@ -57,6 +55,31 @@ enum class TargetVfo : uint8_t {
   B,
   Other,  // FT-8x7: the VFO that is not active
 };
+
+// One value of a choice select and the key that picks it.
+struct ChoiceOption {
+  char key;
+  uint8_t value;
+};
+
+// A choice select: a key picks a value and says it, another key replaces it, and Enter applies
+// it. Any other key beeps ("<name> 7") and the choice stays; only Clear cancels. The mode, the
+// FT-817 power level, ... each have one, kept for as long as the selection runs.
+struct ChoiceSpec {
+  const char* name;  // label of its beeps and trace: "MODE SELECT"
+  // The keys and their values; or nullptr, and pick decides.
+  const ChoiceOption* options;
+  uint8_t optionCount;
+  // With no options: the value key picks, or false. nullptr with options.
+  bool (*pick)(char key, uint8_t& value);
+  // Says the value key just picked.
+  void (*picked)(char key, uint8_t value);
+  // Enter: applies value. The mode is already back to Normal.
+  void (*commit)(uint8_t value, TargetVfo targetVfo);
+};
+
+// Keypad library KeyState, without the Arduino types.
+enum class KeyGesture : uint8_t { Pressed, Held, Released, Idle };
 
 // A bank key action.
 using KeyAction = void (*)();
@@ -104,7 +127,7 @@ class KeypadInputListener {
   // A digit (or the frequency point) was taken into entry.
   virtual void onDigitAccepted(const EntrySpec& entry, char key, const char* digits) = 0;
   // The key does nothing here: an unassigned key, a digit an entry does not
-  // take, Enter with nothing picked, '#' with nothing to cancel, a second key
+  // take, a key a choice select has no value for, Enter with nothing picked, '#' with nothing to cancel, a second key
   // pressed while another is down ("TWO KEYS"). "<label> ->
   // unassigned" and the beep.
   virtual void onRejected(const char* label) = 0;
@@ -115,20 +138,13 @@ class KeypadInputListener {
   // already set.
   virtual void onCommit(InputMode mode, const char* digits, TargetVfo targetVfo) = 0;
 
-  // A key typed during mode select. When it picks a mode: gives the feedback
-  // and returns true with mode set. Otherwise returns false with no feedback;
-  // the key is rejected like a digit an entry does not take ("MODE SELECT 0").
-  virtual bool onModeDigit(char key, uint8_t& mode) = 0;
-  // Enter in mode select once a mode is picked: apply it. The mode is already
-  // back to Normal.
-  virtual void onModeCommit(uint8_t mode, TargetVfo targetVfo) = 0;
-
   // '#': everything was cancelled. With nothing to cancel, '#' gives
   // onRejected("CLEAR") instead.
   virtual void onClear() = 0;
   // An entry or selection had no key event for kEntryTimeoutMs and was
-  // dropped. The mode is already back to Normal.
-  virtual void onEntryTimeout(InputMode mode) = 0;
+  // dropped. The mode is already back to Normal. name: its EntrySpec or
+  // ChoiceSpec name.
+  virtual void onEntryTimeout(InputMode mode, const char* name) = 0;
 };
 
 class KeypadInput {
@@ -148,7 +164,8 @@ class KeypadInput {
   // Called by keymap actions.
   void beginEntry(InputMode mode, TargetVfo targetVfo = TargetVfo::Current);
   void beginProfileSelect() { beginEntry(InputMode::ProfileSelect); }
-  void beginModeSelect(TargetVfo targetVfo);
+  // spec must outlive the selection.
+  void beginChoiceSelect(const ChoiceSpec& spec, TargetVfo targetVfo = TargetVfo::Current);
 
   uint8_t bank() const { return bank_; }
   void setBank(uint8_t bank) { bank_ = bank; }
@@ -156,14 +173,14 @@ class KeypadInput {
   InputMode mode() const { return mode_; }
   const char* digits() const { return digits_.c_str(); }
   TargetVfo entryTargetVfo() const { return entryVfo_; }
-  // Mode select with a mode picked, waiting for Enter.
-  bool stagedModeActive() const { return mode_ == InputMode::ModeSelect && stagedMode_ != kNoMode; }
+  // Choice select with a value picked, waiting for Enter.
+  bool choiceStaged() const { return mode_ == InputMode::ChoiceSelect && choiceStaged_; }
   bool doubleClickPending() const { return pending_.active; }
 
  private:
   // A set of keys, one bit each. Used for the keys that are down and for the
   // keys whose release is swallowed: their hold was handled, or their press
-  // was taken by bank, profile or mode select or an entry.
+  // was taken by bank, profile or choice select or an entry.
   class KeySet {
    public:
     void set(char key);
@@ -189,8 +206,6 @@ class KeypadInput {
     void (KeypadInput::*onHold)();  // nullptr: no long action
   };
 
-  static constexpr uint8_t kNoMode = 0xFF;
-
   struct DoubleClick {
     bool active = false;
     uint8_t bank = 0;
@@ -215,7 +230,9 @@ class KeypadInput {
   bool secondPressDown(char key) const;
   void releasedNormal(char key, uint32_t nowMs);
   void pressedInMode(char key);
-  void pressedModeSelect(char key);
+  void pressedChoice(char key);
+  // The value key picks in the running choice select.
+  bool choiceValue(char key, uint8_t& value) const;
   void pressedEntry(const EntrySpec& entry, char key);
   bool takesDigit(const EntrySpec& entry, char key) const;
   void enter();
@@ -240,8 +257,10 @@ class KeypadInput {
   DigitBuffer<13> digits_;
   // Target VFO of a frequency entry and mode select.
   TargetVfo entryVfo_ = TargetVfo::Current;
-  // The mode picked in mode select, or kNoMode.
-  uint8_t stagedMode_ = kNoMode;
+  // The running choice select, and the value picked once choiceStaged_.
+  const ChoiceSpec* choice_ = nullptr;
+  bool choiceStaged_ = false;
+  uint8_t choiceValue_ = 0;
   KeySet swallowed_;
   DoubleClick pending_;
   // Keys that are down now, and whether two were down at once: every event is

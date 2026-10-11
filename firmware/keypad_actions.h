@@ -32,6 +32,8 @@ void queryBank1Lock();
 void toggleBank1Lock();
 void queryBank1Power();    // "PO?", sent or staged
 void queryBank1RfPower();  // "RFPOWER?", sent or staged
+// The watts entry; on the FT-817/818 a level, picked by 1 (L1) .. 4 (High). Experimental on
+// the FT-8x7, "not available" unless EXPERIMENTAL is on.
 void beginBank1RfPowerSet();
 void queryBank1Smeter();   // "SM?", sent or staged
 void queryBank1Swr();      // "SWR?", sent or staged

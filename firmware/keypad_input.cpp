@@ -159,7 +159,7 @@ bool KeypadInput::coPressed(char key, KeyGesture gesture) {
   return ignored;
 }
 
-// Bank, profile and mode select and the entries have no long or double
+// Bank, profile and choice select and the entries have no long or double
 // action, so their keys act as soon as they go down. The hold and release
 // that follow do nothing, even once the key has ended the mode.
 void KeypadInput::pressedInMode(char key) {
@@ -170,8 +170,8 @@ void KeypadInput::pressedInMode(char key) {
     (this->*g->onShort)();
     return;
   }
-  if (mode_ == InputMode::ModeSelect) {
-    pressedModeSelect(key);
+  if (mode_ == InputMode::ChoiceSelect) {
+    pressedChoice(key);
     return;
   }
   pressedEntry(*keypadEntrySpec(mode_), key);
@@ -203,9 +203,10 @@ void KeypadInput::beginEntry(InputMode mode, TargetVfo targetVfo) {
   entryVfo_ = targetVfo;
 }
 
-void KeypadInput::beginModeSelect(TargetVfo targetVfo) {
-  beginEntry(InputMode::ModeSelect, targetVfo);
-  stagedMode_ = kNoMode;
+void KeypadInput::beginChoiceSelect(const ChoiceSpec& spec, TargetVfo targetVfo) {
+  beginEntry(InputMode::ChoiceSelect, targetVfo);
+  choice_ = &spec;
+  choiceStaged_ = false;
 }
 
 // The keys that belong to the state machine rather than the keymap, the same
@@ -231,7 +232,7 @@ void KeypadInput::beginBankSelect() {
   listener_.onBankSelectStart();
 }
 
-// Bank, profile and mode select and the entries ignore holds; their keys act on
+// Bank, profile and choice select and the entries ignore holds; their keys act on
 // press. So does a key whose press one of them took, even when that press
 // ended the mode. In Normal mode a key with no long action beeps now, and its
 // release is swallowed like after a long action.
@@ -300,16 +301,28 @@ void KeypadInput::releasedNormal(char key, uint32_t nowMs) {
   runShortOrReject(binding, bank, key);
 }
 
-// Mode select takes a key that picks a mode; another one replaces it, and
-// Enter applies it. Any other key beeps and the mode stays; only '#' cancels.
-void KeypadInput::pressedModeSelect(char key) {
-  uint8_t mode = 0;
-  if (listener_.onModeDigit(key, mode)) {
-    stagedMode_ = mode;
+// Choice select takes a key that picks a value; another one replaces it, and
+// Enter applies it. Any other key beeps and the choice stays; only '#' cancels.
+void KeypadInput::pressedChoice(char key) {
+  uint8_t value = 0;
+  if (choiceValue(key, value)) {
+    choiceStaged_ = true;
+    choiceValue_ = value;
+    choice_->picked(key, value);
     return;
   }
   const char label[2] = {key, '\0'};
-  reportRejected("MODE SELECT", label);
+  reportRejected(choice_->name, label);
+}
+
+bool KeypadInput::choiceValue(char key, uint8_t& value) const {
+  if (!choice_->options) return choice_->pick(key, value);
+  for (uint8_t i = 0; i < choice_->optionCount; ++i) {
+    if (choice_->options[i].key != key) continue;
+    value = choice_->options[i].value;
+    return true;
+  }
+  return false;
 }
 
 // Bank select, profile select and the entries: a digit the entry takes, or
@@ -348,22 +361,24 @@ bool KeypadInput::takesDigit(const EntrySpec& entry, char key) const {
 }
 
 // Enter ('D'). Entries and selections commit; in Normal mode it beeps. With no
-// mode, bank or digit chosen yet, Enter beeps and the mode stays: only Clear
+// choice, bank or digit picked yet, Enter beeps and the mode stays: only Clear
 // cancels.
 void KeypadInput::enter() {
   if (mode_ == InputMode::Normal) {
     listener_.onRejected("ENTER");
     return;
   }
-  if (mode_ == InputMode::ModeSelect) {
-    if (stagedMode_ == kNoMode) {
-      reportRejected("MODE SELECT", "D");
+  if (mode_ == InputMode::ChoiceSelect) {
+    if (!choiceStaged_) {
+      reportRejected(choice_->name, "D");
       return;
     }
+    const ChoiceSpec& spec = *choice_;
     const TargetVfo targetVfo = entryVfo_;
     mode_ = InputMode::Normal;
     entryVfo_ = TargetVfo::Current;
-    listener_.onModeCommit(stagedMode_, targetVfo);
+    choiceStaged_ = false;
+    spec.commit(choiceValue_, targetVfo);
     return;
   }
 
@@ -405,6 +420,7 @@ void KeypadInput::clearAll() {
   mode_ = InputMode::Normal;
   digits_.clear();
   entryVfo_ = TargetVfo::Current;
+  choiceStaged_ = false;
   pending_.active = false;
   oneShotBank_ = 0;
   listener_.onClear();
@@ -414,11 +430,12 @@ void KeypadInput::clearAll() {
 // stays.
 void KeypadInput::timeOut() {
   const InputMode mode = mode_;
+  const char* name = mode == InputMode::ChoiceSelect ? choice_->name : keypadEntrySpec(mode)->name;
   mode_ = InputMode::Normal;
   digits_.clear();
   entryVfo_ = TargetVfo::Current;
-  stagedMode_ = kNoMode;
-  listener_.onEntryTimeout(mode);
+  choiceStaged_ = false;
+  listener_.onEntryTimeout(mode, name);
 }
 
 void KeypadInput::runAction(KeyAction action, uint8_t bank, char key, const char* gesture) {

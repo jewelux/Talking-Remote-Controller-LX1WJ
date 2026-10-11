@@ -138,6 +138,25 @@ uint8_t ft857RfPowerWatts(uint8_t b) {
   return b & 0x7F;
 }
 
+void ft857RfPowerRange(Ft8x7BandGroup group, uint8_t& minOut, uint8_t& maxOut) {
+  switch (group) {
+    case Ft8x7BandGroup::Hf:
+    case Ft8x7BandGroup::SixM: minOut = 5; maxOut = 100; return;
+    case Ft8x7BandGroup::Uhf: minOut = 2; maxOut = 20; return;
+    default: minOut = 5; maxOut = 50; return;  // VHF, with FM broadcast and air
+  }
+}
+
+bool ft857RfPowerByte(Ft8x7BandGroup group, uint8_t watts, uint8_t old, uint8_t& out) {
+  uint8_t lo = 0;
+  uint8_t hi = 0;
+  ft857RfPowerRange(group, lo, hi);
+  const uint8_t stored = ft857RfPowerWatts(old);
+  if (watts < lo || watts > hi || stored < lo || stored > hi) return false;
+  out = (uint8_t)(watts | (watts >= 20 ? 0x80 : 0x00));
+  return true;
+}
+
 YaesuAgc ft857AgcFromSpeed(uint8_t b) {
   switch (b & 0x03) {
     case 0x00: return YaesuAgc::Slow;
@@ -280,6 +299,12 @@ uint16_t ft817RfPowerTenths(uint8_t b, bool ft818) {
   static constexpr uint16_t kFt817Tenths[] = {50, 25, 10, 5};
   static constexpr uint16_t kFt818Tenths[] = {60, 50, 25, 10};
   return (ft818 ? kFt818Tenths : kFt817Tenths)[b & 0x03];
+}
+
+Ft817PowerLevel ft817PowerLevel(uint8_t b) { return (Ft817PowerLevel)(b & 0x03); }
+
+uint8_t ft817PowerLevelByte(Ft817PowerLevel level, uint8_t old) {
+  return (uint8_t)((old & ~0x03) | ((uint8_t)level & 0x03));
 }
 
 YaesuAgc ft817AgcFromByte(uint8_t b) {

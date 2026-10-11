@@ -54,7 +54,13 @@ void speakToneMode(const YaesuToneMode& mode);
 String splitToneText(bool on);
 void speakSplitTone(bool on);
 
-// FT-857/897 EEPROM settings: "AGC FAST", "IPO ON", "RFPOWER 100 W", "MENU 76".
+// FT-857/897 EEPROM settings: "AGC FAST", "IPO ON", "RFPOWER 100 W", "MENU 76"; FT-817/818
+// "RFPOWER L2 (1 W)".
 String ft8x7SettingText(const Ft8x7SettingState& state);
-// The radio's soft key label spelled, then the state: "a g c fast", "i p o on", "power 100 watts".
+// The radio's soft key label spelled, then the state: "a g c fast", "i p o on", "power 100 watts";
+// FT-817/818 "power l two", "power high".
 void speakFt8x7Setting(const Ft8x7SettingState& state);
+// "HIGH", "L3", "L2", "L1": the console word.
+const char* ft817PowerLevelName(Ft817PowerLevel level);
+// The level alone: "l two", "high".
+void speakFt817PowerLevel(Ft817PowerLevel level);

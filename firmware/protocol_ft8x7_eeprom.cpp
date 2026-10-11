@@ -29,9 +29,19 @@ bool yaesuCatReadEepromByte(uint16_t addr, uint8_t& out, uint32_t timeoutMs) {
 // for 0xBB. It takes effect at once.
 // CAUTION: a bad write can wipe the radio's memories and calibration. Any reply byte is left
 // for the next flush to drain.
+static constexpr uint32_t FT8X7_EEPROM_WRITE_SETTLE_MS = 120;
+
 void yaesuCatWriteEeprom2(uint16_t addr, const uint8_t data[2]) {
   const uint8_t cmd[5] = {(uint8_t)(addr >> 8), (uint8_t)(addr & 0xFF), data[0], data[1], 0xBC};
+  // The FT-817 answers a write with one byte about 110 ms later (measured), and misses a
+  // command sent before it. The FT-897 does not answer; it gets as long.
+  if (currentIsFt817Family()) {
+    uint8_t ack = 0;
+    (void)yaesuCatTransact1(cmd, ack, YAESU_CAT_REPLY_TIMEOUT_MS);
+    return;
+  }
   yaesuCatSendWriteOnly(cmd);
+  delay(FT8X7_EEPROM_WRITE_SETTLE_MS - YAESU_CAT_WRITE_SETTLE_MS);
   yaesuCatMarkLineDirty();
 }
 
@@ -87,11 +97,14 @@ static YaesuEepromWrite checkReceiving(uint32_t timeoutMs) {
   return yaesuCatTxStatusTransmitting(txStatus) ? YaesuEepromWrite::Transmitting : YaesuEepromWrite::Ok;
 }
 
-// Writes pair at addr and reads it back into check.
+// Writes pair at addr and reads it back into check. The FT-817 may miss the first read after
+// a write that changed its menu item (measured), so the read is tried twice.
 static YaesuEepromWrite writeEepromPairChecked(uint16_t addr, const uint8_t pair[2], uint8_t check[2],
                                                uint32_t timeoutMs) {
   yaesuCatWriteEeprom2(addr, pair);
-  if (!readEepromPair(addr, check, timeoutMs)) return YaesuEepromWrite::NoReply;
+  if (!readEepromPair(addr, check, timeoutMs) && !readEepromPair(addr, check, timeoutMs)) {
+    return YaesuEepromWrite::NoReply;
+  }
   if (check[0] != pair[0] || check[1] != pair[1]) return YaesuEepromWrite::NotVerified;
   return YaesuEepromWrite::Ok;
 }
@@ -121,19 +134,29 @@ YaesuEepromWrite yaesuFt8x7SetMenuOrRow(bool row, uint8_t number, uint8_t& numbe
   return YaesuEepromWrite::Ok;
 }
 
-// 0xBC writes two bytes, so the byte after the setting's is written back as read.
-YaesuEepromWrite yaesuFt8x7SetFlag(Ft8x7Flag flag, bool on, uint32_t timeoutMs) {
-  Ft8x7FlagField field;
-  if (!ft8x7FlagField(currentFt8x7Model(), flag, field)) return YaesuEepromWrite::Unsupported;
+// Reads the setting's byte (pair[0]) and the one after it, while the radio is receiving.
+static YaesuEepromWrite readForWrite(uint16_t addr, uint8_t pair[2], uint32_t timeoutMs) {
   const YaesuEepromWrite rx = checkReceiving(timeoutMs);
   if (rx != YaesuEepromWrite::Ok) return rx;
-  uint8_t pair[2] = {0};
-  if (!readEepromPair(field.addr, pair, timeoutMs)) return YaesuEepromWrite::NoReply;
-  const uint8_t b = ft8x7FlagByte(field, on, pair[0]);
+  return readEepromPair(addr, pair, timeoutMs) ? YaesuEepromWrite::Ok : YaesuEepromWrite::NoReply;
+}
+
+// Writes b at addr unless pair[0], as read, already is b. 0xBC writes two bytes, so the byte
+// after it is written back as read.
+static YaesuEepromWrite writeByteChecked(uint16_t addr, uint8_t pair[2], uint8_t b, uint32_t timeoutMs) {
   if (b == pair[0]) return YaesuEepromWrite::Ok;
   pair[0] = b;
   uint8_t check[2] = {0};
-  return writeEepromPairChecked(field.addr, pair, check, timeoutMs);
+  return writeEepromPairChecked(addr, pair, check, timeoutMs);
+}
+
+YaesuEepromWrite yaesuFt8x7SetFlag(Ft8x7Flag flag, bool on, uint32_t timeoutMs) {
+  Ft8x7FlagField field;
+  if (!ft8x7FlagField(currentFt8x7Model(), flag, field)) return YaesuEepromWrite::Unsupported;
+  uint8_t pair[2] = {0};
+  const YaesuEepromWrite read = readForWrite(field.addr, pair, timeoutMs);
+  if (read != YaesuEepromWrite::Ok) return read;
+  return writeByteChecked(field.addr, pair, ft8x7FlagByte(field, on, pair[0]), timeoutMs);
 }
 
 YaesuEepromWrite yaesuFt857SetLevel(YaesuFt857Level level, uint16_t value, uint16_t& valueOut,
@@ -145,19 +168,48 @@ YaesuEepromWrite yaesuFt857SetLevel(YaesuFt857Level level, uint16_t value, uint1
     return YaesuEepromWrite::Unsupported;
   }
   if (value < lo || value > hi) return YaesuEepromWrite::OutOfRange;
-  const YaesuEepromWrite rx = checkReceiving(timeoutMs);
-  if (rx != YaesuEepromWrite::Ok) return rx;
   uint8_t pair[2] = {0};
-  if (!readEepromPair(addr, pair, timeoutMs)) return YaesuEepromWrite::NoReply;
+  const YaesuEepromWrite read = readForWrite(addr, pair, timeoutMs);
+  if (read != YaesuEepromWrite::Ok) return read;
   uint8_t b = 0;
   if (!ft857LevelByte(level, value, pair[0], b)) return YaesuEepromWrite::UnexpectedBytes;
-  if (b != pair[0]) {
-    pair[0] = b;
-    uint8_t check[2] = {0};
-    const YaesuEepromWrite written = writeEepromPairChecked(addr, pair, check, timeoutMs);
-    if (written != YaesuEepromWrite::Ok) return written;
-  }
+  const YaesuEepromWrite written = writeByteChecked(addr, pair, b, timeoutMs);
+  if (written != YaesuEepromWrite::Ok) return written;
   valueOut = ft857LevelValue(level, pair[0]);
+  return YaesuEepromWrite::Ok;
+}
+
+YaesuEepromWrite yaesuFt857SetRfPowerWatts(uint64_t hz, uint8_t watts, uint8_t& wattsOut,
+                                           uint32_t timeoutMs) {
+  if (!currentIsFt857Family()) return YaesuEepromWrite::Unsupported;
+  const Ft8x7BandGroup group = ft8x7BandGroupForHz(hz);
+  uint8_t lo = 0;
+  uint8_t hi = 0;
+  ft857RfPowerRange(group, lo, hi);
+  if (watts < lo || watts > hi) return YaesuEepromWrite::OutOfRange;
+  const uint16_t addr = ft857RfPowerAddr(group);
+  uint8_t pair[2] = {0};
+  const YaesuEepromWrite read = readForWrite(addr, pair, timeoutMs);
+  if (read != YaesuEepromWrite::Ok) return read;
+  uint8_t b = 0;
+  if (!ft857RfPowerByte(group, watts, pair[0], b)) return YaesuEepromWrite::UnexpectedBytes;
+  const YaesuEepromWrite written = writeByteChecked(addr, pair, b, timeoutMs);
+  if (written != YaesuEepromWrite::Ok) return written;
+  wattsOut = ft857RfPowerWatts(pair[0]);
+  return YaesuEepromWrite::Ok;
+}
+
+// steps 0: set tenths; otherwise step from the level stored.
+YaesuEepromWrite yaesuFt817SetPowerLevel(Ft817PowerLevel level, Ft817PowerLevel& levelOut,
+                                         uint32_t timeoutMs) {
+  if (!currentIsFt817Family()) return YaesuEepromWrite::Unsupported;
+  uint8_t pair[2] = {0};
+  const YaesuEepromWrite read = readForWrite(FT817_RF_POWER_ADDR, pair, timeoutMs);
+  if (read != YaesuEepromWrite::Ok) return read;
+  const YaesuEepromWrite written =
+      writeByteChecked(FT817_RF_POWER_ADDR, pair, ft817PowerLevelByte(level, pair[0]), timeoutMs);
+  if (written != YaesuEepromWrite::Ok) return written;
+  levelOut = ft817PowerLevel(pair[0]);
   return YaesuEepromWrite::Ok;
 }
 
@@ -203,12 +255,11 @@ bool yaesuFt857QueryRfPowerWatts(uint64_t hz, uint8_t& wattsOut, uint32_t timeou
   return true;
 }
 
-bool yaesuFt817QueryRfPowerTenths(uint16_t& tenthsOut, uint32_t timeoutMs) {
-  const Ft8x7Model model = currentFt8x7Model();
-  if (!ft8x7IsFt817Family(model)) return false;
+bool yaesuFt817QueryPowerLevel(Ft817PowerLevel& levelOut, uint32_t timeoutMs) {
+  if (!currentIsFt817Family()) return false;
   uint8_t b = 0;
   if (!yaesuCatReadEepromByte(FT817_RF_POWER_ADDR, b, timeoutMs)) return false;
-  tenthsOut = ft817RfPowerTenths(b, model == Ft8x7Model::Ft818);
+  levelOut = ft817PowerLevel(b);
   return true;
 }
 

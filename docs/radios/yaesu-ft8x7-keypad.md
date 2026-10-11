@@ -31,7 +31,8 @@ Important practical note:
 | `3` short | `LOCK?` (read from the radio) | `LOCK?` (read from the radio) |
 | `3` long | `LOCK ON/OFF` | `LOCK ON/OFF` |
 | `4` short | `PO?` | `PO?` |
-| `6` short | `RFPOWER?`: the TX power setting | `RFPOWER?`: menu 75 power of the current band |
+| `6` short | `RFPOWER?`: the TX power level | `RFPOWER?`: menu 75 power of the current band |
+| `6` long | experimental: `RFPOWER <level>`, `1` L1, `2` L2, `3` L3 or `4` High, then `Enter` | experimental: `RFPOWER <W>`, the watts, then `Enter` |
 | `7` short | `SM?` | `SM?` |
 | `8` short | `SWR?` | `SWR?` |
 | `9` short | `MODE?` | `MODE?` |

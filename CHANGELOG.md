@@ -178,7 +178,7 @@
   with menu 1 EXT MENU on) and rows 1–17, on the FT-817/818 menu 1–52 (1–57 with menu 52 EXTEND
   on) and rows 1–12. Keep the radio's menu closed meanwhile, since the radio saves its own values
   when the menu is exited
-- FT-857/897, experimental: the Bank 2 DSP keys can change their settings, not just read them
+- FT-817/818/857/897, experimental: the Bank 2 DSP keys and the RF power can be changed, not just read
   - `1`, `2`, `3` and `6` long switch noise reduction, the noise blanker, the notch and the DSP
     bandpass filter on and off (console: `NR`, `NB`, `NOTCH`, `DBF ON | OFF | TOGGLE`)
   - `4` long and double step the noise reduction level (menu 49) up and down by 1, `5` the noise
@@ -189,6 +189,11 @@
     steps them with `NRLEVEL`, `NBLEVEL`, `HPF` or `LPF STEP <+-n>`. A value outside these
     ranges is refused and nothing is sent
   - on the FT-817/818, Bank 2 `2` long switches the noise blanker
+  - RF power: on the FT-857/897, Bank 1 `6` long asks for the watts of the current band (menu 75:
+    HF and 6 m 5–100, VHF 5–50, UHF 2–20); type them, then `D` (console: `RFPOWER <W>`). A value
+    the band does not offer says "error" and nothing is sent
+  - on the FT-817/818, Bank 1 `6` long asks for the power level: `1`, `2` and `3` pick L1, L2 and
+    L3, `4` picks High, each saying its level, then `D` (console: `RFPOWER HIGH | L3 | L2 | L1`)
   - HamTRC writes these settings to the radio's memory and the radio follows at once. They say
     "error" while transmitting, and work only with experimental mode on, otherwise they say "not
     available"
@@ -231,8 +236,8 @@
 - FT-817/818/857/897: Bank 8 `8` says the menu item the radio's menu was last left on ("menu 7 6"),
   `7` the soft key or function row
 - FT-817/818/857/897: Bank 1 `6` says the TX power: on the FT-857/897 the menu 75 power of the
-  current band ("power 10 watts"), on the FT-817/818 the power setting (on the FT-818 6, 5, 2.5
-  and 1 watts)
+  current band ("power 10 watts"), on the FT-817/818 the power level ("power l two", "power
+  high"); the console `RFPOWER?` also shows its watts on an external supply
 - FT-817/818/857/897: Bank 3 `5` short says whether RIT is on ("rit on"), long toggles it, also
   after RIT was switched with the radio's CLAR key. Before, the key switched RIT on or off
   without knowing the state. If RIT is on, asking switches it off and straight back on; on the

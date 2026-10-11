@@ -944,7 +944,9 @@ void printHelp() {
                          : "    MICGAIN?  (mic gain of the mode: SSB, AM, FM or DIG menu, read only)");
     Serial.println(ft817 ? "    VOX? | VOXGAIN? | VOXDELAY?  (VOX, menus 51 and 50, read only)"
                          : "    VOX? | VOXGAIN? | VOXDELAY?  (VOX, menus 88 and 87, read only)");
-    Serial.println(ft817 ? "    RFPOWER?  (the TX power setting)" : "    RFPOWER?  (menu 75 power of the current band)");
+    Serial.println(ft817 ? "    RFPOWER?  (the TX power level, and its watts on an external supply)" : "    RFPOWER?  (menu 75 power of the current band)");
+    Serial.println(ft817 ? "    RFPOWER HIGH | L3 | L2 | L1  (experimental: writes it to the EEPROM)"
+                         : "    RFPOWER <W>  (experimental: menu 75 of the current band, HF and 6 m 5..100, VHF 5..50, UHF 2..20)");
     Serial.println("    MENU? | ROW?  (menu item and soft key row, saved when the radio's menu is exited)");
     Serial.println("    MENU <n> | ROW <n>  (experimental: writes them to the EEPROM, from 1)");
     Serial.println("    AGC <hex byte>");
@@ -1520,6 +1522,39 @@ static bool handleConsoleFt8x7LevelSet(const String& line, const String& upper) 
   return false;
 }
 
+// Experimental: RFPOWER <W> on the FT-857/897 (menu 75 of the current band), RFPOWER HIGH | L3 |
+// L2 | L1 on the FT-817/818, like Bank 1 `6` long.
+static bool handleConsoleFt8x7RfPowerSet(const String& upper) {
+  if (!upper.startsWith("RFPOWER ")) return false;
+  String arg = upper.substring(8);
+  arg.trim();
+  Ft8x7SettingState state;
+  FeatureStatus status = FeatureStatus::Invalid;
+  if (currentIsFt817Family()) {
+    for (const Ft817PowerLevel level :
+         {Ft817PowerLevel::High, Ft817PowerLevel::L3, Ft817PowerLevel::L2, Ft817PowerLevel::L1}) {
+      if (arg == ft817PowerLevelName(level)) status = ft817PowerLevelSet(level, state);
+    }
+    if (status == FeatureStatus::Invalid) {
+      Serial.println("RFPOWER -> use HIGH, L3, L2 or L1");
+      return true;
+    }
+  } else {
+    const long watts = arg.toInt();
+    if (arg.length() && String(watts) == arg && watts > 0 && watts <= 255) {
+      status = ft8x7RfPowerSet((uint16_t)(watts * 10), state);
+    }
+    if (status == FeatureStatus::Invalid) {
+      Serial.println("RFPOWER -> use whole watts, HF and 6 m 5..100, VHF 5..50, UHF 2..20");
+      return true;
+    }
+  }
+  if (reportFeatureFailure(status, "RFPOWER")) return true;
+  Serial.println(ft8x7SettingText(state));
+  speakFt8x7Setting(state);
+  return true;
+}
+
 // Experimental, FT-857/897: DBF ON | OFF | TOGGLE, like Bank 2 `6` long.
 static bool handleConsoleFt8x7DbfSet(const String& upper) {
   if (upper != "DBF ON" && upper != "DBF OFF" && upper != "DBF TOGGLE") return false;
@@ -1537,6 +1572,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
   if (handleConsoleFt8x7Settings(upper)) return true;
   if (handleConsoleFt8x7LevelSet(line, upper)) return true;
   if (handleConsoleFt8x7DbfSet(upper)) return true;
+  if (handleConsoleFt8x7RfPowerSet(upper)) return true;
 
   if (upper == "YALL?") {
     Serial.println("[YAESU FT8X7]");
