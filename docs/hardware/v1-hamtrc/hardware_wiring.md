@@ -1,5 +1,11 @@
 # Hardware Wiring Reference (ESP32 Talking Remote Controller - V3.5.8)
 
+> [!IMPORTANT]
+> **Planning to build one? Please get in touch first.**
+> The hardware is still evolving, so this documentation is deliberately kept minimal and may lag behind the bench.
+> Before you order parts or PCBs, [open a build enquiry](https://github.com/jewelux/Talking-Remote-Controller-LX1WJ/issues/new?template=build-enquiry.yml) to get the current state of the board,
+> recent changes and build tips. Feedback from builders is very welcome – every question helps to improve the documentation.
+
 Schematic: [`circuit-diagram-V1.pdf`](circuit-diagram-V1.pdf) · PCB layout: [`pcb-layout-V1.pdf`](pcb-layout-V1.pdf) · Prototype photos: [`proto-pcbs/`](../proto-pcbs/)
 
 This document describes the hardware wiring used by the current modular repository state based on
