@@ -73,14 +73,14 @@ Ft8x7BandGroup ft8x7BandGroupForHz(uint64_t hz) {
   return Ft8x7BandGroup::Hf;
 }
 
-static constexpr uint16_t kFt857VfoBBlockOffset = 0x01C0;
+static constexpr uint16_t kFt857FirstBlock = 0x00BA;
+static constexpr uint16_t kFt857BlockSize = 0x1C;
+static constexpr uint16_t kFt857VfoBBlockOffset = 0x01C0;  // 16 blocks
 
 static constexpr Ft857BandSlot kFt857BandSlots[] = {
-  {1800, 2000, 0x00BA, true},     {3500, 4000, 0x00D6, true},     {5250, 5450, 0x00F2, true},
-  {7000, 7300, 0x010E, true},     {10100, 10150, 0x012A, true},   {14000, 14350, 0x0146, true},
-  {18068, 18168, 0x0162, true},   {21000, 21450, 0x017E, true},   {24890, 24990, 0x019A, true},
-  {28000, 29700, 0x01B6, true},   {50000, 54000, 0x01D2, true},   {144000, 148000, 0x0226, false},
-  {430000, 450000, 0x0242, false},
+  {1800, 2000},     {3500, 4000},     {5250, 5450},     {7000, 7300},     {10100, 10150},
+  {14000, 14350},   {18068, 18168},   {21000, 21450},   {24890, 24990},   {28000, 29700},
+  {50000, 54000},   {144000, 148000}, {430000, 450000},
 };
 
 const Ft857BandSlot* ft857BandSlotForHz(uint64_t hz) {
@@ -91,8 +91,15 @@ const Ft857BandSlot* ft857BandSlotForHz(uint64_t hz) {
   return nullptr;
 }
 
-uint16_t ft857BandBlock(const Ft857BandSlot& slot, bool vfoB) {
-  return vfoB ? (uint16_t)(slot.block + kFt857VfoBBlockOffset) : slot.block;
+uint16_t ft857VfoBandBlock(uint8_t vfoBands, bool vfoB) {
+  const uint8_t band = vfoB ? (uint8_t)(vfoBands >> 4) : (uint8_t)(vfoBands & 0x0F);
+  const uint16_t block = (uint16_t)(kFt857FirstBlock + band * kFt857BlockSize);
+  return vfoB ? (uint16_t)(block + kFt857VfoBBlockOffset) : block;
+}
+
+bool ft857HasIpoAtt(uint64_t hz) {
+  const Ft8x7BandGroup group = ft8x7BandGroupForHz(hz);
+  return group == Ft8x7BandGroup::Hf || group == Ft8x7BandGroup::SixM;
 }
 
 int32_t ft857RitOffsetHz(const uint8_t word[2]) {

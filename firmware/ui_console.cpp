@@ -2104,10 +2104,9 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
       if (yaesuFt857QueryLevel(l.level, value, 300)) Serial.println(value);
       else Serial.println("--");
     }
-    uint64_t hz = 0;
     int32_t offset = 0;
     Serial.print("RITOFFSET ");
-    if (queryFrequency(hz, 800) && yaesuFt857QueryRitOffsetHz(hz, offset, 300)) Serial.println(offset);
+    if (yaesuFt857QueryRitOffsetHz(offset, 300)) Serial.println(offset);
     else Serial.println("--");
     return true;
   }

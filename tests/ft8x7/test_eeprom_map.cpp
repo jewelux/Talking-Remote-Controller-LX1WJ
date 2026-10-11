@@ -16,25 +16,16 @@ TEST(band_group_edges) {
   CHECK_EQ(ft8x7BandGroupForHz(420000000ULL), Ft8x7BandGroup::Uhf);
 }
 
-TEST(ft857_band_slot_for_each_band) {
-  struct Case {
-    uint64_t hz;
-    uint16_t block;
-    bool hasIpoAtt;
-  };
-  const Case cases[] = {
-    {1840000ULL, 0x00BA, true},    {3700000ULL, 0x00D6, true},    {5357000ULL, 0x00F2, true},
-    {7100000ULL, 0x010E, true},    {10125000ULL, 0x012A, true},   {14250000ULL, 0x0146, true},
-    {18100000ULL, 0x0162, true},   {21300000ULL, 0x017E, true},   {24940000ULL, 0x019A, true},
-    {28500000ULL, 0x01B6, true},   {50313000ULL, 0x01D2, true},   {145500000ULL, 0x0226, false},
-    {435000000ULL, 0x0242, false},
-  };
-  for (const Case &c : cases) {
-    const Ft857BandSlot *slot = ft857BandSlotForHz(c.hz);
+TEST(ft857_band_slot_for_each_amateur_band) {
+  const uint64_t hz[] = {1840000ULL,  3700000ULL,  5357000ULL,  7100000ULL,   10125000ULL,
+                         14250000ULL, 18100000ULL, 21300000ULL, 24940000ULL,  28500000ULL,
+                         50313000ULL, 145500000ULL, 435000000ULL};
+  const Ft857BandSlot *previous = nullptr;
+  for (uint64_t h : hz) {
+    const Ft857BandSlot *slot = ft857BandSlotForHz(h);
     CHECK(slot != nullptr);
-    if (!slot) continue;
-    CHECK_EQ(slot->block, c.block);
-    CHECK_EQ(slot->hasIpoAtt, c.hasIpoAtt);
+    CHECK(slot != previous);
+    previous = slot;
   }
 }
 
@@ -52,12 +43,33 @@ TEST(ft857_band_slot_is_null_outside_the_amateur_bands) {
   CHECK(ft857BandSlotForHz(460000000ULL) == nullptr);
 }
 
-TEST(ft857_vfo_b_block_follows_vfo_a) {
-  const Ft857BandSlot *slot = ft857BandSlotForHz(14250000ULL);
-  CHECK(slot != nullptr);
-  if (!slot) return;
-  CHECK_EQ(ft857BandBlock(*slot, false), 0x0146);
-  CHECK_EQ(ft857BandBlock(*slot, true), 0x0306);
+TEST(ft857_vfo_band_block_for_each_band) {
+  // 160 m to 70 cm, then general coverage, as measured.
+  const uint16_t blocks[16] = {0x00BA, 0x00D6, 0x00F2, 0x010E, 0x012A, 0x0146, 0x0162, 0x017E,
+                               0x019A, 0x01B6, 0x01D2, 0x01EE, 0x020A, 0x0226, 0x0242, 0x025E};
+  for (uint8_t band = 0; band < 16; ++band) {
+    CHECK_EQ(ft857VfoBandBlock(band, false), blocks[band]);
+    CHECK_EQ(ft857VfoBandBlock((uint8_t)(band << 4), true), (uint16_t)(blocks[band] + 0x01C0));
+  }
+}
+
+TEST(ft857_vfo_band_block_comes_from_the_band_numbers) {
+  // 0x6C as read: 2 m on A with general coverage on B, then 70 cm, then 26.8 MHz on both.
+  CHECK_EQ(ft857VfoBandBlock(0xFD, false), 0x0226);
+  CHECK_EQ(ft857VfoBandBlock(0xFE, false), 0x0242);
+  CHECK_EQ(ft857VfoBandBlock(0xFF, false), 0x025E);
+  CHECK_EQ(ft857VfoBandBlock(0xFD, true), 0x041E);
+  CHECK_EQ(ft857VfoBandBlock(0x90, false), 0x00BA);
+  CHECK_EQ(ft857VfoBandBlock(0x90, true), 0x0376);
+}
+
+TEST(ft857_ipo_att_exist_on_hf_and_6_m_only) {
+  CHECK(ft857HasIpoAtt(1840000ULL));
+  CHECK(ft857HasIpoAtt(26800000ULL));
+  CHECK(ft857HasIpoAtt(50313000ULL));
+  CHECK(!ft857HasIpoAtt(95000000ULL));
+  CHECK(!ft857HasIpoAtt(145500000ULL));
+  CHECK(!ft857HasIpoAtt(435000000ULL));
 }
 
 TEST(ft857_rit_offset_is_signed_10_hz_units) {

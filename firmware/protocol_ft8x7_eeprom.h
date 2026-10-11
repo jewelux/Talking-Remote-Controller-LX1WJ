@@ -34,9 +34,9 @@ enum class YaesuMenuRowWrite : uint8_t {
 // value read back. The radio overwrites it when its menu is open and then exited.
 YaesuMenuRowWrite yaesuFt8x7SetMenuOrRow(bool row, uint8_t number, uint8_t& numberOut,
                                          uint32_t timeoutMs);
-// IPO, ATT and FM narrow are kept per band. bandKnown is false outside the amateur bands.
+// IPO, ATT and FM narrow are kept per band; read from the block of the band the active VFO is
+// on, also outside the amateur bands. hz decides whether IPO and ATT exist.
 struct YaesuFt857BandFlags {
-  bool bandKnown = false;
   bool hasIpoAtt = false;  // HF and 6 m
   bool ipo = false;
   bool att = false;
@@ -50,16 +50,16 @@ bool yaesuFt817QueryRfPowerTenths(uint16_t& tenthsOut, uint32_t timeoutMs);
 // FT-817/818: true when the band group of hz uses the rear antenna jack (menu 07).
 bool yaesuFt817QueryRearAntenna(uint64_t hz, bool& rearOut, uint32_t timeoutMs);
 bool yaesuFt857QueryLevel(YaesuFt857Level level, uint16_t& valueOut, uint32_t timeoutMs);
-// The RIT offset kept in the band block of hz, as of the radio's last save of that block (a
-// band change saves it; turning the knob or switching RIT off does not). The offset stays when
-// RIT is switched off. The IF shift offset is not kept there.
-bool yaesuFt857QueryRitOffsetHz(uint64_t hz, int32_t& offsetOut, uint32_t timeoutMs);
-// The tone mode in the band block of hz on the active VFO, live. knownOut is false outside the
-// amateur bands and on a memory channel (also one being tuned), whose tone is not in the block.
-bool yaesuFt857QueryToneMode(uint64_t hz, bool& knownOut, YaesuToneMode& out,
-                             uint32_t timeoutMs);
+// The RIT offset kept in the block of the band the active VFO is on, as of the radio's last save
+// of that block (a band change saves it; turning the knob or switching RIT off does not). The
+// offset stays when RIT is switched off. The IF shift offset is not kept there.
+bool yaesuFt857QueryRitOffsetHz(int32_t& offsetOut, uint32_t timeoutMs);
+// The tone mode in the block of the band the active VFO is on, live, also outside the amateur
+// bands (the general coverage block). knownOut is false on a memory channel (also one being
+// tuned), whose tone is not in the block.
+bool yaesuFt857QueryToneMode(bool& knownOut, YaesuToneMode& out, uint32_t timeoutMs);
 // Split tone (menu 79) of the same band block; the radio keeps it per band.
-bool yaesuFt857QuerySplitTone(uint64_t hz, bool& knownOut, bool& onOut, uint32_t timeoutMs);
+bool yaesuFt857QuerySplitTone(bool& knownOut, bool& onOut, uint32_t timeoutMs);
 bool yaesuFt857QueryMicEq(YaesuFt857MicEq& out, uint32_t timeoutMs);
 // True when the active model keeps gain where it can be read (not the FT-857/897's PKT).
 bool yaesuFt8x7HasMicGain(Ft8x7MicGain gain);

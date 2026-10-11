@@ -77,15 +77,10 @@ Ft8x7BandGroup ft8x7BandGroupForHz(uint64_t hz);
 
 // FT-857/897 band blocks: each band keeps a 28-byte block per VFO: +1 bit 3 = NAR, +2 bit 5 =
 // IPO, +2 bit 4 = ATT, +10..+11 = RIT offset, +12..+15 = the band's last frequency in 10 Hz
-// units, big-endian. VFO B's blocks follow VFO A's. Block addresses measured on an FT-897; they
-// differ from the yo3ggx map only for 5 MHz, which that map puts at 0x25E (on the FT-897 the
-// general coverage block).
-struct Ft857BandSlot {
-  uint32_t lowKhz;
-  uint32_t highKhz;
-  uint16_t block;   // VFO A
-  bool hasIpoAtt;   // IPO and ATT exist on HF and 6 m only
-};
+// units, big-endian. 16 bands, in the order of 0x6C below: 160 m 0xBA, 80 m, 5 MHz, 40 m, 30 m,
+// 20 m, 17 m, 15 m, 12 m, 10 m, 6 m, FM broadcast, air, 2 m, 70 cm, general coverage 0x25E,
+// each 0x1C on; VFO B's blocks follow VFO A's. Block addresses measured on an FT-897; they
+// differ from the yo3ggx map only for 5 MHz, which that map puts at 0x25E.
 static constexpr uint16_t FT857_BAND_NAR_OFFSET = 1;
 static constexpr uint8_t FT857_BAND_NAR_MASK = 0x08;
 static constexpr uint16_t FT857_BAND_IPO_ATT_OFFSET = 2;
@@ -104,11 +99,22 @@ YaesuToneMode ft857ToneModeFromByte(uint8_t b);
 // a memory being tuned. On a memory the radio uses the channel's own record, not the band
 // block, and which channel is in use cannot be read.
 static constexpr uint8_t FT857_MEMORY_MASK = 0x40;
+// FT-857/897 0x6C: the band each VFO is on, VFO A bits 3..0 and VFO B bits 7..4, numbered in
+// block order (13 = 2 m, 14 = 70 cm, 15 = general coverage, which the radio uses outside its
+// other bands). Measured on an FT-897 with the band keys (2 m to 70 cm) and on 26.8 MHz.
+static constexpr uint16_t FT857_VFO_BANDS_ADDR = 0x006C;
+// The block of the band 0x6C names for VFO A or B.
+uint16_t ft857VfoBandBlock(uint8_t vfoBands, bool vfoB);
+// IPO and ATT exist on HF and 6 m only, so on the general coverage block too below 76 MHz.
+bool ft857HasIpoAtt(uint64_t hz);
 
-// Only the amateur bands: the band edges the radio uses outside them are not known. Null
-// outside them.
+// The amateur band edges, which the FT-817/818 tone mode uses to tell bands apart. Null outside
+// them.
+struct Ft857BandSlot {
+  uint32_t lowKhz;
+  uint32_t highKhz;
+};
 const Ft857BandSlot* ft857BandSlotForHz(uint64_t hz);
-uint16_t ft857BandBlock(const Ft857BandSlot& slot, bool vfoB);
 // Band block +10..+11: signed, 10 Hz units (0xFFE1 = -310 Hz).
 int32_t ft857RitOffsetHz(const uint8_t word[2]);
 

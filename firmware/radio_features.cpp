@@ -335,7 +335,6 @@ static FeatureStatus ft8x7BandSettingQuery(Ft8x7Setting setting, Ft8x7SettingSta
   }
   YaesuFt857BandFlags flags;
   if (!yaesuFt857QueryBandFlags(hz, flags, kFt8x7TimeoutMs)) return failure(FeatureStatus::NoReply);
-  if (!flags.bandKnown) return FeatureStatus::Unsupported;
   if (setting == Ft8x7Setting::Nar) {
     out.on = flags.nar;
     return FeatureStatus::Ok;
@@ -453,18 +452,19 @@ static bool ft817ToneModeHolds(uint64_t hz) {
   return slot ? slot == ft857BandSlotForHz(hz) : hz == live.toneModeHz;
 }
 
-// hz: the frequency read, also when the mode is not known; a change sets the mode with it.
+// hz: on the FT-817/818 the frequency read, also when the mode is not known; a change sets the
+// mode with it. 0 on the FT-857/897, which reads the mode from the radio.
 static FeatureStatus toneModeQueryAt(uint64_t& hz, YaesuToneMode& out) {
   if (!toneSupported()) return FeatureStatus::Unsupported;
   hz = 0;
-  if (!queryFrequency(hz, kFt8x7TimeoutMs)) return failure(FeatureStatus::NoReply);
   if (!currentIsFt857Family()) {
+    if (!queryFrequency(hz, kFt8x7TimeoutMs)) return failure(FeatureStatus::NoReply);
     if (!ft817ToneModeHolds(hz)) return FeatureStatus::Unsupported;
     out = live.toneMode;
     return FeatureStatus::Ok;
   }
   bool known = false;
-  if (!yaesuFt857QueryToneMode(hz, known, out, kFt8x7TimeoutMs)) return failure(FeatureStatus::NoReply);
+  if (!yaesuFt857QueryToneMode(known, out, kFt8x7TimeoutMs)) return failure(FeatureStatus::NoReply);
   return known ? FeatureStatus::Ok : FeatureStatus::Unsupported;
 }
 
@@ -525,10 +525,7 @@ FeatureStatus toneDirStep(YaesuToneMode& out) {
 
 FeatureStatus splitToneQuery(bool& on) {
   if (!toneSupported() || !currentIsFt857Family()) return FeatureStatus::Unsupported;
-  uint64_t hz = 0;
   bool known = false;
-  if (!queryFrequency(hz, kFt8x7TimeoutMs) || !yaesuFt857QuerySplitTone(hz, known, on, kFt8x7TimeoutMs)) {
-    return failure(FeatureStatus::NoReply);
-  }
+  if (!yaesuFt857QuerySplitTone(known, on, kFt8x7TimeoutMs)) return failure(FeatureStatus::NoReply);
   return known ? FeatureStatus::Ok : FeatureStatus::Unsupported;
 }

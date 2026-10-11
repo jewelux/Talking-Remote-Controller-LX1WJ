@@ -124,7 +124,7 @@ The active VFO cannot be read: `0x55` bit 0, which Hamlib's `get_vfo` and the KA
 | DCS code write | implemented and verified |
 | Extended CTCSS encode/decode modes | implemented and verified |
 | Extended DCS encode/decode modes | implemented and verified |
-| Tone mode query (`TONE?`, `TONEDIR?`, Bank 6 `2` and `5` short) | verified on an FT-897 for CAT changes: band block +4, see the [EEPROM map](#ft-857897-eeprom-map). The CAT tone command answers `00` whether or not the mode changed, so the reply tells nothing. Changes on the front panel are read at once too (checked through CTCSS and DCS, encode only and both, and off). On a memory channel or one being tuned (`0x68` bit 6) the tone is kept with the channel, not in the band block, so these and `SPLITTONE?` say "not available" (not yet tested on the radio) |
+| Tone mode query (`TONE?`, `TONEDIR?`, Bank 6 `2` and `5` short) | verified on an FT-897 for CAT changes: band block +4 of the band the active VFO is on (`0x6C`), see the [EEPROM map](#ft-857897-eeprom-map). Works outside the amateur bands too, in the general coverage block (set, stepped and read back on 26.8 MHz). The CAT tone command answers `00` whether or not the mode changed, so the reply tells nothing. Changes on the front panel are read at once too (checked through CTCSS and DCS, encode only and both, and off). On a memory channel or one being tuned (`0x68` bit 6) the tone is kept with the channel, not in the band block, so these and `SPLITTONE?` say "not available" (not yet tested on the radio) |
 | Decode only and split tone (`TONEDIR NEXT`, `SPLITTONE?`, Bank 6 `5` long and `6` short) | verified on an FT-897: CAT decode only (CTCSS `3A`, DCS `0B`) works with split tone off. Split tone (menu 79) and the mixed modes set with the radio's A (encode) and B (decode) keys read back from band block +4; the keypad says "tone ctcss rx dcs tx", "tone split" and "split tone on" |
 | S-meter read | implemented and verified |
 | RX status raw read | implemented and verified |
@@ -143,7 +143,7 @@ The active VFO cannot be read: `0x55` bit 0, which Hamlib's `get_vfo` and the KA
 | Split status query | verified on an FT-897: EEPROM `0x8D` bit 7 in receive, TX status bit 5 while transmitting (1 = on; the manual says 0 = on, which is wrong) |
 | Repeater and tone/DCS write paths outside normal FM repeater context | CAT bytes are implemented, but practical success can still depend on the radio already being in the appropriate VHF/UHF band and FM context |
 | Active VFO read from the EEPROM (`0x68`) | verified on an FT-897: follows both the front panel A/B key and the CAT toggle; Bank 3 reads it before each VFO action (`get_vfo=1`) |
-| Settings read from the EEPROM (Bank 2, Bank 8 `7`/`8`, `MENU?`, `ROW?`, `AGC?`, `IPO?`, `ATT?`, `NAR?`, `DBF?`, `BK?`, `KYR?`, `NR?`, `NB?`, `NOTCH?`, `NRLEVEL?`, `NBLEVEL?`, `HPF?`, `LPF?`, `MICEQ?`, `PROC?`, `PROCLEVEL?`, `MICGAIN?`, `VOX?`, `VOXGAIN?`, `VOXDELAY?`, `RFPOWER?`) | verified on an FT-897, read only; addresses in the [EEPROM map](#ft-857897-eeprom-map) |
+| Settings read from the EEPROM (Bank 2, Bank 8 `7`/`8`, `MENU?`, `ROW?`, `AGC?`, `IPO?`, `ATT?`, `NAR?`, `DBF?`, `BK?`, `KYR?`, `NR?`, `NB?`, `NOTCH?`, `NRLEVEL?`, `NBLEVEL?`, `HPF?`, `LPF?`, `MICEQ?`, `PROC?`, `PROCLEVEL?`, `MICGAIN?`, `VOX?`, `VOXGAIN?`, `VOXDELAY?`, `RFPOWER?`) | verified on an FT-897, read only; addresses in the [EEPROM map](#ft-857897-eeprom-map). IPO, ATT, NAR and `RITOFFSET` come from the block of the band the active VFO is on (`0x6C`), also outside the amateur bands |
 | Menu item and soft key row write (`MENU <n>`, `ROW <n>`, Bank 8 `8`/`7` long) | experimental, only with EXPERIMENTAL on; verified on an FT-897: the radio's menu opens on the item written and keeps the row, out-of-range numbers write nothing. Writes `0x88`/`0x89` together (`BC`), changing only the one byte, and reads them back. Menu 1–88, or 1–91 with menu 1 EXT MENU on; rows 1–17 (measured). The FT-857 is taken to match. The radio overwrites both when its menu is open and then exited |
 | Further settings read from the EEPROM (`YSETTINGS?`: VOX, PROC, lock, fast tuning, NB, BK, KYR, DSP row, IF shift, filter, SQL/RF knob, mic EQ, menu levels, the RIT offset) | protocol only, no keys except those in Bank 2; verified on an FT-897 against the values set on the radio |
 
@@ -156,6 +156,7 @@ Shared by all bands:
 | Address | Bits | Setting |
 |---|---|---|
 | `0x68` | 0 | VFO, 1 = B; follows the front panel A/B key and the CAT toggle (`81`) |
+| `0x6C` | 3..0 / 7..4 | the band VFO A / VFO B is on, numbered in block order below (13 = 2 m, 14 = 70 cm, 15 = general coverage, used outside the other bands); follows the band keys |
 | `0x6A` | 7 | fast tuning, **inverted** (1 = off) |
 | `0x6A` | 6 | lock, **inverted** (0 = locked); follows the front panel key and CAT lock |
 | `0x6A` | 5 | NB (yo3ggx) |
@@ -210,7 +211,7 @@ Per band and VFO, a 28-byte block. VFO A blocks: 160 m `0xBA`, 80 m `0xD6`, 5 MH
 | +10..+11 | all | the RIT offset, signed, 10 Hz units, big-endian (`FF AA` = −860 Hz), measured on 20 m against the frequency the radio reports with RIT on. Kept when RIT is switched off. Current only after the radio saves the block: a band change saves it, turning the knob or a short press of CLAR does not. The IF shift offset is not here. `YSETTINGS?` shows it as `RITOFFSET` |
 | +12..+15 | all | frequency, 10 Hz units, big-endian |
 
-The radio saves a band block on events such as key presses, not while the dial turns, so the block can lag the current frequency. A CAT frequency jump into another band carries the current working state there: that band's block is saved with the mode bytes (+3, +6, +7), +4 and the RIT offset of the band that was left. The band keys work differently: the RIT offset is kept per band, and a band key brings back the offset saved for that band. Seen changing without a known cause: `0x6C`/`0x6D`, and `0xA9` bit 7 (set together with DIG VOX 100).
+The radio saves a band block on events such as key presses, not while the dial turns, so the block can lag the current frequency. A CAT frequency jump into another band carries the current working state there: that band's block is saved with the mode bytes (+3, +6, +7), +4 and the RIT offset of the band that was left. The band keys work differently: the RIT offset is kept per band, and a band key brings back the offset saved for that band. Seen changing without a known cause: `0x6D`, and `0xA9` bit 7 (set together with DIG VOX 100).
 
 ### Experimental or incomplete
 

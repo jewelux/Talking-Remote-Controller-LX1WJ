@@ -103,36 +103,37 @@ YaesuMenuRowWrite yaesuFt8x7SetMenuOrRow(bool row, uint8_t number, uint8_t& numb
   return YaesuMenuRowWrite::Ok;
 }
 
-// The band slot of hz (null outside the amateur bands) and its block on the active VFO.
-// False when the active VFO could not be read.
-static bool ft857ActiveBandBlock(uint64_t hz, const Ft857BandSlot*& slotOut, uint16_t& blockOut,
-                                 uint32_t timeoutMs) {
-  slotOut = ft857BandSlotForHz(hz);
-  if (!slotOut) return true;
-  bool vfoB = false;
-  if (!yaesuFt8x7QueryFlag(Ft8x7Flag::VfoB, vfoB, timeoutMs)) return false;
-  blockOut = ft857BandBlock(*slotOut, vfoB);
+// The block of the band the active VFO is on (0x6C), on any frequency. onMemoryOut: a memory
+// channel or one being tuned is in use, and the radio uses its own record instead.
+static bool ft857ActiveBandBlock(uint16_t& blockOut, bool& onMemoryOut, uint32_t timeoutMs) {
+  Ft8x7FlagField vfoB;
+  if (!ft8x7FlagField(currentFt8x7Model(), Ft8x7Flag::VfoB, vfoB)) return false;
+  uint8_t vfoMem = 0;
+  uint8_t bands = 0;
+  if (!yaesuCatReadEepromByte(vfoB.addr, vfoMem, timeoutMs)) return false;
+  if (!yaesuCatReadEepromByte(FT857_VFO_BANDS_ADDR, bands, timeoutMs)) return false;
+  onMemoryOut = (vfoMem & FT857_MEMORY_MASK) != 0;
+  blockOut = ft857VfoBandBlock(bands, ft8x7FlagValue(vfoB, vfoMem));
   return true;
 }
 
 bool yaesuFt857QueryBandFlags(uint64_t hz, YaesuFt857BandFlags& out, uint32_t timeoutMs) {
   if (!currentIsFt857Family()) return false;
   out = YaesuFt857BandFlags();
-  const Ft857BandSlot* slot = nullptr;
   uint16_t block = 0;
-  if (!ft857ActiveBandBlock(hz, slot, block, timeoutMs)) return false;
-  if (!slot) return true;
+  bool onMemory = false;
+  if (!ft857ActiveBandBlock(block, onMemory, timeoutMs)) return false;
+  const bool hasIpoAtt = ft857HasIpoAtt(hz);
   uint8_t nar = 0;
   uint8_t ipoAtt = 0;
   if (!yaesuCatReadEepromByte(block + FT857_BAND_NAR_OFFSET, nar, timeoutMs)) return false;
-  if (slot->hasIpoAtt && !yaesuCatReadEepromByte(block + FT857_BAND_IPO_ATT_OFFSET, ipoAtt, timeoutMs)) {
+  if (hasIpoAtt && !yaesuCatReadEepromByte(block + FT857_BAND_IPO_ATT_OFFSET, ipoAtt, timeoutMs)) {
     return false;
   }
-  out.bandKnown = true;
-  out.hasIpoAtt = slot->hasIpoAtt;
+  out.hasIpoAtt = hasIpoAtt;
   out.nar = (nar & FT857_BAND_NAR_MASK) != 0;
-  out.ipo = slot->hasIpoAtt && (ipoAtt & FT857_BAND_IPO_MASK) != 0;
-  out.att = slot->hasIpoAtt && (ipoAtt & FT857_BAND_ATT_MASK) != 0;
+  out.ipo = hasIpoAtt && (ipoAtt & FT857_BAND_IPO_MASK) != 0;
+  out.att = hasIpoAtt && (ipoAtt & FT857_BAND_ATT_MASK) != 0;
   return true;
 }
 
@@ -171,47 +172,41 @@ bool yaesuFt857QueryLevel(YaesuFt857Level level, uint16_t& valueOut, uint32_t ti
   return true;
 }
 
-bool yaesuFt857QueryRitOffsetHz(uint64_t hz, int32_t& offsetOut, uint32_t timeoutMs) {
+bool yaesuFt857QueryRitOffsetHz(int32_t& offsetOut, uint32_t timeoutMs) {
   if (!currentIsFt857Family()) return false;
-  const Ft857BandSlot* slot = nullptr;
   uint16_t block = 0;
-  if (!ft857ActiveBandBlock(hz, slot, block, timeoutMs) || !slot) return false;
+  bool onMemory = false;
+  if (!ft857ActiveBandBlock(block, onMemory, timeoutMs)) return false;
   uint8_t word[2] = {0};
   if (!yaesuCatReadEepromWord(block + FT857_BAND_RIT_OFFSET, word, timeoutMs)) return false;
   offsetOut = ft857RitOffsetHz(word);
   return true;
 }
 
-// The tone byte of the active VFO's band block; 0, and knownOut false, outside the amateur
-// bands and on a memory.
-static bool ft857QueryToneByte(uint64_t hz, bool& knownOut, uint8_t& out, uint32_t timeoutMs) {
+// The tone byte of the band block the active VFO is on; 0, and knownOut false, on a memory.
+static bool ft857QueryToneByte(bool& knownOut, uint8_t& out, uint32_t timeoutMs) {
   if (!currentIsFt857Family()) return false;
   out = 0;
   knownOut = false;
-  const Ft857BandSlot* slot = ft857BandSlotForHz(hz);
-  if (!slot) return true;
-  Ft8x7FlagField vfoB;
-  if (!ft8x7FlagField(currentFt8x7Model(), Ft8x7Flag::VfoB, vfoB)) return false;
-  uint8_t vfoMem = 0;
-  if (!yaesuCatReadEepromByte(vfoB.addr, vfoMem, timeoutMs)) return false;
-  if ((vfoMem & FT857_MEMORY_MASK) != 0) return true;
-  const uint16_t block = ft857BandBlock(*slot, ft8x7FlagValue(vfoB, vfoMem));
+  uint16_t block = 0;
+  bool onMemory = false;
+  if (!ft857ActiveBandBlock(block, onMemory, timeoutMs)) return false;
+  if (onMemory) return true;
   if (!yaesuCatReadEepromByte(block + FT857_BAND_TONE_OFFSET, out, timeoutMs)) return false;
   knownOut = true;
   return true;
 }
 
-bool yaesuFt857QueryToneMode(uint64_t hz, bool& knownOut, YaesuToneMode& out,
-                             uint32_t timeoutMs) {
+bool yaesuFt857QueryToneMode(bool& knownOut, YaesuToneMode& out, uint32_t timeoutMs) {
   uint8_t b = 0;
-  if (!ft857QueryToneByte(hz, knownOut, b, timeoutMs)) return false;
+  if (!ft857QueryToneByte(knownOut, b, timeoutMs)) return false;
   out = ft857ToneModeFromByte(b);
   return true;
 }
 
-bool yaesuFt857QuerySplitTone(uint64_t hz, bool& knownOut, bool& onOut, uint32_t timeoutMs) {
+bool yaesuFt857QuerySplitTone(bool& knownOut, bool& onOut, uint32_t timeoutMs) {
   uint8_t b = 0;
-  if (!ft857QueryToneByte(hz, knownOut, b, timeoutMs)) return false;
+  if (!ft857QueryToneByte(knownOut, b, timeoutMs)) return false;
   onOut = (b & FT857_BAND_SPLIT_TONE_MASK) != 0;
   return true;
 }
