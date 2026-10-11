@@ -2,7 +2,7 @@
 
 > **Status: in development.** V2 is the compact successor of the original board.
 > The hardware is evolving; this page describes the state of the drawings listed below
-> and may change without notice. For the V1 board see [`hardware_wiring.md`](../../hardware_wiring.md).
+> and may change without notice. For the V1 board see [`hardware_wiring.md`](../v1-hamtrc/hardware_wiring.md).
 
 | Source | File |
 |---|---|

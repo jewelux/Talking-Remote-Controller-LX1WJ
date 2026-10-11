@@ -20,7 +20,7 @@ Use this repository if you need to:
 ## Main Technical References
 
 - [QUICKSTART.md](QUICKSTART.md)
-- [docs/hardware_wiring.md](docs/hardware_wiring.md)
+- [docs/hardware/v1-hamtrc/hardware_wiring.md](docs/hardware/v1-hamtrc/hardware_wiring.md)
 - [docs/radio-support-matrix.md](docs/radio-support-matrix.md)
 - [docs/radios/yaesu-ftdx10-family.md](docs/radios/yaesu-ftdx10-family.md)
 - [docs/radios/yaesu-ftdx10-test-plan.md](docs/radios/yaesu-ftdx10-test-plan.md)

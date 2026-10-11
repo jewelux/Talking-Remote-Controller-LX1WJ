@@ -9,7 +9,7 @@ The other docs, which this one does not repeat:
 - [README](../README.md): project goals and the branch model (`main`, `development`, feature branches)
 - [QUICKSTART](../QUICKSTART.md): flashing and using the device
 - [builder-guide](../builder-guide.md): hardware, online updates, and the documentation rule
-- [hardware_wiring](hardware_wiring.md): pins and cables
+- [hardware_wiring](hardware/v1-hamtrc/hardware_wiring.md): pins and cables
 - [voice_assets/piper/README](../firmware/voice_assets/piper/README.md): setting up voice generation
 
 Contents:

@@ -1,6 +1,8 @@
 # Hardware Wiring Reference (ESP32 Talking Remote Controller - V3.5.8)
 
-> Looking for the compact V2 board (Mini-HamTRC, in development)? See [`hardware_wiring_v2.md`](hardware/v2-mini-hamtrc/hardware_wiring_v2.md) and [`bom_v2.md`](hardware/v2-mini-hamtrc/bom_v2.md).
+Schematic: [`circuit-diagram-V1.pdf`](circuit-diagram-V1.pdf) · PCB layout: [`pcb-layout-V1.pdf`](pcb-layout-V1.pdf) · Prototype photos: [`proto-pcbs/`](../proto-pcbs/)
+
+> Looking for the compact V2 board (Mini-HamTRC, in development)? See [`hardware_wiring_v2.md`](../v2-mini-hamtrc/hardware_wiring_v2.md) and [`bom_v2.md`](../v2-mini-hamtrc/bom_v2.md).
 
 This document describes the hardware wiring used by the current modular repository state based on
 `firmware/TalkingRemoteControllerLX1WJ_V3_5_8.ino`.
