@@ -73,15 +73,23 @@ KeyBinding bank2(const KeypadTraits& t, char key) {
   const bool civ = t.layout == L::Civ;
   const bool ftdx10 = t.layout == L::Ftdx10;
   // FT-817 and FT-857/897: settings the radio keeps in its EEPROM, read only but for the
-  // FT-857/897 NR and NB levels, which experimental mode can step. The FT-817 has no DSP and no
-  // readable IPO/ATT, so of these it answers only AGC. Its '0' is the antenna jack of the
+  // FT-857/897 DSP keys '4'-'8', which experimental mode can change. The FT-817 has no DSP and
+  // no readable IPO/ATT, so of these it answers only AGC. Its '0' is the antenna jack of the
   // current band.
   if (t.layout == L::Ft817 && key == '0') return bind(queryBank2Ft817Antenna);
-  if (t.layout == L::Ft857 && key == '4') {
-    return bind(queryBank2Ft8x7NrLevel, [] { stepBank2Ft8x7NrLevel(1); }, [] { stepBank2Ft8x7NrLevel(-1); });
-  }
-  if (t.layout == L::Ft857 && key == '5') {
-    return bind(queryBank2Ft8x7NbLevel, [] { stepBank2Ft8x7NbLevel(10); }, [] { stepBank2Ft8x7NbLevel(-10); });
+  if (t.layout == L::Ft857) {
+    switch (key) {
+      case '4':
+        return bind(queryBank2Ft8x7NrLevel, [] { stepBank2Ft8x7NrLevel(1); }, [] { stepBank2Ft8x7NrLevel(-1); });
+      case '5':
+        return bind(queryBank2Ft8x7NbLevel, [] { stepBank2Ft8x7NbLevel(10); }, [] { stepBank2Ft8x7NbLevel(-10); });
+      case '6': return bind(queryBank2Ft8x7Dbf, toggleBank2Ft8x7Dbf);
+      case '7':
+        return bind(queryBank2Ft8x7LowCut, [] { stepBank2Ft8x7LowCut(1); }, [] { stepBank2Ft8x7LowCut(-1); });
+      case '8':
+        return bind(queryBank2Ft8x7HighCut, [] { stepBank2Ft8x7HighCut(1); }, [] { stepBank2Ft8x7HighCut(-1); });
+      default: break;
+    }
   }
   if (t.layout == L::Ft817 || t.layout == L::Ft857) {
     switch (key) {

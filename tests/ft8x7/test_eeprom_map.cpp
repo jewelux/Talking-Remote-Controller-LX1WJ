@@ -539,18 +539,14 @@ TEST(flag_value_of_an_inverted_bit) {
   CHECK(ft8x7FlagValue(lock, 0xBF));
 }
 
-TEST(only_one_bit_flags_can_be_set) {
-  Ft8x7FlagField field{};
-  CHECK(ft8x7FlagField(Ft8x7Model::Ft857, Ft8x7Flag::Nb, field));
-  CHECK(ft8x7FlagIsOneBit(field));
-  CHECK(ft8x7FlagField(Ft8x7Model::Ft857, Ft8x7Flag::Dnr, field));
-  CHECK(ft8x7FlagIsOneBit(field));
-  CHECK(ft8x7FlagField(Ft8x7Model::Ft857, Ft8x7Flag::Dnf, field));
-  CHECK(ft8x7FlagIsOneBit(field));
-  CHECK(ft8x7FlagField(Ft8x7Model::Ft817, Ft8x7Flag::Nb, field));
-  CHECK(ft8x7FlagIsOneBit(field));
-  CHECK(ft8x7FlagField(Ft8x7Model::Ft857, Ft8x7Flag::Dbf, field));
-  CHECK(!ft8x7FlagIsOneBit(field));
+// Measured on an FT-897: its DBF key sets and clears both bits, in LSB and CW (0x20 <-> 0x2C).
+TEST(dbf_byte_sets_both_bits) {
+  Ft8x7FlagField dbf{};
+  CHECK(ft8x7FlagField(Ft8x7Model::Ft857, Ft8x7Flag::Dbf, dbf));
+  CHECK_EQ(ft8x7FlagByte(dbf, true, 0x20), 0x2C);
+  CHECK_EQ(ft8x7FlagByte(dbf, false, 0x2C), 0x20);
+  CHECK_EQ(ft8x7FlagByte(dbf, true, 0x24), 0x2C);
+  CHECK_EQ(ft8x7FlagByte(dbf, false, 0xFF), 0xF3);
 }
 
 TEST(flag_byte_keeps_the_other_bits) {
@@ -573,6 +569,12 @@ TEST(ft857_settable_level_ranges) {
   CHECK(ft857LevelRange(YaesuFt857Level::NbLevel, lo, hi));
   CHECK_EQ(lo, 0);
   CHECK_EQ(hi, 100);
+  CHECK(ft857LevelRange(YaesuFt857Level::HpfCutoff, lo, hi));
+  CHECK_EQ(lo, 100);
+  CHECK_EQ(hi, 1000);
+  CHECK(ft857LevelRange(YaesuFt857Level::LpfCutoff, lo, hi));
+  CHECK_EQ(lo, 1000);
+  CHECK_EQ(hi, 6000);
   CHECK(!ft857LevelRange(YaesuFt857Level::CwSpeed, lo, hi));
   CHECK(!ft857LevelRange(YaesuFt857Level::ProcLevel, lo, hi));
 }
@@ -614,4 +616,54 @@ TEST(ft857_level_byte_rejects_unexpected_stored_bytes) {
   CHECK(!ft857LevelByte(YaesuFt857Level::NbLevel, 50, 0x65, out));
   CHECK(!ft857LevelByte(YaesuFt857Level::NbLevel, 50, 0xFF, out));
   CHECK_EQ(out, 0xAA);
+}
+
+// 0x95 bits 3..0, 60 Hz steps from 100 Hz; the radio's value nearest the one asked for.
+TEST(ft857_hpf_byte_rounds_to_the_nearest_step) {
+  uint8_t out = 0;
+  CHECK(ft857LevelByte(YaesuFt857Level::HpfCutoff, 100, 0x6F, out));
+  CHECK_EQ(out, 0x60);
+  CHECK(ft857LevelByte(YaesuFt857Level::HpfCutoff, 1000, 0x60, out));
+  CHECK_EQ(out, 0x6F);
+  CHECK(ft857LevelByte(YaesuFt857Level::HpfCutoff, 300, 0x60, out));  // 280 and 340: 280
+  CHECK_EQ(ft857LevelValue(YaesuFt857Level::HpfCutoff, out), 280);
+  CHECK(ft857LevelByte(YaesuFt857Level::HpfCutoff, 310, 0x60, out));  // a tie: the lower one
+  CHECK_EQ(ft857LevelValue(YaesuFt857Level::HpfCutoff, out), 280);
+  CHECK_EQ(out & 0xF0, 0x60);
+}
+
+// 0x94 bits 4..0, 32 steps from 1000 to 6000 Hz.
+TEST(ft857_lpf_byte_rounds_to_the_nearest_step) {
+  uint8_t out = 0;
+  CHECK(ft857LevelByte(YaesuFt857Level::LpfCutoff, 6000, 0x80, out));
+  CHECK_EQ(out, 0x9F);
+  CHECK(ft857LevelByte(YaesuFt857Level::LpfCutoff, 1000, 0x9F, out));
+  CHECK_EQ(out, 0x80);
+  CHECK(ft857LevelByte(YaesuFt857Level::LpfCutoff, 2700, 0x9F, out));
+  CHECK_EQ(ft857LevelValue(YaesuFt857Level::LpfCutoff, out), 2770);
+  CHECK(ft857LevelByte(YaesuFt857Level::LpfCutoff, 2770, 0x9F, out));
+  CHECK_EQ(out, 0x8B);
+}
+
+TEST(ft857_cut_bytes_reject_values_out_of_range) {
+  uint8_t out = 0xAA;
+  CHECK(!ft857LevelByte(YaesuFt857Level::HpfCutoff, 99, 0x60, out));
+  CHECK(!ft857LevelByte(YaesuFt857Level::HpfCutoff, 1001, 0x60, out));
+  CHECK(!ft857LevelByte(YaesuFt857Level::LpfCutoff, 999, 0x9F, out));
+  CHECK(!ft857LevelByte(YaesuFt857Level::LpfCutoff, 6001, 0x9F, out));
+  CHECK_EQ(out, 0xAA);
+}
+
+TEST(ft857_level_step_moves_by_the_radios_steps) {
+  CHECK_EQ(ft857LevelStep(YaesuFt857Level::NrLevel, 8, -3), 5);
+  CHECK_EQ(ft857LevelStep(YaesuFt857Level::NrLevel, 15, 5), 16);
+  CHECK_EQ(ft857LevelStep(YaesuFt857Level::NbLevel, 80, 10), 90);
+  CHECK_EQ(ft857LevelStep(YaesuFt857Level::NbLevel, 95, 10), 100);
+  CHECK_EQ(ft857LevelStep(YaesuFt857Level::NbLevel, 5, -10), 0);
+  CHECK_EQ(ft857LevelStep(YaesuFt857Level::HpfCutoff, 100, 1), 160);
+  CHECK_EQ(ft857LevelStep(YaesuFt857Level::HpfCutoff, 100, -1), 100);
+  CHECK_EQ(ft857LevelStep(YaesuFt857Level::HpfCutoff, 1000, 1), 1000);
+  CHECK_EQ(ft857LevelStep(YaesuFt857Level::LpfCutoff, 6000, -1), ft857LevelValue(YaesuFt857Level::LpfCutoff, 30));
+  CHECK_EQ(ft857LevelStep(YaesuFt857Level::LpfCutoff, 2770, 1), ft857LevelValue(YaesuFt857Level::LpfCutoff, 12));
+  CHECK_EQ(ft857LevelStep(YaesuFt857Level::CwSpeed, 20, 1), 20);
 }

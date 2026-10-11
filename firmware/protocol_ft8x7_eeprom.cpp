@@ -124,9 +124,7 @@ YaesuEepromWrite yaesuFt8x7SetMenuOrRow(bool row, uint8_t number, uint8_t& numbe
 // 0xBC writes two bytes, so the byte after the setting's is written back as read.
 YaesuEepromWrite yaesuFt8x7SetFlag(Ft8x7Flag flag, bool on, uint32_t timeoutMs) {
   Ft8x7FlagField field;
-  if (!ft8x7FlagField(currentFt8x7Model(), flag, field) || !ft8x7FlagIsOneBit(field)) {
-    return YaesuEepromWrite::Unsupported;
-  }
+  if (!ft8x7FlagField(currentFt8x7Model(), flag, field)) return YaesuEepromWrite::Unsupported;
   const YaesuEepromWrite rx = checkReceiving(timeoutMs);
   if (rx != YaesuEepromWrite::Ok) return rx;
   uint8_t pair[2] = {0};

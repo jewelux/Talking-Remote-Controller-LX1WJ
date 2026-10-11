@@ -67,13 +67,14 @@ they say "not available". This is noted where it is always the case.
 | `5` long | NB level up 10 % | radio power off | free | free | NB level up 10 (experimental) |
 | `5` double | NB level down 10 % | radio power on | free | free | NB level down 10 (experimental) |
 | `6` short | PBT inner | radio status line | free | not available | DSP bandpass filter |
-| `6` long | PBT inner up | free | free | free | free |
+| `6` long | PBT inner up | free | free | free | DSP bandpass filter on/off (experimental) |
 | `6` double | PBT inner down | free | free | free | free |
 | `7` short | PBT outer | radio ID | free | not available | low cut |
-| `7` long | PBT outer up | free | free | free | free |
-| `7` double | PBT outer down | free | free | free | free |
+| `7` long | PBT outer up | free | free | free | low cut up 60 Hz (experimental) |
+| `7` double | PBT outer down | free | free | free | low cut down 60 Hz (experimental) |
 | `8` short | filter shape | not available | free | not available | high cut |
-| `8` long | filter shape soft/sharp | free | free | free | free |
+| `8` long | filter shape soft/sharp | free | free | free | high cut up one step (experimental) |
+| `8` double | free | free | free | free | high cut down one step (experimental) |
 | `9` short | filter width | not available | free | not available | TX equalizer |
 | `9` long | next filter | free | free | free | free |
 | `9` double | previous filter | free | free | free | free |

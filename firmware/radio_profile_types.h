@@ -73,8 +73,8 @@ struct RadioCapabilities {
   bool getProc = false;
   bool getMicGain = false;
   bool getVox = false;
-  // FT-8x7: set the menu item and soft key row in the EEPROM. No profile sets it: only
-  // EXPERIMENTAL ON.
+  // FT-8x7: set the menu item and soft key row, and the FT-857/897 DBF, low cut and high cut,
+  // in the EEPROM. No profile sets it: only EXPERIMENTAL ON.
   bool setRadioMenu = false;
 };
 

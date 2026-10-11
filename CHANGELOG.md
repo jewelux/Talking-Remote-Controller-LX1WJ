@@ -178,15 +178,20 @@
   with menu 1 EXT MENU on) and rows 1–17, on the FT-817/818 menu 1–52 (1–57 with menu 52 EXTEND
   on) and rows 1–12. Keep the radio's menu closed meanwhile, since the radio saves its own values
   when the menu is exited
-- FT-857/897, experimental: Bank 2 `1`, `2` and `3` long switch noise reduction, the noise blanker
-  and the notch on and off, like on the other radios (console: `NR`, `NB`, `NOTCH ON | OFF |
-  TOGGLE`). Bank 2 `4` long and double step the noise reduction level (menu 49) up and down by 1,
-  `5` long and double the noise blanker level (menu 63) by 10. The console sets them with
-  `NRLEVEL <1..16>` and `NBLEVEL <0..100>`, or steps them with `NRLEVEL STEP <+-n>` and
-  `NBLEVEL STEP <+-n>`; a value outside these ranges is refused and nothing is sent. On the
-  FT-817/818, Bank 2 `2` long switches the noise blanker. HamTRC writes these settings to the
-  radio's memory, so they say "error" while transmitting. They work only with experimental mode
-  on, otherwise they say "not available"
+- FT-857/897, experimental: the Bank 2 DSP keys can change their settings, not just read them
+  - `1`, `2`, `3` and `6` long switch noise reduction, the noise blanker, the notch and the DSP
+    bandpass filter on and off (console: `NR`, `NB`, `NOTCH`, `DBF ON | OFF | TOGGLE`)
+  - `4` long and double step the noise reduction level (menu 49) up and down by 1, `5` the noise
+    blanker level (menu 63) by 10, `7` the low cut (menu 46) by 60 Hz and `8` the high cut
+    (menu 47) by one of its steps (about 160 Hz)
+  - the console sets them with `NRLEVEL <1..16>`, `NBLEVEL <0..100>`, `HPF <100..1000>` and
+    `LPF <1000..6000>` (in Hz, set to the radio's nearest step, e.g. `HPF 300` gives 280 Hz), or
+    steps them with `NRLEVEL`, `NBLEVEL`, `HPF` or `LPF STEP <+-n>`. A value outside these
+    ranges is refused and nothing is sent
+  - on the FT-817/818, Bank 2 `2` long switches the noise blanker
+  - HamTRC writes these settings to the radio's memory and the radio follows at once. They say
+    "error" while transmitting, and work only with experimental mode on, otherwise they say "not
+    available"
 - FT-817/818/857/897: the SWR reading no longer sends the radio a command that writes to its
   internal memory, and `ALC?` no longer answers with a fixed memory value
 - FT-817/818/857/897: `PO?` and `SWR?` (Bank 1 `4` and `8`) work while transmitting. Power is said in

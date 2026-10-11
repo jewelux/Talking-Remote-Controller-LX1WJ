@@ -929,13 +929,15 @@ void printHelp() {
   } else if (ft8x7) {
     Serial.println("    ALC? | MOD?");
     Serial.println(ft817 ? "    AGC? | BK? | KYR?  (radio settings, read only)"
-                         : "    AGC? | IPO? | ATT? | NAR? | DBF? | BK? | KYR?  (radio settings, read only)");
+                         : "    AGC? | IPO? | ATT? | NAR? | DBF? | BK? | KYR?  (radio settings)");
+    if (!ft817) Serial.println("    DBF ON | OFF | TOGGLE  (experimental: DSP bandpass filter, writes it to the EEPROM)");
     Serial.println(ft817 ? "    NB?" : "    NR? | NB? | NOTCH?");
     Serial.println(ft817 ? "    NB OFF | ON | TOGGLE  (experimental: writes it to the EEPROM)"
                          : "    NR | NB | NOTCH OFF | ON | TOGGLE  (experimental: writes them to the EEPROM)");
     if (!ft817) Serial.println("    NRLEVEL? | NBLEVEL? | HPF? | LPF? | MICEQ?  (DSP menu settings)");
     if (!ft817) {
       Serial.println("    NRLEVEL <1..16> | NBLEVEL <0..100> | NRLEVEL STEP | NBLEVEL STEP <+-n>  (experimental: menus 49 and 63)");
+      Serial.println("    HPF <100..1000> | LPF <1000..6000> | HPF STEP | LPF STEP <+-n>  (experimental: menus 46 and 47, Hz to the nearest step)");
     }
     if (!ft817) Serial.println("    PROC? | PROCLEVEL?  (speech processor and menu 74, read only)");
     Serial.println(ft817 ? "    MICGAIN?  (mic gain of the mode: SSB, AM, FM, DIG or PKT menu, read only)"
@@ -1456,46 +1458,74 @@ static bool handleConsoleFt8x7Settings(const String& upper) {
   return true;
 }
 
-// Experimental, FT-857/897: NRLEVEL <1..16>, NBLEVEL <0..100> and NRLEVEL | NBLEVEL STEP <+-n>,
-// like Bank 2 `4` and `5` long and double.
+// Experimental, FT-857/897: NRLEVEL <1..16>, NBLEVEL <0..100>, HPF <100..1000>, LPF <1000..6000>
+// (Hz, to the radio's nearest step) and <name> STEP <+-n> in the radio's steps, like Bank 2 `4`,
+// `5`, `7` and `8` long and double.
 static bool handleConsoleFt8x7LevelSet(const String& line, const String& upper) {
-  const bool nb = upper.startsWith("NBLEVEL ");
-  if (!nb && !upper.startsWith("NRLEVEL ")) return false;
-  const Ft8x7Setting setting = nb ? Ft8x7Setting::NbLevel : Ft8x7Setting::NrLevel;
-  const char* label = nb ? "NBLEVEL" : "NRLEVEL";
-  Ft8x7SettingState state;
-  FeatureStatus status = FeatureStatus::Ok;
-  if (upper.startsWith(nb ? "NBLEVEL STEP" : "NRLEVEL STEP")) {
-    int32_t step = 0;
-    if (!parseStepArg(line, upper, nb ? "NBLEVEL STEP " : "NRLEVEL STEP ", step)) {
-      Serial.print(label);
-      Serial.print(" STEP -> use a signed number, e.g. ");
-      Serial.print(label);
-      Serial.println(nb ? " STEP 10" : " STEP -1");
-      return true;
+  struct LevelCommand {
+    const char* name;
+    Ft8x7Setting setting;
+    const char* example;
+    const char* stepExample;
+  };
+  static const LevelCommand kCommands[] = {
+    {"NRLEVEL", Ft8x7Setting::NrLevel, "8", "-1"},
+    {"NBLEVEL", Ft8x7Setting::NbLevel, "50", "10"},
+    {"HPF", Ft8x7Setting::LowCut, "300", "1"},
+    {"LPF", Ft8x7Setting::HighCut, "2700", "-1"},
+  };
+  for (const LevelCommand& c : kCommands) {
+    const String prefix = String(c.name) + " ";
+    if (!upper.startsWith(prefix)) continue;
+    const String stepPrefix = prefix + "STEP";
+    Ft8x7SettingState state;
+    FeatureStatus status = FeatureStatus::Ok;
+    if (upper.startsWith(stepPrefix)) {
+      int32_t step = 0;
+      if (!parseStepArg(line, upper, (stepPrefix + " ").c_str(), step)) {
+        Serial.print(c.name);
+        Serial.print(" STEP -> use a signed number of steps, e.g. ");
+        Serial.print(c.name);
+        Serial.print(" STEP ");
+        Serial.println(c.stepExample);
+        return true;
+      }
+      status = ft8x7LevelStep(c.setting, (int)step, state);
+    } else {
+      uint16_t lo = 0;
+      uint16_t hi = 0;
+      (void)ft8x7LevelRange(c.setting, lo, hi);
+      String arg = upper.substring(prefix.length());
+      arg.trim();
+      const long value = arg.toInt();
+      if (!arg.length() || String(value) != arg || value < lo || value > hi) {
+        Serial.print(c.name);
+        Serial.print(" -> use ");
+        Serial.print(lo);
+        Serial.print("..");
+        Serial.print(hi);
+        Serial.print(", e.g. ");
+        Serial.print(c.name);
+        Serial.print(' ');
+        Serial.println(c.example);
+        return true;
+      }
+      status = ft8x7LevelSet(c.setting, (uint16_t)value, state);
     }
-    status = ft8x7LevelStep(setting, (int)step, state);
-  } else {
-    uint16_t lo = 0;
-    uint16_t hi = 0;
-    (void)ft8x7LevelRange(setting, lo, hi);
-    String arg = upper.substring(8);
-    arg.trim();
-    const long value = arg.toInt();
-    if (!arg.length() || String(value) != arg || value < lo || value > hi) {
-      Serial.print(label);
-      Serial.print(" -> use ");
-      Serial.print(lo);
-      Serial.print("..");
-      Serial.print(hi);
-      Serial.print(", e.g. ");
-      Serial.print(label);
-      Serial.println(nb ? " 50" : " 8");
-      return true;
-    }
-    status = ft8x7LevelSet(setting, (uint16_t)value, state);
+    if (reportFeatureFailure(status, c.name)) return true;
+    Serial.println(ft8x7SettingText(state));
+    speakFt8x7Setting(state);
+    return true;
   }
-  if (reportFeatureFailure(status, label)) return true;
+  return false;
+}
+
+// Experimental, FT-857/897: DBF ON | OFF | TOGGLE, like Bank 2 `6` long.
+static bool handleConsoleFt8x7DbfSet(const String& upper) {
+  if (upper != "DBF ON" && upper != "DBF OFF" && upper != "DBF TOGGLE") return false;
+  Ft8x7SettingState state;
+  const FeatureStatus status = upper == "DBF TOGGLE" ? ft8x7DbfToggle(state) : ft8x7DbfSet(upper == "DBF ON", state);
+  if (reportFeatureFailure(status, "DBF")) return true;
   Serial.println(ft8x7SettingText(state));
   speakFt8x7Setting(state);
   return true;
@@ -1506,6 +1536,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
   if (handleConsoleFt8x7Meters(upper)) return true;
   if (handleConsoleFt8x7Settings(upper)) return true;
   if (handleConsoleFt8x7LevelSet(line, upper)) return true;
+  if (handleConsoleFt8x7DbfSet(upper)) return true;
 
   if (upper == "YALL?") {
     Serial.println("[YAESU FT8X7]");

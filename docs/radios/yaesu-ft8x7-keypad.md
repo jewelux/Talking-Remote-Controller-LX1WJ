@@ -39,7 +39,7 @@ Important practical note:
 
 ## Bank 2 - Radio Settings
 
-All Bank 2 keys only read settings from the radio's EEPROM. CAT don't change them, so a long press on `1`–`3` says "not available".
+All Bank 2 keys read settings from the radio's EEPROM, since CAT cannot. With experimental mode on, the FT-857/897 DSP keys also change them by writing the EEPROM: long press on `1`, `2`, `3` and `6` switches the setting, long and double press on `4`, `5`, `7` and `8` step it up and down (NR level by 1, NB level by 10, low cut by 60 Hz, high cut by one step). On the FT-817, `2` long switches NB. Otherwise a long press says "not available".
 
 | Key | FT-817 | FT-857/897 |
 |---|---|---|

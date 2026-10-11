@@ -444,14 +444,19 @@ static bool ft8x7SettableLevel(Ft8x7Setting setting, YaesuFt857Level& levelOut) 
   switch (setting) {
     case Ft8x7Setting::NrLevel: levelOut = YaesuFt857Level::NrLevel; return true;
     case Ft8x7Setting::NbLevel: levelOut = YaesuFt857Level::NbLevel; return true;
+    case Ft8x7Setting::LowCut: levelOut = YaesuFt857Level::HpfCutoff; return true;
+    case Ft8x7Setting::HighCut: levelOut = YaesuFt857Level::LpfCutoff; return true;
     default: return false;
   }
 }
 
-// caps.setNrLevel or caps.setNbLevel, which no FT-8x7 profile sets.
+// caps.setNrLevel, caps.setNbLevel, or for the cuts caps.setRadioMenu; no FT-8x7 profile sets
+// them.
 static bool ft8x7LevelSetAllowed(Ft8x7Setting setting) {
   const RadioCapabilities& caps = currentProfile().caps;
-  return setting == Ft8x7Setting::NrLevel ? caps.setNrLevel : caps.setNbLevel;
+  if (setting == Ft8x7Setting::NrLevel) return caps.setNrLevel;
+  if (setting == Ft8x7Setting::NbLevel) return caps.setNbLevel;
+  return caps.setRadioMenu;
 }
 
 bool ft8x7LevelRange(Ft8x7Setting setting, uint16_t& minOut, uint16_t& maxOut) {
@@ -474,15 +479,26 @@ FeatureStatus ft8x7LevelStep(Ft8x7Setting setting, int delta, Ft8x7SettingState&
   if (!ft8x7SettableLevel(setting, level) || !ft8x7LevelSetAllowed(setting) || !currentIsFt857Family()) {
     return FeatureStatus::Unsupported;
   }
-  uint16_t lo = 0;
-  uint16_t hi = 0;
   uint16_t value = 0;
-  if (!ft857LevelRange(level, lo, hi)) return FeatureStatus::Unsupported;
   if (!yaesuFt857QueryLevel(level, value, kFt8x7TimeoutMs)) return failure(FeatureStatus::NoReply);
-  int next = (int)value + delta;
-  if (next < lo) next = lo;
-  if (next > hi) next = hi;
-  return ft8x7LevelSet(setting, (uint16_t)next, out);
+  return ft8x7LevelSet(setting, ft857LevelStep(level, value, delta), out);
+}
+
+FeatureStatus ft8x7DbfSet(bool on, Ft8x7SettingState& out) {
+  if (!currentProfile().caps.setRadioMenu || !currentIsFt857Family()) return FeatureStatus::Unsupported;
+  out = Ft8x7SettingState();
+  out.setting = Ft8x7Setting::Dbf;
+  const FeatureStatus status = eepromWriteStatus(yaesuFt8x7SetFlag(Ft8x7Flag::Dbf, on, kFt8x7TimeoutMs));
+  if (status != FeatureStatus::Ok) return status;
+  out.on = on;
+  return FeatureStatus::Ok;
+}
+
+FeatureStatus ft8x7DbfToggle(Ft8x7SettingState& out) {
+  if (!currentProfile().caps.setRadioMenu || !currentIsFt857Family()) return FeatureStatus::Unsupported;
+  bool on = false;
+  if (!yaesuFt8x7QueryFlag(Ft8x7Flag::Dbf, on, kFt8x7TimeoutMs)) return failure(FeatureStatus::NoReply);
+  return ft8x7DbfSet(!on, out);
 }
 
 // ---- FT-8x7 tone squelch ----

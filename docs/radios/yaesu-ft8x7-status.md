@@ -145,6 +145,7 @@ The active VFO cannot be read: `0x55` bit 0, which Hamlib's `get_vfo` and the KA
 | Active VFO read from the EEPROM (`0x68`) | verified on an FT-897: follows both the front panel A/B key and the CAT toggle; Bank 3 reads it before each VFO action (`get_vfo=1`) |
 | Settings read from the EEPROM (Bank 2, Bank 8 `7`/`8`, `MENU?`, `ROW?`, `AGC?`, `IPO?`, `ATT?`, `NAR?`, `DBF?`, `BK?`, `KYR?`, `NR?`, `NB?`, `NOTCH?`, `NRLEVEL?`, `NBLEVEL?`, `HPF?`, `LPF?`, `MICEQ?`, `PROC?`, `PROCLEVEL?`, `MICGAIN?`, `VOX?`, `VOXGAIN?`, `VOXDELAY?`, `RFPOWER?`) | verified on an FT-897, read only; addresses in the [EEPROM map](#ft-857897-eeprom-map). IPO, ATT, NAR and `RITOFFSET` come from the block of the band the active VFO is on (`0x6C`), also outside the amateur bands |
 | Menu item and soft key row write (`MENU <n>`, `ROW <n>`, Bank 8 `8`/`7` long) | experimental, only with EXPERIMENTAL on; verified on an FT-897: the radio's menu opens on the item written and keeps the row, out-of-range numbers write nothing. Writes `0x88`/`0x89` together (`BC`), changing only the one byte, and reads them back. Menu 1–88, or 1–91 with menu 1 EXT MENU on; rows 1–17 (measured). The FT-857 is taken to match. The radio overwrites both when its menu is open and then exited |
+| DSP settings write (`NR`, `NB`, `NOTCH`, `DBF ON/OFF/TOGGLE`, `NRLEVEL`, `NBLEVEL`, `HPF`, `LPF` with a value or `STEP`, Bank 2 `1`–`8` long and double) | experimental, only with EXPERIMENTAL on; verified on an FT-897 by ear: the radio follows at once. Read-modify-write of the setting's bits (`BC`), refused while transmitting, read back. Ranges NR level 1–16, NB level 0–100, low cut 100–1000 Hz, high cut 1000–6000 Hz; a cut is set to the radio's nearest step. DBF sets or clears both bits, as the radio's key does in SSB and CW (measured). The FT-817 sets NB only |
 | Further settings read from the EEPROM (`YSETTINGS?`: VOX, PROC, lock, fast tuning, NB, BK, KYR, DSP row, IF shift, filter, SQL/RF knob, mic EQ, menu levels, the RIT offset) | protocol only, no keys except those in Bank 2; verified on an FT-897 against the values set on the radio |
 
 ### FT-857/897 EEPROM map
@@ -192,7 +193,7 @@ Shared by all bands:
 | `0xA7` | 7 | filter 2 selected on the CFIL row; clear = built-in. Filter 1 not measured (no filter fitted). Bit 1 was set when the built-in filter was chosen in CW, not in USB |
 | `0xA8` | 7 | DSP soft key row shown, saved at once |
 | `0xA8` | 5 | AGC on (yo3ggx) |
-| `0xA8` | 3..2 | DBF (yo3ggx) |
+| `0xA8` | 3..2 | DBF: the radio's key sets or clears both bits, in LSB and CW (measured) |
 | `0xA8` | 1 | DNR (yo3ggx) |
 | `0xA8` | 0 | DNF (yo3ggx) |
 | `0xA9` | 1 | PROC |

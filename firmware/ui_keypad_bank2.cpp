@@ -77,6 +77,17 @@ static void stepKeypadFt8x7Level(Ft8x7Setting setting, const char* label, int de
 
 void stepBank2Ft8x7NrLevel(int delta) { stepKeypadFt8x7Level(Ft8x7Setting::NrLevel, "NRLEVEL", delta); }
 void stepBank2Ft8x7NbLevel(int delta) { stepKeypadFt8x7Level(Ft8x7Setting::NbLevel, "NBLEVEL", delta); }
+void stepBank2Ft8x7LowCut(int delta) { stepKeypadFt8x7Level(Ft8x7Setting::LowCut, "HPF", delta); }
+void stepBank2Ft8x7HighCut(int delta) { stepKeypadFt8x7Level(Ft8x7Setting::HighCut, "LPF", delta); }
+
+void toggleBank2Ft8x7Dbf() {
+  printKeypadAction("DBF");
+  prepareKeypadSpeechResponse();
+  Ft8x7SettingState state;
+  if (keypadReportFeatureFailure(ft8x7DbfToggle(state), "DBF")) return;
+  printKeypadStatus("{}", ft8x7SettingText(state).c_str());
+  speakFt8x7Setting(state);
+}
 
 void toggleBank2Nr() {
   printKeypadAction("NR");

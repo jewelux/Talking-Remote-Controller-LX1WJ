@@ -64,10 +64,6 @@ bool ft8x7FlagValue(const Ft8x7FlagField& field, uint8_t b) {
   return ((b & field.mask) != 0) != field.inverted;
 }
 
-bool ft8x7FlagIsOneBit(const Ft8x7FlagField& field) {
-  return field.mask != 0 && (field.mask & (field.mask - 1)) == 0;
-}
-
 uint8_t ft8x7FlagByte(const Ft8x7FlagField& field, bool on, uint8_t old) {
   return (on != field.inverted) ? (uint8_t)(old | field.mask) : (uint8_t)(old & ~field.mask);
 }
@@ -207,8 +203,27 @@ bool ft857LevelRange(YaesuFt857Level level, uint16_t& minOut, uint16_t& maxOut) 
   switch (level) {
     case YaesuFt857Level::NrLevel: minOut = 1; maxOut = 16; return true;
     case YaesuFt857Level::NbLevel: minOut = 0; maxOut = 100; return true;
+    case YaesuFt857Level::HpfCutoff: minOut = 100; maxOut = 1000; return true;
+    case YaesuFt857Level::LpfCutoff: minOut = 1000; maxOut = 6000; return true;
     default: return false;
   }
+}
+
+// The stored field (before ft857LevelValue's scaling) whose value is nearest value, among those
+// within the range; the lower one on a tie.
+static uint8_t ft857NearestRaw(const Ft857LevelField& f, uint16_t value, uint16_t lo, uint16_t hi) {
+  const uint8_t rawMax = (uint8_t)(f.mask >> f.shift);
+  uint8_t best = 0;
+  int bestDistance = -1;
+  for (int raw = 0; raw <= rawMax; ++raw) {
+    const uint16_t v = ft857LevelValue(f.level, (uint8_t)(raw << f.shift));
+    if (v < lo || v > hi) continue;
+    const int distance = v > value ? v - value : value - v;
+    if (bestDistance >= 0 && distance >= bestDistance) continue;
+    best = (uint8_t)raw;
+    bestDistance = distance;
+  }
+  return best;
 }
 
 bool ft857LevelByte(YaesuFt857Level level, uint16_t value, uint8_t old, uint8_t& out) {
@@ -219,10 +234,24 @@ bool ft857LevelByte(YaesuFt857Level level, uint16_t value, uint8_t old, uint8_t&
   if (value < lo || value > hi) return false;
   const uint16_t stored = ft857LevelValue(level, old);
   if (stored < lo || stored > hi) return false;
-  // Both settable levels are stored as shown, NR from 0 (ft857LevelValue).
-  const uint8_t raw = (uint8_t)(level == YaesuFt857Level::NrLevel ? value - 1 : value);
+  const uint8_t raw = ft857NearestRaw(*f, value, lo, hi);
   out = (uint8_t)((old & ~f->mask) | ((raw << f->shift) & f->mask));
   return true;
+}
+
+uint16_t ft857LevelStep(YaesuFt857Level level, uint16_t value, int steps) {
+  const Ft857LevelField* f = ft857LevelField(level);
+  uint16_t lo = 0;
+  uint16_t hi = 0;
+  if (!f || !ft857LevelRange(level, lo, hi)) return value;
+  int raw = ft857NearestRaw(*f, value, lo, hi) + steps;
+  const int rawMax = f->mask >> f->shift;
+  if (raw < 0) raw = 0;
+  if (raw > rawMax) raw = rawMax;
+  uint16_t stepped = ft857LevelValue(level, (uint8_t)(raw << f->shift));
+  if (stepped < lo) stepped = lo;
+  if (stepped > hi) stepped = hi;
+  return stepped;
 }
 
 bool ft8x7MicGainForMode(uint8_t modeByte, Ft8x7MicGain& out) {
