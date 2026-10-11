@@ -81,7 +81,7 @@ FeatureStatus voxGainQuery(uint8_t& level);
 FeatureStatus voxDelayQuery(uint16_t& ms);
 
 // FT-857/897 settings read from the radio's EEPROM, since CAT has no command for them. Only
-// Menu, Row, Dbf, NrLevel, NbLevel, LowCut, HighCut and RfPower can be set, and only experimentally. IPO, ATT and NAR are those of the current band. The FT-817/818 has RfPower,
+// Menu, Row, Agc, Dbf, NrLevel, NbLevel, LowCut, HighCut and RfPower can be set, and only experimentally. IPO, ATT and NAR are those of the current band. The FT-817/818 has RfPower,
 // Menu, Row, Agc, BreakIn, Keyer, IfShift and Antenna.
 // Menu and Row are the menu item and soft key row saved when the radio's menu was last exited.
 // NrLevel (menu 49), NbLevel (63), LowCut (46, DSP HPF), HighCut (47, DSP LPF) and MicEq (48)
@@ -137,6 +137,9 @@ FeatureStatus ft8x7DbfToggle(Ft8x7SettingState& out);
 FeatureStatus ft8x7RfPowerSet(uint16_t wattsTenths, Ft8x7SettingState& out);
 // The same for the FT-817/818 power level; Unsupported on the FT-857/897.
 FeatureStatus ft817PowerLevelSet(Ft817PowerLevel level, Ft8x7SettingState& out);
+// Experimental (caps.setRadioMenu): AGC in the EEPROM, on the FT-817/818 and FT-857/897; out
+// holds the AGC read back. Failed while transmitting or when the read-back differs.
+FeatureStatus ft8x7AgcSet(YaesuAgc agc, Ft8x7SettingState& out);
 
 // FT-8x7 tone squelch. The FT-857/897 reads it from the current band in the EEPROM, live;
 // the FT-817/818 cannot, so there it is the mode HamTRC last set. Unsupported on other radios,

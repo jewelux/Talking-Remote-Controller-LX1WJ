@@ -60,6 +60,8 @@ String ft8x7SettingText(const Ft8x7SettingState& state);
 // The radio's soft key label spelled, then the state: "a g c fast", "i p o on", "power 100 watts";
 // FT-817/818 "power l two", "power high".
 void speakFt8x7Setting(const Ft8x7SettingState& state);
+// "AUTO", "FAST", "SLOW", "OFF": the console word, which speakToken also says.
+const char* ft8x7AgcName(YaesuAgc agc);
 // "HIGH", "L3", "L2", "L1": the console word.
 const char* ft817PowerLevelName(Ft817PowerLevel level);
 // The level alone: "l two", "high".

@@ -165,6 +165,17 @@ YaesuAgc ft857AgcFromSpeed(uint8_t b) {
   }
 }
 
+uint8_t ft857AgcSpeedByte(YaesuAgc agc, uint8_t old) {
+  uint8_t speed = 0;
+  switch (agc) {
+    case YaesuAgc::Slow: speed = 0x00; break;
+    case YaesuAgc::Auto: speed = 0x01; break;
+    case YaesuAgc::Fast: speed = 0x02; break;
+    default: return old;
+  }
+  return (uint8_t)((old & ~0x03) | speed);
+}
+
 YaesuFt857MicEq ft857MicEqFromByte(uint8_t b) {
   return (YaesuFt857MicEq)(b & 0x03);
 }
@@ -310,6 +321,17 @@ uint8_t ft817PowerLevelByte(Ft817PowerLevel level, uint8_t old) {
 YaesuAgc ft817AgcFromByte(uint8_t b) {
   static constexpr YaesuAgc kAgc[] = {YaesuAgc::Auto, YaesuAgc::Fast, YaesuAgc::Slow, YaesuAgc::Off};
   return kAgc[b & 0x03];
+}
+
+uint8_t ft817AgcByte(YaesuAgc agc, uint8_t old) {
+  uint8_t bits = 0;
+  switch (agc) {
+    case YaesuAgc::Auto: bits = 0x00; break;
+    case YaesuAgc::Fast: bits = 0x01; break;
+    case YaesuAgc::Slow: bits = 0x02; break;
+    case YaesuAgc::Off: bits = 0x03; break;
+  }
+  return (uint8_t)((old & ~0x03) | bits);
 }
 
 bool ft8x7MenuRowMap(Ft8x7Model model, Ft8x7MenuRowMap& out) {

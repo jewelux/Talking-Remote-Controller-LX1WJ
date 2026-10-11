@@ -928,8 +928,9 @@ void printHelp() {
     Serial.println("    YSTATUS?");
   } else if (ft8x7) {
     Serial.println("    ALC? | MOD?");
-    Serial.println(ft817 ? "    AGC? | BK? | KYR?  (radio settings, read only)"
+    Serial.println(ft817 ? "    AGC? | BK? | KYR?  (radio settings)"
                          : "    AGC? | IPO? | ATT? | NAR? | DBF? | BK? | KYR?  (radio settings)");
+    Serial.println("    AGC AUTO | FAST | SLOW | OFF  (experimental: writes it to the EEPROM)");
     if (!ft817) Serial.println("    DBF ON | OFF | TOGGLE  (experimental: DSP bandpass filter, writes it to the EEPROM)");
     Serial.println(ft817 ? "    NB?" : "    NR? | NB? | NOTCH?");
     Serial.println(ft817 ? "    NB OFF | ON | TOGGLE  (experimental: writes it to the EEPROM)"
@@ -1555,6 +1556,23 @@ static bool handleConsoleFt8x7RfPowerSet(const String& upper) {
   return true;
 }
 
+// Experimental: AGC AUTO | FAST | SLOW | OFF, like Bank 2 `A` long. Other arguments fall through
+// to the raw CAT AGC <hex byte>.
+static bool handleConsoleFt8x7AgcSet(const String& upper) {
+  if (!upper.startsWith("AGC ")) return false;
+  String arg = upper.substring(4);
+  arg.trim();
+  for (const YaesuAgc agc : {YaesuAgc::Auto, YaesuAgc::Fast, YaesuAgc::Slow, YaesuAgc::Off}) {
+    if (arg != ft8x7AgcName(agc)) continue;
+    Ft8x7SettingState state;
+    if (reportFeatureFailure(ft8x7AgcSet(agc, state), "AGC")) return true;
+    Serial.println(ft8x7SettingText(state));
+    speakFt8x7Setting(state);
+    return true;
+  }
+  return false;
+}
+
 // Experimental, FT-857/897: DBF ON | OFF | TOGGLE, like Bank 2 `6` long.
 static bool handleConsoleFt8x7DbfSet(const String& upper) {
   if (upper != "DBF ON" && upper != "DBF OFF" && upper != "DBF TOGGLE") return false;
@@ -1573,6 +1591,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
   if (handleConsoleFt8x7LevelSet(line, upper)) return true;
   if (handleConsoleFt8x7DbfSet(upper)) return true;
   if (handleConsoleFt8x7RfPowerSet(upper)) return true;
+  if (handleConsoleFt8x7AgcSet(upper)) return true;
 
   if (upper == "YALL?") {
     Serial.println("[YAESU FT8X7]");

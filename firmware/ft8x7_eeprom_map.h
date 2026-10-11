@@ -137,6 +137,9 @@ bool ft857RfPowerByte(Ft8x7BandGroup group, uint8_t watts, uint8_t old, uint8_t&
 // AGC off is its own bit (Ft8x7Flag::AgcOn); the speed is 0x6A bits 1..0.
 static constexpr uint16_t FT857_AGC_SPEED_ADDR = 0x006A;
 YaesuAgc ft857AgcFromSpeed(uint8_t b);
+// The byte with the speed set to agc (fast, slow or auto), bits 7..2 of old kept. Off has no
+// speed: old as it is.
+uint8_t ft857AgcSpeedByte(YaesuAgc agc, uint8_t old);
 
 // The menu item and the soft key row (FT-817: function row), counted from 0 in two neighbouring
 // bytes that one 0xBC writes together. The FT-857/897 saves both when its menu is exited; the
@@ -215,6 +218,8 @@ uint16_t ft817RfPowerTenths(uint8_t b, bool ft818);
 // FT-817 0x57 bits 1..0: 00 auto, 01 fast, 10 slow, 11 off.
 static constexpr uint16_t FT817_AGC_ADDR = 0x0057;
 YaesuAgc ft817AgcFromByte(uint8_t b);
+// The byte with agc set, bits 7..2 of old kept.
+uint8_t ft817AgcByte(YaesuAgc agc, uint8_t old);
 
 // FT-817 0x7A bits 5..0: the antenna of each band group, 1 = rear. Bit 0 HF, 1 6 m, 2 FM
 // broadcast, 3 air, 4 2 m, 5 UHF (KA7OEI map). Bit 7 of the same byte is split.

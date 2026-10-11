@@ -147,6 +147,18 @@ TEST(ft857_agc_speed) {
   CHECK_EQ(ft857AgcFromSpeed(0xFC), YaesuAgc::Slow);
 }
 
+TEST(ft857_agc_speed_byte_keeps_the_other_bits) {
+  CHECK_EQ(ft857AgcSpeedByte(YaesuAgc::Slow, 0xF3), 0xF0);
+  CHECK_EQ(ft857AgcSpeedByte(YaesuAgc::Auto, 0xF0), 0xF1);
+  CHECK_EQ(ft857AgcSpeedByte(YaesuAgc::Fast, 0x31), 0x32);
+  // Off is a bit of its own: the speed stays.
+  CHECK_EQ(ft857AgcSpeedByte(YaesuAgc::Off, 0x32), 0x32);
+  static constexpr YaesuAgc kSpeeds[] = {YaesuAgc::Slow, YaesuAgc::Auto, YaesuAgc::Fast};
+  for (const YaesuAgc agc : kSpeeds) {
+    CHECK_EQ(ft857AgcFromSpeed(ft857AgcSpeedByte(agc, 0xA7)), agc);
+  }
+}
+
 TEST(ft857_mic_eq) {
   CHECK_EQ(ft857MicEqFromByte(0x00), YaesuFt857MicEq::Off);
   CHECK_EQ(ft857MicEqFromByte(0xF1), YaesuFt857MicEq::Lpf);
@@ -284,6 +296,17 @@ TEST(ft817_agc) {
   CHECK_EQ(ft817AgcFromByte(0x01), YaesuAgc::Fast);
   CHECK_EQ(ft817AgcFromByte(0x02), YaesuAgc::Slow);
   CHECK_EQ(ft817AgcFromByte(0xF3), YaesuAgc::Off);
+}
+
+TEST(ft817_agc_byte_keeps_the_other_bits) {
+  CHECK_EQ(ft817AgcByte(YaesuAgc::Auto, 0xF3), 0xF0);
+  CHECK_EQ(ft817AgcByte(YaesuAgc::Fast, 0x20), 0x21);
+  CHECK_EQ(ft817AgcByte(YaesuAgc::Slow, 0x10), 0x12);
+  CHECK_EQ(ft817AgcByte(YaesuAgc::Off, 0xC0), 0xC3);
+  static constexpr YaesuAgc kAgcs[] = {YaesuAgc::Off, YaesuAgc::Fast, YaesuAgc::Slow, YaesuAgc::Auto};
+  for (const YaesuAgc agc : kAgcs) {
+    CHECK_EQ(ft817AgcFromByte(ft817AgcByte(agc, 0x5D)), agc);
+  }
 }
 
 TEST(menu_row_map_per_model) {

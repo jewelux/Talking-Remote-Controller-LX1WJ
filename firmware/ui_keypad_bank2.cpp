@@ -89,6 +89,43 @@ void toggleBank2Ft8x7Dbf() {
   speakFt8x7Setting(state);
 }
 
+static constexpr ChoiceOption kFt8x7AgcKeys[] = {
+    {'0', (uint8_t)YaesuAgc::Off},
+    {'1', (uint8_t)YaesuAgc::Auto},
+    {'2', (uint8_t)YaesuAgc::Fast},
+    {'3', (uint8_t)YaesuAgc::Slow},
+};
+
+static void sayPickedFt8x7Agc(char key, uint8_t agc) {
+  printKeypadCommand("AGC SELECT -> {}", key);
+  printKeypadStatus("AGC STAGE: {}", ft8x7AgcName((YaesuAgc)agc));
+  if (g_speechEnabled) speakToken(ft8x7AgcName((YaesuAgc)agc));
+}
+
+static void commitFt8x7Agc(uint8_t agc, TargetVfo) {
+  printKeypadCommand("ENTER -> AGC {}", ft8x7AgcName((YaesuAgc)agc));
+  prepareKeypadRadioWrite();
+  Ft8x7SettingState state;
+  if (keypadReportFeatureFailure(ft8x7AgcSet((YaesuAgc)agc, state), "AGC")) return;
+  printKeypadStatus("{}", ft8x7SettingText(state).c_str());
+  speakFt8x7Setting(state);
+}
+
+static constexpr ChoiceSpec kFt8x7AgcChoice = {
+    "AGC SELECT", kFt8x7AgcKeys, 4, nullptr, sayPickedFt8x7Agc, commitFt8x7Agc};
+
+void beginBank2Ft8x7AgcSelect() {
+  if (!currentProfile().caps.setRadioMenu) {
+    printKeypadStatus("AGC -> unavailable");
+    speakKeypadFailure("AGC", KeypadFailure::NotAvailable);
+    return;
+  }
+  printKeypadAction("AGC");
+  keypadBeginChoiceSelect(kFt8x7AgcChoice);
+  printKeypadStatus("AGC PLEASE");
+  speakPrompt("agc");
+}
+
 void toggleBank2Nr() {
   printKeypadAction("NR");
   prepareKeypadSpeechResponse();

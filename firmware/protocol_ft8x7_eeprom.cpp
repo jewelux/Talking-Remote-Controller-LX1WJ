@@ -213,6 +213,34 @@ YaesuEepromWrite yaesuFt817SetPowerLevel(Ft817PowerLevel level, Ft817PowerLevel&
   return YaesuEepromWrite::Ok;
 }
 
+YaesuEepromWrite yaesuFt8x7SetAgc(YaesuAgc agc, YaesuAgc& agcOut, uint32_t timeoutMs) {
+  const Ft8x7Model model = currentFt8x7Model();
+  uint8_t pair[2] = {0};
+  if (ft8x7IsFt817Family(model)) {
+    const YaesuEepromWrite read = readForWrite(FT817_AGC_ADDR, pair, timeoutMs);
+    if (read != YaesuEepromWrite::Ok) return read;
+    const YaesuEepromWrite written = writeByteChecked(FT817_AGC_ADDR, pair, ft817AgcByte(agc, pair[0]), timeoutMs);
+    if (written != YaesuEepromWrite::Ok) return written;
+    agcOut = ft817AgcFromByte(pair[0]);
+    return YaesuEepromWrite::Ok;
+  }
+  if (model != Ft8x7Model::Ft857) return YaesuEepromWrite::Unsupported;
+  if (agc == YaesuAgc::Off) {
+    const YaesuEepromWrite off = yaesuFt8x7SetFlag(Ft8x7Flag::AgcOn, false, timeoutMs);
+    if (off == YaesuEepromWrite::Ok) agcOut = YaesuAgc::Off;
+    return off;
+  }
+  const YaesuEepromWrite read = readForWrite(FT857_AGC_SPEED_ADDR, pair, timeoutMs);
+  if (read != YaesuEepromWrite::Ok) return read;
+  const YaesuEepromWrite written =
+      writeByteChecked(FT857_AGC_SPEED_ADDR, pair, ft857AgcSpeedByte(agc, pair[0]), timeoutMs);
+  if (written != YaesuEepromWrite::Ok) return written;
+  const YaesuEepromWrite on = yaesuFt8x7SetFlag(Ft8x7Flag::AgcOn, true, timeoutMs);
+  if (on != YaesuEepromWrite::Ok) return on;
+  agcOut = ft857AgcFromSpeed(pair[0]);
+  return YaesuEepromWrite::Ok;
+}
+
 // The block of the band the active VFO is on (0x6C), on any frequency. onMemoryOut: a memory
 // channel or one being tuned is in use, and the radio uses its own record instead.
 static bool ft857ActiveBandBlock(uint16_t& blockOut, bool& onMemoryOut, uint32_t timeoutMs) {

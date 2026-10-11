@@ -189,7 +189,7 @@ void speakSplitTone(bool on) {
   speakTokenState("split tone", on);
 }
 
-static const char* ft8x7AgcText(YaesuAgc agc) {
+const char* ft8x7AgcName(YaesuAgc agc) {
   switch (agc) {
     case YaesuAgc::Fast: return "FAST";
     case YaesuAgc::Slow: return "SLOW";
@@ -275,7 +275,7 @@ String ft8x7SettingText(const Ft8x7SettingState& state) {
     return text + ft817PowerLevelName(state.powerLevel) + " (" + wattsText(state.wattsTenths) + " W)";
   }
   if (state.setting == Ft8x7Setting::RfPower) return text + wattsText(state.wattsTenths) + " W";
-  if (state.setting == Ft8x7Setting::Agc) return text + ft8x7AgcText(state.agc);
+  if (state.setting == Ft8x7Setting::Agc) return text + ft8x7AgcName(state.agc);
   if (state.setting == Ft8x7Setting::Menu || state.setting == Ft8x7Setting::Row) return text + String((int)state.number);
   if (state.setting == Ft8x7Setting::NrLevel || state.setting == Ft8x7Setting::NbLevel) return text + String(state.value);
   if (state.setting == Ft8x7Setting::LowCut || state.setting == Ft8x7Setting::HighCut) {
@@ -348,7 +348,7 @@ void speakFt8x7Setting(const Ft8x7SettingState& state) {
   if (state.setting == Ft8x7Setting::IfShift) return;
   if (state.setting == Ft8x7Setting::Agc) {
     speakLabel("agc");
-    speakToken(ft8x7AgcText(state.agc));
+    speakToken(ft8x7AgcName(state.agc));
     return;
   }
   // IPO bypasses the preamp: "IPO on" is "preamplifier off".

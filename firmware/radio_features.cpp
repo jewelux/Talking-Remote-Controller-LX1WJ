@@ -525,6 +525,15 @@ FeatureStatus ft817PowerLevelSet(Ft817PowerLevel level, Ft8x7SettingState& out) 
   return status;
 }
 
+FeatureStatus ft8x7AgcSet(YaesuAgc agc, Ft8x7SettingState& out) {
+  if (!currentProfile().caps.setRadioMenu || currentFt8x7Model() == Ft8x7Model::None) {
+    return FeatureStatus::Unsupported;
+  }
+  out = Ft8x7SettingState();
+  out.setting = Ft8x7Setting::Agc;
+  return eepromWriteStatus(yaesuFt8x7SetAgc(agc, out.agc, kFt8x7TimeoutMs));
+}
+
 FeatureStatus ft8x7DbfToggle(Ft8x7SettingState& out) {
   if (!currentProfile().caps.setRadioMenu || !currentIsFt857Family()) return FeatureStatus::Unsupported;
   bool on = false;

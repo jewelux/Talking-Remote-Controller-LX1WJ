@@ -52,6 +52,9 @@ YaesuEepromWrite yaesuFt857SetRfPowerWatts(uint64_t hz, uint8_t watts, uint8_t& 
 // FT-817/818: sets the TX power level. levelOut is the level read back.
 YaesuEepromWrite yaesuFt817SetPowerLevel(Ft817PowerLevel level, Ft817PowerLevel& levelOut,
                                          uint32_t timeoutMs);
+// Sets AGC. The FT-857/897 keeps off as its own bit: off clears it and keeps the speed, the
+// speeds write the speed, then set it. agcOut is the AGC read back.
+YaesuEepromWrite yaesuFt8x7SetAgc(YaesuAgc agc, YaesuAgc& agcOut, uint32_t timeoutMs);
 // IPO, ATT and FM narrow are kept per band; read from the block of the band the active VFO is
 // on, also outside the amateur bands. hz decides whether IPO and ATT exist.
 struct YaesuFt857BandFlags {

@@ -178,7 +178,10 @@
   with menu 1 EXT MENU on) and rows 1–17, on the FT-817/818 menu 1–52 (1–57 with menu 52 EXTEND
   on) and rows 1–12. Keep the radio's menu closed meanwhile, since the radio saves its own values
   when the menu is exited
-- FT-817/818/857/897, experimental: the Bank 2 DSP keys and the RF power can be changed, not just read
+- FT-817/818/857/897, experimental: AGC, the Bank 2 DSP keys and the RF power can be changed, not
+  just read
+  - AGC: Bank 2 `A` long asks for it: `0` picks off, `1` auto, `2` fast, `3` slow, each saying
+    its value, then `D` (console: `AGC AUTO | FAST | SLOW | OFF`)
   - `1`, `2`, `3` and `6` long switch noise reduction, the noise blanker, the notch and the DSP
     bandpass filter on and off (console: `NR`, `NB`, `NOTCH`, `DBF ON | OFF | TOGGLE`)
   - `4` long and double step the noise reduction level (menu 49) up and down by 1, `5` the noise
@@ -210,11 +213,11 @@
   it and a double press says the TX frequency. It used to set split off, on, or on and then off,
   and the `SPLIT CAL` console command is gone
 - FT-817/818/857/897: Bank 2 reads the radio's settings, also those changed on the radio: noise
-  blanker (`2`) and AGC (`A` double press, "a g c auto"). The FT-857/897 also reads DSP noise
+  blanker (`2`) and AGC (`A`, "a g c auto"). The FT-857/897 also reads DSP noise
   reduction (`1`), auto notch (`3`), the NR level (`4`, "noise reduction level 8"), the NB level
   (`5`), the DSP bandpass filter (`6`), the low cut and high cut (`7` and `8`), the TX equalizer
-  (`9`) and the preamplifier and attenuator (`A`, long for the attenuator; the preamplifier is on
-  when IPO is off); the FT-817 has no DSP, so these say "not available".
+  (`9`) and the preamplifier and attenuator (`B`, double press for the attenuator; the
+  preamplifier is on when IPO is off); the FT-817 has no DSP, so these say "not available".
   HamTRC only reads these settings; it cannot change them
 - FT-817/818/857/897: CTCSS and DCS can be set to encode only: the tone is sent, but the squelch
   does not wait for it. The FT-857/897 can also be set to decode only: the squelch waits for the

@@ -75,6 +75,9 @@ void queryBank2Ft817Antenna();
 void stepBank2Ft8x7NrLevel(int delta);
 void stepBank2Ft8x7NbLevel(int delta);
 void toggleBank2Ft8x7Dbf();
+// Experimental, FT-817/818 and FT-857/897: picks AGC with 0 off, 1 auto, 2 fast, 3 slow, then
+// Enter writes it to the radio's EEPROM.
+void beginBank2Ft8x7AgcSelect();
 void stepBank2Ft8x7LowCut(int delta);
 void stepBank2Ft8x7HighCut(int delta);
 

@@ -129,6 +129,7 @@ void queryBank2Ft817Antenna() { record("queryBank2Ft817Antenna"); }
 void stepBank2Ft8x7NrLevel(int d) { record("stepBank2Ft8x7NrLevel(%d)", d); }
 void stepBank2Ft8x7NbLevel(int d) { record("stepBank2Ft8x7NbLevel(%d)", d); }
 void toggleBank2Ft8x7Dbf() { record("toggleBank2Ft8x7Dbf"); }
+void beginBank2Ft8x7AgcSelect() { record("beginBank2Ft8x7AgcSelect"); }
 void stepBank2Ft8x7LowCut(int d) { record("stepBank2Ft8x7LowCut(%d)", d); }
 void stepBank2Ft8x7HighCut(int d) { record("stepBank2Ft8x7HighCut(%d)", d); }
 
