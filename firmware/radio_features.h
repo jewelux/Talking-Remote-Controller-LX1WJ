@@ -37,8 +37,8 @@ uint8_t nrLevelCount();
 // Sets the NR level, 0 being off. Unsupported on a radio without levels and
 // for a level above nrLevelCount().
 FeatureStatus nrSetLevel(uint8_t level, NrState& out);
-// On, off; on the TS-480 off -> 1 -> 2 -> off. Starts from the tracked state
-// when it is known, else reads it.
+// On, off; on the TS-480 off -> 1 -> 2 -> off. Starts from the radio's state, read each
+// time, since its own keys may have changed it; so do the toggles below.
 FeatureStatus nrToggle(NrState& out);
 
 // Noise blanker.
@@ -141,12 +141,12 @@ FeatureStatus ft8x7LevelStep(Ft8x7Setting setting, int delta, Ft8x7SettingState&
 // EEPROM, both its bits as the radio's own key does. Failed while transmitting.
 FeatureStatus ft8x7DbfSet(bool on, Ft8x7SettingState& out);
 FeatureStatus ft8x7DbfToggle(Ft8x7SettingState& out);
-// Experimental (caps.setRfPower): the FT-857/897 TX power in the EEPROM, in tenths of a watt;
-// out holds the value read back. Whole watts of menu 75 for the band group of the current
-// frequency, HF and 6 m 5..100, VHF 5..50, UHF 2..20; Invalid for any other value. Failed while
-// transmitting, when the stored byte is out of range (nothing written) or when the read-back
-// differs. Unsupported on the FT-817/818.
-FeatureStatus ft8x7RfPowerSet(uint16_t wattsTenths, Ft8x7SettingState& out);
+// Experimental (caps.setRfPower): the FT-857/897 TX power in the EEPROM, in watts; out holds
+// the value read back. Menu 75 of the band group of the current frequency, HF and 6 m 5..100,
+// VHF 5..50, UHF 2..20; Invalid for any other value. Failed while transmitting, when the stored
+// byte is out of range (nothing written) or when the read-back differs. Unsupported on the
+// FT-817/818.
+FeatureStatus ft8x7RfPowerSet(uint16_t watts, Ft8x7SettingState& out);
 // The same for the FT-817/818 power level; Unsupported on the FT-857/897.
 FeatureStatus ft817PowerLevelSet(Ft817PowerLevel level, Ft8x7SettingState& out);
 // Experimental (caps.setRadioMenu): AGC in the EEPROM, on the FT-817/818 and FT-857/897; out

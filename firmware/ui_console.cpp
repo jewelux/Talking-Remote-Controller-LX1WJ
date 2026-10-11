@@ -474,6 +474,17 @@ static bool parseStepArg(const String& line, const String& upper, const char* pr
   return true;
 }
 
+// "<prefix><n>" with n a whole number lo..hi, e.g. "NBLEVEL 50".
+static bool parseRangedIntArg(const String& upper, const char* prefix, long lo, long hi, long& out) {
+  if (!upper.startsWith(prefix)) return false;
+  String arg = upper.substring(strlen(prefix));
+  arg.trim();
+  const long value = arg.toInt();
+  if (!arg.length() || String(value) != arg || value < lo || value > hi) return false;
+  out = value;
+  return true;
+}
+
 static int32_t clampInt32(int32_t value, int32_t lo, int32_t hi) {
   if (value < lo) return lo;
   if (value > hi) return hi;
@@ -1445,11 +1456,9 @@ static bool handleConsoleFt8x7Settings(const String& upper) {
   // Experimental: MENU <n>, ROW <n>.
   const bool row = upper.startsWith("ROW ");
   if (!row && !upper.startsWith("MENU ")) return false;
-  String arg = upper.substring(row ? 4 : 5);
-  arg.trim();
   const char* label = row ? "ROW" : "MENU";
-  const long number = arg.toInt();
-  if (!arg.length() || String(number) != arg || number < 1 || number > 255) {
+  long number = 0;
+  if (!parseRangedIntArg(upper, row ? "ROW " : "MENU ", 1, 255, number)) {
     Serial.print(label);
     Serial.print(" -> use a number from 1, e.g. ");
     Serial.print(label);
@@ -1498,15 +1507,13 @@ static bool handleConsoleFt8x7LevelSet(const String& line, const String& upper) 
         Serial.println(c.stepExample);
         return true;
       }
-      status = ft8x7LevelStep(c.setting, (int)step, state);
+      status = ft8x7LevelStep(c.setting, (int)clampInt32(step, -100, 100), state);
     } else {
       uint16_t lo = 0;
       uint16_t hi = 0;
       (void)ft8x7LevelRange(c.setting, lo, hi);
-      String arg = upper.substring(prefix.length());
-      arg.trim();
-      const long value = arg.toInt();
-      if (!arg.length() || String(value) != arg || value < lo || value > hi) {
+      long value = 0;
+      if (!parseRangedIntArg(upper, prefix.c_str(), lo, hi, value)) {
         Serial.print(c.name);
         Serial.print(" -> use ");
         Serial.print(lo);
@@ -1546,10 +1553,8 @@ static bool handleConsoleFt8x7RfPowerSet(const String& upper) {
       return true;
     }
   } else {
-    const long watts = arg.toInt();
-    if (arg.length() && String(watts) == arg && watts > 0 && watts <= 255) {
-      status = ft8x7RfPowerSet((uint16_t)(watts * 10), state);
-    }
+    long watts = 0;
+    if (parseRangedIntArg(upper, "RFPOWER ", 1, 255, watts)) status = ft8x7RfPowerSet((uint16_t)watts, state);
     if (status == FeatureStatus::Invalid) {
       Serial.println("RFPOWER -> use whole watts, HF and 6 m 5..100, VHF 5..50, UHF 2..20");
       return true;
@@ -1617,10 +1622,8 @@ static bool handleConsoleFt8x7MicSet(const String& line, const String& upper) {
     step = clampInt32(step, -100, 100);
     status = proc ? procLevelStep((int)step, level) : micGainStep((int)step, level);
   } else {
-    String arg = upper.substring(prefix.length());
-    arg.trim();
-    const long value = arg.toInt();
-    if (!arg.length() || String(value) != arg || value < 0 || value > 100) {
+    long value = 0;
+    if (!parseRangedIntArg(upper, prefix.c_str(), 0, 100, value)) {
       Serial.print(name);
       Serial.print(" -> use 0..100, e.g. ");
       Serial.print(name);

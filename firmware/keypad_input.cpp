@@ -430,7 +430,8 @@ void KeypadInput::clearAll() {
 // stays.
 void KeypadInput::timeOut() {
   const InputMode mode = mode_;
-  const char* name = mode == InputMode::ChoiceSelect ? choice_->name : keypadEntrySpec(mode)->name;
+  const EntrySpec* entry = keypadEntrySpec(mode);
+  const char* name = mode == InputMode::ChoiceSelect ? choice_->name : entry ? entry->name : "ENTRY";
   mode_ = InputMode::Normal;
   digits_.clear();
   entryVfo_ = TargetVfo::Current;

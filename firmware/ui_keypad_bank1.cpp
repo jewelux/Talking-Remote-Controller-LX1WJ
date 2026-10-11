@@ -163,13 +163,12 @@ static void commitFt817Power(uint8_t level, TargetVfo) {
   printKeypadCommand("ENTER -> RFPOWER {}", ft817PowerLevelName((Ft817PowerLevel)level));
   prepareKeypadRadioWrite();
   Ft8x7SettingState state;
-  if (keypadReportFeatureFailure(ft817PowerLevelSet((Ft817PowerLevel)level, state), "RFPOWER")) return;
-  printKeypadStatus("{}", ft8x7SettingText(state).c_str());
-  speakFt8x7Setting(state);
+  keypadReportFt8x7Setting(ft817PowerLevelSet((Ft817PowerLevel)level, state), "RFPOWER", state);
 }
 
 static constexpr ChoiceSpec kFt817PowerChoice = {
-    "RFPOWER LEVEL", kFt817PowerKeys, 4, nullptr, sayPickedFt817Power, commitFt817Power};
+    "RFPOWER LEVEL", kFt817PowerKeys, sizeof(kFt817PowerKeys) / sizeof(kFt817PowerKeys[0]),
+    nullptr, sayPickedFt817Power, commitFt817Power};
 
 void beginBank1RfPowerSet() {
   if (!currentProfile().caps.setRfPower) {

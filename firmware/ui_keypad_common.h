@@ -90,6 +90,9 @@ void keypadReportFailure(const char* label);
 bool keypadReportFeatureFailure(FeatureStatus status, const char* label);
 // Reads an FT-8x7 EEPROM setting, prints and speaks it; the FT-817 says "not available" for what it lacks.
 void queryKeypadFt8x7Setting(Ft8x7Setting setting);
+// An FT-8x7 setting read or written: the failure as keypadReportFeatureFailure says it, else
+// state printed and spoken.
+void keypadReportFt8x7Setting(FeatureStatus status, const char* label, const Ft8x7SettingState& state);
 // The key has no action here: short beep.
 void keypadReportUnassigned(const char* label);
 // When supported is false the key's feature is missing on this radio or profile:

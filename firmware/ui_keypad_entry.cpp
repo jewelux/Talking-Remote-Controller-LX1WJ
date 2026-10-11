@@ -142,9 +142,7 @@ static void commitRfPower(const char* digits) {
   printKeypadCommand("ENTER -> RFPOWER {}", digits);
   prepareKeypadRadioWrite();
   Ft8x7SettingState state;
-  if (keypadReportFeatureFailure(ft8x7RfPowerSet((uint16_t)(atoi(digits) * 10), state), "RFPOWER")) return;
-  printKeypadStatus("{}", ft8x7SettingText(state).c_str());
-  speakFt8x7Setting(state);
+  keypadReportFt8x7Setting(ft8x7RfPowerSet((uint16_t)atoi(digits), state), "RFPOWER", state);
 }
 
 static void commitCivAddress(const char* digits) {
@@ -211,9 +209,7 @@ static void commitMenuRow(Ft8x7Setting setting, const char* digits) {
   printKeypadCommand("ENTER -> {} {}", label, digits);
   prepareKeypadRadioWrite();
   Ft8x7SettingState state;
-  if (keypadReportFeatureFailure(ft8x7MenuRowSet(setting, (uint8_t)atoi(digits), state), label)) return;
-  printKeypadStatus("{}", ft8x7SettingText(state).c_str());
-  speakFt8x7Setting(state);
+  keypadReportFt8x7Setting(ft8x7MenuRowSet(setting, (uint8_t)atoi(digits), state), label, state);
 }
 
 void keypadEntryCommit(InputMode mode, const char* digits, TargetVfo targetVfo) {

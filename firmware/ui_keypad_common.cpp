@@ -131,7 +131,11 @@ void queryKeypadFt8x7Setting(Ft8x7Setting setting) {
   printKeypadAction("{}", label);
   prepareKeypadSpeechResponse();
   Ft8x7SettingState state;
-  if (keypadReportFeatureFailure(ft8x7SettingQuery(setting, state), label)) return;
+  keypadReportFt8x7Setting(ft8x7SettingQuery(setting, state), label, state);
+}
+
+void keypadReportFt8x7Setting(FeatureStatus status, const char* label, const Ft8x7SettingState& state) {
+  if (keypadReportFeatureFailure(status, label)) return;
   printKeypadStatus("{}", ft8x7SettingText(state).c_str());
   speakFt8x7Setting(state);
 }

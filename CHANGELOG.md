@@ -223,7 +223,7 @@
   (`5`), the DSP bandpass filter (`6`), the low cut and high cut (`7` and `8`), the TX equalizer
   (`9`) and the preamplifier and attenuator (`B`, double press for the attenuator; the
   preamplifier is on when IPO is off); the FT-817 has no DSP, so these say "not available".
-  HamTRC only reads these settings; it cannot change them
+  With experimental mode off, HamTRC only reads these settings
 - FT-817/818/857/897: CTCSS and DCS can be set to encode only: the tone is sent, but the squelch
   does not wait for it. The FT-857/897 can also be set to decode only: the squelch waits for the
   tone, but none is sent. Bank 6 `5` short says "tone tx" for encode only, "tone rx" for decode
@@ -264,6 +264,9 @@
 - TS-480: `NR 0`, `NR 1` and `NR 2` set the NR level, and the Bank 2 `1` key and `NR?` say it
   ("noise reduction two") instead of only on or off
 - NR, NB and notch keys say so when the radio rejects the change or does not answer; this was silent
+- the NR, NB and notch toggles (Bank 2 `1`–`3` long, `NR TOGGLE`, `NB TOGGLE`, `NOTCH TOGGLE`) start from the
+  radio's state, also after it was changed on the radio. Before, they started from the state
+  HamTRC last read or set, so after a change on the radio a toggle could leave it as it was
 - FTDX10: frequency entry and 500 Hz rounding announce the new frequency once and report a write
   the radio rejects. Bank 2 `8` and `9` say "not available" like the other hidden keys
 - FTDX10: setting the current VFO's mode says it once (it was said twice), and a failed VFO A/B

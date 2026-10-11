@@ -3,6 +3,8 @@
 #include "ft8x7_eeprom_map.h"
 #include "test_runner.h"
 
+#include <climits>
+
 TEST(band_group_edges) {
   CHECK_EQ(ft8x7BandGroupForHz(1800000ULL), Ft8x7BandGroup::Hf);
   CHECK_EQ(ft8x7BandGroupForHz(32999999ULL), Ft8x7BandGroup::Hf);
@@ -738,6 +740,26 @@ TEST(ft857_level_step_moves_by_the_radios_steps) {
   CHECK_EQ(ft857LevelStep(YaesuFt857Level::LpfCutoff, 6000, -1), ft857LevelValue(YaesuFt857Level::LpfCutoff, 30));
   CHECK_EQ(ft857LevelStep(YaesuFt857Level::LpfCutoff, 2770, 1), ft857LevelValue(YaesuFt857Level::LpfCutoff, 12));
   CHECK_EQ(ft857LevelStep(YaesuFt857Level::CwSpeed, 20, 1), 20);
+}
+
+// The console passes any step count; more steps than the radio has go to the end of the range.
+TEST(ft857_level_step_takes_any_number_of_steps) {
+  CHECK_EQ(ft857LevelStep(YaesuFt857Level::LpfCutoff, 2770, INT_MAX), 6000);
+  CHECK_EQ(ft857LevelStep(YaesuFt857Level::LpfCutoff, 2770, INT_MIN), 1000);
+  CHECK_EQ(ft857LevelStep(YaesuFt857Level::NbLevel, 50, INT_MAX), 100);
+  CHECK_EQ(ft857LevelStep(YaesuFt857Level::NbLevel, 50, INT_MIN), 0);
+  CHECK_EQ(ft857LevelStep(YaesuFt857Level::NrLevel, 8, 1000), 16);
+  CHECK_EQ(ft857LevelStep(YaesuFt857Level::NrLevel, 8, -1000), 1);
+}
+
+TEST(percent_step_stays_within_0_to_100) {
+  CHECK_EQ(ft8x7PercentStep(50, 5), 55);
+  CHECK_EQ(ft8x7PercentStep(50, -5), 45);
+  CHECK_EQ(ft8x7PercentStep(98, 5), 100);
+  CHECK_EQ(ft8x7PercentStep(3, -5), 0);
+  CHECK_EQ(ft8x7PercentStep(50, INT_MAX), 100);
+  CHECK_EQ(ft8x7PercentStep(50, INT_MIN), 0);
+  CHECK_EQ(ft8x7PercentStep(127, 0), 100);  // above 100 counts as 100
 }
 
 TEST(ft857_rf_power_range_per_band_group) {

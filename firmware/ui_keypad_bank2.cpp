@@ -70,9 +70,7 @@ static void stepKeypadFt8x7Level(Ft8x7Setting setting, const char* label, int de
   printKeypadAction("{} STEP {}", label, delta);
   prepareKeypadSpeechResponse();
   Ft8x7SettingState state;
-  if (keypadReportFeatureFailure(ft8x7LevelStep(setting, delta, state), label)) return;
-  printKeypadStatus("{}", ft8x7SettingText(state).c_str());
-  speakFt8x7Setting(state);
+  keypadReportFt8x7Setting(ft8x7LevelStep(setting, delta, state), label, state);
 }
 
 void stepBank2Ft8x7NrLevel(int delta) { stepKeypadFt8x7Level(Ft8x7Setting::NrLevel, "NRLEVEL", delta); }
@@ -84,9 +82,7 @@ void toggleBank2Ft8x7Dbf() {
   printKeypadAction("DBF");
   prepareKeypadSpeechResponse();
   Ft8x7SettingState state;
-  if (keypadReportFeatureFailure(ft8x7DbfToggle(state), "DBF")) return;
-  printKeypadStatus("{}", ft8x7SettingText(state).c_str());
-  speakFt8x7Setting(state);
+  keypadReportFt8x7Setting(ft8x7DbfToggle(state), "DBF", state);
 }
 
 static constexpr ChoiceOption kFt8x7AgcKeys[] = {
@@ -106,13 +102,12 @@ static void commitFt8x7Agc(uint8_t agc, TargetVfo) {
   printKeypadCommand("ENTER -> AGC {}", ft8x7AgcName((YaesuAgc)agc));
   prepareKeypadRadioWrite();
   Ft8x7SettingState state;
-  if (keypadReportFeatureFailure(ft8x7AgcSet((YaesuAgc)agc, state), "AGC")) return;
-  printKeypadStatus("{}", ft8x7SettingText(state).c_str());
-  speakFt8x7Setting(state);
+  keypadReportFt8x7Setting(ft8x7AgcSet((YaesuAgc)agc, state), "AGC", state);
 }
 
 static constexpr ChoiceSpec kFt8x7AgcChoice = {
-    "AGC SELECT", kFt8x7AgcKeys, 4, nullptr, sayPickedFt8x7Agc, commitFt8x7Agc};
+    "AGC SELECT", kFt8x7AgcKeys, sizeof(kFt8x7AgcKeys) / sizeof(kFt8x7AgcKeys[0]),
+    nullptr, sayPickedFt8x7Agc, commitFt8x7Agc};
 
 void beginBank2Ft8x7AgcSelect() {
   if (!currentProfile().caps.setRadioMenu) {

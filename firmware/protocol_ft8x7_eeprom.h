@@ -40,11 +40,17 @@ YaesuEepromWrite yaesuFt8x7SetMenuOrRow(bool row, uint8_t number, uint8_t& numbe
 // Sets a flag (NB, DNR, DNF, DBF, PROC); on sets every bit of the flag. Nothing is written when the
 // byte is already so.
 YaesuEepromWrite yaesuFt8x7SetFlag(Ft8x7Flag flag, bool on, uint32_t timeoutMs);
+// Flips a flag from the byte read for the write, so a change on the radio's own keys counts.
+// onOut is the flag as written.
+YaesuEepromWrite yaesuFt8x7ToggleFlag(Ft8x7Flag flag, bool& onOut, uint32_t timeoutMs);
 // FT-857/897: sets a menu level to the radio's step nearest value, within ft857LevelRange
-// (NrLevel, NbLevel, HpfCutoff, LpfCutoff, ProcLevel, the mic gains). valueOut is the value read back. Nothing is written
-// when it already has the value.
+// (NrLevel, NbLevel, HpfCutoff, LpfCutoff, ProcLevel, the mic gains). valueOut is the value read
+// back. Nothing is written when it already has the value.
 YaesuEepromWrite yaesuFt857SetLevel(YaesuFt857Level level, uint16_t value, uint16_t& valueOut,
                                     uint32_t timeoutMs);
+// The same, steps of the radio's steps from the value read for the write (ft857LevelStep).
+YaesuEepromWrite yaesuFt857StepLevel(YaesuFt857Level level, int steps, uint16_t& valueOut,
+                                     uint32_t timeoutMs);
 // FT-857/897: sets menu 75 power of the band group of hz to watts, within ft857RfPowerRange.
 // wattsOut is the value read back.
 YaesuEepromWrite yaesuFt857SetRfPowerWatts(uint64_t hz, uint8_t watts, uint8_t& wattsOut,
@@ -53,7 +59,8 @@ YaesuEepromWrite yaesuFt857SetRfPowerWatts(uint64_t hz, uint8_t watts, uint8_t& 
 YaesuEepromWrite yaesuFt817SetPowerLevel(Ft817PowerLevel level, Ft817PowerLevel& levelOut,
                                          uint32_t timeoutMs);
 // Sets AGC. The FT-857/897 keeps off as its own bit: off clears it and keeps the speed, the
-// speeds write the speed, then set it. agcOut is the AGC read back.
+// speeds write the speed, then set it, checking for transmit once. When the second write fails,
+// AGC stays as it was; if it was off, its speed may have changed. agcOut is the AGC read back.
 YaesuEepromWrite yaesuFt8x7SetAgc(YaesuAgc agc, YaesuAgc& agcOut, uint32_t timeoutMs);
 // IPO, ATT and FM narrow are kept per band; read from the block of the band the active VFO is
 // on, also outside the amateur bands. hz decides whether IPO and ATT exist.
@@ -93,6 +100,8 @@ bool yaesuFt8x7QueryMicGain(Ft8x7MicGain gain, uint8_t& valueOut, uint32_t timeo
 // is the value read back.
 YaesuEepromWrite yaesuFt8x7SetMicGain(Ft8x7MicGain gain, uint8_t value, uint8_t& valueOut,
                                       uint32_t timeoutMs);
+// The same, steps from the gain read for the write, kept within 0..100.
+YaesuEepromWrite yaesuFt8x7StepMicGain(Ft8x7MicGain gain, int steps, uint8_t& valueOut, uint32_t timeoutMs);
 // FT-857/897 menu 88, FT-817 menu 51; 0..100.
 bool yaesuFt8x7QueryVoxGain(uint8_t& valueOut, uint32_t timeoutMs);
 // FT-857/897 menu 87, FT-817 menu 50; ms.

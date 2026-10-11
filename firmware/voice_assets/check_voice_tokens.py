@@ -52,7 +52,7 @@ TOKEN_FUNCTIONS = (
 
 # Functions returning the word for a radio state, which the caller speaks.
 RUNTIME_TOKEN_FUNCTIONS = (
-    "ft8x7AgcText",
+    "ft8x7AgcName",
     "modeToken",
 )
 

@@ -157,6 +157,12 @@ bool ft857RfPowerByte(Ft8x7BandGroup group, uint8_t watts, uint8_t old, uint8_t&
   return true;
 }
 
+// old with bits 1..0 set to bits, where the FT-857/897 AGC speed and mic EQ and the FT-817 power
+// level and AGC are kept.
+static uint8_t withLowBits(uint8_t old, uint8_t bits) {
+  return (uint8_t)((old & ~0x03) | (bits & 0x03));
+}
+
 YaesuAgc ft857AgcFromSpeed(uint8_t b) {
   switch (b & 0x03) {
     case 0x00: return YaesuAgc::Slow;
@@ -173,7 +179,7 @@ uint8_t ft857AgcSpeedByte(YaesuAgc agc, uint8_t old) {
     case YaesuAgc::Fast: speed = 0x02; break;
     default: return old;
   }
-  return (uint8_t)((old & ~0x03) | speed);
+  return withLowBits(old, speed);
 }
 
 YaesuFt857MicEq ft857MicEqFromByte(uint8_t b) {
@@ -181,7 +187,7 @@ YaesuFt857MicEq ft857MicEqFromByte(uint8_t b) {
 }
 
 uint8_t ft857MicEqByte(YaesuFt857MicEq eq, uint8_t old) {
-  return (uint8_t)((old & ~0x03) | ((uint8_t)eq & 0x03));
+  return withLowBits(old, (uint8_t)eq);
 }
 
 struct Ft857LevelField {
@@ -283,8 +289,11 @@ uint16_t ft857LevelStep(YaesuFt857Level level, uint16_t value, int steps) {
   uint16_t lo = 0;
   uint16_t hi = 0;
   if (!f || !ft857LevelRange(level, lo, hi)) return value;
-  int raw = ft857NearestRaw(*f, value, lo, hi) + steps;
+  // More steps than the field has go to its end; the bound also keeps the sum from overflowing.
   const int rawMax = f->mask >> f->shift;
+  if (steps > rawMax) steps = rawMax;
+  if (steps < -rawMax) steps = -rawMax;
+  int raw = ft857NearestRaw(*f, value, lo, hi) + steps;
   if (raw < 0) raw = 0;
   if (raw > rawMax) raw = rawMax;
   uint16_t stepped = ft857LevelValue(level, (uint8_t)(raw << f->shift));
@@ -324,7 +333,7 @@ uint16_t ft817RfPowerTenths(uint8_t b, bool ft818) {
 Ft817PowerLevel ft817PowerLevel(uint8_t b) { return (Ft817PowerLevel)(b & 0x03); }
 
 uint8_t ft817PowerLevelByte(Ft817PowerLevel level, uint8_t old) {
-  return (uint8_t)((old & ~0x03) | ((uint8_t)level & 0x03));
+  return withLowBits(old, (uint8_t)level);
 }
 
 YaesuAgc ft817AgcFromByte(uint8_t b) {
@@ -340,7 +349,7 @@ uint8_t ft817AgcByte(YaesuAgc agc, uint8_t old) {
     case YaesuAgc::Slow: bits = 0x02; break;
     case YaesuAgc::Off: bits = 0x03; break;
   }
-  return (uint8_t)((old & ~0x03) | bits);
+  return withLowBits(old, bits);
 }
 
 bool ft8x7MenuRowMap(Ft8x7Model model, Ft8x7MenuRowMap& out) {
@@ -393,6 +402,13 @@ uint16_t ft817MicGainAddr(Ft8x7MicGain gain, bool pkt9600) {
 uint8_t ft817LevelFromByte(uint8_t b) {
   const uint8_t value = (uint8_t)(b & 0x7F);
   return value > 100 ? 100 : value;
+}
+
+uint8_t ft8x7PercentStep(uint8_t value, int steps) {
+  if (steps > 100) steps = 100;
+  if (steps < -100) steps = -100;
+  const int stepped = (value > 100 ? 100 : value) + steps;
+  return (uint8_t)(stepped < 0 ? 0 : stepped > 100 ? 100 : stepped);
 }
 
 bool ft817LevelByte(uint8_t value, uint8_t old, uint8_t& out) {

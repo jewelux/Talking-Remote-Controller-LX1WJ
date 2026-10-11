@@ -1535,3 +1535,27 @@ TEST(input_normal_mode_does_not_time_out) {
   CHECK_EQ(in.mode(), InputMode::Normal);
   CHECK_LOG(f);
 }
+
+// Every mode that takes digits needs its row in kEntries: the keys use it.
+TEST(input_every_entry_mode_has_an_entry_spec) {
+  for (uint8_t m = 0; m <= (uint8_t)InputMode::RowEntry; ++m) {
+    const InputMode mode = (InputMode)m;
+    const EntrySpec *entry = keypadEntrySpec(mode);
+    if (mode == InputMode::Normal || mode == InputMode::ChoiceSelect) {
+      CHECK(entry == nullptr);
+      continue;
+    }
+    CHECK(entry != nullptr);
+    if (entry) CHECK_EQ(entry->mode, mode);
+  }
+}
+
+// A mode without a row times out under a plain name instead of crashing.
+TEST(input_entry_timeout_without_an_entry_spec) {
+  Fake f;
+  KeypadInput in(f);
+  in.beginEntry((InputMode)0xFF);
+  in.poll(1 + KeypadInput::kEntryTimeoutMs);
+  CHECK_EQ(in.mode(), InputMode::Normal);
+  CHECK_LOG(f, "timeout ? ENTRY");
+}
