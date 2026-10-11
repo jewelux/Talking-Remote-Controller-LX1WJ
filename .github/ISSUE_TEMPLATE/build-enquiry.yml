@@ -1,0 +1,36 @@
+name: Build enquiry
+description: Planning to build a HamTRC? Ask for the current state of the hardware.
+title: "[Build] "
+labels: ["build enquiry"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for your interest in building a HamTRC!
+        The hardware is still evolving, so the documentation in `docs/hardware/` is kept minimal.
+        Tell us a little about your plans and you will get the current state of the board, recent changes and build tips.
+  - type: dropdown
+    id: version
+    attributes:
+      label: Board version
+      options:
+        - V1 – HamTRC (original board)
+        - V2 – Mini-HamTRC
+        - Not sure yet
+    validations:
+      required: true
+  - type: input
+    id: radio
+    attributes:
+      label: Radio(s) you want to control
+      placeholder: e.g. Yaesu FT-817, Icom IC-7300
+  - type: input
+    id: country
+    attributes:
+      label: Country
+      description: Helps with tips on sourcing parts.
+  - type: textarea
+    id: questions
+    attributes:
+      label: Questions or notes
+      placeholder: What would you like to know?
