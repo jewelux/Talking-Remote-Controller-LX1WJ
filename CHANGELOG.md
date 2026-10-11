@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased – Documentation
+
+- **new folder `docs/hardware/`**: all hardware files moved here (same layout as on `development`).
+  Old links to `docs/hardware_wiring.md` now point to `docs/hardware/v1-hamtrc/hardware_wiring.md`
+  - `v1-hamtrc/`: wiring, schematic `circuit-diagram-V1.pdf` (was `circuit-diagram-under-construction.pdf`),
+    PCB `pcb-layout-V1.pdf` (was `pcb-under-construction.pdf`)
+  - `proto-pcbs/`: prototype photos (was `docs/Proto-PCBs/`)
+  - `README.md`: overview of the hardware versions
+- the V2 board "Mini-HamTRC" (in development) is documented on the `development` branch in
+  `docs/hardware/v2-mini-hamtrc/`
+
 ## V3.5.8 FTDX10 and Keypad Refinement
 
 The repository is now aligned to the local `V3.5.8` firmware state.

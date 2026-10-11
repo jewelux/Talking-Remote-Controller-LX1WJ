@@ -1,5 +1,7 @@
 # Hardware Wiring Reference (ESP32 Talking Remote Controller - V3.5.8)
 
+Schematic: [`circuit-diagram-V1.pdf`](circuit-diagram-V1.pdf) · PCB layout: [`pcb-layout-V1.pdf`](pcb-layout-V1.pdf) · Prototype photos: [`proto-pcbs/`](../proto-pcbs/)
+
 This document describes the hardware wiring used by the current modular repository state based on
 `firmware/TalkingRemoteControllerLX1WJ_V3_5_8.ino`.
 
