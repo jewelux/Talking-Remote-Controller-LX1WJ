@@ -191,14 +191,18 @@ TEST(ft847_is_its_own_protocol_on_rs232) {
   CHECK_EQ(ft847.modes->digi, "");
 }
 
-TEST(qmx_is_kenwood_cat_over_usb_with_freq_and_mode_only) {
+TEST(qmx_is_kenwood_cat_over_usb_with_freq_mode_and_s_meter) {
   const RadioProfile& qmx = slot(21);
   CHECK(qmx.protocol == PROTO_KENWOOD_ASCII);
-  CHECK(qmx.model == RadioModel::Generic);
+  CHECK(qmx.model == RadioModel::Qmx);
   CHECK(qmx.link.port == RadioPort::UsbHost);
   CHECK(qmx.caps.getFreq && qmx.caps.setFreq && qmx.caps.getMode && qmx.caps.setMode);
-  // Its SM, PC and SW replies differ from the TS-480 ones, and it has no NR or NB.
-  CHECK(!qmx.caps.getSmeter && !qmx.caps.getPower && !qmx.caps.getSwr);
+  // SM is in dB, which RadioModel::Qmx decodes.
+  CHECK(qmx.caps.getSmeter);
+  CHECK_EQ(qmx.commands->smeterGet, "SM;");
+  CHECK_EQ(qmx.commands->smeterReplyPrefix, "SM");
+  // Its PC and SW replies differ from the TS-480 ones, and it has no NR or NB.
+  CHECK(!qmx.caps.getPower && !qmx.caps.getSwr);
   CHECK(!qmx.caps.getNr && !qmx.caps.getNb);
   CHECK_EQ(qmx.modes->digi, "9");
   CHECK_EQ(qmx.modes->digiAlso, "6");
@@ -251,4 +255,5 @@ TEST(model_names_are_set) {
   CHECK_EQ(radioModelName(RadioModel::Ic705), "IC-705");
   CHECK_EQ(radioModelName(RadioModel::Ft857), "FT-857/897");
   CHECK_EQ(radioModelName(RadioModel::Ftdx10), "FTDX10");
+  CHECK_EQ(radioModelName(RadioModel::Qmx), "QMX");
 }

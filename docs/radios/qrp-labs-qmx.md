@@ -10,14 +10,15 @@ been connected yet.
 |---|---|---|
 | Frequency read and set | `FA` | VFO A, 11 digits |
 | Mode read and set | `MD` | LSB 1, USB 2, CW 3, AM 5, CW-R 7, DIGI 9 (USB; 6, Digi on LSB, is read as DIGI too) |
+| S-meter (Bank 1 `7`, console `SM?`) | `SM` | in dB; said as S0 to S9, then S9 plus tens of dB. `SM?` also answers on the second socket, with the raw reply |
 | Radio ID and model (console `ID?`, `OM?`, `IF?`) | `ID`, `OM`, `IF` | `ID020` (TS-480), `OMQC` |
 | USB connection state (console `USB?`, Bank 9 `1`) | | also on the second USB socket |
 
 While the QMX is connected, the full console is not reachable (see Connecting): use the keypad.
 `ID?`, `OM?` and `IF?` are for a later setup with the console on the second socket.
 
-Not yet: S-meter, output power and SWR (the QMX sends `SM` in dB, `PC` in tenths of a watt and
-`SW` in hundredths, not the TS-480 scales), VFO B, split, RIT, PTT and the QMX menu commands.
+Not yet: output power and SWR (the QMX sends `PC` in tenths of a watt and `SW` in hundredths, not
+the TS-480 scales), VFO B, split, RIT, PTT and the QMX menu commands.
 
 ## Connecting
 
@@ -28,7 +29,7 @@ ESP32-S3's native USB socket:
 - the QMX's USB cable goes into the controller's **native USB socket**, the one that is normally
   the PC console (USB JTAG/serial, VID 303A);
 - the PC console then uses the **second USB socket**, the USB-to-serial chip (a CH343 or CP210x)
-  wired to UART0. While the USB host runs, it answers only `HAMTRC?` and `USB?`;
+  wired to UART0. While the USB host runs, it answers only `HAMTRC?`, `USB?` and `SM?`;
 - flashing works through the second socket as usual.
 
 See `docs/hardware_wiring.md`, section 6, for the 5 V supply on the native socket.
@@ -70,13 +71,21 @@ console. The new profile is announced after the restart.
    socket.
 3. Bank 1 `0` short: the frequency. Tune the QMX: the new frequency is announced.
 4. Mode select: LSB, USB, CW, DIGI; Bank 3 mode query after each.
-5. Unplug the QMX: "usb off". Plug it in again: "usb on", and the frequency query works.
-6. Choose another profile: the controller restarts and the PC console is back on the native socket.
+5. S-meter: `SM?` on the second socket prints the raw reply and the S value, and says it; Bank 1
+   `7` says it from the keypad. With no antenna it should be near S0, with a strong signal S9
+   plus. Note the raw value for the developer notes below.
+6. Unplug the QMX: "usb off". Plug it in again: "usb on", and the frequency query works.
+7. Choose another profile: the controller restarts and the PC console is back on the native socket.
 
 ## Developer notes
 
 - Profile: `kQmxCaps`, `kQmxCommands`, `kQmxModes` in `firmware/radio_profile_table.cpp`, protocol
-  `KENWOOD_ASCII`, port `RadioPort::UsbHost`.
+  `KENWOOD_ASCII`, port `RadioPort::UsbHost`, model `RadioModel::Qmx`.
+- S-meter: the CAT manual says only that `SM;` returns the S-meter value in dB. The operating
+  manual calibrates the meter at 6 dB per S unit, S0 at -127 dBm, S9 at -73 dBm, up to S9+36 dB
+  (-37 dBm). Until a reply has been seen from a radio, `qmxDecodeSMeter()` (`firmware/qmx_codec.*`,
+  tests in `tests/qmx`) reads a negative value as dBm and zero and above as dB over S0. Whole S
+  units below S9, tens of dB above, as for the FT-847.
 - USB host and CDC-ACM: `firmware/transport_usb_host.*`, on the ESP-IDF USB Host Library of the
   ESP32 core (no extra library). It opens the first CDC data interface with a bulk IN and OUT
   endpoint, sends SET_LINE_CODING and SET_CONTROL_LINE_STATE (DTR on) to the ACM control interface

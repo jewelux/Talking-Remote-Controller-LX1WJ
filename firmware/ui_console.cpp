@@ -240,15 +240,25 @@ static bool usbConsoleReady() {
 
 // Report a failed radio command. If the radio never answered, say "timeout";
 // other failures (unsupported, bad argument) stay silent as before.
-static void reportCommandFailure(const char* label, const char* reason) {
-  Serial.print(label);
+static void reportCommandFailure(const char* label, const char* reason, Print& output = Serial) {
+  output.print(label);
   if (g_radioReplyTimedOut) {
-    Serial.println(" -> timeout");
+    output.println(" -> timeout");
     if (g_speechEnabled) speakTimeout();
     return;
   }
-  Serial.print(" -> ");
-  Serial.println(reason);
+  output.print(" -> ");
+  output.println(reason);
+}
+
+// SM? on the console, and on Serial0 (processHamtrcServiceCommand).
+static void answerSmeterQuery(Print& output) {
+  if (!refreshLiveSmeter()) { reportCommandFailure("SM?", "no reply", output); return; }
+  output.print("SM: raw=");
+  output.print(live.smRaw);
+  output.print("  ");
+  output.println(live.sm.toString());
+  if (g_speechEnabled) speakSValue(live.sm);
 }
 
 // Report a command the radio or profile cannot do, and say "not available".
@@ -776,7 +786,7 @@ void printHelp() {
   Serial.println("    TEST");
   Serial.println("    TUNINGSPEECH OFF | ON | TOGGLE");
   Serial.println("    TUNINGSPEECH?");
-  Serial.println("    USB?  (USB host and the radio on the native USB socket; also on the UART socket)");
+  Serial.println("    USB?  (USB host and the radio on the native USB socket; also on the UART socket, as is SM?)");
   Serial.println("    VERBOSE OFF | ON | TOGGLE");
   Serial.println("    VERBOSE?");
   Serial.println("    VOICE <name>");
@@ -2763,12 +2773,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     return true;
   }
   if (upper == "SM?") {
-    if (!refreshLiveSmeter()) { reportCommandFailure("SM?", "no reply"); return true; }
-    Serial.print("SM: raw=");
-    Serial.print(live.smRaw);
-    Serial.print("  ");
-    Serial.println(live.sm.toString());
-    if (g_speechEnabled) speakSValue(live.sm);
+    answerSmeterQuery(Serial);
     return true;
   }
   if (upper == "SWR?") {
@@ -3448,7 +3453,16 @@ bool processHamtrcServiceCommand(String line, Print& output) {
   line.trim();
   if (!line.length()) return false;
   String upper = upperCopy(line);
-  return handleHamtrcServiceCommand(upper, output);
+  if (handleHamtrcServiceCommand(upper, output)) return true;
+  // Only Serial0 comes here. While the USB host holds the native socket, this is the one way to
+  // see the radio's raw S-meter reply (the QMX's is not yet confirmed on a radio).
+  if (upper == "SM?") {
+    g_radioReplyTimedOut = false;
+    audioAbortNow();
+    answerSmeterQuery(output);
+    return true;
+  }
+  return false;
 }
 
 void processCommand(String line) {

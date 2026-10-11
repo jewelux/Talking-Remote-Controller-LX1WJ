@@ -129,6 +129,7 @@ enum class RadioModel : uint8_t {
   Ft818,
   Ft857,   // FT-857 and FT-897
   Ftdx10,  // FTDX10 keypad layout and hidden commands
+  Qmx,     // QRP Labs QMX: S-meter in dB (qmx_codec.*)
 };
 
 // The commands of an ASCII CAT radio (Kenwood, Elecraft, Yaesu FTDX), and the

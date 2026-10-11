@@ -5,6 +5,7 @@
 #include "protocol_ops_civ.h"
 #include "protocol_ft847.h"
 #include "protocol_ops_yaesu.h"
+#include "qmx_codec.h"
 #include "radio_protocol.h"
 #include "radio_state.h"
 #include "radio_utils.h"
@@ -147,6 +148,10 @@ SMeterReading sMeterFromRaw(int32_t raw) {
   if (currentProtocolType() == PROTO_YAESU_FT8X7) return yaesuCatDecodeSMeter((uint8_t)raw);
   if (currentProtocolType() == PROTO_YAESU_FT847) return ft847SMeterFromRaw((uint8_t)raw);
   SMeterReading reading;
+  if (currentProfile().model == RadioModel::Qmx) {
+    qmxDecodeSMeter(raw, reading.sUnits, reading.dbOverS9);
+    return reading;
+  }
   reading.sUnits = smRawToS(raw);
   return reading;
 }

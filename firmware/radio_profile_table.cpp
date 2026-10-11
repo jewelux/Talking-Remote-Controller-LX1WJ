@@ -113,18 +113,19 @@ constexpr ModeCodes kTs480Modes = {
 // A USB virtual COM port ignores the baud; the list only satisfies the link checks.
 constexpr uint32_t kQmxBauds[] = {9600};
 
-// Frequency and mode only for now. Its SM, PC and SW replies are not the TS-480 ones (S-meter in
-// dB, output power in tenths of a watt, SWR in hundredths), and it has no NR or NB command.
+// Frequency, mode and S-meter for now. Its SM, PC and SW replies are not the TS-480 ones: SM is
+// in dB (RadioModel::Qmx, qmx_codec.*), PC in tenths of a watt and SW in hundredths, and those
+// two are left out. It has no NR or NB command.
 constexpr RadioCapabilities kQmxCaps = {
-    .getFreq = true, .setFreq = true, .getMode = true, .setMode = true,
+    .getFreq = true, .setFreq = true, .getMode = true, .setMode = true, .getSmeter = true,
 };
 
 constexpr AsciiCommandSet kQmxCommands = {
     .freqGet = "FA;", .freqSetFormat = "FA%011llu;",
     .modeGet = "MD;", .modeSetFormat = "MD%s;",
-    .ifGet = "IF;", .idGet = "ID;", .omGet = "OM;",
+    .ifGet = "IF;", .idGet = "ID;", .omGet = "OM;", .smeterGet = "SM;",
     .freqReplyPrefix = "FA", .modeReplyPrefix = "MD", .ifReplyPrefix = "IF",
-    .idReplyPrefix = "ID", .omReplyPrefix = "OM",
+    .idReplyPrefix = "ID", .omReplyPrefix = "OM", .smeterReplyPrefix = "SM",
 };
 
 // The QMX Digi mode is 9 (FSR) on USB, its default, and 6 (FSK) on LSB; Hamlib and so WSJT-X set
@@ -350,7 +351,7 @@ constexpr RadioProfile kProfiles[] = {
      .link = {.port = RadioPort::CivJack, .baud = 19200, .bauds = kCivBauds, .civAddr = 0xB2},
      .caps = kIcomFullCaps, .rfPowerMaxWatts = 200},
     {.slot = 21, .name = "QRP Labs QMX", .vendor = VoiceVendor::QrpLabs, .voiceDigits = "qmx",
-     .protocol = PROTO_KENWOOD_ASCII,
+     .model = RadioModel::Qmx, .protocol = PROTO_KENWOOD_ASCII,
      .link = {.port = RadioPort::UsbHost, .baud = 9600, .bauds = kQmxBauds},
      .caps = kQmxCaps, .commands = &kQmxCommands, .modes = &kQmxModes},
 };
@@ -453,6 +454,7 @@ const char* radioModelName(RadioModel model) {
     case RadioModel::Ft818: return "FT-818";
     case RadioModel::Ft857: return "FT-857/897";
     case RadioModel::Ftdx10: return "FTDX10";
+    case RadioModel::Qmx: return "QMX";
   }
   return "generic";
 }

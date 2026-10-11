@@ -31,6 +31,9 @@ jobs:
       - name: FT-847 unit tests
         run: make -C tests/ft847
 
+      - name: QMX unit tests
+        run: make -C tests/qmx
+
       - name: Audio unit tests
         run: make -C tests/audio
 
