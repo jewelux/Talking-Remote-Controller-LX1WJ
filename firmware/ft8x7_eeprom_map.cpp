@@ -64,6 +64,14 @@ bool ft8x7FlagValue(const Ft8x7FlagField& field, uint8_t b) {
   return ((b & field.mask) != 0) != field.inverted;
 }
 
+bool ft8x7FlagIsOneBit(const Ft8x7FlagField& field) {
+  return field.mask != 0 && (field.mask & (field.mask - 1)) == 0;
+}
+
+uint8_t ft8x7FlagByte(const Ft8x7FlagField& field, bool on, uint8_t old) {
+  return (on != field.inverted) ? (uint8_t)(old | field.mask) : (uint8_t)(old & ~field.mask);
+}
+
 Ft8x7BandGroup ft8x7BandGroupForHz(uint64_t hz) {
   if (hz >= 420000000ULL) return Ft8x7BandGroup::Uhf;
   if (hz >= 137000000ULL) return Ft8x7BandGroup::Vhf;
@@ -193,6 +201,28 @@ uint16_t ft857LevelValue(YaesuFt857Level level, uint8_t b) {
     case YaesuFt857Level::VoxDelay: return (uint16_t)(raw * 100);        // 100..3000 ms
     default: return raw;                                                 // 0..100
   }
+}
+
+bool ft857LevelRange(YaesuFt857Level level, uint16_t& minOut, uint16_t& maxOut) {
+  switch (level) {
+    case YaesuFt857Level::NrLevel: minOut = 1; maxOut = 16; return true;
+    case YaesuFt857Level::NbLevel: minOut = 0; maxOut = 100; return true;
+    default: return false;
+  }
+}
+
+bool ft857LevelByte(YaesuFt857Level level, uint16_t value, uint8_t old, uint8_t& out) {
+  const Ft857LevelField* f = ft857LevelField(level);
+  uint16_t lo = 0;
+  uint16_t hi = 0;
+  if (!f || !ft857LevelRange(level, lo, hi)) return false;
+  if (value < lo || value > hi) return false;
+  const uint16_t stored = ft857LevelValue(level, old);
+  if (stored < lo || stored > hi) return false;
+  // Both settable levels are stored as shown, NR from 0 (ft857LevelValue).
+  const uint8_t raw = (uint8_t)(level == YaesuFt857Level::NrLevel ? value - 1 : value);
+  out = (uint8_t)((old & ~f->mask) | ((raw << f->shift) & f->mask));
+  return true;
 }
 
 bool ft8x7MicGainForMode(uint8_t modeByte, Ft8x7MicGain& out) {

@@ -44,6 +44,10 @@ struct Ft8x7FlagField {
 // Where model keeps flag. False when it does not (or for Ft8x7Model::None).
 bool ft8x7FlagField(Ft8x7Model model, Ft8x7Flag flag, Ft8x7FlagField& out);
 bool ft8x7FlagValue(const Ft8x7FlagField& field, uint8_t b);
+// True for a flag kept in one bit, the only kind that can be set (Dbf is two bits).
+bool ft8x7FlagIsOneBit(const Ft8x7FlagField& field);
+// The byte that sets a one-bit flag on or off, made from old with every other bit kept.
+uint8_t ft8x7FlagByte(const Ft8x7FlagField& field, bool on, uint8_t old);
 
 enum class YaesuAgc : uint8_t { Off, Fast, Slow, Auto };
 
@@ -168,6 +172,13 @@ YaesuFt857MicEq ft857MicEqFromByte(uint8_t b);
 bool ft857LevelAddr(YaesuFt857Level level, uint16_t& addrOut);
 // The level from the byte at its address, in the units the radio shows.
 uint16_t ft857LevelValue(YaesuFt857Level level, uint8_t b);
+// The values a level can be set to, in the units the radio shows: NrLevel 1..16, NbLevel 0..100.
+// False for the other levels, which cannot be set.
+bool ft857LevelRange(YaesuFt857Level level, uint16_t& minOut, uint16_t& maxOut);
+// The byte that sets level to value, made from old with every other bit kept. False, and out
+// untouched, when value is outside ft857LevelRange, or when old does not hold a value in range:
+// the map then does not fit the radio, and nothing may be written.
+bool ft857LevelByte(YaesuFt857Level level, uint16_t value, uint8_t old, uint8_t& out);
 
 // The mic gain a mode transmits with; each mode group has its own.
 enum class Ft8x7MicGain : uint8_t { Ssb, Am, Fm, Dig, Pkt };

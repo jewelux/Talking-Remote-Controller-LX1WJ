@@ -55,17 +55,17 @@ they say "not available". This is noted where it is always the case.
 |---|---|---|---|---|---|
 | `0` short | free | free | free | antenna jack of the band | free |
 | `1` short | noise reduction | noise reduction | noise reduction | not available | noise reduction |
-| `1` long | noise reduction on/off | noise reduction on/off | noise reduction on/off | not available | not available |
+| `1` long | noise reduction on/off | noise reduction on/off | noise reduction on/off | not available | noise reduction on/off (experimental) |
 | `2` short | noise blanker | noise blanker | noise blanker | noise blanker | noise blanker |
-| `2` long | noise blanker on/off | noise blanker on/off | noise blanker on/off | not available | not available |
+| `2` long | noise blanker on/off | noise blanker on/off | noise blanker on/off | noise blanker on/off (experimental) | noise blanker on/off (experimental) |
 | `3` short | notch | notch | notch | not available | notch |
-| `3` long | notch on/off | notch on/off | notch on/off | not available | not available |
+| `3` long | notch on/off | notch on/off | notch on/off | not available | notch on/off (experimental) |
 | `4` short | noise reduction level | AGC | free | not available | noise reduction level |
-| `4` long | NR level up 10 % | AGC fast | free | free | free |
-| `4` double | NR level down 10 % | AGC slow | free | free | free |
+| `4` long | NR level up 10 % | AGC fast | free | free | NR level up 1 (experimental) |
+| `4` double | NR level down 10 % | AGC slow | free | free | NR level down 1 (experimental) |
 | `5` short | noise blanker level | radio power state | free | not available | noise blanker level |
-| `5` long | NB level up 10 % | radio power off | free | free | free |
-| `5` double | NB level down 10 % | radio power on | free | free | free |
+| `5` long | NB level up 10 % | radio power off | free | free | NB level up 10 (experimental) |
+| `5` double | NB level down 10 % | radio power on | free | free | NB level down 10 (experimental) |
 | `6` short | PBT inner | radio status line | free | not available | DSP bandpass filter |
 | `6` long | PBT inner up | free | free | free | free |
 | `6` double | PBT inner down | free | free | free | free |

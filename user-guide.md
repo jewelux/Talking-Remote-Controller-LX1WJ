@@ -78,6 +78,11 @@ off, so you can try keys that would otherwise say "not available".
 The setting is not saved; after power off the profile applies again. Console: `EXPERIMENTAL?` and
 `EXPERIMENTAL ON | OFF | TOGGLE`.
 
+On the FT-817/818 and FT-857/897, experimental mode also lets HamTRC change settings that CAT can
+only read, by writing them to the radio's memory: the menu item and soft key row (Bank 8), and the
+noise blanker, and on the FT-857/897 noise reduction, notch and their levels (Bank 2). See the
+[keypad map](docs/keypad-map.md).
+
 ## Practical Everyday Use
 
 These actions are the normal starting point on many profiles:

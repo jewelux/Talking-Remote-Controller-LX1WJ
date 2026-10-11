@@ -78,7 +78,7 @@ FeatureStatus nrQuery(NrState& out) {
 }
 
 FeatureStatus nrSet(bool on) {
-  if (!currentProfile().caps.setNr) return FeatureStatus::Unsupported;
+  if (!currentProfile().caps.setNr || isFt817WithoutDsp()) return FeatureStatus::Unsupported;
   if (!applyNrAndTrack(on)) return failure(FeatureStatus::Failed);
   return FeatureStatus::Ok;
 }
@@ -138,7 +138,7 @@ FeatureStatus notchQuery(NotchState& out) {
 }
 
 FeatureStatus notchSet(bool on) {
-  if (!currentProfile().caps.setNotch) return FeatureStatus::Unsupported;
+  if (!currentProfile().caps.setNotch || isFt817WithoutDsp()) return FeatureStatus::Unsupported;
   if (!applyNotchAndTrack(on)) return failure(FeatureStatus::Failed);
   return FeatureStatus::Ok;
 }
@@ -301,6 +301,19 @@ FeatureStatus voxDelayQuery(uint16_t& ms) {
 
 static constexpr uint32_t kFt8x7TimeoutMs = YAESU_CAT_REPLY_TIMEOUT_MS;
 
+static FeatureStatus eepromWriteStatus(YaesuEepromWrite result) {
+  switch (result) {
+    case YaesuEepromWrite::Ok: return FeatureStatus::Ok;
+    case YaesuEepromWrite::Unsupported: return FeatureStatus::Unsupported;
+    case YaesuEepromWrite::OutOfRange: return FeatureStatus::Invalid;
+    case YaesuEepromWrite::NoReply: return failure(FeatureStatus::NoReply);
+    case YaesuEepromWrite::Transmitting:
+    case YaesuEepromWrite::UnexpectedBytes:
+    case YaesuEepromWrite::NotVerified: return FeatureStatus::Failed;
+  }
+  return FeatureStatus::Failed;
+}
+
 const char* ft8x7SettingLabel(Ft8x7Setting setting) {
   switch (setting) {
     case Ft8x7Setting::Agc: return "AGC?";
@@ -421,20 +434,55 @@ FeatureStatus ft8x7MenuRowSet(Ft8x7Setting setting, uint8_t number, Ft8x7Setting
       currentFt8x7Model() == Ft8x7Model::None) {
     return FeatureStatus::Unsupported;
   }
-  uint8_t txStatus = 0;
-  if (!yaesuCatQueryTxStatusRaw(txStatus, kFt8x7TimeoutMs)) return failure(FeatureStatus::NoReply);
-  if (yaesuCatTxStatusTransmitting(txStatus)) return FeatureStatus::Failed;
   out = Ft8x7SettingState();
   out.setting = setting;
-  switch (yaesuFt8x7SetMenuOrRow(row, number, out.number, kFt8x7TimeoutMs)) {
-    case YaesuMenuRowWrite::Ok: return FeatureStatus::Ok;
-    case YaesuMenuRowWrite::Unsupported: return FeatureStatus::Unsupported;
-    case YaesuMenuRowWrite::OutOfRange: return FeatureStatus::Invalid;
-    case YaesuMenuRowWrite::NoReply: return failure(FeatureStatus::NoReply);
-    case YaesuMenuRowWrite::UnexpectedBytes:
-    case YaesuMenuRowWrite::NotVerified: return FeatureStatus::Failed;
+  return eepromWriteStatus(yaesuFt8x7SetMenuOrRow(row, number, out.number, kFt8x7TimeoutMs));
+}
+
+// The menu level of an FT-857/897 setting that can be set.
+static bool ft8x7SettableLevel(Ft8x7Setting setting, YaesuFt857Level& levelOut) {
+  switch (setting) {
+    case Ft8x7Setting::NrLevel: levelOut = YaesuFt857Level::NrLevel; return true;
+    case Ft8x7Setting::NbLevel: levelOut = YaesuFt857Level::NbLevel; return true;
+    default: return false;
   }
-  return FeatureStatus::Failed;
+}
+
+// caps.setNrLevel or caps.setNbLevel, which no FT-8x7 profile sets.
+static bool ft8x7LevelSetAllowed(Ft8x7Setting setting) {
+  const RadioCapabilities& caps = currentProfile().caps;
+  return setting == Ft8x7Setting::NrLevel ? caps.setNrLevel : caps.setNbLevel;
+}
+
+bool ft8x7LevelRange(Ft8x7Setting setting, uint16_t& minOut, uint16_t& maxOut) {
+  YaesuFt857Level level = YaesuFt857Level::NrLevel;
+  return ft8x7SettableLevel(setting, level) && ft857LevelRange(level, minOut, maxOut);
+}
+
+FeatureStatus ft8x7LevelSet(Ft8x7Setting setting, uint16_t value, Ft8x7SettingState& out) {
+  YaesuFt857Level level = YaesuFt857Level::NrLevel;
+  if (!ft8x7SettableLevel(setting, level) || !ft8x7LevelSetAllowed(setting) || !currentIsFt857Family()) {
+    return FeatureStatus::Unsupported;
+  }
+  out = Ft8x7SettingState();
+  out.setting = setting;
+  return eepromWriteStatus(yaesuFt857SetLevel(level, value, out.value, kFt8x7TimeoutMs));
+}
+
+FeatureStatus ft8x7LevelStep(Ft8x7Setting setting, int delta, Ft8x7SettingState& out) {
+  YaesuFt857Level level = YaesuFt857Level::NrLevel;
+  if (!ft8x7SettableLevel(setting, level) || !ft8x7LevelSetAllowed(setting) || !currentIsFt857Family()) {
+    return FeatureStatus::Unsupported;
+  }
+  uint16_t lo = 0;
+  uint16_t hi = 0;
+  uint16_t value = 0;
+  if (!ft857LevelRange(level, lo, hi)) return FeatureStatus::Unsupported;
+  if (!yaesuFt857QueryLevel(level, value, kFt8x7TimeoutMs)) return failure(FeatureStatus::NoReply);
+  int next = (int)value + delta;
+  if (next < lo) next = lo;
+  if (next > hi) next = hi;
+  return ft8x7LevelSet(setting, (uint16_t)next, out);
 }
 
 // ---- FT-8x7 tone squelch ----

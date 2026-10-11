@@ -67,6 +67,10 @@ void queryBank2Ft8x7Ipo();
 void queryBank2Ft8x7Att();
 void queryBank2Ft8x7Agc();
 void queryBank2Ft817Antenna();
+// Experimental, FT-857/897: steps the NR level (menu 49) or NB level (menu 63) by delta, written
+// to the radio's EEPROM; "not available" unless EXPERIMENTAL is on.
+void stepBank2Ft8x7NrLevel(int delta);
+void stepBank2Ft8x7NbLevel(int delta);
 
 // ---- Bank 3 ----
 void queryBank3Split();

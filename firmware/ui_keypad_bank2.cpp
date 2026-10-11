@@ -66,6 +66,18 @@ void queryBank2Ft8x7Att() { queryKeypadFt8x7Setting(Ft8x7Setting::Att); }
 void queryBank2Ft8x7Agc() { queryKeypadFt8x7Setting(Ft8x7Setting::Agc); }
 void queryBank2Ft817Antenna() { queryKeypadFt8x7Setting(Ft8x7Setting::Antenna); }
 
+static void stepKeypadFt8x7Level(Ft8x7Setting setting, const char* label, int delta) {
+  printKeypadAction("{} STEP {}", label, delta);
+  prepareKeypadSpeechResponse();
+  Ft8x7SettingState state;
+  if (keypadReportFeatureFailure(ft8x7LevelStep(setting, delta, state), label)) return;
+  printKeypadStatus("{}", ft8x7SettingText(state).c_str());
+  speakFt8x7Setting(state);
+}
+
+void stepBank2Ft8x7NrLevel(int delta) { stepKeypadFt8x7Level(Ft8x7Setting::NrLevel, "NRLEVEL", delta); }
+void stepBank2Ft8x7NbLevel(int delta) { stepKeypadFt8x7Level(Ft8x7Setting::NbLevel, "NBLEVEL", delta); }
+
 void toggleBank2Nr() {
   printKeypadAction("NR");
   prepareKeypadSpeechResponse();

@@ -17,6 +17,10 @@ enum class FeatureStatus : uint8_t {
   Invalid,      // the value is out of range; nothing was sent
 };
 
+// On the FT-8x7, NR, NB and notch are bits in the EEPROM (FT-857/897 DNR, NB, DNF; FT-817/818
+// NB only). No FT-8x7 profile has caps.setNr, setNb or setNotch, so they are set only with
+// EXPERIMENTAL ON, and not while transmitting.
+
 // Noise reduction. level is 1 or 2 on the TS-480, whose NR has two levels, and
 // 0 elsewhere (or when off).
 struct NrState {
@@ -75,8 +79,8 @@ FeatureStatus voxGainQuery(uint8_t& level);
 // FTDX10 VD.
 FeatureStatus voxDelayQuery(uint16_t& ms);
 
-// FT-857/897 settings read from the radio's EEPROM, since CAT has no command for them. They
-// cannot be set. IPO, ATT and NAR are those of the current band. The FT-817/818 has RfPower,
+// FT-857/897 settings read from the radio's EEPROM, since CAT has no command for them. Only
+// Menu, Row, NrLevel and NbLevel can be set, and only experimentally. IPO, ATT and NAR are those of the current band. The FT-817/818 has RfPower,
 // Menu, Row, Agc, BreakIn, Keyer, IfShift and Antenna.
 // Menu and Row are the menu item and soft key row saved when the radio's menu was last exited.
 // NrLevel (menu 49), NbLevel (63), LowCut (46, DSP HPF), HighCut (47, DSP LPF) and MicEq (48)
@@ -104,6 +108,15 @@ FeatureStatus ft8x7SettingQuery(Ft8x7Setting setting, Ft8x7SettingState& out);
 // the value read back. Invalid outside 1..the last item or row; Failed while transmitting, when
 // the stored bytes are not as expected (nothing written) or when the read-back differs.
 FeatureStatus ft8x7MenuRowSet(Ft8x7Setting setting, uint8_t number, Ft8x7SettingState& out);
+// The values ft8x7LevelSet takes: NrLevel 1..16, NbLevel 0..100. False for other settings.
+bool ft8x7LevelRange(Ft8x7Setting setting, uint16_t& minOut, uint16_t& maxOut);
+// Experimental (caps.setNrLevel, caps.setNbLevel): sets the FT-857/897 NrLevel (menu 49) or
+// NbLevel (menu 63) in the EEPROM; out.value holds the value read back. Invalid outside
+// ft8x7LevelRange; Failed while transmitting, when the stored byte is out of range (nothing
+// written) or when the read-back differs.
+FeatureStatus ft8x7LevelSet(Ft8x7Setting setting, uint16_t value, Ft8x7SettingState& out);
+// The same, by delta from the value read, kept within the range.
+FeatureStatus ft8x7LevelStep(Ft8x7Setting setting, int delta, Ft8x7SettingState& out);
 
 // FT-8x7 tone squelch. The FT-857/897 reads it from the current band in the EEPROM, live;
 // the FT-817/818 cannot, so there it is the mode HamTRC last set. Unsupported on other radios,

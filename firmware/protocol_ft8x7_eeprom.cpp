@@ -1,5 +1,6 @@
 #include "protocol_ft8x7_eeprom.h"
 
+#include "protocol_ops_yaesu.h"
 #include "protocol_yaesu_cat.h"
 #include "radio_catalog.h"
 
@@ -79,28 +80,87 @@ bool yaesuFt8x7QueryMenuAndRow(uint8_t& menuOut, uint8_t& rowOut, uint32_t timeo
   return true;
 }
 
-YaesuMenuRowWrite yaesuFt8x7SetMenuOrRow(bool row, uint8_t number, uint8_t& numberOut,
-                                         uint32_t timeoutMs) {
+// Ok when the radio is receiving, so a settings write may go ahead.
+static YaesuEepromWrite checkReceiving(uint32_t timeoutMs) {
+  uint8_t txStatus = 0;
+  if (!yaesuCatQueryTxStatusRaw(txStatus, timeoutMs)) return YaesuEepromWrite::NoReply;
+  return yaesuCatTxStatusTransmitting(txStatus) ? YaesuEepromWrite::Transmitting : YaesuEepromWrite::Ok;
+}
+
+// Writes pair at addr and reads it back into check.
+static YaesuEepromWrite writeEepromPairChecked(uint16_t addr, const uint8_t pair[2], uint8_t check[2],
+                                               uint32_t timeoutMs) {
+  yaesuCatWriteEeprom2(addr, pair);
+  if (!readEepromPair(addr, check, timeoutMs)) return YaesuEepromWrite::NoReply;
+  if (check[0] != pair[0] || check[1] != pair[1]) return YaesuEepromWrite::NotVerified;
+  return YaesuEepromWrite::Ok;
+}
+
+YaesuEepromWrite yaesuFt8x7SetMenuOrRow(bool row, uint8_t number, uint8_t& numberOut,
+                                        uint32_t timeoutMs) {
   Ft8x7MenuRowMap map;
-  if (!ft8x7MenuRowMap(currentFt8x7Model(), map)) return YaesuMenuRowWrite::Unsupported;
-  if (number < 1 || number > ft8x7MenuRowLast(map, row, true)) return YaesuMenuRowWrite::OutOfRange;
+  if (!ft8x7MenuRowMap(currentFt8x7Model(), map)) return YaesuEepromWrite::Unsupported;
+  if (number < 1 || number > ft8x7MenuRowLast(map, row, true)) return YaesuEepromWrite::OutOfRange;
+  const YaesuEepromWrite rx = checkReceiving(timeoutMs);
+  if (rx != YaesuEepromWrite::Ok) return rx;
   bool extOn = true;
   if (!row) {
     uint8_t ext = 0;
-    if (!yaesuCatReadEepromByte(map.extAddr, ext, timeoutMs)) return YaesuMenuRowWrite::NoReply;
+    if (!yaesuCatReadEepromByte(map.extAddr, ext, timeoutMs)) return YaesuEepromWrite::NoReply;
     extOn = (ext & map.extMask) != 0;
-    if (number > ft8x7MenuRowLast(map, row, extOn)) return YaesuMenuRowWrite::OutOfRange;
+    if (number > ft8x7MenuRowLast(map, row, extOn)) return YaesuEepromWrite::OutOfRange;
   }
   uint8_t old[2] = {0};
-  if (!readEepromPair(map.addr, old, timeoutMs)) return YaesuMenuRowWrite::NoReply;
+  if (!readEepromPair(map.addr, old, timeoutMs)) return YaesuEepromWrite::NoReply;
   uint8_t pair[2] = {0};
-  if (!ft8x7MenuRowPair(map, row, number, extOn, old, pair)) return YaesuMenuRowWrite::UnexpectedBytes;
-  yaesuCatWriteEeprom2(map.addr, pair);
+  if (!ft8x7MenuRowPair(map, row, number, extOn, old, pair)) return YaesuEepromWrite::UnexpectedBytes;
   uint8_t check[2] = {0};
-  if (!readEepromPair(map.addr, check, timeoutMs)) return YaesuMenuRowWrite::NoReply;
-  if (check[0] != pair[0] || check[1] != pair[1]) return YaesuMenuRowWrite::NotVerified;
+  const YaesuEepromWrite written = writeEepromPairChecked(map.addr, pair, check, timeoutMs);
+  if (written != YaesuEepromWrite::Ok) return written;
   numberOut = row ? ft8x7RowFromPair(map, check) : ft8x7MenuFromPair(map, check);
-  return YaesuMenuRowWrite::Ok;
+  return YaesuEepromWrite::Ok;
+}
+
+// 0xBC writes two bytes, so the byte after the setting's is written back as read.
+YaesuEepromWrite yaesuFt8x7SetFlag(Ft8x7Flag flag, bool on, uint32_t timeoutMs) {
+  Ft8x7FlagField field;
+  if (!ft8x7FlagField(currentFt8x7Model(), flag, field) || !ft8x7FlagIsOneBit(field)) {
+    return YaesuEepromWrite::Unsupported;
+  }
+  const YaesuEepromWrite rx = checkReceiving(timeoutMs);
+  if (rx != YaesuEepromWrite::Ok) return rx;
+  uint8_t pair[2] = {0};
+  if (!readEepromPair(field.addr, pair, timeoutMs)) return YaesuEepromWrite::NoReply;
+  const uint8_t b = ft8x7FlagByte(field, on, pair[0]);
+  if (b == pair[0]) return YaesuEepromWrite::Ok;
+  pair[0] = b;
+  uint8_t check[2] = {0};
+  return writeEepromPairChecked(field.addr, pair, check, timeoutMs);
+}
+
+YaesuEepromWrite yaesuFt857SetLevel(YaesuFt857Level level, uint16_t value, uint16_t& valueOut,
+                                    uint32_t timeoutMs) {
+  uint16_t addr = 0;
+  uint16_t lo = 0;
+  uint16_t hi = 0;
+  if (!currentIsFt857Family() || !ft857LevelAddr(level, addr) || !ft857LevelRange(level, lo, hi)) {
+    return YaesuEepromWrite::Unsupported;
+  }
+  if (value < lo || value > hi) return YaesuEepromWrite::OutOfRange;
+  const YaesuEepromWrite rx = checkReceiving(timeoutMs);
+  if (rx != YaesuEepromWrite::Ok) return rx;
+  uint8_t pair[2] = {0};
+  if (!readEepromPair(addr, pair, timeoutMs)) return YaesuEepromWrite::NoReply;
+  uint8_t b = 0;
+  if (!ft857LevelByte(level, value, pair[0], b)) return YaesuEepromWrite::UnexpectedBytes;
+  if (b != pair[0]) {
+    pair[0] = b;
+    uint8_t check[2] = {0};
+    const YaesuEepromWrite written = writeEepromPairChecked(addr, pair, check, timeoutMs);
+    if (written != YaesuEepromWrite::Ok) return written;
+  }
+  valueOut = ft857LevelValue(level, pair[0]);
+  return YaesuEepromWrite::Ok;
 }
 
 // The block of the band the active VFO is on (0x6C), on any frequency. onMemoryOut: a memory

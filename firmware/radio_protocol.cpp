@@ -197,6 +197,7 @@ bool setNr(bool on) {
   const RadioProfile& sp = currentProfile();
   if (pt == PROTO_CIV) return civSetNr(sp, on);
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiSetNr(sp, on);
+  if (pt == PROTO_YAESU_FT8X7) return yaesuFt8x7SetFlag(Ft8x7Flag::Dnr, on, YAESU_CAT_REPLY_TIMEOUT_MS) == YaesuEepromWrite::Ok;
   return false;
 }
 
@@ -228,6 +229,7 @@ bool setNb(bool on) {
   const RadioProfile& sp = currentProfile();
   if (pt == PROTO_CIV) return civSetNb(sp, on);
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiSetNb(sp, on);
+  if (pt == PROTO_YAESU_FT8X7) return yaesuFt8x7SetFlag(Ft8x7Flag::Nb, on, YAESU_CAT_REPLY_TIMEOUT_MS) == YaesuEepromWrite::Ok;
   return false;
 }
 
@@ -259,6 +261,7 @@ bool setNotch(bool on) {
   const RadioProfile& sp = currentProfile();
   if (pt == PROTO_CIV) return civSetNotch(sp, on);
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiSetNotch(sp, on);
+  if (pt == PROTO_YAESU_FT8X7) return yaesuFt8x7SetFlag(Ft8x7Flag::Dnf, on, YAESU_CAT_REPLY_TIMEOUT_MS) == YaesuEepromWrite::Ok;
   return false;
 }
 

@@ -538,3 +538,80 @@ TEST(flag_value_of_an_inverted_bit) {
   CHECK(!ft8x7FlagValue(lock, 0x40));
   CHECK(ft8x7FlagValue(lock, 0xBF));
 }
+
+TEST(only_one_bit_flags_can_be_set) {
+  Ft8x7FlagField field{};
+  CHECK(ft8x7FlagField(Ft8x7Model::Ft857, Ft8x7Flag::Nb, field));
+  CHECK(ft8x7FlagIsOneBit(field));
+  CHECK(ft8x7FlagField(Ft8x7Model::Ft857, Ft8x7Flag::Dnr, field));
+  CHECK(ft8x7FlagIsOneBit(field));
+  CHECK(ft8x7FlagField(Ft8x7Model::Ft857, Ft8x7Flag::Dnf, field));
+  CHECK(ft8x7FlagIsOneBit(field));
+  CHECK(ft8x7FlagField(Ft8x7Model::Ft817, Ft8x7Flag::Nb, field));
+  CHECK(ft8x7FlagIsOneBit(field));
+  CHECK(ft8x7FlagField(Ft8x7Model::Ft857, Ft8x7Flag::Dbf, field));
+  CHECK(!ft8x7FlagIsOneBit(field));
+}
+
+TEST(flag_byte_keeps_the_other_bits) {
+  const Ft8x7FlagField nb{0x006A, 0x20, false};
+  CHECK_EQ(ft8x7FlagByte(nb, true, 0x00), 0x20);
+  CHECK_EQ(ft8x7FlagByte(nb, true, 0xDF), 0xFF);
+  CHECK_EQ(ft8x7FlagByte(nb, false, 0xFF), 0xDF);
+  CHECK_EQ(ft8x7FlagByte(nb, false, 0x00), 0x00);
+  const Ft8x7FlagField lock{0x006A, 0x40, true};
+  CHECK_EQ(ft8x7FlagByte(lock, true, 0xFF), 0xBF);
+  CHECK_EQ(ft8x7FlagByte(lock, false, 0x00), 0x40);
+}
+
+TEST(ft857_settable_level_ranges) {
+  uint16_t lo = 0xFFFF;
+  uint16_t hi = 0;
+  CHECK(ft857LevelRange(YaesuFt857Level::NrLevel, lo, hi));
+  CHECK_EQ(lo, 1);
+  CHECK_EQ(hi, 16);
+  CHECK(ft857LevelRange(YaesuFt857Level::NbLevel, lo, hi));
+  CHECK_EQ(lo, 0);
+  CHECK_EQ(hi, 100);
+  CHECK(!ft857LevelRange(YaesuFt857Level::CwSpeed, lo, hi));
+  CHECK(!ft857LevelRange(YaesuFt857Level::ProcLevel, lo, hi));
+}
+
+// 0x93 also holds the BPF width and the mic EQ, which stay.
+TEST(ft857_nr_level_byte_keeps_bpf_and_mic_eq) {
+  uint8_t out = 0;
+  CHECK(ft857LevelByte(YaesuFt857Level::NrLevel, 16, 0x5B, out));
+  CHECK_EQ(out, 0xFB);
+  CHECK(ft857LevelByte(YaesuFt857Level::NrLevel, 1, 0x5B, out));
+  CHECK_EQ(out, 0x0B);
+  CHECK(ft857LevelByte(YaesuFt857Level::NrLevel, 8, 0x00, out));
+  CHECK_EQ(out, 0x70);
+  CHECK_EQ(ft857LevelValue(YaesuFt857Level::NrLevel, out), 8);
+}
+
+TEST(ft857_nb_level_byte_keeps_bit_7) {
+  uint8_t out = 0;
+  CHECK(ft857LevelByte(YaesuFt857Level::NbLevel, 0, 0xB2, out));
+  CHECK_EQ(out, 0x80);
+  CHECK(ft857LevelByte(YaesuFt857Level::NbLevel, 100, 0xB2, out));
+  CHECK_EQ(out, 0xE4);
+  CHECK(ft857LevelByte(YaesuFt857Level::NbLevel, 50, 0x00, out));
+  CHECK_EQ(out, 0x32);
+}
+
+TEST(ft857_level_byte_rejects_values_out_of_range) {
+  uint8_t out = 0xAA;
+  CHECK(!ft857LevelByte(YaesuFt857Level::NrLevel, 0, 0x5B, out));
+  CHECK(!ft857LevelByte(YaesuFt857Level::NrLevel, 17, 0x5B, out));
+  CHECK(!ft857LevelByte(YaesuFt857Level::NbLevel, 101, 0x32, out));
+  CHECK(!ft857LevelByte(YaesuFt857Level::CwSpeed, 20, 0x10, out));
+  CHECK_EQ(out, 0xAA);
+}
+
+// A stored NB level above 100 means the map does not fit the radio: nothing is written.
+TEST(ft857_level_byte_rejects_unexpected_stored_bytes) {
+  uint8_t out = 0xAA;
+  CHECK(!ft857LevelByte(YaesuFt857Level::NbLevel, 50, 0x65, out));
+  CHECK(!ft857LevelByte(YaesuFt857Level::NbLevel, 50, 0xFF, out));
+  CHECK_EQ(out, 0xAA);
+}

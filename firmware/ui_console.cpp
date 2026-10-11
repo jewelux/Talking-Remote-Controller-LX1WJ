@@ -930,7 +930,13 @@ void printHelp() {
     Serial.println("    ALC? | MOD?");
     Serial.println(ft817 ? "    AGC? | BK? | KYR?  (radio settings, read only)"
                          : "    AGC? | IPO? | ATT? | NAR? | DBF? | BK? | KYR?  (radio settings, read only)");
-    if (!ft817) Serial.println("    NRLEVEL? | NBLEVEL? | HPF? | LPF? | MICEQ?  (DSP menu settings, read only)");
+    Serial.println(ft817 ? "    NB?" : "    NR? | NB? | NOTCH?");
+    Serial.println(ft817 ? "    NB OFF | ON | TOGGLE  (experimental: writes it to the EEPROM)"
+                         : "    NR | NB | NOTCH OFF | ON | TOGGLE  (experimental: writes them to the EEPROM)");
+    if (!ft817) Serial.println("    NRLEVEL? | NBLEVEL? | HPF? | LPF? | MICEQ?  (DSP menu settings)");
+    if (!ft817) {
+      Serial.println("    NRLEVEL <1..16> | NBLEVEL <0..100> | NRLEVEL STEP | NBLEVEL STEP <+-n>  (experimental: menus 49 and 63)");
+    }
     if (!ft817) Serial.println("    PROC? | PROCLEVEL?  (speech processor and menu 74, read only)");
     Serial.println(ft817 ? "    MICGAIN?  (mic gain of the mode: SSB, AM, FM, DIG or PKT menu, read only)"
                          : "    MICGAIN?  (mic gain of the mode: SSB, AM, FM or DIG menu, read only)");
@@ -1450,10 +1456,56 @@ static bool handleConsoleFt8x7Settings(const String& upper) {
   return true;
 }
 
+// Experimental, FT-857/897: NRLEVEL <1..16>, NBLEVEL <0..100> and NRLEVEL | NBLEVEL STEP <+-n>,
+// like Bank 2 `4` and `5` long and double.
+static bool handleConsoleFt8x7LevelSet(const String& line, const String& upper) {
+  const bool nb = upper.startsWith("NBLEVEL ");
+  if (!nb && !upper.startsWith("NRLEVEL ")) return false;
+  const Ft8x7Setting setting = nb ? Ft8x7Setting::NbLevel : Ft8x7Setting::NrLevel;
+  const char* label = nb ? "NBLEVEL" : "NRLEVEL";
+  Ft8x7SettingState state;
+  FeatureStatus status = FeatureStatus::Ok;
+  if (upper.startsWith(nb ? "NBLEVEL STEP" : "NRLEVEL STEP")) {
+    int32_t step = 0;
+    if (!parseStepArg(line, upper, nb ? "NBLEVEL STEP " : "NRLEVEL STEP ", step)) {
+      Serial.print(label);
+      Serial.print(" STEP -> use a signed number, e.g. ");
+      Serial.print(label);
+      Serial.println(nb ? " STEP 10" : " STEP -1");
+      return true;
+    }
+    status = ft8x7LevelStep(setting, (int)step, state);
+  } else {
+    uint16_t lo = 0;
+    uint16_t hi = 0;
+    (void)ft8x7LevelRange(setting, lo, hi);
+    String arg = upper.substring(8);
+    arg.trim();
+    const long value = arg.toInt();
+    if (!arg.length() || String(value) != arg || value < lo || value > hi) {
+      Serial.print(label);
+      Serial.print(" -> use ");
+      Serial.print(lo);
+      Serial.print("..");
+      Serial.print(hi);
+      Serial.print(", e.g. ");
+      Serial.print(label);
+      Serial.println(nb ? " 50" : " 8");
+      return true;
+    }
+    status = ft8x7LevelSet(setting, (uint16_t)value, state);
+  }
+  if (reportFeatureFailure(status, label)) return true;
+  Serial.println(ft8x7SettingText(state));
+  speakFt8x7Setting(state);
+  return true;
+}
+
 static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& upper) {
   if (!isCurrentYaesuFt8x7()) return false;
   if (handleConsoleFt8x7Meters(upper)) return true;
   if (handleConsoleFt8x7Settings(upper)) return true;
+  if (handleConsoleFt8x7LevelSet(line, upper)) return true;
 
   if (upper == "YALL?") {
     Serial.println("[YAESU FT8X7]");

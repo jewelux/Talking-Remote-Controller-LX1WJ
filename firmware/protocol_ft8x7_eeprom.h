@@ -12,7 +12,7 @@ bool yaesuCatReadEepromByte(uint16_t addr, uint8_t& out, uint32_t timeoutMs);
 // CAUTION: writes data[0] to the EEPROM at addr and data[1] at addr + 1 (0xBC). A bad write can
 // wipe the radio's memories and calibration.
 void yaesuCatWriteEeprom2(uint16_t addr, const uint8_t data[2]);
-// FT-8x7 settings read from the EEPROM (read-only). False when the active model does not keep
+// FT-8x7 settings read from the EEPROM. False when the active model does not keep
 // them (ft8x7_eeprom_map.h) or the radio did not answer.
 bool yaesuFt8x7QueryFlag(Ft8x7Flag flag, bool& onOut, uint32_t timeoutMs);
 // True when the active model keeps flag.
@@ -21,19 +21,28 @@ bool yaesuFt8x7QueryAgc(YaesuAgc& out, uint32_t timeoutMs);
 // The menu item and the soft key row (FT-817: function row) as the radio saved them when its
 // menu was last exited, counted from 1 like on the display.
 bool yaesuFt8x7QueryMenuAndRow(uint8_t& menuOut, uint8_t& rowOut, uint32_t timeoutMs);
-enum class YaesuMenuRowWrite : uint8_t {
+// The settings writes below read the bytes first and change only the setting's bits, write
+// nothing while the radio transmits, and read the bytes back.
+enum class YaesuEepromWrite : uint8_t {
   Ok,
-  Unsupported,      // not an FT-8x7
-  OutOfRange,       // not 1..the last row or menu item; nothing written
+  Unsupported,      // the active model does not keep the setting where it can be set
+  OutOfRange,       // the value is not one the radio offers; nothing written
   NoReply,
-  UnexpectedBytes,  // the stored pair is not an item and a row in range; nothing written
-  NotVerified,      // written, but the pair read back differs
+  Transmitting,     // nothing written
+  UnexpectedBytes,  // the stored value is out of range, so the map does not fit; nothing written
+  NotVerified,      // written, but the bytes read back differ
 };
 // Sets the row (row true) or the menu item, counted from 1, by rewriting the two bytes that
-// hold both (ft8x7MenuRowPair keeps every other bit), then reads them back. numberOut is the
-// value read back. The radio overwrites it when its menu is open and then exited.
-YaesuMenuRowWrite yaesuFt8x7SetMenuOrRow(bool row, uint8_t number, uint8_t& numberOut,
-                                         uint32_t timeoutMs);
+// hold both (ft8x7MenuRowPair keeps every other bit). numberOut is the value read back. The
+// radio overwrites it when its menu is open and then exited.
+YaesuEepromWrite yaesuFt8x7SetMenuOrRow(bool row, uint8_t number, uint8_t& numberOut,
+                                        uint32_t timeoutMs);
+// Sets a one-bit flag (NB, DNR, DNF). Nothing is written when it is already so.
+YaesuEepromWrite yaesuFt8x7SetFlag(Ft8x7Flag flag, bool on, uint32_t timeoutMs);
+// FT-857/897: sets a menu level within ft857LevelRange (NrLevel, NbLevel). valueOut is the
+// value read back. Nothing is written when it already has the value.
+YaesuEepromWrite yaesuFt857SetLevel(YaesuFt857Level level, uint16_t value, uint16_t& valueOut,
+                                    uint32_t timeoutMs);
 // IPO, ATT and FM narrow are kept per band; read from the block of the band the active VFO is
 // on, also outside the amateur bands. hz decides whether IPO and ATT exist.
 struct YaesuFt857BandFlags {
