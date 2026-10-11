@@ -1,5 +1,11 @@
 # Bill of Materials – HamTRC V2 (Mini-HamTRC)
 
+> [!IMPORTANT]
+> **Planning to build one? Please get in touch first.**
+> The hardware is still evolving, so this documentation is deliberately kept minimal and may lag behind the bench.
+> Before you order parts or PCBs, [open a build enquiry](https://github.com/jewelux/Talking-Remote-Controller-LX1WJ/issues/new?template=build-enquiry.yml) to get the current state of the board,
+> recent changes and build tips. Feedback from builders is very welcome – every question helps to improve the documentation.
+
 > **Status: in development.** Derived from [`circuit-diagram-V2.pdf`](circuit-diagram-V2.pdf)
 > and [`pcb-layout-V2.pdf`](pcb-layout-V2.pdf). Wiring details: [`hardware_wiring_v2.md`](hardware_wiring_v2.md).
 

@@ -1,5 +1,11 @@
 # Hardware Wiring Reference (ESP32 Talking Remote Controller - V3.5.8)
 
+> [!IMPORTANT]
+> **Planning to build one? Please get in touch first.**
+> The hardware is still evolving, so this documentation is deliberately kept minimal and may lag behind the bench.
+> Before you order parts or PCBs, [open a build enquiry](https://github.com/jewelux/Talking-Remote-Controller-LX1WJ/issues/new?template=build-enquiry.yml) to get the current state of the board,
+> recent changes and build tips. Feedback from builders is very welcome – every question helps to improve the documentation.
+
 Schematic: [`circuit-diagram-V1.pdf`](circuit-diagram-V1.pdf) · PCB layout: [`pcb-layout-V1.pdf`](pcb-layout-V1.pdf) · Prototype photos: [`proto-pcbs/`](../proto-pcbs/)
 
 > Looking for the compact V2 board (Mini-HamTRC, in development)? See [`hardware_wiring_v2.md`](../v2-mini-hamtrc/hardware_wiring_v2.md) and [`bom_v2.md`](../v2-mini-hamtrc/bom_v2.md).

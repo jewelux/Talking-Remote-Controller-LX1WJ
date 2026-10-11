@@ -1,5 +1,11 @@
 # Hardware Wiring Reference – HamTRC V2 (Mini-HamTRC)
 
+> [!IMPORTANT]
+> **Planning to build one? Please get in touch first.**
+> The hardware is still evolving, so this documentation is deliberately kept minimal and may lag behind the bench.
+> Before you order parts or PCBs, [open a build enquiry](https://github.com/jewelux/Talking-Remote-Controller-LX1WJ/issues/new?template=build-enquiry.yml) to get the current state of the board,
+> recent changes and build tips. Feedback from builders is very welcome – every question helps to improve the documentation.
+
 > **Status: in development.** V2 is the compact successor of the original board.
 > The hardware is evolving; this page describes the state of the drawings listed below
 > and may change without notice. For the V1 board see [`hardware_wiring.md`](../v1-hamtrc/hardware_wiring.md).
