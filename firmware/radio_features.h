@@ -55,22 +55,24 @@ FeatureStatus notchSetWidth(NotchWidth width);
 FeatureStatus notchToggle(NotchState& out);
 
 // Speech processor: FT-857/897 PROC and its menu 74 level, Icom COMP, FTDX10 PR and PL.
-// Read only for now.
+// Read only for now. These and the mic gain and VOX reads below are Unsupported where the
+// profile's cap (getProc, getMicGain, getVox) is off.
 FeatureStatus procQuery(bool& on);
 // 0..100.
 FeatureStatus procLevelQuery(uint8_t& level);
 
-// Mic gain, 0..100: Icom, FTDX10, and on the FT-817/818 and FT-857/897 the menu of the current
+// Mic gain, 0..100: IC-7300, IC-705, IC-7760, FTDX10, and on the FT-817/818 and FT-857/897 the menu of the current
 // mode (SSB, AM, FM, DIG, on the FT-817 also PKT). Unsupported in CW and WFM, and in the
 // FT-857/897's PKT. Read only for now.
 FeatureStatus micGainQuery(uint8_t& level);
 
-// VOX: Icom, FTDX10 VX and VG, FT-857/897 and its menu 88 gain, FT-817/818 and its menu 51
+// VOX: IC-7300, IC-705, IC-7760, FTDX10 VX and VG, FT-857/897 and its menu 88 gain, FT-817/818 and its menu 51
 // gain. Read only for now.
 FeatureStatus voxQuery(bool& on);
 // 0..100.
 FeatureStatus voxGainQuery(uint8_t& level);
-// In ms: FT-857/897 menu 87, FT-817/818 menu 50, IC-7300, FTDX10 VD.
+// In ms: FT-857/897 menu 87, FT-817/818 menu 50, IC-7300, IC-705, IC-7760 (civVoxDelayAddr),
+// FTDX10 VD.
 FeatureStatus voxDelayQuery(uint16_t& ms);
 
 // FT-857/897 settings read from the radio's EEPROM, since CAT has no command for them. They

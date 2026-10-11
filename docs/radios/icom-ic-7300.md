@@ -105,6 +105,10 @@ New features and new radios come with a new firmware.
 - `MICGAIN?` (mic gain, 0..100 %)
 - `VOX?` (VOX), `VOXGAIN?` (its gain, 0..100 %), `VOXDELAY?` (its delay, 0..2000 ms)
 
+The IC-705 and IC-7760 profiles answer these too. The VOX delay sits at a different menu
+address on each model (IC-7300 `1A 05 0191`, IC-705 `0359`, IC-7760 `0182`, as Hamlib reads
+them); the IC-705 and IC-7760 ones are not yet tested on a radio.
+
 ### VFO / Split / Bandstack
 
 - `SPLIT?`, `SPLIT ON`, `SPLIT OFF`

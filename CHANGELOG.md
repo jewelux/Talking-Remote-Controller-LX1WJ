@@ -110,15 +110,16 @@
   break-in, keyer and IF shift, on the FT-857/897 also PROC, CW speed, the gains and the DSP filter
   widths. `CLAR ON | OFF` is gone, use `RIT ON | OFF`; `CLAR OFFSET` is now `RIT OFFSET`
 - `PROC?` says whether the speech processor is on ("processor on") and `PROCLEVEL?` says its level
-  ("processor level 50"), on the FT-857/897 (menu 74), Icom radios (COMP) and the FTDX10. They
-  only read; the processor cannot be changed from HamTRC yet
-- `MICGAIN?` says the mic gain ("mic gain 50") on Icom radios, the FTDX10, the FT-817/818 and
-  the FT-857/897. The FT-817 and FT-857/897 have one for each mode, so it says the one of the
+  ("processor level 50"), on the FT-857/897 (menu 74), the IC-7300, IC-705 and IC-7760 (COMP)
+  and the FTDX10. They only read; the processor cannot be changed from HamTRC yet
+- `MICGAIN?` says the mic gain ("mic gain 50") on the IC-7300, IC-705 and IC-7760, the FTDX10,
+  the FT-817/818 and the FT-857/897. The FT-817 and FT-857/897 have one for each mode, so it says the one of the
   current mode: SSB, AM, FM, DIG, and on the FT-817 also packet. In CW, and in packet on the
   FT-857/897, it says "not available". It only reads for now
 - `VOX?` says whether VOX is on ("vox on"), `VOXGAIN?` says its gain ("vox gain 50") and
-  `VOXDELAY?` its delay ("vox delay 500 m s"), on Icom radios, the FTDX10, the
-  FT-817/818 (menus 51 and 50) and the FT-857/897 (menus 88 and 87). They only read for now
+  `VOXDELAY?` its delay ("vox delay 500 m s"), on the IC-7300, IC-705 and IC-7760, the FTDX10,
+  the FT-817/818 (menus 51 and 50) and the FT-857/897 (menus 88 and 87). They only read for now.
+  On the other radios these commands say "not available"
 
 ### Radio profiles
 

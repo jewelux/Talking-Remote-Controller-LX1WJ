@@ -128,6 +128,35 @@ TEST(ic7300_and_ic7760_link) {
   CHECK(slot(18).model == RadioModel::Ic7760);
 }
 
+// The model picks the CI-V menu addresses, e.g. the VOX delay.
+TEST(icom_models) {
+  CHECK(slot(1).model == RadioModel::Ic7300);
+  CHECK(slot(3).model == RadioModel::Ic7300);
+  CHECK(slot(17).model == RadioModel::Ic705);
+  CHECK(slot(2).model == RadioModel::Generic);  // IC-706
+  CHECK(slot(5).model == RadioModel::Generic);  // Xiegu G106
+}
+
+// PROC?, MICGAIN? and VOX? say "not available" where the cap is off, instead of waiting for a
+// radio that has no such command.
+TEST(transmit_setting_caps) {
+  const uint8_t on[] = {1, 3, 17, 18, 8, 9, 10, 14, 11};
+  for (uint8_t s : on) {
+    CHECK(slot(s).caps.getMicGain);
+    CHECK(slot(s).caps.getVox);
+  }
+  const uint8_t proc[] = {1, 3, 17, 18, 9, 10, 11};
+  for (uint8_t s : proc) CHECK(slot(s).caps.getProc);
+  const uint8_t off[] = {2, 4, 5, 6, 7, 12, 13, 15, 16};
+  for (uint8_t s : off) {
+    CHECK(!slot(s).caps.getProc);
+    CHECK(!slot(s).caps.getMicGain);
+    CHECK(!slot(s).caps.getVox);
+  }
+  CHECK(!slot(8).caps.getProc);   // FT-817
+  CHECK(!slot(14).caps.getProc);  // FT-818
+}
+
 TEST(g106_is_ttl_civ_with_freq_and_mode_only) {
   const RadioProfile& g106 = slot(5);
   CHECK(g106.protocol == PROTO_CIV);
@@ -199,6 +228,8 @@ TEST(ft891_keeps_the_ftdx_lock_tuner_and_split) {
 
 TEST(model_names_are_set) {
   CHECK_EQ(radioModelName(RadioModel::Generic), "generic");
+  CHECK_EQ(radioModelName(RadioModel::Ic7300), "IC-7300");
+  CHECK_EQ(radioModelName(RadioModel::Ic705), "IC-705");
   CHECK_EQ(radioModelName(RadioModel::Ft857), "FT-857/897");
   CHECK_EQ(radioModelName(RadioModel::Ftdx10), "FTDX10");
 }

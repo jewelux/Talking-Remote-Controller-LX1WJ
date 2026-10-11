@@ -24,6 +24,15 @@ constexpr RadioCapabilities kCivBasicCaps = {
     .getSmeter = true, .getPower = true, .getSwr = true,
 };
 
+// The IC-705: the basic set and the transmit settings (COMP, mic gain, VOX).
+constexpr RadioCapabilities kIc705Caps = [] {
+  RadioCapabilities caps = kCivBasicCaps;
+  caps.getProc = true;
+  caps.getMicGain = true;
+  caps.getVox = true;
+  return caps;
+}();
+
 // IC-7300 and IC-7760: everything HamTRC can do over CI-V.
 constexpr RadioCapabilities kIcomFullCaps = {
     .getFreq = true, .setFreq = true, .getMode = true, .setMode = true,
@@ -40,7 +49,7 @@ constexpr RadioCapabilities kIcomFullCaps = {
     .getTuner = true, .setTuner = true, .startTune = true,
     .getVfo = true, .setVfo = true, .getVfoMode = true, .setVfoMode = true,
     .getSplit = true, .setSplit = true, .getRit = true, .setRit = true,
-    .getBandStack = true,
+    .getBandStack = true, .getProc = true, .getMicGain = true, .getVox = true,
 };
 
 // --- Elecraft ---------------------------------------------------------------
@@ -108,7 +117,7 @@ constexpr RadioCapabilities kFt817Caps = {
     .getSmeter = true, .getPower = true, .getRfPower = true, .getSwr = true, .getRxTx = true,
     .getNb = true,
     .getVfo = true, .setVfo = true, .getVfoMode = true, .setVfoMode = true,
-    .getSplit = true, .setSplit = true,
+    .getSplit = true, .setSplit = true, .getMicGain = true, .getVox = true,
 };
 
 // The FT-857/897 has no CAT command to pick VFO A or B.
@@ -117,7 +126,7 @@ constexpr RadioCapabilities kFt857Caps = {
     .getSmeter = true, .getPower = true, .getRfPower = true, .getSwr = true, .getRxTx = true,
     .getNr = true, .getNb = true, .getNotch = true,
     .getVfo = true,
-    .getSplit = true, .setSplit = true,
+    .getSplit = true, .setSplit = true, .getProc = true, .getMicGain = true, .getVox = true,
 };
 
 constexpr ModeCodes kFt8x7Modes = {
@@ -154,7 +163,7 @@ constexpr RadioCapabilities kFtdx10Caps = {
     .getDialLock = true, .setDialLock = true,
     .getTuner = true, .setTuner = true, .startTune = true,
     .getVfo = true, .setVfo = true, .getVfoMode = true, .setVfoMode = true,
-    .getSplit = true, .setSplit = true,
+    .getSplit = true, .setSplit = true, .getProc = true, .getMicGain = true, .getVox = true,
 };
 
 constexpr RadioCapabilities kFtdx101Caps = [] {
@@ -163,6 +172,10 @@ constexpr RadioCapabilities kFtdx101Caps = [] {
   caps.getTxFreq = false;
   caps.getVfoMode = false;
   caps.setVfoMode = false;
+  // PR, PL, MG, VX, VG and VD are read on the FTDX10 only so far.
+  caps.getProc = false;
+  caps.getMicGain = false;
+  caps.getVox = false;
   return caps;
 }();
 
@@ -240,7 +253,7 @@ constexpr ModeCodes kYaesuAsciiModes = {
 
 constexpr RadioProfile kProfiles[] = {
     {.slot = 1, .name = "Icom IC-7300", .vendor = VoiceVendor::Icom, .voiceDigits = "7300",
-     .protocol = PROTO_CIV,
+     .model = RadioModel::Ic7300, .protocol = PROTO_CIV,
      .link = {.port = RadioPort::CivJack, .baud = 9600, .bauds = kCivBauds, .civAddr = 0x94},
      .caps = kIcomFullCaps},
     {.slot = 2, .name = "Icom 706", .vendor = VoiceVendor::Icom, .voiceDigits = "706",
@@ -248,7 +261,7 @@ constexpr RadioProfile kProfiles[] = {
      .link = {.port = RadioPort::CivJack, .baud = 9600, .bauds = kCivBauds, .civAddr = 0x58},
      .caps = kCivBasicCaps},
     {.slot = 3, .name = "Icom 7300 rs232", .vendor = VoiceVendor::Icom, .voiceDigits = "7300232",
-     .protocol = PROTO_CIV,
+     .model = RadioModel::Ic7300, .protocol = PROTO_CIV,
      .link = {.port = RadioPort::Rs232, .baud = 9600, .bauds = kCivBauds, .civAddr = 0x94},
      .caps = kIcomFullCaps},
     {.slot = 4, .name = "Icom 706 rs232", .vendor = VoiceVendor::Icom, .voiceDigits = "706232",
@@ -304,9 +317,9 @@ constexpr RadioProfile kProfiles[] = {
      .link = {.port = RadioPort::Rs232, .baud = 4800, .bauds = kFt847Bauds},
      .caps = kFt847Caps, .modes = &kFt847Modes},
     {.slot = 17, .name = "Icom IC-705", .vendor = VoiceVendor::Icom, .voiceDigits = "705",
-     .protocol = PROTO_CIV,
+     .model = RadioModel::Ic705, .protocol = PROTO_CIV,
      .link = {.port = RadioPort::CivJack, .baud = 9600, .bauds = kCivBauds, .civAddr = 0xA4},
-     .caps = kCivBasicCaps},
+     .caps = kIc705Caps},
     {.slot = 18, .name = "Icom IC-7760", .vendor = VoiceVendor::Icom, .voiceDigits = "7760",
      .model = RadioModel::Ic7760, .protocol = PROTO_CIV,
      .link = {.port = RadioPort::CivJack, .baud = 19200, .bauds = kCivBauds, .civAddr = 0xB2},
@@ -403,6 +416,8 @@ uint8_t adjacentProfileSlot(uint8_t slot, int direction) {
 const char* radioModelName(RadioModel model) {
   switch (model) {
     case RadioModel::Generic: return "generic";
+    case RadioModel::Ic7300: return "IC-7300";
+    case RadioModel::Ic705: return "IC-705";
     case RadioModel::Ic7760: return "IC-7760";
     case RadioModel::Ts480: return "TS-480";
     case RadioModel::Ft817: return "FT-817";

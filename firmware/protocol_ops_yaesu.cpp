@@ -309,9 +309,10 @@ bool yaesuCatSetDcsCode(uint16_t dcsCode) {
   return true;
 }
 
-bool yaesuCatSetToneMode(YaesuToneMode mode) {
+bool yaesuCatSetToneMode(YaesuToneMode mode, uint64_t hz) {
   uint8_t modeByte = 0;
   if (!yaesuToneModeByte(mode, currentIsFt857Family(), modeByte)) return false;
   yaesuCatSetToneDcsModeRaw(modeByte);
+  live.toneModeHz = hz;
   return true;
 }

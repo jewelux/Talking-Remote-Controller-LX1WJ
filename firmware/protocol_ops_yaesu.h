@@ -61,7 +61,7 @@ void yaesuCatSetRepeaterOffsetHzRaw(uint64_t hz);
 void yaesuCatSetPowerDocumentedRaw(bool on);
 void yaesuCatSetAgcMode(uint8_t modeByte);
 void yaesuCatSetRitOffsetRaw(const uint8_t data[4]);
-// Also the console's raw write updates the live tone mode, with the frequency it was set on; a
+// Also the console's raw write updates the live tone mode, with the last frequency polled; a
 // byte that is no tone mode (yaesuToneModeFromByte) clears it.
 void yaesuCatSetToneDcsModeRaw(uint8_t modeByte);
 void yaesuCatSetCtcssToneRaw(const uint8_t data[4]);
@@ -69,6 +69,7 @@ void yaesuCatSetDcsCodeRaw(const uint8_t data[4]);
 // A write of a standard tone or code (ft8x7_codec.h) updates the live tone cache.
 bool yaesuCatSetCtcssTenths(uint16_t toneTenths);
 bool yaesuCatSetDcsCode(uint16_t dcsCode);
-// Sets the tone mode and updates the live tone mode. False, sending nothing, for a mode the
-// radio cannot be set to by CAT (yaesuToneModeByte); only the FT-857/897 gets the full set.
-bool yaesuCatSetToneMode(YaesuToneMode mode);
+// Sets the tone mode and updates the live tone mode, set on hz (0: not known). False, sending
+// nothing, for a mode the radio cannot be set to by CAT (yaesuToneModeByte); only the
+// FT-857/897 gets the full set.
+bool yaesuCatSetToneMode(YaesuToneMode mode, uint64_t hz);

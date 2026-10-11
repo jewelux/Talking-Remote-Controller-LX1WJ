@@ -184,7 +184,9 @@ static bool isFtdx10() {
   return currentRadioModel() == RadioModel::Ftdx10;
 }
 
+// The profile's cap, and a read HamTRC has for the radio.
 static bool procSupported() {
+  if (!currentProfile().caps.getProc) return false;
   return currentProtocolType() == PROTO_CIV || isFtdx10() || currentFt8x7Model() == Ft8x7Model::Ft857;
 }
 
@@ -229,10 +231,13 @@ static FeatureStatus ft8x7MicGainQuery(uint8_t& level) {
   return FeatureStatus::Ok;
 }
 
+static bool micGainSupported() {
+  if (!currentProfile().caps.getMicGain) return false;
+  return currentProtocolType() == PROTO_CIV || isFtdx10() || currentFt8x7Model() != Ft8x7Model::None;
+}
+
 FeatureStatus micGainQuery(uint8_t& level) {
-  if (currentProtocolType() != PROTO_CIV && !isFtdx10() && currentFt8x7Model() == Ft8x7Model::None) {
-    return FeatureStatus::Unsupported;
-  }
+  if (!micGainSupported()) return FeatureStatus::Unsupported;
   const RadioProfile& sp = currentProfile();
   bool ok = false;
   if (currentProtocolType() == PROTO_CIV) {
@@ -250,6 +255,7 @@ FeatureStatus micGainQuery(uint8_t& level) {
 // ---- VOX ----
 
 static bool voxSupported() {
+  if (!currentProfile().caps.getVox) return false;
   return currentProtocolType() == PROTO_CIV || isFtdx10() || currentFt8x7Model() != Ft8x7Model::None;
 }
 
@@ -282,6 +288,8 @@ FeatureStatus voxGainQuery(uint8_t& level) {
 FeatureStatus voxDelayQuery(uint16_t& ms) {
   if (!voxSupported()) return FeatureStatus::Unsupported;
   const RadioProfile& sp = currentProfile();
+  uint16_t civAddr = 0;
+  if (currentProtocolType() == PROTO_CIV && !civVoxDelayAddr(sp.model, civAddr)) return FeatureStatus::Unsupported;
   bool ok = false;
   if (currentProtocolType() == PROTO_CIV) ok = civQueryVoxDelayMs(sp, ms, 800);
   else if (isFtdx10()) ok = asciiQueryYaesuVoxDelayMs(sp, ms, 800);
@@ -445,9 +453,10 @@ static bool ft817ToneModeHolds(uint64_t hz) {
   return slot ? slot == ft857BandSlotForHz(hz) : hz == live.toneModeHz;
 }
 
-FeatureStatus toneModeQuery(YaesuToneMode& out) {
+// hz: the frequency read, also when the mode is not known; a change sets the mode with it.
+static FeatureStatus toneModeQueryAt(uint64_t& hz, YaesuToneMode& out) {
   if (!toneSupported()) return FeatureStatus::Unsupported;
-  uint64_t hz = 0;
+  hz = 0;
   if (!queryFrequency(hz, kFt8x7TimeoutMs)) return failure(FeatureStatus::NoReply);
   if (!currentIsFt857Family()) {
     if (!ft817ToneModeHolds(hz)) return FeatureStatus::Unsupported;
@@ -459,30 +468,41 @@ FeatureStatus toneModeQuery(YaesuToneMode& out) {
   return known ? FeatureStatus::Ok : FeatureStatus::Unsupported;
 }
 
+FeatureStatus toneModeQuery(YaesuToneMode& out) {
+  uint64_t hz = 0;
+  return toneModeQueryAt(hz, out);
+}
+
 FeatureStatus toneOff() {
   if (!toneSupported()) return FeatureStatus::Unsupported;
-  return yaesuCatSetToneMode(YaesuToneMode()) ? FeatureStatus::Ok : FeatureStatus::Unsupported;
+  // The FT-817/818 remembers off for the band it is on. Off is sent also when the frequency
+  // cannot be read; then no band is remembered.
+  uint64_t hz = 0;
+  if (!currentIsFt857Family() && !queryFrequency(hz, kFt8x7TimeoutMs)) hz = 0;  // not known
+  return yaesuCatSetToneMode(YaesuToneMode(), hz) ? FeatureStatus::Ok : FeatureStatus::Unsupported;
 }
 
 FeatureStatus toneTypeSet(YaesuToneType type, YaesuToneMode& out) {
   if (!toneSupported() || type == YaesuToneType::None) return FeatureStatus::Unsupported;
+  uint64_t hz = 0;
   YaesuToneMode current;
-  const FeatureStatus status = toneModeQuery(current);
+  const FeatureStatus status = toneModeQueryAt(hz, current);
   if (status != FeatureStatus::Ok && status != FeatureStatus::Unsupported) return status;
   // Not known: as from off.
   if (status != FeatureStatus::Ok) current = YaesuToneMode();
   out.tx = current.rxOnly() ? YaesuToneType::None : type;
   out.rx = current.txOnly() ? YaesuToneType::None : type;
-  if (yaesuCatSetToneMode(out)) return FeatureStatus::Ok;
+  if (yaesuCatSetToneMode(out, hz)) return FeatureStatus::Ok;
   out.tx = type;
   out.rx = type;
-  return yaesuCatSetToneMode(out) ? FeatureStatus::Ok : FeatureStatus::Unsupported;
+  return yaesuCatSetToneMode(out, hz) ? FeatureStatus::Ok : FeatureStatus::Unsupported;
 }
 
 FeatureStatus toneDirStep(YaesuToneMode& out) {
   if (!toneSupported()) return FeatureStatus::Unsupported;
+  uint64_t hz = 0;
   YaesuToneMode current;
-  const FeatureStatus status = toneModeQuery(current);
+  const FeatureStatus status = toneModeQueryAt(hz, current);
   if (status != FeatureStatus::Ok) return status;
   if (current.isOff()) {
     out = current;
@@ -495,12 +515,12 @@ FeatureStatus toneDirStep(YaesuToneMode& out) {
   out = YaesuToneMode();
   if (!txOnly) out.tx = type;
   if (txOnly || rxOnly) out.rx = type;
-  if (yaesuCatSetToneMode(out)) return FeatureStatus::Ok;
+  if (yaesuCatSetToneMode(out, hz)) return FeatureStatus::Ok;
   // The FT-817/818 has no RX only: from TX only back to both.
   if (!txOnly) return FeatureStatus::Unsupported;
   out.tx = type;
   out.rx = type;
-  return yaesuCatSetToneMode(out) ? FeatureStatus::Ok : FeatureStatus::Unsupported;
+  return yaesuCatSetToneMode(out, hz) ? FeatureStatus::Ok : FeatureStatus::Unsupported;
 }
 
 FeatureStatus splitToneQuery(bool& on) {

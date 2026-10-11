@@ -69,6 +69,10 @@ struct RadioCapabilities {
   bool getRit = false;
   bool setRit = false;
   bool getBandStack = false;
+  // Speech processor and its level, mic gain, VOX with its gain and delay. Read only for now.
+  bool getProc = false;
+  bool getMicGain = false;
+  bool getVox = false;
   // FT-8x7: set the menu item and soft key row in the EEPROM. No profile sets it: only
   // EXPERIMENTAL ON.
   bool setRadioMenu = false;
@@ -115,6 +119,8 @@ enum class VoiceVendor : uint8_t { Icom, Yaesu, Kenwood, Elecraft, Xiegu };
 // Generic, and its profile says all there is to know about it.
 enum class RadioModel : uint8_t {
   Generic,
+  Ic7300,  // CI-V menu addresses (VOX delay)
+  Ic705,
   Ic7760,  // CI-V main/sub receiver selection
   Ts480,   // two-level NR
   Ft817,   // FT-8x7 EEPROM map, VFO tracking and keypad layout

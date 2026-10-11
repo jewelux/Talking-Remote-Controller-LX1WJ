@@ -154,6 +154,12 @@ void printActiveProfileDetails() {
   Serial.print(sp.caps.setRit ? "W" : "-");
   Serial.print(" bstack=");
   Serial.print(sp.caps.getBandStack ? "1" : "0");
+  Serial.print(" proc=");
+  Serial.print(sp.caps.getProc ? "R" : "-");
+  Serial.print(" mic=");
+  Serial.print(sp.caps.getMicGain ? "R" : "-");
+  Serial.print(" vox=");
+  Serial.print(sp.caps.getVox ? "R" : "-");
   Serial.print(" menu=");
   Serial.print(sp.caps.setRadioMenu ? "W" : "-");
   Serial.println();

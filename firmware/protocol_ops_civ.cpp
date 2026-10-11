@@ -381,12 +381,23 @@ bool civQueryVoxGain(const RadioProfile& sp, uint16_t& valueOut, uint32_t timeou
   return civQuery14Value(0x16, valueOut, timeoutMs);
 }
 
-// 00..20 in BCD, tenths of a second (Hamlib's IC-7300 VOXDELAY; the IC-7300 MK2, IC-705 and
-// IC-9700 keep it at other addresses).
+// The 1A 05 menu address of the VOX delay, from Hamlib's VOXDELAY of each model. Other models
+// keep it elsewhere (the IC-7300 MK2 at 0267, the IC-9700 at 0330) or have none.
+bool civVoxDelayAddr(RadioModel model, uint16_t& addrOut) {
+  switch (model) {
+    case RadioModel::Ic7300: addrOut = 0x0191; return true;
+    case RadioModel::Ic705: addrOut = 0x0359; return true;
+    case RadioModel::Ic7760: addrOut = 0x0182; return true;
+    default: return false;
+  }
+}
+
+// 00..20 in BCD, tenths of a second.
 bool civQueryVoxDelayMs(const RadioProfile& sp, uint16_t& msOut, uint32_t timeoutMs) {
-  if (sp.protocol != PROTO_CIV) return false;
+  uint16_t addr = 0;
+  if (sp.protocol != PROTO_CIV || !civVoxDelayAddr(sp.model, addr)) return false;
   uint8_t raw = 0;
-  if (!civQueryMenuByte(0x05, 0x0191, raw, timeoutMs)) return false;
+  if (!civQueryMenuByte(0x05, addr, raw, timeoutMs)) return false;
   const int32_t tenths = bcdDigitsToInt(&raw, 1);
   if (tenths < 0 || tenths > 20) return false;
   msOut = (uint16_t)(tenths * 100);
