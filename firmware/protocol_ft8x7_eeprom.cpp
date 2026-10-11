@@ -356,9 +356,33 @@ bool yaesuFt857QueryMicEq(YaesuFt857MicEq& out, uint32_t timeoutMs) {
   return true;
 }
 
+YaesuEepromWrite yaesuFt857SetMicEq(YaesuFt857MicEq eq, YaesuFt857MicEq& eqOut, uint32_t timeoutMs) {
+  if (!currentIsFt857Family()) return YaesuEepromWrite::Unsupported;
+  uint8_t pair[2] = {0};
+  const YaesuEepromWrite read = readForWrite(FT857_MIC_EQ_ADDR, pair, timeoutMs);
+  if (read != YaesuEepromWrite::Ok) return read;
+  const YaesuEepromWrite written =
+      writeByteChecked(FT857_MIC_EQ_ADDR, pair, ft857MicEqByte(eq, pair[0]), timeoutMs);
+  if (written != YaesuEepromWrite::Ok) return written;
+  eqOut = ft857MicEqFromByte(pair[0]);
+  return YaesuEepromWrite::Ok;
+}
+
 bool yaesuFt8x7HasMicGain(Ft8x7MicGain gain) {
   YaesuFt857Level level = YaesuFt857Level::SsbMicGain;
   return currentIsFt817Family() || (currentIsFt857Family() && ft857MicGainLevel(gain, level));
+}
+
+// FT-817/818: the address of gain; the PKT one by the packet rate.
+static bool ft817MicGainAddrNow(Ft8x7MicGain gain, uint16_t& addrOut, uint32_t timeoutMs) {
+  bool pkt9600 = false;
+  if (gain == Ft8x7MicGain::Pkt) {
+    uint8_t rate = 0;
+    if (!yaesuCatReadEepromByte(FT817_PKT_RATE_ADDR, rate, timeoutMs)) return false;
+    pkt9600 = (rate & FT817_PKT_RATE_9600_MASK) != 0;
+  }
+  addrOut = ft817MicGainAddr(gain, pkt9600);
+  return true;
 }
 
 bool yaesuFt8x7QueryMicGain(Ft8x7MicGain gain, uint8_t& valueOut, uint32_t timeoutMs) {
@@ -370,16 +394,37 @@ bool yaesuFt8x7QueryMicGain(Ft8x7MicGain gain, uint8_t& valueOut, uint32_t timeo
     return true;
   }
   if (!currentIsFt817Family()) return false;
-  bool pkt9600 = false;
-  if (gain == Ft8x7MicGain::Pkt) {
-    uint8_t rate = 0;
-    if (!yaesuCatReadEepromByte(FT817_PKT_RATE_ADDR, rate, timeoutMs)) return false;
-    pkt9600 = (rate & FT817_PKT_RATE_9600_MASK) != 0;
-  }
+  uint16_t addr = 0;
+  if (!ft817MicGainAddrNow(gain, addr, timeoutMs)) return false;
   uint8_t b = 0;
-  if (!yaesuCatReadEepromByte(ft817MicGainAddr(gain, pkt9600), b, timeoutMs)) return false;
+  if (!yaesuCatReadEepromByte(addr, b, timeoutMs)) return false;
   valueOut = ft817LevelFromByte(b);
   return true;
+}
+
+YaesuEepromWrite yaesuFt8x7SetMicGain(Ft8x7MicGain gain, uint8_t value, uint8_t& valueOut,
+                                      uint32_t timeoutMs) {
+  if (!yaesuFt8x7HasMicGain(gain)) return YaesuEepromWrite::Unsupported;
+  if (value > 100) return YaesuEepromWrite::OutOfRange;
+  if (currentIsFt857Family()) {
+    YaesuFt857Level level = YaesuFt857Level::SsbMicGain;
+    (void)ft857MicGainLevel(gain, level);
+    uint16_t read = 0;
+    const YaesuEepromWrite written = yaesuFt857SetLevel(level, value, read, timeoutMs);
+    if (written == YaesuEepromWrite::Ok) valueOut = (uint8_t)read;
+    return written;
+  }
+  uint16_t addr = 0;
+  if (!ft817MicGainAddrNow(gain, addr, timeoutMs)) return YaesuEepromWrite::NoReply;
+  uint8_t pair[2] = {0};
+  const YaesuEepromWrite read = readForWrite(addr, pair, timeoutMs);
+  if (read != YaesuEepromWrite::Ok) return read;
+  uint8_t b = 0;
+  if (!ft817LevelByte(value, pair[0], b)) return YaesuEepromWrite::UnexpectedBytes;
+  const YaesuEepromWrite written = writeByteChecked(addr, pair, b, timeoutMs);
+  if (written != YaesuEepromWrite::Ok) return written;
+  valueOut = ft817LevelFromByte(pair[0]);
+  return YaesuEepromWrite::Ok;
 }
 
 bool yaesuFt8x7QueryVoxGain(uint8_t& valueOut, uint32_t timeoutMs) {

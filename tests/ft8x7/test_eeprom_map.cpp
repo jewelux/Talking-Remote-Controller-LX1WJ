@@ -598,8 +598,57 @@ TEST(ft857_settable_level_ranges) {
   CHECK(ft857LevelRange(YaesuFt857Level::LpfCutoff, lo, hi));
   CHECK_EQ(lo, 1000);
   CHECK_EQ(hi, 6000);
+  static constexpr YaesuFt857Level kPercent[] = {YaesuFt857Level::ProcLevel, YaesuFt857Level::SsbMicGain,
+                                                 YaesuFt857Level::AmMicGain, YaesuFt857Level::FmMicGain,
+                                                 YaesuFt857Level::DigGain};
+  for (const YaesuFt857Level level : kPercent) {
+    lo = 0xFFFF;
+    hi = 0;
+    CHECK(ft857LevelRange(level, lo, hi));
+    CHECK_EQ(lo, 0);
+    CHECK_EQ(hi, 100);
+  }
   CHECK(!ft857LevelRange(YaesuFt857Level::CwSpeed, lo, hi));
-  CHECK(!ft857LevelRange(YaesuFt857Level::ProcLevel, lo, hi));
+  CHECK(!ft857LevelRange(YaesuFt857Level::VoxGain, lo, hi));
+}
+
+// Bit 7 of the PROC level and mic gain bytes is not theirs and stays.
+TEST(ft857_proc_level_and_mic_gain_bytes_keep_bit_7) {
+  uint8_t out = 0;
+  CHECK(ft857LevelByte(YaesuFt857Level::ProcLevel, 75, 0x80, out));
+  CHECK_EQ(out, 0xCB);
+  CHECK(ft857LevelByte(YaesuFt857Level::SsbMicGain, 0, 0xB2, out));
+  CHECK_EQ(out, 0x80);
+  CHECK(ft857LevelByte(YaesuFt857Level::FmMicGain, 100, 0x32, out));
+  CHECK_EQ(out, 0x64);
+  out = 0xAA;
+  CHECK(!ft857LevelByte(YaesuFt857Level::AmMicGain, 101, 0x32, out));
+  CHECK(!ft857LevelByte(YaesuFt857Level::DigGain, 50, 0x7F, out));
+  CHECK_EQ(out, 0xAA);
+}
+
+// 0x93 also holds the NR level and the BPF width, which stay.
+TEST(ft857_mic_eq_byte_keeps_nr_level_and_bpf_width) {
+  CHECK_EQ(ft857MicEqByte(YaesuFt857MicEq::Both, 0x58), 0x5B);
+  CHECK_EQ(ft857MicEqByte(YaesuFt857MicEq::Off, 0xFB), 0xF8);
+  CHECK_EQ(ft857MicEqByte(YaesuFt857MicEq::Lpf, 0x02), 0x01);
+  CHECK_EQ(ft857MicEqByte(YaesuFt857MicEq::Hpf, 0x01), 0x02);
+  CHECK_EQ(ft857MicEqFromByte(ft857MicEqByte(YaesuFt857MicEq::Hpf, 0xA4)), YaesuFt857MicEq::Hpf);
+}
+
+// FT-817 0x6B bit 7 is menu 52 EXTEND, 0x68 bit 7 another setting: kept.
+TEST(ft817_level_byte_keeps_bit_7) {
+  uint8_t out = 0;
+  CHECK(ft817LevelByte(50, 0xE4, out));
+  CHECK_EQ(out, 0xB2);
+  CHECK(ft817LevelByte(0, 0x32, out));
+  CHECK_EQ(out, 0x00);
+  CHECK(ft817LevelByte(100, 0x80, out));
+  CHECK_EQ(out, 0xE4);
+  out = 0xAA;
+  CHECK(!ft817LevelByte(101, 0x32, out));
+  CHECK(!ft817LevelByte(50, 0x7F, out));  // stored 127: the map does not fit
+  CHECK_EQ(out, 0xAA);
 }
 
 // 0x93 also holds the BPF width and the mic EQ, which stay.

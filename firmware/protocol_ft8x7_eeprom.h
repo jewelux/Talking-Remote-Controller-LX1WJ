@@ -37,11 +37,11 @@ enum class YaesuEepromWrite : uint8_t {
 // radio overwrites it when its menu is open and then exited.
 YaesuEepromWrite yaesuFt8x7SetMenuOrRow(bool row, uint8_t number, uint8_t& numberOut,
                                         uint32_t timeoutMs);
-// Sets a flag (NB, DNR, DNF, DBF); on sets every bit of the flag. Nothing is written when the
+// Sets a flag (NB, DNR, DNF, DBF, PROC); on sets every bit of the flag. Nothing is written when the
 // byte is already so.
 YaesuEepromWrite yaesuFt8x7SetFlag(Ft8x7Flag flag, bool on, uint32_t timeoutMs);
 // FT-857/897: sets a menu level to the radio's step nearest value, within ft857LevelRange
-// (NrLevel, NbLevel, HpfCutoff, LpfCutoff). valueOut is the value read back. Nothing is written
+// (NrLevel, NbLevel, HpfCutoff, LpfCutoff, ProcLevel, the mic gains). valueOut is the value read back. Nothing is written
 // when it already has the value.
 YaesuEepromWrite yaesuFt857SetLevel(YaesuFt857Level level, uint16_t value, uint16_t& valueOut,
                                     uint32_t timeoutMs);
@@ -82,10 +82,17 @@ bool yaesuFt857QueryToneMode(bool& knownOut, YaesuToneMode& out, uint32_t timeou
 // Split tone (menu 79) of the same band block; the radio keeps it per band.
 bool yaesuFt857QuerySplitTone(bool& knownOut, bool& onOut, uint32_t timeoutMs);
 bool yaesuFt857QueryMicEq(YaesuFt857MicEq& out, uint32_t timeoutMs);
+// FT-857/897: sets menu 48, keeping the NR level and BPF width that share its byte. eqOut is
+// the value read back.
+YaesuEepromWrite yaesuFt857SetMicEq(YaesuFt857MicEq eq, YaesuFt857MicEq& eqOut, uint32_t timeoutMs);
 // True when the active model keeps gain where it can be read (not the FT-857/897's PKT).
 bool yaesuFt8x7HasMicGain(Ft8x7MicGain gain);
 // 0..100. The FT-817 reads its packet rate to pick the PKT one.
 bool yaesuFt8x7QueryMicGain(Ft8x7MicGain gain, uint8_t& valueOut, uint32_t timeoutMs);
+// Sets gain to value, 0..100, as the read above picks it; bit 7 of its byte is kept. valueOut
+// is the value read back.
+YaesuEepromWrite yaesuFt8x7SetMicGain(Ft8x7MicGain gain, uint8_t value, uint8_t& valueOut,
+                                      uint32_t timeoutMs);
 // FT-857/897 menu 88, FT-817 menu 51; 0..100.
 bool yaesuFt8x7QueryVoxGain(uint8_t& valueOut, uint32_t timeoutMs);
 // FT-857/897 menu 87, FT-817 menu 50; ms.

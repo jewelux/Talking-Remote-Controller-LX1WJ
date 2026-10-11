@@ -62,6 +62,8 @@ String ft8x7SettingText(const Ft8x7SettingState& state);
 void speakFt8x7Setting(const Ft8x7SettingState& state);
 // "AUTO", "FAST", "SLOW", "OFF": the console word, which speakToken also says.
 const char* ft8x7AgcName(YaesuAgc agc);
+// "OFF", "LPF", "HPF", "BOTH": menu 48 as the radio shows it, and the console word.
+const char* ft8x7MicEqName(YaesuFt857MicEq eq);
 // "HIGH", "L3", "L2", "L1": the console word.
 const char* ft817PowerLevelName(Ft817PowerLevel level);
 // The level alone: "l two", "high".

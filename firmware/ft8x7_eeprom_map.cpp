@@ -180,6 +180,10 @@ YaesuFt857MicEq ft857MicEqFromByte(uint8_t b) {
   return (YaesuFt857MicEq)(b & 0x03);
 }
 
+uint8_t ft857MicEqByte(YaesuFt857MicEq eq, uint8_t old) {
+  return (uint8_t)((old & ~0x03) | ((uint8_t)eq & 0x03));
+}
+
 struct Ft857LevelField {
   YaesuFt857Level level;
   uint16_t addr;
@@ -232,7 +236,12 @@ uint16_t ft857LevelValue(YaesuFt857Level level, uint8_t b) {
 bool ft857LevelRange(YaesuFt857Level level, uint16_t& minOut, uint16_t& maxOut) {
   switch (level) {
     case YaesuFt857Level::NrLevel: minOut = 1; maxOut = 16; return true;
-    case YaesuFt857Level::NbLevel: minOut = 0; maxOut = 100; return true;
+    case YaesuFt857Level::NbLevel:
+    case YaesuFt857Level::ProcLevel:
+    case YaesuFt857Level::SsbMicGain:
+    case YaesuFt857Level::AmMicGain:
+    case YaesuFt857Level::FmMicGain:
+    case YaesuFt857Level::DigGain: minOut = 0; maxOut = 100; return true;
     case YaesuFt857Level::HpfCutoff: minOut = 100; maxOut = 1000; return true;
     case YaesuFt857Level::LpfCutoff: minOut = 1000; maxOut = 6000; return true;
     default: return false;
@@ -384,6 +393,12 @@ uint16_t ft817MicGainAddr(Ft8x7MicGain gain, bool pkt9600) {
 uint8_t ft817LevelFromByte(uint8_t b) {
   const uint8_t value = (uint8_t)(b & 0x7F);
   return value > 100 ? 100 : value;
+}
+
+bool ft817LevelByte(uint8_t value, uint8_t old, uint8_t& out) {
+  if (value > 100 || (old & 0x7F) > 100) return false;
+  out = (uint8_t)((old & 0x80) | value);
+  return true;
 }
 
 uint16_t ft817VoxDelayMs(uint8_t b) {

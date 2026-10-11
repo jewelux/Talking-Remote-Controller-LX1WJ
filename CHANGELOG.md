@@ -126,11 +126,12 @@
   widths. `CLAR ON | OFF` is gone, use `RIT ON | OFF`; `CLAR OFFSET` is now `RIT OFFSET`
 - `PROC?` says whether the speech processor is on ("processor on") and `PROCLEVEL?` says its level
   ("processor level 50"), on the FT-857/897 (menu 74), the IC-7300, IC-705 and IC-7760 (COMP)
-  and the FTDX10. They only read; the processor cannot be changed from HamTRC yet
+  and the FTDX10. On the FT-857/897, experimental mode can also change them (see below)
 - `MICGAIN?` says the mic gain ("mic gain 50") on the IC-7300, IC-705 and IC-7760, the FTDX10,
   the FT-817/818 and the FT-857/897. The FT-817 and FT-857/897 have one for each mode, so it says the one of the
   current mode: SSB, AM, FM, DIG, and on the FT-817 also packet. In CW, and in packet on the
-  FT-857/897, it says "not available". It only reads for now
+  FT-857/897, it says "not available". On the FT-817/818 and FT-857/897, experimental mode can
+  also change it (see below)
 - `VOX?` says whether VOX is on ("vox on"), `VOXGAIN?` says its gain ("vox gain 50") and
   `VOXDELAY?` its delay ("vox delay 500 m s"), on the IC-7300, IC-705 and IC-7760, the FTDX10,
   the FT-817/818 (menus 51 and 50) and the FT-857/897 (menus 88 and 87). They only read for now.
@@ -178,8 +179,8 @@
   with menu 1 EXT MENU on) and rows 1–17, on the FT-817/818 menu 1–52 (1–57 with menu 52 EXTEND
   on) and rows 1–12. Keep the radio's menu closed meanwhile, since the radio saves its own values
   when the menu is exited
-- FT-817/818/857/897, experimental: AGC, the Bank 2 DSP keys and the RF power can be changed, not
-  just read
+- FT-817/818/857/897, experimental: AGC, the Bank 2 DSP keys, the RF power, the mic gain, the
+  speech processor and the TX equalizer can be changed, not just read
   - AGC: Bank 2 `A` long asks for it: `0` picks off, `1` auto, `2` fast, `3` slow, each saying
     its value, then `D` (console: `AGC AUTO | FAST | SLOW | OFF`)
   - `1`, `2`, `3` and `6` long switch noise reduction, the noise blanker, the notch and the DSP
@@ -197,6 +198,10 @@
     the band does not offer says "error" and nothing is sent
   - on the FT-817/818, Bank 1 `6` long asks for the power level: `1`, `2` and `3` pick L1, L2 and
     L3, `4` picks High, each saying its level, then `D` (console: `RFPOWER HIGH | L3 | L2 | L1`)
+  - console only: `MICGAIN <0..100>` sets the mic gain of the current mode, the same one
+    `MICGAIN?` says; `MICGAIN STEP <+-n>` steps it. On the FT-857/897 also `PROC ON | OFF |
+    TOGGLE`, `PROCLEVEL <0..100>` and `PROCLEVEL STEP <+-n>` for the speech processor (menu 74),
+    and `MICEQ OFF | LPF | HPF | BOTH` for the TX equalizer (menu 48)
   - HamTRC writes these settings to the radio's memory and the radio follows at once. They say
     "error" while transmitting, and work only with experimental mode on, otherwise they say "not
     available"

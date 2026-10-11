@@ -222,11 +222,17 @@ FeatureStatus procLevelQuery(uint8_t& level) {
 
 // The FT-8x7 keeps a mic gain per mode; the raw mode byte also tells PKT and the narrow modes
 // apart, which the profile's mode codes do not.
-static FeatureStatus ft8x7MicGainQuery(uint8_t& level) {
+static FeatureStatus ft8x7CurrentMicGain(Ft8x7MicGain& gain) {
   uint8_t modeByte = 0;
   if (!yaesuCatQueryModeRawByte(modeByte, YAESU_CAT_REPLY_TIMEOUT_MS)) return failure(FeatureStatus::NoReply);
-  Ft8x7MicGain gain = Ft8x7MicGain::Ssb;
   if (!ft8x7MicGainForMode(modeByte, gain) || !yaesuFt8x7HasMicGain(gain)) return FeatureStatus::Unsupported;
+  return FeatureStatus::Ok;
+}
+
+static FeatureStatus ft8x7MicGainQuery(uint8_t& level) {
+  Ft8x7MicGain gain = Ft8x7MicGain::Ssb;
+  const FeatureStatus status = ft8x7CurrentMicGain(gain);
+  if (status != FeatureStatus::Ok) return status;
   if (!yaesuFt8x7QueryMicGain(gain, level, YAESU_CAT_REPLY_TIMEOUT_MS)) return failure(FeatureStatus::NoReply);
   return FeatureStatus::Ok;
 }
@@ -532,6 +538,81 @@ FeatureStatus ft8x7AgcSet(YaesuAgc agc, Ft8x7SettingState& out) {
   out = Ft8x7SettingState();
   out.setting = Ft8x7Setting::Agc;
   return eepromWriteStatus(yaesuFt8x7SetAgc(agc, out.agc, kFt8x7TimeoutMs));
+}
+
+FeatureStatus ft8x7MicEqSet(YaesuFt857MicEq eq, Ft8x7SettingState& out) {
+  if (!currentProfile().caps.setRadioMenu || !currentIsFt857Family()) return FeatureStatus::Unsupported;
+  out = Ft8x7SettingState();
+  out.setting = Ft8x7Setting::MicEq;
+  return eepromWriteStatus(yaesuFt857SetMicEq(eq, out.micEq, kFt8x7TimeoutMs));
+}
+
+// ---- Speech processor and mic gain writes ----
+
+// value + delta, kept within 0..100.
+static uint8_t steppedPercent(uint8_t value, int delta) {
+  const int stepped = (int)value + delta;
+  return (uint8_t)(stepped < 0 ? 0 : stepped > 100 ? 100 : stepped);
+}
+
+// Experimental: the FT-857/897 writes PROC and its level to the EEPROM.
+static bool procSettable() {
+  return currentProfile().caps.setRadioMenu && currentIsFt857Family();
+}
+
+FeatureStatus procSet(bool on) {
+  if (!procSettable()) return FeatureStatus::Unsupported;
+  return eepromWriteStatus(yaesuFt8x7SetFlag(Ft8x7Flag::Proc, on, kFt8x7TimeoutMs));
+}
+
+FeatureStatus procToggle(bool& on) {
+  if (!procSettable()) return FeatureStatus::Unsupported;
+  bool current = false;
+  if (!yaesuFt8x7QueryFlag(Ft8x7Flag::Proc, current, kFt8x7TimeoutMs)) return failure(FeatureStatus::NoReply);
+  const FeatureStatus status = procSet(!current);
+  if (status == FeatureStatus::Ok) on = !current;
+  return status;
+}
+
+FeatureStatus procLevelSet(uint8_t level, uint8_t& levelOut) {
+  if (!procSettable()) return FeatureStatus::Unsupported;
+  uint16_t read = 0;
+  const FeatureStatus status =
+      eepromWriteStatus(yaesuFt857SetLevel(YaesuFt857Level::ProcLevel, level, read, kFt8x7TimeoutMs));
+  if (status == FeatureStatus::Ok) levelOut = (uint8_t)read;
+  return status;
+}
+
+FeatureStatus procLevelStep(int delta, uint8_t& levelOut) {
+  if (!procSettable()) return FeatureStatus::Unsupported;
+  uint8_t level = 0;
+  const FeatureStatus read = procLevelQuery(level);
+  if (read != FeatureStatus::Ok) return read;
+  return procLevelSet(steppedPercent(level, delta), levelOut);
+}
+
+// Experimental: the FT-8x7 writes the mic gain of the current mode to the EEPROM.
+static FeatureStatus micGainSettable(Ft8x7MicGain& gain) {
+  if (!currentProfile().caps.setRadioMenu || currentFt8x7Model() == Ft8x7Model::None) {
+    return FeatureStatus::Unsupported;
+  }
+  return ft8x7CurrentMicGain(gain);
+}
+
+FeatureStatus micGainSet(uint8_t level, uint8_t& levelOut) {
+  Ft8x7MicGain gain = Ft8x7MicGain::Ssb;
+  const FeatureStatus status = micGainSettable(gain);
+  if (status != FeatureStatus::Ok) return status;
+  return eepromWriteStatus(yaesuFt8x7SetMicGain(gain, level, levelOut, kFt8x7TimeoutMs));
+}
+
+FeatureStatus micGainStep(int delta, uint8_t& levelOut) {
+  Ft8x7MicGain gain = Ft8x7MicGain::Ssb;
+  const FeatureStatus status = micGainSettable(gain);
+  if (status != FeatureStatus::Ok) return status;
+  uint8_t level = 0;
+  if (!yaesuFt8x7QueryMicGain(gain, level, kFt8x7TimeoutMs)) return failure(FeatureStatus::NoReply);
+  return eepromWriteStatus(yaesuFt8x7SetMicGain(gain, steppedPercent(level, delta), levelOut, kFt8x7TimeoutMs));
 }
 
 FeatureStatus ft8x7DbfToggle(Ft8x7SettingState& out) {

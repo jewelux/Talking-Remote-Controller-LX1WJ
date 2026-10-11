@@ -59,7 +59,7 @@ All Bank 2 keys read settings from the radio's EEPROM, since CAT cannot. With ex
 | `B` short | not available | `IPO?`: preamplifier, on when IPO is off (HF and 6 m) |
 | `B` double click | not available | `ATT?`: attenuator (HF and 6 m) |
 
-IPO and ATT are those of the current band and VFO, also outside the amateur bands (HF and 6 m only). The menu settings are read as the radio last saved them. Break-in, keyer and FM narrow have no key; the console commands `BK?`, `KYR?` and `NAR?` read them. On the FT-857/897, `PROC?` and `PROCLEVEL?` read the speech processor and its level (menu 74). `MICGAIN?` reads the mic gain of the current mode: on the FT-857/897 SSB menu 81, AM menu 5, FM menu 51 or DIG gain menu 37, not in CW and PKT; on the FT-817 SSB menu 46, AM menu 5, FM menu 29, DIG menu 25 or PKT menu 39 or 3 by the packet rate, not in CW. `VOX?`, `VOXGAIN?` and `VOXDELAY?` read VOX, its gain and its delay (FT-857/897 menus 88 and 87, FT-817 menus 51 and 50).
+IPO and ATT are those of the current band and VFO, also outside the amateur bands (HF and 6 m only). The menu settings are read as the radio last saved them. Break-in, keyer and FM narrow have no key; the console commands `BK?`, `KYR?` and `NAR?` read them. On the FT-857/897, `PROC?` and `PROCLEVEL?` read the speech processor and its level (menu 74). `MICGAIN?` reads the mic gain of the current mode: on the FT-857/897 SSB menu 81, AM menu 5, FM menu 51 or DIG gain menu 37, not in CW and PKT; on the FT-817 SSB menu 46, AM menu 5, FM menu 29, DIG menu 25 or PKT menu 39 or 3 by the packet rate, not in CW. `VOX?`, `VOXGAIN?` and `VOXDELAY?` read VOX, its gain and its delay (FT-857/897 menus 88 and 87, FT-817 menus 51 and 50). With experimental mode on, the console also sets some of these, with no key yet: `MICGAIN <0..100>` and `MICGAIN STEP <+-n>` the mic gain of the current mode, and on the FT-857/897 `PROC ON | OFF | TOGGLE`, `PROCLEVEL <0..100>`, `PROCLEVEL STEP <+-n>` and `MICEQ OFF | LPF | HPF | BOTH`.
 
 ## Bank 3 - VFO / Split
 
@@ -191,7 +191,7 @@ values when the menu is exited.
 | `VFO A/B tracking` | usable with sync support; the radio has no readable VFO | read from the EEPROM |
 | `manual front-panel A/B changes` | resync recommended | followed; no sync needed |
 | FT-817 hidden background conditions | documented CAT commands can work well, but some success still appears to depend on not-yet-characterized radio state; more testing is needed | not the main current concern |
-| `Bank 2 settings` | only antenna, NB and AGC (no DSP, IPO/ATT not read); NB and AGC can be set experimentally | DSP and AGC can be set experimentally; IPO, ATT and the TX equalizer read only |
+| `Bank 2 settings` | only antenna, NB and AGC (no DSP, IPO/ATT not read); NB and AGC can be set experimentally | DSP and AGC can be set experimentally, the TX equalizer from the console; IPO and ATT read only |
 | `MEM READ/WRITE` | experimental | experimental |
 | `VOL/SQL` | not cleanly validated | not cleanly validated |
 

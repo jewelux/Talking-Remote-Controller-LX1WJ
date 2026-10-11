@@ -60,16 +60,28 @@ FeatureStatus notchSetWidth(NotchWidth width);
 FeatureStatus notchToggle(NotchState& out);
 
 // Speech processor: FT-857/897 PROC and its menu 74 level, Icom COMP, FTDX10 PR and PL.
-// Read only for now. These and the mic gain and VOX reads below are Unsupported where the
-// profile's cap (getProc, getMicGain, getVox) is off.
+// These and the mic gain and VOX reads below are Unsupported where the profile's cap (getProc,
+// getMicGain, getVox) is off.
 FeatureStatus procQuery(bool& on);
 // 0..100.
 FeatureStatus procLevelQuery(uint8_t& level);
+// Experimental (caps.setRadioMenu), FT-857/897 only for now: PROC and its level in the EEPROM.
+// levelOut holds the level read back. Invalid above 100; Failed while transmitting, when the
+// stored byte is out of range (nothing written) or when the read-back differs.
+FeatureStatus procSet(bool on);
+FeatureStatus procToggle(bool& on);
+FeatureStatus procLevelSet(uint8_t level, uint8_t& levelOut);
+// The level read, plus delta, kept within 0..100.
+FeatureStatus procLevelStep(int delta, uint8_t& levelOut);
 
 // Mic gain, 0..100: IC-7300, IC-705, IC-7760, FTDX10, and on the FT-817/818 and FT-857/897 the menu of the current
 // mode (SSB, AM, FM, DIG, on the FT-817 also PKT). Unsupported in CW and WFM, and in the
-// FT-857/897's PKT. Read only for now.
+// FT-857/897's PKT.
 FeatureStatus micGainQuery(uint8_t& level);
+// Experimental (caps.setRadioMenu), FT-817/818 and FT-857/897 only for now: the mic gain of the
+// current mode, as micGainQuery picks it, in the EEPROM. Errors as procLevelSet.
+FeatureStatus micGainSet(uint8_t level, uint8_t& levelOut);
+FeatureStatus micGainStep(int delta, uint8_t& levelOut);
 
 // VOX: IC-7300, IC-705, IC-7760, FTDX10 VX and VG, FT-857/897 and its menu 88 gain, FT-817/818 and its menu 51
 // gain. Read only for now.
@@ -81,7 +93,7 @@ FeatureStatus voxGainQuery(uint8_t& level);
 FeatureStatus voxDelayQuery(uint16_t& ms);
 
 // FT-857/897 settings read from the radio's EEPROM, since CAT has no command for them. Only
-// Menu, Row, Agc, Dbf, NrLevel, NbLevel, LowCut, HighCut and RfPower can be set, and only experimentally. IPO, ATT and NAR are those of the current band. The FT-817/818 has RfPower,
+// Menu, Row, Agc, Dbf, NrLevel, NbLevel, LowCut, HighCut, MicEq and RfPower can be set, and only experimentally. IPO, ATT and NAR are those of the current band. The FT-817/818 has RfPower,
 // Menu, Row, Agc, BreakIn, Keyer, IfShift and Antenna.
 // Menu and Row are the menu item and soft key row saved when the radio's menu was last exited.
 // NrLevel (menu 49), NbLevel (63), LowCut (46, DSP HPF), HighCut (47, DSP LPF) and MicEq (48)
@@ -140,6 +152,9 @@ FeatureStatus ft817PowerLevelSet(Ft817PowerLevel level, Ft8x7SettingState& out);
 // Experimental (caps.setRadioMenu): AGC in the EEPROM, on the FT-817/818 and FT-857/897; out
 // holds the AGC read back. Failed while transmitting or when the read-back differs.
 FeatureStatus ft8x7AgcSet(YaesuAgc agc, Ft8x7SettingState& out);
+// Experimental (caps.setRadioMenu): the FT-857/897 TX equalizer (menu 48) in the EEPROM; out
+// holds the value read back. Failed while transmitting or when the read-back differs.
+FeatureStatus ft8x7MicEqSet(YaesuFt857MicEq eq, Ft8x7SettingState& out);
 
 // FT-8x7 tone squelch. The FT-857/897 reads it from the current band in the EEPROM, live;
 // the FT-817/818 cannot, so there it is the mode HamTRC last set. Unsupported on other radios,

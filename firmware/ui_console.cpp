@@ -940,9 +940,14 @@ void printHelp() {
       Serial.println("    NRLEVEL <1..16> | NBLEVEL <0..100> | NRLEVEL STEP | NBLEVEL STEP <+-n>  (experimental: menus 49 and 63)");
       Serial.println("    HPF <100..1000> | LPF <1000..6000> | HPF STEP | LPF STEP <+-n>  (experimental: menus 46 and 47, Hz to the nearest step)");
     }
-    if (!ft817) Serial.println("    PROC? | PROCLEVEL?  (speech processor and menu 74, read only)");
-    Serial.println(ft817 ? "    MICGAIN?  (mic gain of the mode: SSB, AM, FM, DIG or PKT menu, read only)"
-                         : "    MICGAIN?  (mic gain of the mode: SSB, AM, FM or DIG menu, read only)");
+    if (!ft817) {
+      Serial.println("    MICEQ OFF | LPF | HPF | BOTH  (experimental: TX equalizer, menu 48)");
+      Serial.println("    PROC? | PROCLEVEL?  (speech processor and menu 74)");
+      Serial.println("    PROC ON | OFF | TOGGLE | PROCLEVEL <0..100> | PROCLEVEL STEP <+-n>  (experimental: writes them to the EEPROM)");
+    }
+    Serial.println(ft817 ? "    MICGAIN?  (mic gain of the mode: SSB, AM, FM, DIG or PKT menu)"
+                         : "    MICGAIN?  (mic gain of the mode: SSB, AM, FM or DIG menu)");
+    Serial.println("    MICGAIN <0..100> | MICGAIN STEP <+-n>  (experimental: the mode's mic gain, writes it to the EEPROM)");
     Serial.println(ft817 ? "    VOX? | VOXGAIN? | VOXDELAY?  (VOX, menus 51 and 50, read only)"
                          : "    VOX? | VOXGAIN? | VOXDELAY?  (VOX, menus 88 and 87, read only)");
     Serial.println(ft817 ? "    RFPOWER?  (the TX power level, and its watts on an external supply)" : "    RFPOWER?  (menu 75 power of the current band)");
@@ -1584,6 +1589,71 @@ static bool handleConsoleFt8x7DbfSet(const String& upper) {
   return true;
 }
 
+// Experimental: PROC ON | OFF | TOGGLE and PROCLEVEL <0..100> | PROCLEVEL STEP <+-n> on the
+// FT-857/897; MICGAIN <0..100> | MICGAIN STEP <+-n>, the mic gain of the current mode.
+static bool handleConsoleFt8x7MicSet(const String& line, const String& upper) {
+  if (upper == "PROC ON" || upper == "PROC OFF" || upper == "PROC TOGGLE") {
+    bool on = upper == "PROC ON";
+    if (reportFeatureFailure(upper == "PROC TOGGLE" ? procToggle(on) : procSet(on), "PROC")) return true;
+    Serial.println(procStateText(on));
+    speakProcState(on);
+    return true;
+  }
+  const bool proc = upper.startsWith("PROCLEVEL ");
+  if (!proc && !upper.startsWith("MICGAIN ")) return false;
+  const char* name = proc ? "PROCLEVEL" : "MICGAIN";
+  const String prefix = String(name) + " ";
+  uint8_t level = 0;
+  FeatureStatus status = FeatureStatus::Ok;
+  if (upper.startsWith(prefix + "STEP")) {
+    int32_t step = 0;
+    if (!parseStepArg(line, upper, (prefix + "STEP ").c_str(), step)) {
+      Serial.print(name);
+      Serial.print(" STEP -> use a signed number, e.g. ");
+      Serial.print(name);
+      Serial.println(" STEP -5");
+      return true;
+    }
+    step = clampInt32(step, -100, 100);
+    status = proc ? procLevelStep((int)step, level) : micGainStep((int)step, level);
+  } else {
+    String arg = upper.substring(prefix.length());
+    arg.trim();
+    const long value = arg.toInt();
+    if (!arg.length() || String(value) != arg || value < 0 || value > 100) {
+      Serial.print(name);
+      Serial.print(" -> use 0..100, e.g. ");
+      Serial.print(name);
+      Serial.println(" 50");
+      return true;
+    }
+    status = proc ? procLevelSet((uint8_t)value, level) : micGainSet((uint8_t)value, level);
+  }
+  if (reportFeatureFailure(status, name)) return true;
+  Serial.println(proc ? procLevelText(level) : micGainText(level));
+  if (proc) speakProcLevel(level);
+  else speakMicGain(level);
+  return true;
+}
+
+// Experimental, FT-857/897: MICEQ OFF | LPF | HPF | BOTH (menu 48).
+static bool handleConsoleFt8x7MicEqSet(const String& upper) {
+  if (!upper.startsWith("MICEQ ")) return false;
+  String arg = upper.substring(6);
+  arg.trim();
+  for (const YaesuFt857MicEq eq : {YaesuFt857MicEq::Off, YaesuFt857MicEq::Lpf, YaesuFt857MicEq::Hpf,
+                                   YaesuFt857MicEq::Both}) {
+    if (arg != ft8x7MicEqName(eq)) continue;
+    Ft8x7SettingState state;
+    if (reportFeatureFailure(ft8x7MicEqSet(eq, state), "MICEQ")) return true;
+    Serial.println(ft8x7SettingText(state));
+    speakFt8x7Setting(state);
+    return true;
+  }
+  Serial.println("MICEQ -> use OFF, LPF, HPF or BOTH");
+  return true;
+}
+
 static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& upper) {
   if (!isCurrentYaesuFt8x7()) return false;
   if (handleConsoleFt8x7Meters(upper)) return true;
@@ -1592,6 +1662,8 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
   if (handleConsoleFt8x7DbfSet(upper)) return true;
   if (handleConsoleFt8x7RfPowerSet(upper)) return true;
   if (handleConsoleFt8x7AgcSet(upper)) return true;
+  if (handleConsoleFt8x7MicSet(line, upper)) return true;
+  if (handleConsoleFt8x7MicEqSet(upper)) return true;
 
   if (upper == "YALL?") {
     Serial.println("[YAESU FT8X7]");
@@ -2220,10 +2292,9 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     Serial.println(yaesuFt8x7QueryFlag(Ft8x7Flag::Filter2, on, 300) ? (on ? "2" : "BUILTIN") : "--");
     Serial.print("KNOB ");
     Serial.println(yaesuFt8x7QueryFlag(Ft8x7Flag::KnobIsSquelch, on, 300) ? (on ? "SQL" : "RFGAIN") : "--");
-    static const char* const kMicEqNames[] = {"OFF", "LPF", "HPF", "BOTH"};
     YaesuFt857MicEq micEq = YaesuFt857MicEq::Off;
     Serial.print("MICEQ ");
-    Serial.println(yaesuFt857QueryMicEq(micEq, 300) ? kMicEqNames[(uint8_t)micEq] : "--");
+    Serial.println(yaesuFt857QueryMicEq(micEq, 300) ? ft8x7MicEqName(micEq) : "--");
     struct NamedLevel { const char* name; YaesuFt857Level level; };
     static const NamedLevel levels[] = {
       {"CWSPEED", YaesuFt857Level::CwSpeed},     {"AMMIC", YaesuFt857Level::AmMicGain},

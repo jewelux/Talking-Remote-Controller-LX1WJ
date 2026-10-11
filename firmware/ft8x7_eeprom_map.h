@@ -177,14 +177,16 @@ bool ft8x7MenuRowPair(const Ft8x7MenuRowMap& map, bool row, uint8_t number, bool
 // 0x93 bits 1..0.
 static constexpr uint16_t FT857_MIC_EQ_ADDR = 0x0093;
 YaesuFt857MicEq ft857MicEqFromByte(uint8_t b);
+// The byte with eq set, bits 7..2 of old (the NR level and the BPF width) kept.
+uint8_t ft857MicEqByte(YaesuFt857MicEq eq, uint8_t old);
 
 // The byte that holds a level; false for an unknown level.
 bool ft857LevelAddr(YaesuFt857Level level, uint16_t& addrOut);
 // The level from the byte at its address, in the units the radio shows.
 uint16_t ft857LevelValue(YaesuFt857Level level, uint8_t b);
 // The values a level can be set to, in the units the radio shows: NrLevel 1..16, NbLevel 0..100,
-// HpfCutoff 100..1000 Hz, LpfCutoff 1000..6000 Hz. False for the other levels, which cannot be
-// set.
+// HpfCutoff 100..1000 Hz, LpfCutoff 1000..6000 Hz, ProcLevel and the mic gains (SsbMicGain,
+// AmMicGain, FmMicGain, DigGain) 0..100. False for the other levels, which cannot be set.
 bool ft857LevelRange(YaesuFt857Level level, uint16_t& minOut, uint16_t& maxOut);
 // The byte that sets level to the radio's step nearest value (HPF steps are 60 Hz, LPF steps
 // about 160 Hz), made from old with every other bit kept. False, and out untouched, when value
@@ -238,6 +240,10 @@ static constexpr uint16_t FT817_VOX_GAIN_ADDR = 0x0063;
 
 // The mic gains and the VOX gain: bits 6..0, 0..100.
 uint8_t ft817LevelFromByte(uint8_t b);
+// The byte that sets a mic gain to value, bit 7 of old kept (another setting: 0x6B bit 7 is menu
+// 52 EXTEND). False, and out untouched, when value is above 100, or when old holds a level above
+// 100: the map then does not fit the radio, and nothing may be written.
+bool ft817LevelByte(uint8_t value, uint8_t old, uint8_t& out);
 
 // FT-817 VOX delay (menu 50), 0x64 bits 4..0: the delay / 100 ms, 1..25 = 100..2500 ms;
 // other values are kept within that range.

@@ -222,8 +222,7 @@ static const char* ft8x7SettingName(Ft8x7Setting setting) {
   return "";
 }
 
-// Menu 48 as the radio shows it.
-static const char* ft8x7MicEqText(YaesuFt857MicEq eq) {
+const char* ft8x7MicEqName(YaesuFt857MicEq eq) {
   switch (eq) {
     case YaesuFt857MicEq::Lpf: return "LPF";
     case YaesuFt857MicEq::Hpf: return "HPF";
@@ -281,7 +280,7 @@ String ft8x7SettingText(const Ft8x7SettingState& state) {
   if (state.setting == Ft8x7Setting::LowCut || state.setting == Ft8x7Setting::HighCut) {
     return text + String(state.value) + " Hz";
   }
-  if (state.setting == Ft8x7Setting::MicEq) return text + ft8x7MicEqText(state.micEq);
+  if (state.setting == Ft8x7Setting::MicEq) return text + ft8x7MicEqName(state.micEq);
   if (state.setting == Ft8x7Setting::Antenna) return text + (state.on ? "REAR" : "FRONT");
   return text + (state.on ? "ON" : "OFF");
 }
