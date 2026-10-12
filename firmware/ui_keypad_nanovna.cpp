@@ -132,6 +132,35 @@ void onBattery(const NanoVnaResult& result) {
   speakToken("volts");
 }
 
+// Digits and letters one by one.
+void spellCharacters(const char* text) {
+  for (const char* p = text; *p; ++p) {
+    if (*p >= '0' && *p <= '9') {
+      playDigit(*p - '0');
+    } else {
+      const char letter[2] = {(char)(*p | 0x20), '\0'};
+      speakToken(letter);
+    }
+  }
+}
+
+void onSerialNumber(const NanoVnaResult& result) {
+  if (result.status != NanoVnaStatus::Ok) {
+    reportNanoVnaStatus("SERIAL", result.status, result.text);
+    return;
+  }
+  char serial[33];
+  if (!nanoVnaSerialNumber(result.text, serial, sizeof(serial))) {
+    printKeypadStatus("SERIAL -> unexpected reply: {}", result.text);
+    speakKeypadFailure("SERIAL", KeypadFailure::Error);
+    return;
+  }
+  printKeypadStatus("SERIAL: {}", serial);
+  if (!g_speechEnabled) return;
+  speakLabel("serialnumber");
+  spellCharacters(serial);
+}
+
 void speakCalibration(int8_t slot) {
   if (slot == kNanoVnaCalAuto) {
     printKeypadStatus("CAL: auto");
@@ -294,6 +323,13 @@ void queryNanoVnaBattery() {
   prepareKeypadSpeechResponse();
   const NanoVnaStatus status = nanoVnaStartBattery(onBattery);
   if (status != NanoVnaStatus::Ok) reportNanoVnaStatus("BATTERY", status);
+}
+
+void queryNanoVnaSerialNumber() {
+  printKeypadAction("SERIAL?");
+  prepareKeypadSpeechResponse();
+  const NanoVnaStatus status = nanoVnaStartSerialNumber(onSerialNumber);
+  if (status != NanoVnaStatus::Ok) reportNanoVnaStatus("SERIAL", status);
 }
 
 void keypadCommitNanoVnaFrequency(InputMode mode, const char* digits) {

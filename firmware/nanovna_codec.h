@@ -106,6 +106,10 @@ bool nanoVnaParseMillivolts(const char* line, uint32_t& millivoltsOut);
 // Volts to 10 mV: "4.26" for 4256.
 void nanoVnaFormatVolts(uint32_t millivolts, char* out, size_t outLen);
 
+// The serial number in an "SN" reply (the F V2's 16 hex digits, "5736383845107C54"): letters and
+// digits only, in upper case. False for anything else, or when out is too small.
+bool nanoVnaSerialNumber(const char* line, char* out, size_t outLen);
+
 // The version number in a "version" reply: the first word of digits and points, a leading 'v'
 // dropped ("1.0.3" in "NanoVNA-F V2 v1.0.3"). False when there is none.
 bool nanoVnaVersionNumber(const char* line, char* out, size_t outLen);

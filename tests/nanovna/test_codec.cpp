@@ -272,3 +272,16 @@ TEST(volts_to_10_mv) {
   nanoVnaFormatVolts(50, v, sizeof(v));
   CHECK_EQ(v, "0.05");
 }
+
+TEST(serial_number_is_letters_and_digits_in_upper_case) {
+  char sn[24];
+  CHECK(nanoVnaSerialNumber("5736383845107C54", sn, sizeof(sn)));
+  CHECK_EQ(sn, "5736383845107C54");
+  CHECK(nanoVnaSerialNumber(" 5736383845107c54 ", sn, sizeof(sn)));
+  CHECK_EQ(sn, "5736383845107C54");
+  CHECK(!nanoVnaSerialNumber("", sn, sizeof(sn)));
+  CHECK(!nanoVnaSerialNumber("SN?", sn, sizeof(sn)));
+  CHECK(!nanoVnaSerialNumber("57 36", sn, sizeof(sn)));
+  char tiny[8];
+  CHECK(!nanoVnaSerialNumber("5736383845107C54", tiny, sizeof(tiny)));
+}

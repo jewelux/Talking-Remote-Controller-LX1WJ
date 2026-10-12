@@ -45,8 +45,9 @@ state on `1`. Every other bank is free (a beep). Bank 2 is kept for calibration 
 | `3` | short | the range: "band 8 0 meters" for a preset, otherwise "start … stop …" |
 | `5` | short | calibration: "calibration 3", or "calibration auto" |
 | `5` | long | calibration select: `0`–`6` a saved slot, `A` auto, then `D` |
+| `7` | short | test: "version 1 point 0 …", or "ok" |
 | `8` | short | battery voltage: "battery 4 point 2 6 volts" |
-| `9` | short | test: "version 1 point 0 …", or "ok" |
+| `9` | short | serial number, character by character (`SN`; older models: "error") |
 | `B` | short | next band |
 | `C` | short | previous band |
 
@@ -106,7 +107,7 @@ left on the shell line goes first.
 |---|---|
 | `VNA?` | connection, range, calibration and the last result |
 | `VNASCAN` | a measurement, as Bank 1 `0` |
-| `VNA <command>` | any shell command, as typed, and its reply. Examples: `VNA version`, `VNA info`, `VNA cal`, `VNA vbat`, `VNA help` |
+| `VNA <command>` | any shell command, as typed, and its reply. Examples: `VNA version`, `VNA info`, `VNA cal`, `VNA vbat`, `VNA SN`, `VNA help` |
 
 Each ends with `VNA -> ok` or what went wrong. `[VNA]` lines show the commands sent, the
 measurement summary and any unexpected reply. `USB?` shows the USB connection.
@@ -117,7 +118,8 @@ On the second USB socket's console, with the NanoVNA-F V2 on the native socket:
 
 1. Choose profile 30 (Bank 9 `A` long, `3` `0`, `D`): "nano v n a". Switch the NanoVNA on:
    "usb on".
-2. `VNA version` and Bank 1 `9`: the version is printed and said. `VNA info` prints the device
+2. `VNA version` and Bank 1 `7`: the version is printed and said. `VNA SN` and Bank 1 `9`: the
+   serial number. `VNA info` prints the device
    information.
 3. `VNA cal`: note what the calibration status looks like, for the calibration bank later.
    Bank 1 `8`: the battery voltage, as `VNA vbat` prints it in mV.
@@ -169,5 +171,5 @@ On the second USB socket's console, with the NanoVNA-F V2 on the native socket:
   - `recall` takes 0–6 on the F V2, 0–4 on older models.
   - The F V2 takes 11–201 scan points; 101 is used, which every model takes.
   - `vbat` replies `4256 mV`; Bank 1 `8` says it in volts to 10 mV.
-  - On the F V2 (firmware 0.6.0, checked with `help`), `version` replies `0.6.0` and `cal`
-    replies `load open short cal'ed`.
+  - On the F V2 (firmware 0.6.0, checked with `help`), `version` replies `0.6.0`, `cal`
+    replies `load open short cal'ed`, and `SN` (upper case) replies 16 hex digits.

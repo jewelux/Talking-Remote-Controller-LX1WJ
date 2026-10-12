@@ -64,6 +64,7 @@ static constexpr SpokenLabel kSpokenLabels[] = {
   {"ROUND", "frequency"},
   {"ROW", "row"},
   {"RXTX", "transceiver"},
+  {"SERIAL", "serialnumber"},
   {"SPLIT", "split"},
   {"SPLITTONE", "split tone"},
   {"START", "start"},

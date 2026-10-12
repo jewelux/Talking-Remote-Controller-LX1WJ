@@ -245,6 +245,20 @@ void nanoVnaFormatVolts(uint32_t millivolts, char* out, size_t outLen) {
   snprintf(out, outLen, "%lu.%02lu", (unsigned long)(centivolts / 100), (unsigned long)(centivolts % 100));
 }
 
+bool nanoVnaSerialNumber(const char* line, char* out, size_t outLen) {
+  if (!out || !outLen) return false;
+  const char* p = skipSpaces(line);
+  const size_t n = trimmedLength(p);
+  if (n == 0 || n >= outLen) return false;
+  for (size_t i = 0; i < n; ++i) {
+    const char c = p[i];
+    if (!isLetterOrDigit(c)) return false;
+    out[i] = (c >= 'a' && c <= 'z') ? (char)(c - 'a' + 'A') : c;
+  }
+  out[n] = '\0';
+  return true;
+}
+
 bool nanoVnaVersionNumber(const char* line, char* out, size_t outLen) {
   if (!out || !outLen) return false;
   // A dotted number first, so that the "2" of "F_V2" is not taken for the version.

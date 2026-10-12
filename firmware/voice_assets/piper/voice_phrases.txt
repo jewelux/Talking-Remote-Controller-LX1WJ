@@ -179,6 +179,7 @@ version
 busy
 battery
 volts
+serial number | serialnumber
 
 # Vendors
 elecraft
