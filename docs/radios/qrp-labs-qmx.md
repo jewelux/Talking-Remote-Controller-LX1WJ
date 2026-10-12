@@ -63,7 +63,8 @@ Mode 8 is never sent either: on the QMX it is SWR tune mode, not RTTY-R.
 | "usb not available" | the active profile does not use USB | choose profile 21 |
 
 Choosing another profile restarts the controller, so the native socket goes back to the PC
-console. The new profile is announced after the restart.
+console. The new profile is announced after the restart. The NanoVNA profile (30) also restarts
+it while the QMX is connected, so that nothing meant for the NanoVNA reaches the QMX.
 
 ## Test plan
 

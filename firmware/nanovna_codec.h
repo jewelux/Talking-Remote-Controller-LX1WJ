@@ -42,7 +42,7 @@ class NanoVnaReplyReader {
   bool lineDone_ = false;
 };
 
-// line is the shell's echo of command (a device that does not echo has none).
+// line is the shell's echo of command.
 bool nanoVnaIsEcho(const char* line, const char* command);
 // line says command failed: "usage: ...", "Err, default load", "frequency range is invalid",
 // "sweep points exceeds range", or "<command>?" for a command the device does not know.

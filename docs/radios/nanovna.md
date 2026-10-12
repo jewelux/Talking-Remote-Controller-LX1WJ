@@ -26,8 +26,9 @@ The NanoVNA's USB-C cable goes into the controller's **native USB socket**, as f
 - the PC console moves to the second USB socket (the USB-to-serial chip), where `HAMTRC?`,
   `USB?` and the `VNA` commands below answer;
 - the NanoVNA runs on its own battery, so the native socket does not need to supply 5 V;
-- choosing another profile (not the QMX) restarts the controller, and the native socket goes back
-  to the PC console.
+- choosing another profile restarts the controller, and the native socket goes back to the PC
+  console. The QMX profile (21) restarts it only while the NanoVNA is connected, so that the QMX's
+  CAT never reaches the NanoVNA.
 
 ## Keys
 
@@ -71,7 +72,8 @@ state on `1`. Every other bank is free (a beep). Bank 2 is kept for calibration 
 "Auto" uses the calibration the NanoVNA has loaded, as on its screen. A slot (`0`–`6` on the F V2,
 `0`–`4` on older models) is recalled before every measurement, so the measurement always uses
 that calibration, even if it was changed on the screen in between. Choosing a slot also recalls it
-at once when the NanoVNA is connected: a slot the device does not have says "calibration error".
+at once when the NanoVNA is connected: a slot the device does not have says "calibration error",
+and the slot chosen before stays.
 
 Recalling a slot also loads the screen settings saved with it. The calibration itself (open,
 short, load) is done on the NanoVNA for now.
@@ -89,8 +91,8 @@ short, load) is done on the NanoVNA for now.
 
 ## What the measurement does
 
-The measure key runs four shell commands, each ended by CR. The controller waits for the `ch> `
-prompt after each.
+The measure key runs four shell commands, each ended by CR. The controller waits for the echo of
+each command, then for the `ch> ` prompt.
 
 1. `recall <slot>`, only when a slot is chosen;
 2. `sweep <start> <stop>`, so the NanoVNA's own screen shows the range just measured;
@@ -99,7 +101,8 @@ prompt after each.
 
 SWR = (1 + |S11|) / (1 − |S11|) for each point. The lowest is the best match, the highest the
 worst. Before every job the controller sends a bare CR and waits for the prompt, so whatever is
-left on the shell line goes first.
+left on the shell line goes first. Anything before a command's echo is the late reply of a command
+that timed out and is skipped; between jobs, what the NanoVNA sends is dropped.
 
 ## Console (second USB socket)
 

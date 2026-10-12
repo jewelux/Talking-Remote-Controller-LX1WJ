@@ -182,12 +182,17 @@ void applyProfile(uint8_t slot) {
   if (!profile) profile = profileForSlot(kDefaultProfileSlot);
 
   // The USB host keeps the native USB socket until a restart, and the PC console needs it back.
-  // The restart comes up with the new profile, and says its name.
-  if (usbHostStarted() && profile->link.port != RadioPort::UsbHost) {
+  // A USB device of another protocol (the QMX and the NanoVNA) restarts too: what the open port
+  // would get next is meant for the other device. A CR ends the QMX's CAT, and CAT polls hang the
+  // NanoVNA. The restart comes up with the new profile, and says its name.
+  const bool otherUsbDevice = profile->link.port == RadioPort::UsbHost && usbHostSerialReady() &&
+                              profile->protocol != currentProtocolType();
+  if (usbHostStarted() && (profile->link.port != RadioPort::UsbHost || otherUsbDevice)) {
     saveProfileToNvs(profile->slot);
     Serial0.print("[PROFILE] ");
     Serial0.print(profile->name);
-    Serial0.println(": restarting to give the native USB socket back to the console");
+    Serial0.println(otherUsbDevice ? ": restarting so the USB device starts afresh with this profile"
+                                   : ": restarting to give the native USB socket back to the console");
     Serial0.flush();
     ESP.restart();
   }

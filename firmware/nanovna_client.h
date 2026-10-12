@@ -9,14 +9,17 @@
 // callback hears how it ended. The client never speaks; the keys and the console do.
 //
 // Every job starts with a bare CR and waits for the prompt, so whatever was left on the shell line
-// goes first. Nothing is sent to the device unless a key or a console command asks: CAT polls once
-// piled up on its shell line and hung it.
+// goes first. Each command's reply counts from its echo to the prompt after it, so a late reply to
+// a command that timed out is skipped; between jobs, what the device sends is dropped. Nothing is
+// sent to the device unless a key or a console command asks: CAT polls once piled up on its shell
+// line and hung it.
 
 enum class NanoVnaStatus : uint8_t {
   Ok,
   NotAvailable,  // the active profile is not a NanoVNA
   NotConnected,  // its serial port is not open, or closed during the job
   Busy,          // another job runs
+  BadRange,      // the start is not below the stop
   Timeout,       // no prompt within the step's time
   DeviceError,   // the device refused a command; NanoVnaResult::text has its reply
   NoData,        // the scan gave no point
@@ -66,7 +69,8 @@ const NanoVnaResult* nanoVnaLastMeasure();
 // status means it did not start, and done is not called.
 //
 // Measure: recall of the calibration slot (none for auto), the device's own sweep set to the range
-// so its screen shows it, the scan, and resume, which also runs after a failed scan.
+// so its screen shows it, the scan, and resume, which also runs after a failed scan. BadRange when
+// the start is not below the stop.
 NanoVnaStatus nanoVnaStartMeasure(NanoVnaDone done);
 NanoVnaStatus nanoVnaStartVersion(NanoVnaDone done);
 // "SN": the serial number, in NanoVnaResult::text (the F V2 has it; older models refuse it).

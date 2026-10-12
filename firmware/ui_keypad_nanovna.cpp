@@ -87,6 +87,7 @@ void reportNanoVnaStatus(const char* label, NanoVnaStatus status, const char* de
     case NanoVnaStatus::Timeout:
       speakKeypadFailure(label, KeypadFailure::Timeout);
       return;
+    case NanoVnaStatus::BadRange:
     case NanoVnaStatus::DeviceError:
     case NanoVnaStatus::NoData:
       speakKeypadFailure(label, KeypadFailure::Error);
@@ -176,12 +177,16 @@ void speakCalibration(int8_t slot) {
   }
 }
 
+// The slot being recalled; kept once the device has taken it.
+int8_t s_recallingSlot = kNanoVnaCalAuto;
+
 void onRecalled(const NanoVnaResult& result) {
   if (result.status != NanoVnaStatus::Ok) {
     reportNanoVnaStatus("CAL", result.status, result.text);
     return;
   }
-  speakCalibration(nanoVnaSetup().calSlot);
+  nanoVnaSetCalSlot(s_recallingSlot);
+  speakCalibration(s_recallingSlot);
   speakValueOk();
 }
 
@@ -204,12 +209,14 @@ void sayPickedCalibration(char key, uint8_t value) {
 }
 
 // The slot is kept, and recalled before each measurement. With the NanoVNA there and idle it is
-// recalled now too, so a slot the device does not have says "error" at once.
+// recalled now, and kept only once the device has taken it: a slot the device does not have says
+// "error" at once and leaves the old one. Without the NanoVNA it is kept as it is.
 void commitCalibration(uint8_t value, TargetVfo) {
   const int8_t slot = value == kCalAutoValue ? kNanoVnaCalAuto : (int8_t)value;
   printKeypadCommand("ENTER -> CAL {}", value == kCalAutoValue ? "AUTO" : String((unsigned)value).c_str());
-  nanoVnaSetCalSlot(slot);
+  s_recallingSlot = slot;
   if (slot != kNanoVnaCalAuto && nanoVnaStartRecall((uint8_t)slot, onRecalled) == NanoVnaStatus::Ok) return;
+  nanoVnaSetCalSlot(slot);
   speakCalibration(slot);
   speakValueOk();
 }
@@ -224,13 +231,13 @@ void measureNanoVna() {
   printKeypadAction("SWEEP");
   prepareKeypadSpeechResponse();
   const NanoVnaSetup& setup = nanoVnaSetup();
-  if (!nanoVnaRangeValid(setup.startHz, setup.stopHz)) {
+  const NanoVnaStatus status = nanoVnaStartMeasure(onMeasured);
+  if (status == NanoVnaStatus::BadRange) {
     printKeypadStatus("SWEEP -> start {} MHz is not below stop {} MHz", mhzText(setup.startHz).c_str(),
                       mhzText(setup.stopHz).c_str());
     speakKeypadFailure("SWEEP", KeypadFailure::Error);
     return;
   }
-  const NanoVnaStatus status = nanoVnaStartMeasure(onMeasured);
   if (status != NanoVnaStatus::Ok) {
     reportNanoVnaStatus("SWEEP", status);
     return;

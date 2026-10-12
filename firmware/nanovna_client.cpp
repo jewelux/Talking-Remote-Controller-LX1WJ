@@ -142,10 +142,12 @@ void stepDone() {
   sendStep();
 }
 
+// A step's reply starts after its echo. Lines before it are late output of an earlier command, one
+// that timed out, and are skipped.
 void handleLine(const char* line) {
   const Step step = s_job.steps[s_job.index];
-  if (!s_job.echoSeen && nanoVnaIsEcho(line, s_job.command)) {
-    s_job.echoSeen = true;
+  if (!s_job.echoSeen) {
+    s_job.echoSeen = nanoVnaIsEcho(line, s_job.command);
     return;
   }
   if (step == Step::Sync) return;
@@ -228,7 +230,15 @@ void initNanoVna() {
 }
 
 void pollNanoVna() {
-  if (!s_job.active) return;
+  if (!s_job.active) {
+    // Between jobs, what the device still sends (the rest of a reply that timed out) is dropped,
+    // so the USB read never waits on a full buffer and the device is not held up.
+    if (nanoVnaActive()) {
+      for (size_t n = 0; n < kPollBudgetBytes && serialTransportRead() >= 0; ++n) {
+      }
+    }
+    return;
+  }
   // Another profile was chosen: the job is dropped without a word.
   if (!nanoVnaActive()) {
     s_job.active = false;
@@ -244,6 +254,9 @@ void pollNanoVna() {
         handleLine(s_reader.line());
         break;
       case NanoVnaReplyReader::Event::Prompt:
+        // A prompt before the echo ends an earlier command. The sync takes any prompt: the CR's
+        // own follows, and the next step skips it.
+        if (!s_job.echoSeen && s_job.steps[s_job.index] != Step::Sync) break;
         stepDone();
         if (!s_job.active) return;
         break;
@@ -292,6 +305,8 @@ const NanoVnaResult* nanoVnaLastMeasure() {
 }
 
 NanoVnaStatus nanoVnaStartMeasure(NanoVnaDone done) {
+  // The device would set the stop to the start and leave its screen on zero span.
+  if (nanoVnaActive() && !nanoVnaRangeValid(s_setup.startHz, s_setup.stopHz)) return NanoVnaStatus::BadRange;
   Step steps[4];
   uint8_t count = 0;
   if (s_setup.calSlot != kNanoVnaCalAuto) steps[count++] = Step::Recall;
@@ -340,6 +355,7 @@ const char* nanoVnaStatusName(NanoVnaStatus status) {
     case NanoVnaStatus::NotAvailable: return "not a NanoVNA profile";
     case NanoVnaStatus::NotConnected: return "not connected";
     case NanoVnaStatus::Busy: return "busy";
+    case NanoVnaStatus::BadRange: return "start not below stop";
     case NanoVnaStatus::Timeout: return "timeout";
     case NanoVnaStatus::DeviceError: return "device error";
     case NanoVnaStatus::NoData: return "no data";
