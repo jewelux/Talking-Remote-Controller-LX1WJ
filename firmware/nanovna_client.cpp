@@ -168,6 +168,7 @@ void handleLine(const char* line) {
     }
     case Step::Version:
       if (line[0] && !s_job.result.text[0]) strlcpy(s_job.result.text, line, sizeof(s_job.result.text));
+      if (line[0]) Serial0.printf("[VNA] < %s\n", line);
       return;
     default:
       if (line[0]) Serial0.printf("[VNA] < %s\n", line);

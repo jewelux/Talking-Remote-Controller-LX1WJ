@@ -221,6 +221,18 @@ void queryBank9Usb() { record("queryBank9Usb"); }
 void selectNextProfile() { record("selectNextProfile"); }
 void selectPrevProfile() { record("selectPrevProfile"); }
 
+void measureNanoVna() { record("measureNanoVna"); }
+void repeatNanoVnaResult() { record("repeatNanoVnaResult"); }
+void queryNanoVnaStart() { record("queryNanoVnaStart"); }
+void beginNanoVnaStartEntry() { record("beginNanoVnaStartEntry"); }
+void queryNanoVnaStop() { record("queryNanoVnaStop"); }
+void beginNanoVnaStopEntry() { record("beginNanoVnaStopEntry"); }
+void queryNanoVnaRange() { record("queryNanoVnaRange"); }
+void stepNanoVnaBand(int d) { record("stepNanoVnaBand(%d)", d); }
+void queryNanoVnaCalibration() { record("queryNanoVnaCalibration"); }
+void beginNanoVnaCalibrationSelect() { record("beginNanoVnaCalibrationSelect"); }
+void testNanoVna() { record("testNanoVna"); }
+
 // Records the key the action is bound to.
 void reportFtdx10HiddenKey() { record("reportFtdx10HiddenKey(%s)", g_key); }
 
@@ -289,4 +301,83 @@ TEST(keymap_ignores_state_machine_keys_and_other_banks) {
   CHECK(isEmpty(keymapLookup(t, 7, '1')));
   CHECK(isEmpty(keymapLookup(t, 10, '1')));
   CHECK(g_calls.empty());
+}
+
+// ---- NanoVNA ----
+//
+// Not a radio, so not in the characterization matrix: a layout of its own. Bank 1 measures,
+// Bank 9 is the radios' Bank 9, and every other key is free.
+
+namespace {
+
+struct NanoVnaKey {
+  uint8_t bank;
+  char key;
+  const char *shortAction;
+  const char *longAction;
+  const char *doubleAction;
+};
+
+constexpr NanoVnaKey kNanoVnaKeys[] = {
+    {1, '0', "measureNanoVna", "none", "repeatNanoVnaResult"},
+    {1, '1', "queryNanoVnaStart", "beginNanoVnaStartEntry", "-"},
+    {1, '2', "queryNanoVnaStop", "beginNanoVnaStopEntry", "-"},
+    {1, '3', "queryNanoVnaRange", "none", "-"},
+    {1, '6', "queryNanoVnaCalibration", "beginNanoVnaCalibrationSelect", "-"},
+    {1, '7', "stepNanoVnaBand(-1)", "none", "-"},
+    {1, '8', "stepNanoVnaBand(1)", "none", "-"},
+    {1, '9', "testNanoVna", "none", "-"},
+};
+
+constexpr NanoVnaKey kNanoVnaFree = {0, 0, "unassigned", "none", "-"};
+constexpr Family kNanoVnaFamily = {0, "NanoVNA"};
+
+const NanoVnaKey &nanoVnaExpected(uint8_t bank, char key) {
+  for (const NanoVnaKey &k : kNanoVnaKeys) {
+    if (k.bank == bank && k.key == key) return k;
+  }
+  return kNanoVnaFree;
+}
+
+KeypadTraits nanoVnaTraits() {
+  KeypadTraits t;
+  t.layout = KeypadLayout::NanoVna;
+  return t;
+}
+
+}  // namespace
+
+TEST(keymap_nanovna_banks_1_to_8) {
+  const KeypadTraits t = nanoVnaTraits();
+  for (uint8_t bank = 1; bank <= 8; ++bank) {
+    for (const char *k = kBankKeys; *k; ++k) {
+      const NanoVnaKey &expected = nanoVnaExpected(bank, *k);
+      const KeyBinding b = keymapLookup(t, bank, *k);
+      const bool waits = strcmp(expected.doubleAction, "-") != 0;
+      CHECK_EQ(b.waitsForDouble, waits);
+      CHECK(b.doubleHoldAction == nullptr);
+      checkOutcome(kNanoVnaFamily, bank, *k, "short", outcome(b.shortAction, bank, *k, "SHORT", "unassigned"),
+                   expected.shortAction);
+      checkOutcome(kNanoVnaFamily, bank, *k, "long", outcome(b.holdAction, bank, *k, "LONG", "none"),
+                   expected.longAction);
+      checkOutcome(kNanoVnaFamily, bank, *k, "double",
+                   outcome(b.doubleAction, bank, *k, "DOUBLE", waits ? "none" : "-"), expected.doubleAction);
+    }
+  }
+}
+
+TEST(keymap_nanovna_bank9_is_the_radios_bank9) {
+  const KeypadTraits vna = nanoVnaTraits();
+  const KeypadTraits radio = traitsFor(IC7300);
+  for (const char *k = kBankKeys; *k; ++k) {
+    const KeyBinding a = keymapLookup(vna, 9, *k);
+    const KeyBinding b = keymapLookup(radio, 9, *k);
+    CHECK_EQ(a.waitsForDouble, b.waitsForDouble);
+    checkOutcome(kNanoVnaFamily, 9, *k, "short", outcome(a.shortAction, 9, *k, "SHORT", "unassigned"),
+                 outcome(b.shortAction, 9, *k, "SHORT", "unassigned").c_str());
+    checkOutcome(kNanoVnaFamily, 9, *k, "long", outcome(a.holdAction, 9, *k, "LONG", "none"),
+                 outcome(b.holdAction, 9, *k, "LONG", "none").c_str());
+    checkOutcome(kNanoVnaFamily, 9, *k, "double", outcome(a.doubleAction, 9, *k, "DOUBLE", "-"),
+                 outcome(b.doubleAction, 9, *k, "DOUBLE", "-").c_str());
+  }
 }

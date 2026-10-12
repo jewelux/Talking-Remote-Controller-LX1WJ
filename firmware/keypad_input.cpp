@@ -43,6 +43,8 @@ constexpr EntrySpec kEntries[] = {
     {InputMode::DcsEntry,       "DCS",         3,   false,  true,  0,      ""},
     {InputMode::MenuEntry,      "MENU",        2,   false,  false, 0,      ""},
     {InputMode::RowEntry,       "ROW",         2,   false,  false, 0,      ""},
+    {InputMode::SweepStartEntry, "START",      12,  false,  true,  5,      ""},
+    {InputMode::SweepStopEntry, "STOP",        12,  false,  true,  5,      ""},
 };
 
 }  // namespace

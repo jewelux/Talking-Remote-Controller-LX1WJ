@@ -23,6 +23,8 @@ void speakKeypadCommandWord(const String& cmd);
 // Entries and selections (ui_keypad_entry.cpp), called by the state machine.
 void keypadEntryDigit(const EntrySpec& entry, char key, const char* digits);
 void keypadEntryCommit(InputMode mode, const char* digits, TargetVfo targetVfo);
+// NanoVNA sweep start or stop entry (ui_keypad_nanovna.cpp).
+void keypadCommitNanoVnaFrequency(InputMode mode, const char* digits);
 // Shared frequency writer for entry commit and the round-to-500 Hz action.
 bool keypadApplyFrequencyHz(uint64_t hz, TargetVfo targetVfo);
 

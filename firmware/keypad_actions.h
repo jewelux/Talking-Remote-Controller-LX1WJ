@@ -189,6 +189,22 @@ void selectPrevProfile();
 // "USB?": the USB radio link, "usb on/off/error" with counts, or "usb not available".
 void queryBank9Usb();
 
+// ---- NanoVNA (KeypadLayout::NanoVna, Bank 1) ----
+// "SWEEP": says "sweep", runs the scan, then "best match <swr> at <MHz>, worst match ...".
+void measureNanoVna();
+// "SWEEP?": the last result again, or "not available".
+void repeatNanoVnaResult();
+void queryNanoVnaStart();       // "START?": the sweep start in MHz
+void beginNanoVnaStartEntry();  // "START": entry in MHz, "start please"
+void queryNanoVnaStop();
+void beginNanoVnaStopEntry();
+void queryNanoVnaRange();  // "RANGE?": "band 80 meters", or "start ... stop ..."
+// "BAND NEXT/PREV": the next or previous IARU Region 1 band preset, said as for RANGE?.
+void stepNanoVnaBand(int direction);
+void queryNanoVnaCalibration();        // "CAL?": the slot, or "auto"
+void beginNanoVnaCalibrationSelect();  // "CAL": 0-6 a slot, A auto, D applies it
+void testNanoVna();                    // "VERSION?": "version 1 point 0 ...", or "ok"
+
 // ---- FTDX10 ----
 // A key the FTDX10 layout hides: "<key> hidden on FTDX10", "not available".
 void reportFtdx10HiddenKey();

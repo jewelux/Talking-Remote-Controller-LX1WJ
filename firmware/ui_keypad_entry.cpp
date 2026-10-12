@@ -224,6 +224,8 @@ void keypadEntryCommit(InputMode mode, const char* digits, TargetVfo targetVfo) 
     case InputMode::DcsEntry: commitDcs(digits); return;
     case InputMode::MenuEntry: commitMenuRow(Ft8x7Setting::Menu, digits); return;
     case InputMode::RowEntry: commitMenuRow(Ft8x7Setting::Row, digits); return;
+    case InputMode::SweepStartEntry:
+    case InputMode::SweepStopEntry: keypadCommitNanoVnaFrequency(mode, digits); return;
     case InputMode::Normal:
     case InputMode::ChoiceSelect: return;
   }

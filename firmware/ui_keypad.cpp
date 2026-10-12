@@ -63,7 +63,8 @@ static void silenceSpeechForKeyPress() {
 
 static KeypadTraits currentKeypadTraits() {
   KeypadTraits t;
-  if (isFtdx10KeypadProfile()) t.layout = KeypadLayout::Ftdx10;
+  if (currentProtocolType() == PROTO_NANOVNA) t.layout = KeypadLayout::NanoVna;
+  else if (isFtdx10KeypadProfile()) t.layout = KeypadLayout::Ftdx10;
   else if (isFt8x7Ft817Keypad()) t.layout = KeypadLayout::Ft817;
   else if (isFt8x7Ft857FamilyKeypad()) t.layout = KeypadLayout::Ft857;
   else if (currentProtocolType() == PROTO_YAESU_FT8X7) t.layout = KeypadLayout::Ft8x7;

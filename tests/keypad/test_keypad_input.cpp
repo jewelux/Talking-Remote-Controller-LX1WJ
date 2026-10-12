@@ -27,6 +27,8 @@ const char *modeName(InputMode m) {
     case InputMode::DcsEntry: return "DcsEntry";
     case InputMode::MenuEntry: return "MenuEntry";
     case InputMode::RowEntry: return "RowEntry";
+    case InputMode::SweepStartEntry: return "SweepStartEntry";
+    case InputMode::SweepStopEntry: return "SweepStopEntry";
   }
   return "?";
 }
@@ -1455,7 +1457,8 @@ TEST(input_every_entry_mode_has_its_rules) {
                                InputMode::FreqEntry,      InputMode::RfPowerEntry,
                                InputMode::CivAddrEntry,   InputMode::RptOffsetEntry,
                                InputMode::CtcssEntry,     InputMode::DcsEntry,
-                               InputMode::MenuEntry,      InputMode::RowEntry};
+                               InputMode::MenuEntry,      InputMode::RowEntry,
+                               InputMode::SweepStartEntry, InputMode::SweepStopEntry};
   for (InputMode m : entries) {
     const EntrySpec *e = keypadEntrySpec(m);
     CHECK(e != nullptr);
@@ -1466,6 +1469,34 @@ TEST(input_every_entry_mode_has_its_rules) {
   }
   CHECK(keypadEntrySpec(InputMode::Normal) == nullptr);
   CHECK(keypadEntrySpec(InputMode::ChoiceSelect) == nullptr);
+}
+
+// The NanoVNA sweep start and stop take a frequency in MHz, as FREQ does.
+TEST(input_sweep_entries_take_mhz_like_freq) {
+  const EntrySpec *freq = keypadEntrySpec(InputMode::FreqEntry);
+  const InputMode sweeps[] = {InputMode::SweepStartEntry, InputMode::SweepStopEntry};
+  for (InputMode m : sweeps) {
+    const EntrySpec *e = keypadEntrySpec(m);
+    CHECK(e != nullptr && freq != nullptr);
+    if (!e || !freq) continue;
+    CHECK_EQ(e->maxLen, freq->maxLen);
+    CHECK_EQ(e->commitsWhenFull, freq->commitsWhenFull);
+    CHECK_EQ(e->leadingZero, freq->leadingZero);
+    CHECK_EQ(e->maxFraction, freq->maxFraction);
+  }
+  CHECK_EQ(keypadEntrySpec(InputMode::SweepStartEntry)->name, "START");
+  CHECK_EQ(keypadEntrySpec(InputMode::SweepStopEntry)->name, "STOP");
+
+  Fake f;
+  KeypadInput in(f);
+  in.beginEntry(InputMode::SweepStartEntry);
+  tap(in, '3', 1000);
+  tap(in, '*', 1100);
+  tap(in, '5', 1200);
+  tap(in, 'D', 1300);
+  CHECK_EQ(in.mode(), InputMode::Normal);
+  CHECK_LOG(f, "digit SweepStartEntry 3 3", "digit SweepStartEntry * 3*", "digit SweepStartEntry 5 3*5",
+            "commit SweepStartEntry [3*5] vfo0");
 }
 
 // --- Entry timeout ---------------------------------------------------------------------
@@ -1538,7 +1569,7 @@ TEST(input_normal_mode_does_not_time_out) {
 
 // Every mode that takes digits needs its row in kEntries: the keys use it.
 TEST(input_every_entry_mode_has_an_entry_spec) {
-  for (uint8_t m = 0; m <= (uint8_t)InputMode::RowEntry; ++m) {
+  for (uint8_t m = 0; m <= (uint8_t)InputMode::SweepStopEntry; ++m) {
     const InputMode mode = (InputMode)m;
     const EntrySpec *entry = keypadEntrySpec(mode);
     if (mode == InputMode::Normal || mode == InputMode::ChoiceSelect) {

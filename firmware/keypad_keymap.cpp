@@ -299,11 +299,32 @@ KeyBinding bank9(char key) {
   }
 }
 
+// The NanoVNA's Bank 1. Bank 2 is kept for calibration.
+KeyBinding nanoVnaBank1(char key) {
+  switch (key) {
+    case '0': return bind(measureNanoVna, nullptr, repeatNanoVnaResult);
+    case '1': return bind(queryNanoVnaStart, beginNanoVnaStartEntry);
+    case '2': return bind(queryNanoVnaStop, beginNanoVnaStopEntry);
+    case '3': return bind(queryNanoVnaRange);
+    case '6': return bind(queryNanoVnaCalibration, beginNanoVnaCalibrationSelect);
+    // As the volume keys of Bank 9: 7 down, 8 up.
+    case '7': return bind([] { stepNanoVnaBand(-1); });
+    case '8': return bind([] { stepNanoVnaBand(1); });
+    case '9': return bind(testNanoVna);
+    default: return {};
+  }
+}
+
 #undef SEND
 
 }  // namespace
 
 KeyBinding keymapLookup(const KeypadTraits& traits, uint8_t bank, char key) {
+  if (traits.layout == L::NanoVna) {
+    if (bank == 1) return nanoVnaBank1(key);
+    if (bank == 9) return bank9(key);
+    return {};
+  }
   switch (bank) {
     case 1: return bank1(traits, key);
     case 2: return bank2(traits, key);
