@@ -2,15 +2,14 @@
 
 ## Status
 
-**Experimental, not yet tested with this firmware.** Profile 30 (`NanoVNA`) measures the SWR of an
-antenna over a band and says the best and worst match:
+**Experimental. Tested with a NanoVNA-F V2** (firmware 0.6.0): the console commands, a full
+scan, and the keys and their speech. Profile 30 (`NanoVNA`) measures the SWR of an antenna over a
+band and says the best and worst match:
 
 > "sweep" … "best match 1 point 2 1 at 3 point 6 1 2, worst match 3 point 4 0 at 3 point 8 0 0"
 
 It was built from the NanoVNA-F V2 user guide (SYSJOINT, V2.0, chapter 7 "Console Command") and
-cross-checked with DiSlord's NanoVNA-D firmware source. A NanoVNA-F V2 has been connected to the
-USB host of the QMX branch, where it enumerated and answered `info`. This profile has not met it
-yet.
+cross-checked with DiSlord's NanoVNA-D firmware source. The other models are not tested.
 
 Supported: the NanoVNAs with the text shell (`ch>` prompt): NanoVNA, -H, -H4, -F and -F V2. The
 NanoVNA V2 / V2Plus4 (S-A-A-2) uses a binary protocol and does not work with this profile.
@@ -138,8 +137,7 @@ On the second USB socket's console, with the NanoVNA-F V2 on the native socket:
    stop 3 point 7". Measure.
 9. Bank 1 `5` long, `0`, `D`: "calibration 0 ok" if slot 0 holds a calibration. Measure. Then
    `5` long, `A`, `D`: "calibration auto".
-10. Bank 1 `0` twice quickly: "busy" the second time (or the last result, if the first had
-    ended).
+10. Bank 1 `0`, and `7` while the measurement runs: "busy".
 11. Unplug the NanoVNA during a measurement: "usb off". Plug it in again and measure.
 12. Choose another profile: the controller restarts, and the PC console is back on the native
     socket.
