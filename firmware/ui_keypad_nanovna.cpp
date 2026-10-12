@@ -23,7 +23,7 @@ void speakRange(uint32_t startHz, uint32_t stopHz) {
     const NanoVnaBand& b = nanoVnaBandAt((size_t)band);
     printKeypadStatus("BAND {} {}", (unsigned)b.wavelength, b.unit == NanoVnaBandUnit::Meters ? "m" : "cm");
     if (!g_speechEnabled) return;
-    speakToken("band");
+    speakLabel("band");
     speakNumber(String((unsigned)b.wavelength));
     speakToken(b.unit == NanoVnaBandUnit::Meters ? "meters" : "centimeters");
     return;
@@ -114,7 +114,7 @@ void onVersion(const NanoVnaResult& result) {
     speakOk();
     return;
   }
-  speakToken("version");
+  speakLabel("version");
   speakDigitsAndPoint(String(number));
 }
 
