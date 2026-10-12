@@ -66,7 +66,8 @@ to completion, and that action talks to the radio synchronously.
 | FT-8x7 fields | `ft8x7_codec.*`, `ft8x7_eeprom_map.*`, `ft8x7_model.h` | CAT frame fields, the EEPROM map per model, the FT-8x7 model from the `RadioModel`. No `Arduino.h`; `protocol_ft8x7_eeprom.*` reads the EEPROM with them |
 | Profiles | `radio_profile_types.h`, `radio_profile_table.*`, `radio_catalog.*`, `radio_profile.*` | What a radio is (connection, protocol, capabilities, command strings), the built-in radios, the active one, and switching between them. The types and the table have no `Arduino.h` |
 | Speech | `ui_speech.*`, `voice_pack*`, `audio_stretch.*` | Tokens, the audio queue, the clips in the voice pack partition, and the speech speed (time-stretch). `voice_pack_format.*` and `audio_stretch.*` have no `Arduino.h` |
-| Settings | `radio_prefs.*` | NVS: profile, volume, tuning speech, CI-V address and baud per slot |
+| Settings | `radio_prefs.*` | NVS: profile, volume, tuning speech, CI-V address and baud per slot, the NanoVNA setup |
+| NanoVNA | `nanovna_codec.*`, `nanovna_client.*`, `ui_keypad_nanovna.cpp` | Not a radio: its text shell (the codec has no `Arduino.h`), the jobs `pollNanoVna()` runs without blocking, and its Bank 1 keys |
 
 **Five concepts to learn first:**
 
@@ -74,7 +75,8 @@ to completion, and that action talks to the radio synchronously.
   built in (`kProfiles` in `radio_profile_table.cpp`); `currentProfile()` is
   the active one.
 - **Protocol** (`ProtocolType`): `PROTO_CIV`, `PROTO_KENWOOD_ASCII`,
-  `PROTO_ELECRAFT_ASCII`, `PROTO_YAESU_FTDX_ASCII`, `PROTO_YAESU_FT8X7`.
+  `PROTO_ELECRAFT_ASCII`, `PROTO_YAESU_FTDX_ASCII`, `PROTO_YAESU_FT8X7`, and
+  `PROTO_NANOVNA` for the NanoVNA, which has no radio function.
 - **Capabilities** (`RadioCapabilities`, `sp.caps.getX` / `setX`): what this
   profile may do. Set in the profile table.
 - **`live`** (`LiveState`): what we last knew about the radio, with a

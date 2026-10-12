@@ -10,6 +10,9 @@ Columns:
 - **Kenwood, Elecraft, other FTDX**: TS-480, KX2, KX3, FT-891 and other Yaesu FTDX radios
 - **FT-817/818** and **FT-857/897**: the Yaesu FT-8x7 radios
 
+The NanoVNA profile is not a radio and has a layout of its own; see
+[NanoVNA](#nanovna-profile-30) at the end.
+
 Besides the functions, the tables say:
 
 - **free**: the key has no action on this bank for this radio; pressing it beeps
@@ -195,7 +198,7 @@ profile's defaults.
 
 ## Bank 9 - Profile and Speech
 
-The same on every radio.
+The same on every radio, and on the NanoVNA.
 
 | Key | All radios |
 |---|---|
@@ -218,3 +221,25 @@ The same on every radio.
 | `C` short | previous profile |
 
 `2` and `3` are free.
+
+## NanoVNA (profile 30)
+
+Bank 1 is the NanoVNA bank and Bank 9 is as above. Every other bank is free. Details in
+[docs/radios/nanovna.md](radios/nanovna.md).
+
+| Key | NanoVNA |
+|---|---|
+| `0` short | measure: best and worst SWR and their frequencies |
+| `0` double | last result |
+| `1` short | sweep start |
+| `1` long | sweep start entry in MHz |
+| `2` short | sweep stop |
+| `2` long | sweep stop entry in MHz |
+| `3` short | sweep range: band preset, or start and stop |
+| `6` short | calibration slot |
+| `6` long | calibration select: `0`–`6` slot, `A` auto |
+| `7` short | previous band preset |
+| `8` short | next band preset |
+| `9` short | connection test (firmware version) |
+
+`4`, `5` and `A`–`C` are free.

@@ -21,6 +21,7 @@ It is meant as a short engineering overview, not as a promise list.
 | Yaesu FTDX101D | ASCII CAT | implemented | implemented | implemented | implemented | implemented | implemented | assisted field test pending | Uses the same first-block documentation as FTDX10. |
 | Yaesu FTDX101MP | ASCII CAT | implemented | implemented | implemented | implemented | implemented | implemented | assisted field test pending | Uses the same first-block documentation as FTDX10. |
 | QRP Labs QMX / QMX+ | Kenwood ASCII CAT over USB | implemented | implemented | implemented | implemented | implemented | implemented | not tested on a radio | Experimental. USB host on the native USB socket. The S-meter reply scale is not yet confirmed on a radio; power and SWR are read only while transmitting. See `docs/radios/qrp-labs-qmx.md`. |
+| NanoVNA (not a radio) | NanoVNA text shell over USB | n/a | n/a | n/a | n/a | sweep: best and worst SWR | implemented | not tested with this firmware | Experimental. NanoVNA, -H, -H4, -F, -F V2 (not the V2/V2Plus4). USB host on the native USB socket. Band presets, calibration slot, version test. See `docs/radios/nanovna.md`. |
 
 ## Profiles and baud rates
 
@@ -51,6 +52,7 @@ speaks or sets the CI-V address. Bank 9 `A` double press (console `PROFILE RESET
 | 17 | Icom IC-705 | CI-V jack | 9600 | 4800, 9600, 19200, 38400, 57600, 115200 |
 | 18 | Icom IC-7760 | CI-V jack | 19200 | 4800, 9600, 19200, 38400, 57600, 115200 |
 | 21 | QRP Labs QMX | native USB socket (USB host) | 9600 | 9600 (ignored by the radio) |
+| 30 | NanoVNA | native USB socket (USB host) | 115200 | 115200 (ignored by the device) |
 
 The Icom CI-V jack itself goes up to 19200 baud on the IC-7300, IC-705 and IC-706; HamTRC
 still offers the faster rates on every CI-V profile.
