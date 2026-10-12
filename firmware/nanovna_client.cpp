@@ -329,7 +329,11 @@ const char* nanoVnaStatusName(NanoVnaStatus status) {
 }
 
 void nanoVnaPrintStatus(Print& out) {
-  out.printf("NanoVNA: %s, %s\n", linkReady() ? "connected" : "not connected", s_job.active ? "busy" : "idle");
+  if (!nanoVnaActive()) {
+    out.println("NanoVNA: profile 30 is not active");
+  } else {
+    out.printf("NanoVNA: %s, %s\n", linkReady() ? "connected" : "not connected", s_job.active ? "busy" : "idle");
+  }
   out.printf("  range: %lu - %lu Hz", (unsigned long)s_setup.startHz, (unsigned long)s_setup.stopHz);
   const int band = nanoVnaBandMatching(s_setup.startHz, s_setup.stopHz);
   if (band >= 0) {
