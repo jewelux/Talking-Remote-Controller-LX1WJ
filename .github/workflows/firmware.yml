@@ -33,6 +33,8 @@ jobs:
 
       - name: QMX unit tests
         run: make -C tests/qmx
+      - name: NanoVNA unit tests
+        run: make -C tests/nanovna
 
       - name: Audio unit tests
         run: make -C tests/audio
