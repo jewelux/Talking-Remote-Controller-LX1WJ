@@ -3,7 +3,8 @@
 #include <Arduino.h>
 
 // A radio on the ESP32-S3 native USB socket (RadioPort::UsbHost). HamTRC is the USB host and talks
-// to the first CDC-ACM serial port the radio offers, the CAT port of a QRP Labs QMX. Starting the
+// to the first CDC-ACM serial port the radio offers: the CAT port of a QRP Labs QMX, or the shell
+// of a NanoVNA (which also answers VNA commands on Serial0, see nanovna_client.h). Starting the
 // host takes the socket from the PC console until the next restart; the console on the UART0
 // socket (Serial0) still answers HAMTRC?, USB?, SM?, and PO? and SWR? for the QMX.
 

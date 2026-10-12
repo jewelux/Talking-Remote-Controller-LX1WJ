@@ -19,6 +19,7 @@
 #include "radio_runtime.h"
 #include "transport_serial.h"
 #include "transport_usb_host.h"
+#include "nanovna_client.h"
 #include "engine_civ.h"
 #include "engine_kenwood.h"
 #include "ui_console.h"
@@ -86,6 +87,7 @@ void setup() {
   g_bootSpeakAtMs = millis() + 900;
 
   initKeypadUi();
+  initNanoVna();
   printHelp();
 
   // A USB radio is read when its serial port opens (pollRadioLinkEvents).
@@ -109,6 +111,7 @@ void loop() {
   pollFrequencyIfDue();
   speakPendingFreqIfIdle();
   pollSMeterIfDue();
+  pollNanoVna();
   pollKeypadUi();
 
   String line = readLine();

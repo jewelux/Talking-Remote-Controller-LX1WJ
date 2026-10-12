@@ -118,3 +118,25 @@ void clearConnectionOverrideInNvs(uint8_t id) {
   if (prefs.isKey(baudKey.c_str())) prefs.remove(baudKey.c_str());
   prefs.end();
 }
+
+bool loadNanoVnaSetupFromNvs(uint32_t& startHz, uint32_t& stopHz, int8_t& calSlot) {
+  Preferences prefs;
+  if (!prefs.begin("talkingrc", false)) return false;
+  const bool saved = prefs.isKey("vnastart") && prefs.isKey("vnastop") && prefs.isKey("vnacal");
+  if (saved) {
+    startHz = prefs.getULong("vnastart", startHz);
+    stopHz = prefs.getULong("vnastop", stopHz);
+    calSlot = prefs.getChar("vnacal", calSlot);
+  }
+  prefs.end();
+  return saved;
+}
+
+void saveNanoVnaSetupToNvs(uint32_t startHz, uint32_t stopHz, int8_t calSlot) {
+  Preferences prefs;
+  if (!prefs.begin("talkingrc", false)) return;
+  prefs.putULong("vnastart", startHz);
+  prefs.putULong("vnastop", stopHz);
+  prefs.putChar("vnacal", calSlot);
+  prefs.end();
+}

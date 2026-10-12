@@ -8,6 +8,7 @@
 #include "radio_runtime.h"
 #include "radio_state.h"
 #include "transport_usb_host.h"
+#include "nanovna_client.h"
 #include "ui_speech.h"
 #include "radio_utils.h"
 #include "debug_log.h"
@@ -198,7 +199,9 @@ void pollRadioLinkEvents() {
       s_usbNoSerialPending = false;
       resetLiveRadioState();
       // A NanoVNA is not a radio: nothing is read from it until a key asks.
-      if (currentProtocolType() != PROTO_NANOVNA) {
+      if (currentProtocolType() == PROTO_NANOVNA) {
+        nanoVnaLinkOpened();
+      } else {
         // Auto-info off, in case a PC program left it on: its IF lines would answer our queries.
         (void)asciiPacketSendCommand("AI0;");
         delay(10);
@@ -209,6 +212,7 @@ void pollRadioLinkEvents() {
       break;
     case UsbLinkEvent::SerialGone:
       resetLiveRadioState();
+      nanoVnaLinkClosed();
       speakUsbState("off");
       break;
     case UsbLinkEvent::NoSerialPort:

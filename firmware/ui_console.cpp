@@ -19,6 +19,7 @@
 #include "radio_utils.h"
 #include "transport_serial.h"
 #include "transport_usb_host.h"
+#include "nanovna_client.h"
 #include "ui_features.h"
 #include "ui_speech.h"
 #include "ui_console_support.h"
@@ -827,6 +828,7 @@ void printHelp() {
   Serial.println("    TUNINGSPEECH OFF | ON | TOGGLE");
   Serial.println("    TUNINGSPEECH?");
   Serial.println("    USB?  (USB host and the radio on the native USB socket; also on the UART socket, as are SM? and, for the QMX, PO? and SWR?)");
+  Serial.println("    VNA? | VNA <shell command> | VNASCAN  (NanoVNA profile, on the UART socket only)");
   Serial.println("    VERBOSE OFF | ON | TOGGLE");
   Serial.println("    VERBOSE?");
   Serial.println("    VOICE <name>");
@@ -3484,11 +3486,47 @@ static bool handleHamtrcServiceCommand(const String& upper, Print& output) {
   return false;
 }
 
+// The end of a NanoVNA job started from Serial0, after its own lines.
+static void reportNanoVnaConsoleJob(const NanoVnaResult& result) {
+  Serial0.print("VNA -> ");
+  Serial0.println(nanoVnaStatusName(result.status));
+}
+
+static void reportNanoVnaNotStarted(NanoVnaStatus status, Print& output) {
+  if (status == NanoVnaStatus::Ok) return;
+  output.print("VNA -> ");
+  output.println(nanoVnaStatusName(status));
+}
+
+// Serial0 is the console while the USB host holds the native socket, so the NanoVNA answers here:
+// VNA? the setup and last result, VNASCAN a measurement as on the keys, VNA <command> any shell
+// command as typed (the F V2 has upper-case ones, such as SN), its reply printed.
+static bool handleNanoVnaServiceCommand(const String& line, const String& upper, Print& output) {
+  if (upper == "VNA?") {
+    nanoVnaPrintStatus(output);
+    return true;
+  }
+  if (upper == "VNASCAN") {
+    reportNanoVnaNotStarted(nanoVnaStartMeasure(reportNanoVnaConsoleJob), output);
+    return true;
+  }
+  if (!upper.startsWith("VNA ")) return false;
+  String command = line.substring(4);
+  command.trim();
+  if (!command.length()) {
+    output.println("VNA -> usage: VNA <shell command>");
+    return true;
+  }
+  reportNanoVnaNotStarted(nanoVnaStartRaw(command.c_str(), output, reportNanoVnaConsoleJob), output);
+  return true;
+}
+
 bool processHamtrcServiceCommand(String line, Print& output) {
   line.trim();
   if (!line.length()) return false;
   String upper = upperCopy(line);
   if (handleHamtrcServiceCommand(upper, output)) return true;
+  if (handleNanoVnaServiceCommand(line, upper, output)) return true;
   // Only Serial0 comes here. While the USB host holds the native socket, this is the one way to
   // read the radio's meters (the QMX's replies are not yet confirmed on a radio).
   const bool qmxTxMeter = currentRadioModel() == RadioModel::Qmx && (upper == "PO?" || upper == "SWR?");

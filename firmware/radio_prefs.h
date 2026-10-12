@@ -19,3 +19,7 @@ bool loadConnectionOverrideFromNvs(uint8_t id, uint8_t& civAddr, uint32_t& baud)
 void saveConnectionOverrideToNvs(uint8_t id, uint8_t civAddr, uint32_t baud);
 // Forgets the CI-V address and baud saved for slot id.
 void clearConnectionOverrideInNvs(uint8_t id);
+// The NanoVNA sweep range and calibration slot (nanovna_client.*). Leaves them as they are, and
+// returns false, when none were saved.
+bool loadNanoVnaSetupFromNvs(uint32_t& startHz, uint32_t& stopHz, int8_t& calSlot);
+void saveNanoVnaSetupToNvs(uint32_t startHz, uint32_t stopHz, int8_t calSlot);
