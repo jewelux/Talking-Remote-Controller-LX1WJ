@@ -30,6 +30,7 @@ static constexpr SpokenLabel kSpokenLabels[] = {
   {"AGC", "agc"},
   {"ANT", "antenna"},
   {"ATT", "attenuator"},
+  {"BATTERY", "battery"},
   {"BAUD", "baud"},
   {"BSTACK", "band stack"},
   {"CAL", "calibration"},

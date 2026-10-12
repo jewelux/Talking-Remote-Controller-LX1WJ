@@ -7,7 +7,7 @@
 
 namespace {
 
-enum class Step : uint8_t { Sync, Recall, Sweep, Scan, Resume, Version, Raw };
+enum class Step : uint8_t { Sync, Recall, Sweep, Scan, Resume, Version, Battery, Raw };
 
 constexpr size_t kMaxSteps = 6;
 constexpr size_t kMaxCommand = 64;
@@ -74,6 +74,7 @@ void buildCommand(Step step, char* out, size_t outLen) {
     case Step::Scan: (void)nanoVnaScanCommand(s_job.result.startHz, s_job.result.stopHz, out, outLen); break;
     case Step::Resume: strlcpy(out, "resume", outLen); break;
     case Step::Version: strlcpy(out, "version", outLen); break;
+    case Step::Battery: strlcpy(out, "vbat", outLen); break;
     case Step::Raw: strlcpy(out, s_job.rawCommand, outLen); break;
   }
 }
@@ -123,6 +124,8 @@ void stepDone() {
       s_job.failure = NanoVnaStatus::DeviceError;
     } else if (step == Step::Scan && s_job.result.summary.points == 0) {
       s_job.failure = NanoVnaStatus::NoData;
+    } else if (step == Step::Battery && s_job.result.millivolts == 0) {
+      s_job.failure = NanoVnaStatus::NoData;
     }
   }
   uint8_t next = s_job.index + 1;
@@ -166,6 +169,10 @@ void handleLine(const char* line) {
       }
       return;
     }
+    case Step::Battery:
+      if (line[0]) Serial0.printf("[VNA] < %s\n", line);
+      if (!s_job.result.millivolts) (void)nanoVnaParseMillivolts(line, s_job.result.millivolts);
+      return;
     case Step::Version:
       if (line[0] && !s_job.result.text[0]) strlcpy(s_job.result.text, line, sizeof(s_job.result.text));
       if (line[0]) Serial0.printf("[VNA] < %s\n", line);
@@ -297,6 +304,11 @@ NanoVnaStatus nanoVnaStartMeasure(NanoVnaDone done) {
 
 NanoVnaStatus nanoVnaStartVersion(NanoVnaDone done) {
   const Step steps[] = {Step::Version};
+  return startJob(steps, 1, done);
+}
+
+NanoVnaStatus nanoVnaStartBattery(NanoVnaDone done) {
+  const Step steps[] = {Step::Battery};
   return startJob(steps, 1, done);
 }
 

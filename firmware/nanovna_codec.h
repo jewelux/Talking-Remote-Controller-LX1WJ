@@ -101,6 +101,11 @@ bool nanoVnaScanCommand(uint32_t startHz, uint32_t stopHz, char* out, size_t out
 bool nanoVnaSweepCommand(uint32_t startHz, uint32_t stopHz, char* out, size_t outLen);
 bool nanoVnaRecallCommand(uint8_t slot, char* out, size_t outLen);
 
+// The battery in a "vbat" reply, "4256 mV" (the unit may be missing). False for anything else.
+bool nanoVnaParseMillivolts(const char* line, uint32_t& millivoltsOut);
+// Volts to 10 mV: "4.26" for 4256.
+void nanoVnaFormatVolts(uint32_t millivolts, char* out, size_t outLen);
+
 // The version number in a "version" reply: the first word of digits and points, a leading 'v'
 // dropped ("1.0.3" in "NanoVNA-F V2 v1.0.3"). False when there is none.
 bool nanoVnaVersionNumber(const char* line, char* out, size_t outLen);

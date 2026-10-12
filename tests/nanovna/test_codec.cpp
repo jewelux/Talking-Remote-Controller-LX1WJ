@@ -243,3 +243,32 @@ TEST(version_number_prefers_a_dotted_one) {
   CHECK(!nanoVnaVersionNumber("NanoVNA", v, sizeof(v)));
   CHECK(!nanoVnaVersionNumber("x1 y2", v, sizeof(v)));
 }
+
+TEST(battery_reply_in_millivolts) {
+  uint32_t mv = 0;
+  CHECK(nanoVnaParseMillivolts("4256 mV", mv));
+  CHECK_EQ(mv, 4256u);
+  CHECK(nanoVnaParseMillivolts(" 3700mV ", mv));
+  CHECK_EQ(mv, 3700u);
+  CHECK(nanoVnaParseMillivolts("4100", mv));
+  CHECK_EQ(mv, 4100u);
+  CHECK(!nanoVnaParseMillivolts("", mv));
+  CHECK(!nanoVnaParseMillivolts("vbat", mv));
+  CHECK(!nanoVnaParseMillivolts("4256 V", mv));
+  CHECK(!nanoVnaParseMillivolts("4256 mV low", mv));
+  CHECK(!nanoVnaParseMillivolts("1234567 mV", mv));
+}
+
+TEST(volts_to_10_mv) {
+  char v[12];
+  nanoVnaFormatVolts(4256, v, sizeof(v));
+  CHECK_EQ(v, "4.26");
+  nanoVnaFormatVolts(4000, v, sizeof(v));
+  CHECK_EQ(v, "4.00");
+  nanoVnaFormatVolts(3994, v, sizeof(v));
+  CHECK_EQ(v, "3.99");
+  nanoVnaFormatVolts(3995, v, sizeof(v));
+  CHECK_EQ(v, "4.00");
+  nanoVnaFormatVolts(50, v, sizeof(v));
+  CHECK_EQ(v, "0.05");
+}

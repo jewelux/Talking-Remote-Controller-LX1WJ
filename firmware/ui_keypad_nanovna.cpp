@@ -118,6 +118,20 @@ void onVersion(const NanoVnaResult& result) {
   speakDigitsAndPoint(String(number));
 }
 
+void onBattery(const NanoVnaResult& result) {
+  if (result.status != NanoVnaStatus::Ok) {
+    reportNanoVnaStatus("BATTERY", result.status, result.text);
+    return;
+  }
+  char volts[12];
+  nanoVnaFormatVolts(result.millivolts, volts, sizeof(volts));
+  printKeypadStatus("BATTERY: {} V", volts);
+  if (!g_speechEnabled) return;
+  speakLabel("battery");
+  speakNumber(String(volts));
+  speakToken("volts");
+}
+
 void speakCalibration(int8_t slot) {
   if (slot == kNanoVnaCalAuto) {
     printKeypadStatus("CAL: auto");
@@ -273,6 +287,13 @@ void testNanoVna() {
   prepareKeypadSpeechResponse();
   const NanoVnaStatus status = nanoVnaStartVersion(onVersion);
   if (status != NanoVnaStatus::Ok) reportNanoVnaStatus("VERSION", status);
+}
+
+void queryNanoVnaBattery() {
+  printKeypadAction("BATTERY?");
+  prepareKeypadSpeechResponse();
+  const NanoVnaStatus status = nanoVnaStartBattery(onBattery);
+  if (status != NanoVnaStatus::Ok) reportNanoVnaStatus("BATTERY", status);
 }
 
 void keypadCommitNanoVnaFrequency(InputMode mode, const char* digits) {

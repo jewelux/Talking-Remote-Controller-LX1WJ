@@ -340,12 +340,13 @@
   - `6` says the calibration slot; held, it picks a saved slot (`0`–`6`) or `A` for the
     NanoVNA's own calibration
   - `9` tests the connection and says the NanoVNA's firmware version
+  - `4` says the NanoVNA's battery voltage, for example "battery 4.26 volts"
 - the NanoVNA's screen shows the range just measured
 - the range and calibration slot are kept when the controller is switched off
 - on the second USB socket's console, `VNA?` shows the setup and last result, `VNASCAN`
   measures, and `VNA <command>` sends any NanoVNA command and prints its reply
 - new spoken words: best, worst, match, at, start, stop, sweep, meters, centimeters,
-  calibration, version, busy and nano; flash the new voice pack to hear them
+  calibration, version, busy, battery, volts and nano; flash the new voice pack to hear them
 - details in `docs/radios/nanovna.md`
 
 ### Firmware updates

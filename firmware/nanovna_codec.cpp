@@ -223,6 +223,28 @@ bool nanoVnaRecallCommand(uint8_t slot, char* out, size_t outLen) {
   return fits(snprintf(out, outLen, "recall %u", (unsigned)slot), outLen);
 }
 
+bool nanoVnaParseMillivolts(const char* line, uint32_t& millivoltsOut) {
+  const char* p = skipSpaces(line);
+  uint32_t mv = 0;
+  size_t digits = 0;
+  for (; isDigit(*p); ++p, ++digits) {
+    if (digits == 6) return false;
+    mv = mv * 10 + (uint32_t)(*p - '0');
+  }
+  if (!digits) return false;
+  p = skipSpaces(p);
+  if ((p[0] | 0x20) == 'm' && (p[1] | 0x20) == 'v') p = skipSpaces(p + 2);
+  if (*p) return false;
+  millivoltsOut = mv;
+  return true;
+}
+
+void nanoVnaFormatVolts(uint32_t millivolts, char* out, size_t outLen) {
+  if (!out || !outLen) return;
+  const uint32_t centivolts = (millivolts + 5) / 10;
+  snprintf(out, outLen, "%lu.%02lu", (unsigned long)(centivolts / 100), (unsigned long)(centivolts % 100));
+}
+
 bool nanoVnaVersionNumber(const char* line, char* out, size_t outLen) {
   if (!out || !outLen) return false;
   // A dotted number first, so that the "2" of "F_V2" is not taken for the version.

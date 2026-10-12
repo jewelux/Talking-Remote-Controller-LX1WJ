@@ -28,6 +28,8 @@ struct NanoVnaResult {
   uint32_t startHz = 0;
   uint32_t stopHz = 0;
   NanoVnaSweepSummary summary;
+  // Battery: the vbat reply.
+  uint32_t millivolts = 0;
   // Version: the reply's first line. DeviceError: the device's error line.
   char text[64] = "";
 };
@@ -67,6 +69,8 @@ const NanoVnaResult* nanoVnaLastMeasure();
 // so its screen shows it, the scan, and resume, which also runs after a failed scan.
 NanoVnaStatus nanoVnaStartMeasure(NanoVnaDone done);
 NanoVnaStatus nanoVnaStartVersion(NanoVnaDone done);
+// "vbat": the battery voltage; NoData when the reply has no number.
+NanoVnaStatus nanoVnaStartBattery(NanoVnaDone done);
 // Recall of calibration slot (0..kNanoVnaCalSlots-1) alone.
 NanoVnaStatus nanoVnaStartRecall(uint8_t slot, NanoVnaDone done);
 // For the console: command as it is, each reply line printed to out.

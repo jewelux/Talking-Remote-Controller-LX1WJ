@@ -232,6 +232,7 @@ void stepNanoVnaBand(int d) { record("stepNanoVnaBand(%d)", d); }
 void queryNanoVnaCalibration() { record("queryNanoVnaCalibration"); }
 void beginNanoVnaCalibrationSelect() { record("beginNanoVnaCalibrationSelect"); }
 void testNanoVna() { record("testNanoVna"); }
+void queryNanoVnaBattery() { record("queryNanoVnaBattery"); }
 
 // Records the key the action is bound to.
 void reportFtdx10HiddenKey() { record("reportFtdx10HiddenKey(%s)", g_key); }
@@ -323,6 +324,7 @@ constexpr NanoVnaKey kNanoVnaKeys[] = {
     {1, '1', "queryNanoVnaStart", "beginNanoVnaStartEntry", "-"},
     {1, '2', "queryNanoVnaStop", "beginNanoVnaStopEntry", "-"},
     {1, '3', "queryNanoVnaRange", "none", "-"},
+    {1, '4', "queryNanoVnaBattery", "none", "-"},
     {1, '6', "queryNanoVnaCalibration", "beginNanoVnaCalibrationSelect", "-"},
     {1, '9', "testNanoVna", "none", "-"},
     {1, 'B', "stepNanoVnaBand(1)", "none", "-"},

@@ -177,6 +177,8 @@ centimeters
 calibration
 version
 busy
+battery
+volts
 
 # Vendors
 elecraft
