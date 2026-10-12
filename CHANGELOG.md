@@ -327,27 +327,11 @@
   `docs/hardware_wiring.md`)
 - not yet: VFO B, split, RIT, PTT. Details in `docs/radios/qrp-labs-qmx.md`
 
-### NanoVNA over USB (new, experimental, not yet tested with this firmware)
+### NanoVNA over USB (new, experimental)
 
-- new built-in profile 30, said as "nano v n a", measures the SWR of an antenna with a NanoVNA
-  (NanoVNA, -H, -H4, -F, -F V2) on the controller's native USB socket
-- the NanoVNA has a key layout of its own. Bank 1 does all of it, and Bank 9 is as on the radios:
-  - Bank 1 `0` sweeps the range and says the best and worst match, for example "best match
-    1.21 at 3.612, worst match 3.40 at 3.800". A double press says the last result again
-  - `1` and `2` say the sweep start and stop; held, they take a frequency in MHz
-  - `3` says the range, `B` and `C` step up and down through the IARU Region 1 bands from
-    160 m to 70 cm
-  - `5` says the calibration slot; held, it picks a saved slot (`0`–`6`) or `A` for the
-    NanoVNA's own calibration
-  - `9` tests the connection and says the NanoVNA's firmware version
-  - `8` says the NanoVNA's battery voltage, for example "battery 4.26 volts"
-- the NanoVNA's screen shows the range just measured
-- the range and calibration slot are kept when the controller is switched off
-- on the second USB socket's console, `VNA?` shows the setup and last result, `VNASCAN`
-  measures, and `VNA <command>` sends any NanoVNA command and prints its reply
-- new spoken words: best, worst, match, at, start, stop, sweep, meters, centimeters,
-  calibration, version, busy, battery, volts and nano; flash the new voice pack to hear them
-- details in `docs/radios/nanovna.md`
+- new built-in profile 30 for a NanoVNA on the controller's native USB socket: it measures the SWR
+  of an antenna over a band and says the best and worst match. Tested with a NanoVNA-F V2. Details
+  in `docs/radios/nanovna.md`
 
 ### Firmware updates
 
