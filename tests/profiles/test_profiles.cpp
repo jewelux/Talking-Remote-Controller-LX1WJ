@@ -35,11 +35,12 @@ TEST(every_radio_offers_its_default_baud) {
   }
 }
 
+// The NanoVNA's vendor name says it all ("nano v n a").
 TEST(every_radio_has_a_name_and_voice_digits) {
   for (size_t i = 0; i < profileCount(); ++i) {
     const RadioProfile& p = profileAt(i);
     CHECK(p.name[0] != '\0');
-    CHECK(p.voiceDigits[0] != '\0');
+    if (p.vendor != VoiceVendor::NanoVna) CHECK(p.voiceDigits[0] != '\0');
     for (const char* c = p.voiceDigits; *c; ++c) CHECK((*c >= '0' && *c <= '9') || (*c >= 'a' && *c <= 'z'));
   }
 }
@@ -65,7 +66,7 @@ TEST(ascii_radios_have_freq_and_mode_commands) {
 TEST(non_civ_radios_have_mode_codes) {
   for (size_t i = 0; i < profileCount(); ++i) {
     const RadioProfile& p = profileAt(i);
-    if (p.protocol == PROTO_CIV) continue;
+    if (p.protocol == PROTO_CIV || p.protocol == PROTO_NANOVNA) continue;
     CHECK(p.modes->lsb[0] != '\0');
     CHECK(p.modes->usb[0] != '\0');
   }
@@ -98,7 +99,8 @@ TEST(default_slot_is_used) {
   CHECK(profileForSlot(kDefaultProfileSlot) != nullptr);
 }
 
-// Slots 1-18 are all in use since the FT-847 took 16, and the QMX has 21; 19-20 and 22-24 are free.
+// Slots 1-18 are all in use since the FT-847 took 16, the QMX has 21 and the NanoVNA 30; 19-20
+// and 22-29 are free.
 TEST(adjacent_slot_skips_free_slots) {
   CHECK_EQ(adjacentProfileSlot(15, 1), 16);
   CHECK_EQ(adjacentProfileSlot(16, 1), 17);
@@ -107,11 +109,13 @@ TEST(adjacent_slot_skips_free_slots) {
   CHECK_EQ(adjacentProfileSlot(21, -1), 18);
   CHECK_EQ(adjacentProfileSlot(19, -1), 18);
   CHECK_EQ(adjacentProfileSlot(19, 1), 21);
+  CHECK_EQ(adjacentProfileSlot(21, 1), 30);
+  CHECK_EQ(adjacentProfileSlot(30, -1), 21);
 }
 
 TEST(adjacent_slot_wraps_around) {
-  CHECK_EQ(adjacentProfileSlot(21, 1), 1);
-  CHECK_EQ(adjacentProfileSlot(1, -1), 21);
+  CHECK_EQ(adjacentProfileSlot(30, 1), 1);
+  CHECK_EQ(adjacentProfileSlot(1, -1), 30);
 }
 
 TEST(adjacent_slot_without_direction_stays) {
@@ -215,6 +219,17 @@ TEST(qmx_is_kenwood_cat_over_usb_with_freq_mode_and_meters) {
   const ModeCodes& m = *qmx.modes;
   const char* const codes[] = {m.lsb, m.usb, m.am, m.cw, m.rtty, m.fm, m.cwr, m.rttyR, m.digi, m.pkt, m.wfm, m.digiAlso};
   for (const char* code : codes) CHECK(code[0] != '8');
+}
+
+// Not a radio: no cap, so nothing polls its shell; it is reached through nanovna_client.*.
+TEST(nanovna_is_a_shell_over_usb_with_no_radio_caps) {
+  const RadioProfile& vna = slot(30);
+  CHECK_EQ(vna.name, "NanoVNA");
+  CHECK(vna.protocol == PROTO_NANOVNA);
+  CHECK(vna.vendor == VoiceVendor::NanoVna);
+  CHECK(vna.link.port == RadioPort::UsbHost);
+  const bool* caps = reinterpret_cast<const bool*>(&vna.caps);
+  for (size_t i = 0; i < sizeof(RadioCapabilities) / sizeof(bool); ++i) CHECK(!caps[i]);
 }
 
 TEST(kx2_has_nb_and_no_rtty_code) {

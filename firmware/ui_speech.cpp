@@ -139,6 +139,7 @@ static const VoiceAlias kVoiceAliases[] = {
   {"pa", {"p", "a"}, 2},
   {"ps", {"p", "s"}, 2},
   {"qrp", {"q", "r", "p"}, 3},
+  {"nanovna", {"nano", "v", "n", "a"}, 4},
   {"notchfilter", {"notch", "filter"}, 2},
   {"vfoa", {"vfo", "a"}, 2},
   {"vfob", {"vfo", "b"}, 2},
@@ -568,6 +569,7 @@ void speakProfileIdentityFromSlot(uint8_t id, bool withOk) {
     case VoiceVendor::Elecraft: speakClipToken("elecraft"); break;
     case VoiceVendor::Xiegu: speakClipToken("xiegu"); break;
     case VoiceVendor::QrpLabs: speakToken("qrp"); break;
+    case VoiceVendor::NanoVna: speakToken("nanovna"); break;
   }
 
   playSilenceMs(80);

@@ -12,7 +12,9 @@ enum ProtocolType : uint8_t {
   PROTO_ELECRAFT_ASCII = 2,
   PROTO_YAESU_FT8X7 = 3,
   PROTO_YAESU_FTDX_ASCII = 4,
-  PROTO_YAESU_FT847 = 5  // 5-byte CAT like the FT-8x7, but its own opcodes (protocol_ft847.*)
+  PROTO_YAESU_FT847 = 5,  // 5-byte CAT like the FT-8x7, but its own opcodes (protocol_ft847.*)
+  // Not a radio: a NanoVNA's text shell (nanovna_client.*). No radio function runs on it.
+  PROTO_NANOVNA = 6
 };
 
 // Only bool members, all off unless a profile sets them: EXPERIMENTAL ON sets
@@ -115,7 +117,7 @@ struct LinkDefaults {
 };
 
 // Spoken before the profile's voice digits.
-enum class VoiceVendor : uint8_t { Icom, Yaesu, Kenwood, Elecraft, Xiegu, QrpLabs };
+enum class VoiceVendor : uint8_t { Icom, Yaesu, Kenwood, Elecraft, Xiegu, QrpLabs, NanoVna };
 
 // The radio, where code has a path for that model alone. Every other radio is
 // Generic, and its profile says all there is to know about it.

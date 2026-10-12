@@ -13,8 +13,11 @@ static RadioCapabilities allCapsOn() {
   return caps;
 }
 
+// A NanoVNA has no radio function, so experimental mode gives it none: polling would send CAT
+// to its shell.
 static void applyCaps() {
-  s_active.caps = g_experimentalCaps ? allCapsOn() : s_base->caps;
+  const bool radio = s_base->protocol != PROTO_NANOVNA;
+  s_active.caps = g_experimentalCaps && radio ? allCapsOn() : s_base->caps;
 }
 
 void selectActiveProfile(const RadioProfile& profile, uint32_t baud, uint8_t civAddr) {

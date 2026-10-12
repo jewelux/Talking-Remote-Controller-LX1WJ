@@ -18,6 +18,7 @@ const char* protocolTypeToString(ProtocolType pt) {
     case PROTO_YAESU_FT8X7: return "YAESU_FT8X7_CAT";
     case PROTO_YAESU_FTDX_ASCII: return "YAESU_FTDX_ASCII_CAT";
     case PROTO_YAESU_FT847: return "YAESU_FT847_CAT";
+    case PROTO_NANOVNA: return "NANOVNA_SHELL";
     default: return "UNKNOWN";
   }
 }
@@ -40,6 +41,7 @@ static const char* voiceVendorName(VoiceVendor vendor) {
     case VoiceVendor::Elecraft: return "elecraft";
     case VoiceVendor::Xiegu: return "xiegu";
     case VoiceVendor::QrpLabs: return "qrp labs";
+    case VoiceVendor::NanoVna: return "nanovna";
   }
   return "?";
 }

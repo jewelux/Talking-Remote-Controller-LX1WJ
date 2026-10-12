@@ -137,6 +137,12 @@ constexpr ModeCodes kQmxModes = {
     .lsb = "1", .usb = "2", .am = "5", .cw = "3", .cwr = "7", .digi = "9", .digiAlso = "6",
 };
 
+// --- NanoVNA (text shell over USB) ---------------------------------------------
+
+// Not a radio: no caps, so nothing polls its shell or sends it CAT. The keypad and the console
+// reach it through nanovna_client.*. Its virtual COM port ignores the baud.
+constexpr uint32_t kNanoVnaBauds[] = {115200};
+
 // --- Yaesu FT-817, FT-818, FT-857, FT-897 (5-byte CAT) -----------------------
 
 constexpr uint32_t kFt8x7Bauds[] = {4800, 9600, 38400};
@@ -279,6 +285,7 @@ constexpr ModeCodes kYaesuAsciiModes = {
 //   19-20   Kenwood and Elecraft (TS-590, K3/K3S)
 //   22      Xiegu and other compact radios (G90, X6200)
 //   23-24   experimental and protocol test profiles
+//   31-39   other test equipment
 
 constexpr RadioProfile kProfiles[] = {
     {.slot = 1, .name = "Icom IC-7300", .vendor = VoiceVendor::Icom, .voiceDigits = "7300",
@@ -357,6 +364,8 @@ constexpr RadioProfile kProfiles[] = {
      .model = RadioModel::Qmx, .protocol = PROTO_KENWOOD_ASCII,
      .link = {.port = RadioPort::UsbHost, .baud = 9600, .bauds = kQmxBauds},
      .caps = kQmxCaps, .commands = &kQmxCommands, .modes = &kQmxModes},
+    {.slot = 30, .name = "NanoVNA", .vendor = VoiceVendor::NanoVna, .protocol = PROTO_NANOVNA,
+     .link = {.port = RadioPort::UsbHost, .baud = 115200, .bauds = kNanoVnaBauds}},
 };
 
 constexpr size_t kProfileCount = sizeof(kProfiles) / sizeof(kProfiles[0]);
@@ -399,10 +408,10 @@ constexpr bool asciiRadiosHaveFreqAndModeCommands() {
   return true;
 }
 
-// ASCII and FT-8x7 radios send the mode as the radio's own code.
+// ASCII and FT-8x7 radios send the mode as the radio's own code. A NanoVNA has no mode.
 constexpr bool codedRadiosHaveModeCodes() {
   for (const RadioProfile& p : kProfiles) {
-    if (p.protocol == PROTO_CIV) continue;
+    if (p.protocol == PROTO_CIV || p.protocol == PROTO_NANOVNA) continue;
     if (!p.modes->lsb[0] || !p.modes->usb[0]) return false;
   }
   return true;
