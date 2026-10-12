@@ -28,6 +28,8 @@ bool usbHostSerialReady();
 
 size_t usbHostAvailable();
 int usbHostRead();
+// Up to len bytes that already came, without waiting; how many.
+size_t usbHostReadBytes(uint8_t* buf, size_t len);
 // Queues the bytes for the radio; 0 while no serial port is open.
 size_t usbHostWrite(const uint8_t* data, size_t len);
 // Waits until the queued bytes went out, at most timeoutMs.

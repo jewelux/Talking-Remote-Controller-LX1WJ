@@ -108,6 +108,12 @@ int serialTransportRead() {
   return g_civSerial->read();
 }
 
+size_t serialTransportReadBytes(uint8_t* buf, size_t len) {
+  if (usbLink()) return usbHostReadBytes(buf, len);
+  const size_t n = min(len, (size_t)g_civSerial->available());
+  return n ? g_civSerial->read(buf, n) : 0;
+}
+
 static bool s_ft847WriteGateOpen = false;
 
 void serialTransportSetFt847WriteGate(bool open) { s_ft847WriteGateOpen = open; }

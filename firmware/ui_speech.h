@@ -28,6 +28,9 @@ void speakTimeout();
 void speakNotAvailable();
 void playBeep();
 void voiceTest();
+// Digits and letters one by one, each its own clip: a profile's voice digits ("qmx"), a serial
+// number. Upper case is said as lower case; anything else is skipped.
+void spellCharacters(const char* s);
 void speakProfileIdentityFromSlot(uint8_t id, bool withOk);
 void speakBootProfile();
 void audioAbortNow();

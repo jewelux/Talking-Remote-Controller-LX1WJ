@@ -21,6 +21,8 @@ void serialTransportApplyProfile(const ConnectionProfile& profile);
 void serialTransportFlushInput();
 size_t serialTransportAvailable();
 int serialTransportRead();
+// Up to len bytes that already came, without waiting; how many.
+size_t serialTransportReadBytes(uint8_t* buf, size_t len);
 size_t serialTransportWrite(const uint8_t* data, size_t len);
 size_t serialTransportWriteByte(uint8_t value);
 size_t serialTransportPrint(const char* text);

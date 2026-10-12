@@ -15,8 +15,10 @@ constexpr uint32_t kSyncTimeoutMs = 1000;
 constexpr uint32_t kCommandTimeoutMs = 2000;
 // The scan replies only once the sweep is done; 101 points take a few seconds at most.
 constexpr uint32_t kScanTimeoutMs = 20000;
-// Bytes taken per pollNanoVna(), so a scan reply does not hold up the keypad.
+// Bytes taken per pollNanoVna(), so a scan reply does not hold up the keypad, in reads of a USB
+// packet each.
 constexpr size_t kPollBudgetBytes = 512;
+constexpr size_t kReadChunkBytes = 64;
 
 constexpr NanoVnaSetup kDefaultSetup = {3500000, 3800000, kNanoVnaCalAuto};
 
@@ -267,7 +269,11 @@ void pollNanoVna() {
     // Between jobs, what the device still sends (the rest of a reply that timed out) is dropped,
     // so the USB read never waits on a full buffer and the device is not held up.
     if (nanoVnaActive()) {
-      for (size_t n = 0; n < kPollBudgetBytes && serialTransportRead() >= 0; ++n) {
+      uint8_t sink[kReadChunkBytes];
+      for (size_t n = 0; n < kPollBudgetBytes;) {
+        const size_t got = serialTransportReadBytes(sink, sizeof(sink));
+        if (!got) break;
+        n += got;
       }
     }
     return;
@@ -279,22 +285,27 @@ void pollNanoVna() {
     s_job.rawOut = nullptr;
     return;
   }
-  for (size_t n = 0; n < kPollBudgetBytes && serialTransportAvailable(); ++n) {
-    const int c = serialTransportRead();
-    if (c < 0) break;
-    switch (s_reader.feed((char)c)) {
-      case NanoVnaReplyReader::Event::Line:
-        handleLine(s_reader.line());
-        break;
-      case NanoVnaReplyReader::Event::Prompt:
-        // A prompt before the echo ends an earlier command. The sync takes any prompt: the CR's
-        // own follows, and the next step skips it.
-        if (!s_job.echoSeen && s_job.steps[s_job.index] != Step::Sync) break;
-        stepDone();
-        if (!s_job.active) return;
-        break;
-      case NanoVnaReplyReader::Event::None:
-        break;
+  uint8_t chunk[kReadChunkBytes];
+  for (size_t n = 0; n < kPollBudgetBytes;) {
+    const size_t got = serialTransportReadBytes(chunk, sizeof(chunk));
+    if (!got) break;
+    n += got;
+    for (size_t i = 0; i < got; ++i) {
+      switch (s_reader.feed((char)chunk[i])) {
+        case NanoVnaReplyReader::Event::Line:
+          handleLine(s_reader.line());
+          break;
+        case NanoVnaReplyReader::Event::Prompt:
+          // A prompt before the echo ends an earlier command. The sync takes any prompt: the CR's
+          // own follows, and the next step skips it.
+          if (!s_job.echoSeen && s_job.steps[s_job.index] != Step::Sync) break;
+          stepDone();
+          // The rest of the chunk came after the last prompt: late output, dropped.
+          if (!s_job.active) return;
+          break;
+        case NanoVnaReplyReader::Event::None:
+          break;
+      }
     }
   }
   // Bytes still waiting may hold the prompt: the next pass reads them first.

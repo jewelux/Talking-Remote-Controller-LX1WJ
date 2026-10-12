@@ -545,14 +545,13 @@ void speakSpeechSpeed() {
   speakToken(speechSpeedName(g_speechSpeed));
 }
 
-// A profile's voice digits: digits, and lowercase letters for names like "qmx".
-static void playDigitsFromCString(const char* s) {
+void spellCharacters(const char* s) {
   if (!s) return;
   for (const char* p = s; *p; ++p) {
     if (*p >= '0' && *p <= '9') {
       playDigit((int)(*p - '0'));
-    } else if (*p >= 'a' && *p <= 'z') {
-      const char letter[2] = {*p, '\0'};
+    } else if ((*p >= 'a' && *p <= 'z') || (*p >= 'A' && *p <= 'Z')) {
+      const char letter[2] = {(char)(*p | 0x20), '\0'};
       speakClipToken(letter);
     }
   }
@@ -573,7 +572,7 @@ void speakProfileIdentityFromSlot(uint8_t id, bool withOk) {
   }
 
   playSilenceMs(80);
-  playDigitsFromCString(sp->voiceDigits);
+  spellCharacters(sp->voiceDigits);
   if (withOk) {
     playSilenceMs(60);
     speakClipToken("ok");

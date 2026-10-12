@@ -143,18 +143,6 @@ void onBattery(const NanoVnaResult& result) {
   speakToken("volts");
 }
 
-// Digits and letters one by one.
-void spellCharacters(const char* text) {
-  for (const char* p = text; *p; ++p) {
-    if (*p >= '0' && *p <= '9') {
-      playDigit(*p - '0');
-    } else {
-      const char letter[2] = {(char)(*p | 0x20), '\0'};
-      speakToken(letter);
-    }
-  }
-}
-
 void onSerialNumber(const NanoVnaResult& result) {
   if (result.status != NanoVnaStatus::Ok) {
     reportNanoVnaJobEnd("SN", result);

@@ -554,6 +554,10 @@ int usbHostRead() {
   return -1;
 }
 
+size_t usbHostReadBytes(uint8_t* buf, size_t len) {
+  return s_rx && len ? xStreamBufferReceive(s_rx, buf, len, 0) : 0;
+}
+
 size_t usbHostWrite(const uint8_t* data, size_t len) {
   if (!s_started || s_state != PortState::Ready || !len) return 0;
   const size_t n = xStreamBufferSend(s_tx, data, len, pdMS_TO_TICKS(50));
