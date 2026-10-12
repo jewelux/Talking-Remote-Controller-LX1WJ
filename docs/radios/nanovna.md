@@ -47,7 +47,7 @@ state on `1`. Every other bank is free (a beep). Bank 2 is kept for calibration 
 | `5` | long | calibration select: `0`–`6` a saved slot, `A` auto, then `D` |
 | `7` | short | test: "version 1 point 0 …", or "ok" |
 | `8` | short | battery voltage: "battery 4 point 2 6 volts" |
-| `9` | short | serial number, character by character (`SN`; older models: "error") |
+| `9` | short | serial number: "s n", then its characters one by one (older models: "error") |
 | `B` | short | next band |
 | `C` | short | previous band |
 

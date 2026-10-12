@@ -146,18 +146,18 @@ void spellCharacters(const char* text) {
 
 void onSerialNumber(const NanoVnaResult& result) {
   if (result.status != NanoVnaStatus::Ok) {
-    reportNanoVnaStatus("SERIAL", result.status, result.text);
+    reportNanoVnaStatus("SN", result.status, result.text);
     return;
   }
   char serial[33];
   if (!nanoVnaSerialNumber(result.text, serial, sizeof(serial))) {
-    printKeypadStatus("SERIAL -> unexpected reply: {}", result.text);
-    speakKeypadFailure("SERIAL", KeypadFailure::Error);
+    printKeypadStatus("SN -> unexpected reply: {}", result.text);
+    speakKeypadFailure("SN", KeypadFailure::Error);
     return;
   }
-  printKeypadStatus("SERIAL: {}", serial);
+  printKeypadStatus("SN: {}", serial);
   if (!g_speechEnabled) return;
-  speakLabel("serialnumber");
+  speakLabel("s n");
   spellCharacters(serial);
 }
 
@@ -326,10 +326,10 @@ void queryNanoVnaBattery() {
 }
 
 void queryNanoVnaSerialNumber() {
-  printKeypadAction("SERIAL?");
+  printKeypadAction("SN?");
   prepareKeypadSpeechResponse();
   const NanoVnaStatus status = nanoVnaStartSerialNumber(onSerialNumber);
-  if (status != NanoVnaStatus::Ok) reportNanoVnaStatus("SERIAL", status);
+  if (status != NanoVnaStatus::Ok) reportNanoVnaStatus("SN", status);
 }
 
 void keypadCommitNanoVnaFrequency(InputMode mode, const char* digits) {

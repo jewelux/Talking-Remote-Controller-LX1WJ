@@ -205,7 +205,7 @@ void queryNanoVnaCalibration();        // "CAL?": the slot, or "auto"
 void beginNanoVnaCalibrationSelect();  // "CAL": 0-6 a slot, A auto, D applies it
 void testNanoVna();                    // "VERSION?": "version 1 point 0 ...", or "ok"
 void queryNanoVnaBattery();            // "BATTERY?": "battery 4.26 volts"
-void queryNanoVnaSerialNumber();       // "SERIAL?": "serial number 5 7 3 6 ..."
+void queryNanoVnaSerialNumber();       // "SN?": "s n 5 7 3 6 ..."
 
 // ---- FTDX10 ----
 // A key the FTDX10 layout hides: "<key> hidden on FTDX10", "not available".
