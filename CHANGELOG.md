@@ -337,10 +337,10 @@
   - `1` and `2` say the sweep start and stop; held, they take a frequency in MHz
   - `3` says the range, `B` and `C` step up and down through the IARU Region 1 bands from
     160 m to 70 cm
-  - `6` says the calibration slot; held, it picks a saved slot (`0`–`6`) or `A` for the
+  - `5` says the calibration slot; held, it picks a saved slot (`0`–`6`) or `A` for the
     NanoVNA's own calibration
   - `9` tests the connection and says the NanoVNA's firmware version
-  - `4` says the NanoVNA's battery voltage, for example "battery 4.26 volts"
+  - `8` says the NanoVNA's battery voltage, for example "battery 4.26 volts"
 - the NanoVNA's screen shows the range just measured
 - the range and calibration slot are kept when the controller is switched off
 - on the second USB socket's console, `VNA?` shows the setup and last result, `VNASCAN`

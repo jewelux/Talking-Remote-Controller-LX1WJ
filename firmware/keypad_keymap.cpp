@@ -306,8 +306,8 @@ KeyBinding nanoVnaBank1(char key) {
     case '1': return bind(queryNanoVnaStart, beginNanoVnaStartEntry);
     case '2': return bind(queryNanoVnaStop, beginNanoVnaStopEntry);
     case '3': return bind(queryNanoVnaRange);
-    case '4': return bind(queryNanoVnaBattery);
-    case '6': return bind(queryNanoVnaCalibration, beginNanoVnaCalibrationSelect);
+    case '5': return bind(queryNanoVnaCalibration, beginNanoVnaCalibrationSelect);
+    case '8': return bind(queryNanoVnaBattery);
     case '9': return bind(testNanoVna);
     // As the profile keys of Bank 9: B next, C previous.
     case 'B': return bind([] { stepNanoVnaBand(1); });

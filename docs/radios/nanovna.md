@@ -43,9 +43,9 @@ state on `1`. Every other bank is free (a beep). Bank 2 is kept for calibration 
 | `2` | short | stop frequency |
 | `2` | long | stop frequency entry |
 | `3` | short | the range: "band 8 0 meters" for a preset, otherwise "start … stop …" |
-| `4` | short | battery voltage: "battery 4 point 2 6 volts" |
-| `6` | short | calibration: "calibration 3", or "calibration auto" |
-| `6` | long | calibration select: `0`–`6` a saved slot, `A` auto, then `D` |
+| `5` | short | calibration: "calibration 3", or "calibration auto" |
+| `5` | long | calibration select: `0`–`6` a saved slot, `A` auto, then `D` |
+| `8` | short | battery voltage: "battery 4 point 2 6 volts" |
 | `9` | short | test: "version 1 point 0 …", or "ok" |
 | `B` | short | next band |
 | `C` | short | previous band |
@@ -120,7 +120,7 @@ On the second USB socket's console, with the NanoVNA-F V2 on the native socket:
 2. `VNA version` and Bank 1 `9`: the version is printed and said. `VNA info` prints the device
    information.
 3. `VNA cal`: note what the calibration status looks like, for the calibration bank later.
-   Bank 1 `4`: the battery voltage, as `VNA vbat` prints it in mV.
+   Bank 1 `8`: the battery voltage, as `VNA vbat` prints it in mV.
 4. Bank 1 `3`: "band 8 0 meters". Bank 1 `B` and `C` step through the bands. Note how a band
    sounds.
 5. With a 50 Ω load on port 1, Bank 1 `0`: "sweep", then a best and worst match near 1.0.
@@ -130,8 +130,8 @@ On the second USB socket's console, with the NanoVNA-F V2 on the native socket:
    (SWR format, a marker at the minimum).
 8. Bank 1 `1` long, `3` `*` `6` `D`; Bank 1 `2` long, `3` `*` `7` `D`; Bank 1 `3`: "start 3 point 6
    stop 3 point 7". Measure.
-9. Bank 1 `6` long, `0`, `D`: "calibration 0 ok" if slot 0 holds a calibration. Measure. Then
-   `6` long, `A`, `D`: "calibration auto".
+9. Bank 1 `5` long, `0`, `D`: "calibration 0 ok" if slot 0 holds a calibration. Measure. Then
+   `5` long, `A`, `D`: "calibration auto".
 10. Bank 1 `0` twice quickly: "busy" the second time (or the last result, if the first had
     ended).
 11. Unplug the NanoVNA during a measurement: "usb off". Plug it in again and measure.
@@ -168,6 +168,6 @@ On the second USB socket's console, with the NanoVNA-F V2 on the native socket:
   - `scan` leaves the sweep paused on DiSlord's firmware, so `resume` follows it.
   - `recall` takes 0–6 on the F V2, 0–4 on older models.
   - The F V2 takes 11–201 scan points; 101 is used, which every model takes.
-  - `vbat` replies `4256 mV`; Bank 1 `4` says it in volts to 10 mV.
+  - `vbat` replies `4256 mV`; Bank 1 `8` says it in volts to 10 mV.
   - On the F V2 (firmware 0.6.0, checked with `help`), `version` replies `0.6.0` and `cal`
     replies `load open short cal'ed`.
