@@ -238,8 +238,8 @@ Bank 1 is the NanoVNA bank and Bank 9 is as above. Every other bank is free. Det
 | `3` short | sweep range: band preset, or start and stop |
 | `6` short | calibration slot |
 | `6` long | calibration select: `0`–`6` slot, `A` auto |
-| `7` short | previous band preset |
-| `8` short | next band preset |
 | `9` short | connection test (firmware version) |
+| `B` short | next band preset |
+| `C` short | previous band preset |
 
-`4`, `5` and `A`–`C` are free.
+`4`, `5`, `7`, `8` and `A` are free.

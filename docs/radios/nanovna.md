@@ -45,16 +45,16 @@ state on `1`. Every other bank is free (a beep). Bank 2 is kept for calibration 
 | `3` | short | the range: "band 8 0 meters" for a preset, otherwise "start … stop …" |
 | `6` | short | calibration: "calibration 3", or "calibration auto" |
 | `6` | long | calibration select: `0`–`6` a saved slot, `A` auto, then `D` |
-| `7` | short | previous band |
-| `8` | short | next band |
 | `9` | short | test: "version 1 point 0 …", or "ok" |
+| `B` | short | next band |
+| `C` | short | previous band |
 
 - Bands: IARU Region 1 band plan edges.
   - 160 m 1.81–2.0 MHz, 80 m 3.5–3.8, 60 m 5.3515–5.3665, 40 m 7.0–7.2, 30 m 10.1–10.15
   - 20 m 14.0–14.35, 17 m 18.068–18.168, 15 m 21.0–21.45, 12 m 24.89–24.99, 10 m 28.0–29.7
   - 6 m 50–52, 2 m 144–146, 70 cm 430–440 MHz
-  - `8` after 70 cm goes back to 160 m, and `7` before 160 m goes to 70 cm. From a range of your
-    own, `8` goes to the first band that starts above its start, and `7` to the last band that
+  - `B` after 70 cm goes back to 160 m, and `C` before 160 m goes to 70 cm. From a range of your
+    own, `B` goes to the first band that starts above its start, and `C` to the last band that
     starts below it.
 - The start and stop can be set in either order. A measurement with the start not below the stop
   says "error".
@@ -119,7 +119,7 @@ On the second USB socket's console, with the NanoVNA-F V2 on the native socket:
 2. `VNA version` and Bank 1 `9`: the version is printed and said. `VNA info` prints the device
    information.
 3. `VNA cal`: note what the calibration status looks like, for the calibration bank later.
-4. Bank 1 `3`: "band 8 0 meters". Bank 1 `8` and `7` step through the bands. Note how a band
+4. Bank 1 `3`: "band 8 0 meters". Bank 1 `B` and `C` step through the bands. Note how a band
    sounds.
 5. With a 50 Ω load on port 1, Bank 1 `0`: "sweep", then a best and worst match near 1.0.
    `VNA?` shows the same result, and the NanoVNA's screen shows the band.

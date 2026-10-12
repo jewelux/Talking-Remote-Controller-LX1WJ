@@ -324,9 +324,9 @@ constexpr NanoVnaKey kNanoVnaKeys[] = {
     {1, '2', "queryNanoVnaStop", "beginNanoVnaStopEntry", "-"},
     {1, '3', "queryNanoVnaRange", "none", "-"},
     {1, '6', "queryNanoVnaCalibration", "beginNanoVnaCalibrationSelect", "-"},
-    {1, '7', "stepNanoVnaBand(-1)", "none", "-"},
-    {1, '8', "stepNanoVnaBand(1)", "none", "-"},
     {1, '9', "testNanoVna", "none", "-"},
+    {1, 'B', "stepNanoVnaBand(1)", "none", "-"},
+    {1, 'C', "stepNanoVnaBand(-1)", "none", "-"},
 };
 
 constexpr NanoVnaKey kNanoVnaFree = {0, 0, "unassigned", "none", "-"};

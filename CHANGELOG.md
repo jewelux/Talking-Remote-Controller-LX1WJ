@@ -335,7 +335,8 @@
   - Bank 1 `0` sweeps the range and says the best and worst match, for example "best match
     1.21 at 3.612, worst match 3.40 at 3.800". A double press says the last result again
   - `1` and `2` say the sweep start and stop; held, they take a frequency in MHz
-  - `3` says the range, `7` and `8` step through the IARU Region 1 bands from 160 m to 70 cm
+  - `3` says the range, `B` and `C` step up and down through the IARU Region 1 bands from
+    160 m to 70 cm
   - `6` says the calibration slot; held, it picks a saved slot (`0`–`6`) or `A` for the
     NanoVNA's own calibration
   - `9` tests the connection and says the NanoVNA's firmware version
