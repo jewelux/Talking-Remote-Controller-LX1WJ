@@ -108,12 +108,12 @@ void onVersion(const NanoVnaResult& result) {
     return;
   }
   printKeypadStatus("VERSION: {}", result.text);
+  if (!g_speechEnabled) return;
   char number[24];
   if (!nanoVnaVersionNumber(result.text, number, sizeof(number))) {
     speakOk();
     return;
   }
-  if (!g_speechEnabled) return;
   speakToken("version");
   speakDigitsAndPoint(String(number));
 }
