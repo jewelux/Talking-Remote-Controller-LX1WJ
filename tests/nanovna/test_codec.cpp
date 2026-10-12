@@ -203,6 +203,9 @@ TEST(adjacent_band_from_a_range_of_its_own_goes_by_its_start) {
   // 3.6-3.7 MHz lies in 80 m: next is 60 m, previous is 80 m itself.
   CHECK_EQ(nanoVnaAdjacentBand(3600000, 3700000, 1), 2u);
   CHECK_EQ(nanoVnaAdjacentBand(3600000, 3700000, -1), 1u);
+  // Starting on a band's edge counts as inside it.
+  CHECK_EQ(nanoVnaAdjacentBand(3500000, 3700000, 1), 2u);
+  CHECK_EQ(nanoVnaAdjacentBand(3500000, 3700000, -1), 1u);
   CHECK_EQ(nanoVnaAdjacentBand(100000, 200000, 1), 0u);
   CHECK_EQ(nanoVnaAdjacentBand(100000, 200000, -1), 12u);
   CHECK_EQ(nanoVnaAdjacentBand(1000000000, 1100000000, 1), 0u);

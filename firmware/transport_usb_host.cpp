@@ -338,8 +338,10 @@ void serviceConfiguring() {
     return;
   }
   s_state = PortState::Ready;
-  s_inParked = false;
-  submitIn();
+  // The main loop may not yet have taken what the last device sent (it drops it at SerialGone):
+  // the read waits for room then, as in onInDone.
+  s_inParked = !rxHasRoom();
+  if (!s_inParked) submitIn();
   logEvent("serial port open");
   pushEvent(UsbLinkEvent::SerialReady);
 }

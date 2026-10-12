@@ -88,8 +88,9 @@ size_t nanoVnaBandCount();
 const NanoVnaBand& nanoVnaBandAt(size_t index);
 // The band the range is exactly, or -1 for a range of its own.
 int nanoVnaBandMatching(uint32_t startHz, uint32_t stopHz);
-// The band after (direction > 0) or before (direction < 0) the range, by its start; it wraps
-// around at either end, like the profiles.
+// The band after (direction > 0) or before (direction < 0) the range, by its start: from a range
+// of its own, the first band that starts above it, or the last that starts at or below it. It
+// wraps around at either end, like the profiles.
 size_t nanoVnaAdjacentBand(uint32_t startHz, uint32_t stopHz, int direction);
 
 bool nanoVnaFrequencyValid(uint64_t hz);

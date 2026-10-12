@@ -95,9 +95,19 @@ void reportNanoVnaStatus(const char* label, NanoVnaStatus status, const char* de
   }
 }
 
+// A job that ended badly. NotConnected means the port went during it: the link monitor says
+// "usb off" for that, so it is only printed here.
+void reportNanoVnaJobEnd(const char* label, const NanoVnaResult& result) {
+  if (result.status == NanoVnaStatus::NotConnected) {
+    printKeypadStatus("{} -> {}", label, nanoVnaStatusName(result.status));
+    return;
+  }
+  reportNanoVnaStatus(label, result.status, result.text);
+}
+
 void onMeasured(const NanoVnaResult& result) {
   if (result.status != NanoVnaStatus::Ok) {
-    reportNanoVnaStatus("SWEEP", result.status, result.text);
+    reportNanoVnaJobEnd("SWEEP", result);
     return;
   }
   speakMeasurement(result);
@@ -105,7 +115,7 @@ void onMeasured(const NanoVnaResult& result) {
 
 void onVersion(const NanoVnaResult& result) {
   if (result.status != NanoVnaStatus::Ok) {
-    reportNanoVnaStatus("VERSION", result.status, result.text);
+    reportNanoVnaJobEnd("VERSION", result);
     return;
   }
   printKeypadStatus("VERSION: {}", result.text);
@@ -121,7 +131,7 @@ void onVersion(const NanoVnaResult& result) {
 
 void onBattery(const NanoVnaResult& result) {
   if (result.status != NanoVnaStatus::Ok) {
-    reportNanoVnaStatus("BATTERY", result.status, result.text);
+    reportNanoVnaJobEnd("BATTERY", result);
     return;
   }
   char volts[12];
@@ -147,7 +157,7 @@ void spellCharacters(const char* text) {
 
 void onSerialNumber(const NanoVnaResult& result) {
   if (result.status != NanoVnaStatus::Ok) {
-    reportNanoVnaStatus("SN", result.status, result.text);
+    reportNanoVnaJobEnd("SN", result);
     return;
   }
   char serial[33];
@@ -182,7 +192,7 @@ int8_t s_recallingSlot = kNanoVnaCalAuto;
 
 void onRecalled(const NanoVnaResult& result) {
   if (result.status != NanoVnaStatus::Ok) {
-    reportNanoVnaStatus("CAL", result.status, result.text);
+    reportNanoVnaJobEnd("CAL", result);
     return;
   }
   nanoVnaSetCalSlot(s_recallingSlot);

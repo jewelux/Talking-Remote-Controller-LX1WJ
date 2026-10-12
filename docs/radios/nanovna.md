@@ -58,7 +58,7 @@ state on `1`. Every other bank is free (a beep). Bank 2 is kept for calibration 
   - 6 m 50–52, 2 m 144–146, 70 cm 430–440 MHz
   - `B` after 70 cm goes back to 160 m, and `C` before 160 m goes to 70 cm. From a range of your
     own, `B` goes to the first band that starts above its start, and `C` to the last band that
-    starts below it.
+    starts at or below it.
 - The start and stop can be set in either order. A measurement with the start not below the stop
   says "error".
 - The range and the calibration slot are kept when the controller is switched off. The first
@@ -97,7 +97,8 @@ each command, then for the `ch> ` prompt.
 1. `recall <slot>`, only when a slot is chosen;
 2. `sweep <start> <stop>`, so the NanoVNA's own screen shows the range just measured;
 3. `scan <start> <stop> 101 3`: 101 points, each line the frequency and S11 (real, imaginary);
-4. `resume`, so the NanoVNA sweeps again. It is sent after a failed scan too.
+4. `resume`, so the NanoVNA sweeps again. It is sent after a failed scan too, and after a scan
+   that timed out, without waiting for it. A NanoVNA that refuses it keeps the result.
 
 SWR = (1 + |S11|) / (1 − |S11|) for each point. The lowest is the best match, the highest the
 worst. Before every job the controller sends a bare CR and waits for the prompt, so whatever is

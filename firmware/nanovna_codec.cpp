@@ -194,8 +194,9 @@ size_t nanoVnaAdjacentBand(uint32_t startHz, uint32_t stopHz, int direction) {
     return 0;
   }
   if (band >= 0) return ((size_t)band + kBandCount - 1) % kBandCount;
+  // A range that starts on a band's edge goes back to that band, as one inside it does.
   for (size_t i = kBandCount; i-- > 0;) {
-    if (kBands[i].startHz < startHz) return i;
+    if (kBands[i].startHz <= startHz) return i;
   }
   return kBandCount - 1;
 }

@@ -51,8 +51,8 @@ struct NanoVnaSetup {
 
 void initNanoVna();
 void pollNanoVna();
-// From pollRadioLinkEvents(): the serial port opened or went.
-void nanoVnaLinkOpened();
+// From pollRadioLinkEvents(): the serial port went. A job still running ends NotConnected; the
+// link monitor says "usb off", so its callback need not.
 void nanoVnaLinkClosed();
 
 bool nanoVnaBusy();

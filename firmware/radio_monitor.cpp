@@ -199,9 +199,7 @@ void pollRadioLinkEvents() {
       s_usbNoSerialPending = false;
       resetLiveRadioState();
       // A NanoVNA is not a radio: nothing is read from it until a key asks.
-      if (currentProtocolType() == PROTO_NANOVNA) {
-        nanoVnaLinkOpened();
-      } else {
+      if (currentProtocolType() != PROTO_NANOVNA) {
         // Auto-info off, in case a PC program left it on: its IF lines would answer our queries.
         (void)asciiPacketSendCommand("AI0;");
         delay(10);
@@ -212,6 +210,8 @@ void pollRadioLinkEvents() {
       break;
     case UsbLinkEvent::SerialGone:
       resetLiveRadioState();
+      // What the gone device sent is no use to the next one.
+      usbHostFlushInput();
       nanoVnaLinkClosed();
       speakUsbState("off");
       break;

@@ -103,25 +103,51 @@ void finish(NanoVnaStatus status) {
   if (done) done(s_job.result);
 }
 
-void sendStep() {
+bool writeLine(const char* line) {
+  const size_t len = strlen(line);
+  return (len == 0 || serialTransportWrite(reinterpret_cast<const uint8_t*>(line), len) == len) &&
+         serialTransportWrite(reinterpret_cast<const uint8_t*>("\r"), 1) == 1;
+}
+
+// False when the line could not be written.
+bool sendStep() {
   const Step step = s_job.steps[s_job.index];
   buildCommand(step, s_job.command, sizeof(s_job.command));
   s_job.echoSeen = false;
   s_job.stepFailed = false;
   s_reader.reset();
   if (step != Step::Sync) Serial0.printf("[VNA] > %s\n", s_job.command);
-  const size_t len = strlen(s_job.command);
-  const bool sent = (len == 0 || serialTransportWrite(reinterpret_cast<const uint8_t*>(s_job.command), len) == len) &&
-                    serialTransportWrite(reinterpret_cast<const uint8_t*>("\r"), 1) == 1;
   s_job.sentMs = millis();
-  if (!sent) finish(NanoVnaStatus::NotConnected);
+  return writeLine(s_job.command);
+}
+
+// A write failed mid-job: the port went, or the device stopped reading.
+NanoVnaStatus writeFailure() {
+  return linkReady() ? NanoVnaStatus::Timeout : NanoVnaStatus::NotConnected;
+}
+
+// The step got no prompt in time. A scan pauses the device's sweep, so a measurement still sends
+// resume, without waiting for it: the device takes it once it is done, and its reply is dropped
+// with the rest of the late output.
+void timedOut() {
+  for (uint8_t i = s_job.index + 1; i < s_job.count; ++i) {
+    if (s_job.steps[i] != Step::Resume) continue;
+    Serial0.println("[VNA] > resume (not waited for)");
+    (void)writeLine("resume");
+    break;
+  }
+  finish(NanoVnaStatus::Timeout);
 }
 
 // The step ended at the prompt: the next one, the resume after a failure, or the end.
 void stepDone() {
   const Step step = s_job.steps[s_job.index];
   if (s_job.failure == NanoVnaStatus::Ok) {
-    if (s_job.stepFailed) {
+    if (s_job.stepFailed && step == Step::Resume) {
+      // The scan is in: a device that refuses resume keeps the measurement.
+      Serial0.printf("[VNA] resume refused: %s\n", s_job.result.text);
+      s_job.result.text[0] = '\0';
+    } else if (s_job.stepFailed) {
       s_job.failure = NanoVnaStatus::DeviceError;
     } else if (step == Step::Scan && s_job.result.summary.points == 0) {
       s_job.failure = NanoVnaStatus::NoData;
@@ -139,7 +165,7 @@ void stepDone() {
     return;
   }
   s_job.index = next;
-  sendStep();
+  if (!sendStep()) finish(writeFailure());
 }
 
 // A step's reply starts after its echo. Lines before it are late output of an earlier command, one
@@ -214,7 +240,14 @@ NanoVnaStatus startJob(const Step* steps, uint8_t count, NanoVnaDone done, const
   s_job.result.startHz = s_setup.startHz;
   s_job.result.stopHz = s_setup.stopHz;
   serialTransportFlushInput();
-  sendStep();
+  if (!sendStep()) {
+    // Not started, so done is not called.
+    s_job.active = false;
+    s_job.done = nullptr;
+    s_job.rawOut = nullptr;
+    Serial0.println("[VNA] not connected: the command could not be written");
+    return NanoVnaStatus::NotConnected;
+  }
   return NanoVnaStatus::Ok;
 }
 
@@ -264,11 +297,9 @@ void pollNanoVna() {
         break;
     }
   }
-  if (millis() - s_job.sentMs > timeoutFor(s_job.steps[s_job.index])) finish(NanoVnaStatus::Timeout);
-}
-
-void nanoVnaLinkOpened() {
-  s_reader.reset();
+  // Bytes still waiting may hold the prompt: the next pass reads them first.
+  if (serialTransportAvailable()) return;
+  if (millis() - s_job.sentMs > timeoutFor(s_job.steps[s_job.index])) timedOut();
 }
 
 void nanoVnaLinkClosed() {
