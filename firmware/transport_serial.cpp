@@ -24,8 +24,14 @@ static bool usbLink() {
   return currentConnectionProfile().port == RadioPort::UsbHost;
 }
 
-// Kenwood-style CAT never needs CR or LF, and a CR switches a QMX serial port into its terminal
-// mode, which ends CAT until the radio restarts. Drops them before they reach a USB radio.
+// ASCII CAT (Kenwood, Elecraft, Yaesu FTDX) ends its commands with ';' and never needs CR or LF.
+static bool asciiCatProtocol() {
+  const ProtocolType pt = currentProtocolType();
+  return pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII;
+}
+
+// A CR switches a QMX serial port into its terminal mode, which ends CAT until the radio
+// restarts. Drops CR and LF before they reach a USB radio that speaks ASCII CAT.
 static size_t usbWriteWithoutLineEnds(const uint8_t* data, size_t len) {
   uint8_t buf[64];
   size_t accepted = 0;
@@ -116,7 +122,7 @@ static bool serialTransportWriteAllowed() {
 size_t serialTransportWrite(const uint8_t* data, size_t len) {
   if (!serialTransportWriteAllowed()) return 0;
   ++s_writeCount;
-  if (usbLink()) return usbWriteWithoutLineEnds(data, len);
+  if (usbLink()) return asciiCatProtocol() ? usbWriteWithoutLineEnds(data, len) : usbHostWrite(data, len);
   return g_civSerial->write(data, len);
 }
 

@@ -28,7 +28,7 @@ constexpr uint32_t kLineCodingBaud = 9600;
 constexpr uint16_t kControlLineDtr = 0x0001;
 constexpr uint8_t kNoInterface = 0xFF;
 
-constexpr size_t kRxBufferBytes = 1024;
+constexpr size_t kRxBufferBytes = 2048;
 constexpr size_t kTxBufferBytes = 256;
 constexpr size_t kBulkTransferBytes = 64;  // the full-speed bulk packet; a multiple of any smaller one
 constexpr size_t kControlTransferBytes = sizeof(usb_setup_packet_t) + 8;
@@ -66,6 +66,8 @@ SerialPortDesc s_port = {0, kNoInterface, 0, 0};
 uint8_t s_configStep = 0;
 bool s_closeFailureLogged = false;
 volatile bool s_inBusy = false;
+// The read waits for room in s_rx (serviceRx).
+bool s_inParked = false;
 volatile bool s_outBusy = false;
 volatile bool s_ctrlBusy = false;
 uint8_t s_pendingAddrs[kMaxPendingDevices];
@@ -178,6 +180,12 @@ void submitIn() {
   }
 }
 
+// Room for one more bulk packet. The read waits for it instead of dropping bytes: the device is
+// NAKed until the main loop has taken what came, as with a NanoVNA's 3 KB scan reply.
+bool rxHasRoom() {
+  return xStreamBufferSpacesAvailable(s_rx) >= kBulkTransferBytes;
+}
+
 void onInDone(usb_transfer_t* xfer) {
   s_inBusy = false;
   if (xfer->status == USB_TRANSFER_STATUS_COMPLETED) {
@@ -185,7 +193,12 @@ void onInDone(usb_transfer_t* xfer) {
       xStreamBufferSend(s_rx, xfer->data_buffer, xfer->actual_num_bytes, 0);
       s_rxBytes += xfer->actual_num_bytes;
     }
-    if (s_state == PortState::Ready) submitIn();
+    if (s_state != PortState::Ready) return;
+    if (rxHasRoom()) {
+      submitIn();
+    } else {
+      s_inParked = true;
+    }
     return;
   }
   if (s_state == PortState::Ready) logEvent("read stopped: transfer status %d", (int)xfer->status);
@@ -325,9 +338,17 @@ void serviceConfiguring() {
     return;
   }
   s_state = PortState::Ready;
+  s_inParked = false;
   submitIn();
   logEvent("serial port open");
   pushEvent(UsbLinkEvent::SerialReady);
+}
+
+// Restarts the read that waited for the main loop to take the bytes before it.
+void serviceRx() {
+  if (s_state != PortState::Ready || !s_inParked || s_inBusy || !rxHasRoom()) return;
+  s_inParked = false;
+  submitIn();
 }
 
 void serviceTx() {
@@ -361,6 +382,7 @@ void serviceClosing() {
     return;
   }
   s_dev = nullptr;
+  s_inParked = false;
   uint8_t sink[32];
   while (xStreamBufferReceive(s_tx, sink, sizeof(sink), 0) > 0) {
   }
@@ -381,6 +403,7 @@ void clientTask(void*) {
     (void)usb_host_client_handle_events(s_client, pdMS_TO_TICKS(10));
     serviceNewDevices();
     serviceConfiguring();
+    serviceRx();
     serviceTx();
     serviceClosing();
   }
