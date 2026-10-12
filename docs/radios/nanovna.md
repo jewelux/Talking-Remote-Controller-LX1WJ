@@ -167,8 +167,8 @@ On the second USB socket's console, with the NanoVNA-F V2 on the native socket:
   `transport_usb_host.cpp`).
 - Shell facts:
   - The shell echoes the command line, ends lines with CR LF and prints `ch> ` when ready.
-  - An unknown command answers `<command>?`. Errors start with `usage:` or `Err`, or say `invalid`
-    or `exceeds`.
+  - An unknown command answers `<command>?`, on the F V2 `Command not recognised.`. Errors start
+    with `usage:` or `Err`, or say `invalid` or `exceeds`.
   - `scan` leaves the sweep paused on DiSlord's firmware, so `resume` follows it.
   - `recall` takes 0–6 on the F V2, 0–4 on older models.
   - The F V2 takes 11–201 scan points; 101 is used, which every model takes.

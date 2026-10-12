@@ -118,7 +118,8 @@ bool nanoVnaReplyIsError(const char* line, const char* command) {
   if (containsLower(line, "invalid") || containsLower(line, "exceeds") || containsLower(line, "error")) {
     return true;
   }
-  // An unknown command comes back as itself and '?'.
+  // An unknown command: the F V2 says "Command not recognised.", the others give it back with '?'.
+  if (containsLower(line, "not recogni")) return true;
   const size_t n = trimmedLength(line);
   if (n < 2 || line[n - 1] != '?') return false;
   size_t word = 0;

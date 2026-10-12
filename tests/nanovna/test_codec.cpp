@@ -92,6 +92,7 @@ TEST(error_replies_are_recognised) {
   CHECK(nanoVnaReplyIsError("sweep points exceeds range 101", "scan 1 2 401 3"));
   CHECK(nanoVnaReplyIsError("foo?", "foo"));
   CHECK(nanoVnaReplyIsError("foo bar?", "foo bar"));
+  CHECK(nanoVnaReplyIsError("Command not recognised.", "bandwidth"));
   CHECK(!nanoVnaReplyIsError("1.0.3", "version"));
   CHECK(!nanoVnaReplyIsError("3500000 0.1 -0.2", "scan 3500000 3800000 101 3"));
   CHECK(!nanoVnaReplyIsError("is it?", "version"));
