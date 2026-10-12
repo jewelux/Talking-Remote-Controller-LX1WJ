@@ -77,7 +77,9 @@ to completion, and that action talks to the radio synchronously.
 - **Capabilities** (`RadioCapabilities`, `sp.caps.getX` / `setX`): what this
   profile may do. Set in the profile table.
 - **`live`** (`LiveState`): what we last knew about the radio, with a
-  `xValid` flag for each value.
+  `xValid` flag for each value. The background poll keeps `live.freqHz`
+  current only while tuning speech is on; code that needs the radio's
+  frequency queries it.
 - **Bank**: one page of keypad functions, from 1 to 9. The same key does
   different things in different banks.
 

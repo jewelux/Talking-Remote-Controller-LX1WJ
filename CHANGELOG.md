@@ -64,6 +64,9 @@
 - tuning is announced only when the dial stops, and only once it is at least 100 Hz away from the
   last frequency you heard or entered. Moving the dial cuts off a readout that is out of date
   instead of queueing another one, and the next stop is always announced
+- with tuning speech off (Bank 9 `4` long), HamTRC no longer reads the frequency from the radio in
+  the background: while no key or command is used, it sends nothing to the radio. Turning tuning
+  speech on again does not announce the frequency the radio is on; the next tuning is announced
 
 ### Speech and sounds
 
@@ -107,6 +110,8 @@
   FT-817 `VFO A=B`
 - `FREQHZ`, `VFOAHZ` and `VFOBHZ` set a frequency in Hz
 - `BANK <n>`, `BANK NEXT` and `BANK PREV` cover banks 1–9 like the keypad (they stopped at 3)
+- Icom: `BSTACK <n>` says the band stack frequency once; with tuning speech on it was announced
+  again after it had been spoken
 - `NR`, `NB` and `NOTCH` behave like the Bank 2 keys: `TOGGLE` starts from the radio's known state,
   on the TS-480 `NR TOGGLE` steps off → 1 → 2 → off, and on CI-V `NOTCH TOGGLE` steps off → NAR →
   MID → WIDE → off

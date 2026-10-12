@@ -3,6 +3,7 @@
 #include "protocol_ft847.h"
 #include "protocol_yaesu_cat.h"
 #include "radio_catalog.h"
+#include "radio_monitor.h"
 #include "radio_state.h"
 #include "ui_speech.h"
 
@@ -195,8 +196,11 @@ bool handleConsoleFt847Commands(const String& upper) {
     Serial.print(", byte gap ");
     Serial.print(ft847ByteGapMs());
     Serial.print(" ms, background poll ");
-    Serial.print(ft847FmGuardActive() ? "stopped (radio in FM, not supported)"
-                                      : (ft847BackgroundPollPaused() ? "paused" : "running"));
+    Serial.print(ft847FmGuardActive()          ? "stopped (radio in FM, not supported)"
+                 : ft847BackgroundPollPaused() ? "paused"
+                 : !g_speechEnabled            ? "off (speech off)"
+                 : !frequencyPollEnabled()     ? "off (tuning speech off)"
+                                               : "running");
     Serial.print(", trace ");
     Serial.println(g_yaesuCatTrace ? "on" : "off");
     return true;

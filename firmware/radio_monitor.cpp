@@ -100,9 +100,27 @@ void cancelPendingFreqAnnouncement() {
   live.tuningStartSpokenHz = 0;
 }
 
+bool frequencyPollEnabled() {
+  return g_speechEnabled && g_tuningSpeakEnabled;
+}
+
+// Set while the poll is off, until the first reading after it is back on.
+static bool s_freqPollResyncPending = false;
+
+static void pauseFrequencyPoll() {
+  if (s_freqPollResyncPending) return;
+  s_freqPollResyncPending = true;
+  cancelPendingFreqAnnouncement();
+  live.freqValid = false;  // no longer followed
+}
+
 void pollFrequencyIfDue() {
   if (!FREQ_POLL_ENABLE) return;
   if (!currentProfile().caps.getFreq) return;
+  if (!frequencyPollEnabled()) {
+    pauseFrequencyPoll();
+    return;
+  }
   if (currentProtocolType() == PROTO_YAESU_FT847 && ft847BackgroundPollPaused()) return;
 
   const FreqPollPolicy policy = freqPollPolicyFor(currentProtocolType());
@@ -120,6 +138,14 @@ void pollFrequencyIfDue() {
   }
   live.freqPollFailures = 0;
   if (policy.confirmChanges && !confirmPolledFrequency(hz)) return;
+  if (s_freqPollResyncPending) {
+    // Tuning speech is back on: take the frequency the radio is on as heard, so
+    // only tuning from now on is announced.
+    s_freqPollResyncPending = false;
+    rememberLiveFrequency(hz, millis());
+    rememberAnnouncedFrequency(hz);
+    return;
+  }
   handleObservedFrequency(hz, false);
 }
 

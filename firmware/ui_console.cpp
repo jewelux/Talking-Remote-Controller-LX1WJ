@@ -193,14 +193,6 @@ static bool queryCurrentFilterSlot(uint8_t& filterOut) {
   return true;
 }
 
-static bool queryCurrentFrequencyValue(uint64_t& hzOut) {
-  if (live.freqValid) {
-    hzOut = live.freqHz;
-    return true;
-  }
-  return queryFrequency(hzOut, 800);
-}
-
 static bool bandCodeFromFrequency(uint64_t hz, uint8_t& bandCodeOut) {
   if (hz >= 1800000ULL && hz <= 1999999ULL) { bandCodeOut = 0x01; return true; }
   if (hz >= 3400000ULL && hz <= 4099999ULL) { bandCodeOut = 0x02; return true; }
@@ -1144,7 +1136,7 @@ static bool handleConsoleProfileCommands(const String& line, const String& upper
     uint8_t bandCode = 0;
     BandStackEntry entry;
     if (reg < 1 || reg > 3) { Serial.println("BSTACK? -> invalid register (use 1..3)"); return true; }
-    if (!queryCurrentFrequencyValue(hz) || !bandCodeFromFrequency(hz, bandCode)) { Serial.println("BSTACK? -> no current band"); return true; }
+    if (!queryFrequency(hz, 800) || !bandCodeFromFrequency(hz, bandCode)) { Serial.println("BSTACK? -> no current band"); return true; }
     if (!queryBandStackEntry(bandCode, (uint8_t)reg, entry, 800)) { reportCommandFailure("BSTACK?", "no reply"); return true; }
     Serial.print("BSTACK ");
     Serial.print(bandLabelForCode(entry.bandCode));
@@ -1174,9 +1166,9 @@ static bool handleConsoleProfileCommands(const String& line, const String& upper
     uint8_t bandCode = 0;
     BandStackEntry entry;
     if (reg < 1 || reg > 3) { Serial.println("BSTACK -> invalid register (use 1..3)"); return true; }
-    if (!queryCurrentFrequencyValue(hz) || !bandCodeFromFrequency(hz, bandCode)) { Serial.println("BSTACK -> no current band"); return true; }
+    if (!queryFrequency(hz, 800) || !bandCodeFromFrequency(hz, bandCode)) { Serial.println("BSTACK -> no current band"); return true; }
     if (!queryBandStackEntry(bandCode, (uint8_t)reg, entry, 800)) { reportCommandFailure("BSTACK", "no reply"); return true; }
-    if (!setFrequency(entry.freqHz) || !setMode(entry.mode, entry.filter)) { reportCommandFailure("BSTACK", "failed"); return true; }
+    if (!applyFrequencyAndTrack(entry.freqHz, true) || !applyModeAndTrack(entry.mode, entry.filter)) { reportCommandFailure("BSTACK", "failed"); return true; }
     Serial.print("BSTACK ");
     Serial.print(bandLabelForCode(entry.bandCode));
     Serial.print("M REG");
@@ -1803,7 +1795,10 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
       Serial.println("YTMODE -> unknown FT-8x7 model");
       return true;
     }
-    yaesuCatSetToneDcsModeRaw(modeByte);
+    // The FT-817/818 keeps the tone mode per band: remember the band it is set on.
+    uint64_t hz = 0;
+    if (currentIsFt817Family() && !queryFrequency(hz, 800)) hz = 0;  // not known
+    yaesuCatSetToneDcsModeRaw(modeByte, hz);
     Serial.print("YTMODE 0x");
     if (modeByte < 0x10) Serial.print('0');
     Serial.println(modeByte, HEX);
