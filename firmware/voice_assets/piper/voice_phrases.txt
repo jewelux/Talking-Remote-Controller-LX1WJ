@@ -163,6 +163,21 @@ notch
 sharp
 soft
 
+# NanoVNA
+nano
+best
+worst
+match
+at
+start
+stop
+sweep
+meters
+centimeters
+calibration
+version
+busy
+
 # Vendors
 elecraft
 icom
