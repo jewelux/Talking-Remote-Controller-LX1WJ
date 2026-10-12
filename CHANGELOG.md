@@ -154,7 +154,7 @@
   defaults, and HamTRC says "profile reset". Console `PROFILE RESET`, and `PROFILE RESET ALL`
   for every profile
 - the six Icom profiles HamTRC offered when the SD card did not load are gone, and with them
-  Bank 9 `1`–`9` picking a profile directly; on Bank 9, `1`–`3` and `6` beep
+  Bank 9 `1`–`9` picking a profile directly; on Bank 9, `2` and `3` beep
 
 ### Radios
 
@@ -301,31 +301,10 @@
   key ("cw n"); no key yet
 - not yet: PTT, satellite mode, repeater shift, CTCSS and DCS
 
-### QRP Labs QMX over USB (new, experimental, not yet tested on a radio)
+### QRP Labs QMX over USB (new, experimental)
 
-- new built-in profile 21, said as "q r p q m x": frequency and mode read and set over the QMX's
-  own USB cable, plugged into the controller's native USB socket. The modes are LSB, USB, CW,
-  CW-R, AM and DIGI
-- the S-meter (Bank 1 `7`, console `SM?`) is said in S units, and above S9 in tens of dB, as on
-  the other radios
-- output power (Bank 1 `4`, console `PO?`) is said in watts, for example "power 4.5 watts", and
-  SWR (Bank 1 `8`, console `SWR?`) as "swr 1.21". The QMX measures both only while transmitting:
-  in receive you hear "power rx" and "swr rx"
-- with this profile the native USB socket belongs to the radio, so the PC console moves to the
-  board's second USB socket (the USB-to-serial one), where only `HAMTRC?`, `SM?`, `PO?`, `SWR?`
-  and the new `USB?` answer. Choosing another profile restarts the controller and gives the native socket back to
-  the PC
-- you hear "usb on" when the radio's serial port is ready, "usb off" when it is unplugged or
-  switched off, and "usb error" for a USB device that is not a radio serial port
-- new key Bank 9 `1` (on every profile) says the USB state: "usb on" with the bytes sent to and
-  received from the radio, "usb off" with the number of USB devices seen, "usb error", or
-  "usb not available" when the active profile does not use USB
-- if the controller restarted after a crash with this profile, the USB connection stays off and it
-  says "usb error", so the keypad can still pick another radio. Choosing profile 21 again starts it
-- the QMX has its own supply, so the native socket does not need to supply 5 V. A device that
-  takes its USB power from the cable does need it; on some boards that needs a solder jumper (see
-  `docs/hardware_wiring.md`)
-- not yet: VFO B, split, RIT, PTT. Details in `docs/radios/qrp-labs-qmx.md`
+- new built-in profile 21 for the QRP Labs QMX on the controller's native USB socket. Not yet
+  tested on a radio. Details in `docs/radios/qrp-labs-qmx.md`
 
 ### NanoVNA over USB (new, experimental)
 

@@ -29,6 +29,7 @@ const char *modeName(InputMode m) {
     case InputMode::RowEntry: return "RowEntry";
     case InputMode::SweepStartEntry: return "SweepStartEntry";
     case InputMode::SweepStopEntry: return "SweepStopEntry";
+    case InputMode::PaVoltEntry: return "PaVoltEntry";
   }
   return "?";
 }
@@ -1458,7 +1459,8 @@ TEST(input_every_entry_mode_has_its_rules) {
                                InputMode::CivAddrEntry,   InputMode::RptOffsetEntry,
                                InputMode::CtcssEntry,     InputMode::DcsEntry,
                                InputMode::MenuEntry,      InputMode::RowEntry,
-                               InputMode::SweepStartEntry, InputMode::SweepStopEntry};
+                               InputMode::SweepStartEntry, InputMode::SweepStopEntry,
+                               InputMode::PaVoltEntry};
   for (InputMode m : entries) {
     const EntrySpec *e = keypadEntrySpec(m);
     CHECK(e != nullptr);
@@ -1567,9 +1569,32 @@ TEST(input_normal_mode_does_not_time_out) {
   CHECK_LOG(f);
 }
 
+// The QMX PA voltage: volts with one decimal, "11*5" at most; it does not start with 0.
+TEST(input_pa_volt_entry_takes_one_decimal) {
+  CHECK_EQ(keypadEntrySpec(InputMode::PaVoltEntry)->name, "PAVOLT");
+  Fake f;
+  KeypadInput in(f);
+  in.beginEntry(InputMode::PaVoltEntry);
+  typeKeys(in, "*0");
+  CHECK_LOG(f, "rejected PAVOLT POINT", "rejected PAVOLT 0");
+  typeKeys(in, "7*55*D");
+  CHECK_LOG(f, "digit PaVoltEntry 7 7", "digit PaVoltEntry * 7*", "digit PaVoltEntry 5 7*5",
+            "rejected PAVOLT 5", "rejected PAVOLT POINT", "commit PaVoltEntry [7*5] vfo0");
+
+  in.beginEntry(InputMode::PaVoltEntry);
+  typeKeys(in, "1155D");
+  CHECK_LOG(f, "digit PaVoltEntry 1 1", "digit PaVoltEntry 1 11", "digit PaVoltEntry 5 115",
+            "digit PaVoltEntry 5 1155", "commit PaVoltEntry [1155] vfo0");
+
+  in.beginEntry(InputMode::PaVoltEntry);
+  typeKeys(in, "11*50D");
+  CHECK_LOG(f, "digit PaVoltEntry 1 1", "digit PaVoltEntry 1 11", "digit PaVoltEntry * 11*",
+            "digit PaVoltEntry 5 11*5", "rejected PAVOLT 0", "commit PaVoltEntry [11*5] vfo0");
+}
+
 // Every mode that takes digits needs its row in kEntries: the keys use it.
 TEST(input_every_entry_mode_has_an_entry_spec) {
-  for (uint8_t m = 0; m <= (uint8_t)InputMode::SweepStopEntry; ++m) {
+  for (uint8_t m = 0; m <= (uint8_t)InputMode::PaVoltEntry; ++m) {
     const InputMode mode = (InputMode)m;
     const EntrySpec *entry = keypadEntrySpec(mode);
     if (mode == InputMode::Normal || mode == InputMode::ChoiceSelect) {

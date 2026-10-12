@@ -33,6 +33,7 @@ enum class InputMode : uint8_t {
   RowEntry,   // FT-8x7 soft key row
   SweepStartEntry,  // NanoVNA sweep start, in MHz like FreqEntry
   SweepStopEntry,   // NanoVNA sweep stop
+  PaVoltEntry,      // QMX Max. PA voltage, in volts with one decimal
 };
 
 // How bank select, profile select or an entry takes digits. One row per mode

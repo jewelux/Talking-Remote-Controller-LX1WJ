@@ -35,6 +35,7 @@ KeypadTraits traitsFor(uint16_t family) {
   else if (family == FT817) t.layout = KeypadLayout::Ft817;
   else if (family == FT857) t.layout = KeypadLayout::Ft857;
   else if (family == FT8X7_OTHER) t.layout = KeypadLayout::Ft8x7;
+  else if (family == QMX) t.layout = KeypadLayout::Qmx;
   // Monitor and transceive are PROTO_CIV only (radio_protocol.cpp).
   t.supportsMonitor = (family & CIV) != 0;
   t.supportsTransceive = (family & CIV) != 0;
@@ -94,6 +95,8 @@ void toggleBank1Lock() { record("toggleBank1Lock"); }
 void queryBank1Power() { record("queryBank1Power"); }
 void queryBank1RfPower() { record("queryBank1RfPower"); }
 void beginBank1RfPowerSet() { record("beginBank1RfPowerSet"); }
+void queryBank1PaVolt() { record("queryBank1PaVolt"); }
+void beginBank1PaVoltSet() { record("beginBank1PaVoltSet"); }
 void queryBank1Smeter() { record("queryBank1Smeter"); }
 void queryBank1Swr() { record("queryBank1Swr"); }
 void queryBank1Mode() { record("queryBank1Mode"); }

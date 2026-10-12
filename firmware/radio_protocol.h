@@ -1,5 +1,6 @@
 #pragma once
 
+#include "qmx_menu.h"
 #include "radio_globals.h"
 
 // Whether the current protocol implements the feature at all. When false, the
@@ -26,6 +27,11 @@ bool querySWRRaw(int32_t& rawOut, uint32_t timeoutMs = 800);
 // only while transmitting; transmittingOut is false on the bare reply the QMX gives in receive.
 bool queryQmxPowerTenths(bool& transmittingOut, int32_t& tenthsOut, uint32_t timeoutMs = 800);
 bool queryQmxSwrHundredths(bool& transmittingOut, int32_t& hundredthsOut, uint32_t timeoutMs = 800);
+// QRP Labs QMX Max. PA voltage (Protection menu), in tenths of a volt: it sets the output power.
+// The set writes it to the QMX's EEPROM, reads it back and applies it (qmx_menu.*). Only for
+// RadioModel::Qmx.
+QmxPaVoltResult queryQmxPaVolt();
+QmxPaVoltResult setQmxPaVolt(uint16_t tenths);
 bool queryRfPowerLevel(uint16_t& valueOut, uint32_t timeoutMs = 800);
 bool setRfPowerLevel(uint16_t value);
 bool queryNr(bool& onOut, uint32_t timeoutMs = 800);

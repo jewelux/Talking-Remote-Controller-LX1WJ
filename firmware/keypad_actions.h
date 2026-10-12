@@ -35,6 +35,10 @@ void queryBank1RfPower();  // "RFPOWER?", sent or staged
 // The watts entry; on the FT-817/818 a level, picked by 1 (L1) .. 4 (High). Experimental on
 // the FT-8x7, "not available" unless EXPERIMENTAL is on.
 void beginBank1RfPowerSet();
+// QMX: the Max. PA voltage, which sets its output power. "PAVOLT?", sent or staged; the entry
+// takes volts with one decimal.
+void queryBank1PaVolt();
+void beginBank1PaVoltSet();
 void queryBank1Smeter();   // "SM?", sent or staged
 void queryBank1Swr();      // "SWR?", sent or staged
 void queryBank1Mode();     // "MODE?", sent or staged

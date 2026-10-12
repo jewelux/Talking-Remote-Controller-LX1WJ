@@ -13,13 +13,15 @@ been connected yet.
 | S-meter (Bank 1 `7`, console `SM?`) | `SM` | in dB; said as S0 to S9, then S9 plus tens of dB. `SM?` also answers on the second socket, with the raw reply |
 | Output power (Bank 1 `4`, console `PO?`) | `PC` | in tenths of a watt, said as watts ("power 4.5 watts"); "power rx" in receive. Also on the second socket |
 | SWR (Bank 1 `8`, console `SWR?`) | `SW` | in hundredths, said as "swr 1.21"; "swr rx" in receive. Also on the second socket |
+| PA voltage (Bank 1 `6`, console `PAVOLT?`) | `MM` | the Protection menu's Max. PA voltage, which sets the output power; said as "p a 7.5 volts". Also on the second socket |
+| PA voltage set (Bank 1 `6` long, console `PAVOLT <V>`) | `MM`, `MU` | 1.0 to 15.0 V, one decimal; written to the QMX's memory, read back and applied (see below) |
 | Radio ID and model (console `ID?`, `OM?`, `IF?`) | `ID`, `OM`, `IF` | `ID020` (TS-480), `OMQC` |
 | USB connection state (console `USB?`, Bank 9 `1`) | | also on the second USB socket |
 
 While the QMX is connected, the full console is not reachable (see Connecting): use the keypad.
 `ID?`, `OM?` and `IF?` are for a later setup with the console on the second socket.
 
-Not yet: VFO B, split, RIT, PTT and the QMX menu commands.
+Not yet: VFO B, split, RIT, PTT and the other QMX menu items.
 
 ## Connecting
 
@@ -30,8 +32,8 @@ ESP32-S3's native USB socket:
 - the QMX's USB cable goes into the controller's **native USB socket**, the one that is normally
   the PC console (USB JTAG/serial, VID 303A);
 - the PC console then uses the **second USB socket**, the USB-to-serial chip (a CH343 or CP210x)
-  wired to UART0. While the USB host runs, it answers only `HAMTRC?`, `USB?`, `SM?`, `PO?` and
-  `SWR?`;
+  wired to UART0. While the USB host runs, it answers only `HAMTRC?`, `USB?`, `SM?`, `PO?`,
+  `SWR?`, `PAVOLT?` and `PAVOLT <V>`;
 - flashing works through the second socket as usual.
 
 The QMX has its own supply, so the native socket does not need to supply 5 V; see
@@ -41,6 +43,34 @@ The QMX ignores the baud rate on its virtual COM port; the profile lists 9600 on
 nothing on DTR or RTS. HamTRC never sends a carriage return or line feed to it: a carriage return
 switches the QMX port into its terminal mode, which ends CAT until the QMX is switched off and on.
 Mode 8 is never sent either: on the QMX it is SWR tune mode, not RTTY-R.
+
+## Output power: the PA voltage
+
+The QMX has no power level setting and no CAT command for one. Its output power follows the
+voltage on the power amplifier, which the **Max. PA voltage** of its Protection menu limits
+(firmware 1_03_000 and later). The power goes with the square of that voltage: 6 V gives about a
+quarter of the power at 12 V, roughly 1 W. Below 1 V it lowers the power no further. The factory
+setting is 11.5 V.
+
+- Bank 1 `6` (console `PAVOLT?`) says the setting: "p a 11.5 volts".
+- Bank 1 `6` long: "volts please"; type the voltage, `*` for the point, then `D`. For 7.5 V:
+  `7` `*` `5` `D`. The QMX's own reading is said after the write, "p a 7.5 volts".
+- Console: `PAVOLT 7.5`.
+
+A value outside 1.0 to 15.0 V, or with two decimals, says "error". Above 12 V the setting matters
+only on a supply above 12 V; the range goes that far so that a value read from the QMX can always
+be set back. The setting is written to the QMX's memory like a change in its menu, so it stays
+after the QMX is switched off. HamTRC does not know how your QMX is built: on a QMX built for
+9 V, do not set more than 9 V. QRP Labs advise
+against much less than 12 V in SSB, which then loses dynamic range; CW and Digi do not mind.
+
+| Spoken after a set | Meaning |
+|---|---|
+| "p a" and the voltage | the QMX holds the new value and uses it |
+| "error" | the value is out of range, the QMX refused it, or it answered something else or holds another value (the console prints which) |
+| "timeout" | the QMX did not answer |
+
+After "error" or "timeout" the QMX may still hold the new value: read it with Bank 1 `6`.
 
 ## What you hear
 
@@ -85,7 +115,13 @@ it while the QMX is connected, so that nothing meant for the NanoVNA reaches the
    QMX answers in receive with a number instead of the bare reply, note it for the developer
    notes below.
 8. Unplug the QMX: "usb off". Plug it in again: "usb on", and the frequency query works.
-9. Choose another profile: the controller restarts and the PC console is back on the native socket.
+9. PA voltage: `PAVOLT?` on the second socket prints the setting, normally `PAVOLT 11.5 V`; Bank 1
+   `6` says it. Compare with the QMX's Protection menu.
+10. Into a dummy load: `PAVOLT 6.0`, then transmit and read `PO?`: about a quarter of the power at
+    11.5 V. If the power did not drop, check "MM Effect" in the QMX's System config, CAT config
+    menu and note it for the developer notes below. `PAVOLT 11.5` (or the value read in step 9)
+    puts it back. Bank 1 `6` long, `1` `1` `*` `5` `D` does the same from the keypad.
+11. Choose another profile: the controller restarts and the PC console is back on the native socket.
 
 ## Developer notes
 
@@ -102,6 +138,21 @@ it while the QMX is connected, so that nothing meant for the NanoVNA reaches the
   (`firmware/radio_protocol.cpp`) report a bare reply as receive, through `qmxParseTxMeter()`
   (`firmware/qmx_codec.*`, tests in `tests/qmx`); the console's `PO?` and `SWR?` take this path
   for `RadioModel::Qmx`, before the generic TS-480 meter readings.
+- PA voltage: `firmware/qmx_menu.*` (tests in `tests/qmx/test_menu.cpp`, against a simulated QMX),
+  over the radio link in `queryQmxPaVolt()` and `setQmxPaVolt()` (`firmware/radio_protocol.cpp`).
+  The read is `MMProtection|Max. PA voltage;`, answered `MM11.5;`; after `?;` or an answer that
+  is not 0.1 to 20 V (`MM0;` while the menu loads) it asks again, three times in all. The set
+  reads the value first, sends `MMProtection|Max. PA voltage=7.5;`, waits 200 ms and reads it
+  back. Only when the read-back still shows the value before is the write sent again, up to
+  three times; a failed read-back is never answered with another write. Once the QMX holds the
+  value, `MU;` makes it reload its configuration, also when it held the value already.
+  The CAT manual describes the MM command but not these details; they come from the
+  qmx-panadapter project (github.com/SteffenLav/qmx-panadapter, `main/cat/cat.c`), which sets
+  this item on QMX radios: the reply has one decimal; an MM Set makes the QMX redraw its menu,
+  with ANSI cursor bytes on the CAT port, and refuses a command sent during the redraw; with
+  "MM Effect" on "On demand", the default, the QMX kept full power after a Set until `MU;`.
+  `MU;` exists from firmware 1_04_001; before it the QMX answers `?;`, which is ignored. A read
+  skips redraw text, also when it runs into the reply.
 - USB host and CDC-ACM: `firmware/transport_usb_host.*`, on the ESP-IDF USB Host Library of the
   ESP32 core (no extra library). It opens the first CDC data interface with a bulk IN and OUT
   endpoint, sends SET_LINE_CODING and SET_CONTROL_LINE_STATE (DTR on) to the ACM control interface

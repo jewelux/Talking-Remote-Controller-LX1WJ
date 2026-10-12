@@ -131,7 +131,7 @@ On a board with two USB-C sockets (ESP32-S3-DevKitC-1 and copies such as the YD-
 | Socket | Chip | Normal profiles | USB radio profile |
 |---|---|---|---|
 | native USB ("USB", "OTG") | ESP32-S3 itself | PC console and flashing | the radio |
-| USB-to-serial ("COM", "UART") | CH343 or CP210x on UART0 | flashing | flashing, `HAMTRC?`, `SM?`, `PO?`, `SWR?` and `USB?` only |
+| USB-to-serial ("COM", "UART") | CH343 or CP210x on UART0 | flashing | flashing, `HAMTRC?`, `SM?`, `PO?`, `SWR?`, `PAVOLT` and `USB?` only |
 
 ### 5 V on the native socket
 

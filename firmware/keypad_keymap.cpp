@@ -62,6 +62,8 @@ KeyBinding bank1(const KeypadTraits& t, char key) {
       if (t.layout == L::Civ) return bind(t.canGetRfPower ? queryBank1RfPower : nullptr, beginBank1RfPowerSet);
       // FT-8x7: experimental; the FT-817/818 picks a level.
       if (t.layout == L::Ft857 || t.layout == L::Ft817) return bind(queryBank1RfPower, beginBank1RfPowerSet);
+      // QMX: the Max. PA voltage, which sets its output power.
+      if (t.layout == L::Qmx) return bind(queryBank1PaVolt, beginBank1PaVoltSet);
       return {};
     case '7': return bind(queryBank1Smeter);
     case '8': return bind(queryBank1Swr);

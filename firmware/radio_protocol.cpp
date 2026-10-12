@@ -1,5 +1,6 @@
 #include "radio_catalog.h"
 #include "radio_globals.h"
+#include "packet_ascii.h"
 #include "protocol_ascii.h"
 #include "protocol_ops_ascii.h"
 #include "protocol_ops_civ.h"
@@ -195,6 +196,38 @@ bool queryQmxSwrHundredths(bool& transmittingOut, int32_t& hundredthsOut, uint32
   const RadioProfile& sp = currentProfile();
   return queryQmxTxMeter(sp.caps.getSwr, sp.commands->swrGet, sp.commands->swrReplyPrefix,
                          transmittingOut, hundredthsOut, timeoutMs);
+}
+
+namespace {
+
+// The QMX menu manager sequences (qmx_menu.*) on the radio link.
+class QmxTransportLink : public QmxCatLink {
+ public:
+  bool send(const char* cmd) override { return asciiPacketSendCommand(cmd); }
+
+  bool readReply(char* out, size_t outLen, uint32_t timeoutMs) override {
+    if (!outLen) return false;
+    String line;
+    if (!asciiPacketReadLine(line, timeoutMs)) return false;
+    const unsigned keep = outLen - 1;
+    const unsigned from = line.length() > keep ? line.length() - keep : 0;
+    snprintf(out, outLen, "%s", line.c_str() + from);
+    return true;
+  }
+
+  void pause(uint32_t ms) override { delay(ms); }
+};
+
+}  // namespace
+
+QmxPaVoltResult queryQmxPaVolt() {
+  QmxTransportLink link;
+  return qmxReadPaVolt(link);
+}
+
+QmxPaVoltResult setQmxPaVolt(uint16_t tenths) {
+  QmxTransportLink link;
+  return qmxSetPaVolt(link, tenths);
 }
 
 bool queryRfPowerLevel(uint16_t& valueOut, uint32_t timeoutMs) {

@@ -170,6 +170,13 @@ static constexpr ChoiceSpec kFt817PowerChoice = {
     "RFPOWER LEVEL", kFt817PowerKeys, sizeof(kFt817PowerKeys) / sizeof(kFt817PowerKeys[0]),
     nullptr, sayPickedFt817Power, commitFt817Power};
 
+void beginBank1PaVoltSet() {
+  printKeypadAction("PAVOLT");
+  keypadBeginEntry(InputMode::PaVoltEntry);
+  printKeypadStatus("VOLTS PLEASE");
+  speakPrompt("volts");
+}
+
 void beginBank1RfPowerSet() {
   if (!currentProfile().caps.setRfPower) {
     printKeypadStatus("RFPOWER -> unavailable");
@@ -203,14 +210,16 @@ void toggleBank1Lock() {
 
 static void sendBank1Query(const String& cmd) {
   printKeypadAction("{}", cmd.c_str());
-  // The SWR and RF power replies say their own word, so saying it here too doubles it.
-  if (cmd != "SWR?" && cmd != "RFPOWER?") speakKeypadCommandWord(cmd);
+  // The SWR, RF power and PA voltage replies say their own word, so saying it here too doubles it.
+  if (cmd != "SWR?" && cmd != "RFPOWER?" && cmd != "PAVOLT?") speakKeypadCommandWord(cmd);
   keypadSendNow(cmd);
 }
 
 void queryBank1Power() { sendBank1Query("PO?"); }
 
 void queryBank1RfPower() { sendBank1Query("RFPOWER?"); }
+
+void queryBank1PaVolt() { sendBank1Query("PAVOLT?"); }
 
 void queryBank1Smeter() { sendBank1Query("SM?"); }
 

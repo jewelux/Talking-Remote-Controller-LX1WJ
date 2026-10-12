@@ -40,6 +40,8 @@
 //   FT857   PROTO_YAESU_FT8X7, RadioModel::Ft857 (FT-857, FT-897)
 //   FT8X7_OTHER  PROTO_YAESU_FT8X7 with no known model (no built-in profile
 //           today): the generic keys plus Bank 6
+//   QMX     PROTO_KENWOOD_ASCII, RadioModel::Qmx: the generic keys plus its PA
+//           voltage on Bank 1
 // Monitor, transceive, band stack and RIT support are PROTO_CIV only
 // (radio_protocol.cpp), so they follow the family and need no trait of their own.
 //
@@ -50,6 +52,7 @@
 //   queryBank1Swr           sendBank1Query("SWR?")
 //   queryBank1Mode          sendBank1Query("MODE?")
 //   queryBank1RfPower       sendBank1Query("RFPOWER?")
+//   queryBank1PaVolt        sendBank1Query("PAVOLT?")
 //   beginBank1ModeSelect    "MODE", mode select, "mode please"
 //   send(CMD)               sendKeypadCommand(CMD): the console command
 //                           CMD. Most FTDX10 keys; the old code had these
@@ -97,7 +100,8 @@ KEYMAP_ROW(FTDX10,          1, '6', "send(PA?)",             "send(PA TOGGLE)", 
 KEYMAP_ROW(IC7300,          1, '6', "queryBank1RfPower",     "beginBank1RfPowerSet",   "-")
 KEYMAP_ROW(IC706,           1, '6', "unassigned",            "beginBank1RfPowerSet",   "-")
 KEYMAP_ROW(FT817 | FT857,   1, '6', "queryBank1RfPower",     "beginBank1RfPowerSet",   "-")
-KEYMAP_ROW(NOT(FTDX10 | CIV | FT817 | FT857), 1, '6', "unassigned", "none",            "-")
+KEYMAP_ROW(QMX,             1, '6', "queryBank1PaVolt",      "beginBank1PaVoltSet",    "-")
+KEYMAP_ROW(NOT(FTDX10 | CIV | FT817 | FT857 | QMX), 1, '6', "unassigned", "none",      "-")
 KEYMAP_ROW(ALL,             1, '7', "queryBank1Smeter",      "none",                   "-")
 KEYMAP_ROW(ALL,             1, '8', "queryBank1Swr",         "none",                   "-")
 KEYMAP_ROW(ALL,             1, '9', "queryBank1Mode",        "beginBank1ModeSelect",   "-")

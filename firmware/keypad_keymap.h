@@ -21,6 +21,7 @@ enum class KeypadLayout : uint8_t {
   Ft817,    // RadioModel Ft817 and Ft818
   Ft857,    // RadioModel Ft857 (FT-857, FT-897)
   NanoVna,  // PROTO_NANOVNA: not a radio; Bank 1 measures, Bank 9 as everywhere, the rest free
+  Qmx,      // RadioModel::Qmx: Generic plus the PA voltage on Bank 1
 };
 
 // What the keymap depends on. The glue fills this in from the active profile

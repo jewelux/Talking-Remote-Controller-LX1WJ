@@ -145,6 +145,14 @@ static void commitRfPower(const char* digits) {
   keypadReportFt8x7Setting(ft8x7RfPowerSet((uint16_t)atoi(digits), state), "RFPOWER", state);
 }
 
+// The QMX checks the value and says the voltage it read back.
+static void commitPaVolt(const char* digits) {
+  printKeypadCommand("ENTER -> PAVOLT");
+  String volts(digits);
+  volts.replace('*', '.');
+  keypadSendNow(String("PAVOLT ") + volts);
+}
+
 static void commitCivAddress(const char* digits) {
   printKeypadCommand("ENTER -> CIVADDR");
   int addr = atoi(digits);
@@ -226,6 +234,7 @@ void keypadEntryCommit(InputMode mode, const char* digits, TargetVfo targetVfo) 
     case InputMode::RowEntry: commitMenuRow(Ft8x7Setting::Row, digits); return;
     case InputMode::SweepStartEntry:
     case InputMode::SweepStopEntry: keypadCommitNanoVnaFrequency(mode, digits); return;
+    case InputMode::PaVoltEntry: commitPaVolt(digits); return;
     case InputMode::Normal:
     case InputMode::ChoiceSelect: return;
   }

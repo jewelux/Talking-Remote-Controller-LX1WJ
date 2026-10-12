@@ -11,6 +11,7 @@
 #include "protocol_ops_yaesu.h"
 #include "protocol_yaesu_cat.h"
 #include "qmx_codec.h"
+#include "qmx_menu.h"
 #include "radio_profile.h"
 #include "radio_prefs.h"
 #include "radio_protocol.h"
@@ -300,6 +301,72 @@ static void answerQmxTxMeter(bool swr, Print& output) {
   if (swr) return;
   playSilenceMs(60);
   speakToken("watts");
+}
+
+static void printTenthsVolts(uint16_t tenths, Print& output) {
+  char text[8];
+  qmxFormatFixed(tenths, 1, text, sizeof(text));
+  output.print(text);
+  output.println(" V");
+}
+
+// QMX PAVOLT? and PAVOLT <V> on the console, and on Serial0 (processHamtrcServiceCommand): the
+// Max. PA voltage of its Protection menu, which sets the output power (qmx_menu.*).
+static void answerQmxPaVolt(const String& line, const String& upper, Print& output) {
+  const bool query = upper == "PAVOLT?";
+  const char* label = query ? "PAVOLT?" : "PAVOLT";
+  if (currentRadioModel() != RadioModel::Qmx) {
+    output.print(label);
+    output.println(" -> unsupported");
+    if (g_speechEnabled) speakNotAvailable();
+    return;
+  }
+  QmxPaVoltResult result;
+  result.status = QmxPaVoltStatus::Invalid;
+  if (query) {
+    result = queryQmxPaVolt();
+  } else {
+    String volts = line.substring(7);
+    volts.trim();
+    uint16_t wanted = 0;
+    if (qmxParseVolts(volts.c_str(), wanted)) result = setQmxPaVolt(wanted);
+  }
+  if (result.status == QmxPaVoltStatus::Ok) {
+    output.print("PAVOLT ");
+    printTenthsVolts(result.tenths, output);
+    if (!g_speechEnabled) return;
+    char text[8];
+    qmxFormatFixed(result.tenths, 1, text, sizeof(text));
+    speakLabel("pa");
+    speakDigitsAndPoint(String(text));
+    playSilenceMs(60);
+    speakToken("volts");
+    return;
+  }
+  output.print(label);
+  switch (result.status) {
+    case QmxPaVoltStatus::NoReply:
+      output.println(" -> timeout");
+      if (g_speechEnabled) speakTimeout();
+      return;
+    case QmxPaVoltStatus::Invalid:
+      output.println(" -> invalid (use 1.0..15.0 V, one decimal at most)");
+      break;
+    case QmxPaVoltStatus::Refused:
+      output.println(" -> refused by the radio");
+      break;
+    case QmxPaVoltStatus::Unexpected:
+      output.print(" -> unexpected reply: ");
+      output.println(result.reply);
+      break;
+    case QmxPaVoltStatus::Mismatch:
+      output.print(" -> the radio holds ");
+      printTenthsVolts(result.tenths, output);
+      break;
+    case QmxPaVoltStatus::Ok:
+      break;
+  }
+  if (g_speechEnabled) speakError();
 }
 
 // Report a command the radio or profile cannot do, and say "not available".
@@ -808,6 +875,7 @@ void printHelp() {
   Serial.println("    MODE <n|name>");
   Serial.println("    MODE LIST");
   Serial.println("    MODE?");
+  Serial.println("    PAVOLT? | PAVOLT <1.0..15.0>  (QMX profile: Max. PA voltage, which sets the output power; the set writes it to the QMX's memory)");
   Serial.println("    PROFILE <slot>  (SLOTS? lists them)");
   Serial.println("    PROFILE NEXT | PREV");
   Serial.println("    PROFILE RESET [ALL]  (saved baud and CI-V address back to the defaults)");
@@ -827,7 +895,7 @@ void printHelp() {
   Serial.println("    TEST");
   Serial.println("    TUNINGSPEECH OFF | ON | TOGGLE");
   Serial.println("    TUNINGSPEECH?");
-  Serial.println("    USB?  (USB host and the radio on the native USB socket; also on the UART socket, as are SM? and, for the QMX, PO? and SWR?)");
+  Serial.println("    USB?  (USB host and the radio on the native USB socket; also on the UART socket, as are SM? and, for the QMX, PO?, SWR? and PAVOLT)");
   Serial.println("    VNA? | VNA <shell command> | VNASCAN  (NanoVNA profile, on the UART socket only)");
   Serial.println("    VERBOSE OFF | ON | TOGGLE");
   Serial.println("    VERBOSE?");
@@ -2813,6 +2881,10 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     answerQmxTxMeter(upper == "SWR?", Serial);
     return true;
   }
+  if (upper == "PAVOLT?" || upper.startsWith("PAVOLT ")) {
+    answerQmxPaVolt(line, upper, Serial);
+    return true;
+  }
   if (upper == "SWR?") {
     if (!refreshLiveSwr()) { reportCommandFailure("SWR?", "no reply"); return true; }
     float swr = swrRawToValue(live.swrRaw);
@@ -3528,13 +3600,17 @@ bool processHamtrcServiceCommand(String line, Print& output) {
   if (handleHamtrcServiceCommand(upper, output)) return true;
   if (handleNanoVnaServiceCommand(line, upper, output)) return true;
   // Only Serial0 comes here. While the USB host holds the native socket, this is the one way to
-  // read the radio's meters (the QMX's replies are not yet confirmed on a radio).
-  const bool qmxTxMeter = currentRadioModel() == RadioModel::Qmx && (upper == "PO?" || upper == "SWR?");
-  if (upper != "SM?" && !qmxTxMeter) return false;
+  // read the radio's meters and its PA voltage (the QMX's replies are not yet confirmed on a radio).
+  const bool qmx = currentRadioModel() == RadioModel::Qmx;
+  const bool qmxTxMeter = qmx && (upper == "PO?" || upper == "SWR?");
+  const bool qmxPaVolt = qmx && (upper == "PAVOLT?" || upper.startsWith("PAVOLT "));
+  if (upper != "SM?" && !qmxTxMeter && !qmxPaVolt) return false;
   g_radioReplyTimedOut = false;
   audioAbortNow();
   if (qmxTxMeter) {
     answerQmxTxMeter(upper == "SWR?", output);
+  } else if (qmxPaVolt) {
+    answerQmxPaVolt(line, upper, output);
   } else {
     answerSmeterQuery(output);
   }
