@@ -322,8 +322,9 @@
   "usb not available" when the active profile does not use USB
 - if the controller restarted after a crash with this profile, the USB connection stays off and it
   says "usb error", so the keypad can still pick another radio. Choosing profile 21 again starts it
-- the native socket must supply 5 V for a radio that takes its USB power from the cable; on some
-  boards that needs a solder jumper (see `docs/hardware_wiring.md`)
+- the QMX has its own supply, so the native socket does not need to supply 5 V. A device that
+  takes its USB power from the cable does need it; on some boards that needs a solder jumper (see
+  `docs/hardware_wiring.md`)
 - not yet: VFO B, split, RIT, PTT. Details in `docs/radios/qrp-labs-qmx.md`
 
 ### Firmware updates

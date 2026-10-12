@@ -34,7 +34,8 @@ ESP32-S3's native USB socket:
   `SWR?`;
 - flashing works through the second socket as usual.
 
-See `docs/hardware_wiring.md`, section 6, for the 5 V supply on the native socket.
+The QMX has its own supply, so the native socket does not need to supply 5 V; see
+`docs/hardware_wiring.md`, section 6.
 
 The QMX ignores the baud rate on its virtual COM port; the profile lists 9600 only. It keys
 nothing on DTR or RTS. HamTRC never sends a carriage return or line feed to it: a carriage return
@@ -56,7 +57,7 @@ Mode 8 is never sent either: on the QMX it is SWR tune mode, not RTTY-R.
 | Spoken | Meaning | What to try |
 |---|---|---|
 | "usb on", "tx" bytes, "rx" bytes | the serial port is open; bytes sent to and received from the QMX since the start | press Bank 1 `0` (frequency), then Bank 9 `1` again: "tx" grows; if "rx" stays zero, the QMX does not answer CAT (check that its first COM port is the CAT port; switch it off and on) |
-| "usb off zero" | the host runs, but no USB device has reached the controller | check the cable and the 5 V supply on the native socket |
+| "usb off zero" | the host runs, but no USB device has reached the controller | check the cable, and that the QMX is switched on |
 | "usb off" and a number above zero | devices came, but none is open now: no CDC serial port, or it was unplugged | unplug the QMX and plug it in again; listen for "usb on" |
 | "usb error" | the host could not start, or was held after a crash restart | choose profile 21 again (Bank 9 `A` long, `2` `1`, `D`) |
 | "usb not available" | the active profile does not use USB | choose profile 21 |
@@ -69,8 +70,8 @@ console. The new profile is announced after the restart.
 1. On the second USB socket's console, `USB?` says `USB host: on` and `serial port: none`.
 2. Plug in the QMX and switch it on: "usb on". `USB?` shows the device and `serial port: open`.
    If nothing is heard, `USB?` lists what the controller saw, and Bank 9 `1` says it without a
-   computer (see the table above); with no device at all, check the 5 V supply on the native
-   socket.
+   computer (see the table above). With no device at all, the `port:` line of `USB?` tells
+   whether the QMX shows itself on the cable (`D+=1`); see the developer notes below.
 3. Bank 1 `0` short: the frequency. Tune the QMX: the new frequency is announced.
 4. Mode select: LSB, USB, CW, DIGI; Bank 3 mode query after each.
 5. S-meter: `SM?` on the second socket prints the raw reply and the S value, and says it; Bank 1
@@ -104,6 +105,15 @@ console. The new profile is announced after the restart.
   ESP32 core (no extra library). It opens the first CDC data interface with a bulk IN and OUT
   endpoint, sends SET_LINE_CODING and SET_CONTROL_LINE_STATE (DTR on) to the ACM control interface
   before it, and moves bytes through two stream buffers. External hubs are supported by the core.
+- The ESP32 core is built with `CONFIG_USB_HOST_ENABLE_ENUM_FILTER_CALLBACK`. With it, the USB Host
+  Library cancels every device after SET_ADDRESS unless `usb_host_config_t.enum_filter_cb` is set,
+  and says so only in a warning the core does not print. `acceptEveryDevice()` takes every device
+  in its first configuration. Before it, no device was ever seen, which looked like missing 5 V.
+- While the host runs, `USB?` also prints the registers: the root port (`port:` connected,
+  enabled, D+ and D- levels, speed), the PHY routing (`phy:` must say USB host), the host channels
+  (`channel n:` address, endpoint, `chena=1` while a transfer is still running, e.g. a device that
+  keeps refusing data) and the devices the USB Host Library knows. `D+=1` with no device seen means
+  the device is there but was not enumerated; `D+=0` means it does not show itself.
 - `transport_serial.*` routes the radio link to it when the active port is `UsbHost`, and drops CR
   and LF on the way.
 - `pollRadioLinkEvents()` in `firmware/radio_monitor.cpp` speaks the events, sends `AI0;` and

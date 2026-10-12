@@ -136,8 +136,10 @@ On a board with two USB-C sockets (ESP32-S3-DevKitC-1 and copies such as the YD-
 ### 5 V on the native socket
 
 A USB host supplies 5 V to the device. Most ESP32-S3 boards do not put 5 V out on the native
-socket, because a diode blocks it. A radio that takes its USB power from the cable is then not
-seen at all. The QMX has its own supply, but may still wait for 5 V on its USB socket.
+socket, because a diode blocks it. A device that takes its USB power from the cable is then not
+seen at all. A device with its own supply does not need it: a NanoVNA running on its battery was
+found and answered with no 5 V on the socket. The QMX has its own supply too, so it should work
+the same way.
 
 - On the YD-ESP32-S3 and similar boards, close the solder jumper marked `USB-OTG`. It bypasses the
   diode, so the board's 5 V reaches the native socket.

@@ -7,6 +7,9 @@
 #include <freertos/task.h>
 #include <stdarg.h>
 
+#include "soc/rtc_cntl_struct.h"
+#include "soc/usb_dwc_struct.h"
+#include "soc/usb_wrap_struct.h"
 #include "usb/usb_host.h"
 
 // Two tasks on core 0 run the USB host: usbLib runs the library, usbClient opens the radio's
@@ -383,6 +386,64 @@ void clientTask(void*) {
   }
 }
 
+// For USB?, while the host runs: the root port, the PHY routing and the host channels as the
+// registers have them. D+=1 with no device seen means the device is there but the USB Host Library
+// did not enumerate it; D+=0 means the device does not show itself (a bus-powered one without 5 V
+// on the socket).
+void printPortRegisters(Print& out) {
+  usb_dwc_hprt_reg_t hprt;
+  hprt.val = USB_DWC.hprt_reg.val;
+  usb_dwc_gotgctl_reg_t otg;
+  otg.val = USB_DWC.gotgctl_reg.val;
+  usb_wrap_otg_conf_reg_t wrap;
+  wrap.val = USB_WRAP.otg_conf.val;
+  const uint32_t rtcUsbConf = RTCCNTL.usb_conf.val;
+  const bool swSelect = RTCCNTL.usb_conf.sw_hw_usb_phy_sel;
+  const bool phyToHost = RTCCNTL.usb_conf.sw_usb_phy_sel && !wrap.phy_sel;
+  out.printf("  port: connected=%u enabled=%u power=%u D+=%u D-=%u speed=%u (HPRT %08lX)\n", hprt.prtconnsts,
+             hprt.prtena, hprt.prtpwr, hprt.prtlnsts & 1, (hprt.prtlnsts >> 1) & 1, hprt.prtspd,
+             (unsigned long)hprt.val);
+  out.printf("  phy: internal PHY on the %s (otg_conf %08lX, rtc usb_conf %08lX)\n",
+             !swSelect ? "console, by eFuse/default" : phyToHost ? "USB host" : "console",
+             (unsigned long)wrap.val, (unsigned long)rtcUsbConf);
+  out.printf("  otg: pad enable=%u, pull override=%u D+ down=%u D- down=%u, A-valid override=%u/%u, "
+             "VBUS-valid override=%u/%u (GOTGCTL %08lX)\n",
+             wrap.pad_enable, wrap.pad_pull_override, wrap.dp_pulldown, wrap.dm_pulldown, otg.avalidoven,
+             otg.avalidovval, otg.vbvalidoven, otg.vbvalidovval, (unsigned long)otg.val);
+  // Every host channel the stack has used: the last request's device address, endpoint and what is
+  // left of it. chena=1 means the transfer is still running, e.g. a device that keeps NAKing.
+  for (int ch = 0; ch < 8; ++ch) {
+    usb_dwc_hcchar_reg_t hcchar;
+    hcchar.val = USB_DWC.host_chans[ch].hcchar_reg.val;
+    if (!hcchar.val) continue;
+    usb_dwc_hctsiz_reg_t hctsiz;
+    hctsiz.val = USB_DWC.host_chans[ch].hctsiz_reg.val;
+    const uint32_t hcint = USB_DWC.host_chans[ch].hcint_reg.val;
+    out.printf("  channel %d: addr=%u ep=%u %s type=%u mps=%u chena=%u | left %u bytes %u packets pid=%u | "
+               "HCINT %08lX\n",
+               ch, hcchar.devaddr, hcchar.epnum, hcchar.epdir ? "IN" : "OUT", hcchar.eptype, hcchar.mps,
+               hcchar.chena, hctsiz.xfersize, hctsiz.pktcnt, hctsiz.pid, (unsigned long)hcint);
+  }
+  out.printf("  frame number: %lu\n", (unsigned long)(USB_DWC.hfnum_reg.val & 0xFFFF));
+  uint8_t addrs[8];
+  int count = 0;
+  if (usb_host_device_addr_list_fill(sizeof(addrs), addrs, &count) == ESP_OK) {
+    out.printf("  devices known to the USB library: %d", count);
+    for (int i = 0; i < count; ++i) out.printf(" %u", addrs[i]);
+    out.println();
+  }
+}
+
+// The core is built with CONFIG_USB_HOST_ENABLE_ENUM_FILTER_CALLBACK, and with that the USB Host
+// Library cancels every enumeration when no filter is set, with only a warning that the core does
+// not print. Takes every device in its first configuration.
+#if CONFIG_USB_HOST_ENABLE_ENUM_FILTER_CALLBACK
+bool acceptEveryDevice(const usb_device_desc_t*, uint8_t* bConfigurationValue) {
+  *bConfigurationValue = 1;
+  return true;
+}
+#endif
+
 bool allocTransfer(size_t bytes, usb_transfer_cb_t callback, usb_transfer_t** out) {
   if (usb_host_transfer_alloc(bytes, 0, out) != ESP_OK) return false;
   (*out)->callback = callback;
@@ -418,6 +479,9 @@ bool usbHostStart() {
 
   usb_host_config_t hostConfig = {};
   hostConfig.intr_flags = ESP_INTR_FLAG_LEVEL1;
+#if CONFIG_USB_HOST_ENABLE_ENUM_FILTER_CALLBACK
+  hostConfig.enum_filter_cb = acceptEveryDevice;
+#endif
   esp_err_t err = usb_host_install(&hostConfig);
   if (err != ESP_OK) {
     s_startError = err;
@@ -519,6 +583,7 @@ void usbHostPrintStatus(Print& out) {
   }
   out.printf("  bytes: rx=%lu tx=%lu  devices seen: %lu\n", (unsigned long)s_rxBytes, (unsigned long)s_txBytes,
              (unsigned long)s_devicesSeen);
+  if (s_started) printPortRegisters(out);
   if (!s_logLock || xSemaphoreTake(s_logLock, pdMS_TO_TICKS(100)) != pdTRUE) return;
   char lines[kLogLines][kLogLineChars];
   const size_t count = s_logCount;
