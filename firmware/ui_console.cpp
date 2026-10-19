@@ -711,7 +711,8 @@ static bool parseConsoleModeToken(String token, uint8_t& modeOut) {
   if (upper == "CWR") { modeOut = 0x07; return true; }
   if (upper == "RTTY-R" || upper == "RTTYR") { modeOut = 0x08; return true; }
   if (upper == "DIGI" || upper == "DIG") { modeOut = 0x11; return true; }
-  if (upper == "PKT") { modeOut = 0x12; return true; }
+  // PKT is packet where the profile has it, else DIGI as before.
+  if (upper == "PKT") { modeOut = currentProfile().modes->pkt[0] ? 0x12 : 0x11; return true; }
   return false;
 }
 

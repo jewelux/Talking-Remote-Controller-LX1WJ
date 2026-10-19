@@ -171,9 +171,9 @@ void printFt847ConsoleDiagHelp() {
   helpLine("F847POLL OFF | ON  (pause the background frequency poll; CAT stays on)");
   helpLine("F847RAW <10 hex digits>  (send a frame, no reply expected)");
   helpLine("F847RAW1? | F847RAW5? <10 hex digits>  (send a frame, read 1 or 5 bytes)");
+  // Each warning is one line, so HELP <word> never shows half of it.
   helpLine("CAUTION: F847RAW sends anything, e.g. 0000000008 = PTT ON (transmit).");
-  helpLine("FM is not supported: in FM a frequency/mode read (03) keys this FT-847;");
-  helpLine("0000000088 = PTT OFF ends it.");
+  helpLine("FM is not supported: in FM a frequency/mode read (03) keys this FT-847; 0000000088 = PTT OFF ends it.");
 }
 
 bool handleConsoleFt847Commands(const String& upper) {
