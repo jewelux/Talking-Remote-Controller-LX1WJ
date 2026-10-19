@@ -103,6 +103,11 @@
 
 ### Console commands
 
+- at startup the console prints one line (version and radio) instead of the full command list.
+  `HELP` lists the topics: `HELP GENERAL`, `HELP RADIO` (the commands for the selected radio),
+  `HELP DIAG` (raw CAT, CI-V and EEPROM tools) and `HELP ALL`. `HELP <word>` prints only the lines
+  containing the word, e.g. `HELP TONE` or `HELP EEPROM`. Each command is now listed on one line
+  with all its forms, e.g. `NB? | NB OFF | ON | TOGGLE`
 - new commands for what only the keypad could do: `ROUND [<Hz>]`, `NRLEVEL`, `NBLEVEL`,
   `MONLEVEL`, `PBT1`, `PBT2`, `RIT` and `VOLUME STEP <+-n>`; `FILWIDTH NEXT | PREV`; `TOGGLE` for
   `MONITOR`, `TRANSCEIVE`, `RIT`, `FILSHAPE` and `TUNINGSPEECH`; `CIVADDR? | <hex>` (CI-V) and

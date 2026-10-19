@@ -159,7 +159,7 @@ Useful commands:
 
 | Command | What it shows |
 |---|---|
-| `HELP` | Every command, for the active protocol |
+| `HELP` | The help topics; `HELP GENERAL`, `RADIO`, `DIAG` or `ALL` lists commands for the active profile, `HELP <word>` the lines containing it |
 | `PROFILE?`, `SLOTS?` | Active profile details (protocol, model, link, capabilities), all slots |
 | `MODE LIST` | Modes the keypad mode select accepts on this profile |
 | `STATUS?` | A status summary of the radio and device |
@@ -596,7 +596,9 @@ FeatureStatus preampToggle(bool& on) {
 
 **7. Console.** In `ui_console.cpp`, add `PREAMP?`, `PREAMP ON`, `PREAMP OFF`
 and `PREAMP TOGGLE` next to `handleConsoleFeatureCommand()`, calling the same
-functions, and list them in `printHelp()`. Existing console commands (here
+functions, and list them in `printHelp()` as one line,
+`helpLine("PREAMP? | PREAMP ON | OFF | TOGGLE")`, under the radio's
+`HELP_RADIO` heading (raw protocol tools go under `HELP_DIAG`). Existing console commands (here
 the FTDX `PA?`) should move onto the shared operation rather than keep a
 second implementation.
 

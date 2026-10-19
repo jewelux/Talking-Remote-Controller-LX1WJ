@@ -6,3 +6,4 @@
 // and testing the radio: raw frames, CAT ON/OFF, byte gap, decoded status bytes.
 bool handleConsoleFt847Commands(const String& upper);
 void printFt847ConsoleHelp();
+void printFt847ConsoleDiagHelp();

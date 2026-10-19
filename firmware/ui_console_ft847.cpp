@@ -1,4 +1,5 @@
 #include "ui_console_ft847.h"
+#include "ui_console.h"
 
 #include "protocol_ft847.h"
 #include "protocol_yaesu_cat.h"
@@ -153,24 +154,26 @@ static void handleNarrowCommand(const String& upper) {
 }
 
 void printFt847ConsoleHelp() {
-  Serial.println("  Yaesu FT-847:");
-  Serial.println("    RXTX?  SM?  (also FREQ, MODE and the keypad)");
-  Serial.println("    PO?                        (PO/ALC meter 0..31 while transmitting)");
-  Serial.println("    NAR? | NAR ON | OFF | TOGGLE  (narrow filter in CW, CW-R, AM; CW-N needs the YF-115C)");
-  Serial.println("    F847?                      (CAT state and byte gap)");
-  Serial.println("    F847CAT ON | OFF           (OFF: nothing is sent until ON)");
-  Serial.println("    F847GAP <0..200> | F847GAP?  (ms between the 5 bytes, default 50)");
-  Serial.println("    F847RX?                    (receiver status 0xE7, decoded)");
-  Serial.println("    F847TX?                    (transmit status 0xF7, decoded)");
-  Serial.println("    F847MODE?                  (mode byte, narrow filter included)");
-  Serial.println("    F847TRACE ON | OFF         (print every frame sent and received)");
-  Serial.println("    F847POLL OFF | ON          (pause the background frequency poll; CAT stays on)");
-  Serial.println("    F847RAW <10 hex digits>    (send a frame, no reply expected)");
-  Serial.println("    F847RAW1? <10 hex digits>  (send a frame, read 1 byte)");
-  Serial.println("    F847RAW5? <10 hex digits>  (send a frame, read 5 bytes)");
-  Serial.println("    CAUTION: F847RAW sends anything, e.g. 0000000008 = PTT ON (transmit).");
-  Serial.println("    FM is not supported: in FM a frequency/mode read (03) keys this FT-847;");
-  Serial.println("    0000000088 = PTT OFF ends it.");
+  helpHeading(HELP_RADIO, "Yaesu FT-847:");
+  helpLine("RXTX? | SM?  (also FREQ, MODE and the keypad)");
+  helpLine("PO?  (PO/ALC meter 0..31 while transmitting)");
+  helpLine("NAR? | NAR ON | OFF | TOGGLE  (narrow filter in CW, CW-R, AM; CW-N needs the YF-115C)");
+}
+
+void printFt847ConsoleDiagHelp() {
+  helpLine("F847?  (CAT state and byte gap)");
+  helpLine("F847CAT ON | OFF  (OFF: nothing is sent until ON)");
+  helpLine("F847GAP? | F847GAP <0..200>  (ms between the 5 bytes, default 50)");
+  helpLine("F847RX?  (receiver status 0xE7, decoded)");
+  helpLine("F847TX?  (transmit status 0xF7, decoded)");
+  helpLine("F847MODE?  (mode byte, narrow filter included)");
+  helpLine("F847TRACE ON | OFF  (print every frame sent and received)");
+  helpLine("F847POLL OFF | ON  (pause the background frequency poll; CAT stays on)");
+  helpLine("F847RAW <10 hex digits>  (send a frame, no reply expected)");
+  helpLine("F847RAW1? | F847RAW5? <10 hex digits>  (send a frame, read 1 or 5 bytes)");
+  helpLine("CAUTION: F847RAW sends anything, e.g. 0000000008 = PTT ON (transmit).");
+  helpLine("FM is not supported: in FM a frequency/mode read (03) keys this FT-847;");
+  helpLine("0000000088 = PTT OFF ends it.");
 }
 
 bool handleConsoleFt847Commands(const String& upper) {

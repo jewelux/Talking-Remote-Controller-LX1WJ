@@ -715,290 +715,273 @@ static bool parseConsoleModeToken(String token, uint8_t& modeOut) {
   return false;
 }
 
-void printHelp() {
+// HELP output goes through helpLine(): it prints a line when its section was asked for, or when
+// the HELP search word is in it. A section title is printed before its first shown line.
+static uint8_t s_helpWant = 0;
+static String s_helpFind;
+static uint8_t s_helpSection = 0;
+static const char* s_helpTitle = nullptr;
+static bool s_helpFound = false;
+
+void helpHeading(HelpSection section, const char* title) {
+  s_helpSection = section;
+  s_helpTitle = title;
+}
+
+void helpLine(const char* text) {
+  if (s_helpFind.length()) {
+    if (upperCopy(String(text)).indexOf(s_helpFind) < 0) return;
+  } else {
+    if (!(s_helpWant & s_helpSection)) return;
+    if (s_helpTitle) {
+      Serial.println();
+      Serial.print("  ");
+      Serial.println(s_helpTitle);
+      s_helpTitle = nullptr;
+    }
+  }
+  s_helpFound = true;
+  Serial.print("    ");
+  Serial.println(text);
+}
+
+static void printHelpIndex() {
+  Serial.println("HELP GENERAL   bank, profile, speech, volume, frequency, mode");
+  Serial.print("HELP RADIO     commands for ");
+  Serial.println(currentProfile().name);
+  Serial.println("HELP DIAG      raw CAT, CI-V and EEPROM diagnostics");
+  Serial.println("HELP ALL       everything");
+  Serial.println("HELP <word>    lines containing a word, e.g. HELP TONE");
+}
+
+void printHelp(const String& topicArg) {
+  String topic = upperCopy(topicArg);
+  topic.trim();
+  if (topic.length() == 0) {
+    printHelpIndex();
+    return;
+  }
+  s_helpFind = "";
+  if (topic == "GENERAL") s_helpWant = HELP_GENERAL;
+  else if (topic == "RADIO") s_helpWant = HELP_RADIO;
+  else if (topic == "DIAG") s_helpWant = HELP_DIAG;
+  else if (topic == "ALL") s_helpWant = HELP_GENERAL | HELP_RADIO | HELP_DIAG;
+  else {
+    s_helpWant = 0;
+    s_helpFind = topic;
+  }
+  s_helpFound = false;
+
   const bool ftdx10 = isFtdx10ConsoleProfile();
   const bool ft8x7 = currentProtocolType() == PROTO_YAESU_FT8X7;
   const bool ft817 = ft8x7 && currentIsFt817Family();
   const bool ft857Family = ft8x7 && currentIsFt857Family();
   const bool ft847 = currentProtocolType() == PROTO_YAESU_FT847;
-  Serial.println();
-  Serial.println("Commands (case-insensitive):");
-  Serial.println("  General:");
-  Serial.println("    AK?");
-  Serial.println("    BANK?");
-  Serial.println("    BANK <1..9>");
-  Serial.println("    BANK NEXT | PREV");
-  Serial.println("    BAUD <rate> | BAUD?");
-  if (!ftdx10) {
-    Serial.println("    BSTACK <1..3>  (hamTRC internal)");
-    Serial.println("    BSTACK? <1..3>  (hamTRC internal)");
-  }
-  Serial.println("    EXPERIMENTAL ON | OFF | TOGGLE  (all caps on for testing, not saved)");
-  Serial.println("    EXPERIMENTAL?");
-  Serial.println("    FB? | FB <kHz> | FBMHZ <MHz>");
-  Serial.println("    FREQ <kHz>");
-  Serial.println("    FREQ?");
-  Serial.println("    FREQMHZ <MHz>");
-  Serial.println("    FR? | FR0");
-  Serial.println("    FT? | FT A | FT B");
-  Serial.println("    HELP");
-  Serial.println("    ID? | IF? | OM?");
-  Serial.println("    LFREQ");
-  Serial.println("    LISTVOICES");
-  Serial.println("    MODE <n|name>");
-  Serial.println("    MODE LIST");
-  Serial.println("    MODE?");
-  Serial.println("    PROFILE <slot>  (SLOTS? lists them)");
-  Serial.println("    PROFILE NEXT | PREV");
-  Serial.println("    PROFILE RESET [ALL]  (saved baud and CI-V address back to the defaults)");
-  Serial.println("    PROFILE?");
-  Serial.println("    QUIET OFF | QUIET ON");
-  Serial.println("    QUIET?");
-  Serial.println("    ROUND [<Hz>]  (round the frequency, default 500 Hz)");
-  Serial.println("    RX | TX");
-  Serial.println("    SAY <digits>");
-  Serial.println("    SLOTS?");
-  Serial.println("    SPEECH OFF | SPEECH ON");
-  Serial.println("    SPEECH?");
-  Serial.println("    SPEED SLOW | NORMAL | FAST");
-  Serial.println("    SPEED?");
-  Serial.println("    STATUS?");
-  Serial.println("    SWT <nn> | SWH <nn>");
-  Serial.println("    TEST");
-  Serial.println("    TUNINGSPEECH OFF | ON | TOGGLE");
-  Serial.println("    TUNINGSPEECH?");
-  Serial.println("    VERBOSE OFF | ON | TOGGLE");
-  Serial.println("    VERBOSE?");
-  Serial.println("    VOICE <name>");
-  Serial.println("    VOLUME <1..9> | VOLUME STEP <+-n>");
-  Serial.println("    VOLUME?");
-  Serial.println();
-  if (!ftdx10 && !ft8x7 && !ft847) {
-    Serial.println("  IC-7300 / CI-V Extensions:");
-    Serial.println("    CIVADDR <hex> | CIVADDR?");
-    Serial.println("    NBLEVEL <0..100> | NBLEVEL STEP <+-n>");
-    Serial.println("    NBLEVEL?");
-    Serial.println("    NB OFF | ON | TOGGLE");
-    Serial.println("    NB?");
-    Serial.println("    FILSHAPE SHARP | SOFT | TOGGLE");
-    Serial.println("    FILSHAPE?");
-    Serial.println("    FILWIDTH <1..3> | NEXT | PREV");
-    Serial.println("    FILWIDTH?");
-    Serial.println("    LOCK OFF | ON | TOGGLE");
-    Serial.println("    LOCK?");
-    Serial.println("    MONITOR OFF | ON | TOGGLE");
-    Serial.println("    MONITOR?");
-    Serial.println("    MONLEVEL <0..100> | MONLEVEL STEP <+-n>");
-    Serial.println("    MONLEVEL?");
-    Serial.println("    NOTCH MID | NAR | WIDE");
-    Serial.println("    NOTCH OFF | ON | TOGGLE");
-    Serial.println("    NOTCH?");
-    Serial.println("    NRLEVEL <0..100> | NRLEVEL STEP <+-n>");
-    Serial.println("    NRLEVEL?");
-    Serial.println("    NR OFF | ON | TOGGLE");
-    Serial.println("    NR?");
-    Serial.println("    PBT1 <-128..127> | CENTER | STEP <+-n>");
-    Serial.println("    PBT1?");
-    Serial.println("    PBT2 <-128..127> | CENTER | STEP <+-n>");
-    Serial.println("    PBT2?");
-    Serial.println("    PROC? | PROCLEVEL?  (speech compressor, read only)");
-    Serial.println("    MICGAIN?  (read only)");
-    Serial.println("    VOX? | VOXGAIN? | VOXDELAY?  (read only)");
-    Serial.print("    RFPOWER <0..");
-    Serial.print((int)(currentProfile().rfPowerMaxWatts ? currentProfile().rfPowerMaxWatts : 100));
-    Serial.println(" W>");
-    Serial.println("    RFPOWER?");
-    Serial.println("    RIT <Hz> | RIT STEP <+-Hz>");
-    Serial.println("    RIT OFF | ON | TOGGLE");
-    Serial.println("    RIT?");
-    Serial.println("    RXTX?");
-    Serial.println("    SPLIT OFF | ON | TOGGLE");
-    Serial.println("    SPLIT?");
-    Serial.println("    TUNE");
-    Serial.println("    TRANSCEIVE OFF | ON | TOGGLE");
-    Serial.println("    TRANSCEIVE?");
-    Serial.println("    TUNER OFF | ON");
-    Serial.println("    TUNER? | TUNER OFF | ON | TOGGLE");
-    Serial.println("    TXFREQ?");
-    Serial.println("    VFO A | B");
-    Serial.println("    MAIN <kHz> | MAIN?");
-    Serial.println("    MAIN MODE <n> | MAIN MODE?");
-    Serial.println("    SUB <kHz> | SUB?");
-    Serial.println("    SUB MODE <n> | SUB MODE?");
-    Serial.println("    VFOA <kHz> | VFOA?");
-    Serial.println("    VFOA MODE <n> | VFOA MODE?");
-    Serial.println("    VFOB <kHz> | VFOB?");
-    Serial.println("    VFOB MODE <n> | VFOB MODE?");
-    Serial.println();
-    Serial.println("  ASCII / Yaesu Extensions:");
+  const bool otherRadio = !ftdx10 && !ft8x7 && !ft847;
+
+  helpHeading(HELP_GENERAL, "General (case-insensitive):");
+  helpLine("AK?");
+  helpLine("BANK? | BANK <1..9> | NEXT | PREV");
+  helpLine("BAUD? | BAUD <rate>");
+  helpLine("EXPERIMENTAL? | EXPERIMENTAL ON | OFF | TOGGLE  (all caps on for testing, not saved)");
+  helpLine("FB? | FB <kHz> | FBMHZ <MHz>");
+  helpLine("FREQ? | FREQ <kHz> | FREQMHZ <MHz>");
+  helpLine("FR? | FR0");
+  helpLine("FT? | FT A | FT B");
+  helpLine("HELP | HELP GENERAL | RADIO | DIAG | ALL | <word>");
+  helpLine("ID? | IF? | OM?");
+  helpLine("LFREQ");
+  helpLine("LISTVOICES");
+  helpLine("MODE? | MODE <n|name> | MODE LIST");
+  helpLine("PROFILE? | PROFILE <slot> | NEXT | PREV  (SLOTS? lists them)");
+  helpLine("PROFILE RESET [ALL]  (saved baud and CI-V address back to the defaults)");
+  helpLine("QUIET? | QUIET OFF | ON");
+  helpLine("ROUND [<Hz>]  (round the frequency, default 500 Hz)");
+  helpLine("RX | TX");
+  helpLine("SAY <digits>");
+  helpLine("SLOTS?");
+  helpLine("SPEECH? | SPEECH OFF | ON");
+  helpLine("SPEED? | SPEED SLOW | NORMAL | FAST");
+  helpLine("STATUS?");
+  helpLine("SWT <nn> | SWH <nn>");
+  helpLine("TEST");
+  helpLine("TUNINGSPEECH? | TUNINGSPEECH OFF | ON | TOGGLE");
+  helpLine("VERBOSE? | VERBOSE OFF | ON | TOGGLE");
+  helpLine("VOICE <name>");
+  helpLine("VOLUME? | VOLUME <1..9> | VOLUME STEP <+-n>");
+
+  if (otherRadio) {
+    char rfPowerLine[48];
+    snprintf(rfPowerLine, sizeof(rfPowerLine), "RFPOWER? | RFPOWER <0..%d W>",
+             (int)(currentProfile().rfPowerMaxWatts ? currentProfile().rfPowerMaxWatts : 100));
+    helpHeading(HELP_RADIO, "IC-7300 / CI-V extensions:");
+    helpLine("CIVADDR? | CIVADDR <hex>");
+    helpLine("NBLEVEL? | NBLEVEL <0..100> | NBLEVEL STEP <+-n>");
+    helpLine("NB? | NB OFF | ON | TOGGLE");
+    helpLine("FILSHAPE? | FILSHAPE SHARP | SOFT | TOGGLE");
+    helpLine("FILWIDTH? | FILWIDTH <1..3> | NEXT | PREV");
+    helpLine("LOCK? | LOCK OFF | ON | TOGGLE");
+    helpLine("MONITOR? | MONITOR OFF | ON | TOGGLE");
+    helpLine("MONLEVEL? | MONLEVEL <0..100> | MONLEVEL STEP <+-n>");
+    helpLine("NOTCH? | NOTCH OFF | ON | TOGGLE | MID | NAR | WIDE");
+    helpLine("NRLEVEL? | NRLEVEL <0..100> | NRLEVEL STEP <+-n>");
+    helpLine("NR? | NR OFF | ON | TOGGLE");
+    helpLine("PBT1? | PBT1 <-128..127> | CENTER | STEP <+-n>");
+    helpLine("PBT2? | PBT2 <-128..127> | CENTER | STEP <+-n>");
+    helpLine("PROC? | PROCLEVEL?  (speech compressor, read only)");
+    helpLine("MICGAIN?  (read only)");
+    helpLine("VOX? | VOXGAIN? | VOXDELAY?  (read only)");
+    helpLine(rfPowerLine);
+    helpLine("RIT? | RIT <Hz> | RIT STEP <+-Hz> | RIT OFF | ON | TOGGLE");
+    helpLine("RXTX?");
+    helpLine("SPLIT? | SPLIT OFF | ON | TOGGLE");
+    helpLine("TUNE");
+    helpLine("TRANSCEIVE? | TRANSCEIVE OFF | ON | TOGGLE");
+    helpLine("TUNER? | TUNER OFF | ON | TOGGLE");
+    helpLine("TXFREQ?");
+    helpLine("VFO A | B");
+    helpLine("MAIN? | MAIN <kHz> | MAIN MODE? | MAIN MODE <n>");
+    helpLine("SUB? | SUB <kHz> | SUB MODE? | SUB MODE <n>");
+    helpLine("VFOA? | VFOA <kHz> | VFOA MODE? | VFOA MODE <n>");
+    helpLine("VFOB? | VFOB <kHz> | VFOB MODE? | VFOB MODE <n>");
+    helpHeading(HELP_RADIO, "ASCII / Yaesu extensions:");
+    helpLine("ALC? | VOL? | SQL?");
+    helpLine("GT? | GT FAST | SLOW | OFF");
+    helpLine("PA? | PA OFF | ON | TOGGLE");
+    helpLine("PS? | PS OFF | ON");
+    helpLine("PTT OFF | ON");
+    helpLine("SM?");
+    helpLine("SWR?");
+    helpLine("VFO TOGGLE | A | B");
+    helpLine("YPOWER OFF | ON");
   } else if (ft847) {
     printFt847ConsoleHelp();
   } else if (ft8x7) {
-    Serial.println("  Yaesu FT8x7:");
-    Serial.println("    RXTX?");
-    Serial.println("    SPLIT OFF | ON | TOGGLE");
-    Serial.println("    SPLIT?");
-    Serial.println("    PTT OFF | ON");
-    Serial.println("    SM?");
-    Serial.println("    SWR?");
-    Serial.println("    RIT OFFSET <8 hex digits>");
-    if (ft817 || ft857Family) Serial.println("    IFSHIFT?  (IF shift on or off, which CAT cannot switch; not spoken)");
-    if (ft817 || ft857Family) Serial.println("    RIT? | RIT OFF | ON | TOGGLE");
-    Serial.println("    CTCSS <Hz> | CTCSS?");
-    Serial.println("    DCS <code> | DCS?");
-    Serial.println(ft857Family ? "    TONE? | TONE OFF | CTCSS | DCS  (read from the radio)"
-                               : "    TONE? | TONE OFF | CTCSS | DCS  (TONE? says the mode last set)");
-    Serial.println(ft857Family ? "    TONEDIR? | TONEDIR NEXT  (BOTH, encode only TX, decode only RX in turn)"
-                               : "    TONEDIR? | TONEDIR NEXT  (BOTH or encode only TX)");
-    if (ft857Family) Serial.println("    SPLITTONE?  (menu 79 of the current band, read only)");
-    Serial.println("    GT? | GT FAST | SLOW | OFF");
-    Serial.println("    PA? | PA OFF | ON | TOGGLE");
-    Serial.println("    PS? | PS OFF | ON");
-    if (ft817 || ft857Family) Serial.println("    VFO SYNC A | B   (set the tracked VFO)");
+    helpHeading(HELP_RADIO, "Yaesu FT8x7:");
+    helpLine("RXTX?");
+    helpLine("SPLIT? | SPLIT OFF | ON | TOGGLE");
+    helpLine("PTT OFF | ON");
+    helpLine("SM?");
+    helpLine("SWR?");
+    helpLine("RIT OFFSET <8 hex digits>");
+    if (ft817 || ft857Family) helpLine("IFSHIFT?  (IF shift on or off, which CAT cannot switch; not spoken)");
+    if (ft817 || ft857Family) helpLine("RIT? | RIT OFF | ON | TOGGLE");
+    helpLine("CTCSS? | CTCSS <Hz>");
+    helpLine("DCS? | DCS <code>");
+    helpLine(ft857Family ? "TONE? | TONE OFF | CTCSS | DCS  (read from the radio)"
+                         : "TONE? | TONE OFF | CTCSS | DCS  (TONE? says the mode last set)");
+    helpLine(ft857Family ? "TONEDIR? | TONEDIR NEXT  (BOTH, encode only TX, decode only RX in turn)"
+                         : "TONEDIR? | TONEDIR NEXT  (BOTH or encode only TX)");
+    if (ft857Family) helpLine("SPLITTONE?  (menu 79 of the current band, read only)");
+    helpLine("GT? | GT FAST | SLOW | OFF");
+    helpLine("PA? | PA OFF | ON | TOGGLE");
+    helpLine("PS? | PS OFF | ON");
+    if (ft817 || ft857Family) helpLine("VFO SYNC A | B  (set the tracked VFO)");
     if (ft817) {
-      Serial.println("    VOL? | SQL?");
-      Serial.println("    VFO TOGGLE | A | B");
-      Serial.println("    VFO A=B  (copy the active VFO to the other)");
-      Serial.println("    YPOWER OFF | ON");
+      helpLine("VOL? | SQL?");
+      helpLine("VFO TOGGLE | A | B");
+      helpLine("VFO A=B  (copy the active VFO to the other)");
+      helpLine("YPOWER OFF | ON");
     } else if (ft857Family) {
-      Serial.println("    VFO TOGGLE  (raw)");
+      helpLine("VFO TOGGLE  (raw)");
     }
-    Serial.println();
-    Serial.println("  Yaesu FT8x7 Diagnostics:");
+    helpLine("ALC? | MOD?");
+    helpLine(ft817 ? "AGC? | BK? | KYR?  (radio settings)"
+                   : "AGC? | IPO? | ATT? | NAR? | DBF? | BK? | KYR?  (radio settings)");
+    helpLine("AGC AUTO | FAST | SLOW | OFF  (experimental: writes it to the EEPROM)");
+    if (!ft817) helpLine("DBF ON | OFF | TOGGLE  (experimental: DSP bandpass filter, writes it to the EEPROM)");
+    helpLine(ft817 ? "NB?" : "NR? | NB? | NOTCH?");
+    helpLine(ft817 ? "NB OFF | ON | TOGGLE  (experimental: writes it to the EEPROM)"
+                   : "NR | NB | NOTCH OFF | ON | TOGGLE  (experimental: writes them to the EEPROM)");
+    if (!ft817) {
+      helpLine("NRLEVEL? | NBLEVEL? | HPF? | LPF? | MICEQ?  (DSP menu settings)");
+      helpLine("NRLEVEL <1..16> | NBLEVEL <0..100> | NRLEVEL STEP | NBLEVEL STEP <+-n>  (experimental: menus 49 and 63)");
+      helpLine("HPF <100..1000> | LPF <1000..6000> | HPF STEP | LPF STEP <+-n>  (experimental: menus 46 and 47, Hz to the nearest step)");
+      helpLine("MICEQ OFF | LPF | HPF | BOTH  (experimental: TX equalizer, menu 48)");
+      helpLine("PROC? | PROCLEVEL?  (speech processor and menu 74)");
+      helpLine("PROC ON | OFF | TOGGLE | PROCLEVEL <0..100> | PROCLEVEL STEP <+-n>  (experimental: writes them to the EEPROM)");
+    }
+    helpLine(ft817 ? "MICGAIN?  (mic gain of the mode: SSB, AM, FM, DIG or PKT menu)"
+                   : "MICGAIN?  (mic gain of the mode: SSB, AM, FM or DIG menu)");
+    helpLine("MICGAIN <0..100> | MICGAIN STEP <+-n>  (experimental: the mode's mic gain, writes it to the EEPROM)");
+    helpLine(ft817 ? "VOX? | VOXGAIN? | VOXDELAY?  (VOX, menus 51 and 50, read only)"
+                   : "VOX? | VOXGAIN? | VOXDELAY?  (VOX, menus 88 and 87, read only)");
+    helpLine(ft817 ? "RFPOWER?  (the TX power level, and its watts on an external supply)" : "RFPOWER?  (menu 75 power of the current band)");
+    helpLine(ft817 ? "RFPOWER HIGH | L3 | L2 | L1  (experimental: writes it to the EEPROM)"
+                   : "RFPOWER <W>  (experimental: menu 75 of the current band, HF and 6 m 5..100, VHF 5..50, UHF 2..20)");
+    helpLine("MENU? | ROW?  (menu item and soft key row, saved when the radio's menu is exited)");
+    helpLine("MENU <n> | ROW <n>  (experimental: writes them to the EEPROM, from 1)");
   } else {
-    Serial.println("  FTDX10 / hamTRC:");
-    Serial.println("    LOCK OFF | ON | TOGGLE");
-    Serial.println("    LOCK?");
-    Serial.println("    NB OFF | ON | TOGGLE");
-    Serial.println("    NB?");
-    Serial.println("    NOTCH OFF | ON | TOGGLE");
-    Serial.println("    NOTCH?");
-    Serial.println("    NR OFF | ON | TOGGLE");
-    Serial.println("    NR?");
-    Serial.println("    PROC? | PROCLEVEL?  (speech processor, read only)");
-    Serial.println("    MICGAIN?  (read only)");
-    Serial.println("    VOX? | VOXGAIN? | VOXDELAY?  (read only)");
-    Serial.println("    RXTX?");
-    Serial.println("    SPLIT OFF | ON | TOGGLE");
-    Serial.println("    SPLIT?");
-    Serial.println("    TUNE");
-    Serial.println("    TUNER? | TUNER OFF | ON | TOGGLE");
-    Serial.println("    TXFREQ?");
-    Serial.println("    VFO A | B");
-    Serial.println("    VFOA <kHz> | VFOA?");
-    Serial.println("    VFOA MODE <n> | VFOA MODE?");
-    Serial.println("    VFOB <kHz> | VFOB?");
-    Serial.println("    VFOB MODE <n> | VFOB MODE?");
-    Serial.println();
-    Serial.println("  FTDX10 ASCII / Yaesu:");
+    helpHeading(HELP_RADIO, "FTDX10:");
+    helpLine("LOCK? | LOCK OFF | ON | TOGGLE");
+    helpLine("NB? | NB OFF | ON | TOGGLE");
+    helpLine("NOTCH? | NOTCH OFF | ON | TOGGLE");
+    helpLine("NR? | NR OFF | ON | TOGGLE");
+    helpLine("PROC? | PROCLEVEL?  (speech processor, read only)");
+    helpLine("MICGAIN?  (read only)");
+    helpLine("VOX? | VOXGAIN? | VOXDELAY?  (read only)");
+    helpLine("RXTX?");
+    helpLine("SPLIT? | SPLIT OFF | ON | TOGGLE");
+    helpLine("TUNE");
+    helpLine("TUNER? | TUNER OFF | ON | TOGGLE");
+    helpLine("TXFREQ?");
+    helpLine("VFO A | B");
+    helpLine("VFOA? | VFOA <kHz> | VFOA MODE? | VFOA MODE <n>");
+    helpLine("VFOB? | VFOB <kHz> | VFOB MODE? | VFOB MODE <n>");
+    helpLine("GT? | GT FAST | SLOW | OFF");
+    helpLine("PA? | PA OFF | ON | TOGGLE");
+    helpLine("PS? | PS OFF | ON");
+    helpLine("SM?");
+    helpLine("SWR?");
   }
+
+  helpHeading(HELP_DIAG, "Diagnostics:");
+  if (!ftdx10) helpLine("BSTACK <1..3> | BSTACK? <1..3>  (hamTRC internal)");
   if (ft847) {
-    // Listed above.
-  } else if (!ftdx10 && !ft8x7) {
-    Serial.println("    ALC? | VOL? | SQL?");
-    Serial.println("    AGC <hex byte>");
-    Serial.println("    CIVRAW? <cmd hex> [payload hex bytes]");
-    Serial.println("    CIVRAW <cmd hex> [payload hex bytes]");
-    Serial.println("    GT? | GT FAST | SLOW | OFF");
-    Serial.println("    LOCKDOC OFF | ON");
-    Serial.println("    PA? | PA OFF | ON | TOGGLE");
-    Serial.println("    PS? | PS OFF | ON");
-    Serial.println("    PTT OFF | ON");
-    Serial.println("    SM?");
-    Serial.println("    SWR?");
-    Serial.println("    VFO TOGGLE | A | B");
-    Serial.println("    YALL?");
-    Serial.println("    YDCS <hex>");
-    Serial.println("    YPOWER OFF | ON");
-    Serial.println("    YRPT MINUS | PLUS | SIMPLEX");
-    Serial.println("    YRPTSHIFT <MHz>");
-    Serial.println("    YLOCKRAW OFF | ON");
-    Serial.println("    YMODEBYTE?");
-    Serial.println("    YFMCTX?");
-    Serial.println("    YSETMODEQ <hex byte>  (quiet write, then wait)");
-    Serial.println("    YRXSTATUS?");
-    Serial.println("    YSETMODE <hex byte>");
-    Serial.println("    YTRACE OFF | ON");
-    Serial.println("    YTMODE <name|hex>");
-    Serial.println("    YTONE <hex>");
-    Serial.println("    YTXSTATUS?");
-    Serial.println("    YVAR?");
-    Serial.println("    YCAT <10 hex digits>");
-    Serial.println("    YCAT? <10 hex digits>");
-    Serial.println("    YCAT1? <hex byte>");
-    Serial.println("    YSCAN1 <start hex> <end hex>");
-    Serial.println("    YSNIFF <ms>");
-    Serial.println("    YSTATUS?");
-  } else if (ft8x7) {
-    Serial.println("    ALC? | MOD?");
-    Serial.println(ft817 ? "    AGC? | BK? | KYR?  (radio settings)"
-                         : "    AGC? | IPO? | ATT? | NAR? | DBF? | BK? | KYR?  (radio settings)");
-    Serial.println("    AGC AUTO | FAST | SLOW | OFF  (experimental: writes it to the EEPROM)");
-    if (!ft817) Serial.println("    DBF ON | OFF | TOGGLE  (experimental: DSP bandpass filter, writes it to the EEPROM)");
-    Serial.println(ft817 ? "    NB?" : "    NR? | NB? | NOTCH?");
-    Serial.println(ft817 ? "    NB OFF | ON | TOGGLE  (experimental: writes it to the EEPROM)"
-                         : "    NR | NB | NOTCH OFF | ON | TOGGLE  (experimental: writes them to the EEPROM)");
-    if (!ft817) Serial.println("    NRLEVEL? | NBLEVEL? | HPF? | LPF? | MICEQ?  (DSP menu settings)");
-    if (!ft817) {
-      Serial.println("    NRLEVEL <1..16> | NBLEVEL <0..100> | NRLEVEL STEP | NBLEVEL STEP <+-n>  (experimental: menus 49 and 63)");
-      Serial.println("    HPF <100..1000> | LPF <1000..6000> | HPF STEP | LPF STEP <+-n>  (experimental: menus 46 and 47, Hz to the nearest step)");
+    printFt847ConsoleDiagHelp();
+  } else if (otherRadio || ft8x7) {
+    helpLine("AGC <hex byte>");
+    helpLine("CIVRAW | CIVRAW? <cmd hex> [payload hex bytes]");
+    if (otherRadio) helpLine("LOCKDOC OFF | ON");
+    helpLine("YALL?");
+    helpLine("YDCS <hex>");
+    helpLine("YRPT MINUS | PLUS | SIMPLEX");
+    helpLine("YRPTSHIFT <MHz>");
+    helpLine("YLOCKRAW OFF | ON");
+    helpLine("YMODEBYTE?");
+    if (otherRadio || ft817) helpLine("YFMCTX?");
+    helpLine("YSETMODE | YSETMODEQ <hex byte>  (YSETMODEQ: quiet write, then wait)");
+    helpLine("YRXSTATUS? | YTXSTATUS? | YSTATUS? | YVAR?");
+    helpLine("YTRACE OFF | ON");
+    helpLine("YTMODE <name|hex>");
+    helpLine("YTONE <hex>");
+    helpLine("YCAT | YCAT? <10 hex digits>");
+    helpLine("YCAT1? <hex byte>");
+    if (ft8x7) {
+      helpLine("YEEPROM? <start hex> [count 1..32]  (read only; not while operating the radio)");
+      helpLine("YEEPROM! <addr hex> <byte hex> <byte hex>  (CAUTION: writes the EEPROM at addr and addr+1)");
+      helpLine("YSETTINGS?  (settings read from the EEPROM)");
     }
-    if (!ft817) {
-      Serial.println("    MICEQ OFF | LPF | HPF | BOTH  (experimental: TX equalizer, menu 48)");
-      Serial.println("    PROC? | PROCLEVEL?  (speech processor and menu 74)");
-      Serial.println("    PROC ON | OFF | TOGGLE | PROCLEVEL <0..100> | PROCLEVEL STEP <+-n>  (experimental: writes them to the EEPROM)");
-    }
-    Serial.println(ft817 ? "    MICGAIN?  (mic gain of the mode: SSB, AM, FM, DIG or PKT menu)"
-                         : "    MICGAIN?  (mic gain of the mode: SSB, AM, FM or DIG menu)");
-    Serial.println("    MICGAIN <0..100> | MICGAIN STEP <+-n>  (experimental: the mode's mic gain, writes it to the EEPROM)");
-    Serial.println(ft817 ? "    VOX? | VOXGAIN? | VOXDELAY?  (VOX, menus 51 and 50, read only)"
-                         : "    VOX? | VOXGAIN? | VOXDELAY?  (VOX, menus 88 and 87, read only)");
-    Serial.println(ft817 ? "    RFPOWER?  (the TX power level, and its watts on an external supply)" : "    RFPOWER?  (menu 75 power of the current band)");
-    Serial.println(ft817 ? "    RFPOWER HIGH | L3 | L2 | L1  (experimental: writes it to the EEPROM)"
-                         : "    RFPOWER <W>  (experimental: menu 75 of the current band, HF and 6 m 5..100, VHF 5..50, UHF 2..20)");
-    Serial.println("    MENU? | ROW?  (menu item and soft key row, saved when the radio's menu is exited)");
-    Serial.println("    MENU <n> | ROW <n>  (experimental: writes them to the EEPROM, from 1)");
-    Serial.println("    AGC <hex byte>");
-    Serial.println("    CIVRAW? <cmd hex> [payload hex bytes]");
-    Serial.println("    CIVRAW <cmd hex> [payload hex bytes]");
-    Serial.println("    YALL?");
-    Serial.println("    YDCS <hex>");
-    Serial.println("    YRPT MINUS | PLUS | SIMPLEX");
-    Serial.println("    YRPTSHIFT <MHz>");
-    Serial.println("    YLOCKRAW OFF | ON");
-    Serial.println("    YMODEBYTE?");
-    if (ft817) Serial.println("    YFMCTX?");
-    Serial.println("    YSETMODEQ <hex byte>  (quiet write, then wait)");
-    Serial.println("    YRXSTATUS?");
-    Serial.println("    YSETMODE <hex byte>");
-    Serial.println("    YTRACE OFF | ON");
-    Serial.println("    YTMODE <name|hex>");
-    Serial.println("    YTONE <hex>");
-    Serial.println("    YTXSTATUS?");
-    Serial.println("    YVAR?");
-    Serial.println("    YCAT <10 hex digits>");
-    Serial.println("    YCAT? <10 hex digits>");
-    Serial.println("    YCAT1? <hex byte>");
-    Serial.println("    YEEPROM? <start hex> [count 1..32]  (read only; not while operating the radio)");
-    Serial.println("    YEEPROM! <addr hex> <byte hex> <byte hex>  (CAUTION: writes the EEPROM at addr and addr+1)");
-    Serial.println("    YSETTINGS?  (settings read from the EEPROM)");
-    Serial.println("    YSCAN1 <start hex> <end hex>");
-    Serial.println("    YSNIFF <ms>");
-    Serial.println("    YSTATUS?");
-  } else {
-    Serial.println("    GT? | GT FAST | SLOW | OFF");
-    Serial.println("    ID?");
-    Serial.println("    IF?");
-    Serial.println("    PA? | PA OFF | ON | TOGGLE");
-    Serial.println("    PS? | PS OFF | ON");
-    Serial.println("    SM?");
-    Serial.println("    SWR?");
+    helpLine("YSCAN1 <start hex> <end hex>");
+    helpLine("YSNIFF <ms>");
   }
-  Serial.println();
+
+  if (!s_helpFound) {
+    if (s_helpFind.length()) {
+      Serial.print("HELP: no command contains ");
+      Serial.println(s_helpFind);
+    } else {
+      Serial.print("HELP: no commands in this topic for ");
+      Serial.println(currentProfile().name);
+    }
+  }
+  s_helpFind = "";
+  s_helpTitle = nullptr;
 }
 
 static bool handleConsoleInfoCommands(const String& upper) {
-  if (upper == "HELP") { printHelp(); return true; }
+  if (upper == "HELP") { printHelp(""); return true; }
+  if (upper.startsWith("HELP ")) { printHelp(upper.substring(5)); return true; }
   if (upper == "STATUS?") { printStatusSummary(); return true; }
   if (upper == "MODE LIST") { printModeList(); return true; }
   if (upper.startsWith("CIVRAW? ") || upper.startsWith("CIVRAW ")) {

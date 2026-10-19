@@ -67,7 +67,11 @@ void setup() {
   g_bootSpeakAtMs = millis() + 900;
 
   initKeypadUi();
-  printHelp();
+  Serial.print("HamTRC ");
+  Serial.print(HAMTRC_FIRMWARE_VERSION);
+  Serial.print(", ");
+  Serial.print(currentProfile().name);
+  Serial.println(". Type HELP for commands.");
 
   if (currentProtocolType() != PROTO_YAESU_FT8X7) {
     (void)refreshLiveFrequency();
