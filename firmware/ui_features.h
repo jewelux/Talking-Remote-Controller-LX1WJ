@@ -64,6 +64,10 @@ void speakFt8x7Setting(const Ft8x7SettingState& state);
 const char* ft8x7AgcName(YaesuAgc agc);
 // "OFF", "LPF", "HPF", "BOTH": menu 48 as the radio shows it, and the console word.
 const char* ft8x7MicEqName(YaesuFt857MicEq eq);
+// "USB", "LSB", "AUTO": menu 23 as the radio shows it, and the console word.
+const char* ft857CwBfoName(Ft857CwBfo bfo);
+// 30 -> "3.0": the CW dash/dot ratio from tenths.
+String cwWeightText(uint16_t tenths);
 // "HIGH", "L3", "L2", "L1": the console word.
 const char* ft817PowerLevelName(Ft817PowerLevel level);
 // The level alone: "l two", "high".

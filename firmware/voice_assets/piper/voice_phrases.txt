@@ -148,6 +148,16 @@ tune
 tuner
 split
 
+# CW menus
+pitch
+delay
+full
+weight
+side tone | sidetone
+key
+reverse
+paddle
+
 # Filter / DSP
 bandpass filter | bandpassfilter
 equalizer

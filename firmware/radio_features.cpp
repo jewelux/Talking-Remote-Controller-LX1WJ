@@ -372,6 +372,16 @@ const char* ft8x7SettingLabel(Ft8x7Setting setting) {
     case Ft8x7Setting::HighCut: return "LPF?";
     case Ft8x7Setting::MicEq: return "MICEQ?";
     case Ft8x7Setting::Antenna: return "ANT?";
+    case Ft8x7Setting::CwSpeed: return "CWSPEED?";
+    case Ft8x7Setting::CwPitch: return "CWPITCH?";
+    case Ft8x7Setting::CwDelay: return "CWDELAY?";
+    case Ft8x7Setting::CwWeight: return "CWWEIGHT?";
+    case Ft8x7Setting::Sidetone: return "SIDETONE?";
+    case Ft8x7Setting::Qsk: return "QSK?";
+    case Ft8x7Setting::KeyReverse: return "KEYREV?";
+    case Ft8x7Setting::CwAutoMode: return "CWAUTO?";
+    case Ft8x7Setting::Paddle: return "PADDLE?";
+    case Ft8x7Setting::CwBfo: return "CWBFO?";
   }
   return "?";
 }
@@ -409,16 +419,37 @@ static bool ft8x7SettingFlag(Ft8x7Setting setting, Ft8x7Flag& flagOut) {
     case Ft8x7Setting::BreakIn: flagOut = Ft8x7Flag::BreakIn; return true;
     case Ft8x7Setting::Keyer: flagOut = Ft8x7Flag::Keyer; return true;
     case Ft8x7Setting::IfShift: flagOut = Ft8x7Flag::IfShift; return true;
+    case Ft8x7Setting::KeyReverse: flagOut = Ft8x7Flag::KeyReverse; return true;
+    case Ft8x7Setting::CwAutoMode: flagOut = Ft8x7Flag::CwAutoMode; return true;
+    case Ft8x7Setting::Paddle: flagOut = Ft8x7Flag::PaddleMicKey; return true;
     default: return false;
   }
 }
 
-// A flag is supported where the EEPROM map has it.
+// The settings that are a CW level.
+static bool ft8x7SettingCwLevel(Ft8x7Setting setting, Ft8x7CwLevel& levelOut) {
+  switch (setting) {
+    case Ft8x7Setting::CwSpeed: levelOut = Ft8x7CwLevel::Speed; return true;
+    case Ft8x7Setting::CwPitch: levelOut = Ft8x7CwLevel::Pitch; return true;
+    case Ft8x7Setting::CwDelay: levelOut = Ft8x7CwLevel::Delay; return true;
+    case Ft8x7Setting::CwWeight: levelOut = Ft8x7CwLevel::Weight; return true;
+    case Ft8x7Setting::Sidetone: levelOut = Ft8x7CwLevel::Sidetone; return true;
+    case Ft8x7Setting::Qsk: levelOut = Ft8x7CwLevel::Qsk; return true;
+    default: return false;
+  }
+}
+
+// A flag or a CW level is supported where the EEPROM map has it.
 static bool ft8x7SettingSupported(Ft8x7Setting setting, Ft8x7Model model) {
   Ft8x7Flag flag = Ft8x7Flag::Nb;
   if (ft8x7SettingFlag(setting, flag)) {
     Ft8x7FlagField field;
     return ft8x7FlagField(model, flag, field);
+  }
+  Ft8x7CwLevel cwLevel = Ft8x7CwLevel::Speed;
+  if (ft8x7SettingCwLevel(setting, cwLevel)) {
+    uint16_t addr = 0;
+    return ft8x7CwLevelAddr(model, cwLevel, addr);
   }
   switch (setting) {
     case Ft8x7Setting::Agc:
@@ -441,8 +472,14 @@ FeatureStatus ft8x7SettingQuery(Ft8x7Setting setting, Ft8x7SettingState& out) {
     if (!yaesuFt8x7QueryFlag(flag, out.on, kFt8x7TimeoutMs)) return failure(FeatureStatus::NoReply);
     return FeatureStatus::Ok;
   }
+  Ft8x7CwLevel cwLevel = Ft8x7CwLevel::Speed;
+  if (ft8x7SettingCwLevel(setting, cwLevel)) {
+    if (!yaesuFt8x7QueryCwLevel(cwLevel, out.value, kFt8x7TimeoutMs)) return failure(FeatureStatus::NoReply);
+    return FeatureStatus::Ok;
+  }
   bool ok = false;
   switch (setting) {
+    case Ft8x7Setting::CwBfo: ok = yaesuFt857QueryCwBfo(out.cwBfo, kFt8x7TimeoutMs); break;
     case Ft8x7Setting::Agc: ok = yaesuFt8x7QueryAgc(out.agc, kFt8x7TimeoutMs); break;
     case Ft8x7Setting::Menu:
     case Ft8x7Setting::Row: {
@@ -506,31 +543,43 @@ static bool ft8x7LevelSetAllowed(Ft8x7Setting setting) {
 }
 
 bool ft8x7LevelRange(Ft8x7Setting setting, uint16_t& minOut, uint16_t& maxOut) {
+  Ft8x7CwLevel cwLevel = Ft8x7CwLevel::Speed;
+  if (ft8x7SettingCwLevel(setting, cwLevel)) return ft8x7CwLevelRange(currentFt8x7Model(), cwLevel, minOut, maxOut);
   YaesuFt857Level level = YaesuFt857Level::NrLevel;
   return ft8x7SettableLevel(setting, level) && ft857LevelRange(level, minOut, maxOut);
 }
 
 FeatureStatus ft8x7LevelSet(Ft8x7Setting setting, uint16_t value, Ft8x7SettingState& out) {
+  Ft8x7CwLevel cwLevel = Ft8x7CwLevel::Speed;
+  const bool cw = ft8x7SettingCwLevel(setting, cwLevel);
   YaesuFt857Level level = YaesuFt857Level::NrLevel;
-  if (!ft8x7SettableLevel(setting, level) || !ft8x7LevelSetAllowed(setting) || !currentIsFt857Family()) {
+  if (cw ? !ft8x7SettingSupported(setting, currentFt8x7Model())
+         : !ft8x7SettableLevel(setting, level) || !currentIsFt857Family()) {
     return FeatureStatus::Unsupported;
   }
+  if (!ft8x7LevelSetAllowed(setting)) return FeatureStatus::Unsupported;
   out = Ft8x7SettingState();
   out.setting = setting;
+  if (cw) return eepromWriteStatus(yaesuFt8x7SetCwLevel(cwLevel, value, out.value, kFt8x7TimeoutMs));
   return eepromWriteStatus(yaesuFt857SetLevel(level, value, out.value, kFt8x7TimeoutMs));
 }
 
 FeatureStatus ft8x7LevelStep(Ft8x7Setting setting, int delta, Ft8x7SettingState& out) {
+  Ft8x7CwLevel cwLevel = Ft8x7CwLevel::Speed;
+  const bool cw = ft8x7SettingCwLevel(setting, cwLevel);
   YaesuFt857Level level = YaesuFt857Level::NrLevel;
-  if (!ft8x7SettableLevel(setting, level) || !ft8x7LevelSetAllowed(setting) || !currentIsFt857Family()) {
+  if (cw ? !ft8x7SettingSupported(setting, currentFt8x7Model())
+         : !ft8x7SettableLevel(setting, level) || !currentIsFt857Family()) {
     return FeatureStatus::Unsupported;
   }
+  if (!ft8x7LevelSetAllowed(setting)) return FeatureStatus::Unsupported;
   out = Ft8x7SettingState();
   out.setting = setting;
+  if (cw) return eepromWriteStatus(yaesuFt8x7StepCwLevel(cwLevel, delta, out.value, kFt8x7TimeoutMs));
   return eepromWriteStatus(yaesuFt857StepLevel(level, delta, out.value, kFt8x7TimeoutMs));
 }
 
-// DBF, BK and KYR, where the model keeps them; IF shift is read only.
+// DBF, BK, KYR and the CW flags, where the model keeps them; IF shift is read only.
 static bool ft8x7FlagSettable(Ft8x7Setting setting, Ft8x7Flag& flag) {
   if (!currentProfile().caps.setRadioMenu || setting == Ft8x7Setting::IfShift) return false;
   return ft8x7SettingFlag(setting, flag) && ft8x7SettingSupported(setting, currentFt8x7Model());
@@ -613,6 +662,13 @@ FeatureStatus ft8x7MicEqSet(YaesuFt857MicEq eq, Ft8x7SettingState& out) {
   out = Ft8x7SettingState();
   out.setting = Ft8x7Setting::MicEq;
   return eepromWriteStatus(yaesuFt857SetMicEq(eq, out.micEq, kFt8x7TimeoutMs));
+}
+
+FeatureStatus ft8x7CwBfoSet(Ft857CwBfo bfo, Ft8x7SettingState& out) {
+  if (!currentProfile().caps.setRadioMenu || !currentIsFt857Family()) return FeatureStatus::Unsupported;
+  out = Ft8x7SettingState();
+  out.setting = Ft8x7Setting::CwBfo;
+  return eepromWriteStatus(yaesuFt857SetCwBfo(bfo, out.cwBfo, kFt8x7TimeoutMs));
 }
 
 // ---- Speech processor, mic gain and VOX writes ----

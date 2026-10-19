@@ -112,6 +112,14 @@ voice_vox.wav
 voice_voxgain.wav
 voice_voxdelay.wav
 voice_ms.wav
+voice_pitch.wav
+voice_delay.wav
+voice_full.wav
+voice_weight.wav
+voice_sidetone.wav
+voice_key.wav
+voice_reverse.wav
+voice_paddle.wav
 voice_transceiver.wav
 voice_sync.wav
 

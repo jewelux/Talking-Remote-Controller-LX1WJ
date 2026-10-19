@@ -71,6 +71,12 @@ Read with `BB`, on demand only. Addresses from the FT8x7Com FT817Setup project, 
 | `0x58` | 7 | VOX (measured, as in the map) |
 | `0x58` | 5 | BK (measured, as in the map) |
 | `0x58` | 4 | KYR (measured, as in the map) |
+| `0x58` | 2 | CW paddle reverse (menu 19), 1 = reverse (`KEYREV?`; KA7OEI map, not measured) |
+| `0x5E` | 3..0 | CW pitch (menu 20), 300 + 50 × value Hz, 300..1000 (`CWPITCH?`; KA7OEI map, not measured) |
+| `0x5F` | 4..0 | CW weight (menu 22), 1:(2.5 + 0.1 × value), 1:2.5..1:4.5 (`CWWEIGHT?`; KA7OEI map, not measured) |
+| `0x60` | all | CW delay (menu 17), × 10 ms, 10..2500 ms (`CWDELAY?`; KA7OEI map, not measured) |
+| `0x61` | 6..0 | CW side tone (menu 44), 0..100 (`SIDETONE?`; KA7OEI map, not measured) |
+| `0x62` | 5..0 | CW speed (menu 21), value + 4 = WPM, 4..60 (`CWSPEED?`; KA7OEI map, not measured). Bits 7..6 are the charge time |
 | `0x5D` | 2 | packet rate (menu 40), 1 = 9600 (KA7OEI map); picks the PKT mic gain |
 | `0x63` | 6..0 | VOX gain (menu 51), 1..100 (measured, as in the KA7OEI map) |
 | `0x64` | 4..0 | VOX delay (menu 50), × 100 ms, 100..2500 ms (measured: 300 ms is 3; the KA7OEI map's 0 = 100 ms is one step off) |
@@ -153,6 +159,7 @@ The active VFO cannot be read: `0x55` bit 0, which Hamlib's `get_vfo` and the KA
 | AGC write (`AGC AUTO/FAST/SLOW/OFF`, Bank 2 `A` long) | experimental, only with EXPERIMENTAL on; verified on an FT-897 by ear: the radio follows at once. Off clears `0xA8` bit 5 and keeps the speed; a speed writes `0x6A` bits 1..0, then sets `0xA8` bit 5. Each is read back |
 | Mic gain, speech processor and TX equalizer write (`MICGAIN`, `PROCLEVEL` with a value or `STEP`, `PROC ON/OFF/TOGGLE`, `MICEQ OFF/LPF/HPF/BOTH`) | experimental, only with EXPERIMENTAL on; verified on an FT-897: the radio's menus 81 (SSB mic gain) and 74 continued from the values written, a menu 49 save kept the EQ written, and the PROC key switched PROC on from the off written. Read-modify-write as the DSP settings: the mic gain of the current mode (`0x7A`–`0x7D`, not in CW and PKT) and the PROC level (`0x9A`) 0–100 in bits 6..0, keeping bit 7 (set in `0x7A` on the radio tested), PROC `0xA9` bit 1, mic EQ `0x93` bits 1..0, keeping the NR level and BPF width. Only the SSB mic gain was tested |
 | VOX, BK, KYR and VOX gain and delay write (`VOX`, `BK`, `KYR ON/OFF/TOGGLE`, `VOXGAIN <1..100>`, `VOXDELAY <100..3000>`, each also `STEP <+-n>` where it has a level) | experimental, only with EXPERIMENTAL on; not yet tested on the radio. Read-modify-write as the DSP settings: `0x6B` bits 7, 5 and 4, the VOX gain `0x76` bits 6..0 (bit 7 kept), the VOX delay `0x77` to the nearest 100 ms, each read back |
+| CW menus (`CWSPEED?`, `CWPITCH?`, `CWDELAY?`, `CWWEIGHT?`, `SIDETONE?`, `QSK?`, `KEYREV?`, `CWAUTO?`, `PADDLE?`, `CWBFO?`, and with EXPERIMENTAL on the same names with a value, `STEP <+-n>`, `ON/OFF/TOGGLE`, `ELEKEY/MICKEY/TOGGLE` or `USB/LSB/AUTO`) | verified on an FT-897 over the console: each read matched the menu value set on the radio; each write changed only its bits (the delay both bytes, `CWDELAY 3000` = `2C 85`, `FULL` = `02`), steps stopped at the ends and stepped through FULL, out-of-range values were refused, and everything was restored. Addresses in the [EEPROM map](#ft-857897-eeprom-map). CW TRAINING (menu 31) not offered. The FT-817/818 has speed, pitch, delay, weight, side tone and key reverse, from the KA7OEI map, not yet tested |
 | IPO, ATT, NAR and split tone write | not offered: they are kept in the band blocks, which the radio saves late from its own working state, so a write could be ignored or overwritten. IF shift stays read only too |
 | RF power write (`RFPOWER <W>`, FT-817/818 `RFPOWER HIGH/L3/L2/L1`, Bank 1 `6` long) | experimental, only with EXPERIMENTAL on. FT-857/897: whole watts of menu 75 for the band group of the current frequency; verified on an FT-897 (its menu 75 continued from the value written). FT-817/818: the level at `0x79`; verified on an FT-817 by reading it back. TX output not measured |
 | EEPROM write timing (`BC`) | the FT-817 answers a write with one byte after about 110 ms and ignores commands sent before it; HamTRC waits for it, and 120 ms on the FT-857/897. The read-back is tried twice, since the FT-817 missed the first one after a menu item write (measured) |
@@ -177,12 +184,18 @@ Shared by all bands:
 | `0x6B` | 7 | VOX |
 | `0x6B` | 5 | BK (yo3ggx) |
 | `0x6B` | 4 | KYR (yo3ggx) |
+| `0x6B` | 2 | CW KEY REV (menu 25), 1 = reverse |
+| `0x71` | 2..0 | CW PITCH (menu 27), 400 + 100 × value Hz, 400..800 Hz. Bits 7..3 are other settings (bit 4 set on the radio tested) |
+| `0x72` | 4..0 | CW WEIGHT (menu 32), 1:(2.5 + 0.1 × value), 1:2.5..1:4.5 |
+| `0x73`, `0x74` | 7..0, 7 | CW DELAY (menu 24), 9 bits: `0x74` bit 7 is bit 8. 2 = FULL, 3..300 = 30..3000 ms in 10 ms steps (3000 ms = `0x12C`) |
+| `0x74` | 6..0 | CW SIDE TONE (menu 29), 0..100 |
 | `0x75` | 5..0 | CW speed (menu 30), value + 4 = WPM, 4..60 |
 | `0x76` | 6..0 | VOX gain (menu 88), 1..100 |
 | `0x77` | all | VOX delay (menu 87), × 100 ms, 100..3000 ms |
 | `0x72` | 7 | SQL/RF GAIN (menu 80): 1 = SQL, 0 = RF gain |
 | `0x7A` | 6..0 | SSB mic gain (menu 81), 0..100 |
-| `0x7B` | all | AM mic gain (menu 5), 0..100 |
+| `0x7B` | 6..0 | AM mic gain (menu 5), 0..100 |
+| `0x7B` | 7 | CW PADDLE (menu 26): 0 = ELEKEY, 1 = MICKEY |
 | `0x7C` | all | FM mic gain (menu 51), 0..100 |
 | `0x7D` | all | DIG gain (menu 37), 0..100 |
 | `0x7E` | all | PKT 1200 level (menu 71), 0..100 |
@@ -192,6 +205,10 @@ Shared by all bands:
 | `0x8D` | 7 | split (Hamlib) |
 | `0x90` | all | DIG VOX (menu 40), 0..100 |
 | `0x91` | 7 | EXT MENU (menu 1), 1 = on: shows menu items 89–91 |
+| `0x92` | 7 | CW AUTO MODE (menu 22), 1 = on |
+| `0x92` | 6 | changed with CW TRAINING (menu 31); the menu's values not measured |
+| `0x92` | 4..2 | CW QSK (menu 28), 10 + 5 × value ms, 10..30 ms |
+| `0x92` | 1..0 | CW BFO (menu 23): 0 = USB, 1 = LSB, 2 = AUTO |
 | `0x93` | 7..4 | DSP NR level (menu 49), value + 1 = 1..16 |
 | `0x93` | 3..2 | DSP BPF width (menu 45): 0 = 60, 1 = 120, 2 = 240 Hz (1 not seen) |
 | `0x93` | 1..0 | DSP MIC EQ (menu 48): 0 = off, 1 = LPF, 2 = HPF, 3 = both |

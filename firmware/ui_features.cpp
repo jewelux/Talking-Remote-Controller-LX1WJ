@@ -218,8 +218,30 @@ static const char* ft8x7SettingName(Ft8x7Setting setting) {
     case Ft8x7Setting::HighCut: return "LPF";
     case Ft8x7Setting::MicEq: return "MICEQ";
     case Ft8x7Setting::Antenna: return "ANT";
+    case Ft8x7Setting::CwSpeed: return "CWSPEED";
+    case Ft8x7Setting::CwPitch: return "CWPITCH";
+    case Ft8x7Setting::CwDelay: return "CWDELAY";
+    case Ft8x7Setting::CwWeight: return "CWWEIGHT";
+    case Ft8x7Setting::Sidetone: return "SIDETONE";
+    case Ft8x7Setting::Qsk: return "QSK";
+    case Ft8x7Setting::KeyReverse: return "KEYREV";
+    case Ft8x7Setting::CwAutoMode: return "CWAUTO";
+    case Ft8x7Setting::Paddle: return "PADDLE";
+    case Ft8x7Setting::CwBfo: return "CWBFO";
   }
   return "";
+}
+
+const char* ft857CwBfoName(Ft857CwBfo bfo) {
+  switch (bfo) {
+    case Ft857CwBfo::Usb: return "USB";
+    case Ft857CwBfo::Lsb: return "LSB";
+    default: return "AUTO";
+  }
+}
+
+String cwWeightText(uint16_t tenths) {
+  return String((int)(tenths / 10)) + "." + String((int)(tenths % 10));
 }
 
 const char* ft8x7MicEqName(YaesuFt857MicEq eq) {
@@ -282,7 +304,76 @@ String ft8x7SettingText(const Ft8x7SettingState& state) {
   }
   if (state.setting == Ft8x7Setting::MicEq) return text + ft8x7MicEqName(state.micEq);
   if (state.setting == Ft8x7Setting::Antenna) return text + (state.on ? "REAR" : "FRONT");
+  switch (state.setting) {
+    case Ft8x7Setting::CwSpeed: return text + String(state.value) + " WPM";
+    case Ft8x7Setting::CwPitch: return text + String(state.value) + " Hz";
+    case Ft8x7Setting::CwDelay: return text + (state.value == 0 ? String("FULL") : String(state.value) + " ms");
+    case Ft8x7Setting::CwWeight: return text + "1:" + cwWeightText(state.value);
+    case Ft8x7Setting::Sidetone: return text + String(state.value);
+    case Ft8x7Setting::Qsk: return text + String(state.value) + " ms";
+    case Ft8x7Setting::Paddle: return text + (state.on ? "MICKEY" : "ELEKEY");
+    case Ft8x7Setting::CwBfo: return text + ft857CwBfoName(state.cwBfo);
+    default: break;
+  }
   return text + (state.on ? "ON" : "OFF");
+}
+
+// "c w speed 23", "c w pitch 700 hertz", "c w delay full", "c w delay 250 m s", "c w weight 3
+// point 0", "side tone 50", "q s k 10 m s", "key reverse", "c w auto on", "paddle m i c",
+// "c w b f o u s b". True when state is one of them.
+static bool speakFt8x7CwSetting(const Ft8x7SettingState& state) {
+  switch (state.setting) {
+    case Ft8x7Setting::CwSpeed:
+      speakLabel("cw speed");
+      speakDigitsAndPoint(String(state.value));
+      return true;
+    case Ft8x7Setting::CwPitch:
+      speakLabel("cw pitch");
+      speakNumber(String(state.value));
+      playSilenceMs(60);
+      speakToken("hertz");
+      return true;
+    case Ft8x7Setting::CwDelay:
+      speakLabel("cw delay");
+      if (state.value == 0) {
+        speakToken("full");
+        return true;
+      }
+      speakNumber(String(state.value));
+      playSilenceMs(60);
+      speakToken("ms");
+      return true;
+    case Ft8x7Setting::CwWeight:
+      speakLabel("cw weight");
+      speakDigitsAndPoint(cwWeightText(state.value));
+      return true;
+    case Ft8x7Setting::Sidetone:
+      speakLabel("sidetone");
+      speakDigitsAndPoint(String(state.value));
+      return true;
+    case Ft8x7Setting::Qsk:
+      speakLabel("q s k");
+      speakNumber(String(state.value));
+      playSilenceMs(60);
+      speakToken("ms");
+      return true;
+    case Ft8x7Setting::KeyReverse:
+      speakLabel("key");
+      speakToken(state.on ? "reverse" : "normal");
+      return true;
+    case Ft8x7Setting::CwAutoMode:
+      speakTokenState("cw auto", state.on);
+      return true;
+    case Ft8x7Setting::Paddle:
+      speakLabel("paddle");
+      speakToken(state.on ? "m i c" : "e l e");
+      return true;
+    case Ft8x7Setting::CwBfo:
+      speakLabel("cw b f o");
+      speakToken(state.cwBfo == Ft857CwBfo::Usb ? "usb" : state.cwBfo == Ft857CwBfo::Lsb ? "lsb" : "auto");
+      return true;
+    default: return false;
+  }
 }
 
 void speakFt8x7Setting(const Ft8x7SettingState& state) {
@@ -345,6 +436,7 @@ void speakFt8x7Setting(const Ft8x7SettingState& state) {
   }
   // No "shift" clip yet: printed only.
   if (state.setting == Ft8x7Setting::IfShift) return;
+  if (speakFt8x7CwSetting(state)) return;
   if (state.setting == Ft8x7Setting::Agc) {
     speakLabel("agc");
     speakToken(ft8x7AgcName(state.agc));

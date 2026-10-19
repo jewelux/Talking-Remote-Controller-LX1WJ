@@ -477,6 +477,25 @@ static bool parseRangedIntArg(const String& upper, const char* prefix, long lo, 
   return true;
 }
 
+// A number with at most one decimal ("3", "3.1", also "1:3.1" as a ratio), in tenths, within
+// lo..hi tenths.
+static bool parseRangedTenthsArg(const String& upper, const char* prefix, long lo, long hi, long& out) {
+  if (!upper.startsWith(prefix)) return false;
+  String arg = upper.substring(strlen(prefix));
+  arg.trim();
+  if (arg.startsWith("1:")) arg = arg.substring(2);
+  const int point = arg.indexOf('.');
+  const String whole = point < 0 ? arg : arg.substring(0, point);
+  const String tenth = point < 0 ? String("0") : arg.substring(point + 1);
+  const long w = whole.toInt();
+  const long t = tenth.toInt();
+  if (!whole.length() || String(w) != whole || tenth.length() != 1 || String(t) != tenth) return false;
+  const long value = w * 10 + t;
+  if (value < lo || value > hi) return false;
+  out = value;
+  return true;
+}
+
 static int32_t clampInt32(int32_t value, int32_t lo, int32_t hi) {
   if (value < lo) return lo;
   if (value > hi) return hi;
@@ -896,6 +915,17 @@ void printHelp(const String& topicArg) {
     if (!ft817) helpLine("DBF ON | OFF | TOGGLE  (experimental: DSP bandpass filter, writes it to the EEPROM)");
     helpLine("BK | KYR ON | OFF | TOGGLE  (experimental: break-in and keyer, write them to the EEPROM)");
     if (ft817) helpLine("ANT FRONT | REAR | TOGGLE  (experimental: menu 07 jack of the current band group)");
+    helpLine(ft817 ? "CWSPEED? | CWPITCH? | CWDELAY? | CWWEIGHT? | SIDETONE? | KEYREV?  (CW menus)"
+                   : "CWSPEED? | CWPITCH? | CWDELAY? | CWWEIGHT? | SIDETONE? | QSK? | KEYREV? | CWAUTO? | PADDLE? | CWBFO?  (CW menus 22..32)");
+    helpLine(ft817 ? "CWSPEED <4..60> | CWPITCH <300..1000> | CWWEIGHT <2.5..4.5> | SIDETONE <0..100>  (experimental: CW menus, to the nearest step)"
+                   : "CWSPEED <4..60> | CWPITCH <400..800> | CWWEIGHT <2.5..4.5> | SIDETONE <0..100>  (experimental: CW menus, to the nearest step)");
+    helpLine(ft817 ? "CWDELAY <10..2500>  (experimental: ms, 10 ms steps)"
+                   : "CWDELAY FULL | <30..3000> | QSK <10..30>  (experimental: ms, 10 and 5 ms steps)");
+    helpLine(ft817 ? "CWSPEED | CWPITCH | CWDELAY | CWWEIGHT | SIDETONE STEP <+-n>  (experimental: menu steps)"
+                   : "CWSPEED | CWPITCH | CWDELAY | CWWEIGHT | SIDETONE | QSK STEP <+-n>  (experimental: menu steps)");
+    helpLine(ft817 ? "KEYREV ON | OFF | TOGGLE  (experimental: dot and dash swapped)"
+                   : "KEYREV | CWAUTO ON | OFF | TOGGLE  (experimental: menus 25 and 22)");
+    if (!ft817) helpLine("PADDLE ELEKEY | MICKEY | TOGGLE | CWBFO USB | LSB | AUTO  (experimental: menus 26 and 23)");
     helpLine(ft817 ? "NB?" : "NR? | NB? | NOTCH?");
     helpLine(ft817 ? "NB OFF | ON | TOGGLE  (experimental: writes it to the EEPROM)"
                    : "NR | NB | NOTCH OFF | ON | TOGGLE  (experimental: writes them to the EEPROM)");
@@ -1429,7 +1459,9 @@ static bool handleConsoleFt8x7Settings(const String& upper) {
     Ft8x7Setting::Dbf, Ft8x7Setting::BreakIn, Ft8x7Setting::Keyer, Ft8x7Setting::RfPower,
     Ft8x7Setting::Menu, Ft8x7Setting::Row, Ft8x7Setting::IfShift, Ft8x7Setting::NrLevel,
     Ft8x7Setting::NbLevel, Ft8x7Setting::LowCut, Ft8x7Setting::HighCut, Ft8x7Setting::MicEq,
-    Ft8x7Setting::Antenna,
+    Ft8x7Setting::Antenna, Ft8x7Setting::CwSpeed, Ft8x7Setting::CwPitch, Ft8x7Setting::CwDelay,
+    Ft8x7Setting::CwWeight, Ft8x7Setting::Sidetone, Ft8x7Setting::Qsk, Ft8x7Setting::KeyReverse,
+    Ft8x7Setting::CwAutoMode, Ft8x7Setting::Paddle, Ft8x7Setting::CwBfo,
   };
   for (Ft8x7Setting setting : kSettings) {
     const char* label = ft8x7SettingLabel(setting);
@@ -1464,7 +1496,8 @@ static bool handleConsoleFt8x7Settings(const String& upper) {
 
 // Experimental, FT-857/897: NRLEVEL <1..16>, NBLEVEL <0..100>, HPF <100..1000>, LPF <1000..6000>
 // (Hz, to the radio's nearest step) and <name> STEP <+-n> in the radio's steps, like Bank 2 `4`,
-// `5`, `7` and `8` long and double.
+// `5`, `7` and `8` long and double. The CW menus the same, on the FT-817/818 too: CWSPEED,
+// CWPITCH (Hz), CWDELAY (ms, or FULL), CWWEIGHT (2.5..4.5), SIDETONE and QSK (ms).
 static bool handleConsoleFt8x7LevelSet(const String& line, const String& upper) {
   struct LevelCommand {
     const char* name;
@@ -1477,6 +1510,12 @@ static bool handleConsoleFt8x7LevelSet(const String& line, const String& upper) 
     {"NBLEVEL", Ft8x7Setting::NbLevel, "50", "10"},
     {"HPF", Ft8x7Setting::LowCut, "300", "1"},
     {"LPF", Ft8x7Setting::HighCut, "2700", "-1"},
+    {"CWSPEED", Ft8x7Setting::CwSpeed, "20", "2"},
+    {"CWPITCH", Ft8x7Setting::CwPitch, "600", "1"},
+    {"CWDELAY", Ft8x7Setting::CwDelay, "250", "-5"},
+    {"CWWEIGHT", Ft8x7Setting::CwWeight, "3.0", "1"},
+    {"SIDETONE", Ft8x7Setting::Sidetone, "50", "-5"},
+    {"QSK", Ft8x7Setting::Qsk, "15", "1"},
   };
   for (const LevelCommand& c : kCommands) {
     const String prefix = String(c.name) + " ";
@@ -1498,14 +1537,23 @@ static bool handleConsoleFt8x7LevelSet(const String& line, const String& upper) 
     } else {
       uint16_t lo = 0;
       uint16_t hi = 0;
-      (void)ft8x7LevelRange(c.setting, lo, hi);
+      // A CW level the radio does not keep has no range.
+      if (!ft8x7LevelRange(c.setting, lo, hi)) {
+        reportFeatureFailure(FeatureStatus::Unsupported, c.name);
+        return true;
+      }
+      const bool weight = c.setting == Ft8x7Setting::CwWeight;
       long value = 0;
-      if (!parseRangedIntArg(upper, prefix.c_str(), lo, hi, value)) {
+      if (c.setting == Ft8x7Setting::CwDelay && upper == prefix + "FULL") {
+        value = 0;  // FULL; refused where the radio has none
+      } else if (weight ? !parseRangedTenthsArg(upper, prefix.c_str(), lo, hi, value)
+                        : !parseRangedIntArg(upper, prefix.c_str(), lo, hi, value)) {
         Serial.print(c.name);
         Serial.print(" -> use ");
-        Serial.print(lo);
+        if (c.setting == Ft8x7Setting::CwDelay && ft8x7CwDelayHasFull(currentFt8x7Model())) Serial.print("FULL or ");
+        Serial.print(weight ? cwWeightText(lo) : String(lo));
         Serial.print("..");
-        Serial.print(hi);
+        Serial.print(weight ? cwWeightText(hi) : String(hi));
         Serial.print(", e.g. ");
         Serial.print(c.name);
         Serial.print(' ');
@@ -1570,30 +1618,54 @@ static bool handleConsoleFt8x7AgcSet(const String& upper) {
   return false;
 }
 
-// Experimental: DBF ON | OFF | TOGGLE on the FT-857/897, like Bank 2 `6` long; BK and KYR the
-// same.
+// Experimental: DBF ON | OFF | TOGGLE on the FT-857/897, like Bank 2 `6` long; BK, KYR, KEYREV
+// and CWAUTO the same, and PADDLE ELEKEY | MICKEY | TOGGLE (on = MICKEY).
 static bool handleConsoleFt8x7FlagSet(const String& upper) {
   struct FlagCommand {
     const char* name;
     Ft8x7Setting setting;
+    const char* onWord;
+    const char* offWord;
   };
   static const FlagCommand kCommands[] = {
-    {"DBF", Ft8x7Setting::Dbf}, {"BK", Ft8x7Setting::BreakIn}, {"KYR", Ft8x7Setting::Keyer},
+    {"DBF", Ft8x7Setting::Dbf, "ON", "OFF"},
+    {"BK", Ft8x7Setting::BreakIn, "ON", "OFF"},
+    {"KYR", Ft8x7Setting::Keyer, "ON", "OFF"},
+    {"KEYREV", Ft8x7Setting::KeyReverse, "ON", "OFF"},
+    {"CWAUTO", Ft8x7Setting::CwAutoMode, "ON", "OFF"},
+    {"PADDLE", Ft8x7Setting::Paddle, "MICKEY", "ELEKEY"},
   };
   for (const FlagCommand& c : kCommands) {
     const String prefix = String(c.name) + " ";
     if (!upper.startsWith(prefix)) continue;
     const String arg = upper.substring(prefix.length());
-    if (arg != "ON" && arg != "OFF" && arg != "TOGGLE") return false;
+    if (arg != c.onWord && arg != c.offWord && arg != "TOGGLE") return false;
     Ft8x7SettingState state;
     const FeatureStatus status = arg == "TOGGLE" ? ft8x7FlagSettingToggle(c.setting, state)
-                                                 : ft8x7FlagSettingSet(c.setting, arg == "ON", state);
+                                                 : ft8x7FlagSettingSet(c.setting, arg == c.onWord, state);
     if (reportFeatureFailure(status, c.name)) return true;
     Serial.println(ft8x7SettingText(state));
     speakFt8x7Setting(state);
     return true;
   }
   return false;
+}
+
+// Experimental, FT-857/897: CWBFO USB | LSB | AUTO (menu 23).
+static bool handleConsoleFt8x7CwBfoSet(const String& upper) {
+  if (!upper.startsWith("CWBFO ")) return false;
+  String arg = upper.substring(6);
+  arg.trim();
+  for (const Ft857CwBfo bfo : {Ft857CwBfo::Usb, Ft857CwBfo::Lsb, Ft857CwBfo::Auto}) {
+    if (arg != ft857CwBfoName(bfo)) continue;
+    Ft8x7SettingState state;
+    if (reportFeatureFailure(ft8x7CwBfoSet(bfo, state), "CWBFO")) return true;
+    Serial.println(ft8x7SettingText(state));
+    speakFt8x7Setting(state);
+    return true;
+  }
+  Serial.println("CWBFO -> use USB, LSB or AUTO");
+  return true;
 }
 
 // Experimental, FT-817/818: ANT FRONT | REAR | TOGGLE, the jack of the current band group.
@@ -1735,6 +1807,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
   if (handleConsoleFt8x7RfPowerSet(upper)) return true;
   if (handleConsoleFt8x7AgcSet(upper)) return true;
   if (handleConsoleFt8x7MicEqSet(upper)) return true;
+  if (handleConsoleFt8x7CwBfoSet(upper)) return true;
 
   if (upper == "YALL?") {
     Serial.println("[YAESU FT8X7]");
@@ -2369,9 +2442,13 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     YaesuFt857MicEq micEq = YaesuFt857MicEq::Off;
     Serial.print("MICEQ ");
     Serial.println(yaesuFt857QueryMicEq(micEq, 300) ? ft8x7MicEqName(micEq) : "--");
+    uint16_t cwSpeed = 0;
+    Serial.print("CWSPEED ");
+    if (yaesuFt8x7QueryCwLevel(Ft8x7CwLevel::Speed, cwSpeed, 300)) Serial.println(cwSpeed);
+    else Serial.println("--");
     struct NamedLevel { const char* name; YaesuFt857Level level; };
     static const NamedLevel levels[] = {
-      {"CWSPEED", YaesuFt857Level::CwSpeed},     {"AMMIC", YaesuFt857Level::AmMicGain},
+      {"AMMIC", YaesuFt857Level::AmMicGain},
       {"DIGGAIN", YaesuFt857Level::DigGain},     {"DIGVOX", YaesuFt857Level::DigVox},
       {"BPF", YaesuFt857Level::BpfWidth},        {"HPF", YaesuFt857Level::HpfCutoff},
       {"LPF", YaesuFt857Level::LpfCutoff},       {"NRLEVEL", YaesuFt857Level::NrLevel},

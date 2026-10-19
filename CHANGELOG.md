@@ -142,6 +142,9 @@
   `VOXDELAY?` its delay ("vox delay 500 m s"), on the IC-7300, IC-705 and IC-7760, the FTDX10,
   the FT-817/818 (menus 51 and 50) and the FT-857/897 (menus 88 and 87). On the other radios
   these commands say "not available"
+- FT-817/818/857/897: the console reads the CW menu settings: speed, pitch, delay, weight, side
+  tone and key reverse, on the FT-857/897 also QSK, auto mode, paddle and BFO (`CWSPEED?`,
+  `CWPITCH?` …, see `HELP CW`). Not yet tested on the FT-817/818
 - on the IC-7300, IC-705, IC-7760 and FTDX10 the console can also change these: `PROC ON | OFF |
   TOGGLE`, `VOX ON | OFF | TOGGLE`, `PROCLEVEL`, `MICGAIN` and `VOXGAIN <0..100>`, and
   `VOXDELAY <ms>`, set to the radio's nearest step (IC-7300, IC-705, IC-7760 0–2000 ms, FTDX10
@@ -218,6 +221,7 @@
     and `VOXDELAY <ms>` (FT-857/897 menus 88 and 87, 100–3000 ms; FT-817/818 menus 51 and 50,
     100–2500 ms; set to the nearest 100 ms), each also with `STEP <+-n>`. On the FT-817/818,
     `ANT FRONT | REAR | TOGGLE` sets the antenna jack (menu 07) of the current band
+  - console only: the CW menu settings, e.g. `CWSPEED 20`, `CWDELAY FULL`, `KEYREV ON`
   - HamTRC writes these settings to the radio's memory and the radio follows at once. They say
     "error" while transmitting, and work only with experimental mode on, otherwise they say "not
     available"
