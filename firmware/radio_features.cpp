@@ -32,11 +32,21 @@ static FeatureStatus eepromWriteStatus(YaesuEepromWrite result) {
     case YaesuEepromWrite::Unsupported: return FeatureStatus::Unsupported;
     case YaesuEepromWrite::OutOfRange: return FeatureStatus::Invalid;
     case YaesuEepromWrite::NoReply: return failure(FeatureStatus::NoReply);
+    case YaesuEepromWrite::UnexpectedBytes: return FeatureStatus::Unexpected;
     case YaesuEepromWrite::Transmitting:
-    case YaesuEepromWrite::UnexpectedBytes:
     case YaesuEepromWrite::NotVerified: return FeatureStatus::Failed;
   }
   return FeatureStatus::Failed;
+}
+
+static FeatureStatus eepromReadStatus(YaesuEepromRead result) {
+  switch (result) {
+    case YaesuEepromRead::Ok: return FeatureStatus::Ok;
+    case YaesuEepromRead::Unsupported: return FeatureStatus::Unsupported;
+    case YaesuEepromRead::NoReply: return failure(FeatureStatus::NoReply);
+    case YaesuEepromRead::UnexpectedBytes: return FeatureStatus::Unexpected;
+  }
+  return FeatureStatus::NoReply;
 }
 
 static bool isFt8x7() {
@@ -474,12 +484,11 @@ FeatureStatus ft8x7SettingQuery(Ft8x7Setting setting, Ft8x7SettingState& out) {
   }
   Ft8x7CwLevel cwLevel = Ft8x7CwLevel::Speed;
   if (ft8x7SettingCwLevel(setting, cwLevel)) {
-    if (!yaesuFt8x7QueryCwLevel(cwLevel, out.value, kFt8x7TimeoutMs)) return failure(FeatureStatus::NoReply);
-    return FeatureStatus::Ok;
+    return eepromReadStatus(yaesuFt8x7QueryCwLevel(cwLevel, out.value, kFt8x7TimeoutMs));
   }
+  if (setting == Ft8x7Setting::CwBfo) return eepromReadStatus(yaesuFt857QueryCwBfo(out.cwBfo, kFt8x7TimeoutMs));
   bool ok = false;
   switch (setting) {
-    case Ft8x7Setting::CwBfo: ok = yaesuFt857QueryCwBfo(out.cwBfo, kFt8x7TimeoutMs); break;
     case Ft8x7Setting::Agc: ok = yaesuFt8x7QueryAgc(out.agc, kFt8x7TimeoutMs); break;
     case Ft8x7Setting::Menu:
     case Ft8x7Setting::Row: {

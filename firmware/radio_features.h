@@ -16,6 +16,7 @@ enum class FeatureStatus : uint8_t {
   NoReply,      // a read got no usable answer
   Failed,       // a write was not accepted
   Invalid,      // the value is out of range; nothing was sent
+  Unexpected,   // the radio holds a value the map does not know; nothing was written
 };
 
 // On the FT-8x7, NR, NB and notch are bits in the EEPROM (FT-857/897 DNR, NB, DNF; FT-817/818
@@ -68,8 +69,8 @@ FeatureStatus procLevelQuery(uint8_t& level);
 // Writes: caps.setProc over CAT (IC-7300, IC-705, IC-7760, FTDX10), and experimentally
 // (caps.setRadioMenu) on the FT-857/897, in the EEPROM. Toggles start from the radio's state.
 // levelOut holds the level set (on the FT-857/897 read back). Invalid above 100; Failed when the
-// radio does not take it, and on the FT-857/897 while transmitting or when the stored byte is out
-// of range (nothing written).
+// radio does not take it, and on the FT-857/897 while transmitting; Unexpected when the stored
+// byte is out of range (nothing written).
 FeatureStatus procSet(bool on);
 FeatureStatus procToggle(bool& on);
 FeatureStatus procLevelSet(uint8_t level, uint8_t& levelOut);
@@ -148,10 +149,12 @@ struct Ft8x7SettingState {
 // The console command: "AGC?", "IPO?", ...
 const char* ft8x7SettingLabel(Ft8x7Setting setting);
 // Unsupported on other radios, and for IPO/ATT/NAR where the band has none (or is not known).
+// Unexpected when a CW setting's stored value does not fit the map.
 FeatureStatus ft8x7SettingQuery(Ft8x7Setting setting, Ft8x7SettingState& out);
 // Experimental (caps.setRadioMenu): sets Menu or Row, counted from 1, in the EEPROM; out holds
-// the value read back. Invalid outside 1..the last item or row; Failed while transmitting, when
-// the stored bytes are not as expected (nothing written) or when the read-back differs.
+// the value read back. Invalid outside 1..the last item or row; Failed while transmitting or
+// when the read-back differs; Unexpected when the stored bytes are not as expected (nothing
+// written).
 FeatureStatus ft8x7MenuRowSet(Ft8x7Setting setting, uint8_t number, Ft8x7SettingState& out);
 // The values ft8x7LevelSet takes: NrLevel 1..16, NbLevel 0..100, LowCut 100..1000 Hz, HighCut
 // 1000..6000 Hz, the CW levels as ft8x7CwLevelRange gives them for the radio. False for other
@@ -160,8 +163,8 @@ bool ft8x7LevelRange(Ft8x7Setting setting, uint16_t& minOut, uint16_t& maxOut);
 // Experimental (caps.setNrLevel, caps.setNbLevel, and caps.setRadioMenu for the cuts): sets the
 // FT-857/897 NrLevel (menu 49), NbLevel (menu 63), LowCut (menu 46, DSP HPF) or HighCut (menu
 // 47, DSP LPF) in the EEPROM, to the radio's step nearest value; out.value holds the value read
-// back. Invalid outside ft8x7LevelRange; Failed while transmitting, when the stored byte is out
-// of range (nothing written) or when the read-back differs.
+// back. Invalid outside ft8x7LevelRange; Failed while transmitting or when the read-back
+// differs; Unexpected when the stored byte is out of range (nothing written).
 // Also experimental (caps.setRadioMenu): the CW levels, on the FT-817/818 too, CwDelay 0 for
 // FULL where the radio has it.
 FeatureStatus ft8x7LevelSet(Ft8x7Setting setting, uint16_t value, Ft8x7SettingState& out);
@@ -180,9 +183,9 @@ FeatureStatus ft817AntennaSet(bool rear, Ft8x7SettingState& out);
 FeatureStatus ft817AntennaToggle(Ft8x7SettingState& out);
 // Experimental (caps.setRfPower): the FT-857/897 TX power in the EEPROM, in watts; out holds
 // the value read back. Menu 75 of the band group of the current frequency, HF and 6 m 5..100,
-// VHF 5..50, UHF 2..20; Invalid for any other value. Failed while transmitting, when the stored
-// byte is out of range (nothing written) or when the read-back differs. Unsupported on the
-// FT-817/818.
+// VHF 5..50, UHF 2..20; Invalid for any other value. Failed while transmitting or when the
+// read-back differs; Unexpected when the stored byte is out of range (nothing written).
+// Unsupported on the FT-817/818.
 FeatureStatus ft8x7RfPowerSet(uint16_t watts, Ft8x7SettingState& out);
 // The same for the FT-817/818 power level; Unsupported on the FT-857/897.
 FeatureStatus ft817PowerLevelSet(Ft817PowerLevel level, Ft8x7SettingState& out);

@@ -627,12 +627,13 @@ YaesuEepromWrite yaesuFt817ToggleRearAntenna(uint64_t hz, bool& rearOut, uint32_
   return rewriteRearAntenna(hz, [](bool rear) { return !rear; }, rearOut, timeoutMs);
 }
 
-bool yaesuFt8x7QueryCwLevel(Ft8x7CwLevel level, uint16_t& valueOut, uint32_t timeoutMs) {
+YaesuEepromRead yaesuFt8x7QueryCwLevel(Ft8x7CwLevel level, uint16_t& valueOut, uint32_t timeoutMs) {
   const Ft8x7Model model = currentFt8x7Model();
   uint16_t addr = 0;
-  if (!ft8x7CwLevelAddr(model, level, addr)) return false;
+  if (!ft8x7CwLevelAddr(model, level, addr)) return YaesuEepromRead::Unsupported;
   uint8_t pair[2] = {0};
-  return readEepromPair(addr, pair, timeoutMs) && ft8x7CwLevelValue(model, level, pair, valueOut);
+  if (!readEepromPair(addr, pair, timeoutMs)) return YaesuEepromRead::NoReply;
+  return ft8x7CwLevelValue(model, level, pair, valueOut) ? YaesuEepromRead::Ok : YaesuEepromRead::UnexpectedBytes;
 }
 
 // Sets level to target(the value stored); valueOut is the value read back. The whole pair is
@@ -675,10 +676,11 @@ YaesuEepromWrite yaesuFt8x7StepCwLevel(Ft8x7CwLevel level, int steps, uint16_t& 
       valueOut, timeoutMs);
 }
 
-bool yaesuFt857QueryCwBfo(Ft857CwBfo& out, uint32_t timeoutMs) {
-  if (!currentIsFt857Family()) return false;
+YaesuEepromRead yaesuFt857QueryCwBfo(Ft857CwBfo& out, uint32_t timeoutMs) {
+  if (!currentIsFt857Family()) return YaesuEepromRead::Unsupported;
   uint8_t b = 0;
-  return yaesuCatReadEepromByte(FT857_CW_BFO_ADDR, b, timeoutMs) && ft857CwBfoFromByte(b, out);
+  if (!yaesuCatReadEepromByte(FT857_CW_BFO_ADDR, b, timeoutMs)) return YaesuEepromRead::NoReply;
+  return ft857CwBfoFromByte(b, out) ? YaesuEepromRead::Ok : YaesuEepromRead::UnexpectedBytes;
 }
 
 YaesuEepromWrite yaesuFt857SetCwBfo(Ft857CwBfo bfo, Ft857CwBfo& bfoOut, uint32_t timeoutMs) {

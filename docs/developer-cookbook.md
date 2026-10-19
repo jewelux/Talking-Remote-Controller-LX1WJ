@@ -891,7 +891,7 @@ pattern):
 | `Ok` | caller prints and speaks the state | same |
 | `Unsupported` | "not available", `"X -> not available"` | "not available" |
 | `Timeout` | "timeout" | "timeout" |
-| `NoReply`, `Failed` | "error", `"X -> no reply"` / `"X -> failed"` | printed only, no sound |
+| `NoReply`, `Failed`, `Unexpected` | "error", `"X -> no reply"` / `"X -> failed"` / `"X -> unexpected value"` | printed only, no sound |
 
 ### Profile fields
 

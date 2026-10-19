@@ -2444,7 +2444,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     Serial.println(yaesuFt857QueryMicEq(micEq, 300) ? ft8x7MicEqName(micEq) : "--");
     uint16_t cwSpeed = 0;
     Serial.print("CWSPEED ");
-    if (yaesuFt8x7QueryCwLevel(Ft8x7CwLevel::Speed, cwSpeed, 300)) Serial.println(cwSpeed);
+    if (yaesuFt8x7QueryCwLevel(Ft8x7CwLevel::Speed, cwSpeed, 300) == YaesuEepromRead::Ok) Serial.println(cwSpeed);
     else Serial.println("--");
     struct NamedLevel { const char* name; YaesuFt857Level level; };
     static const NamedLevel levels[] = {

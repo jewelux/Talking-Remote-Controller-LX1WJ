@@ -8,6 +8,7 @@ const char* featureStatusText(FeatureStatus status) {
     case FeatureStatus::NoReply: return "no reply";
     case FeatureStatus::Failed: return "failed";
     case FeatureStatus::Invalid: return "invalid";
+    case FeatureStatus::Unexpected: return "unexpected value";
     default: return "";
   }
 }
