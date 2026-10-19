@@ -173,7 +173,7 @@ Shared by all bands:
 | `0x6A` | 5 | NB (yo3ggx) |
 | `0x6A` | 4 | IF shift on (long press of CLAR); saved at once, survives a power cycle. The IF shift offset does not survive one and is not stored anywhere in `0x000`–`0x5FF`, also not after a band change saved the band block (measured) |
 | `0x6A` | 3 | the knob tunes IF shift (1) or RIT (0): set by switching IF shift, cleared by RIT going on, kept when RIT goes off. RIT on/off itself was not found |
-| `0x6A` | 1..0 | AGC speed: 00 slow, 01 auto, 10 fast (yo3ggx) |
+| `0x6A` | 1..0 | AGC speed: 00 auto, 01 fast, 10 slow (measured; yo3ggx has 00 slow, 01 auto, 10 fast) |
 | `0x6B` | 7 | VOX |
 | `0x6B` | 5 | BK (yo3ggx) |
 | `0x6B` | 4 | KYR (yo3ggx) |

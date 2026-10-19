@@ -142,17 +142,17 @@ TEST(ft857_rf_power_drops_bit_7) {
 }
 
 TEST(ft857_agc_speed) {
-  CHECK_EQ(ft857AgcFromSpeed(0x00), YaesuAgc::Slow);
-  CHECK_EQ(ft857AgcFromSpeed(0x01), YaesuAgc::Auto);
-  CHECK_EQ(ft857AgcFromSpeed(0x02), YaesuAgc::Fast);
+  CHECK_EQ(ft857AgcFromSpeed(0x00), YaesuAgc::Auto);
+  CHECK_EQ(ft857AgcFromSpeed(0x01), YaesuAgc::Fast);
+  CHECK_EQ(ft857AgcFromSpeed(0x02), YaesuAgc::Slow);
   CHECK_EQ(ft857AgcFromSpeed(0x03), YaesuAgc::Auto);
-  CHECK_EQ(ft857AgcFromSpeed(0xFC), YaesuAgc::Slow);
+  CHECK_EQ(ft857AgcFromSpeed(0xFE), YaesuAgc::Slow);
 }
 
 TEST(ft857_agc_speed_byte_keeps_the_other_bits) {
-  CHECK_EQ(ft857AgcSpeedByte(YaesuAgc::Slow, 0xF3), 0xF0);
-  CHECK_EQ(ft857AgcSpeedByte(YaesuAgc::Auto, 0xF0), 0xF1);
-  CHECK_EQ(ft857AgcSpeedByte(YaesuAgc::Fast, 0x31), 0x32);
+  CHECK_EQ(ft857AgcSpeedByte(YaesuAgc::Auto, 0xF3), 0xF0);
+  CHECK_EQ(ft857AgcSpeedByte(YaesuAgc::Fast, 0xF0), 0xF1);
+  CHECK_EQ(ft857AgcSpeedByte(YaesuAgc::Slow, 0x31), 0x32);
   // Off is a bit of its own: the speed stays.
   CHECK_EQ(ft857AgcSpeedByte(YaesuAgc::Off, 0x32), 0x32);
   static constexpr YaesuAgc kSpeeds[] = {YaesuAgc::Slow, YaesuAgc::Auto, YaesuAgc::Fast};
