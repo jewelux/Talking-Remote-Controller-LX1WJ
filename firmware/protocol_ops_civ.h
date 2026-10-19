@@ -31,6 +31,14 @@ bool civQueryVoxGain(const RadioProfile& sp, uint16_t& valueOut, uint32_t timeou
 bool civVoxDelayAddr(RadioModel model, uint16_t& addrOut);
 // VOX delay (0.0..2.0 s) of the IC-7300, IC-705 and IC-7760, in ms.
 bool civQueryVoxDelayMs(const RadioProfile& sp, uint16_t& msOut, uint32_t timeoutMs);
+// The writes of the above, each read back: caps.setProc, setMicGain, setVox. The VOX delay goes
+// to the nearest 100 ms, 0..2000.
+bool civSetProc(const RadioProfile& sp, bool on);
+bool civSetProcLevel(const RadioProfile& sp, uint16_t value);
+bool civSetMicGain(const RadioProfile& sp, uint16_t value);
+bool civSetVox(const RadioProfile& sp, bool on);
+bool civSetVoxGain(const RadioProfile& sp, uint16_t value);
+bool civSetVoxDelayMs(const RadioProfile& sp, uint16_t ms);
 bool civQueryNotch(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
 bool civSetNotch(const RadioProfile& sp, bool on);
 bool civQueryNotchWidth(const RadioProfile& sp, NotchWidth& widthOut, uint32_t timeoutMs);

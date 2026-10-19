@@ -611,7 +611,7 @@ TEST(ft857_settable_level_ranges) {
     CHECK_EQ(hi, 100);
   }
   CHECK(!ft857LevelRange(YaesuFt857Level::CwSpeed, lo, hi));
-  CHECK(!ft857LevelRange(YaesuFt857Level::VoxGain, lo, hi));
+  CHECK(!ft857LevelRange(YaesuFt857Level::DigVox, lo, hi));
 }
 
 // Bit 7 of the PROC level and mic gain bytes is not theirs and stays.
@@ -828,4 +828,67 @@ TEST(ft817_power_level_byte_keeps_the_other_bits) {
   CHECK_EQ(ft817PowerLevelByte(Ft817PowerLevel::L1, 0xF0), 0xF3);
   CHECK_EQ(ft817PowerLevelByte(Ft817PowerLevel::L3, 0x00), 0x01);
   CHECK_EQ(ft817PowerLevelByte(Ft817PowerLevel::L2, 0x03), 0x02);
+}
+
+TEST(ft857_vox_levels_can_be_set) {
+  uint16_t lo = 0;
+  uint16_t hi = 0;
+  CHECK(ft857LevelRange(YaesuFt857Level::VoxGain, lo, hi));
+  CHECK_EQ(lo, 1);
+  CHECK_EQ(hi, 100);
+  CHECK(ft857LevelRange(YaesuFt857Level::VoxDelay, lo, hi));
+  CHECK_EQ(lo, 100);
+  CHECK_EQ(hi, 3000);
+  uint8_t out = 0;
+  CHECK(ft857LevelByte(YaesuFt857Level::VoxGain, 50, 0x80 | 10, out));
+  CHECK_EQ(out, 0x80 | 50);  // bit 7 kept
+  CHECK(ft857LevelByte(YaesuFt857Level::VoxDelay, 500, 3, out));
+  CHECK_EQ(out, 5);
+  CHECK(ft857LevelByte(YaesuFt857Level::VoxDelay, 549, 3, out));  // to the nearest 100 ms
+  CHECK_EQ(out, 5);
+  out = 0xAA;
+  CHECK(!ft857LevelByte(YaesuFt857Level::VoxGain, 0, 10, out));
+  CHECK(!ft857LevelByte(YaesuFt857Level::VoxDelay, 3100, 3, out));
+  CHECK(!ft857LevelByte(YaesuFt857Level::VoxDelay, 500, 0, out));  // stored 0: the map does not fit
+  CHECK_EQ(out, 0xAA);
+  CHECK_EQ(ft857LevelStep(YaesuFt857Level::VoxDelay, 500, -2), 300);
+  CHECK_EQ(ft857LevelStep(YaesuFt857Level::VoxDelay, 2900, INT_MAX), 3000);
+  CHECK_EQ(ft857LevelStep(YaesuFt857Level::VoxDelay, 200, INT_MIN), 100);
+  CHECK_EQ(ft857LevelStep(YaesuFt857Level::VoxGain, 3, -10), 1);
+}
+
+TEST(ft817_vox_gain_byte_is_1_to_100) {
+  uint8_t out = 0;
+  CHECK(ft817VoxGainByte(50, 0x80 | 10, out));
+  CHECK_EQ(out, 0x80 | 50);
+  out = 0xAA;
+  CHECK(!ft817VoxGainByte(0, 10, out));
+  CHECK(!ft817VoxGainByte(101, 10, out));
+  CHECK(!ft817VoxGainByte(50, 0, out));  // stored 0: the map does not fit
+  CHECK_EQ(out, 0xAA);
+}
+
+TEST(ft817_vox_delay_byte_keeps_bits_7_5) {
+  uint8_t out = 0;
+  CHECK(ft817VoxDelayByte(300, 0xE5, out));
+  CHECK_EQ(out, 0xE3);
+  CHECK(ft817VoxDelayByte(2500, 0x05, out));
+  CHECK_EQ(out, 0x19);
+  CHECK(ft817VoxDelayByte(149, 0x05, out));  // to the nearest 100 ms
+  CHECK_EQ(out, 0x01);
+  out = 0xAA;
+  CHECK(!ft817VoxDelayByte(99, 0x05, out));
+  CHECK(!ft817VoxDelayByte(2600, 0x05, out));
+  CHECK(!ft817VoxDelayByte(500, 0x00, out));  // stored 0 or above 25: the map does not fit
+  CHECK(!ft817VoxDelayByte(500, 0x1A, out));
+  CHECK_EQ(out, 0xAA);
+  CHECK_EQ(ft817VoxDelayStep(500, 2), 700);
+  CHECK_EQ(ft817VoxDelayStep(500, INT_MAX), 2500);
+  CHECK_EQ(ft817VoxDelayStep(500, INT_MIN), 100);
+}
+
+TEST(ft817_rear_antenna_byte_keeps_the_other_bits) {
+  CHECK_EQ(ft817RearAntennaByte(Ft8x7BandGroup::Hf, true, 0x80), 0x81);  // split kept
+  CHECK_EQ(ft817RearAntennaByte(Ft8x7BandGroup::Vhf, false, 0xBF), 0xAF);
+  CHECK_EQ(ft817RearAntennaByte(Ft8x7BandGroup::Uhf, true, 0x20), 0x20);
 }

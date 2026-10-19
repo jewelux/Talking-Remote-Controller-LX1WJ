@@ -37,7 +37,7 @@ enum class YaesuEepromWrite : uint8_t {
 // radio overwrites it when its menu is open and then exited.
 YaesuEepromWrite yaesuFt8x7SetMenuOrRow(bool row, uint8_t number, uint8_t& numberOut,
                                         uint32_t timeoutMs);
-// Sets a flag (NB, DNR, DNF, DBF, PROC); on sets every bit of the flag. Nothing is written when the
+// Sets a flag (NB, DNR, DNF, DBF, PROC, VOX, BK, KYR); on sets every bit of the flag. Nothing is written when the
 // byte is already so.
 YaesuEepromWrite yaesuFt8x7SetFlag(Ft8x7Flag flag, bool on, uint32_t timeoutMs);
 // Flips a flag from the byte read for the write, so a change on the radio's own keys counts.
@@ -106,3 +106,16 @@ YaesuEepromWrite yaesuFt8x7StepMicGain(Ft8x7MicGain gain, int steps, uint8_t& va
 bool yaesuFt8x7QueryVoxGain(uint8_t& valueOut, uint32_t timeoutMs);
 // FT-857/897 menu 87, FT-817 menu 50; ms.
 bool yaesuFt8x7QueryVoxDelayMs(uint16_t& msOut, uint32_t timeoutMs);
+// Sets the VOX gain, 1..100; bit 7 of its byte is kept. valueOut is the value read back.
+YaesuEepromWrite yaesuFt8x7SetVoxGain(uint8_t value, uint8_t& valueOut, uint32_t timeoutMs);
+// The same, steps from the gain read for the write, kept within 1..100.
+YaesuEepromWrite yaesuFt8x7StepVoxGain(int steps, uint8_t& valueOut, uint32_t timeoutMs);
+// Sets the VOX delay to the 100 ms step nearest ms: FT-857/897 100..3000, FT-817 100..2500.
+// msOut is the value read back.
+YaesuEepromWrite yaesuFt8x7SetVoxDelayMs(uint16_t ms, uint16_t& msOut, uint32_t timeoutMs);
+// The same, steps of 100 ms from the delay read for the write, kept within the range.
+YaesuEepromWrite yaesuFt8x7StepVoxDelay(int steps, uint16_t& msOut, uint32_t timeoutMs);
+// FT-817/818: sets the jack of the band group of hz (menu 07), keeping the other groups and
+// split. rearOut is the jack read back.
+YaesuEepromWrite yaesuFt817SetRearAntenna(uint64_t hz, bool rear, bool& rearOut, uint32_t timeoutMs);
+YaesuEepromWrite yaesuFt817ToggleRearAntenna(uint64_t hz, bool& rearOut, uint32_t timeoutMs);

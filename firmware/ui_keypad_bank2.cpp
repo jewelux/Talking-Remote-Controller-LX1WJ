@@ -82,7 +82,7 @@ void toggleBank2Ft8x7Dbf() {
   printKeypadAction("DBF");
   prepareKeypadSpeechResponse();
   Ft8x7SettingState state;
-  keypadReportFt8x7Setting(ft8x7DbfToggle(state), "DBF", state);
+  keypadReportFt8x7Setting(ft8x7FlagSettingToggle(Ft8x7Setting::Dbf, state), "DBF", state);
 }
 
 static constexpr ChoiceOption kFt8x7AgcKeys[] = {

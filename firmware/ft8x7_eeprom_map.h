@@ -186,7 +186,8 @@ bool ft857LevelAddr(YaesuFt857Level level, uint16_t& addrOut);
 uint16_t ft857LevelValue(YaesuFt857Level level, uint8_t b);
 // The values a level can be set to, in the units the radio shows: NrLevel 1..16, NbLevel 0..100,
 // HpfCutoff 100..1000 Hz, LpfCutoff 1000..6000 Hz, ProcLevel and the mic gains (SsbMicGain,
-// AmMicGain, FmMicGain, DigGain) 0..100. False for the other levels, which cannot be set.
+// AmMicGain, FmMicGain, DigGain) 0..100, VoxGain 1..100, VoxDelay 100..3000 ms. False for the
+// other levels, which cannot be set.
 bool ft857LevelRange(YaesuFt857Level level, uint16_t& minOut, uint16_t& maxOut);
 // The byte that sets level to the radio's step nearest value (HPF steps are 60 Hz, LPF steps
 // about 160 Hz), made from old with every other bit kept. False, and out untouched, when value
@@ -227,6 +228,8 @@ uint8_t ft817AgcByte(YaesuAgc agc, uint8_t old);
 // broadcast, 3 air, 4 2 m, 5 UHF (KA7OEI map). Bit 7 of the same byte is split.
 static constexpr uint16_t FT817_ANTENNA_ADDR = 0x007A;
 uint8_t ft817RearAntennaMask(Ft8x7BandGroup group);
+// The byte with the group's jack set to rear (or front), every other bit of old kept.
+uint8_t ft817RearAntennaByte(Ft8x7BandGroup group, bool rear, uint8_t old);
 
 // FT-817 mic gains, bits 6..0, 0..100 (KA7OEI map): SSB 0x67 (menu 46), AM 0x68 (menu 5), FM
 // 0x69 (menu 29), DIG 0x6A (menu 25), PKT 0x6B (menu 39) at 1200 baud and 0x6C (menu 3) at
@@ -252,3 +255,11 @@ bool ft817LevelByte(uint8_t value, uint8_t old, uint8_t& out);
 // Measured: 300 ms is 3 and the default 500 ms is 5; the KA7OEI map says 0 = 100 ms.
 static constexpr uint16_t FT817_VOX_DELAY_ADDR = 0x0064;
 uint16_t ft817VoxDelayMs(uint8_t b);
+// The byte that sets the VOX gain to value, 1..100, bit 7 of old kept. False, and out untouched,
+// for 0 or above 100, or when old holds a gain outside 1..100.
+bool ft817VoxGainByte(uint8_t value, uint8_t old, uint8_t& out);
+// The byte that sets the VOX delay to the 100 ms step nearest ms, 100..2500, bits 7..5 of old
+// kept. False, and out untouched, outside that range or when old holds a step outside 1..25.
+bool ft817VoxDelayByte(uint16_t ms, uint8_t old, uint8_t& out);
+// The step nearest ms, steps of 100 ms on, kept within 100..2500.
+uint16_t ft817VoxDelayStep(uint16_t ms, int steps);

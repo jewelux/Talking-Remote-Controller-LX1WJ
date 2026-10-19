@@ -28,8 +28,11 @@ constexpr RadioCapabilities kCivBasicCaps = {
 constexpr RadioCapabilities kIc705Caps = [] {
   RadioCapabilities caps = kCivBasicCaps;
   caps.getProc = true;
+  caps.setProc = true;
   caps.getMicGain = true;
+  caps.setMicGain = true;
   caps.getVox = true;
+  caps.setVox = true;
   return caps;
 }();
 
@@ -49,7 +52,8 @@ constexpr RadioCapabilities kIcomFullCaps = {
     .getTuner = true, .setTuner = true, .startTune = true,
     .getVfo = true, .setVfo = true, .getVfoMode = true, .setVfoMode = true,
     .getSplit = true, .setSplit = true, .getRit = true, .setRit = true,
-    .getBandStack = true, .getProc = true, .getMicGain = true, .getVox = true,
+    .getBandStack = true, .getProc = true, .setProc = true, .getMicGain = true, .setMicGain = true,
+    .getVox = true, .setVox = true,
 };
 
 // --- Elecraft ---------------------------------------------------------------
@@ -163,7 +167,8 @@ constexpr RadioCapabilities kFtdx10Caps = {
     .getDialLock = true, .setDialLock = true,
     .getTuner = true, .setTuner = true, .startTune = true,
     .getVfo = true, .setVfo = true, .getVfoMode = true, .setVfoMode = true,
-    .getSplit = true, .setSplit = true, .getProc = true, .getMicGain = true, .getVox = true,
+    .getSplit = true, .setSplit = true, .getProc = true, .setProc = true, .getMicGain = true,
+    .setMicGain = true, .getVox = true, .setVox = true,
 };
 
 constexpr RadioCapabilities kFtdx101Caps = [] {
@@ -174,8 +179,11 @@ constexpr RadioCapabilities kFtdx101Caps = [] {
   caps.setVfoMode = false;
   // PR, PL, MG, VX, VG and VD are read on the FTDX10 only so far.
   caps.getProc = false;
+  caps.setProc = false;
   caps.getMicGain = false;
+  caps.setMicGain = false;
   caps.getVox = false;
+  caps.setVox = false;
   return caps;
 }();
 

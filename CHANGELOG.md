@@ -140,8 +140,13 @@
   also change it (see below)
 - `VOX?` says whether VOX is on ("vox on"), `VOXGAIN?` says its gain ("vox gain 50") and
   `VOXDELAY?` its delay ("vox delay 500 m s"), on the IC-7300, IC-705 and IC-7760, the FTDX10,
-  the FT-817/818 (menus 51 and 50) and the FT-857/897 (menus 88 and 87). They only read for now.
-  On the other radios these commands say "not available"
+  the FT-817/818 (menus 51 and 50) and the FT-857/897 (menus 88 and 87). On the other radios
+  these commands say "not available"
+- on the IC-7300, IC-705, IC-7760 and FTDX10 the console can also change these: `PROC ON | OFF |
+  TOGGLE`, `VOX ON | OFF | TOGGLE`, `PROCLEVEL`, `MICGAIN` and `VOXGAIN <0..100>`, and
+  `VOXDELAY <ms>`, set to the radio's nearest step (IC-7300, IC-705, IC-7760 0–2000 ms, FTDX10
+  30–3000 ms). Each also takes `STEP <+-n>`: a level in percent, the delay in the radio's steps.
+  Not yet tested on these radios
 
 ### Radio profiles
 
@@ -186,7 +191,8 @@
   on) and rows 1–12. Keep the radio's menu closed meanwhile, since the radio saves its own values
   when the menu is exited
 - FT-817/818/857/897, experimental: AGC, the Bank 2 DSP keys, the RF power, the mic gain, the
-  speech processor and the TX equalizer can be changed, not just read
+  speech processor, the TX equalizer, VOX, break-in, the keyer and the FT-817/818 antenna jack can
+  be changed, not just read
   - AGC: Bank 2 `A` long asks for it: `0` picks off, `1` auto, `2` fast, `3` slow, each saying
     its value, then `D` (console: `AGC AUTO | FAST | SLOW | OFF`)
   - `1`, `2`, `3` and `6` long switch noise reduction, the noise blanker, the notch and the DSP
@@ -208,6 +214,10 @@
     `MICGAIN?` says; `MICGAIN STEP <+-n>` steps it. On the FT-857/897 also `PROC ON | OFF |
     TOGGLE`, `PROCLEVEL <0..100>` and `PROCLEVEL STEP <+-n>` for the speech processor (menu 74),
     and `MICEQ OFF | LPF | HPF | BOTH` for the TX equalizer (menu 48)
+  - console only: `VOX`, `BK` (break-in) and `KYR` (keyer) `ON | OFF | TOGGLE`, `VOXGAIN <1..100>`
+    and `VOXDELAY <ms>` (FT-857/897 menus 88 and 87, 100–3000 ms; FT-817/818 menus 51 and 50,
+    100–2500 ms; set to the nearest 100 ms), each also with `STEP <+-n>`. On the FT-817/818,
+    `ANT FRONT | REAR | TOGGLE` sets the antenna jack (menu 07) of the current band
   - HamTRC writes these settings to the radio's memory and the radio follows at once. They say
     "error" while transmitting, and work only with experimental mode on, otherwise they say "not
     available"

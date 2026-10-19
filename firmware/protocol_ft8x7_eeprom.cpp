@@ -539,3 +539,90 @@ bool yaesuFt8x7QueryVoxDelayMs(uint16_t& msOut, uint32_t timeoutMs) {
   msOut = ft817VoxDelayMs(b);
   return true;
 }
+
+// The VOX gain set to target(the gain read for the write).
+template <typename Target>
+static YaesuEepromWrite rewriteVoxGain(Target target, uint8_t& valueOut, uint32_t timeoutMs) {
+  if (currentIsFt857Family()) {
+    uint16_t read = 0;
+    const YaesuEepromWrite written = ft857RewriteLevel(
+        YaesuFt857Level::VoxGain, [&](uint16_t stored) { return (uint16_t)target(stored > 100 ? 100 : (uint8_t)stored); },
+        read, timeoutMs);
+    if (written == YaesuEepromWrite::Ok) valueOut = (uint8_t)read;
+    return written;
+  }
+  if (!currentIsFt817Family()) return YaesuEepromWrite::Unsupported;
+  uint8_t b = 0;
+  const YaesuEepromWrite written = rewriteByte(
+      FT817_VOX_GAIN_ADDR,
+      [&](uint8_t old, uint8_t& out) { return ft817VoxGainByte(target(ft817LevelFromByte(old)), old, out); }, b,
+      timeoutMs);
+  if (written == YaesuEepromWrite::Ok) valueOut = ft817LevelFromByte(b);
+  return written;
+}
+
+YaesuEepromWrite yaesuFt8x7SetVoxGain(uint8_t value, uint8_t& valueOut, uint32_t timeoutMs) {
+  if (value < 1 || value > 100) return YaesuEepromWrite::OutOfRange;
+  return rewriteVoxGain([value](uint8_t) { return value; }, valueOut, timeoutMs);
+}
+
+YaesuEepromWrite yaesuFt8x7StepVoxGain(int steps, uint8_t& valueOut, uint32_t timeoutMs) {
+  return rewriteVoxGain(
+      [steps](uint8_t stored) {
+        const uint8_t stepped = ft8x7PercentStep(stored, steps);
+        return stepped < 1 ? (uint8_t)1 : stepped;
+      },
+      valueOut, timeoutMs);
+}
+
+// The VOX delay in ms set to target(the delay read for the write).
+template <typename Target>
+static YaesuEepromWrite rewriteFt817VoxDelay(Target target, uint16_t& msOut, uint32_t timeoutMs) {
+  if (!currentIsFt817Family()) return YaesuEepromWrite::Unsupported;
+  uint8_t b = 0;
+  const YaesuEepromWrite written = rewriteByte(
+      FT817_VOX_DELAY_ADDR,
+      [&](uint8_t old, uint8_t& out) { return ft817VoxDelayByte(target(ft817VoxDelayMs(old)), old, out); }, b,
+      timeoutMs);
+  if (written == YaesuEepromWrite::Ok) msOut = ft817VoxDelayMs(b);
+  return written;
+}
+
+YaesuEepromWrite yaesuFt8x7SetVoxDelayMs(uint16_t ms, uint16_t& msOut, uint32_t timeoutMs) {
+  if (currentIsFt857Family()) return yaesuFt857SetLevel(YaesuFt857Level::VoxDelay, ms, msOut, timeoutMs);
+  if (!currentIsFt817Family()) return YaesuEepromWrite::Unsupported;
+  if (ms < 100 || ms > 2500) return YaesuEepromWrite::OutOfRange;
+  return rewriteFt817VoxDelay([ms](uint16_t) { return ms; }, msOut, timeoutMs);
+}
+
+YaesuEepromWrite yaesuFt8x7StepVoxDelay(int steps, uint16_t& msOut, uint32_t timeoutMs) {
+  if (currentIsFt857Family()) return yaesuFt857StepLevel(YaesuFt857Level::VoxDelay, steps, msOut, timeoutMs);
+  return rewriteFt817VoxDelay([steps](uint16_t stored) { return ft817VoxDelayStep(stored, steps); }, msOut,
+                              timeoutMs);
+}
+
+// The jack of the band group of hz set to rear(the jack read for the write).
+template <typename Rear>
+static YaesuEepromWrite rewriteRearAntenna(uint64_t hz, Rear rear, bool& rearOut, uint32_t timeoutMs) {
+  if (!currentIsFt817Family()) return YaesuEepromWrite::Unsupported;
+  const Ft8x7BandGroup group = ft8x7BandGroupForHz(hz);
+  const uint8_t mask = ft817RearAntennaMask(group);
+  uint8_t b = 0;
+  const YaesuEepromWrite written = rewriteByte(
+      FT817_ANTENNA_ADDR,
+      [&](uint8_t old, uint8_t& out) {
+        out = ft817RearAntennaByte(group, rear((old & mask) != 0), old);
+        return true;
+      },
+      b, timeoutMs);
+  if (written == YaesuEepromWrite::Ok) rearOut = (b & mask) != 0;
+  return written;
+}
+
+YaesuEepromWrite yaesuFt817SetRearAntenna(uint64_t hz, bool rear, bool& rearOut, uint32_t timeoutMs) {
+  return rewriteRearAntenna(hz, [rear](bool) { return rear; }, rearOut, timeoutMs);
+}
+
+YaesuEepromWrite yaesuFt817ToggleRearAntenna(uint64_t hz, bool& rearOut, uint32_t timeoutMs) {
+  return rewriteRearAntenna(hz, [](bool rear) { return !rear; }, rearOut, timeoutMs);
+}

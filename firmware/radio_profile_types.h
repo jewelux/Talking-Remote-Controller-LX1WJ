@@ -69,13 +69,18 @@ struct RadioCapabilities {
   bool getRit = false;
   bool setRit = false;
   bool getBandStack = false;
-  // Speech processor and its level, mic gain, VOX with its gain and delay. Read only for now.
+  // Speech processor and its level, mic gain, VOX with its gain and delay. The FT-8x7 writes
+  // them to the EEPROM under setRadioMenu instead.
   bool getProc = false;
+  bool setProc = false;
   bool getMicGain = false;
+  bool setMicGain = false;
   bool getVox = false;
-  // FT-8x7: the settings written to the EEPROM that have no cap of their own: the menu item and
-  // soft key row, AGC, the mic gain, and on the FT-857/897 DBF, low cut and high cut, PROC and its
-  // level and the mic EQ. No profile sets it: only EXPERIMENTAL ON.
+  bool setVox = false;
+  // FT-8x7: the settings written to the EEPROM: the menu item and soft key row, AGC, the mic
+  // gain, VOX with its gain and delay, BK and KYR, on the FT-817/818 the antenna jack, and on the
+  // FT-857/897 DBF, low cut and high cut, PROC and its level and the mic EQ. No profile sets it:
+  // only EXPERIMENTAL ON.
   bool setRadioMenu = false;
 };
 

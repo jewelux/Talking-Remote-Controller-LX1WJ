@@ -250,6 +250,8 @@ bool ft857LevelRange(YaesuFt857Level level, uint16_t& minOut, uint16_t& maxOut) 
     case YaesuFt857Level::DigGain: minOut = 0; maxOut = 100; return true;
     case YaesuFt857Level::HpfCutoff: minOut = 100; maxOut = 1000; return true;
     case YaesuFt857Level::LpfCutoff: minOut = 1000; maxOut = 6000; return true;
+    case YaesuFt857Level::VoxGain: minOut = 1; maxOut = 100; return true;
+    case YaesuFt857Level::VoxDelay: minOut = 100; maxOut = 3000; return true;
     default: return false;
   }
 }
@@ -423,6 +425,26 @@ uint16_t ft817VoxDelayMs(uint8_t b) {
   return (uint16_t)((steps > 25 ? 25 : steps) * 100);
 }
 
+bool ft817VoxGainByte(uint8_t value, uint8_t old, uint8_t& out) {
+  const uint8_t stored = (uint8_t)(old & 0x7F);
+  if (value < 1 || stored < 1) return false;
+  return ft817LevelByte(value, old, out);
+}
+
+bool ft817VoxDelayByte(uint16_t ms, uint8_t old, uint8_t& out) {
+  const uint8_t stored = (uint8_t)(old & 0x1F);
+  if (ms < 100 || ms > 2500 || stored < 1 || stored > 25) return false;
+  out = (uint8_t)((old & 0xE0) | ((ms + 50) / 100));
+  return true;
+}
+
+uint16_t ft817VoxDelayStep(uint16_t ms, int steps) {
+  if (steps > 25) steps = 25;
+  if (steps < -25) steps = -25;
+  const int stepped = (ms + 50) / 100 + steps;
+  return (uint16_t)((stepped < 1 ? 1 : stepped > 25 ? 25 : stepped) * 100);
+}
+
 uint8_t ft817RearAntennaMask(Ft8x7BandGroup group) {
   switch (group) {
     case Ft8x7BandGroup::Hf: return 0x01;
@@ -433,4 +455,9 @@ uint8_t ft817RearAntennaMask(Ft8x7BandGroup group) {
     case Ft8x7BandGroup::Uhf: return 0x20;
   }
   return 0x01;
+}
+
+uint8_t ft817RearAntennaByte(Ft8x7BandGroup group, bool rear, uint8_t old) {
+  const uint8_t mask = ft817RearAntennaMask(group);
+  return rear ? (uint8_t)(old | mask) : (uint8_t)(old & ~mask);
 }

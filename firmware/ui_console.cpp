@@ -828,9 +828,12 @@ void printHelp(const String& topicArg) {
     helpLine("NR? | NR OFF | ON | TOGGLE");
     helpLine("PBT1? | PBT1 <-128..127> | CENTER | STEP <+-n>");
     helpLine("PBT2? | PBT2 <-128..127> | CENTER | STEP <+-n>");
-    helpLine("PROC? | PROCLEVEL?  (speech compressor, read only)");
-    helpLine("MICGAIN?  (read only)");
-    helpLine("VOX? | VOXGAIN? | VOXDELAY?  (read only)");
+    helpLine("PROC? | PROC OFF | ON | TOGGLE  (speech compressor)");
+    helpLine("PROCLEVEL? | PROCLEVEL <0..100> | PROCLEVEL STEP <+-n>");
+    helpLine("MICGAIN? | MICGAIN <0..100> | MICGAIN STEP <+-n>");
+    helpLine("VOX? | VOX OFF | ON | TOGGLE");
+    helpLine("VOXGAIN? | VOXGAIN <0..100> | VOXGAIN STEP <+-n>");
+    helpLine("VOXDELAY? | VOXDELAY <ms> | VOXDELAY STEP <+-n>  (to the radio's nearest step)");
     helpLine(rfPowerLine);
     helpLine("RIT? | RIT <Hz> | RIT STEP <+-Hz> | RIT OFF | ON | TOGGLE");
     helpLine("RXTX?");
@@ -886,10 +889,12 @@ void printHelp(const String& topicArg) {
       helpLine("VFO TOGGLE  (raw)");
     }
     helpLine("ALC? | MOD?");
-    helpLine(ft817 ? "AGC? | BK? | KYR?  (radio settings)"
+    helpLine(ft817 ? "AGC? | BK? | KYR? | ANT?  (radio settings)"
                    : "AGC? | IPO? | ATT? | NAR? | DBF? | BK? | KYR?  (radio settings)");
     helpLine("AGC AUTO | FAST | SLOW | OFF  (experimental: writes it to the EEPROM)");
     if (!ft817) helpLine("DBF ON | OFF | TOGGLE  (experimental: DSP bandpass filter, writes it to the EEPROM)");
+    helpLine("BK | KYR ON | OFF | TOGGLE  (experimental: break-in and keyer, write them to the EEPROM)");
+    if (ft817) helpLine("ANT FRONT | REAR | TOGGLE  (experimental: menu 07 jack of the current band group)");
     helpLine(ft817 ? "NB?" : "NR? | NB? | NOTCH?");
     helpLine(ft817 ? "NB OFF | ON | TOGGLE  (experimental: writes it to the EEPROM)"
                    : "NR | NB | NOTCH OFF | ON | TOGGLE  (experimental: writes them to the EEPROM)");
@@ -904,8 +909,11 @@ void printHelp(const String& topicArg) {
     helpLine(ft817 ? "MICGAIN?  (mic gain of the mode: SSB, AM, FM, DIG or PKT menu)"
                    : "MICGAIN?  (mic gain of the mode: SSB, AM, FM or DIG menu)");
     helpLine("MICGAIN <0..100> | MICGAIN STEP <+-n>  (experimental: the mode's mic gain, writes it to the EEPROM)");
-    helpLine(ft817 ? "VOX? | VOXGAIN? | VOXDELAY?  (VOX, menus 51 and 50, read only)"
-                   : "VOX? | VOXGAIN? | VOXDELAY?  (VOX, menus 88 and 87, read only)");
+    helpLine(ft817 ? "VOX? | VOXGAIN? | VOXDELAY?  (VOX, menus 51 and 50)"
+                   : "VOX? | VOXGAIN? | VOXDELAY?  (VOX, menus 88 and 87)");
+    helpLine("VOX ON | OFF | TOGGLE | VOXGAIN <1..100> | VOXGAIN STEP <+-n>  (experimental: writes them to the EEPROM)");
+    helpLine(ft817 ? "VOXDELAY <100..2500> | VOXDELAY STEP <+-n>  (experimental: ms, 100 ms steps)"
+                   : "VOXDELAY <100..3000> | VOXDELAY STEP <+-n>  (experimental: ms, 100 ms steps)");
     helpLine(ft817 ? "RFPOWER?  (the TX power level, and its watts on an external supply)" : "RFPOWER?  (menu 75 power of the current band)");
     helpLine(ft817 ? "RFPOWER HIGH | L3 | L2 | L1  (experimental: writes it to the EEPROM)"
                    : "RFPOWER <W>  (experimental: menu 75 of the current band, HF and 6 m 5..100, VHF 5..50, UHF 2..20)");
@@ -917,9 +925,12 @@ void printHelp(const String& topicArg) {
     helpLine("NB? | NB OFF | ON | TOGGLE");
     helpLine("NOTCH? | NOTCH OFF | ON | TOGGLE");
     helpLine("NR? | NR OFF | ON | TOGGLE");
-    helpLine("PROC? | PROCLEVEL?  (speech processor, read only)");
-    helpLine("MICGAIN?  (read only)");
-    helpLine("VOX? | VOXGAIN? | VOXDELAY?  (read only)");
+    helpLine("PROC? | PROC OFF | ON | TOGGLE  (speech processor)");
+    helpLine("PROCLEVEL? | PROCLEVEL <0..100> | PROCLEVEL STEP <+-n>");
+    helpLine("MICGAIN? | MICGAIN <0..100> | MICGAIN STEP <+-n>");
+    helpLine("VOX? | VOX OFF | ON | TOGGLE");
+    helpLine("VOXGAIN? | VOXGAIN <0..100> | VOXGAIN STEP <+-n>");
+    helpLine("VOXDELAY? | VOXDELAY <ms> | VOXDELAY STEP <+-n>  (to the radio's nearest step)");
     helpLine("RXTX?");
     helpLine("SPLIT? | SPLIT OFF | ON | TOGGLE");
     helpLine("TUNE");
@@ -1558,32 +1569,74 @@ static bool handleConsoleFt8x7AgcSet(const String& upper) {
   return false;
 }
 
-// Experimental, FT-857/897: DBF ON | OFF | TOGGLE, like Bank 2 `6` long.
-static bool handleConsoleFt8x7DbfSet(const String& upper) {
-  if (upper != "DBF ON" && upper != "DBF OFF" && upper != "DBF TOGGLE") return false;
+// Experimental: DBF ON | OFF | TOGGLE on the FT-857/897, like Bank 2 `6` long; BK and KYR the
+// same.
+static bool handleConsoleFt8x7FlagSet(const String& upper) {
+  struct FlagCommand {
+    const char* name;
+    Ft8x7Setting setting;
+  };
+  static const FlagCommand kCommands[] = {
+    {"DBF", Ft8x7Setting::Dbf}, {"BK", Ft8x7Setting::BreakIn}, {"KYR", Ft8x7Setting::Keyer},
+  };
+  for (const FlagCommand& c : kCommands) {
+    const String prefix = String(c.name) + " ";
+    if (!upper.startsWith(prefix)) continue;
+    const String arg = upper.substring(prefix.length());
+    if (arg != "ON" && arg != "OFF" && arg != "TOGGLE") return false;
+    Ft8x7SettingState state;
+    const FeatureStatus status = arg == "TOGGLE" ? ft8x7FlagSettingToggle(c.setting, state)
+                                                 : ft8x7FlagSettingSet(c.setting, arg == "ON", state);
+    if (reportFeatureFailure(status, c.name)) return true;
+    Serial.println(ft8x7SettingText(state));
+    speakFt8x7Setting(state);
+    return true;
+  }
+  return false;
+}
+
+// Experimental, FT-817/818: ANT FRONT | REAR | TOGGLE, the jack of the current band group.
+static bool handleConsoleFt817AntennaSet(const String& upper) {
+  if (upper != "ANT FRONT" && upper != "ANT REAR" && upper != "ANT TOGGLE") return false;
   Ft8x7SettingState state;
-  const FeatureStatus status = upper == "DBF TOGGLE" ? ft8x7DbfToggle(state) : ft8x7DbfSet(upper == "DBF ON", state);
-  if (reportFeatureFailure(status, "DBF")) return true;
+  const FeatureStatus status =
+      upper == "ANT TOGGLE" ? ft817AntennaToggle(state) : ft817AntennaSet(upper == "ANT REAR", state);
+  if (reportFeatureFailure(status, "ANT")) return true;
   Serial.println(ft8x7SettingText(state));
   speakFt8x7Setting(state);
   return true;
 }
 
-// Experimental: PROC ON | OFF | TOGGLE and PROCLEVEL <0..100> | PROCLEVEL STEP <+-n> on the
-// FT-857/897; MICGAIN <0..100> | MICGAIN STEP <+-n>, the mic gain of the current mode.
-static bool handleConsoleFt8x7MicSet(const String& line, const String& upper) {
-  if (upper == "PROC ON" || upper == "PROC OFF" || upper == "PROC TOGGLE") {
-    bool on = upper == "PROC ON";
-    if (reportFeatureFailure(upper == "PROC TOGGLE" ? procToggle(on) : procSet(on), "PROC")) return true;
-    Serial.println(procStateText(on));
-    speakProcState(on);
+// PROC and VOX ON | OFF | TOGGLE; PROCLEVEL, MICGAIN and VOXGAIN <n> | STEP <+-n>, VOXDELAY <ms> |
+// STEP <+-n> in the radio's steps. Over CAT where the profile can set them; on the FT-8x7
+// experimental, in the EEPROM (PROC and PROCLEVEL on the FT-857/897 only, MICGAIN the current
+// mode's).
+static bool handleConsoleTxAudioSet(const String& line, const String& upper) {
+  const bool vox = upper.startsWith("VOX ");
+  if (vox || upper.startsWith("PROC ")) {
+    const char* name = vox ? "VOX" : "PROC";
+    const String arg = upper.substring(vox ? 4 : 5);
+    if (arg != "ON" && arg != "OFF" && arg != "TOGGLE") return false;
+    bool on = arg == "ON";
+    const FeatureStatus status = vox ? (arg == "TOGGLE" ? voxToggle(on) : voxSet(on))
+                                     : (arg == "TOGGLE" ? procToggle(on) : procSet(on));
+    if (reportFeatureFailure(status, name)) return true;
+    Serial.println(vox ? voxStateText(on) : procStateText(on));
+    if (vox) speakVoxState(on);
+    else speakProcState(on);
     return true;
   }
-  const bool proc = upper.startsWith("PROCLEVEL ");
-  if (!proc && !upper.startsWith("MICGAIN ")) return false;
-  const char* name = proc ? "PROCLEVEL" : "MICGAIN";
+  enum class Level : uint8_t { Proc, Mic, VoxGain, VoxDelay };
+  Level level = Level::Proc;
+  const char* name = nullptr;
+  if (upper.startsWith("PROCLEVEL ")) name = "PROCLEVEL";
+  else if (upper.startsWith("MICGAIN ")) name = "MICGAIN", level = Level::Mic;
+  else if (upper.startsWith("VOXGAIN ")) name = "VOXGAIN", level = Level::VoxGain;
+  else if (upper.startsWith("VOXDELAY ")) name = "VOXDELAY", level = Level::VoxDelay;
+  else return false;
   const String prefix = String(name) + " ";
-  uint8_t level = 0;
+  uint8_t percent = 0;
+  uint16_t ms = 0;
   FeatureStatus status = FeatureStatus::Ok;
   if (upper.startsWith(prefix + "STEP")) {
     int32_t step = 0;
@@ -1594,23 +1647,62 @@ static bool handleConsoleFt8x7MicSet(const String& line, const String& upper) {
       Serial.println(" STEP -5");
       return true;
     }
-    step = clampInt32(step, -100, 100);
-    status = proc ? procLevelStep((int)step, level) : micGainStep((int)step, level);
+    const int delta = (int)clampInt32(step, -100, 100);
+    switch (level) {
+      case Level::Proc: status = procLevelStep(delta, percent); break;
+      case Level::Mic: status = micGainStep(delta, percent); break;
+      case Level::VoxGain: status = voxGainStep(delta, percent); break;
+      case Level::VoxDelay: status = voxDelayStep(delta, ms); break;
+    }
   } else {
+    uint16_t lo = 0;
+    uint16_t hi = 100;
+    if (level == Level::VoxGain) {
+      uint8_t gainLo = 0;
+      uint8_t gainHi = 100;
+      if (voxGainRange(gainLo, gainHi)) lo = gainLo, hi = gainHi;
+    } else if (level == Level::VoxDelay) {
+      hi = 3000;
+      (void)voxDelayRange(lo, hi);
+    }
     long value = 0;
-    if (!parseRangedIntArg(upper, prefix.c_str(), 0, 100, value)) {
+    if (!parseRangedIntArg(upper, prefix.c_str(), lo, hi, value)) {
       Serial.print(name);
-      Serial.print(" -> use 0..100, e.g. ");
+      Serial.print(" -> use ");
+      Serial.print(lo);
+      Serial.print("..");
+      Serial.print(hi);
+      Serial.print(level == Level::VoxDelay ? " ms, e.g. " : ", e.g. ");
       Serial.print(name);
-      Serial.println(" 50");
+      Serial.println(level == Level::VoxDelay ? " 500" : " 50");
       return true;
     }
-    status = proc ? procLevelSet((uint8_t)value, level) : micGainSet((uint8_t)value, level);
+    switch (level) {
+      case Level::Proc: status = procLevelSet((uint8_t)value, percent); break;
+      case Level::Mic: status = micGainSet((uint8_t)value, percent); break;
+      case Level::VoxGain: status = voxGainSet((uint8_t)value, percent); break;
+      case Level::VoxDelay: status = voxDelaySet((uint16_t)value, ms); break;
+    }
   }
   if (reportFeatureFailure(status, name)) return true;
-  Serial.println(proc ? procLevelText(level) : micGainText(level));
-  if (proc) speakProcLevel(level);
-  else speakMicGain(level);
+  switch (level) {
+    case Level::Proc:
+      Serial.println(procLevelText(percent));
+      speakProcLevel(percent);
+      break;
+    case Level::Mic:
+      Serial.println(micGainText(percent));
+      speakMicGain(percent);
+      break;
+    case Level::VoxGain:
+      Serial.println(voxGainText(percent));
+      speakVoxGain(percent);
+      break;
+    case Level::VoxDelay:
+      Serial.println(voxDelayText(ms));
+      speakVoxDelay(ms);
+      break;
+  }
   return true;
 }
 
@@ -1637,10 +1729,10 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
   if (handleConsoleFt8x7Meters(upper)) return true;
   if (handleConsoleFt8x7Settings(upper)) return true;
   if (handleConsoleFt8x7LevelSet(line, upper)) return true;
-  if (handleConsoleFt8x7DbfSet(upper)) return true;
+  if (handleConsoleFt8x7FlagSet(upper)) return true;
+  if (handleConsoleFt817AntennaSet(upper)) return true;
   if (handleConsoleFt8x7RfPowerSet(upper)) return true;
   if (handleConsoleFt8x7AgcSet(upper)) return true;
-  if (handleConsoleFt8x7MicSet(line, upper)) return true;
   if (handleConsoleFt8x7MicEqSet(upper)) return true;
 
   if (upper == "YALL?") {
@@ -3446,6 +3538,7 @@ void processCommand(String line) {
   if (handleConsoleToggleCommands(line, upper)) return;
   if (handleConsoleYaesuFt8x7Commands(line, upper)) return;
   if (handleConsoleFt847Commands(upper)) return;
+  if (handleConsoleTxAudioSet(line, upper)) return;
   if (handleConsoleAdjustCommands(line, upper)) return;
   if (handleConsoleRadioCommands(line, upper)) return;
   if (handleConsoleBankCommands(line, upper)) return;

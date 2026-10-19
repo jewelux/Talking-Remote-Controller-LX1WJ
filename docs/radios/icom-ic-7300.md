@@ -101,9 +101,15 @@ New features and new radios come with a new firmware.
 
 ### Transmit
 
-- `PROC?` (speech compressor, COMP), `PROCLEVEL?` (its level, 0..100 %)
-- `MICGAIN?` (mic gain, 0..100 %)
-- `VOX?` (VOX), `VOXGAIN?` (its gain, 0..100 %), `VOXDELAY?` (its delay, 0..2000 ms)
+- `PROC?`, `PROC ON | OFF | TOGGLE` (speech compressor, COMP)
+- `PROCLEVEL?`, `PROCLEVEL <0..100>`, `PROCLEVEL STEP <+-n>` (its level, %)
+- `MICGAIN?`, `MICGAIN <0..100>`, `MICGAIN STEP <+-n>` (mic gain, %)
+- `VOX?`, `VOX ON | OFF | TOGGLE`
+- `VOXGAIN?`, `VOXGAIN <0..100>`, `VOXGAIN STEP <+-n>` (its gain, %)
+- `VOXDELAY?`, `VOXDELAY <0..2000>`, `VOXDELAY STEP <+-n>` (its delay in ms, set to the nearest
+  100 ms; a step is 100 ms)
+
+Each set is read back. The sets are not yet tested on a radio.
 
 The IC-705 and IC-7760 profiles answer these too. The VOX delay sits at a different menu
 address on each model (IC-7300 `1A 05 0191`, IC-705 `0359`, IC-7760 `0182`, as Hamlib reads
