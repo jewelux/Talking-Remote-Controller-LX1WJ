@@ -500,11 +500,6 @@ void applyVolumeLevel(uint8_t lvl) {
   if (lvl > 9) lvl = 9;
   g_volumeLevel = lvl;
   g_speechVolume = volumeLevelToGain(lvl);
-  Serial.print("[VOL] Applied level ");
-  Serial.print((int)lvl);
-  Serial.print(" (gain=");
-  Serial.print(g_speechVolume, 2);
-  Serial.println(")");
 }
 
 void speakVolumeLevel(uint8_t lvl) {

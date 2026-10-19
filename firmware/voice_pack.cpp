@@ -52,8 +52,10 @@ static bool mapPack() {
 
 bool voicePackInit() {
   const bool ok = mapPack();
-  Serial.print("VOICE PACK ");
-  voicePackPrintStatus();
+  if (!ok) {
+    Serial.print("VOICE PACK ");
+    voicePackPrintStatus();
+  }
   return ok;
 }
 

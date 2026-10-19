@@ -45,8 +45,6 @@ void setup() {
   delay(200);
   waitForUsbSerial(2000);
 
-  printProfileSlots();
-
   initSpeech();
   applyVolumeLevel(loadVolumeFromNvs(DEFAULT_VOLUME_LEVEL));
   applySpeechSpeed((SpeechSpeed)loadSpeechSpeedFromNvs((uint8_t)SpeechSpeed::Normal));
@@ -54,7 +52,7 @@ void setup() {
   g_profileId = loadProfileFromNvs(g_profileId);
   g_tuningSpeakEnabled = loadTuningSpeakFromNvs(true);
   g_verboseSpeech = loadVerboseFromNvs(true);
-  applyProfile(g_profileId);
+  applyProfile(g_profileId, false);
 
   DBG_PRINT("Talking Remote Controller LX1WJ (");
   DBG_PRINT(HAMTRC_FIRMWARE_VERSION);

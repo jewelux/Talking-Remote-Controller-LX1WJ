@@ -166,7 +166,7 @@ void printActiveProfileDetails() {
   if (g_experimentalCaps) Serial.println("  EXPERIMENTAL: all caps on");
 }
 
-void applyProfile(uint8_t slot) {
+void applyProfile(uint8_t slot, bool report) {
   const RadioProfile* profile = profileForSlot(slot);
   if (!profile) profile = profileForSlot(kDefaultProfileSlot);
   g_profileId = profile->slot;
@@ -200,6 +200,7 @@ void applyProfile(uint8_t slot) {
     g_lastSavedProfile = g_profileId;
   }
 
+  if (!report) return;
   Serial.print("[PROFILE] Active: ");
   Serial.print(currentProfile().name);
   if (currentProtocolType() == PROTO_CIV) {
