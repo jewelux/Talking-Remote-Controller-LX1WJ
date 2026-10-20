@@ -2,7 +2,6 @@
 // USB radio link.
 #include "ui_keypad_bank.h"
 #include "radio_catalog.h"
-#include "radio_monitor.h"
 #include "radio_prefs.h"
 #include "radio_profile.h"
 #include "transport_usb_host.h"
@@ -17,7 +16,6 @@ void speakTuningSpeechState() {
 void setTuningSpeechEnabled(bool enabled) {
   g_tuningSpeakEnabled = enabled;
   saveTuningSpeakToNvs(g_tuningSpeakEnabled);
-  if (!g_tuningSpeakEnabled) cancelPendingFreqAnnouncement();
 }
 
 // Always with its name: alone, "off" would not say what verbose off is.

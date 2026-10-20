@@ -6,7 +6,8 @@ const char* protocolTypeToString(ProtocolType pt);
 void printActiveProfileDetails();
 // Makes the profile in slot the active radio (the default profile for a free
 // slot), with the baud and CI-V address saved for it, and reopens the link.
-void applyProfile(uint8_t slot);
+// report: print the active profile and its details (off at boot).
+void applyProfile(uint8_t slot, bool report = true);
 // SLOTS?: every slot and its radio.
 void printProfileSlots();
 void speakCurrentProfile();

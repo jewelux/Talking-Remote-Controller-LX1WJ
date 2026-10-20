@@ -89,6 +89,8 @@ What HamTRC does about it:
 - The poll restarts when a query the user starts (keypad or console `FREQ?`) finds another mode.
   While the radio is still in FM, that query causes the same short transmit, which HamTRC ends the
   same way.
+- With tuning speech off there is no background poll, so only a query the user starts can trip
+  the guard.
 
 Richard uses a TYT MD-9600 with OpenGD77 speech for FM on 2 m and 70 cm, and the FT-847 with
 HamTRC for SSB, CW and AM on all bands.
@@ -128,7 +130,7 @@ Turn the trace on first, so every frame shows: `F847TRACE ON`.
 
 | # | Command | Expected | If not |
 |---|---|---|---|
-| 1 | `F847?` | `CAT on (sent automatically), byte gap 50 ms, background poll running` | |
+| 1 | `F847?` | `CAT on (sent automatically), byte gap 50 ms, background poll running` | `off (tuning speech off)`: `TUNINGSPEECH ON` |
 | 2 | `F847RAW5? 0000000003` | 5 bytes, e.g. `01 42 50 00 01` = 14.250 MHz USB. The CAT icon on the radio's display flashes | No reply: check cable, baud, FC-20, serial number. Try `F847CAT ON`, then again |
 | 3 | `FREQ?` | the radio's frequency | |
 | 4 | `F847MODE?` | the radio's mode | |

@@ -32,11 +32,21 @@ static FeatureStatus eepromWriteStatus(YaesuEepromWrite result) {
     case YaesuEepromWrite::Unsupported: return FeatureStatus::Unsupported;
     case YaesuEepromWrite::OutOfRange: return FeatureStatus::Invalid;
     case YaesuEepromWrite::NoReply: return failure(FeatureStatus::NoReply);
+    case YaesuEepromWrite::UnexpectedBytes: return FeatureStatus::Unexpected;
     case YaesuEepromWrite::Transmitting:
-    case YaesuEepromWrite::UnexpectedBytes:
     case YaesuEepromWrite::NotVerified: return FeatureStatus::Failed;
   }
   return FeatureStatus::Failed;
+}
+
+static FeatureStatus eepromReadStatus(YaesuEepromRead result) {
+  switch (result) {
+    case YaesuEepromRead::Ok: return FeatureStatus::Ok;
+    case YaesuEepromRead::Unsupported: return FeatureStatus::Unsupported;
+    case YaesuEepromRead::NoReply: return failure(FeatureStatus::NoReply);
+    case YaesuEepromRead::UnexpectedBytes: return FeatureStatus::Unexpected;
+  }
+  return FeatureStatus::NoReply;
 }
 
 static bool isFt8x7() {
@@ -368,10 +378,21 @@ const char* ft8x7SettingLabel(Ft8x7Setting setting) {
     case Ft8x7Setting::IfShift: return "IFSHIFT?";
     case Ft8x7Setting::NrLevel: return "NRLEVEL?";
     case Ft8x7Setting::NbLevel: return "NBLEVEL?";
+    case Ft8x7Setting::BpfWidth: return "BPF?";
     case Ft8x7Setting::LowCut: return "HPF?";
     case Ft8x7Setting::HighCut: return "LPF?";
     case Ft8x7Setting::MicEq: return "MICEQ?";
     case Ft8x7Setting::Antenna: return "ANT?";
+    case Ft8x7Setting::CwSpeed: return "CWSPEED?";
+    case Ft8x7Setting::CwPitch: return "CWPITCH?";
+    case Ft8x7Setting::CwDelay: return "CWDELAY?";
+    case Ft8x7Setting::CwWeight: return "CWWEIGHT?";
+    case Ft8x7Setting::Sidetone: return "SIDETONE?";
+    case Ft8x7Setting::Qsk: return "QSK?";
+    case Ft8x7Setting::KeyReverse: return "KEYREV?";
+    case Ft8x7Setting::CwAutoMode: return "CWAUTO?";
+    case Ft8x7Setting::Paddle: return "PADDLE?";
+    case Ft8x7Setting::CwBfo: return "CWBFO?";
   }
   return "?";
 }
@@ -409,16 +430,37 @@ static bool ft8x7SettingFlag(Ft8x7Setting setting, Ft8x7Flag& flagOut) {
     case Ft8x7Setting::BreakIn: flagOut = Ft8x7Flag::BreakIn; return true;
     case Ft8x7Setting::Keyer: flagOut = Ft8x7Flag::Keyer; return true;
     case Ft8x7Setting::IfShift: flagOut = Ft8x7Flag::IfShift; return true;
+    case Ft8x7Setting::KeyReverse: flagOut = Ft8x7Flag::KeyReverse; return true;
+    case Ft8x7Setting::CwAutoMode: flagOut = Ft8x7Flag::CwAutoMode; return true;
+    case Ft8x7Setting::Paddle: flagOut = Ft8x7Flag::PaddleMicKey; return true;
     default: return false;
   }
 }
 
-// A flag is supported where the EEPROM map has it.
+// The settings that are a CW level.
+static bool ft8x7SettingCwLevel(Ft8x7Setting setting, Ft8x7CwLevel& levelOut) {
+  switch (setting) {
+    case Ft8x7Setting::CwSpeed: levelOut = Ft8x7CwLevel::Speed; return true;
+    case Ft8x7Setting::CwPitch: levelOut = Ft8x7CwLevel::Pitch; return true;
+    case Ft8x7Setting::CwDelay: levelOut = Ft8x7CwLevel::Delay; return true;
+    case Ft8x7Setting::CwWeight: levelOut = Ft8x7CwLevel::Weight; return true;
+    case Ft8x7Setting::Sidetone: levelOut = Ft8x7CwLevel::Sidetone; return true;
+    case Ft8x7Setting::Qsk: levelOut = Ft8x7CwLevel::Qsk; return true;
+    default: return false;
+  }
+}
+
+// A flag or a CW level is supported where the EEPROM map has it.
 static bool ft8x7SettingSupported(Ft8x7Setting setting, Ft8x7Model model) {
   Ft8x7Flag flag = Ft8x7Flag::Nb;
   if (ft8x7SettingFlag(setting, flag)) {
     Ft8x7FlagField field;
     return ft8x7FlagField(model, flag, field);
+  }
+  Ft8x7CwLevel cwLevel = Ft8x7CwLevel::Speed;
+  if (ft8x7SettingCwLevel(setting, cwLevel)) {
+    uint16_t addr = 0;
+    return ft8x7CwLevelAddr(model, cwLevel, addr);
   }
   switch (setting) {
     case Ft8x7Setting::Agc:
@@ -441,6 +483,11 @@ FeatureStatus ft8x7SettingQuery(Ft8x7Setting setting, Ft8x7SettingState& out) {
     if (!yaesuFt8x7QueryFlag(flag, out.on, kFt8x7TimeoutMs)) return failure(FeatureStatus::NoReply);
     return FeatureStatus::Ok;
   }
+  Ft8x7CwLevel cwLevel = Ft8x7CwLevel::Speed;
+  if (ft8x7SettingCwLevel(setting, cwLevel)) {
+    return eepromReadStatus(yaesuFt8x7QueryCwLevel(cwLevel, out.value, kFt8x7TimeoutMs));
+  }
+  if (setting == Ft8x7Setting::CwBfo) return eepromReadStatus(yaesuFt857QueryCwBfo(out.cwBfo, kFt8x7TimeoutMs));
   bool ok = false;
   switch (setting) {
     case Ft8x7Setting::Agc: ok = yaesuFt8x7QueryAgc(out.agc, kFt8x7TimeoutMs); break;
@@ -454,6 +501,7 @@ FeatureStatus ft8x7SettingQuery(Ft8x7Setting setting, Ft8x7SettingState& out) {
     }
     case Ft8x7Setting::NrLevel: ok = yaesuFt857QueryLevel(YaesuFt857Level::NrLevel, out.value, kFt8x7TimeoutMs); break;
     case Ft8x7Setting::NbLevel: ok = yaesuFt857QueryLevel(YaesuFt857Level::NbLevel, out.value, kFt8x7TimeoutMs); break;
+    case Ft8x7Setting::BpfWidth: ok = yaesuFt857QueryLevel(YaesuFt857Level::BpfWidth, out.value, kFt8x7TimeoutMs); break;
     case Ft8x7Setting::LowCut: ok = yaesuFt857QueryLevel(YaesuFt857Level::HpfCutoff, out.value, kFt8x7TimeoutMs); break;
     case Ft8x7Setting::HighCut: ok = yaesuFt857QueryLevel(YaesuFt857Level::LpfCutoff, out.value, kFt8x7TimeoutMs); break;
     case Ft8x7Setting::MicEq: ok = yaesuFt857QueryMicEq(out.micEq, kFt8x7TimeoutMs); break;
@@ -490,14 +538,15 @@ static bool ft8x7SettableLevel(Ft8x7Setting setting, YaesuFt857Level& levelOut) 
   switch (setting) {
     case Ft8x7Setting::NrLevel: levelOut = YaesuFt857Level::NrLevel; return true;
     case Ft8x7Setting::NbLevel: levelOut = YaesuFt857Level::NbLevel; return true;
+    case Ft8x7Setting::BpfWidth: levelOut = YaesuFt857Level::BpfWidth; return true;
     case Ft8x7Setting::LowCut: levelOut = YaesuFt857Level::HpfCutoff; return true;
     case Ft8x7Setting::HighCut: levelOut = YaesuFt857Level::LpfCutoff; return true;
     default: return false;
   }
 }
 
-// caps.setNrLevel, caps.setNbLevel, or for the cuts caps.setRadioMenu; no FT-8x7 profile sets
-// them.
+// caps.setNrLevel, caps.setNbLevel, or for the width and the cuts caps.setRadioMenu; no FT-8x7
+// profile sets them.
 static bool ft8x7LevelSetAllowed(Ft8x7Setting setting) {
   const RadioCapabilities& caps = currentProfile().caps;
   if (setting == Ft8x7Setting::NrLevel) return caps.setNrLevel;
@@ -506,49 +555,84 @@ static bool ft8x7LevelSetAllowed(Ft8x7Setting setting) {
 }
 
 bool ft8x7LevelRange(Ft8x7Setting setting, uint16_t& minOut, uint16_t& maxOut) {
+  Ft8x7CwLevel cwLevel = Ft8x7CwLevel::Speed;
+  if (ft8x7SettingCwLevel(setting, cwLevel)) return ft8x7CwLevelRange(currentFt8x7Model(), cwLevel, minOut, maxOut);
   YaesuFt857Level level = YaesuFt857Level::NrLevel;
   return ft8x7SettableLevel(setting, level) && ft857LevelRange(level, minOut, maxOut);
 }
 
 FeatureStatus ft8x7LevelSet(Ft8x7Setting setting, uint16_t value, Ft8x7SettingState& out) {
+  Ft8x7CwLevel cwLevel = Ft8x7CwLevel::Speed;
+  const bool cw = ft8x7SettingCwLevel(setting, cwLevel);
   YaesuFt857Level level = YaesuFt857Level::NrLevel;
-  if (!ft8x7SettableLevel(setting, level) || !ft8x7LevelSetAllowed(setting) || !currentIsFt857Family()) {
+  if (cw ? !ft8x7SettingSupported(setting, currentFt8x7Model())
+         : !ft8x7SettableLevel(setting, level) || !currentIsFt857Family()) {
     return FeatureStatus::Unsupported;
   }
+  if (!ft8x7LevelSetAllowed(setting)) return FeatureStatus::Unsupported;
   out = Ft8x7SettingState();
   out.setting = setting;
+  if (cw) return eepromWriteStatus(yaesuFt8x7SetCwLevel(cwLevel, value, out.value, kFt8x7TimeoutMs));
   return eepromWriteStatus(yaesuFt857SetLevel(level, value, out.value, kFt8x7TimeoutMs));
 }
 
 FeatureStatus ft8x7LevelStep(Ft8x7Setting setting, int delta, Ft8x7SettingState& out) {
+  Ft8x7CwLevel cwLevel = Ft8x7CwLevel::Speed;
+  const bool cw = ft8x7SettingCwLevel(setting, cwLevel);
   YaesuFt857Level level = YaesuFt857Level::NrLevel;
-  if (!ft8x7SettableLevel(setting, level) || !ft8x7LevelSetAllowed(setting) || !currentIsFt857Family()) {
+  if (cw ? !ft8x7SettingSupported(setting, currentFt8x7Model())
+         : !ft8x7SettableLevel(setting, level) || !currentIsFt857Family()) {
     return FeatureStatus::Unsupported;
   }
+  if (!ft8x7LevelSetAllowed(setting)) return FeatureStatus::Unsupported;
   out = Ft8x7SettingState();
   out.setting = setting;
+  if (cw) return eepromWriteStatus(yaesuFt8x7StepCwLevel(cwLevel, delta, out.value, kFt8x7TimeoutMs));
   return eepromWriteStatus(yaesuFt857StepLevel(level, delta, out.value, kFt8x7TimeoutMs));
 }
 
-static bool ft8x7DbfSettable() {
-  return currentProfile().caps.setRadioMenu && currentIsFt857Family();
+// DBF, BK, KYR and the CW flags, where the model keeps them; IF shift is read only.
+static bool ft8x7FlagSettable(Ft8x7Setting setting, Ft8x7Flag& flag) {
+  if (!currentProfile().caps.setRadioMenu || setting == Ft8x7Setting::IfShift) return false;
+  return ft8x7SettingFlag(setting, flag) && ft8x7SettingSupported(setting, currentFt8x7Model());
 }
 
-FeatureStatus ft8x7DbfSet(bool on, Ft8x7SettingState& out) {
-  if (!ft8x7DbfSettable()) return FeatureStatus::Unsupported;
+FeatureStatus ft8x7FlagSettingSet(Ft8x7Setting setting, bool on, Ft8x7SettingState& out) {
+  Ft8x7Flag flag = Ft8x7Flag::Nb;
+  if (!ft8x7FlagSettable(setting, flag)) return FeatureStatus::Unsupported;
   out = Ft8x7SettingState();
-  out.setting = Ft8x7Setting::Dbf;
-  const FeatureStatus status = eepromWriteStatus(yaesuFt8x7SetFlag(Ft8x7Flag::Dbf, on, kFt8x7TimeoutMs));
+  out.setting = setting;
+  const FeatureStatus status = eepromWriteStatus(yaesuFt8x7SetFlag(flag, on, kFt8x7TimeoutMs));
   if (status != FeatureStatus::Ok) return status;
   out.on = on;
   return FeatureStatus::Ok;
 }
 
-FeatureStatus ft8x7DbfToggle(Ft8x7SettingState& out) {
-  if (!ft8x7DbfSettable()) return FeatureStatus::Unsupported;
+FeatureStatus ft8x7FlagSettingToggle(Ft8x7Setting setting, Ft8x7SettingState& out) {
+  Ft8x7Flag flag = Ft8x7Flag::Nb;
+  if (!ft8x7FlagSettable(setting, flag)) return FeatureStatus::Unsupported;
   out = Ft8x7SettingState();
-  out.setting = Ft8x7Setting::Dbf;
-  return ft8x7ToggleFlag(Ft8x7Flag::Dbf, out.on);
+  out.setting = setting;
+  return ft8x7ToggleFlag(flag, out.on);
+}
+
+// rear: nullptr toggles.
+static FeatureStatus ft817AntennaWrite(const bool* rear, Ft8x7SettingState& out) {
+  if (!currentProfile().caps.setRadioMenu || !currentIsFt817Family()) return FeatureStatus::Unsupported;
+  out = Ft8x7SettingState();
+  out.setting = Ft8x7Setting::Antenna;
+  uint64_t hz = 0;
+  if (!queryFrequency(hz, kFt8x7TimeoutMs)) return failure(FeatureStatus::NoReply);
+  return eepromWriteStatus(rear ? yaesuFt817SetRearAntenna(hz, *rear, out.on, kFt8x7TimeoutMs)
+                                : yaesuFt817ToggleRearAntenna(hz, out.on, kFt8x7TimeoutMs));
+}
+
+FeatureStatus ft817AntennaSet(bool rear, Ft8x7SettingState& out) {
+  return ft817AntennaWrite(&rear, out);
+}
+
+FeatureStatus ft817AntennaToggle(Ft8x7SettingState& out) {
+  return ft817AntennaWrite(nullptr, out);
 }
 
 FeatureStatus ft8x7RfPowerSet(uint16_t watts, Ft8x7SettingState& out) {
@@ -592,25 +676,85 @@ FeatureStatus ft8x7MicEqSet(YaesuFt857MicEq eq, Ft8x7SettingState& out) {
   return eepromWriteStatus(yaesuFt857SetMicEq(eq, out.micEq, kFt8x7TimeoutMs));
 }
 
-// ---- Speech processor and mic gain writes ----
+FeatureStatus ft8x7CwBfoSet(Ft857CwBfo bfo, Ft8x7SettingState& out) {
+  if (!currentProfile().caps.setRadioMenu || !currentIsFt857Family()) return FeatureStatus::Unsupported;
+  out = Ft8x7SettingState();
+  out.setting = Ft8x7Setting::CwBfo;
+  return eepromWriteStatus(yaesuFt857SetCwBfo(bfo, out.cwBfo, kFt8x7TimeoutMs));
+}
 
-// Experimental: the FT-857/897 writes PROC and its level to the EEPROM.
-static bool procSettable() {
-  return currentProfile().caps.setRadioMenu && currentIsFt857Family();
+// ---- Speech processor, mic gain and VOX writes ----
+
+// Where a write goes: over CAT where the profile has the write cap, or, experimentally
+// (caps.setRadioMenu), to the FT-8x7 EEPROM. ft8x7: the FT-8x7 model keeps the setting.
+enum class TxWrite : uint8_t { None, Civ, Ftdx10, Ft8x7 };
+
+static TxWrite txWriteTarget(bool readable, bool capSet, bool ft8x7) {
+  if (!readable) return TxWrite::None;
+  if (currentProtocolType() == PROTO_CIV) return capSet ? TxWrite::Civ : TxWrite::None;
+  if (isFtdx10()) return capSet ? TxWrite::Ftdx10 : TxWrite::None;
+  return ft8x7 && currentProfile().caps.setRadioMenu ? TxWrite::Ft8x7 : TxWrite::None;
+}
+
+// A CAT write, which reads the setting back.
+static FeatureStatus catWriteStatus(bool ok) {
+  return ok ? FeatureStatus::Ok : failure(FeatureStatus::Failed);
+}
+
+// Sets a CAT level of 0..100 percent: CI-V scaled to 0..255, FTDX10 as it is. levelOut is the
+// level set.
+template <typename CivSet, typename AsciiSet>
+static FeatureStatus catLevelSet(TxWrite target, uint8_t level, CivSet civSet, AsciiSet asciiSet,
+                                 uint8_t& levelOut) {
+  if (level > 100) return FeatureStatus::Invalid;
+  const RadioProfile& sp = currentProfile();
+  const bool ok = target == TxWrite::Civ ? civSet(sp, levelPercentToRaw(level)) : asciiSet(sp, level);
+  if (!ok) return failure(FeatureStatus::Failed);
+  levelOut = level;
+  return FeatureStatus::Ok;
+}
+
+// The CAT level read, plus delta, kept within 0..100, then set.
+template <typename Query, typename CivSet, typename AsciiSet>
+static FeatureStatus catLevelStep(TxWrite target, int delta, Query query, CivSet civSet, AsciiSet asciiSet,
+                                  uint8_t& levelOut) {
+  uint8_t level = 0;
+  const FeatureStatus status = query(level);
+  if (status != FeatureStatus::Ok) return status;
+  return catLevelSet(target, ft8x7PercentStep(level, delta), civSet, asciiSet, levelOut);
+}
+
+static TxWrite procWriteTarget() {
+  return txWriteTarget(procSupported(), currentProfile().caps.setProc, currentIsFt857Family());
 }
 
 FeatureStatus procSet(bool on) {
-  if (!procSettable()) return FeatureStatus::Unsupported;
+  const RadioProfile& sp = currentProfile();
+  switch (procWriteTarget()) {
+    case TxWrite::None: return FeatureStatus::Unsupported;
+    case TxWrite::Civ: return catWriteStatus(civSetProc(sp, on));
+    case TxWrite::Ftdx10: return catWriteStatus(asciiSetYaesuProc(sp, on));
+    case TxWrite::Ft8x7: break;
+  }
   return eepromWriteStatus(yaesuFt8x7SetFlag(Ft8x7Flag::Proc, on, kFt8x7TimeoutMs));
 }
 
 FeatureStatus procToggle(bool& on) {
-  if (!procSettable()) return FeatureStatus::Unsupported;
-  return ft8x7ToggleFlag(Ft8x7Flag::Proc, on);
+  const TxWrite target = procWriteTarget();
+  if (target == TxWrite::None) return FeatureStatus::Unsupported;
+  if (target == TxWrite::Ft8x7) return ft8x7ToggleFlag(Ft8x7Flag::Proc, on);
+  bool current = false;
+  const FeatureStatus status = procQuery(current);
+  if (status != FeatureStatus::Ok) return status;
+  const FeatureStatus set = procSet(!current);
+  if (set == FeatureStatus::Ok) on = !current;
+  return set;
 }
 
 FeatureStatus procLevelSet(uint8_t level, uint8_t& levelOut) {
-  if (!procSettable()) return FeatureStatus::Unsupported;
+  const TxWrite target = procWriteTarget();
+  if (target == TxWrite::None) return FeatureStatus::Unsupported;
+  if (target != TxWrite::Ft8x7) return catLevelSet(target, level, civSetProcLevel, asciiSetYaesuProcLevel, levelOut);
   uint16_t read = 0;
   const FeatureStatus status =
       eepromWriteStatus(yaesuFt857SetLevel(YaesuFt857Level::ProcLevel, level, read, kFt8x7TimeoutMs));
@@ -619,7 +763,11 @@ FeatureStatus procLevelSet(uint8_t level, uint8_t& levelOut) {
 }
 
 FeatureStatus procLevelStep(int delta, uint8_t& levelOut) {
-  if (!procSettable()) return FeatureStatus::Unsupported;
+  const TxWrite target = procWriteTarget();
+  if (target == TxWrite::None) return FeatureStatus::Unsupported;
+  if (target != TxWrite::Ft8x7) {
+    return catLevelStep(target, delta, procLevelQuery, civSetProcLevel, asciiSetYaesuProcLevel, levelOut);
+  }
   uint16_t read = 0;
   const FeatureStatus status =
       eepromWriteStatus(yaesuFt857StepLevel(YaesuFt857Level::ProcLevel, delta, read, kFt8x7TimeoutMs));
@@ -627,26 +775,132 @@ FeatureStatus procLevelStep(int delta, uint8_t& levelOut) {
   return status;
 }
 
-// Experimental: the FT-8x7 writes the mic gain of the current mode to the EEPROM.
-static FeatureStatus micGainSettable(Ft8x7MicGain& gain) {
-  if (!currentProfile().caps.setRadioMenu || currentFt8x7Model() == Ft8x7Model::None) {
-    return FeatureStatus::Unsupported;
-  }
-  return ft8x7CurrentMicGain(gain);
+static TxWrite micGainWriteTarget() {
+  return txWriteTarget(micGainSupported(), currentProfile().caps.setMicGain, true);
 }
 
 FeatureStatus micGainSet(uint8_t level, uint8_t& levelOut) {
+  const TxWrite target = micGainWriteTarget();
+  if (target == TxWrite::None) return FeatureStatus::Unsupported;
+  if (target != TxWrite::Ft8x7) return catLevelSet(target, level, civSetMicGain, asciiSetYaesuMicGain, levelOut);
+  // The FT-8x7 keeps a mic gain per mode: the current mode's, as micGainQuery picks it.
   Ft8x7MicGain gain = Ft8x7MicGain::Ssb;
-  const FeatureStatus status = micGainSettable(gain);
+  const FeatureStatus status = ft8x7CurrentMicGain(gain);
   if (status != FeatureStatus::Ok) return status;
   return eepromWriteStatus(yaesuFt8x7SetMicGain(gain, level, levelOut, kFt8x7TimeoutMs));
 }
 
 FeatureStatus micGainStep(int delta, uint8_t& levelOut) {
+  const TxWrite target = micGainWriteTarget();
+  if (target == TxWrite::None) return FeatureStatus::Unsupported;
+  if (target != TxWrite::Ft8x7) {
+    return catLevelStep(target, delta, micGainQuery, civSetMicGain, asciiSetYaesuMicGain, levelOut);
+  }
   Ft8x7MicGain gain = Ft8x7MicGain::Ssb;
-  const FeatureStatus status = micGainSettable(gain);
+  const FeatureStatus status = ft8x7CurrentMicGain(gain);
   if (status != FeatureStatus::Ok) return status;
   return eepromWriteStatus(yaesuFt8x7StepMicGain(gain, delta, levelOut, kFt8x7TimeoutMs));
+}
+
+static TxWrite voxWriteTarget() {
+  return txWriteTarget(voxSupported(), currentProfile().caps.setVox, true);
+}
+
+FeatureStatus voxSet(bool on) {
+  const RadioProfile& sp = currentProfile();
+  switch (voxWriteTarget()) {
+    case TxWrite::None: return FeatureStatus::Unsupported;
+    case TxWrite::Civ: return catWriteStatus(civSetVox(sp, on));
+    case TxWrite::Ftdx10: return catWriteStatus(asciiSetYaesuVox(sp, on));
+    case TxWrite::Ft8x7: break;
+  }
+  return eepromWriteStatus(yaesuFt8x7SetFlag(Ft8x7Flag::Vox, on, kFt8x7TimeoutMs));
+}
+
+FeatureStatus voxToggle(bool& on) {
+  const TxWrite target = voxWriteTarget();
+  if (target == TxWrite::None) return FeatureStatus::Unsupported;
+  if (target == TxWrite::Ft8x7) return ft8x7ToggleFlag(Ft8x7Flag::Vox, on);
+  bool current = false;
+  const FeatureStatus status = voxQuery(current);
+  if (status != FeatureStatus::Ok) return status;
+  const FeatureStatus set = voxSet(!current);
+  if (set == FeatureStatus::Ok) on = !current;
+  return set;
+}
+
+bool voxGainRange(uint8_t& minOut, uint8_t& maxOut) {
+  const TxWrite target = voxWriteTarget();
+  if (target == TxWrite::None) return false;
+  minOut = target == TxWrite::Ft8x7 ? 1 : 0;
+  maxOut = 100;
+  return true;
+}
+
+FeatureStatus voxGainSet(uint8_t level, uint8_t& levelOut) {
+  const TxWrite target = voxWriteTarget();
+  if (target == TxWrite::None) return FeatureStatus::Unsupported;
+  if (target != TxWrite::Ft8x7) return catLevelSet(target, level, civSetVoxGain, asciiSetYaesuVoxGain, levelOut);
+  return eepromWriteStatus(yaesuFt8x7SetVoxGain(level, levelOut, kFt8x7TimeoutMs));
+}
+
+FeatureStatus voxGainStep(int delta, uint8_t& levelOut) {
+  const TxWrite target = voxWriteTarget();
+  if (target == TxWrite::None) return FeatureStatus::Unsupported;
+  if (target != TxWrite::Ft8x7) {
+    return catLevelStep(target, delta, voxGainQuery, civSetVoxGain, asciiSetYaesuVoxGain, levelOut);
+  }
+  return eepromWriteStatus(yaesuFt8x7StepVoxGain(delta, levelOut, kFt8x7TimeoutMs));
+}
+
+bool voxDelayRange(uint16_t& minOut, uint16_t& maxOut) {
+  const TxWrite target = voxWriteTarget();
+  uint16_t civAddr = 0;
+  if (target == TxWrite::None || (target == TxWrite::Civ && !civVoxDelayAddr(currentProfile().model, civAddr))) {
+    return false;
+  }
+  minOut = 100;
+  maxOut = 3000;
+  if (target == TxWrite::Civ) {
+    minOut = 0;
+    maxOut = 2000;
+  } else if (target == TxWrite::Ftdx10) {
+    minOut = 30;
+  } else if (currentIsFt817Family()) {
+    maxOut = 2500;
+  }
+  return true;
+}
+
+FeatureStatus voxDelaySet(uint16_t ms, uint16_t& msOut) {
+  uint16_t lo = 0;
+  uint16_t hi = 0;
+  if (!voxDelayRange(lo, hi)) return FeatureStatus::Unsupported;
+  if (ms < lo || ms > hi) return FeatureStatus::Invalid;
+  const TxWrite target = voxWriteTarget();
+  if (target == TxWrite::Ft8x7) return eepromWriteStatus(yaesuFt8x7SetVoxDelayMs(ms, msOut, kFt8x7TimeoutMs));
+  const RadioProfile& sp = currentProfile();
+  const bool ok = target == TxWrite::Civ ? civSetVoxDelayMs(sp, ms) : asciiSetYaesuVoxDelayMs(sp, ms);
+  if (!ok) return failure(FeatureStatus::Failed);
+  // The step the radio took.
+  return voxDelayQuery(msOut);
+}
+
+FeatureStatus voxDelayStep(int delta, uint16_t& msOut) {
+  uint16_t lo = 0;
+  uint16_t hi = 0;
+  if (!voxDelayRange(lo, hi)) return FeatureStatus::Unsupported;
+  const TxWrite target = voxWriteTarget();
+  if (target == TxWrite::Ft8x7) return eepromWriteStatus(yaesuFt8x7StepVoxDelay(delta, msOut, kFt8x7TimeoutMs));
+  uint16_t ms = 0;
+  const FeatureStatus status = voxDelayQuery(ms);
+  if (status != FeatureStatus::Ok) return status;
+  if (target == TxWrite::Ftdx10) return voxDelaySet(asciiYaesuVoxDelayStep(ms, delta), msOut);
+  // CI-V: 100 ms steps.
+  if (delta > 20) delta = 20;
+  if (delta < -20) delta = -20;
+  const int stepped = (int)ms + delta * 100;
+  return voxDelaySet((uint16_t)(stepped < lo ? lo : stepped > hi ? hi : stepped), msOut);
 }
 
 // ---- FT-8x7 tone squelch ----

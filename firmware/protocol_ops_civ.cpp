@@ -404,6 +404,57 @@ bool civQueryVoxDelayMs(const RadioProfile& sp, uint16_t& msOut, uint32_t timeou
   return true;
 }
 
+// Sets a 16 on/off function and reads it back.
+static bool civSetToggleSubChecked(uint8_t subcmd, bool on) {
+  if (!civSetToggleSub(subcmd, on)) return false;
+  civSettleAfterWrite();
+  bool readBack = false;
+  return civQueryToggleSub(subcmd, readBack, 800) && readBack == on;
+}
+
+// Sets a 14 level and reads it back.
+static bool civSet14ValueChecked(uint8_t subcmd, uint16_t value) {
+  if (!civSet14Value(subcmd, value)) return false;
+  civSettleAfterWrite();
+  uint16_t readBack = 0;
+  return civQuery14Value(subcmd, readBack, 800) && readBack == value;
+}
+
+bool civSetProc(const RadioProfile& sp, bool on) {
+  if (sp.protocol != PROTO_CIV || !sp.caps.setProc) return false;
+  return civSetToggleSubChecked(0x44, on);
+}
+
+bool civSetProcLevel(const RadioProfile& sp, uint16_t value) {
+  if (sp.protocol != PROTO_CIV || !sp.caps.setProc) return false;
+  return civSet14ValueChecked(0x0E, value);
+}
+
+bool civSetMicGain(const RadioProfile& sp, uint16_t value) {
+  if (sp.protocol != PROTO_CIV || !sp.caps.setMicGain) return false;
+  return civSet14ValueChecked(0x0B, value);
+}
+
+bool civSetVox(const RadioProfile& sp, bool on) {
+  if (sp.protocol != PROTO_CIV || !sp.caps.setVox) return false;
+  return civSetToggleSubChecked(0x46, on);
+}
+
+bool civSetVoxGain(const RadioProfile& sp, uint16_t value) {
+  if (sp.protocol != PROTO_CIV || !sp.caps.setVox) return false;
+  return civSet14ValueChecked(0x16, value);
+}
+
+bool civSetVoxDelayMs(const RadioProfile& sp, uint16_t ms) {
+  uint16_t addr = 0;
+  if (sp.protocol != PROTO_CIV || !sp.caps.setVox || !civVoxDelayAddr(sp.model, addr) || ms > 2000) return false;
+  const uint8_t tenths = (uint8_t)((ms + 50) / 100);
+  if (!civSetMenuByte(0x05, addr, (uint8_t)(((tenths / 10) << 4) | (tenths % 10)))) return false;
+  civSettleAfterWrite();
+  uint16_t readBack = 0;
+  return civQueryVoxDelayMs(sp, readBack, 800) && readBack == tenths * 100;
+}
+
 bool civQueryNotch(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
   if (!sp.caps.getNotch) return false;
   return civQueryToggleSub(0x48, onOut, timeoutMs);

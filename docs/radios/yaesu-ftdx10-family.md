@@ -24,6 +24,10 @@ Implemented and documented for the current field-test phase:
 - NR, NB, notch read and set
 - preamp read and set
 - AGC query plus fast and slow presets
+- speech processor and its level (`PR0`, `PL`), mic gain (`MG`), VOX with its gain and delay
+  (`VX`, `VG`, `VD`) read and set, console only (`PROC`, `PROCLEVEL`, `MICGAIN`, `VOX`,
+  `VOXGAIN`, `VOXDELAY`). Each set is read back. The sets are not yet tested on a radio: `PROC ON`
+  sends `PR01`, and `PR02` (the manual's on) when that does not read back as on
 - power-state query, off, and on path
 - IF query
 - ID query

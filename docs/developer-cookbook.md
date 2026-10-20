@@ -80,7 +80,9 @@ to completion, and that action talks to the radio synchronously.
 - **Capabilities** (`RadioCapabilities`, `sp.caps.getX` / `setX`): what this
   profile may do. Set in the profile table.
 - **`live`** (`LiveState`): what we last knew about the radio, with a
-  `xValid` flag for each value.
+  `xValid` flag for each value. The background poll keeps `live.freqHz`
+  current only while tuning speech is on; code that needs the radio's
+  frequency queries it.
 - **Bank**: one page of keypad functions, from 1 to 9. The same key does
   different things in different banks.
 
@@ -160,7 +162,7 @@ Useful commands:
 
 | Command | What it shows |
 |---|---|
-| `HELP` | Every command, for the active protocol |
+| `HELP` | The help topics; `HELP GENERAL`, `RADIO`, `DIAG` or `ALL` lists commands for the active profile, `HELP <word>` the lines containing it |
 | `PROFILE?`, `SLOTS?` | Active profile details (protocol, model, link, capabilities), all slots |
 | `MODE LIST` | Modes the keypad mode select accepts on this profile |
 | `STATUS?` | A status summary of the radio and device |
@@ -597,7 +599,9 @@ FeatureStatus preampToggle(bool& on) {
 
 **7. Console.** In `ui_console.cpp`, add `PREAMP?`, `PREAMP ON`, `PREAMP OFF`
 and `PREAMP TOGGLE` next to `handleConsoleFeatureCommand()`, calling the same
-functions, and list them in `printHelp()`. Existing console commands (here
+functions, and list them in `printHelp()` as one line,
+`helpLine("PREAMP? | PREAMP ON | OFF | TOGGLE")`, under the radio's
+`HELP_RADIO` heading (raw protocol tools go under `HELP_DIAG`). Existing console commands (here
 the FTDX `PA?`) should move onto the shared operation rather than keep a
 second implementation.
 
@@ -891,7 +895,7 @@ pattern):
 | `Ok` | caller prints and speaks the state | same |
 | `Unsupported` | "not available", `"X -> not available"` | "not available" |
 | `Timeout` | "timeout" | "timeout" |
-| `NoReply`, `Failed` | "error", `"X -> no reply"` / `"X -> failed"` | printed only, no sound |
+| `NoReply`, `Failed`, `Unexpected` | "error", `"X -> no reply"` / `"X -> failed"` / `"X -> unexpected value"` | printed only, no sound |
 
 ### Profile fields
 

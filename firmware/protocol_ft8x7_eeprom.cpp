@@ -539,3 +539,162 @@ bool yaesuFt8x7QueryVoxDelayMs(uint16_t& msOut, uint32_t timeoutMs) {
   msOut = ft817VoxDelayMs(b);
   return true;
 }
+
+// The VOX gain set to target(the gain read for the write).
+template <typename Target>
+static YaesuEepromWrite rewriteVoxGain(Target target, uint8_t& valueOut, uint32_t timeoutMs) {
+  if (currentIsFt857Family()) {
+    uint16_t read = 0;
+    const YaesuEepromWrite written = ft857RewriteLevel(
+        YaesuFt857Level::VoxGain, [&](uint16_t stored) { return (uint16_t)target(stored > 100 ? 100 : (uint8_t)stored); },
+        read, timeoutMs);
+    if (written == YaesuEepromWrite::Ok) valueOut = (uint8_t)read;
+    return written;
+  }
+  if (!currentIsFt817Family()) return YaesuEepromWrite::Unsupported;
+  uint8_t b = 0;
+  const YaesuEepromWrite written = rewriteByte(
+      FT817_VOX_GAIN_ADDR,
+      [&](uint8_t old, uint8_t& out) { return ft817VoxGainByte(target(ft817LevelFromByte(old)), old, out); }, b,
+      timeoutMs);
+  if (written == YaesuEepromWrite::Ok) valueOut = ft817LevelFromByte(b);
+  return written;
+}
+
+YaesuEepromWrite yaesuFt8x7SetVoxGain(uint8_t value, uint8_t& valueOut, uint32_t timeoutMs) {
+  if (value < 1 || value > 100) return YaesuEepromWrite::OutOfRange;
+  return rewriteVoxGain([value](uint8_t) { return value; }, valueOut, timeoutMs);
+}
+
+YaesuEepromWrite yaesuFt8x7StepVoxGain(int steps, uint8_t& valueOut, uint32_t timeoutMs) {
+  return rewriteVoxGain(
+      [steps](uint8_t stored) {
+        const uint8_t stepped = ft8x7PercentStep(stored, steps);
+        return stepped < 1 ? (uint8_t)1 : stepped;
+      },
+      valueOut, timeoutMs);
+}
+
+// The VOX delay in ms set to target(the delay read for the write).
+template <typename Target>
+static YaesuEepromWrite rewriteFt817VoxDelay(Target target, uint16_t& msOut, uint32_t timeoutMs) {
+  if (!currentIsFt817Family()) return YaesuEepromWrite::Unsupported;
+  uint8_t b = 0;
+  const YaesuEepromWrite written = rewriteByte(
+      FT817_VOX_DELAY_ADDR,
+      [&](uint8_t old, uint8_t& out) { return ft817VoxDelayByte(target(ft817VoxDelayMs(old)), old, out); }, b,
+      timeoutMs);
+  if (written == YaesuEepromWrite::Ok) msOut = ft817VoxDelayMs(b);
+  return written;
+}
+
+YaesuEepromWrite yaesuFt8x7SetVoxDelayMs(uint16_t ms, uint16_t& msOut, uint32_t timeoutMs) {
+  if (currentIsFt857Family()) return yaesuFt857SetLevel(YaesuFt857Level::VoxDelay, ms, msOut, timeoutMs);
+  if (!currentIsFt817Family()) return YaesuEepromWrite::Unsupported;
+  if (ms < 100 || ms > 2500) return YaesuEepromWrite::OutOfRange;
+  return rewriteFt817VoxDelay([ms](uint16_t) { return ms; }, msOut, timeoutMs);
+}
+
+YaesuEepromWrite yaesuFt8x7StepVoxDelay(int steps, uint16_t& msOut, uint32_t timeoutMs) {
+  if (currentIsFt857Family()) return yaesuFt857StepLevel(YaesuFt857Level::VoxDelay, steps, msOut, timeoutMs);
+  return rewriteFt817VoxDelay([steps](uint16_t stored) { return ft817VoxDelayStep(stored, steps); }, msOut,
+                              timeoutMs);
+}
+
+// The jack of the band group of hz set to rear(the jack read for the write).
+template <typename Rear>
+static YaesuEepromWrite rewriteRearAntenna(uint64_t hz, Rear rear, bool& rearOut, uint32_t timeoutMs) {
+  if (!currentIsFt817Family()) return YaesuEepromWrite::Unsupported;
+  const Ft8x7BandGroup group = ft8x7BandGroupForHz(hz);
+  const uint8_t mask = ft817RearAntennaMask(group);
+  uint8_t b = 0;
+  const YaesuEepromWrite written = rewriteByte(
+      FT817_ANTENNA_ADDR,
+      [&](uint8_t old, uint8_t& out) {
+        out = ft817RearAntennaByte(group, rear((old & mask) != 0), old);
+        return true;
+      },
+      b, timeoutMs);
+  if (written == YaesuEepromWrite::Ok) rearOut = (b & mask) != 0;
+  return written;
+}
+
+YaesuEepromWrite yaesuFt817SetRearAntenna(uint64_t hz, bool rear, bool& rearOut, uint32_t timeoutMs) {
+  return rewriteRearAntenna(hz, [rear](bool) { return rear; }, rearOut, timeoutMs);
+}
+
+YaesuEepromWrite yaesuFt817ToggleRearAntenna(uint64_t hz, bool& rearOut, uint32_t timeoutMs) {
+  return rewriteRearAntenna(hz, [](bool rear) { return !rear; }, rearOut, timeoutMs);
+}
+
+YaesuEepromRead yaesuFt8x7QueryCwLevel(Ft8x7CwLevel level, uint16_t& valueOut, uint32_t timeoutMs) {
+  const Ft8x7Model model = currentFt8x7Model();
+  uint16_t addr = 0;
+  if (!ft8x7CwLevelAddr(model, level, addr)) return YaesuEepromRead::Unsupported;
+  uint8_t pair[2] = {0};
+  if (!readEepromPair(addr, pair, timeoutMs)) return YaesuEepromRead::NoReply;
+  return ft8x7CwLevelValue(model, level, pair, valueOut) ? YaesuEepromRead::Ok : YaesuEepromRead::UnexpectedBytes;
+}
+
+// Sets level to target(the value stored); valueOut is the value read back. The whole pair is
+// built from the one read, since the FT-857/897 delay spans both bytes.
+template <typename Target>
+static YaesuEepromWrite rewriteCwLevel(Ft8x7CwLevel level, Target target, uint16_t& valueOut, uint32_t timeoutMs) {
+  const Ft8x7Model model = currentFt8x7Model();
+  uint16_t addr = 0;
+  if (!ft8x7CwLevelAddr(model, level, addr)) return YaesuEepromWrite::Unsupported;
+  uint8_t old[2] = {0};
+  const YaesuEepromWrite read = readForWrite(addr, old, timeoutMs);
+  if (read != YaesuEepromWrite::Ok) return read;
+  uint16_t stored = 0;
+  uint8_t pair[2] = {0};
+  if (!ft8x7CwLevelValue(model, level, old, stored) || !ft8x7CwLevelPair(model, level, target(stored), old, pair)) {
+    return YaesuEepromWrite::UnexpectedBytes;
+  }
+  uint8_t check[2] = {pair[0], pair[1]};
+  if (pair[0] != old[0] || pair[1] != old[1]) {
+    const YaesuEepromWrite written = writeEepromPairChecked(addr, pair, check, timeoutMs);
+    if (written != YaesuEepromWrite::Ok) return written;
+  }
+  return ft8x7CwLevelValue(model, level, check, valueOut) ? YaesuEepromWrite::Ok : YaesuEepromWrite::NotVerified;
+}
+
+YaesuEepromWrite yaesuFt8x7SetCwLevel(Ft8x7CwLevel level, uint16_t value, uint16_t& valueOut,
+                                      uint32_t timeoutMs) {
+  const Ft8x7Model model = currentFt8x7Model();
+  uint16_t addr = 0;
+  if (!ft8x7CwLevelAddr(model, level, addr)) return YaesuEepromWrite::Unsupported;
+  if (!ft8x7CwLevelAccepts(model, level, value)) return YaesuEepromWrite::OutOfRange;
+  return rewriteCwLevel(level, [value](uint16_t) { return value; }, valueOut, timeoutMs);
+}
+
+YaesuEepromWrite yaesuFt8x7StepCwLevel(Ft8x7CwLevel level, int steps, uint16_t& valueOut,
+                                       uint32_t timeoutMs) {
+  const Ft8x7Model model = currentFt8x7Model();
+  return rewriteCwLevel(
+      level, [model, level, steps](uint16_t stored) { return ft8x7CwLevelStep(model, level, stored, steps); },
+      valueOut, timeoutMs);
+}
+
+YaesuEepromRead yaesuFt857QueryCwBfo(Ft857CwBfo& out, uint32_t timeoutMs) {
+  if (!currentIsFt857Family()) return YaesuEepromRead::Unsupported;
+  uint8_t b = 0;
+  if (!yaesuCatReadEepromByte(FT857_CW_BFO_ADDR, b, timeoutMs)) return YaesuEepromRead::NoReply;
+  return ft857CwBfoFromByte(b, out) ? YaesuEepromRead::Ok : YaesuEepromRead::UnexpectedBytes;
+}
+
+YaesuEepromWrite yaesuFt857SetCwBfo(Ft857CwBfo bfo, Ft857CwBfo& bfoOut, uint32_t timeoutMs) {
+  if (!currentIsFt857Family()) return YaesuEepromWrite::Unsupported;
+  uint8_t b = 0;
+  const YaesuEepromWrite written = rewriteByte(
+      FT857_CW_BFO_ADDR,
+      [bfo](uint8_t old, uint8_t& out) {
+        Ft857CwBfo stored = bfo;
+        if (!ft857CwBfoFromByte(old, stored)) return false;
+        out = ft857CwBfoByte(bfo, old);
+        return true;
+      },
+      b, timeoutMs);
+  if (written == YaesuEepromWrite::Ok) (void)ft857CwBfoFromByte(b, bfoOut);
+  return written;
+}

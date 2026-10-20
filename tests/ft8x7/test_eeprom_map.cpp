@@ -142,17 +142,17 @@ TEST(ft857_rf_power_drops_bit_7) {
 }
 
 TEST(ft857_agc_speed) {
-  CHECK_EQ(ft857AgcFromSpeed(0x00), YaesuAgc::Slow);
-  CHECK_EQ(ft857AgcFromSpeed(0x01), YaesuAgc::Auto);
-  CHECK_EQ(ft857AgcFromSpeed(0x02), YaesuAgc::Fast);
+  CHECK_EQ(ft857AgcFromSpeed(0x00), YaesuAgc::Auto);
+  CHECK_EQ(ft857AgcFromSpeed(0x01), YaesuAgc::Fast);
+  CHECK_EQ(ft857AgcFromSpeed(0x02), YaesuAgc::Slow);
   CHECK_EQ(ft857AgcFromSpeed(0x03), YaesuAgc::Auto);
-  CHECK_EQ(ft857AgcFromSpeed(0xFC), YaesuAgc::Slow);
+  CHECK_EQ(ft857AgcFromSpeed(0xFE), YaesuAgc::Slow);
 }
 
 TEST(ft857_agc_speed_byte_keeps_the_other_bits) {
-  CHECK_EQ(ft857AgcSpeedByte(YaesuAgc::Slow, 0xF3), 0xF0);
-  CHECK_EQ(ft857AgcSpeedByte(YaesuAgc::Auto, 0xF0), 0xF1);
-  CHECK_EQ(ft857AgcSpeedByte(YaesuAgc::Fast, 0x31), 0x32);
+  CHECK_EQ(ft857AgcSpeedByte(YaesuAgc::Auto, 0xF3), 0xF0);
+  CHECK_EQ(ft857AgcSpeedByte(YaesuAgc::Fast, 0xF0), 0xF1);
+  CHECK_EQ(ft857AgcSpeedByte(YaesuAgc::Slow, 0x31), 0x32);
   // Off is a bit of its own: the speed stays.
   CHECK_EQ(ft857AgcSpeedByte(YaesuAgc::Off, 0x32), 0x32);
   static constexpr YaesuAgc kSpeeds[] = {YaesuAgc::Slow, YaesuAgc::Auto, YaesuAgc::Fast};
@@ -178,8 +178,8 @@ TEST(ft857_every_level_has_an_address) {
 
 TEST(ft857_level_addresses) {
   uint16_t addr = 0;
-  CHECK(ft857LevelAddr(YaesuFt857Level::CwSpeed, addr));
-  CHECK_EQ(addr, 0x0075);
+  CHECK(ft857LevelAddr(YaesuFt857Level::AmMicGain, addr));
+  CHECK_EQ(addr, 0x007B);
   CHECK(ft857LevelAddr(YaesuFt857Level::NrLevel, addr));
   CHECK_EQ(addr, 0x0093);
   CHECK(ft857LevelAddr(YaesuFt857Level::LpfCutoff, addr));
@@ -189,9 +189,6 @@ TEST(ft857_level_addresses) {
 }
 
 TEST(ft857_level_scaling) {
-  CHECK_EQ(ft857LevelValue(YaesuFt857Level::CwSpeed, 0x00), 4);
-  CHECK_EQ(ft857LevelValue(YaesuFt857Level::CwSpeed, 0x38), 60);
-  CHECK_EQ(ft857LevelValue(YaesuFt857Level::CwSpeed, 0xC8), 12);  // bits 7..6 are not the speed
   CHECK_EQ(ft857LevelValue(YaesuFt857Level::HpfCutoff, 0x00), 100);
   CHECK_EQ(ft857LevelValue(YaesuFt857Level::HpfCutoff, 0x0F), 1000);
   CHECK_EQ(ft857LevelValue(YaesuFt857Level::LpfCutoff, 0x00), 1000);
@@ -233,7 +230,7 @@ TEST(mic_gain_follows_the_mode) {
 }
 
 TEST(ft857_mic_gain_menus) {
-  YaesuFt857Level level = YaesuFt857Level::CwSpeed;
+  YaesuFt857Level level = YaesuFt857Level::NrLevel;
   CHECK(ft857MicGainLevel(Ft8x7MicGain::Ssb, level));
   CHECK_EQ(level, YaesuFt857Level::SsbMicGain);
   CHECK(ft857MicGainLevel(Ft8x7MicGain::Am, level));
@@ -470,7 +467,7 @@ constexpr Ft8x7Flag kAllFlags[] = {
   Ft8x7Flag::Proc,   Ft8x7Flag::Lock,    Ft8x7Flag::FastTuning, Ft8x7Flag::IfShift,
   Ft8x7Flag::Dnr,    Ft8x7Flag::Dnf,     Ft8x7Flag::Dbf,     Ft8x7Flag::AgcOn,
   Ft8x7Flag::DspRow, Ft8x7Flag::VfoB,    Ft8x7Flag::Filter2, Ft8x7Flag::KnobIsSquelch,
-  Ft8x7Flag::Split,
+  Ft8x7Flag::Split,  Ft8x7Flag::KeyReverse, Ft8x7Flag::CwAutoMode, Ft8x7Flag::PaddleMicKey,
 };
 
 void checkFlags(Ft8x7Model model, const FlagCase *cases, size_t count) {
@@ -516,6 +513,8 @@ TEST(ft857_flag_map) {
     {Ft8x7Flag::Dnr, 0x00A8, 0x02, false},        {Ft8x7Flag::Dbf, 0x00A8, 0x0C, false},
     {Ft8x7Flag::AgcOn, 0x00A8, 0x20, false},      {Ft8x7Flag::DspRow, 0x00A8, 0x80, false},
     {Ft8x7Flag::Proc, 0x00A9, 0x02, false},
+    {Ft8x7Flag::KeyReverse, 0x006B, 0x04, false}, {Ft8x7Flag::PaddleMicKey, 0x007B, 0x80, false},
+    {Ft8x7Flag::CwAutoMode, 0x0092, 0x80, false},
   };
   checkFlags(Ft8x7Model::Ft857, cases, sizeof(cases) / sizeof(cases[0]));
   checkNoSharedBits(Ft8x7Model::Ft857);
@@ -527,6 +526,7 @@ TEST(ft817_flag_map) {
     {Ft8x7Flag::Lock, 0x0057, 0x40, true},       {Ft8x7Flag::FastTuning, 0x0057, 0x80, true},
     {Ft8x7Flag::Keyer, 0x0058, 0x10, false},     {Ft8x7Flag::BreakIn, 0x0058, 0x20, false},
     {Ft8x7Flag::Vox, 0x0058, 0x80, false},       {Ft8x7Flag::Split, 0x007A, 0x80, false},
+    {Ft8x7Flag::KeyReverse, 0x0058, 0x04, false},
   };
   checkFlags(Ft8x7Model::Ft817, cases, sizeof(cases) / sizeof(cases[0]));
   checkFlags(Ft8x7Model::Ft818, cases, sizeof(cases) / sizeof(cases[0]));
@@ -594,6 +594,9 @@ TEST(ft857_settable_level_ranges) {
   CHECK(ft857LevelRange(YaesuFt857Level::NbLevel, lo, hi));
   CHECK_EQ(lo, 0);
   CHECK_EQ(hi, 100);
+  CHECK(ft857LevelRange(YaesuFt857Level::BpfWidth, lo, hi));
+  CHECK_EQ(lo, 60);
+  CHECK_EQ(hi, 240);
   CHECK(ft857LevelRange(YaesuFt857Level::HpfCutoff, lo, hi));
   CHECK_EQ(lo, 100);
   CHECK_EQ(hi, 1000);
@@ -610,8 +613,7 @@ TEST(ft857_settable_level_ranges) {
     CHECK_EQ(lo, 0);
     CHECK_EQ(hi, 100);
   }
-  CHECK(!ft857LevelRange(YaesuFt857Level::CwSpeed, lo, hi));
-  CHECK(!ft857LevelRange(YaesuFt857Level::VoxGain, lo, hi));
+  CHECK(!ft857LevelRange(YaesuFt857Level::DigVox, lo, hi));
 }
 
 // Bit 7 of the PROC level and mic gain bytes is not theirs and stays.
@@ -665,6 +667,26 @@ TEST(ft857_nr_level_byte_keeps_bpf_and_mic_eq) {
   CHECK_EQ(ft857LevelValue(YaesuFt857Level::NrLevel, out), 8);
 }
 
+// 0x93 bits 3..2: 60, 120 or 240 Hz; the NR level and the mic EQ stay.
+TEST(ft857_bpf_width_byte_keeps_nr_level_and_mic_eq) {
+  uint8_t out = 0;
+  CHECK(ft857LevelByte(YaesuFt857Level::BpfWidth, 240, 0x53, out));
+  CHECK_EQ(out, 0x5B);
+  CHECK(ft857LevelByte(YaesuFt857Level::BpfWidth, 60, 0xFB, out));
+  CHECK_EQ(out, 0xF3);
+  CHECK(ft857LevelByte(YaesuFt857Level::BpfWidth, 120, 0x00, out));
+  CHECK_EQ(out, 0x04);
+  CHECK(ft857LevelByte(YaesuFt857Level::BpfWidth, 180, 0x00, out));  // a tie: the lower one
+  CHECK_EQ(out, 0x04);
+  CHECK(ft857LevelByte(YaesuFt857Level::BpfWidth, 200, 0x00, out));
+  CHECK_EQ(out, 0x08);
+  out = 0xAA;
+  CHECK(!ft857LevelByte(YaesuFt857Level::BpfWidth, 59, 0x08, out));
+  CHECK(!ft857LevelByte(YaesuFt857Level::BpfWidth, 241, 0x08, out));
+  CHECK(!ft857LevelByte(YaesuFt857Level::BpfWidth, 120, 0x0C, out));  // stored 3: not a width
+  CHECK_EQ(out, 0xAA);
+}
+
 TEST(ft857_nb_level_byte_keeps_bit_7) {
   uint8_t out = 0;
   CHECK(ft857LevelByte(YaesuFt857Level::NbLevel, 0, 0xB2, out));
@@ -680,7 +702,7 @@ TEST(ft857_level_byte_rejects_values_out_of_range) {
   CHECK(!ft857LevelByte(YaesuFt857Level::NrLevel, 0, 0x5B, out));
   CHECK(!ft857LevelByte(YaesuFt857Level::NrLevel, 17, 0x5B, out));
   CHECK(!ft857LevelByte(YaesuFt857Level::NbLevel, 101, 0x32, out));
-  CHECK(!ft857LevelByte(YaesuFt857Level::CwSpeed, 20, 0x10, out));
+  CHECK(!ft857LevelByte(YaesuFt857Level::DigVox, 20, 0x10, out));
   CHECK_EQ(out, 0xAA);
 }
 
@@ -734,12 +756,17 @@ TEST(ft857_level_step_moves_by_the_radios_steps) {
   CHECK_EQ(ft857LevelStep(YaesuFt857Level::NbLevel, 80, 10), 90);
   CHECK_EQ(ft857LevelStep(YaesuFt857Level::NbLevel, 95, 10), 100);
   CHECK_EQ(ft857LevelStep(YaesuFt857Level::NbLevel, 5, -10), 0);
+  CHECK_EQ(ft857LevelStep(YaesuFt857Level::BpfWidth, 60, 1), 120);
+  CHECK_EQ(ft857LevelStep(YaesuFt857Level::BpfWidth, 120, 1), 240);
+  CHECK_EQ(ft857LevelStep(YaesuFt857Level::BpfWidth, 240, 1), 240);
+  CHECK_EQ(ft857LevelStep(YaesuFt857Level::BpfWidth, 240, -1), 120);
+  CHECK_EQ(ft857LevelStep(YaesuFt857Level::BpfWidth, 60, -1), 60);
   CHECK_EQ(ft857LevelStep(YaesuFt857Level::HpfCutoff, 100, 1), 160);
   CHECK_EQ(ft857LevelStep(YaesuFt857Level::HpfCutoff, 100, -1), 100);
   CHECK_EQ(ft857LevelStep(YaesuFt857Level::HpfCutoff, 1000, 1), 1000);
   CHECK_EQ(ft857LevelStep(YaesuFt857Level::LpfCutoff, 6000, -1), ft857LevelValue(YaesuFt857Level::LpfCutoff, 30));
   CHECK_EQ(ft857LevelStep(YaesuFt857Level::LpfCutoff, 2770, 1), ft857LevelValue(YaesuFt857Level::LpfCutoff, 12));
-  CHECK_EQ(ft857LevelStep(YaesuFt857Level::CwSpeed, 20, 1), 20);
+  CHECK_EQ(ft857LevelStep(YaesuFt857Level::DigVox, 20, 1), 20);
 }
 
 // The console passes any step count; more steps than the radio has go to the end of the range.
@@ -750,6 +777,8 @@ TEST(ft857_level_step_takes_any_number_of_steps) {
   CHECK_EQ(ft857LevelStep(YaesuFt857Level::NbLevel, 50, INT_MIN), 0);
   CHECK_EQ(ft857LevelStep(YaesuFt857Level::NrLevel, 8, 1000), 16);
   CHECK_EQ(ft857LevelStep(YaesuFt857Level::NrLevel, 8, -1000), 1);
+  CHECK_EQ(ft857LevelStep(YaesuFt857Level::BpfWidth, 60, INT_MAX), 240);
+  CHECK_EQ(ft857LevelStep(YaesuFt857Level::BpfWidth, 240, INT_MIN), 60);
 }
 
 TEST(percent_step_stays_within_0_to_100) {
@@ -828,4 +857,248 @@ TEST(ft817_power_level_byte_keeps_the_other_bits) {
   CHECK_EQ(ft817PowerLevelByte(Ft817PowerLevel::L1, 0xF0), 0xF3);
   CHECK_EQ(ft817PowerLevelByte(Ft817PowerLevel::L3, 0x00), 0x01);
   CHECK_EQ(ft817PowerLevelByte(Ft817PowerLevel::L2, 0x03), 0x02);
+}
+
+TEST(ft857_vox_levels_can_be_set) {
+  uint16_t lo = 0;
+  uint16_t hi = 0;
+  CHECK(ft857LevelRange(YaesuFt857Level::VoxGain, lo, hi));
+  CHECK_EQ(lo, 1);
+  CHECK_EQ(hi, 100);
+  CHECK(ft857LevelRange(YaesuFt857Level::VoxDelay, lo, hi));
+  CHECK_EQ(lo, 100);
+  CHECK_EQ(hi, 3000);
+  uint8_t out = 0;
+  CHECK(ft857LevelByte(YaesuFt857Level::VoxGain, 50, 0x80 | 10, out));
+  CHECK_EQ(out, 0x80 | 50);  // bit 7 kept
+  CHECK(ft857LevelByte(YaesuFt857Level::VoxDelay, 500, 3, out));
+  CHECK_EQ(out, 5);
+  CHECK(ft857LevelByte(YaesuFt857Level::VoxDelay, 549, 3, out));  // to the nearest 100 ms
+  CHECK_EQ(out, 5);
+  out = 0xAA;
+  CHECK(!ft857LevelByte(YaesuFt857Level::VoxGain, 0, 10, out));
+  CHECK(!ft857LevelByte(YaesuFt857Level::VoxDelay, 3100, 3, out));
+  CHECK(!ft857LevelByte(YaesuFt857Level::VoxDelay, 500, 0, out));  // stored 0: the map does not fit
+  CHECK_EQ(out, 0xAA);
+  CHECK_EQ(ft857LevelStep(YaesuFt857Level::VoxDelay, 500, -2), 300);
+  CHECK_EQ(ft857LevelStep(YaesuFt857Level::VoxDelay, 2900, INT_MAX), 3000);
+  CHECK_EQ(ft857LevelStep(YaesuFt857Level::VoxDelay, 200, INT_MIN), 100);
+  CHECK_EQ(ft857LevelStep(YaesuFt857Level::VoxGain, 3, -10), 1);
+}
+
+TEST(ft817_vox_gain_byte_is_1_to_100) {
+  uint8_t out = 0;
+  CHECK(ft817VoxGainByte(50, 0x80 | 10, out));
+  CHECK_EQ(out, 0x80 | 50);
+  out = 0xAA;
+  CHECK(!ft817VoxGainByte(0, 10, out));
+  CHECK(!ft817VoxGainByte(101, 10, out));
+  CHECK(!ft817VoxGainByte(50, 0, out));  // stored 0: the map does not fit
+  CHECK_EQ(out, 0xAA);
+}
+
+TEST(ft817_vox_delay_byte_keeps_bits_7_5) {
+  uint8_t out = 0;
+  CHECK(ft817VoxDelayByte(300, 0xE5, out));
+  CHECK_EQ(out, 0xE3);
+  CHECK(ft817VoxDelayByte(2500, 0x05, out));
+  CHECK_EQ(out, 0x19);
+  CHECK(ft817VoxDelayByte(149, 0x05, out));  // to the nearest 100 ms
+  CHECK_EQ(out, 0x01);
+  out = 0xAA;
+  CHECK(!ft817VoxDelayByte(99, 0x05, out));
+  CHECK(!ft817VoxDelayByte(2600, 0x05, out));
+  CHECK(!ft817VoxDelayByte(500, 0x00, out));  // stored 0 or above 25: the map does not fit
+  CHECK(!ft817VoxDelayByte(500, 0x1A, out));
+  CHECK_EQ(out, 0xAA);
+  CHECK_EQ(ft817VoxDelayStep(500, 2), 700);
+  CHECK_EQ(ft817VoxDelayStep(500, INT_MAX), 2500);
+  CHECK_EQ(ft817VoxDelayStep(500, INT_MIN), 100);
+}
+
+TEST(ft817_rear_antenna_byte_keeps_the_other_bits) {
+  CHECK_EQ(ft817RearAntennaByte(Ft8x7BandGroup::Hf, true, 0x80), 0x81);  // split kept
+  CHECK_EQ(ft817RearAntennaByte(Ft8x7BandGroup::Vhf, false, 0xBF), 0xAF);
+  CHECK_EQ(ft817RearAntennaByte(Ft8x7BandGroup::Uhf, true, 0x20), 0x20);
+}
+
+// The CW value read from pair, or 0xFFFF where ft8x7CwLevelValue refuses it.
+uint16_t cwValue(Ft8x7Model model, Ft8x7CwLevel level, const uint8_t pair[2]) {
+  uint16_t value = 0;
+  return ft8x7CwLevelValue(model, level, pair, value) ? value : 0xFFFF;
+}
+
+TEST(ft857_cw_levels_as_measured) {
+  // An FT-897 as found: 0x71..0x75 = 13 E5 19 05 53, 0x92 = C2.
+  const uint8_t pitch[2] = {0x13, 0xE5};
+  const uint8_t weight[2] = {0xE5, 0x19};
+  const uint8_t delay[2] = {0x19, 0x05};
+  const uint8_t sidetone[2] = {0x05, 0x53};
+  const uint8_t speed[2] = {0x53, 0xB2};
+  const uint8_t qsk[2] = {0xC2, 0x78};
+  CHECK_EQ(cwValue(Ft8x7Model::Ft857, Ft8x7CwLevel::Pitch, pitch), 700);
+  CHECK_EQ(cwValue(Ft8x7Model::Ft857, Ft8x7CwLevel::Weight, weight), 30);
+  CHECK_EQ(cwValue(Ft8x7Model::Ft857, Ft8x7CwLevel::Delay, delay), 250);
+  CHECK_EQ(cwValue(Ft8x7Model::Ft857, Ft8x7CwLevel::Sidetone, sidetone), 5);
+  CHECK_EQ(cwValue(Ft8x7Model::Ft857, Ft8x7CwLevel::Speed, speed), 23);
+  CHECK_EQ(cwValue(Ft8x7Model::Ft857, Ft8x7CwLevel::Qsk, qsk), 10);
+  // The ends set on the radio.
+  const uint8_t pitchMin[2] = {0x10, 0xE5};
+  const uint8_t pitchMax[2] = {0x14, 0xE5};
+  const uint8_t weightMax[2] = {0xF4, 0x19};
+  const uint8_t delayFull[2] = {0x02, 0x05};
+  const uint8_t delay30[2] = {0x03, 0x05};
+  const uint8_t delayMax[2] = {0x2C, 0x85};
+  const uint8_t sidetoneMax[2] = {0x64, 0x53};
+  const uint8_t sidetoneWithDelayBit[2] = {0x85, 0x53};
+  const uint8_t qskMax[2] = {0xD2, 0x78};
+  CHECK_EQ(cwValue(Ft8x7Model::Ft857, Ft8x7CwLevel::Pitch, pitchMin), 400);
+  CHECK_EQ(cwValue(Ft8x7Model::Ft857, Ft8x7CwLevel::Pitch, pitchMax), 800);
+  CHECK_EQ(cwValue(Ft8x7Model::Ft857, Ft8x7CwLevel::Weight, weightMax), 45);
+  CHECK_EQ(cwValue(Ft8x7Model::Ft857, Ft8x7CwLevel::Delay, delayFull), 0);
+  CHECK_EQ(cwValue(Ft8x7Model::Ft857, Ft8x7CwLevel::Delay, delay30), 30);
+  CHECK_EQ(cwValue(Ft8x7Model::Ft857, Ft8x7CwLevel::Delay, delayMax), 3000);
+  CHECK_EQ(cwValue(Ft8x7Model::Ft857, Ft8x7CwLevel::Sidetone, sidetoneMax), 100);
+  CHECK_EQ(cwValue(Ft8x7Model::Ft857, Ft8x7CwLevel::Sidetone, sidetoneWithDelayBit), 5);
+  CHECK_EQ(cwValue(Ft8x7Model::Ft857, Ft8x7CwLevel::Qsk, qskMax), 30);
+}
+
+// A stored value outside the radio's steps means the map does not fit: no value is read.
+TEST(cw_level_reads_refuse_values_the_radio_does_not_offer) {
+  const uint8_t speedMin[2] = {0x00, 0x00};
+  const uint8_t speedMax[2] = {0xF8, 0x00};  // bits 7..6 are not the speed
+  const uint8_t speed61[2] = {0x39, 0x00};
+  CHECK_EQ(cwValue(Ft8x7Model::Ft857, Ft8x7CwLevel::Speed, speedMin), 4);
+  CHECK_EQ(cwValue(Ft8x7Model::Ft857, Ft8x7CwLevel::Speed, speedMax), 60);
+  CHECK_EQ(cwValue(Ft8x7Model::Ft857, Ft8x7CwLevel::Speed, speed61), 0xFFFF);
+  const uint8_t delay0[2] = {0x00, 0x05};
+  const uint8_t delay1[2] = {0x01, 0x05};  // not FULL, which is 2
+  const uint8_t pitch5[2] = {0x15, 0xE5};
+  CHECK_EQ(cwValue(Ft8x7Model::Ft857, Ft8x7CwLevel::Delay, delay0), 0xFFFF);
+  CHECK_EQ(cwValue(Ft8x7Model::Ft857, Ft8x7CwLevel::Delay, delay1), 0xFFFF);
+  CHECK_EQ(cwValue(Ft8x7Model::Ft857, Ft8x7CwLevel::Pitch, pitch5), 0xFFFF);
+  const uint8_t ft817Pitch15[2] = {0x0F, 0x00};
+  const uint8_t ft817Delay0[2] = {0x00, 0x00};
+  CHECK_EQ(cwValue(Ft8x7Model::Ft817, Ft8x7CwLevel::Pitch, ft817Pitch15), 0xFFFF);
+  CHECK_EQ(cwValue(Ft8x7Model::Ft817, Ft8x7CwLevel::Delay, ft817Delay0), 0xFFFF);
+  CHECK_EQ(cwValue(Ft8x7Model::Ft817, Ft8x7CwLevel::Qsk, ft817Delay0), 0xFFFF);  // not kept
+}
+
+TEST(ft857_cw_level_pair_keeps_the_other_bits) {
+  uint8_t out[2] = {0, 0};
+  const uint8_t delay[2] = {0x19, 0x05};
+  CHECK(ft8x7CwLevelPair(Ft8x7Model::Ft857, Ft8x7CwLevel::Delay, 3000, delay, out));
+  CHECK_EQ(out[0], 0x2C);
+  CHECK_EQ(out[1], 0x85);  // bit 8 set, side tone 5 kept
+  const uint8_t delayMax[2] = {0x2C, 0x85};
+  CHECK(ft8x7CwLevelPair(Ft8x7Model::Ft857, Ft8x7CwLevel::Delay, 250, delayMax, out));
+  CHECK_EQ(out[0], 0x19);
+  CHECK_EQ(out[1], 0x05);
+  CHECK(ft8x7CwLevelPair(Ft8x7Model::Ft857, Ft8x7CwLevel::Delay, 0, delay, out));  // FULL
+  CHECK_EQ(out[0], 0x02);
+  CHECK(ft8x7CwLevelPair(Ft8x7Model::Ft857, Ft8x7CwLevel::Delay, 254, delay, out));  // nearest 10 ms
+  CHECK_EQ(out[0], 0x19);
+  const uint8_t pitch[2] = {0x13, 0xE5};
+  CHECK(ft8x7CwLevelPair(Ft8x7Model::Ft857, Ft8x7CwLevel::Pitch, 400, pitch, out));
+  CHECK_EQ(out[0], 0x10);
+  CHECK_EQ(out[1], 0xE5);  // the weight's byte untouched
+  const uint8_t qsk[2] = {0xC2, 0x78};
+  CHECK(ft8x7CwLevelPair(Ft8x7Model::Ft857, Ft8x7CwLevel::Qsk, 15, qsk, out));
+  CHECK_EQ(out[0], 0xC6);  // auto mode, the TRAINING bit and the BFO kept
+  const uint8_t weight[2] = {0xE5, 0x19};
+  CHECK(ft8x7CwLevelPair(Ft8x7Model::Ft857, Ft8x7CwLevel::Weight, 31, weight, out));
+  CHECK_EQ(out[0], 0xE6);  // the SQL/RF knob bit kept
+  const uint8_t sidetone[2] = {0x85, 0x53};
+  CHECK(ft8x7CwLevelPair(Ft8x7Model::Ft857, Ft8x7CwLevel::Sidetone, 100, sidetone, out));
+  CHECK_EQ(out[0], 0xE4);  // the delay's bit 8 kept
+}
+
+TEST(ft857_cw_level_pair_refuses_what_the_radio_does_not_offer) {
+  const uint8_t delay[2] = {0x19, 0x05};
+  uint8_t out[2] = {0xAA, 0xBB};
+  CHECK(!ft8x7CwLevelPair(Ft8x7Model::Ft857, Ft8x7CwLevel::Delay, 20, delay, out));
+  CHECK(!ft8x7CwLevelPair(Ft8x7Model::Ft857, Ft8x7CwLevel::Delay, 3010, delay, out));
+  CHECK(!ft8x7CwLevelPair(Ft8x7Model::Ft857, Ft8x7CwLevel::Pitch, 900, delay, out));
+  CHECK(!ft8x7CwLevelPair(Ft8x7Model::Ft857, Ft8x7CwLevel::Speed, 3, delay, out));
+  // Stored values the map does not fit: delay 1, delay above 300, pitch 5, QSK 5.
+  const uint8_t delay1[2] = {0x01, 0x05};
+  const uint8_t delay301[2] = {0x2D, 0x85};
+  const uint8_t pitch5[2] = {0x15, 0xE5};
+  const uint8_t qsk5[2] = {0xD6, 0x78};
+  CHECK(!ft8x7CwLevelPair(Ft8x7Model::Ft857, Ft8x7CwLevel::Delay, 250, delay1, out));
+  CHECK(!ft8x7CwLevelPair(Ft8x7Model::Ft857, Ft8x7CwLevel::Delay, 250, delay301, out));
+  CHECK(!ft8x7CwLevelPair(Ft8x7Model::Ft857, Ft8x7CwLevel::Pitch, 600, pitch5, out));
+  CHECK(!ft8x7CwLevelPair(Ft8x7Model::Ft857, Ft8x7CwLevel::Qsk, 20, qsk5, out));
+  CHECK_EQ(out[0], 0xAA);
+  CHECK_EQ(out[1], 0xBB);
+}
+
+TEST(ft857_cw_level_ranges_and_steps) {
+  uint16_t lo = 0;
+  uint16_t hi = 0;
+  CHECK(ft8x7CwLevelRange(Ft8x7Model::Ft857, Ft8x7CwLevel::Delay, lo, hi));
+  CHECK_EQ(lo, 30);
+  CHECK_EQ(hi, 3000);
+  CHECK(ft8x7CwDelayHasFull(Ft8x7Model::Ft857));
+  CHECK(ft8x7CwLevelRange(Ft8x7Model::Ft857, Ft8x7CwLevel::Speed, lo, hi));
+  CHECK_EQ(lo, 4);
+  CHECK_EQ(hi, 60);
+  CHECK(ft8x7CwLevelRange(Ft8x7Model::Ft857, Ft8x7CwLevel::Qsk, lo, hi));
+  CHECK_EQ(lo, 10);
+  CHECK_EQ(hi, 30);
+  // FULL is the step below 30 ms.
+  CHECK_EQ(ft8x7CwLevelStep(Ft8x7Model::Ft857, Ft8x7CwLevel::Delay, 30, -1), 0);
+  CHECK_EQ(ft8x7CwLevelStep(Ft8x7Model::Ft857, Ft8x7CwLevel::Delay, 0, 1), 30);
+  CHECK_EQ(ft8x7CwLevelStep(Ft8x7Model::Ft857, Ft8x7CwLevel::Delay, 250, -100), 0);
+  CHECK_EQ(ft8x7CwLevelStep(Ft8x7Model::Ft857, Ft8x7CwLevel::Delay, 250, INT_MAX), 3000);
+  CHECK_EQ(ft8x7CwLevelStep(Ft8x7Model::Ft857, Ft8x7CwLevel::Pitch, 700, 1), 800);
+  CHECK_EQ(ft8x7CwLevelStep(Ft8x7Model::Ft857, Ft8x7CwLevel::Pitch, 700, 5), 800);
+  CHECK_EQ(ft8x7CwLevelStep(Ft8x7Model::Ft857, Ft8x7CwLevel::Weight, 30, INT_MIN), 25);
+  CHECK_EQ(ft8x7CwLevelStep(Ft8x7Model::Ft857, Ft8x7CwLevel::Qsk, 10, 2), 20);
+  CHECK_EQ(ft8x7CwLevelStep(Ft8x7Model::Ft817, Ft8x7CwLevel::Qsk, 10, 2), 10);  // not kept
+}
+
+TEST(ft817_cw_levels_from_the_ka7oei_map) {
+  const uint8_t pitch[2] = {0x08, 0x00};  // 700 Hz
+  const uint8_t delay[2] = {0x19, 0x00};
+  const uint8_t speed[2] = {0x93, 0x00};  // bits 7..6 the charge time
+  CHECK_EQ(cwValue(Ft8x7Model::Ft817, Ft8x7CwLevel::Pitch, pitch), 700);
+  CHECK_EQ(cwValue(Ft8x7Model::Ft818, Ft8x7CwLevel::Delay, delay), 250);
+  CHECK_EQ(cwValue(Ft8x7Model::Ft817, Ft8x7CwLevel::Speed, speed), 23);
+  uint16_t addr = 0;
+  CHECK(ft8x7CwLevelAddr(Ft8x7Model::Ft817, Ft8x7CwLevel::Sidetone, addr));
+  CHECK_EQ(addr, 0x0061);
+  CHECK(ft8x7CwLevelAddr(Ft8x7Model::Ft817, Ft8x7CwLevel::Weight, addr));
+  CHECK_EQ(addr, 0x005F);
+  CHECK(!ft8x7CwLevelAddr(Ft8x7Model::Ft817, Ft8x7CwLevel::Qsk, addr));
+  CHECK(!ft8x7CwLevelAddr(Ft8x7Model::None, Ft8x7CwLevel::Speed, addr));
+  CHECK(!ft8x7CwDelayHasFull(Ft8x7Model::Ft817));
+  uint16_t lo = 0;
+  uint16_t hi = 0;
+  CHECK(ft8x7CwLevelRange(Ft8x7Model::Ft817, Ft8x7CwLevel::Pitch, lo, hi));
+  CHECK_EQ(lo, 300);
+  CHECK_EQ(hi, 1000);
+  CHECK(ft8x7CwLevelRange(Ft8x7Model::Ft817, Ft8x7CwLevel::Delay, lo, hi));
+  CHECK_EQ(lo, 10);
+  CHECK_EQ(hi, 2500);
+  uint8_t out[2] = {0, 0};
+  CHECK(ft8x7CwLevelPair(Ft8x7Model::Ft817, Ft8x7CwLevel::Pitch, 1000, pitch, out));
+  CHECK_EQ(out[0], 0x0E);
+  CHECK(ft8x7CwLevelPair(Ft8x7Model::Ft817, Ft8x7CwLevel::Speed, 60, speed, out));
+  CHECK_EQ(out[0], 0xB8);  // the charge time kept
+  CHECK(!ft8x7CwLevelPair(Ft8x7Model::Ft817, Ft8x7CwLevel::Delay, 0, delay, out));  // no FULL
+  const uint8_t delay0[2] = {0x00, 0x00};
+  CHECK(!ft8x7CwLevelPair(Ft8x7Model::Ft817, Ft8x7CwLevel::Delay, 100, delay0, out));
+}
+
+TEST(ft857_cw_bfo) {
+  Ft857CwBfo bfo = Ft857CwBfo::Usb;
+  CHECK(ft857CwBfoFromByte(0xC2, bfo));
+  CHECK_EQ(bfo, Ft857CwBfo::Auto);
+  CHECK(ft857CwBfoFromByte(0xC1, bfo));
+  CHECK_EQ(bfo, Ft857CwBfo::Lsb);
+  CHECK(ft857CwBfoFromByte(0xC0, bfo));
+  CHECK_EQ(bfo, Ft857CwBfo::Usb);
+  CHECK(!ft857CwBfoFromByte(0xC3, bfo));
+  CHECK_EQ(ft857CwBfoByte(Ft857CwBfo::Lsb, 0xD2), 0xD1);  // QSK and auto mode kept
 }

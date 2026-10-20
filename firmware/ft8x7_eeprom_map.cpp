@@ -15,11 +15,14 @@ static constexpr Ft8x7FlagRow kFt857Flags[] = {
   {Ft8x7Flag::Nb, {0x006A, 0x20, false}},
   {Ft8x7Flag::Lock, {0x006A, 0x40, true}},
   {Ft8x7Flag::FastTuning, {0x006A, 0x80, true}},
+  {Ft8x7Flag::KeyReverse, {0x006B, 0x04, false}},
   {Ft8x7Flag::Keyer, {0x006B, 0x10, false}},
   {Ft8x7Flag::BreakIn, {0x006B, 0x20, false}},
   {Ft8x7Flag::Vox, {0x006B, 0x80, false}},
   {Ft8x7Flag::KnobIsSquelch, {0x0072, 0x80, false}},
+  {Ft8x7Flag::PaddleMicKey, {0x007B, 0x80, false}},  // bits 6..0 are the AM mic gain
   {Ft8x7Flag::Split, {0x008D, 0x80, false}},
+  {Ft8x7Flag::CwAutoMode, {0x0092, 0x80, false}},
   // 0xA7 bit 1 was set when the built-in filter was chosen in CW but not in USB.
   {Ft8x7Flag::Filter2, {0x00A7, 0x80, false}},
   {Ft8x7Flag::Dnf, {0x00A8, 0x01, false}},
@@ -38,6 +41,7 @@ static constexpr Ft8x7FlagRow kFt817Flags[] = {
   {Ft8x7Flag::Nb, {0x0057, 0x20, false}},
   {Ft8x7Flag::Lock, {0x0057, 0x40, true}},
   {Ft8x7Flag::FastTuning, {0x0057, 0x80, true}},
+  {Ft8x7Flag::KeyReverse, {0x0058, 0x04, false}},  // KA7OEI map, not measured
   {Ft8x7Flag::Keyer, {0x0058, 0x10, false}},
   {Ft8x7Flag::BreakIn, {0x0058, 0x20, false}},
   {Ft8x7Flag::Vox, {0x0058, 0x80, false}},
@@ -165,8 +169,8 @@ static uint8_t withLowBits(uint8_t old, uint8_t bits) {
 
 YaesuAgc ft857AgcFromSpeed(uint8_t b) {
   switch (b & 0x03) {
-    case 0x00: return YaesuAgc::Slow;
-    case 0x02: return YaesuAgc::Fast;
+    case 0x01: return YaesuAgc::Fast;
+    case 0x02: return YaesuAgc::Slow;
     default: return YaesuAgc::Auto;
   }
 }
@@ -174,9 +178,9 @@ YaesuAgc ft857AgcFromSpeed(uint8_t b) {
 uint8_t ft857AgcSpeedByte(YaesuAgc agc, uint8_t old) {
   uint8_t speed = 0;
   switch (agc) {
-    case YaesuAgc::Slow: speed = 0x00; break;
-    case YaesuAgc::Auto: speed = 0x01; break;
-    case YaesuAgc::Fast: speed = 0x02; break;
+    case YaesuAgc::Auto: speed = 0x00; break;
+    case YaesuAgc::Fast: speed = 0x01; break;
+    case YaesuAgc::Slow: speed = 0x02; break;
     default: return old;
   }
   return withLowBits(old, speed);
@@ -198,7 +202,7 @@ struct Ft857LevelField {
 };
 
 static constexpr Ft857LevelField kFt857LevelFields[] = {
-  {YaesuFt857Level::CwSpeed, 0x0075, 0x3F, 0},    {YaesuFt857Level::AmMicGain, 0x007B, 0x7F, 0},
+  {YaesuFt857Level::AmMicGain, 0x007B, 0x7F, 0},
   {YaesuFt857Level::DigGain, 0x007D, 0x7F, 0},    {YaesuFt857Level::DigVox, 0x0090, 0x7F, 0},
   {YaesuFt857Level::BpfWidth, 0x0093, 0x0C, 2},   {YaesuFt857Level::HpfCutoff, 0x0095, 0x0F, 0},
   {YaesuFt857Level::LpfCutoff, 0x0094, 0x1F, 0},  {YaesuFt857Level::NrLevel, 0x0093, 0xF0, 4},
@@ -227,7 +231,6 @@ uint16_t ft857LevelValue(YaesuFt857Level level, uint8_t b) {
   if (!f) return 0;
   const uint16_t raw = (uint16_t)((b & f->mask) >> f->shift);
   switch (level) {
-    case YaesuFt857Level::CwSpeed: return (uint16_t)(raw + 4);           // 4..60 WPM
     case YaesuFt857Level::BpfWidth: return (uint16_t)(60 << raw);        // 60 / 120 / 240 Hz
     case YaesuFt857Level::HpfCutoff: return (uint16_t)(100 + 60 * raw);  // 100..1000 Hz
     // 1000..6000 Hz in 32 steps; measured at the ends and at 11 = 2770 Hz (12 = 2940 Hz on
@@ -242,6 +245,7 @@ uint16_t ft857LevelValue(YaesuFt857Level level, uint8_t b) {
 bool ft857LevelRange(YaesuFt857Level level, uint16_t& minOut, uint16_t& maxOut) {
   switch (level) {
     case YaesuFt857Level::NrLevel: minOut = 1; maxOut = 16; return true;
+    case YaesuFt857Level::BpfWidth: minOut = 60; maxOut = 240; return true;
     case YaesuFt857Level::NbLevel:
     case YaesuFt857Level::ProcLevel:
     case YaesuFt857Level::SsbMicGain:
@@ -250,6 +254,8 @@ bool ft857LevelRange(YaesuFt857Level level, uint16_t& minOut, uint16_t& maxOut) 
     case YaesuFt857Level::DigGain: minOut = 0; maxOut = 100; return true;
     case YaesuFt857Level::HpfCutoff: minOut = 100; maxOut = 1000; return true;
     case YaesuFt857Level::LpfCutoff: minOut = 1000; maxOut = 6000; return true;
+    case YaesuFt857Level::VoxGain: minOut = 1; maxOut = 100; return true;
+    case YaesuFt857Level::VoxDelay: minOut = 100; maxOut = 3000; return true;
     default: return false;
   }
 }
@@ -423,6 +429,26 @@ uint16_t ft817VoxDelayMs(uint8_t b) {
   return (uint16_t)((steps > 25 ? 25 : steps) * 100);
 }
 
+bool ft817VoxGainByte(uint8_t value, uint8_t old, uint8_t& out) {
+  const uint8_t stored = (uint8_t)(old & 0x7F);
+  if (value < 1 || stored < 1) return false;
+  return ft817LevelByte(value, old, out);
+}
+
+bool ft817VoxDelayByte(uint16_t ms, uint8_t old, uint8_t& out) {
+  const uint8_t stored = (uint8_t)(old & 0x1F);
+  if (ms < 100 || ms > 2500 || stored < 1 || stored > 25) return false;
+  out = (uint8_t)((old & 0xE0) | ((ms + 50) / 100));
+  return true;
+}
+
+uint16_t ft817VoxDelayStep(uint16_t ms, int steps) {
+  if (steps > 25) steps = 25;
+  if (steps < -25) steps = -25;
+  const int stepped = (ms + 50) / 100 + steps;
+  return (uint16_t)((stepped < 1 ? 1 : stepped > 25 ? 25 : stepped) * 100);
+}
+
 uint8_t ft817RearAntennaMask(Ft8x7BandGroup group) {
   switch (group) {
     case Ft8x7BandGroup::Hf: return 0x01;
@@ -433,4 +459,162 @@ uint8_t ft817RearAntennaMask(Ft8x7BandGroup group) {
     case Ft8x7BandGroup::Uhf: return 0x20;
   }
   return 0x01;
+}
+
+uint8_t ft817RearAntennaByte(Ft8x7BandGroup group, bool rear, uint8_t old) {
+  const uint8_t mask = ft817RearAntennaMask(group);
+  return rear ? (uint8_t)(old | mask) : (uint8_t)(old & ~mask);
+}
+
+// A CW value: the stored field is (pair[0] & mask) >> shift, plus 256 when highMask is set in
+// pair[1]; it holds rawMin..rawMax, and the value is base + step * field. fullRaw, when not 0,
+// is the field that means FULL (value 0).
+struct Ft8x7CwField {
+  Ft8x7CwLevel level;
+  uint16_t addr;
+  uint8_t mask;
+  uint8_t shift;
+  uint8_t highMask;
+  uint16_t rawMin;
+  uint16_t rawMax;
+  uint16_t base;
+  uint16_t step;
+  uint16_t fullRaw;
+};
+
+static constexpr Ft8x7CwField kFt857CwFields[] = {
+  {Ft8x7CwLevel::Speed, 0x0075, 0x3F, 0, 0, 0, 56, 4, 1, 0},
+  {Ft8x7CwLevel::Pitch, 0x0071, 0x07, 0, 0, 0, 4, 400, 100, 0},
+  {Ft8x7CwLevel::Delay, 0x0073, 0xFF, 0, 0x80, 2, 300, 0, 10, 2},
+  {Ft8x7CwLevel::Weight, 0x0072, 0x1F, 0, 0, 0, 20, 25, 1, 0},
+  {Ft8x7CwLevel::Sidetone, 0x0074, 0x7F, 0, 0, 0, 100, 0, 1, 0},
+  {Ft8x7CwLevel::Qsk, 0x0092, 0x1C, 2, 0, 0, 4, 10, 5, 0},
+};
+
+static constexpr Ft8x7CwField kFt817CwFields[] = {
+  {Ft8x7CwLevel::Speed, 0x0062, 0x3F, 0, 0, 0, 56, 4, 1, 0},
+  {Ft8x7CwLevel::Pitch, 0x005E, 0x0F, 0, 0, 0, 14, 300, 50, 0},
+  {Ft8x7CwLevel::Delay, 0x0060, 0xFF, 0, 0, 1, 250, 0, 10, 0},
+  {Ft8x7CwLevel::Weight, 0x005F, 0x1F, 0, 0, 0, 20, 25, 1, 0},
+  {Ft8x7CwLevel::Sidetone, 0x0061, 0x7F, 0, 0, 0, 100, 0, 1, 0},
+};
+
+template <size_t N>
+static const Ft8x7CwField* findCwField(const Ft8x7CwField (&fields)[N], Ft8x7CwLevel level) {
+  for (const Ft8x7CwField& f : fields) {
+    if (f.level == level) return &f;
+  }
+  return nullptr;
+}
+
+static const Ft8x7CwField* ft8x7CwField(Ft8x7Model model, Ft8x7CwLevel level) {
+  if (ft8x7IsFt817Family(model)) return findCwField(kFt817CwFields, level);
+  if (model == Ft8x7Model::Ft857) return findCwField(kFt857CwFields, level);
+  return nullptr;
+}
+
+static uint16_t cwRaw(const Ft8x7CwField& f, const uint8_t pair[2]) {
+  uint16_t raw = (uint16_t)((pair[0] & f.mask) >> f.shift);
+  if (f.highMask && (pair[1] & f.highMask)) raw = (uint16_t)(raw + 256);
+  return raw;
+}
+
+static uint16_t cwRawValue(const Ft8x7CwField& f, uint16_t raw) {
+  if (f.fullRaw && raw == f.fullRaw) return 0;
+  return (uint16_t)(f.base + f.step * raw);
+}
+
+// The field whose value is nearest value; the lower one on a tie.
+static uint16_t cwNearestRaw(const Ft8x7CwField& f, uint16_t value) {
+  uint16_t best = f.rawMin;
+  int bestDistance = -1;
+  for (int raw = f.rawMin; raw <= f.rawMax; ++raw) {
+    const uint16_t v = cwRawValue(f, (uint16_t)raw);
+    const int distance = v > value ? v - value : value - v;
+    if (bestDistance >= 0 && distance >= bestDistance) continue;
+    best = (uint16_t)raw;
+    bestDistance = distance;
+  }
+  return best;
+}
+
+bool ft8x7CwLevelAddr(Ft8x7Model model, Ft8x7CwLevel level, uint16_t& addrOut) {
+  const Ft8x7CwField* f = ft8x7CwField(model, level);
+  if (!f) return false;
+  addrOut = f->addr;
+  return true;
+}
+
+// The field stored in pair; false when it is not one the radio offers.
+static bool cwStoredRaw(const Ft8x7CwField& f, const uint8_t pair[2], uint16_t& rawOut) {
+  const uint16_t raw = cwRaw(f, pair);
+  if (raw < f.rawMin || raw > f.rawMax) return false;
+  rawOut = raw;
+  return true;
+}
+
+bool ft8x7CwLevelValue(Ft8x7Model model, Ft8x7CwLevel level, const uint8_t pair[2], uint16_t& valueOut) {
+  const Ft8x7CwField* f = ft8x7CwField(model, level);
+  uint16_t raw = 0;
+  if (!f || !cwStoredRaw(*f, pair, raw)) return false;
+  valueOut = cwRawValue(*f, raw);
+  return true;
+}
+
+bool ft8x7CwLevelRange(Ft8x7Model model, Ft8x7CwLevel level, uint16_t& minOut, uint16_t& maxOut) {
+  const Ft8x7CwField* f = ft8x7CwField(model, level);
+  if (!f) return false;
+  // FULL is the lowest field and not a number of ms.
+  minOut = cwRawValue(*f, f->fullRaw ? (uint16_t)(f->rawMin + 1) : f->rawMin);
+  maxOut = cwRawValue(*f, f->rawMax);
+  return true;
+}
+
+bool ft8x7CwDelayHasFull(Ft8x7Model model) {
+  const Ft8x7CwField* f = ft8x7CwField(model, Ft8x7CwLevel::Delay);
+  return f && f->fullRaw;
+}
+
+bool ft8x7CwLevelAccepts(Ft8x7Model model, Ft8x7CwLevel level, uint16_t value) {
+  const Ft8x7CwField* f = ft8x7CwField(model, level);
+  uint16_t lo = 0;
+  uint16_t hi = 0;
+  if (!f || !ft8x7CwLevelRange(model, level, lo, hi)) return false;
+  return (value == 0 && f->fullRaw) || (value >= lo && value <= hi);
+}
+
+bool ft8x7CwLevelPair(Ft8x7Model model, Ft8x7CwLevel level, uint16_t value, const uint8_t old[2],
+                      uint8_t out[2]) {
+  const Ft8x7CwField* f = ft8x7CwField(model, level);
+  uint16_t stored = 0;
+  if (!f || !ft8x7CwLevelAccepts(model, level, value) || !cwStoredRaw(*f, old, stored)) return false;
+  // FULL (0) is nearest its own field.
+  const uint16_t raw = cwNearestRaw(*f, value);
+  out[0] = (uint8_t)((old[0] & ~f->mask) | ((raw << f->shift) & f->mask));
+  out[1] = old[1];
+  if (f->highMask) out[1] = (uint8_t)(raw >= 256 ? (old[1] | f->highMask) : (old[1] & ~f->highMask));
+  return true;
+}
+
+uint16_t ft8x7CwLevelStep(Ft8x7Model model, Ft8x7CwLevel level, uint16_t value, int steps) {
+  const Ft8x7CwField* f = ft8x7CwField(model, level);
+  if (!f) return value;
+  // More steps than the field has go to its end; the bound also keeps the sum from overflowing.
+  const int span = f->rawMax - f->rawMin;
+  if (steps > span) steps = span;
+  if (steps < -span) steps = -span;
+  int raw = cwNearestRaw(*f, value) + steps;
+  if (raw < f->rawMin) raw = f->rawMin;
+  if (raw > f->rawMax) raw = f->rawMax;
+  return cwRawValue(*f, (uint16_t)raw);
+}
+
+bool ft857CwBfoFromByte(uint8_t b, Ft857CwBfo& out) {
+  if ((b & 0x03) == 0x03) return false;
+  out = (Ft857CwBfo)(b & 0x03);
+  return true;
+}
+
+uint8_t ft857CwBfoByte(Ft857CwBfo bfo, uint8_t old) {
+  return withLowBits(old, (uint8_t)bfo);
 }

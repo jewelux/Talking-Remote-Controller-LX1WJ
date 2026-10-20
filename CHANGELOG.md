@@ -64,6 +64,9 @@
 - tuning is announced only when the dial stops, and only once it is at least 100 Hz away from the
   last frequency you heard or entered. Moving the dial cuts off a readout that is out of date
   instead of queueing another one, and the next stop is always announced
+- with tuning speech off (Bank 9 `4` long), HamTRC no longer reads the frequency from the radio in
+  the background: while no key or command is used, it sends nothing to the radio. Turning tuning
+  speech on again does not announce the frequency the radio is on; the next tuning is announced
 
 ### Speech and sounds
 
@@ -100,6 +103,7 @@
 
 ### Console commands
 
+- startup prints one line instead of about 8 KB; `HELP` is split into topics and can search for a word
 - new commands for what only the keypad could do: `ROUND [<Hz>]`, `NRLEVEL`, `NBLEVEL`,
   `MONLEVEL`, `PBT1`, `PBT2`, `RIT` and `VOLUME STEP <+-n>`; `FILWIDTH NEXT | PREV`; `TOGGLE` for
   `MONITOR`, `TRANSCEIVE`, `RIT`, `FILSHAPE` and `TUNINGSPEECH`; `CIVADDR? | <hex>` (CI-V) and
@@ -107,6 +111,8 @@
   FT-817 `VFO A=B`
 - `FREQHZ`, `VFOAHZ` and `VFOBHZ` set a frequency in Hz
 - `BANK <n>`, `BANK NEXT` and `BANK PREV` cover banks 1–9 like the keypad (they stopped at 3)
+- Icom: `BSTACK <n>` says the band stack frequency once; with tuning speech on it was announced
+  again after it had been spoken
 - `NR`, `NB` and `NOTCH` behave like the Bank 2 keys: `TOGGLE` starts from the radio's known state,
   on the TS-480 `NR TOGGLE` steps off → 1 → 2 → off, and on CI-V `NOTCH TOGGLE` steps off → NAR →
   MID → WIDE → off
@@ -119,7 +125,7 @@
   can wipe the radio's memories and calibration. It is refused while transmitting
 - FT-817/818/857/897: every Bank 2 and Bank 8 key, Bank 1 `6` and Bank 3 `5` has a console command
   (`NB?`, `AGC?`, `MENU?`, `ROW?`, `RFPOWER?`, `RIT?` …; on the FT-817/818 also `ANT?`; on the FT-857/897 also `NR?`, `NOTCH?`,
-  `NRLEVEL?`, `NBLEVEL?`, `HPF?`, `LPF?`, `MICEQ?`, `IPO?`, `ATT?` and `DBF?`). `BK?`, `KYR?` and,
+  `NRLEVEL?`, `NBLEVEL?`, `BPF?`, `HPF?`, `LPF?`, `MICEQ?`, `IPO?`, `ATT?` and `DBF?`). `BK?`, `KYR?` and,
   on the FT-857/897, `NAR?` read break-in, keyer and FM narrow. `IFSHIFT?` prints whether IF shift is on,
   and `YSETTINGS?` lists more settings read from the radio, e.g. VOX, lock, fast tuning, NB,
   break-in, keyer and IF shift, on the FT-857/897 also PROC, CW speed, the gains and the DSP filter
@@ -134,8 +140,16 @@
   also change it (see below)
 - `VOX?` says whether VOX is on ("vox on"), `VOXGAIN?` says its gain ("vox gain 50") and
   `VOXDELAY?` its delay ("vox delay 500 m s"), on the IC-7300, IC-705 and IC-7760, the FTDX10,
-  the FT-817/818 (menus 51 and 50) and the FT-857/897 (menus 88 and 87). They only read for now.
-  On the other radios these commands say "not available"
+  the FT-817/818 (menus 51 and 50) and the FT-857/897 (menus 88 and 87). On the other radios
+  these commands say "not available"
+- FT-817/818/857/897: the console reads the CW menu settings: speed, pitch, delay, weight, side
+  tone and key reverse, on the FT-857/897 also QSK, auto mode, paddle and BFO (`CWSPEED?`,
+  `CWPITCH?` …, see `HELP CW`). Not yet tested on the FT-817/818
+- on the IC-7300, IC-705, IC-7760 and FTDX10 the console can also change these: `PROC ON | OFF |
+  TOGGLE`, `VOX ON | OFF | TOGGLE`, `PROCLEVEL`, `MICGAIN` and `VOXGAIN <0..100>`, and
+  `VOXDELAY <ms>`, set to the radio's nearest step (IC-7300, IC-705, IC-7760 0–2000 ms, FTDX10
+  30–3000 ms). Each also takes `STEP <+-n>`: a level in percent, the delay in the radio's steps.
+  Not yet tested on these radios
 
 ### Radio profiles
 
@@ -180,7 +194,8 @@
   on) and rows 1–12. Keep the radio's menu closed meanwhile, since the radio saves its own values
   when the menu is exited
 - FT-817/818/857/897, experimental: AGC, the Bank 2 DSP keys, the RF power, the mic gain, the
-  speech processor and the TX equalizer can be changed, not just read
+  speech processor, the TX equalizer, VOX, break-in, the keyer and the FT-817/818 antenna jack can
+  be changed, not just read
   - AGC: Bank 2 `A` long asks for it: `0` picks off, `1` auto, `2` fast, `3` slow, each saying
     its value, then `D` (console: `AGC AUTO | FAST | SLOW | OFF`)
   - `1`, `2`, `3` and `6` long switch noise reduction, the noise blanker, the notch and the DSP
@@ -192,6 +207,8 @@
     `LPF <1000..6000>` (in Hz, set to the radio's nearest step, e.g. `HPF 300` gives 280 Hz), or
     steps them with `NRLEVEL`, `NBLEVEL`, `HPF` or `LPF STEP <+-n>`. A value outside these
     ranges is refused and nothing is sent
+  - console only: `BPF 60 | 120 | 240` sets the DSP bandpass width (menu 45, in Hz), `BPF STEP
+    <+-n>` moves it by whole widths (`BPF STEP 1` = one wider); `BPF?` says it ("b p f 240 hertz")
   - on the FT-817/818, Bank 2 `2` long switches the noise blanker
   - RF power: on the FT-857/897, Bank 1 `6` long asks for the watts of the current band (menu 75:
     HF and 6 m 5–100, VHF 5–50, UHF 2–20); type them, then `D` (console: `RFPOWER <W>`). A value
@@ -202,6 +219,11 @@
     `MICGAIN?` says; `MICGAIN STEP <+-n>` steps it. On the FT-857/897 also `PROC ON | OFF |
     TOGGLE`, `PROCLEVEL <0..100>` and `PROCLEVEL STEP <+-n>` for the speech processor (menu 74),
     and `MICEQ OFF | LPF | HPF | BOTH` for the TX equalizer (menu 48)
+  - console only: `VOX`, `BK` (break-in) and `KYR` (keyer) `ON | OFF | TOGGLE`, `VOXGAIN <1..100>`
+    and `VOXDELAY <ms>` (FT-857/897 menus 88 and 87, 100–3000 ms; FT-817/818 menus 51 and 50,
+    100–2500 ms; set to the nearest 100 ms), each also with `STEP <+-n>`. On the FT-817/818,
+    `ANT FRONT | REAR | TOGGLE` sets the antenna jack (menu 07) of the current band
+  - console only: the CW menu settings, e.g. `CWSPEED 20`, `CWDELAY FULL`, `KEYREV ON`
   - HamTRC writes these settings to the radio's memory and the radio follows at once. They say
     "error" while transmitting, and work only with experimental mode on, otherwise they say "not
     available"

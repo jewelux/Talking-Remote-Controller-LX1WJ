@@ -309,15 +309,91 @@ bool asciiQueryYaesuVoxGain(const RadioProfile& sp, uint8_t& levelOut, uint32_t 
 
 // VD answers a step, not ms: 00..05 = 30, 50, 100, 150, 200, 250 ms, then 06..33 = 300..3000 ms
 // in 100 ms steps (Hamlib maps it so on the FTDX10, FTDX101 and FT-710).
-bool asciiQueryYaesuVoxDelayMs(const RadioProfile& sp, uint16_t& msOut, uint32_t timeoutMs) {
+static constexpr uint8_t kYaesuVoxDelaySteps = 34;
+
+static uint16_t yaesuVoxDelayStepMs(uint8_t step) {
   static constexpr uint16_t kFirstSteps[] = {30, 50, 100, 150, 200, 250};
+  return step < 6 ? kFirstSteps[step] : (uint16_t)(300 + (step - 6) * 100);
+}
+
+bool asciiQueryYaesuVoxDelayMs(const RadioProfile& sp, uint16_t& msOut, uint32_t timeoutMs) {
   if (sp.protocol != PROTO_YAESU_FTDX_ASCII) return false;
   String line;
   if (!transactAsciiCommand("VD;", line, "VD", timeoutMs)) return false;
   uint64_t value = 0;
-  if (!parseAsciiUnsignedResponse(line, "VD", value) || value > 33) return false;
-  msOut = value < 6 ? kFirstSteps[value] : (uint16_t)(300 + (value - 6) * 100);
+  if (!parseAsciiUnsignedResponse(line, "VD", value) || value >= kYaesuVoxDelaySteps) return false;
+  msOut = yaesuVoxDelayStepMs((uint8_t)value);
   return true;
+}
+
+// Sends "<code><level, 3 digits>;" and reads it back with query.
+template <typename Query>
+static bool asciiSetYaesuLevel(const RadioProfile& sp, const char* code, uint8_t level, Query query) {
+  if (sp.protocol != PROTO_YAESU_FTDX_ASCII || level > 100) return false;
+  char cmd[8];
+  snprintf(cmd, sizeof(cmd), "%s%03u;", code, (unsigned)level);
+  if (!asciiSendSimpleCommand(cmd)) return false;
+  uint8_t readBack = 0;
+  return query(sp, readBack, 800) && readBack == level;
+}
+
+// PR01 / PR00 as Hamlib sends on the FTDX101, FT-891 and FT-991; the FTDX10 manual's 2 = on is
+// tried when 1 does not read back as on.
+bool asciiSetYaesuProc(const RadioProfile& sp, bool on) {
+  if (sp.protocol != PROTO_YAESU_FTDX_ASCII || !sp.caps.setProc) return false;
+  bool readBack = !on;
+  if (asciiSendSimpleCommand(on ? "PR01;" : "PR00;") && asciiQueryYaesuProc(sp, readBack, 800) && readBack == on) {
+    return true;
+  }
+  return on && asciiSendSimpleCommand("PR02;") && asciiQueryYaesuProc(sp, readBack, 800) && readBack;
+}
+
+bool asciiSetYaesuProcLevel(const RadioProfile& sp, uint8_t level) {
+  if (!sp.caps.setProc) return false;
+  return asciiSetYaesuLevel(sp, "PL", level, asciiQueryYaesuProcLevel);
+}
+
+bool asciiSetYaesuMicGain(const RadioProfile& sp, uint8_t level) {
+  if (!sp.caps.setMicGain) return false;
+  return asciiSetYaesuLevel(sp, "MG", level, asciiQueryYaesuMicGain);
+}
+
+bool asciiSetYaesuVox(const RadioProfile& sp, bool on) {
+  if (sp.protocol != PROTO_YAESU_FTDX_ASCII || !sp.caps.setVox) return false;
+  bool readBack = !on;
+  return asciiSendSimpleCommand(on ? "VX1;" : "VX0;") && asciiQueryYaesuVox(sp, readBack, 800) && readBack == on;
+}
+
+bool asciiSetYaesuVoxGain(const RadioProfile& sp, uint8_t level) {
+  if (!sp.caps.setVox) return false;
+  return asciiSetYaesuLevel(sp, "VG", level, asciiQueryYaesuVoxGain);
+}
+
+// The VD step nearest ms; the lower one on a tie.
+static uint8_t yaesuVoxDelayNearestStep(uint16_t ms) {
+  uint8_t best = 0;
+  for (uint8_t step = 1; step < kYaesuVoxDelaySteps; ++step) {
+    if (abs((int)yaesuVoxDelayStepMs(step) - (int)ms) < abs((int)yaesuVoxDelayStepMs(best) - (int)ms)) best = step;
+  }
+  return best;
+}
+
+uint16_t asciiYaesuVoxDelayStep(uint16_t ms, int steps) {
+  const int limit = kYaesuVoxDelaySteps - 1;
+  if (steps > limit) steps = limit;
+  if (steps < -limit) steps = -limit;
+  const int step = yaesuVoxDelayNearestStep(ms) + steps;
+  return yaesuVoxDelayStepMs((uint8_t)(step < 0 ? 0 : step > limit ? limit : step));
+}
+
+bool asciiSetYaesuVoxDelayMs(const RadioProfile& sp, uint16_t ms) {
+  if (sp.protocol != PROTO_YAESU_FTDX_ASCII || !sp.caps.setVox) return false;
+  const uint8_t best = yaesuVoxDelayNearestStep(ms);
+  char cmd[8];
+  snprintf(cmd, sizeof(cmd), "VD%02u;", (unsigned)best);
+  if (!asciiSendSimpleCommand(cmd)) return false;
+  uint16_t readBack = 0;
+  return asciiQueryYaesuVoxDelayMs(sp, readBack, 800) && readBack == yaesuVoxDelayStepMs(best);
 }
 
 bool asciiQueryActiveVfoA(const RadioProfile& sp, bool& vfoAOut, uint32_t timeoutMs) {

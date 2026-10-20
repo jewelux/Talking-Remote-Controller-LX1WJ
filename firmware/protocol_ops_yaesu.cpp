@@ -267,11 +267,11 @@ void yaesuCatSetRitOffsetRaw(const uint8_t data[4]) {
   yaesuCatSendWriteOnly(cmd);
 }
 
-void yaesuCatSetToneDcsModeRaw(uint8_t modeByte) {
+void yaesuCatSetToneDcsModeRaw(uint8_t modeByte, uint64_t hz) {
   const uint8_t cmd[5] = {modeByte, 0x00, 0x00, 0x00, 0x0A};
   yaesuCatSendWriteOnly(cmd);
   live.toneModeValid = yaesuToneModeFromByte(modeByte, live.toneMode);
-  live.toneModeHz = live.freqValid ? live.freqHz : 0;
+  live.toneModeHz = hz;
 }
 
 void yaesuCatSetCtcssToneRaw(const uint8_t data[4]) {
@@ -312,7 +312,6 @@ bool yaesuCatSetDcsCode(uint16_t dcsCode) {
 bool yaesuCatSetToneMode(YaesuToneMode mode, uint64_t hz) {
   uint8_t modeByte = 0;
   if (!yaesuToneModeByte(mode, currentIsFt857Family(), modeByte)) return false;
-  yaesuCatSetToneDcsModeRaw(modeByte);
-  live.toneModeHz = hz;
+  yaesuCatSetToneDcsModeRaw(modeByte, hz);
   return true;
 }

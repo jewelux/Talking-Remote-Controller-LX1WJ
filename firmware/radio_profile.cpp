@@ -167,17 +167,20 @@ void printActiveProfileDetails() {
   Serial.print(sp.caps.getBandStack ? "1" : "0");
   Serial.print(" proc=");
   Serial.print(sp.caps.getProc ? "R" : "-");
+  Serial.print(sp.caps.setProc ? "W" : "-");
   Serial.print(" mic=");
   Serial.print(sp.caps.getMicGain ? "R" : "-");
+  Serial.print(sp.caps.setMicGain ? "W" : "-");
   Serial.print(" vox=");
   Serial.print(sp.caps.getVox ? "R" : "-");
+  Serial.print(sp.caps.setVox ? "W" : "-");
   Serial.print(" menu=");
   Serial.print(sp.caps.setRadioMenu ? "W" : "-");
   Serial.println();
   if (g_experimentalCaps) Serial.println("  EXPERIMENTAL: all caps on");
 }
 
-void applyProfile(uint8_t slot) {
+void applyProfile(uint8_t slot, bool report) {
   const RadioProfile* profile = profileForSlot(slot);
   if (!profile) profile = profileForSlot(kDefaultProfileSlot);
 
@@ -227,6 +230,7 @@ void applyProfile(uint8_t slot) {
     g_lastSavedProfile = g_profileId;
   }
 
+  if (!report) return;
   Serial.print("[PROFILE] Active: ");
   Serial.print(currentProfile().name);
   if (currentProtocolType() == PROTO_CIV) {

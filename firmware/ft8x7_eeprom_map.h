@@ -33,6 +33,9 @@ enum class Ft8x7Flag : uint8_t {
   Filter2,        // filter 2 is chosen on the CFIL row (filter 1 could not be measured)
   KnobIsSquelch,  // menu 80: the RF/SQL knob is squelch, not RF gain
   Split,          // valid in receive; the TX status has it while transmitting
+  KeyReverse,     // FT-857/897 menu 25 CW KEY REV, FT-817 menu 19 CW PADDLE: dot and dash swapped
+  CwAutoMode,     // FT-857/897 menu 22: CW sent from the key in SSB too
+  PaddleMicKey,   // FT-857/897 menu 26 CW PADDLE: MICKEY (the mic's UP/DWN keys), else ELEKEY
 };
 
 struct Ft8x7FlagField {
@@ -55,7 +58,6 @@ enum class YaesuFt857MicEq : uint8_t { Off, Lpf, Hpf, Both };
 
 // Menu levels, returned in the units the radio shows.
 enum class YaesuFt857Level : uint8_t {
-  CwSpeed,       // menu 30, WPM
   AmMicGain,     // menu 5
   DigGain,       // menu 37
   DigVox,        // menu 40
@@ -185,8 +187,9 @@ bool ft857LevelAddr(YaesuFt857Level level, uint16_t& addrOut);
 // The level from the byte at its address, in the units the radio shows.
 uint16_t ft857LevelValue(YaesuFt857Level level, uint8_t b);
 // The values a level can be set to, in the units the radio shows: NrLevel 1..16, NbLevel 0..100,
-// HpfCutoff 100..1000 Hz, LpfCutoff 1000..6000 Hz, ProcLevel and the mic gains (SsbMicGain,
-// AmMicGain, FmMicGain, DigGain) 0..100. False for the other levels, which cannot be set.
+// BpfWidth 60..240 Hz, HpfCutoff 100..1000 Hz, LpfCutoff 1000..6000 Hz, ProcLevel and the mic
+// gains (SsbMicGain, AmMicGain, FmMicGain, DigGain) 0..100, VoxGain 1..100, VoxDelay 100..3000
+// ms. False for the other levels, which cannot be set.
 bool ft857LevelRange(YaesuFt857Level level, uint16_t& minOut, uint16_t& maxOut);
 // The byte that sets level to the radio's step nearest value (HPF steps are 60 Hz, LPF steps
 // about 160 Hz), made from old with every other bit kept. False, and out untouched, when value
@@ -227,6 +230,8 @@ uint8_t ft817AgcByte(YaesuAgc agc, uint8_t old);
 // broadcast, 3 air, 4 2 m, 5 UHF (KA7OEI map). Bit 7 of the same byte is split.
 static constexpr uint16_t FT817_ANTENNA_ADDR = 0x007A;
 uint8_t ft817RearAntennaMask(Ft8x7BandGroup group);
+// The byte with the group's jack set to rear (or front), every other bit of old kept.
+uint8_t ft817RearAntennaByte(Ft8x7BandGroup group, bool rear, uint8_t old);
 
 // FT-817 mic gains, bits 6..0, 0..100 (KA7OEI map): SSB 0x67 (menu 46), AM 0x68 (menu 5), FM
 // 0x69 (menu 29), DIG 0x6A (menu 25), PKT 0x6B (menu 39) at 1200 baud and 0x6C (menu 3) at
@@ -252,3 +257,52 @@ bool ft817LevelByte(uint8_t value, uint8_t old, uint8_t& out);
 // Measured: 300 ms is 3 and the default 500 ms is 5; the KA7OEI map says 0 = 100 ms.
 static constexpr uint16_t FT817_VOX_DELAY_ADDR = 0x0064;
 uint16_t ft817VoxDelayMs(uint8_t b);
+// The byte that sets the VOX gain to value, 1..100, bit 7 of old kept. False, and out untouched,
+// for 0 or above 100, or when old holds a gain outside 1..100.
+bool ft817VoxGainByte(uint8_t value, uint8_t old, uint8_t& out);
+// The byte that sets the VOX delay to the 100 ms step nearest ms, 100..2500, bits 7..5 of old
+// kept. False, and out untouched, outside that range or when old holds a step outside 1..25.
+bool ft817VoxDelayByte(uint16_t ms, uint8_t old, uint8_t& out);
+// The step nearest ms, steps of 100 ms on, kept within 100..2500.
+uint16_t ft817VoxDelayStep(uint16_t ms, int steps);
+
+// CW menu values. FT-857/897 measured on an FT-897, FT-817/818 from the KA7OEI map, not yet
+// measured; addresses in docs/radios/yaesu-ft8x7-status.md. Each is read and written as the pair
+// at its address and the byte after it, since the FT-857/897 delay spans both.
+enum class Ft8x7CwLevel : uint8_t {
+  Speed,     // WPM, 4..60
+  Pitch,     // Hz
+  Delay,     // ms; 0 = FULL (full break-in, FT-857/897)
+  Weight,    // the dash/dot ratio in tenths: 25..45 = 1:2.5..1:4.5
+  Sidetone,  // 0..100
+  Qsk,       // ms, FT-857/897
+};
+// The address of the pair that holds level; false where model does not keep it.
+bool ft8x7CwLevelAddr(Ft8x7Model model, Ft8x7CwLevel level, uint16_t& addrOut);
+// The value from the pair read at the address. False where model does not keep level, or when
+// the pair holds a value the radio does not offer (the map then does not fit the radio).
+bool ft8x7CwLevelValue(Ft8x7Model model, Ft8x7CwLevel level, const uint8_t pair[2], uint16_t& valueOut);
+// The values ft8x7CwLevelPair takes, in the units above; FULL (0) is outside them, see
+// ft8x7CwDelayHasFull. False where model does not keep level.
+bool ft8x7CwLevelRange(Ft8x7Model model, Ft8x7CwLevel level, uint16_t& minOut, uint16_t& maxOut);
+// The FT-857/897 delay can be FULL (value 0).
+bool ft8x7CwDelayHasFull(Ft8x7Model model);
+// value is in ft8x7CwLevelRange, or FULL where the delay has it.
+bool ft8x7CwLevelAccepts(Ft8x7Model model, Ft8x7CwLevel level, uint16_t value);
+// The pair that sets level to the radio's step nearest value, made from old with every other bit
+// kept. False, and out untouched, when ft8x7CwLevelAccepts refuses value or old does not hold a
+// value the radio offers: the map then does not fit the radio, and nothing may be written.
+bool ft8x7CwLevelPair(Ft8x7Model model, Ft8x7CwLevel level, uint16_t value, const uint8_t old[2],
+                      uint8_t out[2]);
+// The value steps of the radio's steps away from the step nearest value (FULL counting as the
+// step below the shortest delay), kept within the radio's steps however large steps is. value
+// itself where model does not keep level.
+uint16_t ft8x7CwLevelStep(Ft8x7Model model, Ft8x7CwLevel level, uint16_t value, int steps);
+
+// FT-857/897 menu 23 CW BFO, 0x92 bits 1..0.
+enum class Ft857CwBfo : uint8_t { Usb, Lsb, Auto };
+static constexpr uint16_t FT857_CW_BFO_ADDR = 0x0092;
+// False for 3, which the radio does not use.
+bool ft857CwBfoFromByte(uint8_t b, Ft857CwBfo& out);
+// The byte with bfo set, bits 7..2 of old (CW auto mode, CW TRAINING's bit and QSK) kept.
+uint8_t ft857CwBfoByte(Ft857CwBfo bfo, uint8_t old);

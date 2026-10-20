@@ -64,8 +64,6 @@ void setup() {
   delay(200);
   waitForUsbSerial(2000);
 
-  printProfileSlots();
-
   initSpeech();
   applyVolumeLevel(loadVolumeFromNvs(DEFAULT_VOLUME_LEVEL));
   applySpeechSpeed((SpeechSpeed)loadSpeechSpeedFromNvs((uint8_t)SpeechSpeed::Normal));
@@ -74,7 +72,7 @@ void setup() {
   g_tuningSpeakEnabled = loadTuningSpeakFromNvs(true);
   g_verboseSpeech = loadVerboseFromNvs(true);
   holdUsbHostIfCrashed(g_profileId);
-  applyProfile(g_profileId);
+  applyProfile(g_profileId, false);
 
   DBG_PRINT("Talking Remote Controller LX1WJ (");
   DBG_PRINT(HAMTRC_FIRMWARE_VERSION);
@@ -88,7 +86,11 @@ void setup() {
 
   initKeypadUi();
   initNanoVna();
-  printHelp();
+  Serial.print("HamTRC ");
+  Serial.print(HAMTRC_FIRMWARE_VERSION);
+  Serial.print(", ");
+  Serial.print(currentProfile().name);
+  Serial.println(". Type HELP for commands.");
 
   // A USB radio is read when its serial port opens (pollRadioLinkEvents).
   if (currentProtocolType() != PROTO_YAESU_FT8X7 && currentConnectionProfile().port != RadioPort::UsbHost) {

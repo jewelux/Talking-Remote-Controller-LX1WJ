@@ -16,6 +16,7 @@ enum class FeatureStatus : uint8_t {
   NoReply,      // a read got no usable answer
   Failed,       // a write was not accepted
   Invalid,      // the value is out of range; nothing was sent
+  Unexpected,   // the radio holds a value the map does not know; nothing was written
 };
 
 // On the FT-8x7, NR, NB and notch are bits in the EEPROM (FT-857/897 DNR, NB, DNF; FT-817/818
@@ -65,9 +66,11 @@ FeatureStatus notchToggle(NotchState& out);
 FeatureStatus procQuery(bool& on);
 // 0..100.
 FeatureStatus procLevelQuery(uint8_t& level);
-// Experimental (caps.setRadioMenu), FT-857/897 only for now: PROC and its level in the EEPROM.
-// levelOut holds the level read back. Invalid above 100; Failed while transmitting, when the
-// stored byte is out of range (nothing written) or when the read-back differs.
+// Writes: caps.setProc over CAT (IC-7300, IC-705, IC-7760, FTDX10), and experimentally
+// (caps.setRadioMenu) on the FT-857/897, in the EEPROM. Toggles start from the radio's state.
+// levelOut holds the level set (on the FT-857/897 read back). Invalid above 100; Failed when the
+// radio does not take it, and on the FT-857/897 while transmitting; Unexpected when the stored
+// byte is out of range (nothing written).
 FeatureStatus procSet(bool on);
 FeatureStatus procToggle(bool& on);
 FeatureStatus procLevelSet(uint8_t level, uint8_t& levelOut);
@@ -78,29 +81,52 @@ FeatureStatus procLevelStep(int delta, uint8_t& levelOut);
 // mode (SSB, AM, FM, DIG, on the FT-817 also PKT). Unsupported in CW and WFM, and in the
 // FT-857/897's PKT.
 FeatureStatus micGainQuery(uint8_t& level);
-// Experimental (caps.setRadioMenu), FT-817/818 and FT-857/897 only for now: the mic gain of the
-// current mode, as micGainQuery picks it, in the EEPROM. Errors as procLevelSet.
+// caps.setMicGain over CAT; experimentally (caps.setRadioMenu) on the FT-817/818 and FT-857/897
+// the mic gain of the current mode, as micGainQuery picks it, in the EEPROM. Errors as
+// procLevelSet.
 FeatureStatus micGainSet(uint8_t level, uint8_t& levelOut);
 FeatureStatus micGainStep(int delta, uint8_t& levelOut);
 
 // VOX: IC-7300, IC-705, IC-7760, FTDX10 VX and VG, FT-857/897 and its menu 88 gain, FT-817/818 and its menu 51
-// gain. Read only for now.
+// gain.
 FeatureStatus voxQuery(bool& on);
 // 0..100.
 FeatureStatus voxGainQuery(uint8_t& level);
 // In ms: FT-857/897 menu 87, FT-817/818 menu 50, IC-7300, IC-705, IC-7760 (civVoxDelayAddr),
 // FTDX10 VD.
 FeatureStatus voxDelayQuery(uint16_t& ms);
+// Writes: caps.setVox over CAT, and experimentally (caps.setRadioMenu) on the FT-8x7, in the
+// EEPROM. Errors as procLevelSet.
+FeatureStatus voxSet(bool on);
+FeatureStatus voxToggle(bool& on);
+// The VOX gains the radio takes: 1..100 on the FT-8x7, else 0..100. False where it cannot be set.
+bool voxGainRange(uint8_t& minOut, uint8_t& maxOut);
+FeatureStatus voxGainSet(uint8_t level, uint8_t& levelOut);
+FeatureStatus voxGainStep(int delta, uint8_t& levelOut);
+// The VOX delays in ms the radio takes: CI-V 0..2000, FTDX10 30..3000, FT-857/897 100..3000,
+// FT-817/818 100..2500. False where it cannot be set.
+bool voxDelayRange(uint16_t& minOut, uint16_t& maxOut);
+// Sets the radio's step nearest ms; msOut holds the delay read back. Invalid outside the range.
+FeatureStatus voxDelaySet(uint16_t ms, uint16_t& msOut);
+// delta of the radio's steps (100 ms; FTDX10 its VD steps) from the delay read, kept within the
+// range.
+FeatureStatus voxDelayStep(int delta, uint16_t& msOut);
 
-// FT-857/897 settings read from the radio's EEPROM, since CAT has no command for them. Only
-// Menu, Row, Agc, Dbf, NrLevel, NbLevel, LowCut, HighCut, MicEq and RfPower can be set, and only experimentally. IPO, ATT and NAR are those of the current band. The FT-817/818 has RfPower,
-// Menu, Row, Agc, BreakIn, Keyer, IfShift and Antenna.
+// FT-857/897 settings read from the radio's EEPROM, since CAT has no command for them. All but
+// IPO, ATT, NAR and IfShift can be set, and only experimentally. IPO, ATT and NAR are those of the
+// current band, kept in its band block, which the radio saves late. The FT-817/818 has RfPower,
+// Menu, Row, Agc, BreakIn, Keyer, IfShift, Antenna and the CW settings below.
 // Menu and Row are the menu item and soft key row saved when the radio's menu was last exited.
-// NrLevel (menu 49), NbLevel (63), LowCut (46, DSP HPF), HighCut (47, DSP LPF) and MicEq (48)
-// are FT-857/897 DSP menu settings.
+// NrLevel (menu 49), NbLevel (63), BpfWidth (45, DSP BPF), LowCut (46, DSP HPF), HighCut (47,
+// DSP LPF) and MicEq (48) are FT-857/897 DSP menu settings.
+// The CW menu settings (Ft8x7CwLevel for the levels' units): CwSpeed, CwPitch, CwDelay,
+// CwWeight, Sidetone and KeyReverse on both families; Qsk, CwAutoMode, Paddle (on = MICKEY)
+// and CwBfo on the FT-857/897 only. The FT-817/818 addresses are from the KA7OEI map, not yet
+// measured.
 enum class Ft8x7Setting : uint8_t {
   Agc, Ipo, Att, Nar, Dbf, BreakIn, Keyer, RfPower, Menu, Row, IfShift,
-  NrLevel, NbLevel, LowCut, HighCut, MicEq, Antenna,
+  NrLevel, NbLevel, BpfWidth, LowCut, HighCut, MicEq, Antenna,
+  CwSpeed, CwPitch, CwDelay, CwWeight, Sidetone, Qsk, KeyReverse, CwAutoMode, Paddle, CwBfo,
 };
 
 struct Ft8x7SettingState {
@@ -113,39 +139,55 @@ struct Ft8x7SettingState {
   bool hasPowerLevel = false;    // RfPower: FT-817/818, which has powerLevel
   Ft817PowerLevel powerLevel = Ft817PowerLevel::High;
   uint8_t number = 0;            // Menu, Row: from 1
-  uint16_t value = 0;            // NrLevel 1..16, NbLevel 0..100, LowCut and HighCut in Hz
+  // NrLevel 1..16, NbLevel 0..100, BpfWidth, LowCut and HighCut in Hz; the CW levels in the
+  // units of Ft8x7CwLevel (CwDelay 0 = FULL, CwWeight in tenths).
+  uint16_t value = 0;
   YaesuFt857MicEq micEq = YaesuFt857MicEq::Off;  // MicEq
+  Ft857CwBfo cwBfo = Ft857CwBfo::Auto;           // CwBfo
 };
 
 // The console command: "AGC?", "IPO?", ...
 const char* ft8x7SettingLabel(Ft8x7Setting setting);
 // Unsupported on other radios, and for IPO/ATT/NAR where the band has none (or is not known).
+// Unexpected when a CW setting's stored value does not fit the map.
 FeatureStatus ft8x7SettingQuery(Ft8x7Setting setting, Ft8x7SettingState& out);
 // Experimental (caps.setRadioMenu): sets Menu or Row, counted from 1, in the EEPROM; out holds
-// the value read back. Invalid outside 1..the last item or row; Failed while transmitting, when
-// the stored bytes are not as expected (nothing written) or when the read-back differs.
+// the value read back. Invalid outside 1..the last item or row; Failed while transmitting or
+// when the read-back differs; Unexpected when the stored bytes are not as expected (nothing
+// written).
 FeatureStatus ft8x7MenuRowSet(Ft8x7Setting setting, uint8_t number, Ft8x7SettingState& out);
-// The values ft8x7LevelSet takes: NrLevel 1..16, NbLevel 0..100, LowCut 100..1000 Hz, HighCut
-// 1000..6000 Hz. False for other settings.
+// The values ft8x7LevelSet takes: NrLevel 1..16, NbLevel 0..100, BpfWidth 60..240 Hz, LowCut
+// 100..1000 Hz, HighCut 1000..6000 Hz, the CW levels as ft8x7CwLevelRange gives them for the
+// radio. False for other settings, and for a CW level the radio does not keep.
 bool ft8x7LevelRange(Ft8x7Setting setting, uint16_t& minOut, uint16_t& maxOut);
-// Experimental (caps.setNrLevel, caps.setNbLevel, and caps.setRadioMenu for the cuts): sets the
-// FT-857/897 NrLevel (menu 49), NbLevel (menu 63), LowCut (menu 46, DSP HPF) or HighCut (menu
-// 47, DSP LPF) in the EEPROM, to the radio's step nearest value; out.value holds the value read
-// back. Invalid outside ft8x7LevelRange; Failed while transmitting, when the stored byte is out
-// of range (nothing written) or when the read-back differs.
+// Experimental (caps.setNrLevel, caps.setNbLevel, and caps.setRadioMenu for the width and the
+// cuts): sets the FT-857/897 NrLevel (menu 49), NbLevel (menu 63), BpfWidth (menu 45, DSP BPF
+// 60, 120 or 240 Hz), LowCut (menu 46, DSP HPF) or HighCut (menu 47, DSP LPF) in the EEPROM,
+// to the radio's step nearest value; out.value holds the value read back. Invalid outside
+// ft8x7LevelRange; Failed while transmitting or when the read-back differs; Unexpected when the
+// stored byte is out of range (nothing written).
+// Also experimental (caps.setRadioMenu): the CW levels, on the FT-817/818 too, CwDelay 0 for
+// FULL where the radio has it.
 FeatureStatus ft8x7LevelSet(Ft8x7Setting setting, uint16_t value, Ft8x7SettingState& out);
-// The same, delta of the radio's steps from the value read (NR and NB: 1 each, LowCut 60 Hz,
-// HighCut about 160 Hz), kept within the range.
+// The same, delta of the radio's steps from the value read (NR and NB: 1 each, BpfWidth one of
+// its three widths, LowCut 60 Hz, HighCut about 160 Hz, the CW levels one menu step), kept
+// within the range.
 FeatureStatus ft8x7LevelStep(Ft8x7Setting setting, int delta, Ft8x7SettingState& out);
-// Experimental (caps.setRadioMenu): the FT-857/897 DSP bandpass filter (DBF) on or off in the
-// EEPROM, both its bits as the radio's own key does. Failed while transmitting.
-FeatureStatus ft8x7DbfSet(bool on, Ft8x7SettingState& out);
-FeatureStatus ft8x7DbfToggle(Ft8x7SettingState& out);
+// Experimental (caps.setRadioMenu): Dbf (FT-857/897, both its bits as the radio's own key
+// does), BreakIn, Keyer, KeyReverse, CwAutoMode or Paddle on or off in the EEPROM. Unsupported
+// for other settings. Failed while transmitting.
+FeatureStatus ft8x7FlagSettingSet(Ft8x7Setting setting, bool on, Ft8x7SettingState& out);
+FeatureStatus ft8x7FlagSettingToggle(Ft8x7Setting setting, Ft8x7SettingState& out);
+// Experimental (caps.setRadioMenu): the FT-817/818 antenna jack (menu 07) of the band group of
+// the current frequency, out.on = rear as read back. Unsupported on the FT-857/897. Failed while
+// transmitting.
+FeatureStatus ft817AntennaSet(bool rear, Ft8x7SettingState& out);
+FeatureStatus ft817AntennaToggle(Ft8x7SettingState& out);
 // Experimental (caps.setRfPower): the FT-857/897 TX power in the EEPROM, in watts; out holds
 // the value read back. Menu 75 of the band group of the current frequency, HF and 6 m 5..100,
-// VHF 5..50, UHF 2..20; Invalid for any other value. Failed while transmitting, when the stored
-// byte is out of range (nothing written) or when the read-back differs. Unsupported on the
-// FT-817/818.
+// VHF 5..50, UHF 2..20; Invalid for any other value. Failed while transmitting or when the
+// read-back differs; Unexpected when the stored byte is out of range (nothing written).
+// Unsupported on the FT-817/818.
 FeatureStatus ft8x7RfPowerSet(uint16_t watts, Ft8x7SettingState& out);
 // The same for the FT-817/818 power level; Unsupported on the FT-857/897.
 FeatureStatus ft817PowerLevelSet(Ft817PowerLevel level, Ft8x7SettingState& out);
@@ -155,6 +197,9 @@ FeatureStatus ft8x7AgcSet(YaesuAgc agc, Ft8x7SettingState& out);
 // Experimental (caps.setRadioMenu): the FT-857/897 TX equalizer (menu 48) in the EEPROM; out
 // holds the value read back. Failed while transmitting or when the read-back differs.
 FeatureStatus ft8x7MicEqSet(YaesuFt857MicEq eq, Ft8x7SettingState& out);
+// Experimental (caps.setRadioMenu): the FT-857/897 CW BFO side (menu 23) in the EEPROM; out
+// holds the value read back. Failed while transmitting or when the read-back differs.
+FeatureStatus ft8x7CwBfoSet(Ft857CwBfo bfo, Ft8x7SettingState& out);
 
 // FT-8x7 tone squelch. The FT-857/897 reads it from the current band in the EEPROM, live;
 // the FT-817/818 cannot, so there it is the mode HamTRC last set. Unsupported on other radios,

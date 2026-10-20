@@ -32,20 +32,27 @@ enum class YaesuEepromWrite : uint8_t {
   UnexpectedBytes,  // the stored value is out of range, so the map does not fit; nothing written
   NotVerified,      // written, but the bytes read back differ
 };
+// A settings read that checks the stored value against the map.
+enum class YaesuEepromRead : uint8_t {
+  Ok,
+  Unsupported,      // the active model does not keep the setting
+  NoReply,
+  UnexpectedBytes,  // the stored value is not one the radio offers, so the map does not fit
+};
 // Sets the row (row true) or the menu item, counted from 1, by rewriting the two bytes that
 // hold both (ft8x7MenuRowPair keeps every other bit). numberOut is the value read back. The
 // radio overwrites it when its menu is open and then exited.
 YaesuEepromWrite yaesuFt8x7SetMenuOrRow(bool row, uint8_t number, uint8_t& numberOut,
                                         uint32_t timeoutMs);
-// Sets a flag (NB, DNR, DNF, DBF, PROC); on sets every bit of the flag. Nothing is written when the
-// byte is already so.
+// Sets a flag (NB, DNR, DNF, DBF, PROC, VOX, BK, KYR, the CW key reverse, auto mode and paddle);
+// on sets every bit of the flag. Nothing is written when the byte is already so.
 YaesuEepromWrite yaesuFt8x7SetFlag(Ft8x7Flag flag, bool on, uint32_t timeoutMs);
 // Flips a flag from the byte read for the write, so a change on the radio's own keys counts.
 // onOut is the flag as written.
 YaesuEepromWrite yaesuFt8x7ToggleFlag(Ft8x7Flag flag, bool& onOut, uint32_t timeoutMs);
 // FT-857/897: sets a menu level to the radio's step nearest value, within ft857LevelRange
-// (NrLevel, NbLevel, HpfCutoff, LpfCutoff, ProcLevel, the mic gains). valueOut is the value read
-// back. Nothing is written when it already has the value.
+// (NrLevel, NbLevel, BpfWidth, HpfCutoff, LpfCutoff, ProcLevel, the mic gains). valueOut is the
+// value read back. Nothing is written when it already has the value.
 YaesuEepromWrite yaesuFt857SetLevel(YaesuFt857Level level, uint16_t value, uint16_t& valueOut,
                                     uint32_t timeoutMs);
 // The same, steps of the radio's steps from the value read for the write (ft857LevelStep).
@@ -106,3 +113,30 @@ YaesuEepromWrite yaesuFt8x7StepMicGain(Ft8x7MicGain gain, int steps, uint8_t& va
 bool yaesuFt8x7QueryVoxGain(uint8_t& valueOut, uint32_t timeoutMs);
 // FT-857/897 menu 87, FT-817 menu 50; ms.
 bool yaesuFt8x7QueryVoxDelayMs(uint16_t& msOut, uint32_t timeoutMs);
+// Sets the VOX gain, 1..100; bit 7 of its byte is kept. valueOut is the value read back.
+YaesuEepromWrite yaesuFt8x7SetVoxGain(uint8_t value, uint8_t& valueOut, uint32_t timeoutMs);
+// The same, steps from the gain read for the write, kept within 1..100.
+YaesuEepromWrite yaesuFt8x7StepVoxGain(int steps, uint8_t& valueOut, uint32_t timeoutMs);
+// Sets the VOX delay to the 100 ms step nearest ms: FT-857/897 100..3000, FT-817 100..2500.
+// msOut is the value read back.
+YaesuEepromWrite yaesuFt8x7SetVoxDelayMs(uint16_t ms, uint16_t& msOut, uint32_t timeoutMs);
+// The same, steps of 100 ms from the delay read for the write, kept within the range.
+YaesuEepromWrite yaesuFt8x7StepVoxDelay(int steps, uint16_t& msOut, uint32_t timeoutMs);
+// FT-817/818: sets the jack of the band group of hz (menu 07), keeping the other groups and
+// split. rearOut is the jack read back.
+YaesuEepromWrite yaesuFt817SetRearAntenna(uint64_t hz, bool rear, bool& rearOut, uint32_t timeoutMs);
+YaesuEepromWrite yaesuFt817ToggleRearAntenna(uint64_t hz, bool& rearOut, uint32_t timeoutMs);
+// CW menu values in the units of Ft8x7CwLevel.
+YaesuEepromRead yaesuFt8x7QueryCwLevel(Ft8x7CwLevel level, uint16_t& valueOut, uint32_t timeoutMs);
+// Sets level to the radio's step nearest value, within ft8x7CwLevelRange, or the FT-857/897
+// delay to FULL with value 0. Both bytes of the pair are written, every other bit as read.
+// valueOut is the value read back. Nothing is written when it already has the value.
+YaesuEepromWrite yaesuFt8x7SetCwLevel(Ft8x7CwLevel level, uint16_t value, uint16_t& valueOut,
+                                      uint32_t timeoutMs);
+// The same, steps of the radio's steps from the value read for the write (ft8x7CwLevelStep).
+YaesuEepromWrite yaesuFt8x7StepCwLevel(Ft8x7CwLevel level, int steps, uint16_t& valueOut,
+                                       uint32_t timeoutMs);
+// FT-857/897 menu 23. UnexpectedBytes when the byte holds 3, which the radio does not use.
+YaesuEepromRead yaesuFt857QueryCwBfo(Ft857CwBfo& out, uint32_t timeoutMs);
+// Sets menu 23, keeping the rest of its byte. bfoOut is the value read back.
+YaesuEepromWrite yaesuFt857SetCwBfo(Ft857CwBfo bfo, Ft857CwBfo& bfoOut, uint32_t timeoutMs);
