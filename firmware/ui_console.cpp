@@ -930,8 +930,9 @@ void printHelp(const String& topicArg) {
     helpLine(ft817 ? "NB OFF | ON | TOGGLE  (experimental: writes it to the EEPROM)"
                    : "NR | NB | NOTCH OFF | ON | TOGGLE  (experimental: writes them to the EEPROM)");
     if (!ft817) {
-      helpLine("NRLEVEL? | NBLEVEL? | HPF? | LPF? | MICEQ?  (DSP menu settings)");
+      helpLine("NRLEVEL? | NBLEVEL? | BPF? | HPF? | LPF? | MICEQ?  (DSP menu settings)");
       helpLine("NRLEVEL <1..16> | NBLEVEL <0..100> | NRLEVEL STEP | NBLEVEL STEP <+-n>  (experimental: menus 49 and 63)");
+      helpLine("BPF 60 | 120 | 240 | BPF STEP <+-n>  (experimental: DSP bandpass width in Hz, menu 45; STEP moves by whole widths)");
       helpLine("HPF <100..1000> | LPF <1000..6000> | HPF STEP | LPF STEP <+-n>  (experimental: menus 46 and 47, Hz to the nearest step)");
       helpLine("MICEQ OFF | LPF | HPF | BOTH  (experimental: TX equalizer, menu 48)");
       helpLine("PROC? | PROCLEVEL?  (speech processor and menu 74)");
@@ -1458,10 +1459,10 @@ static bool handleConsoleFt8x7Settings(const String& upper) {
     Ft8x7Setting::Agc, Ft8x7Setting::Ipo, Ft8x7Setting::Att, Ft8x7Setting::Nar,
     Ft8x7Setting::Dbf, Ft8x7Setting::BreakIn, Ft8x7Setting::Keyer, Ft8x7Setting::RfPower,
     Ft8x7Setting::Menu, Ft8x7Setting::Row, Ft8x7Setting::IfShift, Ft8x7Setting::NrLevel,
-    Ft8x7Setting::NbLevel, Ft8x7Setting::LowCut, Ft8x7Setting::HighCut, Ft8x7Setting::MicEq,
-    Ft8x7Setting::Antenna, Ft8x7Setting::CwSpeed, Ft8x7Setting::CwPitch, Ft8x7Setting::CwDelay,
-    Ft8x7Setting::CwWeight, Ft8x7Setting::Sidetone, Ft8x7Setting::Qsk, Ft8x7Setting::KeyReverse,
-    Ft8x7Setting::CwAutoMode, Ft8x7Setting::Paddle, Ft8x7Setting::CwBfo,
+    Ft8x7Setting::NbLevel, Ft8x7Setting::BpfWidth, Ft8x7Setting::LowCut, Ft8x7Setting::HighCut,
+    Ft8x7Setting::MicEq, Ft8x7Setting::Antenna, Ft8x7Setting::CwSpeed, Ft8x7Setting::CwPitch,
+    Ft8x7Setting::CwDelay, Ft8x7Setting::CwWeight, Ft8x7Setting::Sidetone, Ft8x7Setting::Qsk,
+    Ft8x7Setting::KeyReverse, Ft8x7Setting::CwAutoMode, Ft8x7Setting::Paddle, Ft8x7Setting::CwBfo,
   };
   for (Ft8x7Setting setting : kSettings) {
     const char* label = ft8x7SettingLabel(setting);
@@ -1496,8 +1497,9 @@ static bool handleConsoleFt8x7Settings(const String& upper) {
 
 // Experimental, FT-857/897: NRLEVEL <1..16>, NBLEVEL <0..100>, HPF <100..1000>, LPF <1000..6000>
 // (Hz, to the radio's nearest step) and <name> STEP <+-n> in the radio's steps, like Bank 2 `4`,
-// `5`, `7` and `8` long and double. The CW menus the same, on the FT-817/818 too: CWSPEED,
-// CWPITCH (Hz), CWDELAY (ms, or FULL), CWWEIGHT (2.5..4.5), SIDETONE and QSK (ms).
+// `5`, `7` and `8` long and double; BPF 60 | 120 | 240 (menu 45, Hz) console only.
+// The CW menus the same, on the FT-817/818 too: CWSPEED, CWPITCH (Hz), CWDELAY (ms, or FULL),
+// CWWEIGHT (2.5..4.5), SIDETONE and QSK (ms).
 static bool handleConsoleFt8x7LevelSet(const String& line, const String& upper) {
   struct LevelCommand {
     const char* name;
@@ -1508,6 +1510,7 @@ static bool handleConsoleFt8x7LevelSet(const String& line, const String& upper) 
   static const LevelCommand kCommands[] = {
     {"NRLEVEL", Ft8x7Setting::NrLevel, "8", "-1"},
     {"NBLEVEL", Ft8x7Setting::NbLevel, "50", "10"},
+    {"BPF", Ft8x7Setting::BpfWidth, "240", "-1"},
     {"HPF", Ft8x7Setting::LowCut, "300", "1"},
     {"LPF", Ft8x7Setting::HighCut, "2700", "-1"},
     {"CWSPEED", Ft8x7Setting::CwSpeed, "20", "2"},
@@ -1527,7 +1530,8 @@ static bool handleConsoleFt8x7LevelSet(const String& line, const String& upper) 
       int32_t step = 0;
       if (!parseStepArg(line, upper, (stepPrefix + " ").c_str(), step)) {
         Serial.print(c.name);
-        Serial.print(" STEP -> use a signed number of steps, e.g. ");
+        Serial.print(c.setting == Ft8x7Setting::BpfWidth ? " STEP -> use a signed number of widths, 1 = one wider, e.g. "
+                                                         : " STEP -> use a signed number of steps, e.g. ");
         Serial.print(c.name);
         Serial.print(" STEP ");
         Serial.println(c.stepExample);
@@ -1548,6 +1552,11 @@ static bool handleConsoleFt8x7LevelSet(const String& line, const String& upper) 
         value = 0;  // FULL; refused where the radio has none
       } else if (weight ? !parseRangedTenthsArg(upper, prefix.c_str(), lo, hi, value)
                         : !parseRangedIntArg(upper, prefix.c_str(), lo, hi, value)) {
+        // The BPF has three widths, not a range to pick from.
+        if (c.setting == Ft8x7Setting::BpfWidth) {
+          Serial.println("BPF -> use 60, 120 or 240 (Hz), e.g. BPF 240");
+          return true;
+        }
         Serial.print(c.name);
         Serial.print(" -> use ");
         if (c.setting == Ft8x7Setting::CwDelay && ft8x7CwDelayHasFull(currentFt8x7Model())) Serial.print("FULL or ");

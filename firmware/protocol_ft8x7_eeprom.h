@@ -51,8 +51,8 @@ YaesuEepromWrite yaesuFt8x7SetFlag(Ft8x7Flag flag, bool on, uint32_t timeoutMs);
 // onOut is the flag as written.
 YaesuEepromWrite yaesuFt8x7ToggleFlag(Ft8x7Flag flag, bool& onOut, uint32_t timeoutMs);
 // FT-857/897: sets a menu level to the radio's step nearest value, within ft857LevelRange
-// (NrLevel, NbLevel, HpfCutoff, LpfCutoff, ProcLevel, the mic gains). valueOut is the value read
-// back. Nothing is written when it already has the value.
+// (NrLevel, NbLevel, BpfWidth, HpfCutoff, LpfCutoff, ProcLevel, the mic gains). valueOut is the
+// value read back. Nothing is written when it already has the value.
 YaesuEepromWrite yaesuFt857SetLevel(YaesuFt857Level level, uint16_t value, uint16_t& valueOut,
                                     uint32_t timeoutMs);
 // The same, steps of the radio's steps from the value read for the write (ft857LevelStep).

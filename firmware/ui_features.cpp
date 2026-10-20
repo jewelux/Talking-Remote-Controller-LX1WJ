@@ -215,6 +215,7 @@ static const char* ft8x7SettingName(Ft8x7Setting setting) {
     case Ft8x7Setting::IfShift: return "IFSHIFT";
     case Ft8x7Setting::NrLevel: return "NRLEVEL";
     case Ft8x7Setting::NbLevel: return "NBLEVEL";
+    case Ft8x7Setting::BpfWidth: return "BPF";
     case Ft8x7Setting::LowCut: return "HPF";
     case Ft8x7Setting::HighCut: return "LPF";
     case Ft8x7Setting::MicEq: return "MICEQ";
@@ -300,7 +301,8 @@ String ft8x7SettingText(const Ft8x7SettingState& state) {
   if (state.setting == Ft8x7Setting::Agc) return text + ft8x7AgcName(state.agc);
   if (state.setting == Ft8x7Setting::Menu || state.setting == Ft8x7Setting::Row) return text + String((int)state.number);
   if (state.setting == Ft8x7Setting::NrLevel || state.setting == Ft8x7Setting::NbLevel) return text + String(state.value);
-  if (state.setting == Ft8x7Setting::LowCut || state.setting == Ft8x7Setting::HighCut) {
+  if (state.setting == Ft8x7Setting::BpfWidth || state.setting == Ft8x7Setting::LowCut ||
+      state.setting == Ft8x7Setting::HighCut) {
     return text + String(state.value) + " Hz";
   }
   if (state.setting == Ft8x7Setting::MicEq) return text + ft8x7MicEqName(state.micEq);
@@ -402,9 +404,13 @@ void speakFt8x7Setting(const Ft8x7SettingState& state) {
     speakDigitsAndPoint(String(state.value));
     return;
   }
-  // "low cut 300 hertz": the radio's HPF cutoff; high cut is its LPF.
-  if (state.setting == Ft8x7Setting::LowCut || state.setting == Ft8x7Setting::HighCut) {
-    speakLabel(state.setting == Ft8x7Setting::LowCut ? "lowcut" : "highcut");
+  // "low cut 300 hertz": the radio's HPF cutoff; high cut is its LPF. "b p f 240 hertz": the
+  // DSP bandpass width.
+  if (state.setting == Ft8x7Setting::BpfWidth || state.setting == Ft8x7Setting::LowCut ||
+      state.setting == Ft8x7Setting::HighCut) {
+    speakLabel(state.setting == Ft8x7Setting::BpfWidth ? "b p f"
+               : state.setting == Ft8x7Setting::LowCut ? "lowcut"
+                                                       : "highcut");
     speakNumber(String(state.value));
     playSilenceMs(60);
     speakToken("hertz");

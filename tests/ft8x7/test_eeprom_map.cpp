@@ -594,6 +594,9 @@ TEST(ft857_settable_level_ranges) {
   CHECK(ft857LevelRange(YaesuFt857Level::NbLevel, lo, hi));
   CHECK_EQ(lo, 0);
   CHECK_EQ(hi, 100);
+  CHECK(ft857LevelRange(YaesuFt857Level::BpfWidth, lo, hi));
+  CHECK_EQ(lo, 60);
+  CHECK_EQ(hi, 240);
   CHECK(ft857LevelRange(YaesuFt857Level::HpfCutoff, lo, hi));
   CHECK_EQ(lo, 100);
   CHECK_EQ(hi, 1000);
@@ -662,6 +665,26 @@ TEST(ft857_nr_level_byte_keeps_bpf_and_mic_eq) {
   CHECK(ft857LevelByte(YaesuFt857Level::NrLevel, 8, 0x00, out));
   CHECK_EQ(out, 0x70);
   CHECK_EQ(ft857LevelValue(YaesuFt857Level::NrLevel, out), 8);
+}
+
+// 0x93 bits 3..2: 60, 120 or 240 Hz; the NR level and the mic EQ stay.
+TEST(ft857_bpf_width_byte_keeps_nr_level_and_mic_eq) {
+  uint8_t out = 0;
+  CHECK(ft857LevelByte(YaesuFt857Level::BpfWidth, 240, 0x53, out));
+  CHECK_EQ(out, 0x5B);
+  CHECK(ft857LevelByte(YaesuFt857Level::BpfWidth, 60, 0xFB, out));
+  CHECK_EQ(out, 0xF3);
+  CHECK(ft857LevelByte(YaesuFt857Level::BpfWidth, 120, 0x00, out));
+  CHECK_EQ(out, 0x04);
+  CHECK(ft857LevelByte(YaesuFt857Level::BpfWidth, 180, 0x00, out));  // a tie: the lower one
+  CHECK_EQ(out, 0x04);
+  CHECK(ft857LevelByte(YaesuFt857Level::BpfWidth, 200, 0x00, out));
+  CHECK_EQ(out, 0x08);
+  out = 0xAA;
+  CHECK(!ft857LevelByte(YaesuFt857Level::BpfWidth, 59, 0x08, out));
+  CHECK(!ft857LevelByte(YaesuFt857Level::BpfWidth, 241, 0x08, out));
+  CHECK(!ft857LevelByte(YaesuFt857Level::BpfWidth, 120, 0x0C, out));  // stored 3: not a width
+  CHECK_EQ(out, 0xAA);
 }
 
 TEST(ft857_nb_level_byte_keeps_bit_7) {
@@ -733,6 +756,11 @@ TEST(ft857_level_step_moves_by_the_radios_steps) {
   CHECK_EQ(ft857LevelStep(YaesuFt857Level::NbLevel, 80, 10), 90);
   CHECK_EQ(ft857LevelStep(YaesuFt857Level::NbLevel, 95, 10), 100);
   CHECK_EQ(ft857LevelStep(YaesuFt857Level::NbLevel, 5, -10), 0);
+  CHECK_EQ(ft857LevelStep(YaesuFt857Level::BpfWidth, 60, 1), 120);
+  CHECK_EQ(ft857LevelStep(YaesuFt857Level::BpfWidth, 120, 1), 240);
+  CHECK_EQ(ft857LevelStep(YaesuFt857Level::BpfWidth, 240, 1), 240);
+  CHECK_EQ(ft857LevelStep(YaesuFt857Level::BpfWidth, 240, -1), 120);
+  CHECK_EQ(ft857LevelStep(YaesuFt857Level::BpfWidth, 60, -1), 60);
   CHECK_EQ(ft857LevelStep(YaesuFt857Level::HpfCutoff, 100, 1), 160);
   CHECK_EQ(ft857LevelStep(YaesuFt857Level::HpfCutoff, 100, -1), 100);
   CHECK_EQ(ft857LevelStep(YaesuFt857Level::HpfCutoff, 1000, 1), 1000);
@@ -749,6 +777,8 @@ TEST(ft857_level_step_takes_any_number_of_steps) {
   CHECK_EQ(ft857LevelStep(YaesuFt857Level::NbLevel, 50, INT_MIN), 0);
   CHECK_EQ(ft857LevelStep(YaesuFt857Level::NrLevel, 8, 1000), 16);
   CHECK_EQ(ft857LevelStep(YaesuFt857Level::NrLevel, 8, -1000), 1);
+  CHECK_EQ(ft857LevelStep(YaesuFt857Level::BpfWidth, 60, INT_MAX), 240);
+  CHECK_EQ(ft857LevelStep(YaesuFt857Level::BpfWidth, 240, INT_MIN), 60);
 }
 
 TEST(percent_step_stays_within_0_to_100) {

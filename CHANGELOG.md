@@ -125,7 +125,7 @@
   can wipe the radio's memories and calibration. It is refused while transmitting
 - FT-817/818/857/897: every Bank 2 and Bank 8 key, Bank 1 `6` and Bank 3 `5` has a console command
   (`NB?`, `AGC?`, `MENU?`, `ROW?`, `RFPOWER?`, `RIT?` …; on the FT-817/818 also `ANT?`; on the FT-857/897 also `NR?`, `NOTCH?`,
-  `NRLEVEL?`, `NBLEVEL?`, `HPF?`, `LPF?`, `MICEQ?`, `IPO?`, `ATT?` and `DBF?`). `BK?`, `KYR?` and,
+  `NRLEVEL?`, `NBLEVEL?`, `BPF?`, `HPF?`, `LPF?`, `MICEQ?`, `IPO?`, `ATT?` and `DBF?`). `BK?`, `KYR?` and,
   on the FT-857/897, `NAR?` read break-in, keyer and FM narrow. `IFSHIFT?` prints whether IF shift is on,
   and `YSETTINGS?` lists more settings read from the radio, e.g. VOX, lock, fast tuning, NB,
   break-in, keyer and IF shift, on the FT-857/897 also PROC, CW speed, the gains and the DSP filter
@@ -207,6 +207,8 @@
     `LPF <1000..6000>` (in Hz, set to the radio's nearest step, e.g. `HPF 300` gives 280 Hz), or
     steps them with `NRLEVEL`, `NBLEVEL`, `HPF` or `LPF STEP <+-n>`. A value outside these
     ranges is refused and nothing is sent
+  - console only: `BPF 60 | 120 | 240` sets the DSP bandpass width (menu 45, in Hz), `BPF STEP
+    <+-n>` moves it by whole widths (`BPF STEP 1` = one wider); `BPF?` says it ("b p f 240 hertz")
   - on the FT-817/818, Bank 2 `2` long switches the noise blanker
   - RF power: on the FT-857/897, Bank 1 `6` long asks for the watts of the current band (menu 75:
     HF and 6 m 5–100, VHF 5–50, UHF 2–20); type them, then `D` (console: `RFPOWER <W>`). A value

@@ -245,6 +245,7 @@ uint16_t ft857LevelValue(YaesuFt857Level level, uint8_t b) {
 bool ft857LevelRange(YaesuFt857Level level, uint16_t& minOut, uint16_t& maxOut) {
   switch (level) {
     case YaesuFt857Level::NrLevel: minOut = 1; maxOut = 16; return true;
+    case YaesuFt857Level::BpfWidth: minOut = 60; maxOut = 240; return true;
     case YaesuFt857Level::NbLevel:
     case YaesuFt857Level::ProcLevel:
     case YaesuFt857Level::SsbMicGain:

@@ -187,9 +187,9 @@ bool ft857LevelAddr(YaesuFt857Level level, uint16_t& addrOut);
 // The level from the byte at its address, in the units the radio shows.
 uint16_t ft857LevelValue(YaesuFt857Level level, uint8_t b);
 // The values a level can be set to, in the units the radio shows: NrLevel 1..16, NbLevel 0..100,
-// HpfCutoff 100..1000 Hz, LpfCutoff 1000..6000 Hz, ProcLevel and the mic gains (SsbMicGain,
-// AmMicGain, FmMicGain, DigGain) 0..100, VoxGain 1..100, VoxDelay 100..3000 ms. False for the
-// other levels, which cannot be set.
+// BpfWidth 60..240 Hz, HpfCutoff 100..1000 Hz, LpfCutoff 1000..6000 Hz, ProcLevel and the mic
+// gains (SsbMicGain, AmMicGain, FmMicGain, DigGain) 0..100, VoxGain 1..100, VoxDelay 100..3000
+// ms. False for the other levels, which cannot be set.
 bool ft857LevelRange(YaesuFt857Level level, uint16_t& minOut, uint16_t& maxOut);
 // The byte that sets level to the radio's step nearest value (HPF steps are 60 Hz, LPF steps
 // about 160 Hz), made from old with every other bit kept. False, and out untouched, when value

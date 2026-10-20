@@ -378,6 +378,7 @@ const char* ft8x7SettingLabel(Ft8x7Setting setting) {
     case Ft8x7Setting::IfShift: return "IFSHIFT?";
     case Ft8x7Setting::NrLevel: return "NRLEVEL?";
     case Ft8x7Setting::NbLevel: return "NBLEVEL?";
+    case Ft8x7Setting::BpfWidth: return "BPF?";
     case Ft8x7Setting::LowCut: return "HPF?";
     case Ft8x7Setting::HighCut: return "LPF?";
     case Ft8x7Setting::MicEq: return "MICEQ?";
@@ -500,6 +501,7 @@ FeatureStatus ft8x7SettingQuery(Ft8x7Setting setting, Ft8x7SettingState& out) {
     }
     case Ft8x7Setting::NrLevel: ok = yaesuFt857QueryLevel(YaesuFt857Level::NrLevel, out.value, kFt8x7TimeoutMs); break;
     case Ft8x7Setting::NbLevel: ok = yaesuFt857QueryLevel(YaesuFt857Level::NbLevel, out.value, kFt8x7TimeoutMs); break;
+    case Ft8x7Setting::BpfWidth: ok = yaesuFt857QueryLevel(YaesuFt857Level::BpfWidth, out.value, kFt8x7TimeoutMs); break;
     case Ft8x7Setting::LowCut: ok = yaesuFt857QueryLevel(YaesuFt857Level::HpfCutoff, out.value, kFt8x7TimeoutMs); break;
     case Ft8x7Setting::HighCut: ok = yaesuFt857QueryLevel(YaesuFt857Level::LpfCutoff, out.value, kFt8x7TimeoutMs); break;
     case Ft8x7Setting::MicEq: ok = yaesuFt857QueryMicEq(out.micEq, kFt8x7TimeoutMs); break;
@@ -536,14 +538,15 @@ static bool ft8x7SettableLevel(Ft8x7Setting setting, YaesuFt857Level& levelOut) 
   switch (setting) {
     case Ft8x7Setting::NrLevel: levelOut = YaesuFt857Level::NrLevel; return true;
     case Ft8x7Setting::NbLevel: levelOut = YaesuFt857Level::NbLevel; return true;
+    case Ft8x7Setting::BpfWidth: levelOut = YaesuFt857Level::BpfWidth; return true;
     case Ft8x7Setting::LowCut: levelOut = YaesuFt857Level::HpfCutoff; return true;
     case Ft8x7Setting::HighCut: levelOut = YaesuFt857Level::LpfCutoff; return true;
     default: return false;
   }
 }
 
-// caps.setNrLevel, caps.setNbLevel, or for the cuts caps.setRadioMenu; no FT-8x7 profile sets
-// them.
+// caps.setNrLevel, caps.setNbLevel, or for the width and the cuts caps.setRadioMenu; no FT-8x7
+// profile sets them.
 static bool ft8x7LevelSetAllowed(Ft8x7Setting setting) {
   const RadioCapabilities& caps = currentProfile().caps;
   if (setting == Ft8x7Setting::NrLevel) return caps.setNrLevel;
