@@ -22,6 +22,7 @@ It is meant as a short engineering overview, not as a promise list.
 | Yaesu FTDX10 | ASCII CAT | implemented | implemented | implemented | implemented | implemented | implemented | assisted field test pending | Current `V3.5.8` block includes VFO, VFO mode, split, lock, tuner, preamp, AGC, IF, ID, and power-state paths. See `docs/radios/yaesu-ftdx10-family.md`. |
 | Yaesu FTDX101D | ASCII CAT | implemented | implemented | implemented | implemented | implemented | implemented | assisted field test pending | Uses the same first-block documentation as FTDX10. |
 | Yaesu FTDX101MP | ASCII CAT | implemented | implemented | implemented | implemented | implemented | implemented | assisted field test pending | Uses the same first-block documentation as FTDX10. |
+| Yaesu FT-891 | ASCII CAT | implemented | implemented | implemented | implemented | implemented | implemented | not tested | Frequency, VFO A/B, mode, meters, lock, tuner (external), split. |
 
 ## Profiles and baud rates
 

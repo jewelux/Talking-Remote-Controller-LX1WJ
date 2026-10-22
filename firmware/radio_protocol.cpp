@@ -446,7 +446,7 @@ bool queryRxTxStatus(bool& txOut, uint32_t timeoutMs) {
   ProtocolType pt = currentProtocolType();
   const RadioProfile& sp = currentProfile();
   if (pt == PROTO_CIV) return civQueryRxTxStatus(sp, txOut, timeoutMs);
-  if (pt == PROTO_YAESU_FTDX_ASCII) {
+  if (pt == PROTO_YAESU_FTDX_ASCII && sp.caps.getRxTx) {
     if (!ensureYaesuFtdxActiveVfoKnown(sp, timeoutMs)) return false;
     const char* txCode = live.activeVfoA ? "5" : "6";
     const char* rxCode = live.activeVfoA ? "7" : "8";
@@ -473,7 +473,7 @@ bool queryTxFrequency(uint64_t& hzOut, uint32_t timeoutMs) {
   ProtocolType pt = currentProtocolType();
   const RadioProfile& sp = currentProfile();
   if (pt == PROTO_CIV) return civQueryTxFrequency(sp, hzOut, timeoutMs);
-  if (pt == PROTO_YAESU_FTDX_ASCII) {
+  if (pt == PROTO_YAESU_FTDX_ASCII && sp.caps.getTxFreq) {
     bool splitOn = false;
     if (querySplit(splitOn, timeoutMs) && splitOn) return queryVfoFrequency(false, hzOut, timeoutMs);
     return queryVfoFrequency(true, hzOut, timeoutMs);
@@ -533,7 +533,7 @@ bool queryVfoMode(bool targetVfoA, uint8_t& modeOut, uint8_t& filterOut, uint32_
   ProtocolType pt = currentProtocolType();
   const RadioProfile& sp = currentProfile();
   if (pt == PROTO_CIV) return civQueryVfoMode(sp, targetVfoA, modeOut, filterOut, timeoutMs);
-  if (pt == PROTO_YAESU_FTDX_ASCII) {
+  if (pt == PROTO_YAESU_FTDX_ASCII && sp.caps.getVfoMode) {
     if (!ensureYaesuFtdxActiveVfoKnown(sp, timeoutMs)) return false;
     const bool priorVfoA = live.activeVfoA;
     if (priorVfoA != targetVfoA && !selectYaesuFtdxVfo(sp, targetVfoA)) return false;
@@ -559,7 +559,7 @@ bool setVfoMode(bool targetVfoA, uint8_t mode, uint8_t filter) {
   ProtocolType pt = currentProtocolType();
   const RadioProfile& sp = currentProfile();
   if (pt == PROTO_CIV) return civSetVfoMode(sp, targetVfoA, mode, filter);
-  if (pt == PROTO_YAESU_FTDX_ASCII) {
+  if (pt == PROTO_YAESU_FTDX_ASCII && sp.caps.setVfoMode) {
     (void)filter;
     if (!ensureYaesuFtdxActiveVfoKnown(sp, 800)) return false;
     const bool priorVfoA = live.activeVfoA;

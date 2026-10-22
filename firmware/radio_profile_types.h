@@ -185,6 +185,9 @@ struct AsciiCommandSet {
   const char* lockGet = "";
   const char* lockOnCmd = "";
   const char* lockOffCmd = "";
+  // The first reply digits that mean unlocked. The FTDX101 locks main and sub apart: LK7 locks
+  // both, LK4 unlocks both, and a read of 0 or 4 is unlocked (Hamlib newcat).
+  const char* lockOffDigits = "0";
   const char* freqReplyPrefix = "";
   const char* modeReplyPrefix = "";
   const char* ifReplyPrefix = "";

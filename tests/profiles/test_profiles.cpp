@@ -251,6 +251,24 @@ TEST(ft891_keeps_the_ftdx_lock_tuner_and_split) {
   CHECK_EQ(ft891.link.baud, 4800u);
 }
 
+// Hamlib newcat sends MD0 on every newcat radio, and the FTDX101 locks with LK7 / LK4.
+TEST(newcat_mode_and_lock_commands) {
+  const uint8_t newcat[] = {11, 12, 13, 15};
+  for (uint8_t s : newcat) {
+    CHECK_EQ(slot(s).commands->modeGet, "MD0;");
+    CHECK_EQ(slot(s).commands->modeSetFormat, "MD0%s;");
+    CHECK_EQ(slot(s).commands->modeReplyPrefix, "MD0");
+  }
+  CHECK_EQ(slot(11).commands->lockOnCmd, "LK1;");
+  CHECK_EQ(slot(11).commands->lockOffDigits, "0");
+  const uint8_t ftdx101[] = {12, 13};
+  for (uint8_t s : ftdx101) {
+    CHECK_EQ(slot(s).commands->lockOnCmd, "LK7;");
+    CHECK_EQ(slot(s).commands->lockOffCmd, "LK4;");
+    CHECK_EQ(slot(s).commands->lockOffDigits, "04");
+  }
+}
+
 TEST(model_names_are_set) {
   CHECK_EQ(radioModelName(RadioModel::Generic), "generic");
   CHECK_EQ(radioModelName(RadioModel::Ic7300), "IC-7300");

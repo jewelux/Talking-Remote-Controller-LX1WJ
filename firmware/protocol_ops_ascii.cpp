@@ -222,13 +222,17 @@ bool asciiSetNotch(const RadioProfile& sp, bool on) {
 }
 
 bool asciiQueryLock(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
-  if (!sp.commands->lockGet[0] || !sp.commands->lockReplyPrefix[0]) return false;
+  if (!sp.caps.getDialLock || !sp.commands->lockGet[0] || !sp.commands->lockReplyPrefix[0]) return false;
   String line;
   if (!transactAsciiCommand(sp.commands->lockGet, line, sp.commands->lockReplyPrefix, timeoutMs)) return false;
-  return asciiParseOnOffResponse(line, sp.commands->lockReplyPrefix, onOut);
+  const size_t at = strlen(sp.commands->lockReplyPrefix);
+  if (line.length() <= at || !isDigit(line[at])) return false;
+  onOut = strchr(sp.commands->lockOffDigits, line[at]) == nullptr;
+  return true;
 }
 
 bool asciiSetLock(const RadioProfile& sp, bool on) {
+  if (!sp.caps.setDialLock) return false;
   return asciiSendSimpleCommand(on ? sp.commands->lockOnCmd : sp.commands->lockOffCmd);
 }
 

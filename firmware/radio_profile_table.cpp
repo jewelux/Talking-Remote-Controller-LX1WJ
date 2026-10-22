@@ -239,9 +239,9 @@ constexpr AsciiCommandSet kFtdx10Commands = {
 
 constexpr AsciiCommandSet kFtdx101Commands = [] {
   AsciiCommandSet cmds = kFtdx10Commands;
-  cmds.modeGet = "MD;";
-  cmds.modeSetFormat = "MD%s;";
-  cmds.modeReplyPrefix = "MD";
+  cmds.lockOnCmd = "LK7;";
+  cmds.lockOffCmd = "LK4;";
+  cmds.lockOffDigits = "04";
   cmds.ifGet = "";
   cmds.idGet = "";
   return cmds;
@@ -249,7 +249,7 @@ constexpr AsciiCommandSet kFtdx101Commands = [] {
 
 constexpr AsciiCommandSet kFt891Commands = {
     .freqGet = "FA;", .freqSetFormat = "FA%09llu;",
-    .modeGet = "MD;", .modeSetFormat = "MD%s;",
+    .modeGet = "MD0;", .modeSetFormat = "MD0%s;",
     .vfoAGet = "FA;", .vfoASetFormat = "FA%09llu;",
     .vfoBGet = "FB;", .vfoBSetFormat = "FB%09llu;",
     .smeterGet = "SM0;", .powerGet = "RM5;", .swrGet = "RM6;",
@@ -257,7 +257,7 @@ constexpr AsciiCommandSet kFt891Commands = {
     .splitGet = "ST;", .splitOnCmd = "ST1;", .splitOffCmd = "ST0;",
     .vfoGet = "VS;", .vfoACmd = "VS0;", .vfoBCmd = "VS1;", .vfoSwapCmd = "SV;",
     .lockGet = "LK;", .lockOnCmd = "LK1;", .lockOffCmd = "LK0;",
-    .freqReplyPrefix = "FA", .modeReplyPrefix = "MD", .ifReplyPrefix = "IF",
+    .freqReplyPrefix = "FA", .modeReplyPrefix = "MD0", .ifReplyPrefix = "IF",
     .idReplyPrefix = "ID", .omReplyPrefix = "OM", .smeterReplyPrefix = "SM0",
     .powerReplyPrefix = "RM5", .swrReplyPrefix = "RM6", .tunerReplyPrefix = "AC",
     .splitReplyPrefix = "ST", .vfoReplyPrefix = "VS", .lockReplyPrefix = "LK",

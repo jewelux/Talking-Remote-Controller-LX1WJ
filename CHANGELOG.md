@@ -193,6 +193,12 @@
   notch width until their commands are confirmed for it. The IC-706 reads frequency, mode and the
   S-meter, no longer power and SWR
 - console commands the radio profile cannot do say "not available" (they printed "no reply")
+- FTDX101D/MP: `LOCK ON | OFF` sends LK7 and LK4 as these radios expect (main and sub dial
+  together), and a read of 4 counts as unlocked. Before, LK1 and LK0 locked or unlocked the main
+  dial only and a read of 4 counted as locked
+- FTDX101D/MP and FT-891: the mode is read and set with `MD0`, as on the FTDX10
+- FTDX101D/MP and FT-891: RX/TX, TX frequency and VFO mode say "not available"; their commands are
+  confirmed only on the FTDX10
 - FT-817/818/857/897: the frequency is polled in the background again. When the radio is off or
   disconnected, polling slows down so the keypad stays responsive
 - FT-817/818/857/897: fixed the S-meter always reading S0
