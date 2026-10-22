@@ -46,8 +46,6 @@ bool queryDialLock(bool& onOut, uint32_t timeoutMs = 800);
 bool setDialLock(bool on);
 bool queryFilterShape(bool& softOut, uint32_t timeoutMs = 800);
 bool setFilterShape(bool soft);
-bool queryFilterWidth(uint8_t& rawOut, uint32_t timeoutMs = 800);
-bool setFilterWidth(uint8_t raw);
 bool queryMonitorEnabled(bool& onOut, uint32_t timeoutMs = 800);
 bool setMonitorEnabled(bool on);
 bool queryMonitorLevel(uint16_t& valueOut, uint32_t timeoutMs = 800);

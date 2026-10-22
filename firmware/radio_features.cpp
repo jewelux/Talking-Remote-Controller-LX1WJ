@@ -193,7 +193,7 @@ FeatureStatus notchSet(bool on) {
 }
 
 FeatureStatus notchSetWidth(NotchWidth width) {
-  if (currentProtocolType() != PROTO_CIV || !currentProfile().caps.setNotch) return FeatureStatus::Unsupported;
+  if (currentProtocolType() != PROTO_CIV || !currentProfile().caps.setNotchWidth) return FeatureStatus::Unsupported;
   if (!applyNotchAndTrack(true) || !applyNotchWidthAndTrack(width)) return failure(FeatureStatus::Failed);
   return FeatureStatus::Ok;
 }
@@ -227,7 +227,10 @@ FeatureStatus notchToggle(NotchState& out) {
     return FeatureStatus::Ok;
   }
   if (!refreshLiveNotch()) return failure(FeatureStatus::NoReply);
-  if (currentProtocolType() != PROTO_CIV) return applyNotchState(!live.notchOn, NOTCH_WIDTH_UNKNOWN, out);
+  // Without a notch width the toggle is just on and off; an Icom with widths steps through them.
+  if (currentProtocolType() != PROTO_CIV || !currentProfile().caps.setNotchWidth) {
+    return applyNotchState(!live.notchOn, NOTCH_WIDTH_UNKNOWN, out);
+  }
 
   if (!live.notchOn) return applyNotchState(true, NOTCH_WIDTH_NAR, out);
   if (!live.notchWidthValid && !refreshLiveNotchWidth()) return failure(FeatureStatus::NoReply);

@@ -19,25 +19,15 @@ constexpr RadioCapabilities kCivFreqModeCaps = {
     .getFreq = true, .setFreq = true, .getMode = true, .setMode = true,
 };
 
-constexpr RadioCapabilities kCivBasicCaps = {
+// The IC-706: frequency, mode and the S-meter. Hamlib gives no IC-706 variant the PO or SWR
+// meter (15 11, 15 12), and the original and MKII have no levels at all.
+constexpr RadioCapabilities kIc706Caps = {
     .getFreq = true, .setFreq = true, .getMode = true, .setMode = true,
-    .getSmeter = true, .getPower = true, .getSwr = true,
+    .getSmeter = true,
 };
 
-// The IC-705: the basic set and the transmit settings (COMP, mic gain, VOX).
-constexpr RadioCapabilities kIc705Caps = [] {
-  RadioCapabilities caps = kCivBasicCaps;
-  caps.getProc = true;
-  caps.setProc = true;
-  caps.getMicGain = true;
-  caps.setMicGain = true;
-  caps.getVox = true;
-  caps.setVox = true;
-  return caps;
-}();
-
-// IC-7300 and IC-7760: everything HamTRC can do over CI-V.
-constexpr RadioCapabilities kIcomFullCaps = {
+// The IC-7300: everything HamTRC can do over CI-V, checked against its CI-V command table.
+constexpr RadioCapabilities kIc7300Caps = {
     .getFreq = true, .setFreq = true, .getMode = true, .setMode = true,
     .getSmeter = true, .getPower = true, .getRfPower = true, .setRfPower = true,
     .getSwr = true, .getRxTx = true, .getTxFreq = true,
@@ -55,6 +45,32 @@ constexpr RadioCapabilities kIcomFullCaps = {
     .getBandStack = true, .getProc = true, .setProc = true, .getMicGain = true, .setMicGain = true,
     .getVox = true, .setVox = true,
 };
+
+// The IC-705: the IC-7300's commands that Hamlib lists for the IC-705 too. It has no internal
+// tuner, and its band stack, filter type, notch width and transceive are not confirmed.
+constexpr RadioCapabilities kIc705Caps = [] {
+  RadioCapabilities caps = kIc7300Caps;
+  caps.getNotchWidth = false;
+  caps.setNotchWidth = false;
+  caps.getFilterShape = false;
+  caps.setFilterShape = false;
+  caps.getTransceive = false;
+  caps.setTransceive = false;
+  caps.getTuner = false;
+  caps.setTuner = false;
+  caps.startTune = false;
+  caps.getBandStack = false;
+  return caps;
+}();
+
+// The IC-7760: as the IC-705, plus its internal tuner. Main and sub go through 29.
+constexpr RadioCapabilities kIc7760Caps = [] {
+  RadioCapabilities caps = kIc705Caps;
+  caps.getTuner = true;
+  caps.setTuner = true;
+  caps.startTune = true;
+  return caps;
+}();
 
 // --- Elecraft ---------------------------------------------------------------
 
@@ -263,19 +279,19 @@ constexpr RadioProfile kProfiles[] = {
     {.slot = 1, .name = "Icom IC-7300", .vendor = VoiceVendor::Icom, .voiceDigits = "7300",
      .model = RadioModel::Ic7300, .protocol = PROTO_CIV,
      .link = {.port = RadioPort::CivJack, .baud = 9600, .bauds = kCivBauds, .civAddr = 0x94},
-     .caps = kIcomFullCaps},
+     .caps = kIc7300Caps},
     {.slot = 2, .name = "Icom 706", .vendor = VoiceVendor::Icom, .voiceDigits = "706",
      .protocol = PROTO_CIV,
      .link = {.port = RadioPort::CivJack, .baud = 9600, .bauds = kCivBauds, .civAddr = 0x58},
-     .caps = kCivBasicCaps},
+     .caps = kIc706Caps},
     {.slot = 3, .name = "Icom 7300 rs232", .vendor = VoiceVendor::Icom, .voiceDigits = "7300232",
      .model = RadioModel::Ic7300, .protocol = PROTO_CIV,
      .link = {.port = RadioPort::Rs232, .baud = 9600, .bauds = kCivBauds, .civAddr = 0x94},
-     .caps = kIcomFullCaps},
+     .caps = kIc7300Caps},
     {.slot = 4, .name = "Icom 706 rs232", .vendor = VoiceVendor::Icom, .voiceDigits = "706232",
      .protocol = PROTO_CIV,
      .link = {.port = RadioPort::Rs232, .baud = 9600, .bauds = kCivBauds, .civAddr = 0x58},
-     .caps = kCivBasicCaps},
+     .caps = kIc706Caps},
     {.slot = 5, .name = "Xiegu 106", .vendor = VoiceVendor::Xiegu, .voiceDigits = "106",
      .protocol = PROTO_CIV,
      .link = {.port = RadioPort::CatTtl, .baud = 19200, .bauds = kCivBauds, .civAddr = 0x76},
@@ -327,11 +343,11 @@ constexpr RadioProfile kProfiles[] = {
     {.slot = 17, .name = "Icom IC-705", .vendor = VoiceVendor::Icom, .voiceDigits = "705",
      .model = RadioModel::Ic705, .protocol = PROTO_CIV,
      .link = {.port = RadioPort::CivJack, .baud = 9600, .bauds = kCivBauds, .civAddr = 0xA4},
-     .caps = kIc705Caps},
+     .caps = kIc705Caps, .rfPowerMaxWatts = 10},
     {.slot = 18, .name = "Icom IC-7760", .vendor = VoiceVendor::Icom, .voiceDigits = "7760",
      .model = RadioModel::Ic7760, .protocol = PROTO_CIV,
      .link = {.port = RadioPort::CivJack, .baud = 19200, .bauds = kCivBauds, .civAddr = 0xB2},
-     .caps = kIcomFullCaps, .rfPowerMaxWatts = 200},
+     .caps = kIc7760Caps, .rfPowerMaxWatts = 200},
 };
 
 constexpr size_t kProfileCount = sizeof(kProfiles) / sizeof(kProfiles[0]);

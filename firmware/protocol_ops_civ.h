@@ -51,8 +51,6 @@ bool civQueryDialLock(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
 bool civSetDialLock(const RadioProfile& sp, bool on);
 bool civQueryFilterShape(const RadioProfile& sp, bool& softOut, uint32_t timeoutMs);
 bool civSetFilterShape(const RadioProfile& sp, bool soft);
-bool civQueryFilterWidth(const RadioProfile& sp, uint8_t& rawOut, uint32_t timeoutMs);
-bool civSetFilterWidth(const RadioProfile& sp, uint8_t raw);
 bool civQueryMonitorEnabled(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
 bool civSetMonitorEnabled(const RadioProfile& sp, bool on);
 bool civQueryMonitorLevel(const RadioProfile& sp, uint16_t& valueOut, uint32_t timeoutMs);

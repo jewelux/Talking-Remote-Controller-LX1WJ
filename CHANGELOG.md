@@ -180,6 +180,18 @@
 
 ### Radios
 
+- Icom: `LOCK`, `FILSHAPE`, the notch width (`NOTCH NAR | MID | WIDE`) and `MONITOR` now use the
+  commands in Icom's CI-V table. Before, on the IC-7300 they changed the beep level limit, the
+  confirmation beep, the band edge beep and the transmit frequency monitor instead, and read those
+  back as if they worked. If you used them, check these four settings in the radio's menu
+- IC-705 and IC-7760: `TRANSCEIVE` says "not available". It sent the IC-7300's menu address,
+  which is a different item on these radios
+- each Icom gets only the commands confirmed for it, and a command the radio lacks says "not
+  available" at once instead of waiting for a timeout. The IC-705 now has RF power (up to 10 W),
+  NR and NB levels, the manual notch, twin PBT, lock, monitor, VFO A/B, split and RIT; it has no
+  tuner, band stack, filter type or notch width. The IC-7760 loses band stack, filter type and
+  notch width until their commands are confirmed for it. The IC-706 reads frequency, mode and the
+  S-meter, no longer power and SWR
 - FT-817/818/857/897: the frequency is polled in the background again. When the radio is off or
   disconnected, polling slows down so the keypad stays responsive
 - FT-817/818/857/897: fixed the S-meter always reading S0

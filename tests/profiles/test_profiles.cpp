@@ -84,6 +84,31 @@ TEST(ft8x7_radios_have_an_ft8x7_model_and_its_bauds) {
 
 // ---- Lookup ----
 
+// Each Icom gets the CI-V commands its own sources confirm (protocol_ops_civ.cpp checks them).
+TEST(icom_caps_per_model) {
+  const RadioProfile& ic7300 = slot(1);
+  CHECK(ic7300.caps.getDialLock && ic7300.caps.getFilterShape && ic7300.caps.getNotchWidth);
+  CHECK(ic7300.caps.getTransceive && ic7300.caps.getBandStack && ic7300.caps.getTuner);
+
+  const RadioProfile& ic705 = slot(17);
+  CHECK_EQ(ic705.rfPowerMaxWatts, 10);
+  CHECK(ic705.caps.getRfPower && ic705.caps.getNrLevel && ic705.caps.getDialLock);
+  CHECK(ic705.caps.getVfo && ic705.caps.getSplit && ic705.caps.getRit && ic705.caps.getRxTx);
+  CHECK(!ic705.caps.getTuner && !ic705.caps.getTransceive && !ic705.caps.getBandStack);
+  CHECK(!ic705.caps.getFilterShape && !ic705.caps.getNotchWidth);
+
+  const RadioProfile& ic7760 = slot(18);
+  CHECK(ic7760.caps.getTuner && ic7760.caps.getDialLock);
+  CHECK(!ic7760.caps.getTransceive && !ic7760.caps.getBandStack);
+  CHECK(!ic7760.caps.getFilterShape && !ic7760.caps.getNotchWidth);
+
+  const uint8_t ic706[] = {2, 4};
+  for (uint8_t s : ic706) {
+    CHECK(slot(s).caps.getSmeter);
+    CHECK(!slot(s).caps.getPower && !slot(s).caps.getSwr && !slot(s).caps.getDialLock);
+  }
+}
+
 TEST(profile_for_slot_finds_used_slots_only) {
   CHECK_EQ(slot(1).name, "Icom IC-7300");
   CHECK_EQ(slot(11).name, "Yaesu FTDX-10");

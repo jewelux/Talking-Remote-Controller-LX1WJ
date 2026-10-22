@@ -7,9 +7,11 @@ It is meant as a short engineering overview, not as a promise list.
 |---|---|---|---|---|---|---|---|---|---|
 | ICOM IC-7300 | CI-V | implemented | implemented | implemented | implemented | implemented | implemented | tested on hardware | See `docs/radios/icom-ic-7300.md` for the extended command map. |
 | ICOM IC-7300 RS-232 | RS-232 | implemented | implemented | implemented | implemented | implemented | implemented | not recently verified | Intended to mirror the CI-V path. |
-| ICOM IC-706 CI-V | CI-V | implemented | implemented | partial | partial | partial | implemented | not recently verified | Legacy support carried into the modular branch. |
-| ICOM IC-706 RS-232 | RS-232 | partial | partial | partial | partial | partial | implemented | not recently verified | Needs recheck on live hardware. |
-| Xiegu G106 | CAT | implemented | partial | partial | partial | partial | implemented | not recently verified | Existing support should be rechecked command by command. |
+| ICOM IC-705 | CI-V | implemented | implemented | implemented | implemented | implemented | implemented | not tested | The IC-7300's CI-V commands that Hamlib also lists for the IC-705. No tuner, band stack, filter type, notch width or transceive. |
+| ICOM IC-7760 | CI-V | implemented | implemented | implemented | implemented | implemented | implemented | not tested | As the IC-705 plus the tuner; main and sub through command 29. |
+| ICOM IC-706 CI-V | CI-V | implemented | implemented | n/a | implemented | n/a | implemented | not recently verified | Frequency, mode and S-meter. No IC-706 variant has the PO or SWR meter command. |
+| ICOM IC-706 RS-232 | RS-232 | implemented | implemented | n/a | implemented | n/a | implemented | not recently verified | As the CI-V slot. |
+| Xiegu G106 | CI-V (TTL) | implemented | implemented | n/a | n/a | n/a | implemented | not recently verified | Frequency and mode only. |
 | Kenwood TS-480 | ASCII / CAT | partial | partial | planned | planned | planned | implemented | not recently verified | Good candidate for future expansion. |
 | Elecraft KX2 | ASCII / CAT | partial | partial | partial | planned | planned | implemented | not recently verified | Evolving profile. |
 | Yaesu FT-817 | CAT | implemented | implemented | implemented | implemented | implemented | implemented | tested on hardware | FT8x7 family notes are documented separately. |

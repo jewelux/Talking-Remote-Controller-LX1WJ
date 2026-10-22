@@ -250,13 +250,17 @@ The following families were checked during real-device work on the IC-7300:
 - `VFO A/B MODE`
 - `SPLIT`
 - `RIT`
-- `LOCK`
 - `PBT1`, `PBT2`
-- `FILSHAPE`
 - `FILWIDTH`
-- `MONITOR`, `MONLEVEL`
+- `MONLEVEL`
 - `TRANSCEIVE`
 - `BSTACK`
+
+`LOCK`, `FILSHAPE`, the notch width and `MONITOR` were on this list, but they sent `1A 05`
+menu items 0022, 0023, 0024 and `1C 02`, which the IC-7300 manual lists as the beep level
+limit, the confirmation beep, the band edge beep and the transmit frequency monitor. They
+now send `16 50`, `16 56`, `16 57` and `16 45`, as in the manual and in Hamlib, and need
+a new test on the radio.
 
 This does not mean every edge case is finished forever, but it does mean the
 profile is already well beyond a minimal proof of concept.

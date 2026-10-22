@@ -369,20 +369,6 @@ bool setFilterShape(bool soft) {
   return false;
 }
 
-bool queryFilterWidth(uint8_t& rawOut, uint32_t timeoutMs) {
-  ProtocolType pt = currentProtocolType();
-  const RadioProfile& sp = currentProfile();
-  if (pt == PROTO_CIV) return civQueryFilterWidth(sp, rawOut, timeoutMs);
-  return false;
-}
-
-bool setFilterWidth(uint8_t raw) {
-  ProtocolType pt = currentProtocolType();
-  const RadioProfile& sp = currentProfile();
-  if (pt == PROTO_CIV) return civSetFilterWidth(sp, raw);
-  return false;
-}
-
 bool queryMonitorEnabled(bool& onOut, uint32_t timeoutMs) {
   ProtocolType pt = currentProtocolType();
   const RadioProfile& sp = currentProfile();
@@ -592,7 +578,7 @@ bool setVfoMode(bool targetVfoA, uint8_t mode, uint8_t filter) {
 bool canSetVfoFrequency(bool targetVfoA) {
   ProtocolType pt = currentProtocolType();
   const RadioProfile& sp = currentProfile();
-  if (pt == PROTO_CIV) return true;
+  if (pt == PROTO_CIV) return sp.caps.setVfo;
   if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) {
     return (targetVfoA ? sp.commands->vfoASetFormat : sp.commands->vfoBSetFormat)[0] != '\0';
   }
@@ -603,7 +589,7 @@ bool canSetVfoFrequency(bool targetVfoA) {
 bool canSetVfoMode() {
   ProtocolType pt = currentProtocolType();
   const RadioProfile& sp = currentProfile();
-  if (pt == PROTO_CIV || pt == PROTO_YAESU_FTDX_ASCII) return true;
+  if (pt == PROTO_CIV || pt == PROTO_YAESU_FTDX_ASCII) return sp.caps.setVfoMode;
   if (pt == PROTO_YAESU_FT8X7) return sp.caps.setVfoMode && sp.caps.setVfo && currentIsFt817Family();
   return false;
 }
