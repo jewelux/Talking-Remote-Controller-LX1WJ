@@ -31,6 +31,9 @@ jobs:
       - name: FT-847 unit tests
         run: make -C tests/ft847
 
+      - name: Icom S-meter unit tests
+        run: make -C tests/civmeter
+
       - name: Audio unit tests
         run: make -C tests/audio
 
