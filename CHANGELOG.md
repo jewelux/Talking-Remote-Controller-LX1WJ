@@ -192,6 +192,7 @@
   tuner, band stack, filter type or notch width. The IC-7760 loses band stack, filter type and
   notch width until their commands are confirmed for it. The IC-706 reads frequency, mode and the
   S-meter, no longer power and SWR
+- console commands the radio profile cannot do say "not available" (they printed "no reply")
 - FT-817/818/857/897: the frequency is polled in the background again. When the radio is off or
   disconnected, polling slows down so the keypad stays responsive
 - FT-817/818/857/897: fixed the S-meter always reading S0

@@ -229,13 +229,21 @@ static bool usbConsoleReady() {
   return (bool)Serial;
 }
 
-// Report a failed radio command. If the radio never answered, say "timeout";
-// other failures (unsupported, bad argument) stay silent as before.
+// Bytes the transport had written when the current command started.
+static uint32_t s_writesBeforeCommand = 0;
+
+// Report a failed radio command. If the radio never answered, say "timeout". If nothing was
+// sent, the profile has no command for it: say "not available". Other failures stay silent.
 static void reportCommandFailure(const char* label, const char* reason) {
   Serial.print(label);
   if (g_radioReplyTimedOut) {
     Serial.println(" -> timeout");
     if (g_speechEnabled) speakTimeout();
+    return;
+  }
+  if (serialTransportWriteCount() == s_writesBeforeCommand) {
+    Serial.println(" -> not available");
+    if (g_speechEnabled) speakNotAvailable();
     return;
   }
   Serial.print(" -> ");
@@ -3605,6 +3613,7 @@ void processCommand(String line) {
   if (!line.length()) return;
   // A timeout left by background polling must not be blamed on this command.
   g_radioReplyTimedOut = false;
+  s_writesBeforeCommand = serialTransportWriteCount();
 
   String upper = upperCopy(line);
   if (handleHamtrcServiceCommand(upper, Serial)) return;
