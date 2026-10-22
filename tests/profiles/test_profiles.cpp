@@ -269,6 +269,15 @@ TEST(newcat_mode_and_lock_commands) {
   }
 }
 
+// TS-480: RM; answers all three meters, SWR first; 9 is FSK-R and there is no DIGI.
+TEST(ts480_swr_and_mode_codes) {
+  const RadioProfile& ts480 = slot(7);
+  CHECK_EQ(ts480.commands->swrGet, "RM;");
+  CHECK_EQ(ts480.commands->swrReplyPrefix, "RM1");
+  CHECK_EQ(ts480.modes->rttyR, "9");
+  CHECK_EQ(ts480.modes->digi, "");
+}
+
 TEST(model_names_are_set) {
   CHECK_EQ(radioModelName(RadioModel::Generic), "generic");
   CHECK_EQ(radioModelName(RadioModel::Ic7300), "IC-7300");

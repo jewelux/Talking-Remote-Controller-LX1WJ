@@ -114,18 +114,18 @@ constexpr RadioCapabilities kTs480Caps = {
 constexpr AsciiCommandSet kTs480Commands = {
     .freqGet = "FA;", .freqSetFormat = "FA%011llu;",
     .modeGet = "MD;", .modeSetFormat = "MD%s;",
-    .smeterGet = "SM0;", .swrGet = "RM1;",
+    .smeterGet = "SM0;", .swrGet = "RM;",
     .nrGet = "NR;", .nrOnCmd = "NR1;", .nrOffCmd = "NR0;",
     .nbGet = "NB;", .nbOnCmd = "NB1;", .nbOffCmd = "NB0;",
     .freqReplyPrefix = "FA", .modeReplyPrefix = "MD", .ifReplyPrefix = "IF",
     .idReplyPrefix = "ID", .omReplyPrefix = "OM", .smeterReplyPrefix = "SM0",
-    .powerReplyPrefix = "PC", .swrReplyPrefix = "RM1", .nrReplyPrefix = "NR",
+    .swrReplyPrefix = "RM1", .nrReplyPrefix = "NR",
     .nbReplyPrefix = "NB",
 };
 
+// 9 is FSK-R and 8 is no mode (Hamlib kenwood_mode_table, flrig TS480SAT). There is no DIGI.
 constexpr ModeCodes kTs480Modes = {
-    .lsb = "1", .usb = "2", .am = "5", .cw = "3", .rtty = "6", .fm = "4", .cwr = "7", .rttyR = "8",
-    .digi = "9",
+    .lsb = "1", .usb = "2", .am = "5", .cw = "3", .rtty = "6", .fm = "4", .cwr = "7", .rttyR = "9",
 };
 
 // --- Yaesu FT-817, FT-818, FT-857, FT-897 (5-byte CAT) -----------------------

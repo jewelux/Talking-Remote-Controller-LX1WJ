@@ -12,8 +12,8 @@ It is meant as a short engineering overview, not as a promise list.
 | ICOM IC-706 CI-V | CI-V | implemented | implemented | n/a | implemented | n/a | implemented | not recently verified | Frequency, mode and S-meter. No IC-706 variant has the PO or SWR meter command. |
 | ICOM IC-706 RS-232 | RS-232 | implemented | implemented | n/a | implemented | n/a | implemented | not recently verified | As the CI-V slot. |
 | Xiegu G106 | CI-V (TTL) | implemented | implemented | n/a | n/a | n/a | implemented | not recently verified | Frequency and mode only. |
-| Kenwood TS-480 | ASCII / CAT | partial | partial | planned | planned | planned | implemented | not recently verified | Good candidate for future expansion. |
-| Elecraft KX2 | ASCII / CAT | partial | partial | partial | planned | planned | implemented | not recently verified | Evolving profile. |
+| Kenwood TS-480 | ASCII / CAT | implemented | implemented | n/a | implemented | implemented | implemented | not tested | SWR from `RM;` (SWR, COMP and ALC in one reply). NR and NB. |
+| Elecraft KX2 | ASCII / CAT | implemented | implemented | implemented | implemented | implemented | implemented | not tested | NB, preamp, AGC fast/slow, power switch. |
 | Yaesu FT-817 | CAT | implemented | implemented | implemented | implemented | implemented | implemented | tested on hardware | FT8x7 family notes are documented separately. |
 | Yaesu FT-818 | CAT | implemented | implemented | partial | implemented | partial | implemented | not recently verified | Mirrors the FT-817 family path. |
 | Yaesu FT-857 | CAT | implemented | implemented | partial | implemented | partial | implemented | tested on hardware | Split and VFO handling are already documented and tested. |

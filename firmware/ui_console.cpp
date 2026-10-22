@@ -2750,6 +2750,34 @@ static bool handleConsoleAdjustCommands(const String& line, const String& upper)
   return false;
 }
 
+// Raw Kenwood/Elecraft/Yaesu ASCII commands. Sent to a CI-V or FT-8x7 radio, their bytes would
+// be read as frames of that protocol, so only ASCII profiles take them.
+static bool isRawAsciiConsoleCommand(const String& upper) {
+  static const char* const kExact[] = {"FB?", "IF?", "ID?", "OM?", "FR?", "FR0", "FT?", "FT A", "FT B",
+                                       "RX", "TX", "AK?"};
+  static const char* const kPrefix[] = {"FBMHZ ", "FB ", "SWT ", "SWH "};
+  for (const char* c : kExact) {
+    if (upper == c) return true;
+  }
+  for (const char* c : kPrefix) {
+    if (upper.startsWith(c)) return true;
+  }
+  return false;
+}
+
+static bool currentProtocolIsAscii() {
+  const ProtocolType pt = currentProtocolType();
+  return pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII;
+}
+
+// VFO B as FB with the profile's digit count (11 on Kenwood/Elecraft, 9 on Yaesu).
+static bool sendAsciiVfoBFrequency(uint64_t hz) {
+  const char* format = currentProfile().commands->vfoBSetFormat;
+  char cmd[24];
+  snprintf(cmd, sizeof(cmd), format[0] ? format : "FB%011llu;", (unsigned long long)hz);
+  return asciiPacketSendCommand(cmd);
+}
+
 static bool handleConsoleRadioCommands(const String& line, const String& upper) {
   const RadioProfile& sp = currentProfile();
   if (upper == "LFREQ") {
@@ -2805,6 +2833,10 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     speakModeReply(mode);
     return true;
   }
+  if (isRawAsciiConsoleCommand(upper) && !currentProtocolIsAscii()) {
+    reportNotAvailable((upper + " -> ASCII CAT radios only").c_str());
+    return true;
+  }
   if (upper == "FB?") {
     String rsp;
     uint64_t hz = 0;
@@ -2821,18 +2853,14 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     double mhz = line.substring(6).toDouble();
     if (mhz <= 0.0) { Serial.println("FBMHZ -> invalid value"); return true; }
     uint64_t hzSet = (uint64_t)(mhz * 1000000.0 + 0.5);
-    char cmd[24];
-    snprintf(cmd, sizeof(cmd), "FB%011llu;", (unsigned long long)hzSet);
-    if (!asciiPacketSendCommand(cmd)) { reportCommandFailure("SET FB", "failed"); return true; }
+    if (!sendAsciiVfoBFrequency(hzSet)) { reportCommandFailure("SET FB", "failed"); return true; }
     Serial.println("SET FB -> command sent");
     return true;
   }
   if (upper.startsWith("FB ")) {
     uint64_t khz = strtoull(line.substring(3).c_str(), nullptr, 10);
     uint64_t hzSet = khz * 1000ULL;
-    char cmd[24];
-    snprintf(cmd, sizeof(cmd), "FB%011llu;", (unsigned long long)hzSet);
-    if (!asciiPacketSendCommand(cmd)) { reportCommandFailure("SET FB", "failed"); return true; }
+    if (!sendAsciiVfoBFrequency(hzSet)) { reportCommandFailure("SET FB", "failed"); return true; }
     Serial.println("SET FB -> command sent");
     return true;
   }

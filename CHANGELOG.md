@@ -199,6 +199,13 @@
 - FTDX101D/MP and FT-891: the mode is read and set with `MD0`, as on the FTDX10
 - FTDX101D/MP and FT-891: RX/TX, TX frequency and VFO mode say "not available"; their commands are
   confirmed only on the FTDX10
+- TS-480: SWR is read with `RM;` (it sent `RM1;`, which selects a meter and gets no answer). RTTY-R
+  is mode 9 (it sent 8, which is no mode on the TS-480), and DIGI, which the TS-480 does not have,
+  is gone
+- the raw ASCII commands (`FB`, `FR`, `FT`, `RX`, `TX`, `AK?`, `SWT`, `SWH`, `IF?`, `ID?`, `OM?`)
+  work only on Kenwood, Elecraft and Yaesu ASCII radios; elsewhere they say "not available"
+  instead of sending bytes the radio reads as other commands. `FB <kHz>` sends 9 digits on Yaesu
+  ASCII radios (it sent 11)
 - FT-817/818/857/897: the frequency is polled in the background again. When the radio is off or
   disconnected, polling slows down so the keypad stays responsive
 - FT-817/818/857/897: fixed the S-meter always reading S0
