@@ -62,8 +62,6 @@
 //   setBank5RitOff          "RIT OFF", RIT off or "unsupported"
 //   queryBank9Profile       "PROFILE?", speaks the profile
 //   queryBank9Volume        "VOLUME?", speaks the volume
-//   adjustBank9Volume(-1/1) "VOLUME DOWN/UP" + adjustVolumeLevel
-//   adjustBank9Volume(-2/2) "VOLUME DOWN/UP FAST" + adjustBank9Volume
 //   queryBank9Speed         "SPEED?", says the speech speed
 //   stepBank9Speed          "SPEED NEXT", the next speech speed
 //   focusSay, focusEntry, focusCentre, focusStep(dir), focusBigStep(dir)
@@ -304,10 +302,8 @@ KEYMAP_ROW(ALL,             9, '0', "queryBank9Experimental", "toggleBank9Experi
 KEYMAP_ROW(ALL,             9, '1', "queryBank9Profile",     "beginBank9ProfileSelect", "resetBank9Profile", "none", "PROFILE")
 KEYMAP_ROW(ALL,             9, '4', "queryBank9TuningSpeech", "toggleBank9TuningSpeech", "-", "none", "-")
 KEYMAP_ROW(ALL,             9, '5', "queryBank9Verbose",     "toggleBank9Verbose",     "-", "none", "-")
-KEYMAP_ROW(ALL,             9, '6', "queryBank9Speed",       "stepBank9Speed",         "-", "none", "SPEED")
-KEYMAP_ROW(ALL,             9, '7', "adjustBank9Volume(-1)", "adjustBank9Volume(-2)",  "-", "none", "VOLUME")
-KEYMAP_ROW(ALL,             9, '8', "adjustBank9Volume(1)",  "adjustBank9Volume(2)",   "-", "none", "VOLUME")
-KEYMAP_ROW(ALL,             9, '9', "queryBank9Volume",      "none",                   "-", "none", "VOLUME")
+KEYMAP_ROW(ALL,             9, '7', "queryBank9Volume",      "settingEntry(VOLUME)",   "-", "none", "VOLUME")
+KEYMAP_ROW(ALL,             9, '8', "queryBank9Speed",       "stepBank9Speed",         "-", "none", "SPEED")
 // fixed: A, B and C were the profile's alone; the profile is now the home focus.
 KEYMAP_ROW(ALL,             9, 'A', "focusSay",              "focusEntry",             "focusCentre", "none", "-")
 KEYMAP_ROW(ALL,             9, 'B', "focusStep(1)",          "focusBigStep(1)",        "-", "none", "-")

@@ -39,8 +39,8 @@ Global rules:
   `D` long or `#` ends help mode
 
 `A`, `B` and `C` act on the bank's focus, the setting of the last key you used on that bank that
-has one: Bank 1 `6` RF power or `9` mode, Bank 5 the RIT offset, Bank 9 `6` speech speed or
-`7`-`9` volume, or `1` the profile. A key with nothing to move, such as a meter, leaves the focus as it was. Each bank
+has one: Bank 1 `6` RF power or `9` mode, Bank 5 the RIT offset, Bank 9 `7` volume or
+`8` speech speed, or `1` the profile. A key with nothing to move, such as a meter, leaves the focus as it was. Each bank
 keeps its own focus. Bank 5 starts on the RIT offset and Bank 9 on the profile.
 
 - `A` short: the focus with its name
@@ -75,13 +75,21 @@ Every answer first says what it is, then the value: "power 50 watts", "noise bla
 The setting is kept after power off. Prompts such as "frequency please" and messages such as
 "not available" stay the same. Console: `VERBOSE?` and `VERBOSE ON | OFF | TOGGLE`.
 
+## Volume
+
+- Bank 9, `7` short: says the volume, e.g. "volume five"
+- Bank 9, `7` long: volume entry, `1` to `9`, then `D`
+- after `7`, `B` / `C` turn the volume up / down
+
+The setting is kept after power off.
+
 ## Speech Speed
 
 The words can be spoken slow, normal or fast. The pauses between them follow, and the voice keeps
 its pitch.
 
-- Bank 9, `6` short: says the speed, e.g. "speed normal"
-- Bank 9, `6` long: the next speed (slow, normal, fast, then slow again), said at the new speed
+- Bank 9, `8` short: says the speed, e.g. "speed normal"
+- Bank 9, `8` long: the next speed (slow, normal, fast, then slow again), said at the new speed
 
 The setting is kept after power off. Console: `SPEED?` and `SPEED SLOW | NORMAL | FAST`.
 

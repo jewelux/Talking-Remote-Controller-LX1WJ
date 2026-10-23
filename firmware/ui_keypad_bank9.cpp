@@ -102,20 +102,6 @@ static void speakVolumeWithLevel(uint8_t lvl) {
   speakVolumeLevel(lvl);
 }
 
-void adjustBank9Volume(int delta) {
-  printKeypadAction("VOLUME {}{}", delta < 0 ? "DOWN" : "UP", delta < -1 || delta > 1 ? " FAST" : "");
-  int next = (int)g_volumeLevel + delta;
-  if (next < 1) next = 1;
-  if (next > 9) next = 9;
-  applyVolumeLevel((uint8_t)next);
-  saveVolumeToNvs((uint8_t)next);
-  printKeypadStatus("VOLUME {}", next);
-  if (g_speechEnabled) {
-    speakVolumeWithLevel((uint8_t)next);
-    speakValueOk();
-  }
-}
-
 void queryBank9Volume() {
   printKeypadAction("VOLUME?");
   printKeypadStatus("VOLUME {}", g_volumeLevel);

@@ -540,8 +540,8 @@ KeyBinding bank7(const KeypadTraits& t, char key, Setting focus) {
   }
 }
 
-// The profile is the home focus: A, B and C select, step and reset it until the speed or
-// volume keys move the focus, and '1' brings it back.
+// The profile is the home focus: A, B and C select, step and reset it until the volume ('7')
+// or speed ('8') key moves the focus, and '1' brings it back.
 KeyBinding bank9(char key, Setting focus) {
   if (isFocusKey(key)) return focusKey(key, focus);
   constexpr Setting kVolume = Setting::Volume;
@@ -555,17 +555,10 @@ KeyBinding bank9(char key, Setting focus) {
     case '4':
       return bind(queryBank9TuningSpeech, toggleBank9TuningSpeech).help("TUNINGSPEECH", V::Say, V::Toggle);
     case '5': return bind(queryBank9Verbose, toggleBank9Verbose).help("VERBOSE", V::Say, V::Toggle);
-    case '6':
-      return bind(queryBank9Speed, stepBank9Speed).withFocus(Setting::SpeechSpeed).help("SPEED", V::Say, V::Next);
     case '7':
-      return bind([] { adjustBank9Volume(-1); }, [] { adjustBank9Volume(-2); })
-          .withFocus(kVolume)
-          .help("VOLUME", V::Down, V::DownFast);
+      return bind(queryBank9Volume, enterSetting<kVolume>).withFocus(kVolume).help("VOLUME", V::Say, V::Entry);
     case '8':
-      return bind([] { adjustBank9Volume(1); }, [] { adjustBank9Volume(2); })
-          .withFocus(kVolume)
-          .help("VOLUME", V::Up, V::UpFast);
-    case '9': return bind(queryBank9Volume).withFocus(kVolume).help("VOLUME", V::Say);
+      return bind(queryBank9Speed, stepBank9Speed).withFocus(Setting::SpeechSpeed).help("SPEED", V::Say, V::Next);
     default: return {};
   }
 }

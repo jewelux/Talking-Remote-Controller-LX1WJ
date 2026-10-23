@@ -44,7 +44,7 @@ back to its starting focus.
 | 6 | `3` CTCSS tone, `4` DCS code (FT-8x7) | none |
 | 7 | `1` keyer speed, `2` QSK time (FT-857/897) or break-in (Icom), `3` sidetone, `5` pitch, `6` weight, `8` RF power, `9` break-in delay | none |
 | 8 | none yet | none |
-| 9 | `6` speech speed, `7`-`9` volume | profile |
+| 9 | `7` volume, `8` speech speed | profile |
 
 With no focus, `A`, `B` and `C` say "not available".
 
@@ -366,14 +366,13 @@ The same on every radio.
 | `4` long | tuning speech on/off |
 | `5` short | verbose |
 | `5` long | verbose on/off |
-| `6` short | speech speed |
-| `6` long | next speech speed (slow, normal, fast) |
-| `7` short / long | volume down / down fast |
-| `8` short / long | volume up / up fast |
-| `9` short | volume |
-| `A` `B` `C` | focus: the profile, until `6`-`9` move it to the speech speed or volume; `1` brings it back |
+| `7` short | volume |
+| `7` long | volume entry |
+| `8` short | speech speed |
+| `8` long | next speech speed (slow, normal, fast) |
+| `A` `B` `C` | focus: the profile, until `7` or `8` moves it to the volume or speech speed; `1` brings it back |
 
 With the profile as the focus: `A` short profile, `A` long profile select, `A` double reset the
 profile's baud rate and CI-V address to its defaults, `B` next profile, `C` previous profile.
 
-`2` and `3` are free.
+`2`, `3`, `6` and `9` are free. `B` and `C` step the volume once `7` has made it the focus.

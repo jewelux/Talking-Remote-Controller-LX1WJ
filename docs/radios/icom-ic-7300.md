@@ -271,10 +271,8 @@ break-in delay say "not available".
 | Profile / System | `EXPERIMENTAL?`, `EXPERIMENTAL TOGGLE` | Bank 9: `0` short / `0` long |
 | Profile / System | `TUNINGSPEECH?`, `TUNINGSPEECH TOGGLE` | Bank 9: `4` short / `4` long |
 | Profile / System | `VERBOSE?`, `VERBOSE TOGGLE` | Bank 9: `5` short / `5` long |
-| Profile / System | `SPEED?`, next speed (slow, normal, fast) | Bank 9: `6` short / `6` long |
-| Profile / System | `VOLUME DOWN / DOWN FAST` | Bank 9: `7` short / `7` long |
-| Profile / System | `VOLUME UP / UP FAST` | Bank 9: `8` short / `8` long |
-| Profile / System | `VOLUME?` | Bank 9: `9` short |
+| Profile / System | `VOLUME?`, volume entry | Bank 9: `7` short / `7` long |
+| Profile / System | `SPEED?`, next speed (slow, normal, fast) | Bank 9: `8` short / `8` long |
 
 ---
 

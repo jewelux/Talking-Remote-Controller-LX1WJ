@@ -139,12 +139,14 @@
   VOX delay; the levels step by 5, and the FT-8x7 ones wait for `D`. Bank 7: the keyer speed, the
   QSK time or the Icom break-in, sidetone, pitch, weight, RF power and break-in delay; the FT-8x7
   ones wait for `D`. Bank 6: `3` the CTCSS tone and `4` the DCS code, set at once on every radio,
-  so `B` and `C` walk the tones. Bank 9: the profile as before, until `6` moves
-  it to the speech speed or `7`-`9` to the volume. With no focus they say "not available". RIT,
+  so `B` and `C` walk the tones. Bank 9: the profile as before, until `7` moves
+  it to the volume or `8` to the speech speed. With no focus they say "not available". RIT,
   the CAT radios' RF power and the Bank 2 focus on the CAT radios are not yet tested on a radio
 - Bank 9 `1` says the profile, selects one on a long press and resets it on a double press, and
   brings `A`, `B` and `C` back to the profile after the speed or volume keys
 - keys moved:
+  - Bank 9: `7` is the volume (short says it, long opens an entry; `B` and `C` turn it up and
+    down) and `8` the speech speed; `6` and `9` are free
   - the FTDX10 tuner is no longer on Bank 1 `5` (it stays on Bank 4 `0`)
   - AGC from Bank 2 `A` to `7`, the preamp (FT-8x7: IPO) from `B` to `8`, the attenuator from `C`
     to `9`

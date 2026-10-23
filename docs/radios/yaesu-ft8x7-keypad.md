@@ -254,11 +254,10 @@ values when the menu is exited.
 | `4` long | `TUNINGSPEECH TOGGLE` | `TUNINGSPEECH TOGGLE` |
 | `5` short | `VERBOSE?` | `VERBOSE?` |
 | `5` long | `VERBOSE TOGGLE` | `VERBOSE TOGGLE` |
-| `6` short | `SPEED?` | `SPEED?` |
-| `6` long | next speed (slow, normal, fast) | next speed (slow, normal, fast) |
-| `7` short / long | `VOLUME DOWN` / `VOLUME DOWN FAST` | `VOLUME DOWN` / `VOLUME DOWN FAST` |
-| `8` short / long | `VOLUME UP` / `VOLUME UP FAST` | `VOLUME UP` / `VOLUME UP FAST` |
-| `9` short | `VOLUME?` | `VOLUME?` |
+| `7` short | `VOLUME?` | `VOLUME?` |
+| `7` long | volume entry | volume entry |
+| `8` short | `SPEED?` | `SPEED?` |
+| `8` long | next speed (slow, normal, fast) | next speed (slow, normal, fast) |
 
 `A`, `B` and `C` act on the profile until `6`-`9` move the focus to the speech speed or the volume;
 `1` brings it back to the profile.
