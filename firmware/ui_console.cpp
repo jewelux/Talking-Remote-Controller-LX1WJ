@@ -1492,7 +1492,7 @@ static bool handleConsoleFt8x7Meters(const String& upper) {
 // FT-8x7 settings read from the EEPROM, like the Bank 2 and Bank 8 keys.
 static bool handleConsoleFt8x7Settings(const String& upper) {
   static constexpr Ft8x7Setting kSettings[] = {
-    Ft8x7Setting::Ipo, Ft8x7Setting::Att, Ft8x7Setting::Nar,
+    Ft8x7Setting::Ipo, Ft8x7Setting::Nar,
     Ft8x7Setting::Dbf, Ft8x7Setting::BreakIn, Ft8x7Setting::Keyer, Ft8x7Setting::RfPower,
     Ft8x7Setting::Menu, Ft8x7Setting::Row, Ft8x7Setting::IfShift, Ft8x7Setting::NrLevel,
     Ft8x7Setting::NbLevel, Ft8x7Setting::BpfWidth, Ft8x7Setting::LowCut, Ft8x7Setting::HighCut,
@@ -1667,6 +1667,15 @@ static bool handleConsoleAgc(const String& upper) {
     return true;
   }
   return false;
+}
+
+static bool handleConsoleAtt(const String& upper) {
+  if (upper != "ATT?") return false;
+  AttState state;
+  if (reportFeatureFailure(attQuery(state), "ATT?")) return true;
+  Serial.println(attText(state));
+  speakAtt(state);
+  return true;
 }
 
 // Experimental: DBF ON | OFF | TOGGLE on the FT-857/897, like Bank 2 `6` long; BK, KYR, KEYREV
@@ -3664,6 +3673,7 @@ void processCommand(String line) {
   if (handleFtdx10BlockedConsoleCommand(upper)) return;
   if (handleConsoleToggleCommands(line, upper)) return;
   if (handleConsoleAgc(upper)) return;
+  if (handleConsoleAtt(upper)) return;
   if (handleConsoleYaesuFt8x7Commands(line, upper)) return;
   if (handleConsoleFt847Commands(upper)) return;
   if (handleConsoleTxAudioSet(line, upper)) return;

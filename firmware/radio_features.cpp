@@ -86,6 +86,18 @@ FeatureStatus agcSet(AgcMode mode, AgcMode& out) {
   return status;
 }
 
+// ---- Attenuator ----
+
+FeatureStatus attQuery(AttState& out) {
+  if (!currentProfile().caps.getAtt || !isFt8x7()) return FeatureStatus::Unsupported;
+  Ft8x7SettingState state;
+  const FeatureStatus status = ft8x7SettingQuery(Ft8x7Setting::Att, state);
+  if (status != FeatureStatus::Ok) return status;
+  out.on = state.on;
+  out.db = 0;
+  return FeatureStatus::Ok;
+}
+
 // The toggles below start from the radio's state, read each time: nothing keeps the remembered
 // one up to date when the radio's own keys change it.
 

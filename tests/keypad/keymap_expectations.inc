@@ -137,7 +137,7 @@ KEYMAP_ROW(FTDX10,          2, '9', "reportFtdx10HiddenKey(BANK2 9 SHORT)", "non
 KEYMAP_ROW(FT817 | FT857,   2, '9', "queryBank2Ft8x7MicEq",  "none",                   "-")
 KEYMAP_ROW(NOT(CIV | FTDX10 | FT817 | FT857), 2, '9', "unassigned", "none",            "-")
 KEYMAP_ROW(ALL,             2, 'A', "queryBank2Agc",         "beginBank2AgcSelect", "-")
-KEYMAP_ROW(FT817 | FT857,   2, 'B', "queryBank2Ft8x7Ipo",    "none",                   "queryBank2Ft8x7Att")
+KEYMAP_ROW(FT817 | FT857,   2, 'B', "queryBank2Ft8x7Ipo",    "none",                   "queryBank2Att")
 KEYMAP_ROW(NOT(FT817 | FT857), 2, 'B', "unassigned",       "none",                   "-")
 
 // ---- Bank 3 ----------------------------------------------------------------

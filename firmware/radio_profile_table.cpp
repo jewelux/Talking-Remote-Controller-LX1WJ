@@ -149,8 +149,8 @@ constexpr RadioCapabilities kFt857Caps = {
     .getSmeter = true, .getPower = true, .getRfPower = true, .getSwr = true, .getRxTx = true,
     .getNr = true, .getNb = true, .getNotch = true,
     .getVfo = true,
-    .getSplit = true, .setSplit = true, .getAgc = true, .getProc = true, .getMicGain = true,
-    .getVox = true,
+    .getSplit = true, .setSplit = true, .getAgc = true, .getAtt = true, .getProc = true,
+    .getMicGain = true, .getVox = true,
 };
 
 constexpr ModeCodes kFt8x7Modes = {

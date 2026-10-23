@@ -26,6 +26,10 @@ const char* agcModeName(AgcMode mode);
 String agcText(AgcMode mode);
 void speakAgc(AgcMode mode);
 
+// "ATT OFF", "ATT ON", or with its dB: "ATT 12 DB"; "attenuator 12".
+String attText(const AttState& state);
+void speakAtt(const AttState& state);
+
 // "PROC ON", "PROC OFF"; "processor on".
 String procStateText(bool on);
 void speakProcState(bool on);

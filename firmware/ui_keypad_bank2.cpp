@@ -62,7 +62,6 @@ void queryBank2Ft8x7LowCut() { queryKeypadFt8x7Setting(Ft8x7Setting::LowCut); }
 void queryBank2Ft8x7HighCut() { queryKeypadFt8x7Setting(Ft8x7Setting::HighCut); }
 void queryBank2Ft8x7MicEq() { queryKeypadFt8x7Setting(Ft8x7Setting::MicEq); }
 void queryBank2Ft8x7Ipo() { queryKeypadFt8x7Setting(Ft8x7Setting::Ipo); }
-void queryBank2Ft8x7Att() { queryKeypadFt8x7Setting(Ft8x7Setting::Att); }
 void queryBank2Ft817Antenna() { queryKeypadFt8x7Setting(Ft8x7Setting::Antenna); }
 
 static void stepKeypadFt8x7Level(Ft8x7Setting setting, const char* label, int delta) {
@@ -91,6 +90,15 @@ void queryBank2Agc() {
   if (keypadReportFeatureFailure(agcQuery(mode), "AGC?")) return;
   printKeypadStatus("{}", agcText(mode).c_str());
   speakAgc(mode);
+}
+
+void queryBank2Att() {
+  printKeypadAction("ATT?");
+  prepareKeypadSpeechResponse();
+  AttState state;
+  if (keypadReportFeatureFailure(attQuery(state), "ATT?")) return;
+  printKeypadStatus("{}", attText(state).c_str());
+  speakAtt(state);
 }
 
 // 0 off, 1 auto, 2 fast, 3 slow, 4 mid; a key for a speed the radio cannot be set to is rejected.

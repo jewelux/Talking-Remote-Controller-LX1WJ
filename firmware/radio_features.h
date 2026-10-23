@@ -72,6 +72,16 @@ bool agcCanSet(AgcMode mode);
 // procLevelSet.
 FeatureStatus agcSet(AgcMode mode, AgcMode& out);
 
+// The RX attenuator. db is 0 where the radio does not say how many dB it takes off.
+struct AttState {
+  bool on = false;
+  uint8_t db = 0;
+};
+
+// The attenuator (caps.getAtt): the FT-857/897 from the current band in its EEPROM, Unsupported
+// where the band has none.
+FeatureStatus attQuery(AttState& out);
+
 // Speech processor: FT-857/897 PROC and its menu 74 level, Icom COMP, FTDX10 and FT-891 PR0 and
 // PL, TS-480 PR and its PL input level.
 // These and the mic gain and VOX reads below are Unsupported where the profile's cap (getProc,

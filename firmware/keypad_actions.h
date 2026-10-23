@@ -62,6 +62,8 @@ void cycleBank2FilterWidth(int delta);
 // can be set to, then Enter sets it. On the FT-8x7 experimental, written to the EEPROM.
 void queryBank2Agc();
 void beginBank2AgcSelect();
+// The attenuator (attQuery).
+void queryBank2Att();
 // FT-8x7 settings read from the radio's EEPROM.
 void queryBank2Ft8x7NrLevel();
 void queryBank2Ft8x7NbLevel();
@@ -70,7 +72,6 @@ void queryBank2Ft8x7LowCut();
 void queryBank2Ft8x7HighCut();
 void queryBank2Ft8x7MicEq();
 void queryBank2Ft8x7Ipo();
-void queryBank2Ft8x7Att();
 void queryBank2Ft817Antenna();
 // Experimental, FT-857/897, written to the radio's EEPROM; "not available" unless EXPERIMENTAL
 // is on. The steps are the radio's: NR level (menu 49) and NB level (menu 63) 1 each, low cut

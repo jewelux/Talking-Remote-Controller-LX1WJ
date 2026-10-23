@@ -74,6 +74,9 @@ struct RadioCapabilities {
   // AGC. The FT-8x7 reads it from its EEPROM and writes it there under setRadioMenu.
   bool getAgc = false;
   bool setAgc = false;
+  // The RX attenuator. The FT-857/897 reads it from its EEPROM, read only.
+  bool getAtt = false;
+  bool setAtt = false;
   // Speech processor and its level, mic gain, VOX with its gain and delay. The FT-8x7 writes
   // them to the EEPROM under setRadioMenu instead.
   bool getProc = false;

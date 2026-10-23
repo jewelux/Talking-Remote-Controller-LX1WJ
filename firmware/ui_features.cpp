@@ -84,6 +84,22 @@ void speakAgc(AgcMode mode) {
   speakToken(agcModeName(mode));
 }
 
+String attText(const AttState& state) {
+  if (!state.on) return "ATT OFF";
+  if (!state.db) return "ATT ON";
+  return String("ATT ") + String((int)state.db) + " DB";
+}
+
+void speakAtt(const AttState& state) {
+  if (!g_speechEnabled) return;
+  if (!state.on || !state.db) {
+    speakTokenState("attenuator", state.on);
+    return;
+  }
+  speakLabel("attenuator");
+  speakNumber(String((int)state.db));
+}
+
 String procStateText(bool on) {
   return on ? "PROC ON" : "PROC OFF";
 }
