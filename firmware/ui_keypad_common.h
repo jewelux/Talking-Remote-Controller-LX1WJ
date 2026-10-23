@@ -2,6 +2,7 @@
 
 #include "formatted_line.h"
 #include "keypad_actions.h"
+#include "keypad_help.h"
 #include "keypad_input.h"
 #include "radio_features.h"
 #include "radio_globals.h"
@@ -125,8 +126,14 @@ void speakProfileReset();
 void formatCtcssTenthsLabel(uint16_t toneTenths, char* out, size_t outSize);
 
 void speakFrequencyWord();
-// A short gap, then "please". Ends a prompt such as "mode please".
+// A short gap, then "please". Ends a prompt such as "mode please", and the value
+// a Confirm entry opens with.
 void speakPlease();
+// "help on" or "help off", with verbose off too.
+void speakHelpMode(bool on);
+// What a gesture would do in help mode ("up noisereduction level"). The name is
+// said with verbose off too; HelpVerb::None says nothing.
+void speakHelp(const GestureHelp& help);
 // "<token> please".
 void speakPrompt(const char* token);
 // "vfo a" or "vfo b" (just "vfo" for any other letter).

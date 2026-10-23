@@ -165,7 +165,7 @@ void speakCivAddressValue(uint8_t addr, bool ok) {
   if (!g_speechEnabled) return;
   char hex[3] = "";
   formatHexByte(addr, hex, sizeof(hex));
-  if (g_verboseSpeech) {
+  if (labelSpoken()) {
     speakToken("c");
     playSilenceMs(50);
     speakToken("i");
@@ -205,6 +205,30 @@ void speakFrequencyWord() {
 void speakPlease() {
   if (!g_speechEnabled) return;
   speakToken("please");
+}
+
+void speakHelpMode(bool on) {
+  LabelModeScope named(LabelMode::Always);
+  speakTokenState("help", on);
+}
+
+void speakHelp(const GestureHelp& help) {
+  if (!g_speechEnabled || help.verb == HelpVerb::None) return;
+  LabelModeScope named(LabelMode::Always);
+  switch (help.verb) {
+    case HelpVerb::Next: speakToken("next"); break;
+    case HelpVerb::Entry:
+    case HelpVerb::Pick: speakToken("choose"); break;
+    case HelpVerb::Centre: speakToken("reset"); break;
+    case HelpVerb::Up: speakToken("up"); break;
+    case HelpVerb::Down: speakToken("down"); break;
+    case HelpVerb::UpFast: speakToken("up fast"); break;
+    case HelpVerb::DownFast: speakToken("down fast"); break;
+    default: break;
+  }
+  const String name = help.label ? spokenLabel(help.label) : String();
+  if (name.length()) speakLabel(name);
+  if (help.verb == HelpVerb::Toggle) speakToken("on off");
 }
 
 void speakPrompt(const char* token) {

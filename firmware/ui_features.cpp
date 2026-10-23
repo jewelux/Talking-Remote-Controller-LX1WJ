@@ -203,7 +203,7 @@ String breakInText(BreakInMode mode) {
 
 void speakBreakIn(BreakInMode mode) {
   if (!g_speechEnabled) return;
-  speakLabel("B K");
+  speakLabel("breakin");
   speakToken(breakInModeName(mode));
 }
 
@@ -212,7 +212,7 @@ String keyerText(bool on) {
 }
 
 void speakKeyer(bool on) {
-  speakTokenState("K Y R", on);
+  speakTokenState("keyer", on);
 }
 
 const char* cwLevelName(CwLevel level) {
@@ -645,6 +645,9 @@ void speakFt8x7Setting(const Ft8x7SettingState& state) {
     speakTokenState("attenuator", state.on);
     return;
   }
-  // "BK" -> "b k"
+  if (state.setting == Ft8x7Setting::BreakIn || state.setting == Ft8x7Setting::Keyer) {
+    speakTokenState(state.setting == Ft8x7Setting::Keyer ? "keyer" : "breakin", state.on);
+    return;
+  }
   speakTokenState(spelledLetters(ft8x7SettingName(state.setting)), state.on);
 }

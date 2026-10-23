@@ -462,8 +462,22 @@ bool speakToken(const String& token) {
   return false;
 }
 
+static LabelMode s_labelMode = LabelMode::Verbose;
+
+LabelModeScope::LabelModeScope(LabelMode mode) : previous_(s_labelMode) { s_labelMode = mode; }
+LabelModeScope::~LabelModeScope() { s_labelMode = previous_; }
+
+bool labelSpoken() {
+  switch (s_labelMode) {
+    case LabelMode::Always: return true;
+    case LabelMode::Never: return false;
+    case LabelMode::Verbose: break;
+  }
+  return g_verboseSpeech;
+}
+
 bool speakLabel(const String& token) {
-  if (!g_speechEnabled || !g_verboseSpeech) return true;
+  if (!g_speechEnabled || !labelSpoken()) return true;
   bool ok = speakToken(token);
   playSilenceMs(60);
   return ok;
@@ -493,6 +507,7 @@ void speakOk() { speakToken("ok"); }
 void speakError() { speakToken("error"); }
 void speakTimeout() { speakToken("timeout"); }
 void speakNotAvailable() { speakToken("notavailable"); }
+void speakLimit(bool atMax) { speakToken(atMax ? "maximum" : "minimum"); }
 void playBeep() { (void)playClip((const uint8_t*)s_beepPcm, sizeof(s_beepPcm), AUDIO_TONE); }
 
 void applyVolumeLevel(uint8_t lvl) {

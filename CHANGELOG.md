@@ -124,6 +124,8 @@
 - a CI-V address with the hex digit E (e.g. E0) says "e" instead of "error"
 - the S-meter says dB over S9 as a word ("S meter nine plus twenty")
 - WFM is said as "wfm" instead of being spelled out
+- break-in and the keyer are said as words ("break in semi", "keyer on") instead of being spelled
+  "b k" and "k y r". This needs the new voice pack
 - the RX/TX query (Bank 1 `1`, and Bank 3 `6` on radios other than the FT-8x7 and FTDX10) says
   "transceiver rx" or "transceiver tx" instead of "transceiver off" or "on"
 - Bank 9 says what a value is: the volume keys say "volume five" (plus "ok" after a change), the
