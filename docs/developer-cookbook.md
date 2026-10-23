@@ -59,7 +59,7 @@ to completion, and that action talks to the radio synchronously.
 | Keypad logic | `keypad_input.*`, `keypad_keymap.*`, `keypad_actions.h`, `keypad_digit_buffer.h` | Gestures, modes, entries; the key → action table. No `Arduino.h`. |
 | Keypad glue and actions | `ui_keypad.cpp`, `ui_keypad_common.*`, `ui_keypad_bankN.cpp`, `ui_keypad_entry.cpp` | Carrying out the decision: radio calls, serial trace, speech |
 | Console | `ui_console*.cpp` | Serial commands (`HELP` lists them) |
-| Shared features | `radio_features.*`, `ui_features.*` | NR, NB and notch, used by both keypad and console |
+| Shared features | `radio_features*.cpp`, `radio_features.h`, `ui_features.*` | Settings used by both keypad and console: NR, NB and notch in `radio_features.cpp`, PROC, mic gain and VOX in `_tx`, the FT-8x7 EEPROM settings in `_ft8x7`, tone squelch in `_tone` |
 | Radio API | `radio_protocol.*`, `radio_runtime.*`, `radio_state.*` | Protocol-independent calls, and the tracked `live` state |
 | Protocols | `protocol_ops_*`, `protocol_*`, `packet_*`, `transport_serial.*` | CI-V, Kenwood/Elecraft/FTDX ASCII, Yaesu FT-8x7 5-byte CAT |
 | CAT setting values | `cat_setting_codec.*` | How CAT radios encode setting values: CI-V levels and RF power, the Yaesu ASCII VOX delay steps, lock reply digits. No `Arduino.h` |
