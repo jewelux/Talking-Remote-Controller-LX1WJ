@@ -23,7 +23,10 @@ Implemented and documented for the current field-test phase:
 - lock read and set
 - tuner read, set, and tune start
 - NR, NB, notch read and set
-- preamp read and set
+- preamp and attenuator read and set (`PREAMP? | PREAMP OFF | 1 | 2`, `ATT? | ATT OFF | 6 | 12 | 18`,
+  on the FT-891 `PREAMP OFF | ON` and `ATT OFF | ON`, Bank 2 `B` and `C`): `PA0` 0 IPO, 1 AMP1,
+  2 AMP2 and `RA0` 0 off, 1..3 for 6, 12 and 18 dB, as the CAT manuals and Hamlib have them, each
+  set read back. The raw `PA` console commands are gone.
 - AGC read and set (`AGC?`, `AGC OFF | FAST | MID | SLOW | AUTO`, Bank 2 `A`): `GT0`, as the CAT
   manual and Hamlib have it; auto reads back as auto, whichever speed the radio picked
 - speech processor and its level (`PR0`, `PL`), mic gain (`MG`), VOX with its gain and delay

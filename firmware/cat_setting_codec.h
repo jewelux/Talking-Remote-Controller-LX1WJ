@@ -1,7 +1,7 @@
 #pragma once
 
 // How CAT radios encode setting values: CI-V levels, RF power, the ASCII VOX delay, the
-// TS-480 processor levels, AGC and the ASCII lock reply. No Arduino.h, so the host tests
+// TS-480 processor levels, AGC, the preamp and attenuator, and the ASCII lock reply. No Arduino.h, so the host tests
 // (tests/cat) can build it.
 
 #include <stddef.h>
@@ -53,6 +53,33 @@ const char* asciiAgcReadCommand(AgcEncoding encoding);
 bool asciiAgcDecode(AgcEncoding encoding, const char* digits, AgcMode& out);
 // The GT command that sets mode, into out; false where the radio has no such speed.
 bool asciiAgcEncode(AgcEncoding encoding, AgcMode mode, char* out, size_t size);
+
+// Icom 16 02: the preamp level, 00 off, 01 P.AMP1, 02 P.AMP2; false above levels.
+bool civPreampDecode(uint8_t raw, uint8_t levels, uint8_t& levelOut);
+// Icom 11: the attenuator in dB as two BCD digits, 00 off. False on a byte that is not BCD.
+bool civAttDecode(uint8_t raw, uint8_t& dbOut);
+// db (0..99) as that byte.
+uint8_t civAttEncode(uint8_t db);
+
+// The PA and RA commands that read the preamp and the attenuator, or nullptr.
+const char* asciiPreampReadCommand(FrontEndEncoding encoding);
+const char* asciiAttReadCommand(FrontEndEncoding encoding);
+// The preamp level of a PA reply, given what follows "PA" (the ';' may be left out), 0..levels.
+// False on anything else.
+bool asciiPreampDecode(FrontEndEncoding encoding, uint8_t levels, const char* digits, uint8_t& levelOut);
+// The PA command that sets level (0..levels), into out.
+bool asciiPreampEncode(FrontEndEncoding encoding, uint8_t levels, uint8_t level, char* out, size_t size);
+// The attenuator step of an RA reply, given what follows "RA", 0..levels.
+bool asciiAttDecode(FrontEndEncoding encoding, uint8_t levels, const char* digits, uint8_t& stepOut);
+// The RA command that sets step (0..levels), into out.
+bool asciiAttEncode(FrontEndEncoding encoding, uint8_t levels, uint8_t step, char* out, size_t size);
+
+// The attenuator step after the one at db (attDb as in SettingEncodings): off goes to step 1, the
+// last step to off (0). A db between steps, which a radio's own keys may set, goes to the next
+// step above it.
+uint8_t attNextStep(const uint8_t* attDb, uint8_t levels, bool on, uint8_t db);
+// The step of attDb that is db dB, from 1; 0 where none is.
+uint8_t attStepOfDb(const uint8_t* attDb, uint8_t levels, uint8_t db);
 
 // An ASCII lock reply digit: on unless it is one of offDigits ("0", or "04" on the FTDX101).
 // False when digit is not a digit.

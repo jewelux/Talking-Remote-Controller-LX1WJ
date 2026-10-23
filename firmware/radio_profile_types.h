@@ -77,6 +77,8 @@ struct RadioCapabilities {
   // The RX attenuator. The FT-857/897 reads it from its EEPROM, read only.
   bool getAtt = false;
   bool setAtt = false;
+  bool getPreamp = false;
+  bool setPreamp = false;
   // Speech processor and its level, mic gain, VOX with its gain and delay. The FT-8x7 writes
   // them to the EEPROM under setRadioMenu instead.
   bool getProc = false;
@@ -166,9 +168,6 @@ struct AsciiCommandSet {
   const char* nbGet = "";
   const char* nbOnCmd = "";
   const char* nbOffCmd = "";
-  const char* preampGet = "";
-  const char* preampOnCmd = "";
-  const char* preampOffCmd = "";
   const char* powerStateGet = "";
   const char* powerStateOnCmd = "";
   const char* powerStateOffCmd = "";
@@ -202,7 +201,6 @@ struct AsciiCommandSet {
   const char* swrReplyPrefix = "";
   const char* nrReplyPrefix = "";
   const char* nbReplyPrefix = "";
-  const char* preampReplyPrefix = "";
   const char* powerStateReplyPrefix = "";
   const char* tunerReplyPrefix = "";
   const char* splitReplyPrefix = "";
@@ -244,8 +242,8 @@ enum class VoxDelayEncoding : uint8_t {
   Ms4,         // VDnnnn in ms, in voxDelayStepMs steps (FT-891, TS-480)
 };
 
-// The setting values of an ASCII radio that differ between models. CI-V and the FT-8x7 keep
-// theirs in code (civVoxDelayAddr, the EEPROM map).
+// The setting values that differ between models. CI-V keeps the rest in code (civVoxDelayAddr),
+// the FT-8x7 in its EEPROM map.
 struct SettingEncodings {
   VoxDelayEncoding voxDelay = VoxDelayEncoding::None;
   uint16_t voxDelayMinMs = 0;
@@ -253,6 +251,13 @@ struct SettingEncodings {
   uint16_t voxDelayStepMs = 0;  // Ms4: the radio's resolution
   uint8_t voxGainMax = 100;     // VG 0..voxGainMax
   AgcEncoding agc = AgcEncoding::None;
+  // The preamp's levels (0 none, 1 on, 2 P.AMP1/AMP1 and P.AMP2/AMP2) and the attenuator's
+  // steps, attDb[n - 1] dB for step n (0 where only one source gives the dB). frontEnd says how
+  // an ASCII radio sends them; CI-V uses 16 02 and 11 (the attenuator in dB).
+  FrontEndEncoding frontEnd = FrontEndEncoding::None;
+  uint8_t preampLevels = 0;
+  uint8_t attLevels = 0;
+  uint8_t attDb[3] = {};
 };
 
 inline constexpr AsciiCommandSet kNoAsciiCommands{};

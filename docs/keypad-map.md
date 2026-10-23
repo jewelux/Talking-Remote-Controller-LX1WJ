@@ -42,8 +42,8 @@ they say "not available". This is noted where it is always the case.
 | `5` short | free | tuner | free | free | free |
 | `5` long | free | tuner on/off | free | free | free |
 | `5` double | free | tune | free | free | free |
-| `6` short | RF power setting (IC-706: free) | preamp | free | RF power setting | RF power setting |
-| `6` long | RF power entry | preamp on/off | free | RF power level select (experimental) | RF power entry (experimental) |
+| `6` short | RF power setting (IC-706: free) | free | free | RF power setting | RF power setting |
+| `6` long | RF power entry | free | free | RF power level select (experimental) | RF power entry (experimental) |
 | `7` short | S-meter | S-meter | S-meter | S-meter | S-meter |
 | `8` short | SWR | SWR | SWR | SWR | SWR |
 | `9` short | mode | mode | mode | mode | mode |
@@ -80,13 +80,21 @@ they say "not available". This is noted where it is always the case.
 | `9` double | previous filter | free | free | free | free |
 | `A` short | AGC | AGC | AGC | AGC | AGC |
 | `A` long | AGC select | AGC select | AGC select | AGC select (experimental) | AGC select (experimental) |
-| `B` short | free | free | free | not available | preamplifier |
+| `B` short | preamp | preamp | preamp | not available | preamplifier (IPO) |
+| `B` long | next preamp level | next preamp level | next preamp level | free | free |
 | `B` double | free | free | free | not available | attenuator |
+| `C` short | attenuator | attenuator | attenuator | not available | attenuator |
+| `C` long | next attenuator step | next attenuator step | next attenuator step | not available | not available |
 
 AGC select: `0` off, `1` auto, `2` fast, `3` slow, `4` mid, then `D`. Only the radio's own speeds
 are taken: Icom fast, mid and slow; FTDX10, FTDX101 and FT-891 all five; TS-480 off, fast and
 slow; KX2 fast and slow; FT-8x7 off, auto, fast and slow. The IC-706 and G106 say "not
 available".
+
+Preamp and attenuator: a hold goes to the next level and from the last one to off. Preamp: IC-7300,
+IC-705, IC-7760, FTDX10 and FTDX101 off, 1, 2; FT-891, TS-480 and KX2 off and on. Attenuator:
+IC-7300 and IC-705 20 dB; IC-7760, FTDX10 and FTDX101 6, 12 and 18 dB; KX2 10 dB; FT-891 and TS-480
+on. The FT-857/897 attenuator is read only; the IC-706, G106 and FT-817 say "not available".
 
 ## Bank 3 - VFO and Split
 

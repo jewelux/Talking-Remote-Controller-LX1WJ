@@ -62,8 +62,12 @@ void cycleBank2FilterWidth(int delta);
 // can be set to, then Enter sets it. On the FT-8x7 experimental, written to the EEPROM.
 void queryBank2Agc();
 void beginBank2AgcSelect();
-// The attenuator (attQuery).
+// The attenuator (attQuery) and the preamp (preampQuery); the steps go to the next level, from
+// the last one to off.
 void queryBank2Att();
+void stepBank2Att();
+void queryBank2Preamp();
+void stepBank2Preamp();
 // FT-8x7 settings read from the radio's EEPROM.
 void queryBank2Ft8x7NrLevel();
 void queryBank2Ft8x7NbLevel();

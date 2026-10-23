@@ -205,6 +205,91 @@ TEST(no_agc_encoding_does_nothing) {
   CHECK(!asciiAgcDecode(AgcEncoding::None, "001;", mode));
 }
 
+// ---- Preamp and attenuator ----
+
+TEST(civ_preamp_levels) {
+  uint8_t level = 9;
+  CHECK(civPreampDecode(0x00, 2, level) && level == 0);
+  CHECK(civPreampDecode(0x02, 2, level) && level == 2);
+  CHECK(!civPreampDecode(0x03, 2, level));
+  CHECK(!civPreampDecode(0x00, 0, level));
+}
+
+TEST(civ_att_is_bcd_db) {
+  uint8_t db = 0;
+  CHECK(civAttDecode(0x20, db) && db == 20);
+  CHECK(civAttDecode(0x00, db) && db == 0);
+  CHECK(civAttDecode(0x45, db) && db == 45);
+  CHECK(!civAttDecode(0x0A, db));
+  CHECK(!civAttDecode(0xA0, db));
+  CHECK_EQ(civAttEncode(20), 0x20);
+  CHECK_EQ(civAttEncode(6), 0x06);
+  CHECK_EQ(civAttEncode(18), 0x18);
+}
+
+TEST(yaesu_pa0_ra0) {
+  CHECK_EQ(asciiPreampReadCommand(FrontEndEncoding::Yaesu), "PA0;");
+  CHECK_EQ(asciiAttReadCommand(FrontEndEncoding::Yaesu), "RA0;");
+  char cmd[8];
+  CHECK(asciiPreampEncode(FrontEndEncoding::Yaesu, 2, 2, cmd, sizeof(cmd)));
+  CHECK_EQ(cmd, "PA02;");
+  CHECK(asciiPreampEncode(FrontEndEncoding::Yaesu, 2, 0, cmd, sizeof(cmd)));
+  CHECK_EQ(cmd, "PA00;");
+  CHECK(!asciiPreampEncode(FrontEndEncoding::Yaesu, 1, 2, cmd, sizeof(cmd)));
+  CHECK(asciiAttEncode(FrontEndEncoding::Yaesu, 3, 3, cmd, sizeof(cmd)));
+  CHECK_EQ(cmd, "RA03;");
+  uint8_t value = 9;
+  CHECK(asciiPreampDecode(FrontEndEncoding::Yaesu, 2, "01;", value) && value == 1);
+  CHECK(!asciiPreampDecode(FrontEndEncoding::Yaesu, 1, "02;", value));
+  CHECK(!asciiPreampDecode(FrontEndEncoding::Yaesu, 2, "11;", value));
+  CHECK(asciiAttDecode(FrontEndEncoding::Yaesu, 3, "03", value) && value == 3);
+  CHECK(!asciiAttDecode(FrontEndEncoding::Yaesu, 3, "04;", value));
+  CHECK(!asciiAttDecode(FrontEndEncoding::Yaesu, 3, "0;", value));
+}
+
+TEST(kenwood_pa_ra) {
+  CHECK_EQ(asciiPreampReadCommand(FrontEndEncoding::Kenwood), "PA;");
+  CHECK_EQ(asciiAttReadCommand(FrontEndEncoding::Kenwood), "RA;");
+  char cmd[8];
+  CHECK(asciiPreampEncode(FrontEndEncoding::Kenwood, 1, 1, cmd, sizeof(cmd)));
+  CHECK_EQ(cmd, "PA1;");
+  CHECK(asciiAttEncode(FrontEndEncoding::Kenwood, 1, 1, cmd, sizeof(cmd)));
+  CHECK_EQ(cmd, "RA01;");
+  CHECK(asciiAttEncode(FrontEndEncoding::Kenwood, 1, 0, cmd, sizeof(cmd)));
+  CHECK_EQ(cmd, "RA00;");
+  uint8_t value = 9;
+  // KX2: PAn, RAnn. TS-480: PAn0, RAnn00.
+  CHECK(asciiPreampDecode(FrontEndEncoding::Kenwood, 1, "1;", value) && value == 1);
+  CHECK(asciiPreampDecode(FrontEndEncoding::Kenwood, 1, "10;", value) && value == 1);
+  CHECK(asciiPreampDecode(FrontEndEncoding::Kenwood, 1, "00;", value) && value == 0);
+  CHECK(!asciiPreampDecode(FrontEndEncoding::Kenwood, 1, "11;", value));
+  CHECK(!asciiPreampDecode(FrontEndEncoding::Kenwood, 1, "2;", value));
+  CHECK(asciiAttDecode(FrontEndEncoding::Kenwood, 1, "01;", value) && value == 1);
+  CHECK(asciiAttDecode(FrontEndEncoding::Kenwood, 1, "0100;", value) && value == 1);
+  CHECK(asciiAttDecode(FrontEndEncoding::Kenwood, 1, "0000", value) && value == 0);
+  CHECK(!asciiAttDecode(FrontEndEncoding::Kenwood, 1, "0101;", value));
+  CHECK(!asciiAttDecode(FrontEndEncoding::Kenwood, 1, "1;", value));
+  CHECK(!asciiAttDecode(FrontEndEncoding::None, 1, "01;", value));
+  CHECK(asciiPreampReadCommand(FrontEndEncoding::None) == nullptr);
+}
+
+TEST(att_steps_cycle_through_off) {
+  const uint8_t three[] = {6, 12, 18};
+  CHECK_EQ(attNextStep(three, 3, false, 0), 1);
+  CHECK_EQ(attNextStep(three, 3, true, 6), 2);
+  CHECK_EQ(attNextStep(three, 3, true, 18), 0);
+  // An IC-7760 set to 9 dB on its own panel goes to 12 dB, and 21 dB to off.
+  CHECK_EQ(attNextStep(three, 3, true, 9), 2);
+  CHECK_EQ(attNextStep(three, 3, true, 21), 0);
+  // One step whose dB is not known.
+  const uint8_t one[] = {0};
+  CHECK_EQ(attNextStep(one, 1, false, 0), 1);
+  CHECK_EQ(attNextStep(one, 1, true, 0), 0);
+  CHECK_EQ(attNextStep(three, 0, false, 0), 0);
+  CHECK_EQ(attStepOfDb(three, 3, 12), 2);
+  CHECK_EQ(attStepOfDb(three, 3, 9), 0);
+}
+
 // ---- ASCII lock ----
 
 TEST(lock_digit_decodes_with_the_profile_off_digits) {

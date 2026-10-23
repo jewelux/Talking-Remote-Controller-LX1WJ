@@ -16,3 +16,11 @@ enum class AgcEncoding : uint8_t {
   KenwoodGt,   // GTnnn: 000 off, 001 fast, 002 slow (TS-480)
   ElecraftGt,  // GTnnn: 002 fast, 004 slow (KX2)
 };
+
+// How an ASCII radio's PA and RA read and set the preamp and the attenuator. The Icoms all use
+// 16 02 and 11.
+enum class FrontEndEncoding : uint8_t {
+  None,
+  Yaesu,    // PA0n, RA0n (FTDX10/101, FT-891)
+  Kenwood,  // PAn, RAnn (TS-480, KX2); the TS-480 answers PAn0 and RAnn00
+};

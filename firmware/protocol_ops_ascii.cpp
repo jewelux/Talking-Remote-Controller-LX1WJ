@@ -116,15 +116,42 @@ bool asciiQueryOmLine(const RadioProfile& sp, String& lineOut, uint32_t timeoutM
   return asciiQueryRawLine(sp.commands->omGet, sp.commands->omReplyPrefix, lineOut, timeoutMs);
 }
 
-bool asciiQueryPreamp(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
-  if (!sp.commands->preampGet[0] || !sp.commands->preampReplyPrefix[0]) return false;
+// PA and RA as settings.frontEnd encodes them (cat_setting_codec.h).
+bool asciiQueryPreampLevel(const RadioProfile& sp, uint8_t& levelOut, uint32_t timeoutMs) {
+  const char* cmd = asciiPreampReadCommand(sp.settings.frontEnd);
+  if (!sp.caps.getPreamp || !cmd) return false;
   String line;
-  if (!transactAsciiCommand(sp.commands->preampGet, line, sp.commands->preampReplyPrefix, timeoutMs)) return false;
-  return asciiParseOnOffResponse(line, sp.commands->preampReplyPrefix, onOut);
+  if (!transactAsciiCommand(cmd, line, "PA", timeoutMs)) return false;
+  return asciiPreampDecode(sp.settings.frontEnd, sp.settings.preampLevels, line.c_str() + 2, levelOut);
 }
 
-bool asciiSetPreamp(const RadioProfile& sp, bool on) {
-  return asciiSendSimpleCommand(on ? sp.commands->preampOnCmd : sp.commands->preampOffCmd);
+bool asciiSetPreampLevel(const RadioProfile& sp, uint8_t level) {
+  char cmd[8];
+  if (!sp.caps.setPreamp ||
+      !asciiPreampEncode(sp.settings.frontEnd, sp.settings.preampLevels, level, cmd, sizeof(cmd))) {
+    return false;
+  }
+  if (!asciiSendSimpleCommand(cmd)) return false;
+  uint8_t readBack = 0xFF;
+  return asciiQueryPreampLevel(sp, readBack, 800) && readBack == level;
+}
+
+bool asciiQueryAttStep(const RadioProfile& sp, uint8_t& stepOut, uint32_t timeoutMs) {
+  const char* cmd = asciiAttReadCommand(sp.settings.frontEnd);
+  if (!sp.caps.getAtt || !cmd) return false;
+  String line;
+  if (!transactAsciiCommand(cmd, line, "RA", timeoutMs)) return false;
+  return asciiAttDecode(sp.settings.frontEnd, sp.settings.attLevels, line.c_str() + 2, stepOut);
+}
+
+bool asciiSetAttStep(const RadioProfile& sp, uint8_t step) {
+  char cmd[8];
+  if (!sp.caps.setAtt || !asciiAttEncode(sp.settings.frontEnd, sp.settings.attLevels, step, cmd, sizeof(cmd))) {
+    return false;
+  }
+  if (!asciiSendSimpleCommand(cmd)) return false;
+  uint8_t readBack = 0xFF;
+  return asciiQueryAttStep(sp, readBack, 800) && readBack == step;
 }
 
 // GT, as the profile's settings.agc encodes it (cat_setting_codec.h).

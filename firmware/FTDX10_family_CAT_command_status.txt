@@ -63,7 +63,7 @@ NL | Noise blanker level | nein | keine FTDX10-Implementierung gefunden
 NR | Noise reduction (DNR) | implementiert | read/on/off vorhanden
 OI | Opposite band information | nein | keine FTDX10-Implementierung gefunden
 OS | Offset (repeater shift) | nein | keine FTDX10-Implementierung gefunden
-PA | Pre-amp (IPO) | teilweise | PA read/on/off ueber serielle ASCII-Konsole vorhanden
+PA | Pre-amp (IPO) | implementiert | PREAMP? und PREAMP OFF/1/2 (PA0, nach CAT-Handbuch und Hamlib), mit Ruecklesen; Bank 2 B
 PB | Play back | nein | keine FTDX10-Implementierung gefunden
 PC | Power control | nein | nur Meterabfrage vorhanden, keine Power-Control-Implementierung
 PL | Speech processor level | teilweise | PL read ueber Konsole PROCLEVEL? vorhanden, nicht am Radio getestet
@@ -72,7 +72,7 @@ PS | Power switch | teilweise | PS read/on/off in ASCII-Konsole vorhanden, spezi
 QI | QMB store | nein | keine FTDX10-Implementierung gefunden
 QR | QMB recall | nein | keine FTDX10-Implementierung gefunden
 QS | Quick split | nein | keine FTDX10-Implementierung gefunden
-RA | RF attenuator | nein | keine FTDX10-Implementierung gefunden
+RA | RF attenuator | implementiert | ATT? und ATT OFF/6/12/18 (RA0, nach CAT-Handbuch und Hamlib), mit Ruecklesen; Bank 2 C
 RC | RIT clear | nein | keine FTDX10-Implementierung gefunden
 RD | RIT down | nein | keine FTDX10-Implementierung gefunden
 RF | Roofing filter | nein | keine FTDX10-Implementierung gefunden

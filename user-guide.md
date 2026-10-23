@@ -87,8 +87,8 @@ levels, and the DSP bandpass filter with its low and high cut (Bank 2), and the 
 antenna jack (`ANT`), and on the FT-857/897 the speech processor (`PROC`, `PROCLEVEL`) and the TX
 equalizer (`MICEQ`). On the IC-7300, IC-705, IC-7760, FTDX10, FTDX101, FT-891 and TS-480 the
 console sets the speech processor, mic gain and VOX without experimental mode (the FTDX101 and
-IC-7760 not all of them), and on these and the KX2 the AGC, also from Bank 2 `A`. See the
-[keypad map](docs/keypad-map.md).
+IC-7760 not all of them), and on these and the KX2 the AGC, also from Bank 2 `A`, and the preamp
+and attenuator (`PREAMP`, `ATT`, Bank 2 `B` and `C`). See the [keypad map](docs/keypad-map.md).
 
 ## Practical Everyday Use
 
@@ -145,11 +145,11 @@ Use these keypad functions first:
 - Bank 1, `3` short or long: read or toggle lock
 - Bank 1, `4` short: power meter
 - Bank 1, `5` short, long, or double: tuner query, tuner toggle, tune
-- Bank 1, `6` short or long: preamp query or toggle
 - Bank 1, `7` short: S-meter
 - Bank 1, `8` short: SWR
 - Bank 1, `9` short or long: read or set mode
 - Bank 2, `1`, `2`, `3` short or long: NR, NB, notch query or toggle
+- Bank 2, `B` and `C` short or long: preamp and attenuator query, or the next level
 - Bank 2, `5` short, long, or double: power-state query, off, on
 - Bank 2, `6` short: IF info
 - Bank 2, `7` short: radio ID

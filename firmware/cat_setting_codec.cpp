@@ -200,6 +200,106 @@ bool asciiAgcEncode(AgcEncoding encoding, AgcMode mode, char* out, size_t size) 
   return code >= 0 && snprintf(out, size, "GT%03d;", code) == 6;
 }
 
+bool civPreampDecode(uint8_t raw, uint8_t levels, uint8_t& levelOut) {
+  if (!levels || raw > levels) return false;
+  levelOut = raw;
+  return true;
+}
+
+bool civAttDecode(uint8_t raw, uint8_t& dbOut) {
+  const uint8_t tens = raw >> 4;
+  const uint8_t ones = raw & 0x0F;
+  if (tens > 9 || ones > 9) return false;
+  dbOut = (uint8_t)(tens * 10 + ones);
+  return true;
+}
+
+uint8_t civAttEncode(uint8_t db) {
+  if (db > 99) db = 99;
+  return (uint8_t)(((db / 10) << 4) | (db % 10));
+}
+
+const char* asciiPreampReadCommand(FrontEndEncoding encoding) {
+  switch (encoding) {
+    case FrontEndEncoding::Yaesu: return "PA0;";
+    case FrontEndEncoding::Kenwood: return "PA;";
+    case FrontEndEncoding::None: break;
+  }
+  return nullptr;
+}
+
+const char* asciiAttReadCommand(FrontEndEncoding encoding) {
+  switch (encoding) {
+    case FrontEndEncoding::Yaesu: return "RA0;";
+    case FrontEndEncoding::Kenwood: return "RA;";
+    case FrontEndEncoding::None: break;
+  }
+  return nullptr;
+}
+
+// What follows PA or RA: Yaesu "0n"; Kenwood width digits, which the TS-480 follows with width
+// zeros.
+static bool frontEndDecode(FrontEndEncoding encoding, size_t width, const char* digits, uint8_t max,
+                           uint8_t& out) {
+  int value = 0;
+  if (encoding == FrontEndEncoding::Yaesu) {
+    if (!digits || digits[0] != '0' || !exactDigits(digits + 1, 1, value)) return false;
+  } else if (encoding == FrontEndEncoding::Kenwood) {
+    const int scale = width == 1 ? 10 : 100;
+    int both = 0;
+    if (!exactDigits(digits, width, value)) {
+      if (!exactDigits(digits, width * 2, both) || both % scale != 0) return false;
+      value = both / scale;
+    }
+  } else {
+    return false;
+  }
+  if (!max || value > max) return false;
+  out = (uint8_t)value;
+  return true;
+}
+
+static bool frontEndEncode(FrontEndEncoding encoding, const char* letters, size_t width, uint8_t levels,
+                           uint8_t value, char* out, size_t size) {
+  if (!levels || value > levels) return false;
+  if (encoding == FrontEndEncoding::Yaesu) return snprintf(out, size, "%s0%u;", letters, (unsigned)value) == 5;
+  if (encoding != FrontEndEncoding::Kenwood) return false;
+  return snprintf(out, size, "%s%0*u;", letters, (int)width, (unsigned)value) == (int)(3 + width);
+}
+
+bool asciiPreampDecode(FrontEndEncoding encoding, uint8_t levels, const char* digits, uint8_t& levelOut) {
+  return frontEndDecode(encoding, 1, digits, levels, levelOut);
+}
+
+bool asciiPreampEncode(FrontEndEncoding encoding, uint8_t levels, uint8_t level, char* out, size_t size) {
+  return frontEndEncode(encoding, "PA", 1, levels, level, out, size);
+}
+
+bool asciiAttDecode(FrontEndEncoding encoding, uint8_t levels, const char* digits, uint8_t& stepOut) {
+  return frontEndDecode(encoding, 2, digits, levels, stepOut);
+}
+
+bool asciiAttEncode(FrontEndEncoding encoding, uint8_t levels, uint8_t step, char* out, size_t size) {
+  return frontEndEncode(encoding, "RA", 2, levels, step, out, size);
+}
+
+uint8_t attNextStep(const uint8_t* attDb, uint8_t levels, bool on, uint8_t db) {
+  if (!levels) return 0;
+  if (!on) return 1;
+  for (uint8_t i = 0; i < levels; ++i) {
+    if (attDb[i] == db) return i + 1 < levels ? (uint8_t)(i + 2) : 0;
+    if (attDb[i] > db) return (uint8_t)(i + 1);
+  }
+  return 0;
+}
+
+uint8_t attStepOfDb(const uint8_t* attDb, uint8_t levels, uint8_t db) {
+  for (uint8_t i = 0; i < levels; ++i) {
+    if (attDb[i] == db) return (uint8_t)(i + 1);
+  }
+  return 0;
+}
+
 bool asciiLockDigitDecode(char digit, const char* offDigits, bool& onOut) {
   if (digit < '0' || digit > '9') return false;
   onOut = strchr(offDigits, digit) == nullptr;

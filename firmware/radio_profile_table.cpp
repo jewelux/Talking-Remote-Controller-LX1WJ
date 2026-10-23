@@ -43,9 +43,15 @@ constexpr RadioCapabilities kIc7300Caps = {
     .getVfo = true, .setVfo = true, .getVfoMode = true, .setVfoMode = true,
     .getSplit = true, .setSplit = true, .getRit = true, .setRit = true,
     .getBandStack = true, .getAgc = true, .setAgc = true,
+    .getAtt = true, .setAtt = true, .getPreamp = true, .setPreamp = true,
     .getProc = true, .setProc = true, .getMicGain = true, .setMicGain = true,
     .getVox = true, .setVox = true,
 };
+
+// 16 02 00..02 and 11 00/20 (the IC-7300 and IC-705 CI-V guides; Hamlib: P.AMP1, P.AMP2 and
+// 20 dB). On 144 and 430 MHz the IC-705 has only one preamp, and its attenuator works on HF and
+// 50 MHz only: a set the radio refuses reads back as an error.
+constexpr SettingEncodings kIc7300Settings = {.preampLevels = 2, .attLevels = 1, .attDb = {20}};
 
 // The IC-705: every IC-7300 command is in the IC-705 CI-V reference guide too, and Hamlib has
 // it. 1C 01 drives an external tuner (AH-705).
@@ -60,6 +66,10 @@ constexpr RadioCapabilities kIc7760Caps = [] {
   return caps;
 }();
 
+// 16 02 00..02, and 11 in dB: Icom's guide has 3..45 in 3 dB steps, Hamlib 6, 12 and 18, so those
+// three are set; a read of any other step is reported as it is.
+constexpr SettingEncodings kIc7760Settings = {.preampLevels = 2, .attLevels = 3, .attDb = {6, 12, 18}};
+
 // --- Elecraft ---------------------------------------------------------------
 
 constexpr uint32_t kKx2Bauds[] = {4800, 9600, 19200, 38400};
@@ -69,11 +79,16 @@ constexpr RadioCapabilities kKx2Caps = {
     .getSmeter = true, .getPower = true, .getSwr = true,
     .getNb = true, .setNb = true,
     .getAgc = true, .setAgc = true,
+    .getAtt = true, .setAtt = true, .getPreamp = true, .setPreamp = true,
 };
 
 // GT002 fast and GT004 slow (the Elecraft programmer's reference and Hamlib). No off: Hamlib
-// sends GT000, the reference has off only in the K2's extended format.
-constexpr SettingEncodings kKx2Settings = {.agc = AgcEncoding::ElecraftGt};
+// sends GT000, the reference has off only in the K2's extended format. PA0/PA1 and RA00/RA01, the
+// attenuator 10 dB (both).
+constexpr SettingEncodings kKx2Settings = {
+    .agc = AgcEncoding::ElecraftGt, .frontEnd = FrontEndEncoding::Kenwood, .preampLevels = 1,
+    .attLevels = 1, .attDb = {10},
+};
 
 constexpr AsciiCommandSet kKx2Commands = {
     .freqGet = "FA;", .freqSetFormat = "FA%011llu;",
@@ -81,12 +96,11 @@ constexpr AsciiCommandSet kKx2Commands = {
     .ifGet = "IF;", .idGet = "ID;", .omGet = "OM;",
     .smeterGet = "SM;", .powerGet = "PO;", .swrGet = "SW;",
     .nbGet = "NB;", .nbOnCmd = "NB1;", .nbOffCmd = "NB0;",
-    .preampGet = "PA;", .preampOnCmd = "PA1;", .preampOffCmd = "PA0;",
     .powerStateGet = "PS;", .powerStateOnCmd = "PS1;", .powerStateOffCmd = "PS0;",
     .freqReplyPrefix = "FA", .modeReplyPrefix = "MD", .ifReplyPrefix = "IF",
     .idReplyPrefix = "ID", .omReplyPrefix = "OM", .smeterReplyPrefix = "SM",
     .powerReplyPrefix = "PO", .swrReplyPrefix = "SW", .nbReplyPrefix = "NB",
-    .preampReplyPrefix = "PA", .powerStateReplyPrefix = "PS",
+    .powerStateReplyPrefix = "PS",
 };
 
 constexpr ModeCodes kKx2Modes = {
@@ -103,15 +117,18 @@ constexpr RadioCapabilities kTs480Caps = {
     .getSmeter = true, .getSwr = true,
     .getNr = true, .setNr = true, .getNb = true, .setNb = true,
     .getAgc = true, .setAgc = true,
+    .getAtt = true, .setAtt = true, .getPreamp = true, .setPreamp = true,
     .getProc = true, .setProc = true, .getMicGain = true, .setMicGain = true,
     .getVox = true, .setVox = true,
 };
 
-// VD 0..3000 ms in 150 ms steps, VG 0..9, GT 000 off, 001 fast, 002 slow (TS-480 PC command
-// reference; Hamlib agrees).
+// VD 0..3000 ms in 150 ms steps, VG 0..9, GT 000 off, 001 fast, 002 slow, PA0/PA1 and
+// RA00/RA01 (TS-480 PC command reference; Hamlib agrees, and has 12 dB for both, which the
+// reference does not give).
 constexpr SettingEncodings kTs480Settings = {
     .voxDelay = VoxDelayEncoding::Ms4, .voxDelayMinMs = 0, .voxDelayMaxMs = 3000, .voxDelayStepMs = 150,
-    .voxGainMax = 9, .agc = AgcEncoding::KenwoodGt,
+    .voxGainMax = 9, .agc = AgcEncoding::KenwoodGt, .frontEnd = FrontEndEncoding::Kenwood,
+    .preampLevels = 1, .attLevels = 1,
 };
 
 constexpr AsciiCommandSet kTs480Commands = {
@@ -188,6 +205,7 @@ constexpr RadioCapabilities kFtdx10Caps = {
     .getTuner = true, .setTuner = true, .startTune = true,
     .getVfo = true, .setVfo = true, .getVfoMode = true, .setVfoMode = true,
     .getSplit = true, .setSplit = true, .getAgc = true, .setAgc = true,
+    .getAtt = true, .setAtt = true, .getPreamp = true, .setPreamp = true,
     .getProc = true, .setProc = true, .getMicGain = true, .setMicGain = true,
     .getVox = true, .setVox = true,
 };
@@ -205,11 +223,13 @@ constexpr RadioCapabilities kFtdx101Caps = [] {
   return caps;
 }();
 
-// VD and GT0 as the FTDX10 and FTDX101 CAT manuals and Hamlib have them: VD a step,
-// 30..3000 ms.
+// VD, GT0, PA0 and RA0 as the FTDX10 and FTDX101 CAT manuals and Hamlib have them: VD a step,
+// 30..3000 ms; PA0 0 IPO, 1 AMP1, 2 AMP2; RA0 0 off, 1..3 6, 12 and 18 dB. The FTDX101 sends
+// them for the main band.
 constexpr SettingEncodings kFtdx10Settings = {
     .voxDelay = VoxDelayEncoding::YaesuSteps, .voxDelayMinMs = 30, .voxDelayMaxMs = 3000,
-    .agc = AgcEncoding::YaesuGt0,
+    .agc = AgcEncoding::YaesuGt0, .frontEnd = FrontEndEncoding::Yaesu, .preampLevels = 2,
+    .attLevels = 3, .attDb = {6, 12, 18},
 };
 
 constexpr RadioCapabilities kFt891Caps = {
@@ -219,15 +239,17 @@ constexpr RadioCapabilities kFt891Caps = {
     .getTuner = true, .setTuner = true, .startTune = true,
     .getVfo = true, .setVfo = true,
     .getSplit = true, .setSplit = true, .getAgc = true, .setAgc = true,
+    .getAtt = true, .setAtt = true, .getPreamp = true, .setPreamp = true,
     .getProc = true, .setProc = true, .getMicGain = true, .setMicGain = true,
     .getVox = true, .setVox = true,
 };
 
-// PR0, PL, MG, VX, VG, VD and GT0 as the FT-891 CAT manual and Hamlib newcat have them (flrig
-// agrees but for GT, which it lacks); VD in ms, 30..3000 in 10 ms steps.
+// PR0, PL, MG, VX, VG, VD, GT0, PA0 and RA0 as the FT-891 CAT manual and Hamlib newcat have
+// them (flrig agrees but for GT, which it lacks); VD in ms, 30..3000 in 10 ms steps; PA0 0 IPO,
+// 1 AMP; RA0 0 off, 1 on (Hamlib's 12 dB is not in the manual).
 constexpr SettingEncodings kFt891Settings = {
     .voxDelay = VoxDelayEncoding::Ms4, .voxDelayMinMs = 30, .voxDelayMaxMs = 3000, .voxDelayStepMs = 10,
-    .agc = AgcEncoding::YaesuGt0,
+    .agc = AgcEncoding::YaesuGt0, .frontEnd = FrontEndEncoding::Yaesu, .preampLevels = 1, .attLevels = 1,
 };
 
 constexpr AsciiCommandSet kFtdx10Commands = {
@@ -239,7 +261,6 @@ constexpr AsciiCommandSet kFtdx10Commands = {
     .smeterGet = "SM0;", .powerGet = "RM5;", .swrGet = "RM6;",
     .nrGet = "NR0;", .nrOnCmd = "NR01;", .nrOffCmd = "NR00;",
     .nbGet = "NB0;", .nbOnCmd = "NB01;", .nbOffCmd = "NB00;",
-    .preampGet = "PA0;", .preampOnCmd = "PA01;", .preampOffCmd = "PA00;",
     .powerStateGet = "PS;", .powerStateOnCmd = "PS1;", .powerStateOffCmd = "PS0;",
     .tunerGet = "AC;", .tunerOnCmd = "AC001;", .tunerOffCmd = "AC000;", .tuneStartCmd = "AC002;",
     .splitGet = "ST;", .splitOnCmd = "ST1;", .splitOffCmd = "ST0;",
@@ -249,7 +270,7 @@ constexpr AsciiCommandSet kFtdx10Commands = {
     .freqReplyPrefix = "FA", .modeReplyPrefix = "MD0", .ifReplyPrefix = "IF",
     .idReplyPrefix = "ID", .omReplyPrefix = "OM", .smeterReplyPrefix = "SM0",
     .powerReplyPrefix = "RM5", .swrReplyPrefix = "RM6", .nrReplyPrefix = "NR0",
-    .nbReplyPrefix = "NB0", .preampReplyPrefix = "PA0",
+    .nbReplyPrefix = "NB0",
     .powerStateReplyPrefix = "PS", .tunerReplyPrefix = "AC", .splitReplyPrefix = "ST",
     .vfoReplyPrefix = "VS", .notchReplyPrefix = "BP0", .lockReplyPrefix = "LK",
 };
@@ -296,7 +317,7 @@ constexpr RadioProfile kProfiles[] = {
     {.slot = 1, .name = "Icom IC-7300", .vendor = VoiceVendor::Icom, .voiceDigits = "7300",
      .model = RadioModel::Ic7300, .protocol = PROTO_CIV,
      .link = {.port = RadioPort::CivJack, .baud = 9600, .bauds = kCivBauds, .civAddr = 0x94},
-     .caps = kIc7300Caps},
+     .caps = kIc7300Caps, .settings = kIc7300Settings},
     {.slot = 2, .name = "Icom 706", .vendor = VoiceVendor::Icom, .voiceDigits = "706",
      .protocol = PROTO_CIV,
      .link = {.port = RadioPort::CivJack, .baud = 9600, .bauds = kCivBauds, .civAddr = 0x58},
@@ -304,7 +325,7 @@ constexpr RadioProfile kProfiles[] = {
     {.slot = 3, .name = "Icom 7300 rs232", .vendor = VoiceVendor::Icom, .voiceDigits = "7300232",
      .model = RadioModel::Ic7300, .protocol = PROTO_CIV,
      .link = {.port = RadioPort::Rs232, .baud = 9600, .bauds = kCivBauds, .civAddr = 0x94},
-     .caps = kIc7300Caps},
+     .caps = kIc7300Caps, .settings = kIc7300Settings},
     {.slot = 4, .name = "Icom 706 rs232", .vendor = VoiceVendor::Icom, .voiceDigits = "706232",
      .protocol = PROTO_CIV,
      .link = {.port = RadioPort::Rs232, .baud = 9600, .bauds = kCivBauds, .civAddr = 0x58},
@@ -364,11 +385,11 @@ constexpr RadioProfile kProfiles[] = {
     {.slot = 17, .name = "Icom IC-705", .vendor = VoiceVendor::Icom, .voiceDigits = "705",
      .model = RadioModel::Ic705, .protocol = PROTO_CIV,
      .link = {.port = RadioPort::CivJack, .baud = 9600, .bauds = kCivBauds, .civAddr = 0xA4},
-     .caps = kIc705Caps, .rfPowerMaxWatts = 10},
+     .caps = kIc705Caps, .settings = kIc7300Settings, .rfPowerMaxWatts = 10},
     {.slot = 18, .name = "Icom IC-7760", .vendor = VoiceVendor::Icom, .voiceDigits = "7760",
      .model = RadioModel::Ic7760, .protocol = PROTO_CIV,
      .link = {.port = RadioPort::CivJack, .baud = 19200, .bauds = kCivBauds, .civAddr = 0xB2},
-     .caps = kIc7760Caps, .rfPowerMaxWatts = 200},
+     .caps = kIc7760Caps, .settings = kIc7760Settings, .rfPowerMaxWatts = 200},
 };
 
 constexpr size_t kProfileCount = sizeof(kProfiles) / sizeof(kProfiles[0]);

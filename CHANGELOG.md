@@ -65,6 +65,10 @@
   `3` slow, `4` mid, then `D`. Only the speeds the radio has are taken; on the FT-8x7 it is still
   experimental, and the IC-706 and G106 say "not available". On the FTDX10, Bank 2 `4` no longer
   reads or sets the AGC and is free
+- Bank 2 `B` says the preamp and `C` the attenuator on every radio but the FT-8x7 (where `B` stays
+  IPO and its double press ATT, and `C` also says ATT); holding either goes to the next level, and
+  from the last one to off. On the FTDX10, Bank 1 `6` no longer reads or toggles the preamp and is
+  free
 
 ### Frequency
 
@@ -172,6 +176,12 @@
   FT-891 all five, and a Yaesu set to auto reads back as auto; on the TS-480 off, fast and slow
   (not in FM); on the KX2 fast and slow. `HELP` lists the radio's own. `GT?`, `GT FAST`,
   `GT SLOW` and `GT OFF` are gone. Not yet tested on these radios
+- `PREAMP?` says the preamp and `PREAMP OFF | ON | 1 | 2` sets it; `ATT?` says the attenuator
+  ("attenuator 12") and `ATT OFF | ON | <dB>` sets it. Each set is read back. Preamp levels 1 and 2
+  on the IC-7300, IC-705, IC-7760, FTDX10 and FTDX101D/MP (AMP1 and AMP2), on and off on the
+  FT-891, TS-480 and KX2. Attenuator 20 dB on the IC-7300 and IC-705; 6, 12 and 18 dB on the
+  IC-7760, FTDX10 and FTDX101D/MP; 10 dB on the KX2; on and off on the FT-891 and TS-480. The
+  raw `PA?`, `PA ON`, `PA OFF` and `PA TOGGLE` are gone. Not yet tested on these radios
 
 ### Radio profiles
 

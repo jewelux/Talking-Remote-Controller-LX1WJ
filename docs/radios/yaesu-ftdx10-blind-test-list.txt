@@ -21,16 +21,17 @@ Tuner and front end
 Bank 1, key 5 short - tuner state
 Bank 1, key 5 long - tuner on or off
 Bank 1, key 5 double - start tune
-Bank 1, key 6 short - preamp state
-Bank 1, key 6 long - preamp on or off
+Bank 2, key B short - preamp state
+Bank 2, key B long - next preamp level
+Bank 2, key C short - attenuator state
+Bank 2, key C long - next attenuator step
 
 DSP
 Bank 2, key 1 short or long - NR query or toggle
 Bank 2, key 2 short or long - NB query or toggle
 Bank 2, key 3 short or long - notch query or toggle
-Bank 2, key 4 short - AGC query
-Bank 2, key 4 long - AGC fast
-Bank 2, key 4 double - AGC slow
+Bank 2, key A short - AGC query
+Bank 2, key A long - AGC select, then 0 off, 1 auto, 2 fast, 3 slow, 4 mid, then D
 
 Radio information
 Bank 2, key 5 short - power state query
@@ -54,7 +55,7 @@ Suggested first test order
 4. S meter
 5. Lock query and toggle
 6. Tuner query, toggle, tune
-7. Preamp query and toggle
+7. Preamp and attenuator query and next level
 8. NR, NB, notch
 9. VFO-A
 10. VFO-B

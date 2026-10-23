@@ -93,11 +93,10 @@ KEYMAP_ROW(NOT(FTDX10),     1, '3', "queryBank1Lock",        "toggleBank1Lock", 
 KEYMAP_ROW(ALL,             1, '4', "queryBank1Power",       "none",                   "-")
 KEYMAP_ROW(FTDX10,          1, '5', "send(TUNER?)",          "send(TUNER TOGGLE)",     "send(TUNE)")
 KEYMAP_ROW(NOT(FTDX10),     1, '5', "unassigned",            "none",                   "-")
-KEYMAP_ROW(FTDX10,          1, '6', "send(PA?)",             "send(PA TOGGLE)",        "-")
 KEYMAP_ROW(IC7300,          1, '6', "queryBank1RfPower",     "beginBank1RfPowerSet",   "-")
 KEYMAP_ROW(IC706,           1, '6', "unassigned",            "beginBank1RfPowerSet",   "-")
 KEYMAP_ROW(FT817 | FT857,   1, '6', "queryBank1RfPower",     "beginBank1RfPowerSet",   "-")
-KEYMAP_ROW(NOT(FTDX10 | CIV | FT817 | FT857), 1, '6', "unassigned", "none",            "-")
+KEYMAP_ROW(NOT(CIV | FT817 | FT857), 1, '6', "unassigned",   "none",                   "-")
 KEYMAP_ROW(ALL,             1, '7', "queryBank1Smeter",      "none",                   "-")
 KEYMAP_ROW(ALL,             1, '8', "queryBank1Swr",         "none",                   "-")
 KEYMAP_ROW(ALL,             1, '9', "queryBank1Mode",        "beginBank1ModeSelect",   "-")
@@ -138,7 +137,8 @@ KEYMAP_ROW(FT817 | FT857,   2, '9', "queryBank2Ft8x7MicEq",  "none",            
 KEYMAP_ROW(NOT(CIV | FTDX10 | FT817 | FT857), 2, '9', "unassigned", "none",            "-")
 KEYMAP_ROW(ALL,             2, 'A', "queryBank2Agc",         "beginBank2AgcSelect", "-")
 KEYMAP_ROW(FT817 | FT857,   2, 'B', "queryBank2Ft8x7Ipo",    "none",                   "queryBank2Att")
-KEYMAP_ROW(NOT(FT817 | FT857), 2, 'B', "unassigned",       "none",                   "-")
+KEYMAP_ROW(NOT(FT817 | FT857), 2, 'B', "queryBank2Preamp", "stepBank2Preamp",        "-")
+KEYMAP_ROW(ALL,             2, 'C', "queryBank2Att",         "stepBank2Att",           "-")
 
 // ---- Bank 3 ----------------------------------------------------------------
 // FT-817 and FT-857/897 track the active VFO: '1' is the current VFO, '2' the

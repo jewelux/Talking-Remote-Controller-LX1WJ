@@ -46,6 +46,13 @@ bool civSetNotchWidth(const RadioProfile& sp, NotchWidth width);
 // 16 12, the AGC time constant preset: FAST, MID, SLOW (caps.getAgc, setAgc); the set is read back.
 bool civQueryAgc(const RadioProfile& sp, AgcMode& out, uint32_t timeoutMs);
 bool civSetAgc(const RadioProfile& sp, AgcMode mode);
+// 16 02, the preamp level, 0..settings.preampLevels (caps.getPreamp, setPreamp), and 11, the
+// attenuator in dB (caps.getAtt, setAtt; the set takes one of settings.attDb or 0). The sets are
+// read back.
+bool civQueryPreampLevel(const RadioProfile& sp, uint8_t& levelOut, uint32_t timeoutMs);
+bool civSetPreampLevel(const RadioProfile& sp, uint8_t level);
+bool civQueryAttDb(const RadioProfile& sp, uint8_t& dbOut, uint32_t timeoutMs);
+bool civSetAttDb(const RadioProfile& sp, uint8_t db);
 bool civQueryPbtInner(const RadioProfile& sp, uint16_t& valueOut, uint32_t timeoutMs);
 bool civSetPbtInner(const RadioProfile& sp, uint16_t value);
 bool civQueryPbtOuter(const RadioProfile& sp, uint16_t& valueOut, uint32_t timeoutMs);

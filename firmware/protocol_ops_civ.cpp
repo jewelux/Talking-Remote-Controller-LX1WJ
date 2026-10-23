@@ -550,6 +550,42 @@ bool civSetAgc(const RadioProfile& sp, AgcMode mode) {
   return civQueryAgc(sp, readBack, 800) && readBack == mode;
 }
 
+// 16 02: 00 off, 01 P.AMP1, 02 P.AMP2 (the IC-7300, IC-705 and IC-7760 CI-V guides, Hamlib).
+bool civQueryPreampLevel(const RadioProfile& sp, uint8_t& levelOut, uint32_t timeoutMs) {
+  if (sp.protocol != PROTO_CIV || !sp.caps.getPreamp) return false;
+  uint8_t raw = 0;
+  return civQuery16Byte(0x02, raw, timeoutMs) && civPreampDecode(raw, sp.settings.preampLevels, levelOut);
+}
+
+bool civSetPreampLevel(const RadioProfile& sp, uint8_t level) {
+  if (sp.protocol != PROTO_CIV || !sp.caps.setPreamp || level > sp.settings.preampLevels) return false;
+  if (!civSet16Byte(0x02, level)) return false;
+  civSettleAfterWrite();
+  uint8_t readBack = 0xFF;
+  return civQueryPreampLevel(sp, readBack, 800) && readBack == level;
+}
+
+// 11: the attenuator in dB, BCD, with no sub command (the CI-V guides, Hamlib).
+bool civQueryAttDb(const RadioProfile& sp, uint8_t& dbOut, uint32_t timeoutMs) {
+  if (sp.protocol != PROTO_CIV || !sp.caps.getAtt) return false;
+  civFlushInput();
+  civSend(0x11, nullptr, 0);
+  const std::optional<CivFrame> d = waitReply(0x11, timeoutMs);
+  if (!d || d->payloadLen < 1) return false;
+  return civAttDecode(d->payload[0], dbOut);
+}
+
+bool civSetAttDb(const RadioProfile& sp, uint8_t db) {
+  if (sp.protocol != PROTO_CIV || !sp.caps.setAtt) return false;
+  if (db != 0 && !attStepOfDb(sp.settings.attDb, sp.settings.attLevels, db)) return false;
+  civFlushInput();
+  const uint8_t pl[] = {civAttEncode(db)};
+  civSend(0x11, pl, 1);
+  civSettleAfterWrite();
+  uint8_t readBack = 0xFF;
+  return civQueryAttDb(sp, readBack, 800) && readBack == db;
+}
+
 // A 16 function that is only off (00) or on (01); any other byte is not a valid reply.
 static bool civQuery16OnOff(uint8_t subcmd, bool& onOut, uint32_t timeoutMs) {
   uint8_t raw = 0;

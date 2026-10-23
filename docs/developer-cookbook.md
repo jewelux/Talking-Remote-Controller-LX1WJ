@@ -359,9 +359,10 @@ KeyBinding bank2(const KeypadTraits& t, char key) {
 
 ## 4. Recipes
 
-The recipes share one running example: the **preamp**. Today it exists only
-as ASCII console commands (`PA?`, `PA ON`), so turning it into a real
-cross-radio feature with a key exercises every layer.
+The recipes share one running example: the **preamp**, as a plain on/off
+setting with a key, which exercises every layer. HamTRC has the real one
+(`PREAMP?`, Bank 2 `B`): it adds levels and per-model encodings, so read
+`preampQuery` in `radio_features.cpp` next to the recipes.
 
 ### 4.1 Add a key action
 
@@ -522,10 +523,12 @@ every step below names its NB counterpart.
   `PROFILE?` shows them.
 
 **2. Command strings (ASCII protocols only).** The NB counterparts are
-`nbGet`, `nbOnCmd` and `nb_get`. Preamp already has these:
-`sp.commands->preampGet`, `preampOnCmd`, `preampOffCmd` and
-`preampReplyPrefix`. For a new command, add the fields to `AsciiCommandSet`
-and set them in the command tables of `radio_profile_table.cpp`.
+`nbGet`, `nbOnCmd` and `nb_get`. For a new command, add the fields to
+`AsciiCommandSet` and set them in the command tables of
+`radio_profile_table.cpp`. Where the models encode the value differently,
+put an encoding in the profile's `SettingEncodings` instead and the
+encoding itself in `cat_setting_codec.*`, with a test in `tests/cat`; the
+real preamp does so with `frontEnd` and `preampLevels`.
 
 **3. Protocol ops.** Each op takes the profile and checks the capability
 first. The CI-V ops are hard-coded bytes; the ASCII ops are driven by the
@@ -538,7 +541,7 @@ bool civQueryPreamp(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
   return civQueryToggleSub(0x02, onOut, timeoutMs);
 }
 
-// protocol_ops_ascii.cpp — asciiQueryPreamp exists; add the caps check like asciiQueryNb
+// protocol_ops_ascii.cpp — the caps check first, like asciiQueryNb
 bool asciiQueryPreamp(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
   if (!sp.caps.getPreamp || !sp.commands->preampGet[0] || !sp.commands->preampReplyPrefix[0]) return false;
   ...
@@ -600,9 +603,9 @@ FeatureStatus preampToggle(bool& on) {
 and `PREAMP TOGGLE` next to `handleConsoleFeatureCommand()`, calling the same
 functions, and list them in `printHelp()` as one line,
 `helpLine("PREAMP? | PREAMP ON | OFF | TOGGLE")`, under the radio's
-`HELP_RADIO` heading (raw protocol tools go under `HELP_DIAG`). Existing console commands (here
-the FTDX `PA?`) should move onto the shared operation rather than keep a
-second implementation.
+`HELP_RADIO` heading (raw protocol tools go under `HELP_DIAG`). Existing console commands for
+the same setting (as the raw FTDX `PA?` was) should move onto the shared operation rather than
+keep a second implementation.
 
 **8. Key.** Follow recipe 4.1.
 

@@ -782,6 +782,27 @@ static void printAgcHelp() {
   helpLine(text.c_str());
 }
 
+// PREAMP and ATT over CAT, with the radio's levels and steps.
+static void printFrontEndHelp() {
+  const uint8_t levels = preampLevels();
+  if (levels) {
+    const bool set = currentProfile().caps.setPreamp;
+    helpLine(!set ? "PREAMP?" : levels == 1 ? "PREAMP? | PREAMP OFF | ON" : "PREAMP? | PREAMP OFF | 1 | 2");
+  }
+  const uint8_t steps = attSteps();
+  if (!steps) return;
+  String text = "ATT? | ATT OFF | ON";
+  if (attStepDb(1)) {
+    text = "ATT? | ATT OFF";
+    for (uint8_t s = 1; s <= steps; ++s) {
+      text += " | ";
+      text += String((int)attStepDb(s));
+    }
+    text += "  (dB)";
+  }
+  helpLine(text.c_str());
+}
+
 // PROC, mic gain and VOX over CAT, as far as the profile has them, with the radio's ranges.
 static void printTxSettingsHelp() {
   const RadioCapabilities& caps = currentProfile().caps;
@@ -896,6 +917,7 @@ void printHelp(const String& topicArg) {
     helpLine("PBT1? | PBT1 <-128..127> | CENTER | STEP <+-n>");
     helpLine("PBT2? | PBT2 <-128..127> | CENTER | STEP <+-n>");
     printAgcHelp();
+    printFrontEndHelp();
     printTxSettingsHelp();
     helpLine(rfPowerLine);
     helpLine("RIT? | RIT <Hz> | RIT STEP <+-Hz> | RIT OFF | ON | TOGGLE");
@@ -912,7 +934,6 @@ void printHelp(const String& topicArg) {
     helpLine("VFOB? | VFOB <kHz> | VFOB MODE? | VFOB MODE <n>");
     helpHeading(HELP_RADIO, "ASCII / Yaesu extensions:");
     helpLine("ALC? | VOL? | SQL?");
-    helpLine("PA? | PA OFF | ON | TOGGLE");
     helpLine("PS? | PS OFF | ON");
     helpLine("PTT OFF | ON");
     helpLine("SM?");
@@ -938,7 +959,6 @@ void printHelp(const String& topicArg) {
     helpLine(ft857Family ? "TONEDIR? | TONEDIR NEXT  (BOTH, encode only TX, decode only RX in turn)"
                          : "TONEDIR? | TONEDIR NEXT  (BOTH or encode only TX)");
     if (ft857Family) helpLine("SPLITTONE?  (menu 79 of the current band, read only)");
-    helpLine("PA? | PA OFF | ON | TOGGLE");
     helpLine("PS? | PS OFF | ON");
     if (ft817 || ft857Family) helpLine("VFO SYNC A | B  (set the tracked VFO)");
     if (ft817) {
@@ -999,6 +1019,7 @@ void printHelp(const String& topicArg) {
     helpLine("NOTCH? | NOTCH OFF | ON | TOGGLE");
     helpLine("NR? | NR OFF | ON | TOGGLE");
     printAgcHelp();
+    printFrontEndHelp();
     printTxSettingsHelp();
     helpLine("RXTX?");
     helpLine("SPLIT? | SPLIT OFF | ON | TOGGLE");
@@ -1008,7 +1029,6 @@ void printHelp(const String& topicArg) {
     helpLine("VFO A | B");
     helpLine("VFOA? | VFOA <kHz> | VFOA MODE? | VFOA MODE <n>");
     helpLine("VFOB? | VFOB <kHz> | VFOB MODE? | VFOB MODE <n>");
-    helpLine("PA? | PA OFF | ON | TOGGLE");
     helpLine("PS? | PS OFF | ON");
     helpLine("SM?");
     helpLine("SWR?");
@@ -1669,13 +1689,64 @@ static bool handleConsoleAgc(const String& upper) {
   return false;
 }
 
-static bool handleConsoleAtt(const String& upper) {
-  if (upper != "ATT?") return false;
-  AttState state;
-  if (reportFeatureFailure(attQuery(state), "ATT?")) return true;
-  Serial.println(attText(state));
-  speakAtt(state);
-  return true;
+// ATT? | ATT OFF | ON | <dB>, ON the first step, <dB> one of the radio's steps; PREAMP? |
+// PREAMP OFF | ON | <level>, ON level 1.
+static bool handleConsoleFrontEnd(const String& upper) {
+  if (upper == "ATT?") {
+    AttState state;
+    if (reportFeatureFailure(attQuery(state), "ATT?")) return true;
+    Serial.println(attText(state));
+    speakAtt(state);
+    return true;
+  }
+  if (upper == "PREAMP?") {
+    uint8_t level = 0;
+    if (reportFeatureFailure(preampQuery(level), "PREAMP?")) return true;
+    Serial.println(preampText(level));
+    speakPreamp(level);
+    return true;
+  }
+  if (upper.startsWith("ATT ")) {
+    String arg = upper.substring(4);
+    arg.trim();
+    int step = -1;
+    if (arg == "OFF") {
+      step = 0;
+    } else if (arg == "ON") {
+      step = 1;
+    } else if (arg.length() && arg.length() <= 2 && isDigit(arg[0]) && (arg.length() == 1 || isDigit(arg[1]))) {
+      const int db = arg.toInt();
+      for (uint8_t s = 1; s <= attSteps(); ++s) {
+        if (attStepDb(s) && attStepDb(s) == db) step = s;
+      }
+      if (step < 0 && attSteps()) {
+        Serial.println("ATT -> use OFF, ON or the radio's dB (HELP)");
+        return true;
+      }
+    } else {
+      return false;
+    }
+    AttState state;
+    if (reportFeatureFailure(attSet(step < 0 ? 0 : (uint8_t)step, state), "ATT")) return true;
+    Serial.println(attText(state));
+    speakAtt(state);
+    return true;
+  }
+  if (upper.startsWith("PREAMP ")) {
+    String arg = upper.substring(7);
+    arg.trim();
+    int level = -1;
+    if (arg == "OFF") level = 0;
+    else if (arg == "ON") level = 1;
+    else if (arg.length() == 1 && arg[0] >= '0' && arg[0] <= '9') level = arg[0] - '0';
+    else return false;
+    uint8_t out = 0;
+    if (reportFeatureFailure(preampSet((uint8_t)level, out), "PREAMP")) return true;
+    Serial.println(preampText(out));
+    speakPreamp(out);
+    return true;
+  }
+  return false;
 }
 
 // Experimental: DBF ON | OFF | TOGGLE on the FT-857/897, like Bank 2 `6` long; BK, KYR, KEYREV
@@ -3530,33 +3601,6 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     if (g_speechEnabled) speakTokenState("transceiver", false);
     return true;
   }
-  if (upper == "PA?") {
-    bool on = false;
-    if (!asciiQueryPreamp(sp, on, 800)) { reportCommandFailure("PA?", "no reply"); return true; }
-    Serial.println(on ? "PA ON" : "PA OFF");
-    if (g_speechEnabled) speakTokenState("pa", on);
-    return true;
-  }
-  if (upper == "PA ON") {
-    if (!asciiSetPreamp(sp, true)) { reportCommandFailure("PA ON", "failed"); return true; }
-    Serial.println("PA ON");
-    if (g_speechEnabled) speakTokenState("pa", true);
-    return true;
-  }
-  if (upper == "PA OFF") {
-    if (!asciiSetPreamp(sp, false)) { reportCommandFailure("PA OFF", "failed"); return true; }
-    Serial.println("PA OFF");
-    if (g_speechEnabled) speakTokenState("pa", false);
-    return true;
-  }
-  if (upper == "PA TOGGLE") {
-    bool on = false;
-    if (!asciiQueryPreamp(sp, on, 800)) { reportCommandFailure("PA TOGGLE", "no reply"); return true; }
-    if (!asciiSetPreamp(sp, !on)) { reportCommandFailure("PA TOGGLE", "failed"); return true; }
-    Serial.println(!on ? "PA ON" : "PA OFF");
-    if (g_speechEnabled) speakTokenState("pa", !on);
-    return true;
-  }
   if (upper == "PS?") {
     bool on = false;
     if (!asciiQueryPowerState(sp, on, 800)) { reportCommandFailure("PS?", "no reply"); return true; }
@@ -3673,7 +3717,7 @@ void processCommand(String line) {
   if (handleFtdx10BlockedConsoleCommand(upper)) return;
   if (handleConsoleToggleCommands(line, upper)) return;
   if (handleConsoleAgc(upper)) return;
-  if (handleConsoleAtt(upper)) return;
+  if (handleConsoleFrontEnd(upper)) return;
   if (handleConsoleYaesuFt8x7Commands(line, upper)) return;
   if (handleConsoleFt847Commands(upper)) return;
   if (handleConsoleTxAudioSet(line, upper)) return;

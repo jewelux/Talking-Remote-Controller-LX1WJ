@@ -100,6 +100,22 @@ void speakAtt(const AttState& state) {
   speakNumber(String((int)state.db));
 }
 
+String preampText(uint8_t level) {
+  if (!level) return "PREAMP OFF";
+  if (preampLevels() <= 1) return "PREAMP ON";
+  return String("PREAMP ") + String((int)level);
+}
+
+void speakPreamp(uint8_t level) {
+  if (!g_speechEnabled) return;
+  if (!level || preampLevels() <= 1) {
+    speakTokenState("preamplifier", level != 0);
+    return;
+  }
+  speakLabel("preamplifier");
+  playDigit(level);
+}
+
 String procStateText(bool on) {
   return on ? "PROC ON" : "PROC OFF";
 }

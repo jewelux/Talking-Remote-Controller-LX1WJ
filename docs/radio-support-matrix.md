@@ -13,13 +13,13 @@ It is meant as a short engineering overview, not as a promise list.
 | ICOM IC-706 RS-232 | RS-232 | implemented | implemented | n/a | implemented | n/a | implemented | not recently verified | As the CI-V slot. |
 | Xiegu G106 | CI-V (TTL) | implemented | implemented | n/a | n/a | n/a | implemented | not recently verified | Frequency and mode only. |
 | Kenwood TS-480 | ASCII / CAT | implemented | implemented | n/a | implemented | implemented | implemented | not tested | SWR from `RM;` (SWR, COMP and ALC in one reply). NR and NB; PROC, mic gain and VOX (see below). |
-| Elecraft KX2 | ASCII / CAT | implemented | implemented | implemented | implemented | implemented | implemented | not tested | NB, preamp, AGC fast and slow, power switch. |
+| Elecraft KX2 | ASCII / CAT | implemented | implemented | implemented | implemented | implemented | implemented | not tested | NB, preamp, attenuator, AGC fast and slow, power switch. |
 | Yaesu FT-817 | CAT | implemented | implemented | implemented | implemented | implemented | implemented | tested on hardware | FT8x7 family notes are documented separately. |
 | Yaesu FT-818 | CAT | implemented | implemented | partial | implemented | partial | implemented | not recently verified | Mirrors the FT-817 family path. |
 | Yaesu FT-857 | CAT | implemented | implemented | partial | implemented | partial | implemented | tested on hardware | Split and VFO handling are already documented and tested. |
 | Yaesu FT-897 | CAT | partial | partial | partial | partial | partial | implemented | not recently verified | Shares the FT-857/897 family handling. |
 | Yaesu FT-847 | CAT (own protocol) | implemented | implemented (no FM) | meter 0..31 | implemented | n/a | implemented | tested on hardware | Frequency, mode, S-meter, RX/TX. FM is not supported: a frequency read keys the radio in FM. See `docs/radios/yaesu-ft-847.md`. |
-| Yaesu FTDX10 | ASCII CAT | implemented | implemented | implemented | implemented | implemented | implemented | assisted field test pending | Current `V3.5.8` block includes VFO, VFO mode, split, lock, tuner, preamp, AGC, IF, ID, and power-state paths. See `docs/radios/yaesu-ftdx10-family.md`. |
+| Yaesu FTDX10 | ASCII CAT | implemented | implemented | implemented | implemented | implemented | implemented | assisted field test pending | Current `V3.5.8` block includes VFO, VFO mode, split, lock, tuner, preamp, attenuator, AGC, IF, ID, and power-state paths. See `docs/radios/yaesu-ftdx10-family.md`. |
 | Yaesu FTDX101D | ASCII CAT | implemented | implemented | implemented | implemented | implemented | implemented | assisted field test pending | Uses the same first-block documentation as FTDX10. |
 | Yaesu FTDX101MP | ASCII CAT | implemented | implemented | implemented | implemented | implemented | implemented | assisted field test pending | Uses the same first-block documentation as FTDX10. |
 | Yaesu FT-891 | ASCII CAT | implemented | implemented | implemented | implemented | implemented | implemented | not tested | Frequency, VFO A/B, mode, meters, lock, tuner (external), split; PROC, mic gain and VOX (see below). |
@@ -31,18 +31,20 @@ offered only where Hamlib and a second source (the maker's CAT manual, flrig or 
 its command; the others say "not available". The FT-8x7 has no CAT command for these and keeps
 them in its EEPROM: see the FT-8x7 pages.
 
-| Radio | `AGC` | `PROC`, `PROCLEVEL` | `MICGAIN` | `VOX`, `VOXGAIN` | `VOXDELAY` | Sources |
-|---|---|---|---|---|---|---|
-| IC-7300, IC-705 | fast, mid, slow | COMP, 0–100 | 0–100 | 0–100 | 0–2000 ms | CI-V guide, Hamlib |
-| IC-7760 | fast, mid, slow | COMP, 0–100 | 0–100 | 0–100 | – | CI-V guide, Hamlib |
-| FTDX10 | off, fast, mid, slow, auto | `PR0`, `PL` 0–100 | 0–100 | 0–100 | 30–3000 ms (VD step) | CAT manual, Hamlib |
-| FTDX101D/MP | off, fast, mid, slow, auto | – | 0–100 | 0–100 | 30–3000 ms (VD step) | CAT manual, Hamlib, flrig |
-| FT-891 | off, fast, mid, slow, auto | `PR0`, `PL` 0–100 | 0–100 | 0–100 | 30–3000 ms | CAT manual, Hamlib, flrig |
-| TS-480 | off, fast, slow | `PR`, `PL` input 0–100 | 0–100 | `VG` 0–9 | 0–3000 ms, 150 ms steps | PC command reference, Hamlib |
-| KX2 | fast, slow | – | – | – | – | programmer's reference, Hamlib |
+| Radio | `AGC` | `PREAMP` | `ATT` | `PROC`, `PROCLEVEL` | `MICGAIN` | `VOX`, `VOXGAIN` | `VOXDELAY` | Sources |
+|---|---|---|---|---|---|---|---|---|
+| IC-7300, IC-705 | fast, mid, slow | off, 1, 2 | 20 dB | COMP, 0–100 | 0–100 | 0–100 | 0–2000 ms | CI-V guide, Hamlib |
+| IC-7760 | fast, mid, slow | off, 1, 2 | 6, 12, 18 dB | COMP, 0–100 | 0–100 | 0–100 | – | CI-V guide, Hamlib |
+| FTDX10 | off, fast, mid, slow, auto | IPO, AMP1, AMP2 | 6, 12, 18 dB | `PR0`, `PL` 0–100 | 0–100 | 0–100 | 30–3000 ms (VD step) | CAT manual, Hamlib |
+| FTDX101D/MP | off, fast, mid, slow, auto | IPO, AMP1, AMP2 | 6, 12, 18 dB | – | 0–100 | 0–100 | 30–3000 ms (VD step) | CAT manual, Hamlib, flrig |
+| FT-891 | off, fast, mid, slow, auto | IPO, AMP | on | `PR0`, `PL` 0–100 | 0–100 | 0–100 | 30–3000 ms | CAT manual, Hamlib, flrig |
+| TS-480 | off, fast, slow | on | on | `PR`, `PL` input 0–100 | 0–100 | `VG` 0–9 | 0–3000 ms, 150 ms steps | PC command reference, Hamlib |
+| KX2 | fast, slow | on | 10 dB | – | – | – | – | programmer's reference, Hamlib |
 
 A Yaesu set to auto reads back as auto, whichever speed the radio picked. The TS-480 has no AGC
-setting in FM.
+setting in FM. The IC-7760 attenuator reads every 3 dB step Icom lists, but HamTRC sets only the
+6, 12 and 18 dB that Hamlib has too. On the IC-705 the 144 and 430 MHz bands have one preamp level
+and no attenuator. "on" means the sources do not agree on the dB.
 
 None of these sets is tested on a radio yet.
 

@@ -58,7 +58,6 @@ KeyBinding bank1(const KeypadTraits& t, char key) {
       if (t.layout == L::Ftdx10) return bind(SEND("TUNER?"), SEND("TUNER TOGGLE"), SEND("TUNE"));
       return {};
     case '6':
-      if (t.layout == L::Ftdx10) return bind(SEND("PA?"), SEND("PA TOGGLE"));
       if (t.layout == L::Civ) return bind(t.canGetRfPower ? queryBank1RfPower : nullptr, beginBank1RfPowerSet);
       // FT-8x7: experimental; the FT-817/818 picks a level.
       if (t.layout == L::Ft857 || t.layout == L::Ft817) return bind(queryBank1RfPower, beginBank1RfPowerSet);
@@ -148,6 +147,10 @@ KeyBinding bank2(const KeypadTraits& t, char key) {
       return {};
     // Every radio: what agcQuery reads, and the select of the speeds it can be set to.
     case 'A': return bind(queryBank2Agc, beginBank2AgcSelect);
+    // Every radio but the FT-8x7 ('B' above): the preamp and the attenuator, hold for the next
+    // level.
+    case 'B': return bind(queryBank2Preamp, stepBank2Preamp);
+    case 'C': return bind(queryBank2Att, stepBank2Att);
     default: return {};
   }
 }

@@ -101,6 +101,33 @@ void queryBank2Att() {
   speakAtt(state);
 }
 
+void stepBank2Att() {
+  printKeypadAction("ATT");
+  prepareKeypadSpeechResponse();
+  AttState state;
+  if (keypadReportFeatureFailure(attStep(state), "ATT")) return;
+  printKeypadStatus("{}", attText(state).c_str());
+  speakAtt(state);
+}
+
+void queryBank2Preamp() {
+  printKeypadAction("PREAMP?");
+  prepareKeypadSpeechResponse();
+  uint8_t level = 0;
+  if (keypadReportFeatureFailure(preampQuery(level), "PREAMP?")) return;
+  printKeypadStatus("{}", preampText(level).c_str());
+  speakPreamp(level);
+}
+
+void stepBank2Preamp() {
+  printKeypadAction("PREAMP");
+  prepareKeypadSpeechResponse();
+  uint8_t level = 0;
+  if (keypadReportFeatureFailure(preampStep(level), "PREAMP")) return;
+  printKeypadStatus("{}", preampText(level).c_str());
+  speakPreamp(level);
+}
+
 // 0 off, 1 auto, 2 fast, 3 slow, 4 mid; a key for a speed the radio cannot be set to is rejected.
 static bool pickAgc(char key, uint8_t& value) {
   static constexpr AgcMode kKeys[] = {AgcMode::Off, AgcMode::Auto, AgcMode::Fast, AgcMode::Slow, AgcMode::Mid};

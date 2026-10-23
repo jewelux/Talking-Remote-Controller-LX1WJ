@@ -241,6 +241,55 @@ TEST(every_ascii_agc_cap_has_an_encoding) {
   }
 }
 
+// Preamp and attenuator: the Icoms by 16 02 and 11, the ASCII radios by PA and RA, the FT-857/897
+// ATT from its EEPROM, read only.
+TEST(preamp_and_att_caps_and_encodings) {
+  const uint8_t settable[] = {1, 3, 17, 18, 6, 7, 11, 12, 13, 15};
+  for (uint8_t s : settable) {
+    const RadioCapabilities& c = slot(s).caps;
+    CHECK(c.getPreamp && c.setPreamp && c.getAtt && c.setAtt);
+    CHECK(slot(s).settings.preampLevels >= 1 && slot(s).settings.preampLevels <= 2);
+    CHECK(slot(s).settings.attLevels >= 1 && slot(s).settings.attLevels <= 3);
+  }
+  const uint8_t icom7300[] = {1, 3, 17};
+  for (uint8_t s : icom7300) {
+    CHECK_EQ(slot(s).settings.preampLevels, 2);
+    CHECK_EQ(slot(s).settings.attLevels, 1);
+    CHECK_EQ(slot(s).settings.attDb[0], 20);
+  }
+  CHECK_EQ(slot(18).settings.attLevels, 3);
+  CHECK_EQ(slot(18).settings.attDb[2], 18);
+  const uint8_t ftdx[] = {11, 12, 13};
+  for (uint8_t s : ftdx) {
+    CHECK(slot(s).settings.frontEnd == FrontEndEncoding::Yaesu);
+    CHECK_EQ(slot(s).settings.preampLevels, 2);
+    CHECK_EQ(slot(s).settings.attDb[0], 6);
+  }
+  CHECK(slot(15).settings.frontEnd == FrontEndEncoding::Yaesu);
+  CHECK_EQ(slot(15).settings.attDb[0], 0);
+  CHECK(slot(7).settings.frontEnd == FrontEndEncoding::Kenwood);
+  CHECK(slot(6).settings.frontEnd == FrontEndEncoding::Kenwood);
+  CHECK_EQ(slot(6).settings.attDb[0], 10);
+  const uint8_t ft857[] = {9, 10};
+  for (uint8_t s : ft857) CHECK(slot(s).caps.getAtt && !slot(s).caps.setAtt && !slot(s).caps.getPreamp);
+  const uint8_t none[] = {2, 4, 5, 8, 14, 16};
+  for (uint8_t s : none) CHECK(!slot(s).caps.getPreamp && !slot(s).caps.getAtt);
+}
+
+// The steps a profile gives are ascending, and an ASCII radio's caps come with its PA/RA encoding.
+TEST(every_preamp_and_att_cap_has_an_encoding) {
+  for (size_t i = 0; i < profileCount(); ++i) {
+    const RadioProfile& p = profileAt(i);
+    const SettingEncodings& s = p.settings;
+    CHECK(s.attLevels <= 3);
+    for (uint8_t k = 1; k < s.attLevels; ++k) CHECK(s.attDb[k] > s.attDb[k - 1]);
+    if (p.caps.getPreamp) CHECK(s.preampLevels > 0);
+    if (p.caps.getAtt && p.protocol != PROTO_YAESU_FT8X7) CHECK(s.attLevels > 0);
+    if (isAscii(p.protocol) && (p.caps.getPreamp || p.caps.getAtt)) CHECK(s.frontEnd != FrontEndEncoding::None);
+    if (s.frontEnd != FrontEndEncoding::None) CHECK(isAscii(p.protocol));
+  }
+}
+
 TEST(g106_is_ttl_civ_with_freq_and_mode_only) {
   const RadioProfile& g106 = slot(5);
   CHECK(g106.protocol == PROTO_CIV);

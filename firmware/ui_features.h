@@ -30,6 +30,10 @@ void speakAgc(AgcMode mode);
 String attText(const AttState& state);
 void speakAtt(const AttState& state);
 
+// "PREAMP OFF", "PREAMP ON" where it has one level, else "PREAMP 1", "PREAMP 2"; "preamplifier 1".
+String preampText(uint8_t level);
+void speakPreamp(uint8_t level);
+
 // "PROC ON", "PROC OFF"; "processor on".
 String procStateText(bool on);
 void speakProcState(bool on);

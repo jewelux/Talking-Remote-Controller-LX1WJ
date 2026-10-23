@@ -78,9 +78,28 @@ struct AttState {
   uint8_t db = 0;
 };
 
-// The attenuator (caps.getAtt): the FT-857/897 from the current band in its EEPROM, Unsupported
-// where the band has none.
+// The attenuator (caps.getAtt): Icom 11, the ASCII radios' RA (settings.frontEnd), the FT-857/897
+// from the current band in its EEPROM, Unsupported where the band has none.
 FeatureStatus attQuery(AttState& out);
+// The steps it can be set to (caps.setAtt), 0 where it cannot; step n is attStepDb(n) dB (0 where
+// not known).
+uint8_t attSteps();
+uint8_t attStepDb(uint8_t step);
+// Sets step (0 off, 1..attSteps()), read back into out. Invalid above attSteps().
+FeatureStatus attSet(uint8_t step, AttState& out);
+// Off -> step 1 -> ... -> the last step -> off, from the attenuator read.
+FeatureStatus attStep(AttState& out);
+
+// The preamp (caps.getPreamp): Icom 16 02, the ASCII radios' PA. Level 0 is off (Yaesu IPO).
+// preampLevels() is 1 where it is only on or off, 2 with P.AMP1/AMP1 and P.AMP2/AMP2, 0 where
+// there is none.
+uint8_t preampLevels();
+FeatureStatus preampQuery(uint8_t& levelOut);
+// Sets level (0..preampLevels()), read back into levelOut. Unsupported without caps.setPreamp,
+// Invalid above preampLevels().
+FeatureStatus preampSet(uint8_t level, uint8_t& levelOut);
+// Off -> 1 -> ... -> off, from the level read.
+FeatureStatus preampStep(uint8_t& levelOut);
 
 // Speech processor: FT-857/897 PROC and its menu 74 level, Icom COMP, FTDX10 and FT-891 PR0 and
 // PL, TS-480 PR and its PL input level.

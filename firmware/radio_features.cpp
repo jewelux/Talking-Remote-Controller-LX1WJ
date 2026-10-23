@@ -88,14 +88,109 @@ FeatureStatus agcSet(AgcMode mode, AgcMode& out) {
 
 // ---- Attenuator ----
 
+// The ASCII radios with a PA/RA encoding in their profile.
+static bool isAsciiFrontEnd() {
+  const ProtocolType pt = currentProtocolType();
+  return (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) &&
+         currentProfile().settings.frontEnd != FrontEndEncoding::None;
+}
+
+// The CAT radios whose profile gives the attenuator's steps.
+static bool hasCatAtt() {
+  return currentProfile().settings.attLevels && (currentProtocolType() == PROTO_CIV || isAsciiFrontEnd());
+}
+
 FeatureStatus attQuery(AttState& out) {
-  if (!currentProfile().caps.getAtt || !isFt8x7()) return FeatureStatus::Unsupported;
-  Ft8x7SettingState state;
-  const FeatureStatus status = ft8x7SettingQuery(Ft8x7Setting::Att, state);
-  if (status != FeatureStatus::Ok) return status;
-  out.on = state.on;
-  out.db = 0;
+  const RadioProfile& sp = currentProfile();
+  if (!sp.caps.getAtt) return FeatureStatus::Unsupported;
+  if (isFt8x7()) {
+    Ft8x7SettingState state;
+    const FeatureStatus status = ft8x7SettingQuery(Ft8x7Setting::Att, state);
+    if (status != FeatureStatus::Ok) return status;
+    out.on = state.on;
+    out.db = 0;
+    return FeatureStatus::Ok;
+  }
+  if (!hasCatAtt()) return FeatureStatus::Unsupported;
+  if (currentProtocolType() == PROTO_CIV) {
+    uint8_t db = 0;
+    if (!civQueryAttDb(sp, db, 800)) return failure(FeatureStatus::NoReply);
+    out.on = db != 0;
+    out.db = db;
+    return FeatureStatus::Ok;
+  }
+  uint8_t step = 0;
+  if (!asciiQueryAttStep(sp, step, 800)) return failure(FeatureStatus::NoReply);
+  out.on = step != 0;
+  out.db = attStepDb(step);
   return FeatureStatus::Ok;
+}
+
+uint8_t attSteps() {
+  const RadioProfile& sp = currentProfile();
+  return sp.caps.getAtt && sp.caps.setAtt && hasCatAtt() ? sp.settings.attLevels : 0;
+}
+
+uint8_t attStepDb(uint8_t step) {
+  const SettingEncodings& enc = currentProfile().settings;
+  return step >= 1 && step <= enc.attLevels && step <= sizeof(enc.attDb) ? enc.attDb[step - 1] : 0;
+}
+
+FeatureStatus attSet(uint8_t step, AttState& out) {
+  if (!attSteps()) return FeatureStatus::Unsupported;
+  if (step > attSteps()) return FeatureStatus::Invalid;
+  const RadioProfile& sp = currentProfile();
+  const bool ok = currentProtocolType() == PROTO_CIV ? civSetAttDb(sp, attStepDb(step)) : asciiSetAttStep(sp, step);
+  if (!ok) return failure(FeatureStatus::Failed);
+  out.on = step != 0;
+  out.db = attStepDb(step);
+  return FeatureStatus::Ok;
+}
+
+FeatureStatus attStep(AttState& out) {
+  if (!attSteps()) return FeatureStatus::Unsupported;
+  AttState now;
+  const FeatureStatus status = attQuery(now);
+  if (status != FeatureStatus::Ok) return status;
+  const SettingEncodings& enc = currentProfile().settings;
+  return attSet(attNextStep(enc.attDb, enc.attLevels, now.on, now.db), out);
+}
+
+// ---- Preamp ----
+
+static bool hasCatPreamp() {
+  return currentProfile().settings.preampLevels && (currentProtocolType() == PROTO_CIV || isAsciiFrontEnd());
+}
+
+uint8_t preampLevels() {
+  const RadioProfile& sp = currentProfile();
+  return sp.caps.getPreamp && hasCatPreamp() ? sp.settings.preampLevels : 0;
+}
+
+FeatureStatus preampQuery(uint8_t& levelOut) {
+  if (!preampLevels()) return FeatureStatus::Unsupported;
+  const RadioProfile& sp = currentProfile();
+  const bool ok = currentProtocolType() == PROTO_CIV ? civQueryPreampLevel(sp, levelOut, 800)
+                                                     : asciiQueryPreampLevel(sp, levelOut, 800);
+  return ok ? FeatureStatus::Ok : failure(FeatureStatus::NoReply);
+}
+
+FeatureStatus preampSet(uint8_t level, uint8_t& levelOut) {
+  if (!preampLevels() || !currentProfile().caps.setPreamp) return FeatureStatus::Unsupported;
+  if (level > preampLevels()) return FeatureStatus::Invalid;
+  const RadioProfile& sp = currentProfile();
+  const bool ok = currentProtocolType() == PROTO_CIV ? civSetPreampLevel(sp, level) : asciiSetPreampLevel(sp, level);
+  if (!ok) return failure(FeatureStatus::Failed);
+  levelOut = level;
+  return FeatureStatus::Ok;
+}
+
+FeatureStatus preampStep(uint8_t& levelOut) {
+  if (!preampLevels() || !currentProfile().caps.setPreamp) return FeatureStatus::Unsupported;
+  uint8_t now = 0;
+  const FeatureStatus status = preampQuery(now);
+  if (status != FeatureStatus::Ok) return status;
+  return preampSet(now >= preampLevels() ? 0 : now + 1, levelOut);
 }
 
 // The toggles below start from the radio's state, read each time: nothing keeps the remembered

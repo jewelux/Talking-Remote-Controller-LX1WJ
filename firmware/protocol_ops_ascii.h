@@ -12,8 +12,13 @@ bool asciiQuerySWRRaw(const RadioProfile& sp, int32_t& rawOut, uint32_t timeoutM
 bool asciiQueryStatusLine(const RadioProfile& sp, String& lineOut, uint32_t timeoutMs);
 bool asciiQueryIdLine(const RadioProfile& sp, String& lineOut, uint32_t timeoutMs);
 bool asciiQueryOmLine(const RadioProfile& sp, String& lineOut, uint32_t timeoutMs);
-bool asciiQueryPreamp(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
-bool asciiSetPreamp(const RadioProfile& sp, bool on);
+// The preamp level (PA, 0..settings.preampLevels) and the attenuator step (RA,
+// 0..settings.attLevels) by settings.frontEnd (caps.getPreamp, setPreamp, getAtt, setAtt); the
+// sets are read back.
+bool asciiQueryPreampLevel(const RadioProfile& sp, uint8_t& levelOut, uint32_t timeoutMs);
+bool asciiSetPreampLevel(const RadioProfile& sp, uint8_t level);
+bool asciiQueryAttStep(const RadioProfile& sp, uint8_t& stepOut, uint32_t timeoutMs);
+bool asciiSetAttStep(const RadioProfile& sp, uint8_t step);
 // AGC by settings.agc (caps.getAgc, setAgc); the set is read back. AUTO reads back as AUTO.
 bool asciiQueryAgc(const RadioProfile& sp, AgcMode& out, uint32_t timeoutMs);
 bool asciiSetAgc(const RadioProfile& sp, AgcMode mode);
