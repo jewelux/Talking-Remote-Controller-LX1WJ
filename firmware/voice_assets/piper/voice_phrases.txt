@@ -118,6 +118,7 @@ plus
 power
 profile
 reset
+round
 row
 slow
 speed

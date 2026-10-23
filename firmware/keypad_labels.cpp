@@ -75,7 +75,7 @@ constexpr SpokenLabel kSpokenLabels[] = {
   {"RIT", "rit"},
   {"RIT OFF", "rit off"},
   {"RITOFFSET", "rit"},
-  {"ROUND", "frequency"},
+  {"ROUND", "round frequency"},
   {"ROW", "row"},
   {"RPT", "repeater"},
   {"RPT MINUS", "repeater minus"},

@@ -126,7 +126,7 @@ KeyBinding bank1(const KeypadTraits& t, char key, Setting focus) {
       return bind(ftdx10 ? SEND("FREQ?") : queryBank1Frequency, beginBank1FrequencySet,
                   [] { roundActiveFrequency(500); })
           .help("FREQ", V::Say, V::Entry)
-          .helpDouble("ROUND", V::Centre);
+          .helpDouble("ROUND", V::Run);
     case '1': return bind(ftdx10 ? SEND("RXTX?") : queryBank1RxTx, nullptr, waitOnly).help("RXTX", V::Say);
     case '2':
       if (ftdx10) return bind(SEND("TXFREQ?"), nullptr, waitOnly).help("TXFREQ", V::Say);
