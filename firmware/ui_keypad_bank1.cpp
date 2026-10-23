@@ -170,20 +170,26 @@ static constexpr ChoiceSpec kFt817PowerChoice = {
     "RFPOWER LEVEL", kFt817PowerKeys, sizeof(kFt817PowerKeys) / sizeof(kFt817PowerKeys[0]),
     nullptr, sayPickedFt817Power, commitFt817Power};
 
-void beginBank1RfPowerSet() {
-  if (!currentProfile().caps.setRfPower) {
-    printKeypadStatus("RFPOWER -> unavailable");
-    speakKeypadFailure("RFPOWER", KeypadFailure::NotAvailable);
-    return;
-  }
+// The FT-817/818 picks one of its levels, read first so that B and C walk from it.
+static void beginFt817PowerSelect() {
   printKeypadAction("RFPOWER");
-  if (currentProtocolType() == PROTO_YAESU_FT8X7 && currentIsFt817Family()) {
-    keypadBeginChoiceSelect(kFt817PowerChoice);
-  } else {
-    keypadBeginEntry(InputMode::RfPowerEntry);
-  }
+  prepareKeypadSpeechResponse();
+  Ft8x7SettingState state;
+  if (keypadReportFeatureFailure(ft8x7SettingQuery(Ft8x7Setting::RfPower, state), "RFPOWER")) return;
+  EntrySeed seed;
+  seed.known = state.hasPowerLevel;
+  seed.value = (uint8_t)state.powerLevel;
+  keypadBeginChoiceSelect(kFt817PowerChoice, TargetVfo::Current, seed);
   printKeypadStatus("POWER PLEASE");
   speakPrompt("power");
+}
+
+void beginBank1RfPowerSet() {
+  if (currentProtocolType() == PROTO_YAESU_FT8X7 && currentIsFt817Family() && currentProfile().caps.setRfPower) {
+    beginFt817PowerSelect();
+    return;
+  }
+  keypadSettingEntry(Setting::RfPower);
 }
 
 void toggleBank1Lock() {

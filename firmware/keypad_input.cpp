@@ -36,11 +36,8 @@ constexpr EntrySpec kEntries[] = {
     {InputMode::BankSelect,     "BANK SELECT", 1,   true,   false, 0,      ""},
     {InputMode::ProfileSelect,  "PROFILE",     2,   false,  false, 0,      ""},
     {InputMode::FreqEntry,      "FREQ",        12,  false,  true,  5,      ""},
-    {InputMode::RfPowerEntry,   "RFPOWER",     3,   false,  true,  0,      " W"},
     {InputMode::CivAddrEntry,   "CIVADDR",     3,   false,  true,  0,      ""},
     {InputMode::RptOffsetEntry, "RPTSHIFT",    4,   false,  true,  0,      " kHz"},
-    {InputMode::CtcssEntry,     "CTCSS",       4,   false,  true,  0,      ""},
-    {InputMode::DcsEntry,       "DCS",         3,   false,  true,  0,      ""},
     {InputMode::MenuEntry,      "MENU",        2,   false,  false, 0,      ""},
     {InputMode::RowEntry,       "ROW",         2,   false,  false, 0,      ""},
 };
@@ -174,6 +171,10 @@ void KeypadInput::pressedInMode(char key) {
     pressedChoice(key);
     return;
   }
+  if (mode_ == InputMode::ValueEntry) {
+    pressedValue(key);
+    return;
+  }
   pressedEntry(*keypadEntrySpec(mode_), key);
 }
 
@@ -203,10 +204,17 @@ void KeypadInput::beginEntry(InputMode mode, TargetVfo targetVfo) {
   entryVfo_ = targetVfo;
 }
 
-void KeypadInput::beginChoiceSelect(const ChoiceSpec& spec, TargetVfo targetVfo) {
+void KeypadInput::beginChoiceSelect(const ChoiceSpec& spec, TargetVfo targetVfo, const EntrySeed& seed) {
   beginEntry(InputMode::ChoiceSelect, targetVfo);
   choice_ = &spec;
-  choiceStaged_ = false;
+  choiceKnown_ = seed.known;
+  choiceStaged_ = seed.known && seed.staged;
+  choiceValue_ = (uint8_t)seed.value;
+}
+
+void KeypadInput::beginValueEntry(const ValueSpec& spec, const EntrySeed& seed, TargetVfo targetVfo) {
+  beginEntry(InputMode::ValueEntry, targetVfo);
+  value_.begin(spec, seed);
 }
 
 // The keys that belong to the state machine rather than the keymap, the same
@@ -304,6 +312,14 @@ void KeypadInput::releasedNormal(char key, uint32_t nowMs) {
 // Choice select takes a key that picks a value; another one replaces it, and
 // Enter applies it. Any other key beeps and the choice stays; only '#' cancels.
 void KeypadInput::pressedChoice(char key) {
+  if (key == 'A' && (choiceStaged_ || choiceKnown_)) {
+    choice_->picked(key, choiceValue_);
+    return;
+  }
+  if (key == 'B' || key == 'C') {
+    walkChoice(key, key == 'B' ? 1 : -1);
+    return;
+  }
   uint8_t value = 0;
   if (choiceValue(key, value)) {
     choiceStaged_ = true;
@@ -313,6 +329,67 @@ void KeypadInput::pressedChoice(char key) {
   }
   const char label[2] = {key, '\0'};
   reportRejected(choice_->name, label);
+}
+
+// From the value picked or the radio's value, to the next candidate the choice
+// takes. A value that is none of them (a mode the keys do not pick) walks from
+// before the first or after the last.
+void KeypadInput::walkChoice(char key, int8_t dir) {
+  if (!choiceStaged_ && !choiceKnown_) {
+    const char label[2] = {key, '\0'};
+    reportRejected(choice_->name, label);
+    return;
+  }
+  int count = 0;
+  int at = -1;
+  for (char k; (k = choiceKeyAt(count)) != 0; ++count) {
+    uint8_t v = 0;
+    if (at < 0 && choiceValue(k, v) && v == choiceValue_) at = count;
+  }
+  if (at < 0) at = dir > 0 ? -1 : count;
+  for (int i = at + dir; i >= 0 && i < count; i += dir) {
+    uint8_t v = 0;
+    if (!choiceValue(choiceKeyAt(i), v)) continue;
+    choiceStaged_ = true;
+    choiceValue_ = v;
+    choice_->picked(key, v);
+    return;
+  }
+  listener_.onLimit(choice_->name, dir > 0);
+}
+
+char KeypadInput::choiceKeyAt(int at) const {
+  if (choice_->options) return at < choice_->optionCount ? choice_->options[at].key : 0;
+  return at < 10 ? (char)('0' + at) : 0;
+}
+
+// Value entry: digits and '*' type, A says the value so far, B and C step it.
+void KeypadInput::pressedValue(char key) {
+  const ValueSpec& spec = value_.spec();
+  if (key == 'A') {
+    int32_t v = 0;
+    if (value_.current(v)) {
+      listener_.onValueSay(spec, v);
+      return;
+    }
+  } else if (key == 'B' || key == 'C') {
+    const int8_t dir = key == 'B' ? 1 : -1;
+    switch (value_.step(dir)) {
+      case ValueEntry::Step::Moved: {
+        int32_t v = 0;
+        value_.current(v);
+        listener_.onValueStepped(spec, v);
+        return;
+      }
+      case ValueEntry::Step::AtLimit: listener_.onLimit(spec.name, dir > 0); return;
+      case ValueEntry::Step::NoValue: break;
+    }
+  } else if (value_.type(key)) {
+    listener_.onValueDigit(spec, key, value_.digits());
+    return;
+  }
+  const char label[2] = {key, '\0'};
+  reportRejected(spec.name, label);
 }
 
 bool KeypadInput::choiceValue(char key, uint8_t& value) const {
@@ -381,6 +458,29 @@ void KeypadInput::enter() {
     spec.commit(choiceValue_, targetVfo);
     return;
   }
+  if (mode_ == InputMode::ValueEntry) {
+    // A value past the range says so and becomes that end, staged for another Enter.
+    int32_t v = 0;
+    const ValueEntry::Result result = value_.result(v);
+    if (result == ValueEntry::Result::AboveMax || result == ValueEntry::Result::BelowMin) {
+      value_.snapToRange();
+      value_.current(v);
+      listener_.onLimit(value_.spec().name, result == ValueEntry::Result::AboveMax);
+      listener_.onValueStaged(value_.spec(), v);
+      return;
+    }
+    switch (result) {
+      case ValueEntry::Result::Ok: {
+        const TargetVfo targetVfo = entryVfo_;
+        mode_ = InputMode::Normal;
+        entryVfo_ = TargetVfo::Current;
+        listener_.onValueCommit(value_.spec(), v, targetVfo);
+        return;
+      }
+      case ValueEntry::Result::None: reportRejected(value_.spec().name, "D"); return;
+      default: return;
+    }
+  }
 
   if (digits_.empty()) {
     reportRejected(keypadEntrySpec(mode_)->name, "D");
@@ -431,7 +531,10 @@ void KeypadInput::clearAll() {
 void KeypadInput::timeOut() {
   const InputMode mode = mode_;
   const EntrySpec* entry = keypadEntrySpec(mode);
-  const char* name = mode == InputMode::ChoiceSelect ? choice_->name : entry ? entry->name : "ENTRY";
+  const char* name = mode == InputMode::ChoiceSelect ? choice_->name
+                     : mode == InputMode::ValueEntry ? value_.spec().name
+                     : entry                         ? entry->name
+                                                     : "ENTRY";
   mode_ = InputMode::Normal;
   digits_.clear();
   entryVfo_ = TargetVfo::Current;

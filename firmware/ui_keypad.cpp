@@ -125,6 +125,17 @@ class KeypadUiListener : public KeypadInputListener {
     keypadEntryDigit(entry, key, digits);
   }
 
+  void onValueDigit(const ValueSpec& spec, char key, const char* digits) override {
+    keypadValueDigit(spec, key, digits);
+  }
+  void onValueSay(const ValueSpec& spec, int32_t value) override { keypadValueSay(spec, value); }
+  void onValueStepped(const ValueSpec& spec, int32_t value) override { keypadValueStepped(spec, value); }
+  void onValueStaged(const ValueSpec& spec, int32_t value) override { keypadValueStaged(spec, value); }
+  void onLimit(const char* name, bool atMax) override { keypadValueLimit(name, atMax); }
+  void onValueCommit(const ValueSpec& spec, int32_t value, TargetVfo) override {
+    keypadValueCommit(spec, value);
+  }
+
   void onRejected(const char* label) override { keypadReportUnassigned(label); }
 
   void onCommit(InputMode mode, const char* digits, TargetVfo targetVfo) override {
@@ -168,8 +179,12 @@ void keypadBeginEntry(InputMode mode, TargetVfo targetVfo) {
   s_input.beginEntry(mode, targetVfo);
 }
 
-void keypadBeginChoiceSelect(const ChoiceSpec& spec, TargetVfo targetVfo) {
-  s_input.beginChoiceSelect(spec, targetVfo);
+void keypadBeginChoiceSelect(const ChoiceSpec& spec, TargetVfo targetVfo, const EntrySeed& seed) {
+  s_input.beginChoiceSelect(spec, targetVfo, seed);
+}
+
+void keypadBeginValueEntry(const ValueSpec& spec, const EntrySeed& seed) {
+  s_input.beginValueEntry(spec, seed);
 }
 
 void keypadBeginProfileSelect() {

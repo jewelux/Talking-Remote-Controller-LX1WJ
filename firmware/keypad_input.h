@@ -5,6 +5,7 @@
 
 #include "keypad_digit_buffer.h"
 #include "keypad_settings.h"
+#include "keypad_value_entry.h"
 
 // Keypad input state machine. It decides what each key event means: which
 // mode is active, which digits an entry takes, when a release is swallowed
@@ -18,18 +19,16 @@
 
 // Exactly one mode is active. Bank select, profile select and the entries
 // take digits by the rules of their EntrySpec; choice select takes one key by
-// its ChoiceSpec.
+// its ChoiceSpec; value entry takes a number by its ValueSpec.
 enum class InputMode : uint8_t {
   Normal,
   BankSelect,
   ProfileSelect,
   ChoiceSelect,  // a key picks one value of a ChoiceSpec; Enter applies it
+  ValueEntry,    // a number typed or stepped by a ValueSpec; Enter sets it
   FreqEntry,
-  RfPowerEntry,
   CivAddrEntry,
   RptOffsetEntry,
-  CtcssEntry,
-  DcsEntry,
   MenuEntry,  // FT-8x7 menu item
   RowEntry,   // FT-8x7 soft key row
 };
@@ -46,7 +45,7 @@ struct EntrySpec {
   const char* unit;     // shown after the digits while typing
 };
 
-// The rules of mode, or nullptr for Normal and ChoiceSelect.
+// The rules of mode, or nullptr for Normal, ChoiceSelect and ValueEntry.
 const EntrySpec* keypadEntrySpec(InputMode mode);
 
 // Target VFO for a frequency entry and mode select.
@@ -64,7 +63,9 @@ struct ChoiceOption {
 };
 
 // A choice select: a key picks a value and says it, another key replaces it, and Enter applies
-// it. Any other key beeps ("<name> 7") and the choice stays; only Clear cancels. The mode, the
+// it. A says the value picked, or else the radio's value it was opened with; B and C walk to the
+// next value up or down, in the order of the options (or of the keys 0-9 that pick() takes).
+// Any other key beeps ("<name> 7") and the choice stays; only Clear cancels. The mode, the
 // FT-817 power level, ... each have one, kept for as long as the selection runs.
 struct ChoiceSpec {
   const char* name;  // label of its beeps and trace: "MODE SELECT"
@@ -73,7 +74,7 @@ struct ChoiceSpec {
   uint8_t optionCount;
   // With no options: the value key picks, or false. nullptr with options.
   bool (*pick)(char key, uint8_t& value);
-  // Says the value key just picked.
+  // Says the value key just picked; also for A, B and C.
   void (*picked)(char key, uint8_t value);
   // Enter: applies value. The mode is already back to Normal.
   void (*commit)(uint8_t value, TargetVfo targetVfo);
@@ -129,6 +130,22 @@ class KeypadInputListener {
 
   // A digit (or the frequency point) was taken into entry.
   virtual void onDigitAccepted(const EntrySpec& entry, char key, const char* digits) = 0;
+
+  // Value entry. A digit, point or minus was typed: digits as ValueEntry::digits() has them.
+  virtual void onValueDigit(const ValueSpec& spec, char key, const char* digits) = 0;
+  // A: the value so far.
+  virtual void onValueSay(const ValueSpec& spec, int32_t value) = 0;
+  // B or C moved the value.
+  virtual void onValueStepped(const ValueSpec& spec, int32_t value) = 0;
+  // Enter with a value typed past an end, after onLimit: the value is now that end, staged
+  // and not yet set; another Enter sets it.
+  virtual void onValueStaged(const ValueSpec& spec, int32_t value) = 0;
+  // B or C at the end of a range or choice (nothing changed), or Enter with a value typed past
+  // an end. The entry stays. name: its ValueSpec or ChoiceSpec name.
+  virtual void onLimit(const char* name, bool atMax) = 0;
+  // Enter set value. The mode is already back to Normal.
+  virtual void onValueCommit(const ValueSpec& spec, int32_t value, TargetVfo targetVfo) = 0;
+
   // The key does nothing here: an unassigned key, a digit an entry does not
   // take, a key a choice select has no value for, Enter with nothing picked, '#' with nothing to cancel, a second key
   // pressed while another is down ("TWO KEYS"). "<label> ->
@@ -145,8 +162,8 @@ class KeypadInputListener {
   // onRejected("CLEAR") instead.
   virtual void onClear() = 0;
   // An entry or selection had no key event for kEntryTimeoutMs and was
-  // dropped. The mode is already back to Normal. name: its EntrySpec or
-  // ChoiceSpec name.
+  // dropped. The mode is already back to Normal. name: its EntrySpec,
+  // ChoiceSpec or ValueSpec name.
   virtual void onEntryTimeout(InputMode mode, const char* name) = 0;
 };
 
@@ -167,8 +184,13 @@ class KeypadInput {
   // Called by keymap actions.
   void beginEntry(InputMode mode, TargetVfo targetVfo = TargetVfo::Current);
   void beginProfileSelect() { beginEntry(InputMode::ProfileSelect); }
-  // spec must outlive the selection.
-  void beginChoiceSelect(const ChoiceSpec& spec, TargetVfo targetVfo = TargetVfo::Current);
+  // spec must outlive the selection. seed: the radio's value, for A, B and C;
+  // staged, Enter applies it with no key picked.
+  void beginChoiceSelect(const ChoiceSpec& spec, TargetVfo targetVfo = TargetVfo::Current,
+                         const EntrySeed& seed = EntrySeed());
+  // spec is copied.
+  void beginValueEntry(const ValueSpec& spec, const EntrySeed& seed = EntrySeed(),
+                       TargetVfo targetVfo = TargetVfo::Current);
 
   uint8_t bank() const { return bank_; }
   void setBank(uint8_t bank) { bank_ = bank; }
@@ -178,6 +200,7 @@ class KeypadInput {
   TargetVfo entryTargetVfo() const { return entryVfo_; }
   // Choice select with a value picked, waiting for Enter.
   bool choiceStaged() const { return mode_ == InputMode::ChoiceSelect && choiceStaged_; }
+  const ValueEntry& valueEntry() const { return value_; }
   bool doubleClickPending() const { return pending_.active; }
 
  private:
@@ -236,6 +259,12 @@ class KeypadInput {
   void pressedChoice(char key);
   // The value key picks in the running choice select.
   bool choiceValue(char key, uint8_t& value) const;
+  // B (dir 1) or C (-1) in choice select.
+  void walkChoice(char key, int8_t dir);
+  // The key of the choice's candidate at (the options, or the keys 0-9 in
+  // order), or 0 past the end.
+  char choiceKeyAt(int at) const;
+  void pressedValue(char key);
   void pressedEntry(const EntrySpec& entry, char key);
   bool takesDigit(const EntrySpec& entry, char key) const;
   void enter();
@@ -260,10 +289,13 @@ class KeypadInput {
   DigitBuffer<13> digits_;
   // Target VFO of a frequency entry and mode select.
   TargetVfo entryVfo_ = TargetVfo::Current;
-  // The running choice select, and the value picked once choiceStaged_.
+  // The running choice select, and the value picked once choiceStaged_; before
+  // that, choiceKnown_ says it holds the radio's value.
   const ChoiceSpec* choice_ = nullptr;
   bool choiceStaged_ = false;
+  bool choiceKnown_ = false;
   uint8_t choiceValue_ = 0;
+  ValueEntry value_;
   KeySet swallowed_;
   DoubleClick pending_;
   // Keys that are down now, and whether two were down at once: every event is

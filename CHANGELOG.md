@@ -78,6 +78,14 @@
   FTDX10, FTDX101 and FT-891 (console `ALC?`)
 - Bank 1 `6` says the RF power setting and long press enters it in watts on the FTDX10, FTDX101D,
   FT-891, TS-480 and KX2 too, as on the Icoms
+- the RF power, CTCSS and DCS entries start from the radio's value: `A` says the value so far, `B`
+  steps it up and `C` down (RF power 1 W up to 20 W, then 5 W; CTCSS and DCS the next standard
+  tone or code), from a typed number too. `D` sets it. A typed value past the range says
+  "maximum" or "minimum" and the end value followed by "please": nothing is set yet, and a second
+  `D` sets it. A step past the end says "maximum" or "minimum" and changes nothing. CTCSS takes
+  `*` as the point (`88*5`) as well as `885`
+- the FT-817/818 power level, the mode and the AGC picks: `B` and `C` walk to the next or previous
+  choice, from the power level or mode the radio has; `A` says it. Nothing changes before `D`
 - Bank 7 is the CW bank: `1` says break-in and long press turns it on or off (Icom: off to semi,
   semi or full to off), `2` the same for the keyer, `3` the keyer speed, `4` the CW pitch and `5`
   the break-in delay (long press one step up, double press one step down). On the FT-8x7 setting

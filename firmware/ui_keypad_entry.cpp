@@ -131,20 +131,6 @@ static void commitFrequency(const char* digits, TargetVfo targetVfo) {
   }
 }
 
-// FT-8x7 (experimental): written here rather than through the console command, so a value the
-// band does not offer says "error".
-static void commitRfPower(const char* digits) {
-  if (currentProtocolType() != PROTO_YAESU_FT8X7) {
-    printKeypadCommand("ENTER -> RFPOWER");
-    keypadSendNow(String("RFPOWER ") + digits);
-    return;
-  }
-  printKeypadCommand("ENTER -> RFPOWER {}", digits);
-  prepareKeypadRadioWrite();
-  Ft8x7SettingState state;
-  keypadReportFt8x7Setting(ft8x7RfPowerSet((uint16_t)atoi(digits), state), "RFPOWER", state);
-}
-
 static void commitCivAddress(const char* digits) {
   printKeypadCommand("ENTER -> CIVADDR");
   int addr = atoi(digits);
@@ -167,42 +153,6 @@ static void commitRepeaterOffset(const char* digits) {
   speakRepeaterOffsetHz(hz);
 }
 
-// The FT-8x7 tone and DCS writes are write-only: they fail only on a value
-// that is not a standard tone or code.
-static void commitCtcss(const char* digits) {
-  printKeypadCommand("ENTER -> CTCSS");
-  uint16_t toneTenths = (uint16_t)atoi(digits);
-  if (!yaesuCatSetCtcssTenths(toneTenths)) {
-    printKeypadStatus("CTCSS -> invalid");
-    speakKeypadFailure("CTCSS", KeypadFailure::Error);
-    return;
-  }
-  char label[12] = "";
-  formatCtcssTenthsLabel(toneTenths, label, sizeof(label));
-  printKeypadStatus("CTCSS {}", label);
-  if (g_speechEnabled) {
-    speakLabel("ctcss");
-    speakDigitsAndPoint(label);
-  }
-}
-
-static void commitDcs(const char* digits) {
-  printKeypadCommand("ENTER -> DCS");
-  uint16_t dcsCode = (uint16_t)atoi(digits);
-  if (!yaesuCatSetDcsCode(dcsCode)) {
-    printKeypadStatus("DCS -> invalid");
-    speakKeypadFailure("DCS", KeypadFailure::Error);
-    return;
-  }
-  char label[8] = "";
-  snprintf(label, sizeof(label), "%03u", (unsigned)dcsCode);
-  printKeypadStatus("DCS {}", label);
-  if (g_speechEnabled) {
-    speakLabel("dcs");
-    speakDigitsAndPoint(label);
-  }
-}
-
 // Experimental FT-8x7 EEPROM write; says the value read back.
 static void commitMenuRow(Ft8x7Setting setting, const char* digits) {
   const char* label = setting == Ft8x7Setting::Row ? "ROW" : "MENU";
@@ -217,15 +167,13 @@ void keypadEntryCommit(InputMode mode, const char* digits, TargetVfo targetVfo) 
     case InputMode::BankSelect: commitBank(); return;
     case InputMode::ProfileSelect: commitProfile(digits); return;
     case InputMode::FreqEntry: commitFrequency(digits, targetVfo); return;
-    case InputMode::RfPowerEntry: commitRfPower(digits); return;
     case InputMode::CivAddrEntry: commitCivAddress(digits); return;
     case InputMode::RptOffsetEntry: commitRepeaterOffset(digits); return;
-    case InputMode::CtcssEntry: commitCtcss(digits); return;
-    case InputMode::DcsEntry: commitDcs(digits); return;
     case InputMode::MenuEntry: commitMenuRow(Ft8x7Setting::Menu, digits); return;
     case InputMode::RowEntry: commitMenuRow(Ft8x7Setting::Row, digits); return;
     case InputMode::Normal:
-    case InputMode::ChoiceSelect: return;
+    case InputMode::ChoiceSelect:
+    case InputMode::ValueEntry: return;
   }
 }
 
@@ -264,4 +212,10 @@ static void commitMode(uint8_t mode, TargetVfo targetVfo) {
 
 static constexpr ChoiceSpec kModeChoice = {"MODE SELECT", nullptr, 0, pickMode, sayPickedMode, commitMode};
 
-void keypadBeginModeSelect(TargetVfo targetVfo) { keypadBeginChoiceSelect(kModeChoice, targetVfo); }
+// B and C walk from the mode last read, when it is the current VFO's.
+void keypadBeginModeSelect(TargetVfo targetVfo) {
+  EntrySeed seed;
+  seed.known = targetVfo == TargetVfo::Current && live.modeValid;
+  seed.value = live.mode;
+  keypadBeginChoiceSelect(kModeChoice, targetVfo, seed);
+}

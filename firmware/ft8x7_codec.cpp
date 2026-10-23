@@ -102,6 +102,44 @@ bool yaesuDcsCodeValid(uint16_t dcsCode) {
   return containsU16(kValidDcsCodes, dcsCode);
 }
 
+bool yaesuDcsCodeIndex(uint16_t dcsCode, uint8_t& indexOut) {
+  for (size_t i = 0; i < sizeof(kValidDcsCodes) / sizeof(kValidDcsCodes[0]); ++i) {
+    if (kValidDcsCodes[i] != dcsCode) continue;
+    indexOut = (uint8_t)i;
+    return true;
+  }
+  return false;
+}
+
+bool yaesuDcsCodeAt(uint8_t index, uint16_t& dcsCodeOut) {
+  if (index >= sizeof(kValidDcsCodes) / sizeof(kValidDcsCodes[0])) return false;
+  dcsCodeOut = kValidDcsCodes[index];
+  return true;
+}
+
+// values is in ascending order.
+template <size_t N>
+static uint16_t stepU16(const uint16_t (&values)[N], uint16_t value, int8_t dir) {
+  if (dir > 0) {
+    for (size_t i = 0; i < N; ++i) {
+      if (values[i] > value) return values[i];
+    }
+  } else {
+    for (size_t i = N; i-- > 0;) {
+      if (values[i] < value) return values[i];
+    }
+  }
+  return value;
+}
+
+uint16_t yaesuCtcssToneStep(uint16_t toneTenths, int8_t dir) {
+  return stepU16(kValidCtcssTenths, toneTenths, dir);
+}
+
+uint16_t yaesuDcsCodeStep(uint16_t dcsCode, int8_t dir) {
+  return stepU16(kValidDcsCodes, dcsCode, dir);
+}
+
 void yaesuEncodeToneData(uint16_t value, bool separateTxRx, uint8_t data[4]) {
   const uint8_t d1 = (uint8_t)(value % 10); value /= 10;
   const uint8_t d10 = (uint8_t)(value % 10); value /= 10;

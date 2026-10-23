@@ -288,8 +288,11 @@ FeatureStatus ft817AntennaToggle(Ft8x7SettingState& out);
 // the value read back. Menu 75 of the band group of the current frequency, HF and 6 m 5..100,
 // VHF 5..50, UHF 2..20; Invalid for any other value. Failed while transmitting or when the
 // read-back differs; Unexpected when the stored byte is out of range (nothing written).
-// Unsupported on the FT-817/818.
-FeatureStatus ft8x7RfPowerSet(uint16_t watts, Ft8x7SettingState& out);
+// Unsupported on the FT-817/818. hz: a frequency of the band group to set, 0 for the current
+// one.
+FeatureStatus ft8x7RfPowerSet(uint16_t watts, Ft8x7SettingState& out, uint64_t hz = 0);
+// The watts ft8x7RfPowerSet takes for the band group of the current frequency, hzOut.
+FeatureStatus ft8x7RfPowerRange(uint64_t& hzOut, uint16_t& minOut, uint16_t& maxOut);
 // The same for the FT-817/818 power level; Unsupported on the FT-857/897.
 FeatureStatus ft817PowerLevelSet(Ft817PowerLevel level, Ft8x7SettingState& out);
 // Experimental (caps.setRadioMenu): AGC in the EEPROM, on the FT-817/818 and FT-857/897; out

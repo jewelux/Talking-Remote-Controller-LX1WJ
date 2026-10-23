@@ -59,19 +59,9 @@ void beginBank6RepeaterOffsetEntry() {
   }
 }
 
-void beginBank6CtcssEntry() {
-  printKeypadAction("CTCSS ENTRY");
-  keypadBeginEntry(InputMode::CtcssEntry);
-  printKeypadStatus("CTCSS PLEASE");
-  speakPrompt("ctcss");
-}
+void beginBank6CtcssEntry() { keypadSettingEntry(Setting::Ctcss); }
 
-void beginBank6DcsEntry() {
-  printKeypadAction("DCS ENTRY");
-  keypadBeginEntry(InputMode::DcsEntry);
-  printKeypadStatus("DCS PLEASE");
-  speakPrompt("dcs");
-}
+void beginBank6DcsEntry() { keypadSettingEntry(Setting::Dcs); }
 
 void setBank6RepeaterOff() {
   setBank6Ft8x7RepeaterShift(0x89, "OFF");

@@ -286,14 +286,24 @@ FeatureStatus ft817AntennaToggle(Ft8x7SettingState& out) {
   return ft817AntennaWrite(nullptr, out);
 }
 
-FeatureStatus ft8x7RfPowerSet(uint16_t watts, Ft8x7SettingState& out) {
+FeatureStatus ft8x7RfPowerRange(uint64_t& hzOut, uint16_t& minOut, uint16_t& maxOut) {
+  if (!currentProfile().caps.setRfPower || !currentIsFt857Family()) return FeatureStatus::Unsupported;
+  if (!queryFrequency(hzOut, kFt8x7TimeoutMs)) return failure(FeatureStatus::NoReply);
+  uint8_t lo = 0;
+  uint8_t hi = 0;
+  ft857RfPowerRange(ft8x7BandGroupForHz(hzOut), lo, hi);
+  minOut = lo;
+  maxOut = hi;
+  return FeatureStatus::Ok;
+}
+
+FeatureStatus ft8x7RfPowerSet(uint16_t watts, Ft8x7SettingState& out, uint64_t hz) {
   if (!currentProfile().caps.setRfPower || !currentIsFt857Family()) return FeatureStatus::Unsupported;
   out = Ft8x7SettingState();
   out.setting = Ft8x7Setting::RfPower;
   // Above any band's maximum; also keeps the cast below from wrapping.
   if (watts > 0xFF) return FeatureStatus::Invalid;
-  uint64_t hz = 0;
-  if (!queryFrequency(hz, kFt8x7TimeoutMs)) return failure(FeatureStatus::NoReply);
+  if (!hz && !queryFrequency(hz, kFt8x7TimeoutMs)) return failure(FeatureStatus::NoReply);
   uint8_t written = 0;
   const FeatureStatus status =
       eepromWriteStatus(yaesuFt857SetRfPowerWatts(hz, (uint8_t)watts, written, kFt8x7TimeoutMs));

@@ -123,6 +123,44 @@ TEST(dcs_accepts_only_standard_codes) {
   CHECK(!yaesuDcsCodeValid(755));
 }
 
+TEST(dcs_index_round_trips_the_table) {
+  uint8_t index = 0xFF;
+  CHECK(yaesuDcsCodeIndex(23, index));
+  CHECK_EQ(index, 0);
+  CHECK(yaesuDcsCodeIndex(754, index));
+  CHECK_EQ(index, 103);
+  CHECK(!yaesuDcsCodeIndex(24, index));
+  for (uint8_t i = 0; i < 104; ++i) {
+    uint16_t code = 0;
+    CHECK(yaesuDcsCodeAt(i, code));
+    CHECK(yaesuDcsCodeValid(code));
+    CHECK(yaesuDcsCodeIndex(code, index));
+    CHECK_EQ(index, i);
+  }
+  uint16_t code = 0;
+  CHECK(!yaesuDcsCodeAt(104, code));
+}
+
+TEST(ctcss_step_walks_the_standard_tones) {
+  CHECK_EQ(yaesuCtcssToneStep(885, 1), 915);
+  CHECK_EQ(yaesuCtcssToneStep(885, -1), 854);
+  // From a value between tones, to the neighbour in that direction.
+  CHECK_EQ(yaesuCtcssToneStep(886, 1), 915);
+  CHECK_EQ(yaesuCtcssToneStep(886, -1), 885);
+  // Nothing past the ends.
+  CHECK_EQ(yaesuCtcssToneStep(2541, 1), 2541);
+  CHECK_EQ(yaesuCtcssToneStep(670, -1), 670);
+  CHECK_EQ(yaesuCtcssToneStep(0, 1), 670);
+}
+
+TEST(dcs_step_walks_the_standard_codes) {
+  CHECK_EQ(yaesuDcsCodeStep(23, 1), 25);
+  CHECK_EQ(yaesuDcsCodeStep(25, -1), 23);
+  CHECK_EQ(yaesuDcsCodeStep(24, 1), 25);
+  CHECK_EQ(yaesuDcsCodeStep(754, 1), 754);
+  CHECK_EQ(yaesuDcsCodeStep(23, -1), 23);
+}
+
 TEST(tone_data_repeats_the_value_for_separate_tx_and_rx) {
   uint8_t data[4] = {0xEE, 0xEE, 0xEE, 0xEE};
   yaesuEncodeToneData(885, true, data);

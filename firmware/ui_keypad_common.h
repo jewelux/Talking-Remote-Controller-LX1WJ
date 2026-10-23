@@ -12,7 +12,9 @@
 // What an action may ask of the keypad state machine (ui_keypad.cpp): the keys
 // after it go to an entry, a choice select or profile select.
 void keypadBeginEntry(InputMode mode, TargetVfo targetVfo = TargetVfo::Current);
-void keypadBeginChoiceSelect(const ChoiceSpec& spec, TargetVfo targetVfo = TargetVfo::Current);
+void keypadBeginChoiceSelect(const ChoiceSpec& spec, TargetVfo targetVfo = TargetVfo::Current,
+                             const EntrySeed& seed = EntrySeed());
+void keypadBeginValueEntry(const ValueSpec& spec, const EntrySeed& seed);
 // The mode keys (ui_keypad_entry.cpp).
 void keypadBeginModeSelect(TargetVfo targetVfo);
 void keypadBeginProfileSelect();
@@ -24,6 +26,18 @@ void speakKeypadCommandWord(const String& cmd);
 // Entries and selections (ui_keypad_entry.cpp), called by the state machine.
 void keypadEntryDigit(const EntrySpec& entry, char key, const char* digits);
 void keypadEntryCommit(InputMode mode, const char* digits, TargetVfo targetVfo);
+// The settings engine (ui_keypad_settings.cpp). Opens the entry of setting with
+// its value read from the radio: "power please".
+void keypadSettingEntry(Setting setting);
+// What a value entry says, called by the state machine.
+void keypadValueDigit(const ValueSpec& spec, char key, const char* digits);
+void keypadValueSay(const ValueSpec& spec, int32_t value);
+void keypadValueStepped(const ValueSpec& spec, int32_t value);
+// The value, then "please": staged, not yet set.
+void keypadValueStaged(const ValueSpec& spec, int32_t value);
+// "maximum" or "minimum": nothing changed.
+void keypadValueLimit(const char* name, bool atMax);
+void keypadValueCommit(const ValueSpec& spec, int32_t value);
 // Shared frequency writer for entry commit and the round-to-500 Hz action.
 bool keypadApplyFrequencyHz(uint64_t hz, TargetVfo targetVfo);
 
