@@ -264,6 +264,26 @@ static bool reportFeatureFailure(FeatureStatus status, const char* label) {
   }
 }
 
+// The reply to a feature command: the failure, or value printed with text and spoken with speak.
+// value is read after the operation that filled it. Always true (the command is handled).
+template <typename T, typename TextFn, typename SpeakFn>
+static bool replyFeature(FeatureStatus status, const char* label, const T& value, TextFn text, SpeakFn speak) {
+  if (reportFeatureFailure(status, label)) return true;
+  Serial.println(text(value));
+  speak(value);
+  return true;
+}
+
+// "<name> -> invalid (use min..max)".
+static void printInvalidRange(const String& name, unsigned min, unsigned max) {
+  Serial.print(name);
+  Serial.print(" -> invalid (use ");
+  Serial.print(min);
+  Serial.print("..");
+  Serial.print(max);
+  Serial.println(")");
+}
+
 static void printNrState(const NrState& state) {
   Serial.println(nrStateText(state));
   speakNrState(state);
@@ -891,6 +911,18 @@ static void printTxSettingsHelp() {
   }
 }
 
+// The CAT settings the profile has: AGC, front end, RF power, CW, tone, ALC, PROC, mic gain, VOX.
+static void printCatSettingsHelp() {
+  printAgcHelp();
+  printFrontEndHelp();
+  printRfPowerHelp();
+  printCwSwitchHelp();
+  printCwLevelHelp();
+  printCatToneHelp();
+  if (currentProfile().caps.getAlc) helpLine("ALC?  (while transmitting, percent of full scale)");
+  printTxSettingsHelp();
+}
+
 static void printHelpIndex() {
   Serial.println("HELP GENERAL   bank, profile, speech, volume, frequency, mode");
   Serial.print("HELP RADIO     commands for ");
@@ -971,14 +1003,7 @@ void printHelp(const String& topicArg) {
     helpLine("NR? | NR OFF | ON | TOGGLE");
     helpLine("PBT1? | PBT1 <-128..127> | CENTER | STEP <+-n>");
     helpLine("PBT2? | PBT2 <-128..127> | CENTER | STEP <+-n>");
-    printAgcHelp();
-    printFrontEndHelp();
-    printRfPowerHelp();
-    printCwSwitchHelp();
-    printCwLevelHelp();
-    printCatToneHelp();
-    if (currentProfile().caps.getAlc) helpLine("ALC?  (while transmitting, percent of full scale)");
-    printTxSettingsHelp();
+    printCatSettingsHelp();
     helpLine("RIT? | RIT <Hz> | RIT STEP <+-Hz> | RIT OFF | ON | TOGGLE");
     helpLine("RXTX?");
     helpLine("SPLIT? | SPLIT OFF | ON | TOGGLE");
@@ -1078,14 +1103,7 @@ void printHelp(const String& topicArg) {
     helpLine("NOTCH? | NOTCH OFF | ON | TOGGLE");
     helpLine("NR? | NR OFF | ON | TOGGLE");
     printYaesuRxLevelHelp();
-    printAgcHelp();
-    printFrontEndHelp();
-    printRfPowerHelp();
-    printCwSwitchHelp();
-    printCwLevelHelp();
-    printCatToneHelp();
-    if (currentProfile().caps.getAlc) helpLine("ALC?  (while transmitting, percent of full scale)");
-    printTxSettingsHelp();
+    printCatSettingsHelp();
     helpLine("RXTX?");
     helpLine("SPLIT? | SPLIT OFF | ON | TOGGLE");
     helpLine("TUNE");
@@ -1735,21 +1753,12 @@ static bool handleConsoleFt8x7RfPowerSet(const String& upper) {
 // experimental. Other arguments fall through to the raw CAT AGC <hex byte>.
 static bool handleConsoleAgc(const String& upper) {
   AgcMode mode = AgcMode::Off;
-  if (upper == "AGC?") {
-    if (reportFeatureFailure(agcQuery(mode), "AGC?")) return true;
-    Serial.println(agcText(mode));
-    speakAgc(mode);
-    return true;
-  }
+  if (upper == "AGC?") return replyFeature(agcQuery(mode), "AGC?", mode, agcText, speakAgc);
   if (!upper.startsWith("AGC ")) return false;
   String arg = upper.substring(4);
   arg.trim();
   for (const AgcMode want : {AgcMode::Off, AgcMode::Fast, AgcMode::Mid, AgcMode::Slow, AgcMode::Auto}) {
-    if (arg != agcModeName(want)) continue;
-    if (reportFeatureFailure(agcSet(want, mode), "AGC")) return true;
-    Serial.println(agcText(mode));
-    speakAgc(mode);
-    return true;
+    if (arg == agcModeName(want)) return replyFeature(agcSet(want, mode), "AGC", mode, agcText, speakAgc);
   }
   return false;
 }
@@ -1757,127 +1766,73 @@ static bool handleConsoleAgc(const String& upper) {
 // ATT? | ATT OFF | ON | <dB>, ON the first step, <dB> one of the radio's steps; PREAMP? |
 // PREAMP OFF | ON | <level>, ON level 1; ANOTCH? | ANOTCH OFF | ON | TOGGLE.
 static bool handleConsoleFrontEnd(const String& upper) {
-  if (upper == "ATT?") {
-    AttState state;
-    if (reportFeatureFailure(attQuery(state), "ATT?")) return true;
-    Serial.println(attText(state));
-    speakAtt(state);
-    return true;
-  }
-  if (upper == "ANOTCH?") {
-    bool on = false;
-    if (reportFeatureFailure(autoNotchQuery(on), "ANOTCH?")) return true;
-    Serial.println(autoNotchText(on));
-    speakAutoNotch(on);
-    return true;
-  }
+  AttState state;
+  bool on = false;
+  uint8_t level = 0;
+  if (upper == "ATT?") return replyFeature(attQuery(state), "ATT?", state, attText, speakAtt);
+  if (upper == "ANOTCH?") return replyFeature(autoNotchQuery(on), "ANOTCH?", on, autoNotchText, speakAutoNotch);
   if (upper == "ANOTCH ON" || upper == "ANOTCH OFF" || upper == "ANOTCH TOGGLE") {
-    bool on = upper == "ANOTCH ON";
+    on = upper == "ANOTCH ON";
     const FeatureStatus status = upper == "ANOTCH TOGGLE" ? autoNotchToggle(on) : autoNotchSet(on);
-    if (reportFeatureFailure(status, "ANOTCH")) return true;
-    Serial.println(autoNotchText(on));
-    speakAutoNotch(on);
-    return true;
+    return replyFeature(status, "ANOTCH", on, autoNotchText, speakAutoNotch);
   }
-  if (upper == "PREAMP?") {
-    uint8_t level = 0;
-    if (reportFeatureFailure(preampQuery(level), "PREAMP?")) return true;
-    Serial.println(preampText(level));
-    speakPreamp(level);
-    return true;
-  }
+  if (upper == "PREAMP?") return replyFeature(preampQuery(level), "PREAMP?", level, preampText, speakPreamp);
   if (upper.startsWith("ATT ")) {
     String arg = upper.substring(4);
     arg.trim();
-    int step = -1;
-    if (arg == "OFF") {
-      step = 0;
-    } else if (arg == "ON") {
+    uint8_t step = 0;
+    if (arg == "ON") {
       step = 1;
     } else if (arg.length() && arg.length() <= 2 && isDigit(arg[0]) && (arg.length() == 1 || isDigit(arg[1]))) {
+      // Unsupported where the radio cannot set it, else one of its steps in dB.
+      if (!attSteps()) return replyFeature(FeatureStatus::Unsupported, "ATT", state, attText, speakAtt);
       const int db = arg.toInt();
       for (uint8_t s = 1; s <= attSteps(); ++s) {
         if (attStepDb(s) && attStepDb(s) == db) step = s;
       }
-      if (step < 0 && attSteps()) {
+      if (!step) {
         Serial.println("ATT -> use OFF, ON or the radio's dB (HELP)");
         return true;
       }
-    } else {
+    } else if (arg != "OFF") {
       return false;
     }
-    AttState state;
-    if (reportFeatureFailure(attSet(step < 0 ? 0 : (uint8_t)step, state), "ATT")) return true;
-    Serial.println(attText(state));
-    speakAtt(state);
-    return true;
+    return replyFeature(attSet(step, state), "ATT", state, attText, speakAtt);
   }
   if (upper.startsWith("PREAMP ")) {
     String arg = upper.substring(7);
     arg.trim();
-    int level = -1;
-    if (arg == "OFF") level = 0;
-    else if (arg == "ON") level = 1;
-    else if (arg.length() == 1 && arg[0] >= '0' && arg[0] <= '9') level = arg[0] - '0';
+    uint8_t want = 0;
+    if (arg == "OFF") want = 0;
+    else if (arg == "ON") want = 1;
+    else if (arg.length() == 1 && arg[0] >= '0' && arg[0] <= '9') want = (uint8_t)(arg[0] - '0');
     else return false;
-    uint8_t out = 0;
-    if (reportFeatureFailure(preampSet((uint8_t)level, out), "PREAMP")) return true;
-    Serial.println(preampText(out));
-    speakPreamp(out);
-    return true;
+    return replyFeature(preampSet(want, level), "PREAMP", level, preampText, speakPreamp);
   }
   return false;
 }
 
 // BK? | BK OFF | ON | SEMI | FULL | TOGGLE, KYR? | KYR OFF | ON | TOGGLE.
 static bool handleConsoleCwSwitches(const String& upper) {
-  if (upper == "BK?") {
-    BreakInMode mode = BreakInMode::Off;
-    if (reportFeatureFailure(breakInQuery(mode), "BK?")) return true;
-    Serial.println(breakInText(mode));
-    speakBreakIn(mode);
-    return true;
-  }
+  BreakInMode mode = BreakInMode::Off;
+  bool on = false;
+  if (upper == "BK?") return replyFeature(breakInQuery(mode), "BK?", mode, breakInText, speakBreakIn);
   if (upper.startsWith("BK ")) {
     String arg = upper.substring(3);
     arg.trim();
-    BreakInMode mode = BreakInMode::Off;
-    FeatureStatus status = FeatureStatus::Unsupported;
-    if (arg == "TOGGLE") {
-      status = breakInToggle(mode);
-    } else {
-      bool known = false;
-      for (const BreakInMode want : {BreakInMode::Off, BreakInMode::On, BreakInMode::Semi, BreakInMode::Full}) {
-        if (arg != breakInModeName(want)) continue;
-        known = true;
-        status = breakInSet(want, mode);
-      }
-      if (!known) return false;
+    if (arg == "TOGGLE") return replyFeature(breakInToggle(mode), "BK", mode, breakInText, speakBreakIn);
+    for (const BreakInMode want : {BreakInMode::Off, BreakInMode::On, BreakInMode::Semi, BreakInMode::Full}) {
+      if (arg == breakInModeName(want)) return replyFeature(breakInSet(want, mode), "BK", mode, breakInText, speakBreakIn);
     }
-    if (reportFeatureFailure(status, "BK")) return true;
-    Serial.println(breakInText(mode));
-    speakBreakIn(mode);
-    return true;
+    return false;
   }
-  if (upper == "KYR?") {
-    bool on = false;
-    if (reportFeatureFailure(keyerQuery(on), "KYR?")) return true;
-    Serial.println(keyerText(on));
-    speakKeyer(on);
-    return true;
-  }
+  if (upper == "KYR?") return replyFeature(keyerQuery(on), "KYR?", on, keyerText, speakKeyer);
   if (upper.startsWith("KYR ")) {
     String arg = upper.substring(4);
     arg.trim();
-    bool on = false;
-    FeatureStatus status = FeatureStatus::Unsupported;
-    if (arg == "TOGGLE") status = keyerToggle(on);
-    else if (arg == "ON" || arg == "OFF") status = keyerSet(arg == "ON", on);
-    else return false;
-    if (reportFeatureFailure(status, "KYR")) return true;
-    Serial.println(keyerText(on));
-    speakKeyer(on);
-    return true;
+    if (arg == "TOGGLE") return replyFeature(keyerToggle(on), "KYR", on, keyerText, speakKeyer);
+    if (arg == "ON" || arg == "OFF") return replyFeature(keyerSet(arg == "ON", on), "KYR", on, keyerText, speakKeyer);
+    return false;
   }
   return false;
 }
@@ -1901,12 +1856,7 @@ static bool handleConsoleYaesuRxLevels(const String& line, const String& upper) 
       uint16_t max = 0;
       const bool ranged = yaesuRxLevelRange(level, min, max);
       if (!parseRangedIntArg(upper, (name + " ").c_str(), ranged ? min : 0, ranged ? max : 99, want)) {
-        Serial.print(name);
-        Serial.print(" -> invalid (use ");
-        Serial.print((int)min);
-        Serial.print("..");
-        Serial.print((int)max);
-        Serial.println(")");
+        printInvalidRange(name, min, max);
         return true;
       }
       if (reportFeatureFailure(yaesuRxLevelSet(level, (uint16_t)want, value), name.c_str())) return true;
@@ -1924,43 +1874,25 @@ static bool handleConsoleYaesuRxLevels(const String& line, const String& upper) 
 // its own (handleConsoleYaesuFt8x7Commands, Bank 6). TONE and TONEDIR are shared.
 static bool handleConsoleCatTone(const String& line, const String& upper) {
   if (isCurrentYaesuFt8x7()) return false;
-  if (upper == "CTCSS?") {
-    uint16_t tenths = 0;
-    if (reportFeatureFailure(ctcssToneQuery(tenths), "CTCSS?")) return true;
-    Serial.println(ctcssText(tenths));
-    speakCtcss(tenths);
-    return true;
-  }
+  uint16_t tenths = 0;
+  RptShift shift = RptShift::Simplex;
+  if (upper == "CTCSS?") return replyFeature(ctcssToneQuery(tenths), "CTCSS?", tenths, ctcssText, speakCtcss);
   if (upper.startsWith("CTCSS ")) {
     const float hz = line.substring(6).toFloat();
-    uint16_t tenths = 0;
     const FeatureStatus status =
         hz > 0.0f && hz < 1000.0f ? ctcssToneSet((uint16_t)(hz * 10.0f + 0.5f), tenths) : FeatureStatus::Invalid;
     if (status == FeatureStatus::Invalid) {
       Serial.println("CTCSS -> invalid (use a standard tone in Hz, e.g. 88.5)");
       return true;
     }
-    if (reportFeatureFailure(status, "CTCSS")) return true;
-    Serial.println(ctcssText(tenths));
-    speakCtcss(tenths);
-    return true;
+    return replyFeature(status, "CTCSS", tenths, ctcssText, speakCtcss);
   }
-  if (upper == "RPT?") {
-    RptShift shift = RptShift::Simplex;
-    if (reportFeatureFailure(rptShiftQuery(shift), "RPT?")) return true;
-    Serial.println(rptShiftText(shift));
-    speakRptShift(shift);
-    return true;
-  }
+  if (upper == "RPT?") return replyFeature(rptShiftQuery(shift), "RPT?", shift, rptShiftText, speakRptShift);
   if (upper.startsWith("RPT ")) {
     String arg = upper.substring(4);
     arg.trim();
-    for (const RptShift shift : {RptShift::Simplex, RptShift::Plus, RptShift::Minus}) {
-      if (arg != rptShiftName(shift)) continue;
-      if (reportFeatureFailure(rptShiftSet(shift), "RPT")) return true;
-      Serial.println(rptShiftText(shift));
-      speakRptShift(shift);
-      return true;
+    for (const RptShift want : {RptShift::Simplex, RptShift::Plus, RptShift::Minus}) {
+      if (arg == rptShiftName(want)) return replyFeature(rptShiftSet(want), "RPT", want, rptShiftText, speakRptShift);
     }
     return false;
   }
@@ -1972,13 +1904,8 @@ static bool handleConsoleCatTone(const String& line, const String& upper) {
 // handleConsoleFt8x7LevelSet).
 static bool handleConsoleCwLevels(const String& line, const String& upper) {
   if (isCurrentYaesuFt8x7()) return false;
-  if (upper == "ALC?") {
-    uint8_t percent = 0;
-    if (reportFeatureFailure(alcQuery(percent), "ALC?")) return true;
-    Serial.println(alcText(percent));
-    speakAlc(percent);
-    return true;
-  }
+  uint8_t percent = 0;
+  if (upper == "ALC?") return replyFeature(alcQuery(percent), "ALC?", percent, alcText, speakAlc);
   for (const CwLevel level : {CwLevel::Speed, CwLevel::Pitch, CwLevel::Delay}) {
     const String name = cwLevelName(level);
     uint16_t value = 0;
@@ -2005,12 +1932,7 @@ static bool handleConsoleCwLevels(const String& line, const String& upper) {
         uint16_t min = 0;
         uint16_t max = 0;
         (void)cwLevelRange(level, min, max);
-        Serial.print(name);
-        Serial.print(" -> invalid (use ");
-        Serial.print((int)min);
-        Serial.print("..");
-        Serial.print((int)max);
-        Serial.println(")");
+        printInvalidRange(name, min, max);
         return true;
       }
       if (reportFeatureFailure(status, name.c_str())) return true;
