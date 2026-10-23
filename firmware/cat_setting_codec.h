@@ -94,6 +94,17 @@ bool civBreakInEncode(BreakInMode mode, uint8_t& rawOut);
 // One digit, 0 off or 1 on, then the end or ';' (Yaesu BI and KR, after the two letters).
 bool asciiOnOffDigitDecode(const char* digits, bool& onOut);
 
+// Icom 14 09: 0..255 = 300..900 Hz, linear; the radio keeps 5 Hz steps, so the Hz is rounded
+// to 5. The raw value of hz, kept within 300..900.
+uint16_t civCwPitchRawToHz(uint16_t raw);
+uint16_t civCwPitchHzToRaw(uint16_t hz);
+// Yaesu KP: 00..75 = 300..1050 Hz in 10 Hz steps. Decode takes the two digits after "KP"; encode
+// the nearest step, kept within the range.
+bool yaesuKpDecode(const char* digits, uint16_t& hzOut);
+bool yaesuKpEncode(uint16_t hz, char* out, size_t size);
+// The value of a reply of exactly n digits after its letters (the ';' may be left out).
+bool asciiDigitsDecode(const char* digits, size_t n, uint16_t& valueOut);
+
 // An ASCII lock reply digit: on unless it is one of offDigits ("0", or "04" on the FTDX101).
 // False when digit is not a digit.
 bool asciiLockDigitDecode(char digit, const char* offDigits, bool& onOut);

@@ -40,9 +40,9 @@ ID | Identification | vorbereitet | generische ASCII-Infrastruktur vorhanden, ft
 IF | Information | vorbereitet | generische ASCII-Infrastruktur vorhanden, ftdx10-Profil fuellt IF nicht
 IS | IF-shift | nein | keine FTDX10-Implementierung gefunden
 KM | Keyer memory | nein | keine FTDX10-Implementierung gefunden
-KP | Key pitch | nein | keine FTDX10-Implementierung gefunden
+KP | Key pitch | implementiert | CWPITCH? und CWPITCH 300..1050 Hz (KP 00..75, nach CAT-Handbuch und Hamlib), mit Ruecklesen; Bank 7 4
 KR | Keyer | implementiert | KYR? und KYR OFF/ON/TOGGLE (nach CAT-Handbuch und Hamlib), mit Ruecklesen; Bank 7 2
-KS | Key speed | nein | keine FTDX10-Implementierung gefunden
+KS | Key speed | implementiert | CWSPEED? und CWSPEED 4..60 WPM (nach CAT-Handbuch, Hamlib und flrig), mit Ruecklesen; Bank 7 3
 KY | CW keying | nein | keine FTDX10-Implementierung gefunden
 LK | Lock | implementiert | read/on/off vorhanden
 LM | Load message | nein | keine FTDX10-Implementierung gefunden
@@ -84,7 +84,7 @@ RS | Radio status | nein | keine FTDX10-Implementierung gefunden
 RT | RIT | nein | keine FTDX10-Implementierung gefunden
 RU | RIT up | nein | keine FTDX10-Implementierung gefunden
 SC | Scan | nein | keine FTDX10-Implementierung gefunden
-SD | Semi break-in delay time | nein | keine FTDX10-Implementierung gefunden
+SD | Semi break-in delay time | implementiert | CWDELAY? und CWDELAY 30..3000 ms (SD-Stufe wie VD, nach FTDX10-Handbuch und Hamlib), mit Ruecklesen; Bank 7 5; nicht beim FTDX101 (Handbuch ms, Hamlib Stufen)
 SF | Sub dial | nein | keine FTDX10-Implementierung gefunden
 SH | Width | nein | keine FTDX10-Implementierung gefunden
 SM | S meter | teilweise | konkret SM0 Abfrage vorhanden, kein allgemeiner SM-Ausbau darueber hinaus

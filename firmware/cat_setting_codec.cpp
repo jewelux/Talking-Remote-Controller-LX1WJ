@@ -344,6 +344,39 @@ bool asciiOnOffDigitDecode(const char* digits, bool& onOut) {
   return true;
 }
 
+uint16_t civCwPitchRawToHz(uint16_t raw) {
+  if (raw > 255) raw = 255;
+  const uint32_t hz = 300 + (raw * 600U + 127U) / 255U;
+  return (uint16_t)((hz + 2) / 5 * 5);
+}
+
+uint16_t civCwPitchHzToRaw(uint16_t hz) {
+  if (hz < 300) hz = 300;
+  if (hz > 900) hz = 900;
+  return (uint16_t)(((hz - 300) * 255U + 300U) / 600U);
+}
+
+bool yaesuKpDecode(const char* digits, uint16_t& hzOut) {
+  int value = 0;
+  if (!exactDigits(digits, 2, value) || value > 75) return false;
+  hzOut = (uint16_t)(300 + value * 10);
+  return true;
+}
+
+bool yaesuKpEncode(uint16_t hz, char* out, size_t size) {
+  if (hz < 300) hz = 300;
+  if (hz > 1050) hz = 1050;
+  const unsigned step = (unsigned)((hz - 300 + 5) / 10);
+  return snprintf(out, size, "KP%02u;", step) == 5;
+}
+
+bool asciiDigitsDecode(const char* digits, size_t n, uint16_t& valueOut) {
+  int value = 0;
+  if (!exactDigits(digits, n, value)) return false;
+  valueOut = (uint16_t)value;
+  return true;
+}
+
 bool asciiLockDigitDecode(char digit, const char* offDigits, bool& onOut) {
   if (digit < '0' || digit > '9') return false;
   onOut = strchr(offDigits, digit) == nullptr;

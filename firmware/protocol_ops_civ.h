@@ -56,6 +56,10 @@ bool civSetAttDb(const RadioProfile& sp, uint8_t db);
 // 16 47, CW break-in OFF, SEMI or FULL (caps.getBreakIn, setBreakIn); the set is read back.
 bool civQueryBreakIn(const RadioProfile& sp, BreakInMode& out, uint32_t timeoutMs);
 bool civSetBreakIn(const RadioProfile& sp, BreakInMode mode);
+// 14 09, the CW pitch in Hz, 300..900 (caps.getCwPitch, setCwPitch); the set is read back to
+// within the radio's 5 Hz step.
+bool civQueryCwPitchHz(const RadioProfile& sp, uint16_t& hzOut, uint32_t timeoutMs);
+bool civSetCwPitchHz(const RadioProfile& sp, uint16_t hz);
 bool civQueryPbtInner(const RadioProfile& sp, uint16_t& valueOut, uint32_t timeoutMs);
 bool civSetPbtInner(const RadioProfile& sp, uint16_t value);
 bool civQueryPbtOuter(const RadioProfile& sp, uint16_t& valueOut, uint32_t timeoutMs);

@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+#include "radio_setting_types.h"
+
 // The keypad actions the keymap (keypad_keymap.cpp) can run. Only plain types
 // here, so the keymap stays Arduino-free and the host tests (tests/keypad) can
 // link it against a recording stub. The firmware implements these in the
@@ -179,6 +181,10 @@ void queryBank7BreakIn();
 void toggleBank7BreakIn();
 void queryBank7Keyer();
 void toggleBank7Keyer();
+// The CW speed, pitch and delay (cwLevelQuery), and delta of their steps (cwLevelStep): 1 WPM,
+// 10 Hz, one delay step; on the FT-8x7 the menu step, experimental.
+void queryBank7CwLevel(CwLevel level);
+void stepBank7CwLevel(CwLevel level, int delta);
 
 // ---- Bank 9 ----
 void queryBank9TuningSpeech();

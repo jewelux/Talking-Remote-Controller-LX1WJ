@@ -603,6 +603,25 @@ bool civSetBreakIn(const RadioProfile& sp, BreakInMode mode) {
   return civQueryBreakIn(sp, readBack, 800) && readBack == mode;
 }
 
+// 14 09: 0000 = 300 Hz, 0128 = 600 Hz, 0255 = 900 Hz (the IC-7300 manual, the IC-705 and IC-7760
+// CI-V guides, Hamlib).
+bool civQueryCwPitchHz(const RadioProfile& sp, uint16_t& hzOut, uint32_t timeoutMs) {
+  if (sp.protocol != PROTO_CIV || !sp.caps.getCwPitch) return false;
+  uint16_t raw = 0;
+  if (!civQuery14Value(0x09, raw, timeoutMs) || raw > 255) return false;
+  hzOut = civCwPitchRawToHz(raw);
+  return true;
+}
+
+bool civSetCwPitchHz(const RadioProfile& sp, uint16_t hz) {
+  if (sp.protocol != PROTO_CIV || !sp.caps.setCwPitch || hz < 300 || hz > 900) return false;
+  if (!civSet14Value(0x09, civCwPitchHzToRaw(hz))) return false;
+  civSettleAfterWrite();
+  uint16_t readBack = 0;
+  if (!civQueryCwPitchHz(sp, readBack, 800)) return false;
+  return readBack + 5 >= hz && readBack <= hz + 5;
+}
+
 // A 16 function that is only off (00) or on (01); any other byte is not a valid reply.
 static bool civQuery16OnOff(uint8_t subcmd, bool& onOut, uint32_t timeoutMs) {
   uint8_t raw = 0;

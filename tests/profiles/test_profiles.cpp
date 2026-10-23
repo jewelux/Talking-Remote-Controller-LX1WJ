@@ -340,6 +340,57 @@ TEST(break_in_and_keyer_caps) {
   for (uint8_t s : none) CHECK(!slot(s).caps.getBreakIn && !slot(s).caps.getKeyer);
 }
 
+// CW speed, pitch and delay where the sources agree.
+TEST(cw_level_caps_and_ranges) {
+  const uint8_t icom[] = {1, 3, 17, 18};
+  for (uint8_t s : icom) {
+    const RadioCapabilities& c = slot(s).caps;
+    CHECK(c.getCwPitch && c.setCwPitch && !c.getCwSpeed && !c.getCwDelay);
+  }
+  const uint8_t all[] = {11, 15};
+  for (uint8_t s : all) {
+    const RadioCapabilities& c = slot(s).caps;
+    CHECK(c.getCwSpeed && c.setCwSpeed && c.getCwPitch && c.setCwPitch && c.getCwDelay && c.setCwDelay);
+    CHECK(slot(s).settings.cwPitchKp);
+    CHECK_EQ(slot(s).settings.cwSpeedMinWpm, 4);
+    CHECK_EQ(slot(s).settings.cwSpeedMaxWpm, 60);
+  }
+  CHECK(slot(11).settings.cwDelay == VoxDelayEncoding::YaesuSteps);
+  CHECK(slot(15).settings.cwDelay == VoxDelayEncoding::Ms4);
+  const uint8_t ftdx101[] = {12, 13};
+  for (uint8_t s : ftdx101) {
+    const RadioCapabilities& c = slot(s).caps;
+    CHECK(c.getCwSpeed && c.getCwPitch && !c.getCwDelay && !c.setCwDelay);
+  }
+  CHECK(slot(7).caps.getCwSpeed && slot(7).caps.getCwDelay && !slot(7).caps.getCwPitch);
+  CHECK_EQ(slot(7).settings.cwDelayMaxMs, 1000);
+  CHECK_EQ(slot(7).settings.cwDelayStepMs, 50);
+  CHECK(slot(6).caps.getCwSpeed && !slot(6).caps.getCwPitch && !slot(6).caps.getCwDelay);
+  CHECK_EQ(slot(6).settings.cwSpeedMaxWpm, 50);
+  const uint8_t ft8x7[] = {8, 9, 10, 14};
+  for (uint8_t s : ft8x7) {
+    const RadioCapabilities& c = slot(s).caps;
+    CHECK(c.getCwSpeed && c.getCwPitch && c.getCwDelay && !c.setCwSpeed && !c.setCwPitch && !c.setCwDelay);
+  }
+}
+
+// An ASCII radio's CW caps come with their encodings, and CI-V has the pitch only.
+TEST(every_cw_level_cap_has_an_encoding) {
+  for (size_t i = 0; i < profileCount(); ++i) {
+    const RadioProfile& p = profileAt(i);
+    const SettingEncodings& s = p.settings;
+    if (p.protocol == PROTO_CIV) CHECK(!p.caps.getCwSpeed && !p.caps.getCwDelay);
+    if (!isAscii(p.protocol)) continue;
+    if (p.caps.getCwSpeed) CHECK(s.cwSpeedMaxWpm > s.cwSpeedMinWpm);
+    if (p.caps.getCwPitch) CHECK(s.cwPitchKp && p.protocol == PROTO_YAESU_FTDX_ASCII);
+    if (p.caps.getCwDelay) {
+      CHECK(s.cwDelay != VoxDelayEncoding::None);
+      CHECK(s.cwDelayMaxMs > s.cwDelayMinMs);
+      if (s.cwDelay == VoxDelayEncoding::Ms4) CHECK(s.cwDelayStepMs > 0);
+    }
+  }
+}
+
 TEST(g106_is_ttl_civ_with_freq_and_mode_only) {
   const RadioProfile& g106 = slot(5);
   CHECK(g106.protocol == PROTO_CIV);

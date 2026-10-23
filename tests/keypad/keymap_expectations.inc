@@ -140,6 +140,9 @@ KEYMAP_ROW(NOT(FT817 | FT857), 2, 'B', "queryBank2Preamp", "stepBank2Preamp",   
 KEYMAP_ROW(ALL,             2, 'C', "queryBank2Att",         "stepBank2Att",           "-")
 KEYMAP_ROW(ALL,             7, '1', "queryBank7BreakIn",     "toggleBank7BreakIn",     "-")
 KEYMAP_ROW(ALL,             7, '2', "queryBank7Keyer",       "toggleBank7Keyer",       "-")
+KEYMAP_ROW(ALL,             7, '3', "queryBank7CwLevel(0)",  "stepBank7CwLevel(0,1)",  "stepBank7CwLevel(0,-1)")
+KEYMAP_ROW(ALL,             7, '4', "queryBank7CwLevel(1)",  "stepBank7CwLevel(1,1)",  "stepBank7CwLevel(1,-1)")
+KEYMAP_ROW(ALL,             7, '5', "queryBank7CwLevel(2)",  "stepBank7CwLevel(2,1)",  "stepBank7CwLevel(2,-1)")
 
 // ---- Bank 3 ----------------------------------------------------------------
 // FT-817 and FT-857/897 track the active VFO: '1' is the current VFO, '2' the

@@ -131,6 +131,8 @@ void queryBank7BreakIn() { record("queryBank7BreakIn"); }
 void toggleBank7BreakIn() { record("toggleBank7BreakIn"); }
 void queryBank7Keyer() { record("queryBank7Keyer"); }
 void toggleBank7Keyer() { record("toggleBank7Keyer"); }
+void queryBank7CwLevel(CwLevel l) { record("queryBank7CwLevel(%d)", (int)l); }
+void stepBank7CwLevel(CwLevel l, int d) { record("stepBank7CwLevel(%d,%d)", (int)l, d); }
 void queryBank2Agc() { record("queryBank2Agc"); }
 void queryBank2Ft817Antenna() { record("queryBank2Ft817Antenna"); }
 void stepBank2Ft8x7NrLevel(int d) { record("stepBank2Ft8x7NrLevel(%d)", d); }

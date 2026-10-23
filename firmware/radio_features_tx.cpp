@@ -200,6 +200,165 @@ FeatureStatus keyerToggle(bool& out) {
   return ft8x7FlagWrite(Ft8x7Setting::Keyer, nullptr, out);
 }
 
+// ---- CW levels ----
+
+static Ft8x7Setting ft8x7CwSetting(CwLevel level) {
+  switch (level) {
+    case CwLevel::Pitch: return Ft8x7Setting::CwPitch;
+    case CwLevel::Delay: return Ft8x7Setting::CwDelay;
+    case CwLevel::Speed: break;
+  }
+  return Ft8x7Setting::CwSpeed;
+}
+
+static bool cwCanGet(CwLevel level) {
+  const RadioCapabilities& caps = currentProfile().caps;
+  switch (level) {
+    case CwLevel::Pitch: return caps.getCwPitch;
+    case CwLevel::Delay: return caps.getCwDelay;
+    case CwLevel::Speed: break;
+  }
+  return caps.getCwSpeed;
+}
+
+static bool cwCanSetCap(CwLevel level) {
+  const RadioCapabilities& caps = currentProfile().caps;
+  switch (level) {
+    case CwLevel::Pitch: return caps.setCwPitch;
+    case CwLevel::Delay: return caps.setCwDelay;
+    case CwLevel::Speed: break;
+  }
+  return caps.setCwSpeed;
+}
+
+static bool isAsciiCw() {
+  const ProtocolType pt = currentProtocolType();
+  return pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII;
+}
+
+FeatureStatus cwLevelQuery(CwLevel level, uint16_t& valueOut) {
+  if (!cwCanGet(level)) return FeatureStatus::Unsupported;
+  const RadioProfile& sp = currentProfile();
+  if (isFt8x7()) {
+    Ft8x7SettingState state;
+    const FeatureStatus status = ft8x7SettingQuery(ft8x7CwSetting(level), state);
+    if (status == FeatureStatus::Ok) valueOut = state.value;
+    return status;
+  }
+  bool ok = false;
+  if (currentProtocolType() == PROTO_CIV) {
+    if (level != CwLevel::Pitch) return FeatureStatus::Unsupported;
+    ok = civQueryCwPitchHz(sp, valueOut, 800);
+  } else if (isAsciiCw()) {
+    switch (level) {
+      case CwLevel::Speed: ok = asciiQueryCwSpeed(sp, valueOut, 800); break;
+      case CwLevel::Pitch: ok = asciiQueryCwPitch(sp, valueOut, 800); break;
+      case CwLevel::Delay: ok = asciiQueryCwDelayMs(sp, valueOut, 800); break;
+    }
+  } else {
+    return FeatureStatus::Unsupported;
+  }
+  return ok ? FeatureStatus::Ok : failure(FeatureStatus::NoReply);
+}
+
+bool cwLevelRange(CwLevel level, uint16_t& minOut, uint16_t& maxOut) {
+  if (!cwCanGet(level)) return false;
+  if (isFt8x7()) return ft8x7CanWriteMenu() && ft8x7LevelRange(ft8x7CwSetting(level), minOut, maxOut);
+  if (!cwCanSetCap(level)) return false;
+  const SettingEncodings& enc = currentProfile().settings;
+  if (currentProtocolType() == PROTO_CIV) {
+    if (level != CwLevel::Pitch) return false;
+    minOut = 300;
+    maxOut = 900;
+    return true;
+  }
+  if (!isAsciiCw()) return false;
+  switch (level) {
+    case CwLevel::Speed:
+      if (!enc.cwSpeedMaxWpm) return false;
+      minOut = enc.cwSpeedMinWpm;
+      maxOut = enc.cwSpeedMaxWpm;
+      return true;
+    case CwLevel::Pitch:
+      if (!enc.cwPitchKp) return false;
+      minOut = 300;
+      maxOut = 1050;
+      return true;
+    case CwLevel::Delay:
+      if (enc.cwDelay == VoxDelayEncoding::None) return false;
+      minOut = enc.cwDelayMinMs;
+      maxOut = enc.cwDelayMaxMs;
+      return true;
+  }
+  return false;
+}
+
+// The value the radio keeps nearest value: Icom pitch 5 Hz, Yaesu KP 10 Hz, the delay its step.
+static uint16_t cwLevelNearest(CwLevel level, uint16_t value) {
+  const SettingEncodings& enc = currentProfile().settings;
+  if (level == CwLevel::Pitch) {
+    const uint16_t step = currentProtocolType() == PROTO_CIV ? 5 : 10;
+    return (uint16_t)((value + step / 2) / step * step);
+  }
+  if (level == CwLevel::Delay) {
+    if (enc.cwDelay == VoxDelayEncoding::YaesuSteps) return yaesuAsciiVoxDelayStepMs(yaesuAsciiVoxDelayNearestStep(value));
+    return asciiVoxDelayMsRound(value, enc.cwDelayMinMs, enc.cwDelayMaxMs, enc.cwDelayStepMs);
+  }
+  return value;
+}
+
+FeatureStatus cwLevelSet(CwLevel level, uint16_t value, uint16_t& valueOut) {
+  uint16_t min = 0;
+  uint16_t max = 0;
+  if (!cwLevelRange(level, min, max)) return FeatureStatus::Unsupported;
+  if (value < min || value > max) return FeatureStatus::Invalid;
+  if (isFt8x7()) {
+    Ft8x7SettingState state;
+    const FeatureStatus status = ft8x7LevelSet(ft8x7CwSetting(level), value, state);
+    if (status == FeatureStatus::Ok) valueOut = state.value;
+    return status;
+  }
+  const RadioProfile& sp = currentProfile();
+  const uint16_t want = cwLevelNearest(level, value);
+  bool ok = false;
+  if (currentProtocolType() == PROTO_CIV) {
+    ok = civSetCwPitchHz(sp, want);
+  } else {
+    switch (level) {
+      case CwLevel::Speed: ok = asciiSetCwSpeed(sp, want); break;
+      case CwLevel::Pitch: ok = asciiSetCwPitch(sp, want); break;
+      case CwLevel::Delay: ok = asciiSetCwDelayMs(sp, want); break;
+    }
+  }
+  if (!ok) return failure(FeatureStatus::Failed);
+  valueOut = want;
+  return FeatureStatus::Ok;
+}
+
+FeatureStatus cwLevelStep(CwLevel level, int delta, uint16_t& valueOut) {
+  uint16_t min = 0;
+  uint16_t max = 0;
+  if (!cwLevelRange(level, min, max)) return FeatureStatus::Unsupported;
+  if (isFt8x7()) {
+    Ft8x7SettingState state;
+    const FeatureStatus status = ft8x7LevelStep(ft8x7CwSetting(level), delta, state);
+    if (status == FeatureStatus::Ok) valueOut = state.value;
+    return status;
+  }
+  uint16_t now = 0;
+  const FeatureStatus status = cwLevelQuery(level, now);
+  if (status != FeatureStatus::Ok) return status;
+  const SettingEncodings& enc = currentProfile().settings;
+  int next = now;
+  if (level == CwLevel::Speed) next = now + delta;
+  else if (level == CwLevel::Pitch) next = now + delta * 10;
+  else if (enc.cwDelay == VoxDelayEncoding::YaesuSteps) next = yaesuAsciiVoxDelayStepBy(now, delta);
+  else next = asciiVoxDelayMsStepBy(now, delta, enc.cwDelayMinMs, enc.cwDelayMaxMs, enc.cwDelayStepMs);
+  if (next < min) next = min;
+  if (next > max) next = max;
+  return cwLevelSet(level, (uint16_t)next, valueOut);
+}
+
 FeatureStatus procQuery(bool& on) {
   if (!procSupported()) return FeatureStatus::Unsupported;
   const RadioProfile& sp = currentProfile();

@@ -44,7 +44,7 @@ constexpr RadioCapabilities kIc7300Caps = {
     .getSplit = true, .setSplit = true, .getRit = true, .setRit = true,
     .getBandStack = true, .getAgc = true, .setAgc = true,
     .getAtt = true, .setAtt = true, .getPreamp = true, .setPreamp = true,
-    .getBreakIn = true, .setBreakIn = true,
+    .getBreakIn = true, .setBreakIn = true, .getCwPitch = true, .setCwPitch = true,
     .getProc = true, .setProc = true, .getMicGain = true, .setMicGain = true,
     .getVox = true, .setVox = true,
 };
@@ -81,15 +81,18 @@ constexpr RadioCapabilities kKx2Caps = {
     .getNb = true, .setNb = true,
     .getAgc = true, .setAgc = true,
     .getAtt = true, .setAtt = true, .getPreamp = true, .setPreamp = true,
+    .getCwSpeed = true, .setCwSpeed = true,
 };
 
 // GT002 fast and GT004 slow (the Elecraft programmer's reference and Hamlib). No off: Hamlib
 // sends GT000, the reference has off only in the K2's extended format. PA0/PA1 and RA00/RA01, the
 // attenuator 10 dB (both). PCnnn in watts, 0..15 (12 on 80-20 m: a set the radio refuses reads
-// back as an error).
+// back as an error). KS 8..50 WPM (both); no pitch: the reference reads it with CW, Hamlib
+// with PT.
 constexpr SettingEncodings kKx2Settings = {
     .agc = AgcEncoding::ElecraftGt, .frontEnd = FrontEndEncoding::Kenwood, .preampLevels = 1,
-    .attLevels = 1, .attDb = {10}, .rfPower = RfPowerEncoding::PcWatts,
+    .attLevels = 1, .attDb = {10}, .rfPower = RfPowerEncoding::PcWatts, .cwSpeedMinWpm = 8,
+    .cwSpeedMaxWpm = 50,
 };
 
 constexpr AsciiCommandSet kKx2Commands = {
@@ -120,6 +123,7 @@ constexpr RadioCapabilities kTs480Caps = {
     .getNr = true, .setNr = true, .getNb = true, .setNb = true,
     .getAgc = true, .setAgc = true,
     .getAtt = true, .setAtt = true, .getPreamp = true, .setPreamp = true,
+    .getCwSpeed = true, .setCwSpeed = true, .getCwDelay = true, .setCwDelay = true,
     .getProc = true, .setProc = true, .getMicGain = true, .setMicGain = true,
     .getVox = true, .setVox = true,
 };
@@ -127,11 +131,14 @@ constexpr RadioCapabilities kTs480Caps = {
 // VD 0..3000 ms in 150 ms steps, VG 0..9, GT 000 off, 001 fast, 002 slow, PA0/PA1 and
 // RA00/RA01 (TS-480 PC command reference; Hamlib agrees, and has 12 dB for both, which the
 // reference does not give). PC in watts, 5..100 on the TS-480SAT (25 in AM; the HX goes to 200,
-// which is not offered); Hamlib and flrig agree.
+// which is not offered); Hamlib and flrig agree. KS 10..60 WPM, SD 0..1000 ms in 50 ms steps, 0
+// full break-in (the reference; Hamlib agrees). No pitch: the sources disagree on its scale.
 constexpr SettingEncodings kTs480Settings = {
     .voxDelay = VoxDelayEncoding::Ms4, .voxDelayMinMs = 0, .voxDelayMaxMs = 3000, .voxDelayStepMs = 150,
     .voxGainMax = 9, .agc = AgcEncoding::KenwoodGt, .frontEnd = FrontEndEncoding::Kenwood,
     .preampLevels = 1, .attLevels = 1, .rfPower = RfPowerEncoding::PcWatts, .rfPowerMinWatts = 5,
+    .cwSpeedMinWpm = 10, .cwSpeedMaxWpm = 60, .cwDelay = VoxDelayEncoding::Ms4, .cwDelayMinMs = 0,
+    .cwDelayMaxMs = 1000, .cwDelayStepMs = 50,
 };
 
 constexpr AsciiCommandSet kTs480Commands = {
@@ -161,7 +168,7 @@ constexpr RadioCapabilities kFt817Caps = {
     .getNb = true,
     .getVfo = true, .setVfo = true, .getVfoMode = true, .setVfoMode = true,
     .getSplit = true, .setSplit = true, .getAgc = true, .getBreakIn = true, .getKeyer = true,
-    .getMicGain = true, .getVox = true,
+    .getCwSpeed = true, .getCwPitch = true, .getCwDelay = true, .getMicGain = true, .getVox = true,
 };
 
 // The FT-857/897 has no CAT command to pick VFO A or B.
@@ -171,7 +178,8 @@ constexpr RadioCapabilities kFt857Caps = {
     .getNr = true, .getNb = true, .getNotch = true,
     .getVfo = true,
     .getSplit = true, .setSplit = true, .getAgc = true, .getAtt = true,
-    .getBreakIn = true, .getKeyer = true, .getProc = true, .getMicGain = true, .getVox = true,
+    .getBreakIn = true, .getKeyer = true, .getCwSpeed = true, .getCwPitch = true, .getCwDelay = true,
+    .getProc = true, .getMicGain = true, .getVox = true,
 };
 
 constexpr ModeCodes kFt8x7Modes = {
@@ -211,6 +219,8 @@ constexpr RadioCapabilities kFtdx10Caps = {
     .getSplit = true, .setSplit = true, .getAgc = true, .setAgc = true,
     .getAtt = true, .setAtt = true, .getPreamp = true, .setPreamp = true,
     .getBreakIn = true, .setBreakIn = true, .getKeyer = true, .setKeyer = true,
+    .getCwSpeed = true, .setCwSpeed = true, .getCwPitch = true, .setCwPitch = true,
+    .getCwDelay = true, .setCwDelay = true,
     .getProc = true, .setProc = true, .getMicGain = true, .setMicGain = true,
     .getVox = true, .setVox = true,
 };
@@ -225,6 +235,9 @@ constexpr RadioCapabilities kFtdx101Caps = [] {
   // PL: the manual says PR01 is off, Hamlib that it is on.
   caps.getProc = false;
   caps.setProc = false;
+  // KS and KP as on the FTDX10; no SD: the manual gives it in ms, Hamlib as the FTDX10's steps.
+  caps.getCwDelay = false;
+  caps.setCwDelay = false;
   return caps;
 }();
 
@@ -239,11 +252,14 @@ constexpr RadioCapabilities kFtdx101MpCaps = [] {
 
 // VD, GT0, PA0 and RA0 as the FTDX10 and FTDX101 CAT manuals and Hamlib have them: VD a step,
 // 30..3000 ms; PA0 0 IPO, 1 AMP1, 2 AMP2; RA0 0 off, 1..3 6, 12 and 18 dB. The FTDX101 sends
-// them for the main band. PC in watts, 5..100 (the manuals, Hamlib and flrig).
+// them for the main band. PC in watts, 5..100 (the manuals, Hamlib and flrig). KS 4..60 WPM,
+// KP 300..1050 Hz, SD a step of the VD table, 30..3000 ms (the FTDX10 manual and Hamlib).
 constexpr SettingEncodings kFtdx10Settings = {
     .voxDelay = VoxDelayEncoding::YaesuSteps, .voxDelayMinMs = 30, .voxDelayMaxMs = 3000,
     .agc = AgcEncoding::YaesuGt0, .frontEnd = FrontEndEncoding::Yaesu, .preampLevels = 2,
     .attLevels = 3, .attDb = {6, 12, 18}, .rfPower = RfPowerEncoding::PcWatts, .rfPowerMinWatts = 5,
+    .cwSpeedMinWpm = 4, .cwSpeedMaxWpm = 60, .cwPitchKp = true, .cwDelay = VoxDelayEncoding::YaesuSteps,
+    .cwDelayMinMs = 30, .cwDelayMaxMs = 3000,
 };
 
 constexpr RadioCapabilities kFt891Caps = {
@@ -255,17 +271,22 @@ constexpr RadioCapabilities kFt891Caps = {
     .getSplit = true, .setSplit = true, .getAgc = true, .setAgc = true,
     .getAtt = true, .setAtt = true, .getPreamp = true, .setPreamp = true,
     .getBreakIn = true, .setBreakIn = true, .getKeyer = true, .setKeyer = true,
+    .getCwSpeed = true, .setCwSpeed = true, .getCwPitch = true, .setCwPitch = true,
+    .getCwDelay = true, .setCwDelay = true,
     .getProc = true, .setProc = true, .getMicGain = true, .setMicGain = true,
     .getVox = true, .setVox = true,
 };
 
 // PR0, PL, MG, VX, VG, VD, GT0, PA0 and RA0 as the FT-891 CAT manual and Hamlib newcat have
 // them (flrig agrees but for GT, which it lacks); VD in ms, 30..3000 in 10 ms steps; PA0 0 IPO,
-// 1 AMP; RA0 0 off, 1 on (Hamlib's 12 dB is not in the manual); PC in watts, 5..100.
+// 1 AMP; RA0 0 off, 1 on (Hamlib's 12 dB is not in the manual); PC in watts, 5..100; KS 4..60
+// WPM, KP 300..1050 Hz, SD 30..3000 ms (Hamlib sends ms too).
 constexpr SettingEncodings kFt891Settings = {
     .voxDelay = VoxDelayEncoding::Ms4, .voxDelayMinMs = 30, .voxDelayMaxMs = 3000, .voxDelayStepMs = 10,
     .agc = AgcEncoding::YaesuGt0, .frontEnd = FrontEndEncoding::Yaesu, .preampLevels = 1, .attLevels = 1,
-    .rfPower = RfPowerEncoding::PcWatts, .rfPowerMinWatts = 5,
+    .rfPower = RfPowerEncoding::PcWatts, .rfPowerMinWatts = 5, .cwSpeedMinWpm = 4, .cwSpeedMaxWpm = 60,
+    .cwPitchKp = true, .cwDelay = VoxDelayEncoding::Ms4, .cwDelayMinMs = 30, .cwDelayMaxMs = 3000,
+    .cwDelayStepMs = 10,
 };
 
 constexpr AsciiCommandSet kFtdx10Commands = {

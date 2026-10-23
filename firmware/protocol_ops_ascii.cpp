@@ -222,6 +222,83 @@ bool asciiSetKeyer(const RadioProfile& sp, bool on) {
   return asciiQueryKeyer(sp, readBack, 800) && readBack == on;
 }
 
+// KS, three digits in WPM (the Yaesu CAT manuals, the TS-480 PC command reference, Elecraft's
+// reference; Hamlib).
+bool asciiQueryCwSpeed(const RadioProfile& sp, uint16_t& wpmOut, uint32_t timeoutMs) {
+  const SettingEncodings& enc = sp.settings;
+  if (!sp.caps.getCwSpeed || !enc.cwSpeedMaxWpm) return false;
+  String line;
+  if (!transactAsciiCommand("KS;", line, "KS", timeoutMs)) return false;
+  uint16_t wpm = 0;
+  if (!asciiDigitsDecode(line.c_str() + 2, 3, wpm) || wpm > enc.cwSpeedMaxWpm) return false;
+  wpmOut = wpm;
+  return true;
+}
+
+bool asciiSetCwSpeed(const RadioProfile& sp, uint16_t wpm) {
+  const SettingEncodings& enc = sp.settings;
+  if (!sp.caps.setCwSpeed || !enc.cwSpeedMaxWpm || wpm < enc.cwSpeedMinWpm || wpm > enc.cwSpeedMaxWpm) {
+    return false;
+  }
+  char cmd[8];
+  snprintf(cmd, sizeof(cmd), "KS%03u;", (unsigned)wpm);
+  if (!asciiSendSimpleCommand(cmd)) return false;
+  uint16_t readBack = 0;
+  return asciiQueryCwSpeed(sp, readBack, 800) && readBack == wpm;
+}
+
+// KP, 00..75 = 300..1050 Hz (the Yaesu CAT manuals, Hamlib newcat).
+bool asciiQueryCwPitch(const RadioProfile& sp, uint16_t& hzOut, uint32_t timeoutMs) {
+  if (sp.protocol != PROTO_YAESU_FTDX_ASCII || !sp.caps.getCwPitch || !sp.settings.cwPitchKp) return false;
+  String line;
+  if (!transactAsciiCommand("KP;", line, "KP", timeoutMs)) return false;
+  return yaesuKpDecode(line.c_str() + 2, hzOut);
+}
+
+bool asciiSetCwPitch(const RadioProfile& sp, uint16_t hz) {
+  if (sp.protocol != PROTO_YAESU_FTDX_ASCII || !sp.caps.setCwPitch || !sp.settings.cwPitchKp) return false;
+  char cmd[8];
+  if (hz < 300 || hz > 1050 || hz % 10 || !yaesuKpEncode(hz, cmd, sizeof(cmd))) return false;
+  if (!asciiSendSimpleCommand(cmd)) return false;
+  uint16_t readBack = 0;
+  return asciiQueryCwPitch(sp, readBack, 800) && readBack == hz;
+}
+
+// SD: on the FTDX10 a step of the VD table, on the FT-891 and TS-480 ms (their manuals, Hamlib).
+bool asciiQueryCwDelayMs(const RadioProfile& sp, uint16_t& msOut, uint32_t timeoutMs) {
+  const SettingEncodings& enc = sp.settings;
+  if (!sp.caps.getCwDelay || enc.cwDelay == VoxDelayEncoding::None) return false;
+  String line;
+  if (!transactAsciiCommand("SD;", line, "SD", timeoutMs)) return false;
+  uint16_t value = 0;
+  if (enc.cwDelay == VoxDelayEncoding::YaesuSteps) {
+    if (!asciiDigitsDecode(line.c_str() + 2, 2, value) || value >= kYaesuAsciiVoxDelaySteps) return false;
+    msOut = yaesuAsciiVoxDelayStepMs((uint8_t)value);
+    return true;
+  }
+  if (!asciiDigitsDecode(line.c_str() + 2, 4, value) || value > enc.cwDelayMaxMs) return false;
+  msOut = value;
+  return true;
+}
+
+bool asciiSetCwDelayMs(const RadioProfile& sp, uint16_t ms) {
+  const SettingEncodings& enc = sp.settings;
+  if (!sp.caps.setCwDelay || enc.cwDelay == VoxDelayEncoding::None) return false;
+  char cmd[10];
+  uint16_t expected = 0;
+  if (enc.cwDelay == VoxDelayEncoding::YaesuSteps) {
+    const uint8_t step = yaesuAsciiVoxDelayNearestStep(ms);
+    snprintf(cmd, sizeof(cmd), "SD%02u;", (unsigned)step);
+    expected = yaesuAsciiVoxDelayStepMs(step);
+  } else {
+    expected = asciiVoxDelayMsRound(ms, enc.cwDelayMinMs, enc.cwDelayMaxMs, enc.cwDelayStepMs);
+    snprintf(cmd, sizeof(cmd), "SD%04u;", (unsigned)expected);
+  }
+  if (!asciiSendSimpleCommand(cmd)) return false;
+  uint16_t readBack = 0;
+  return asciiQueryCwDelayMs(sp, readBack, 800) && readBack == expected;
+}
+
 bool asciiQueryPowerState(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
   if (!sp.commands->powerStateGet[0] || !sp.commands->powerStateReplyPrefix[0]) return false;
   String line;

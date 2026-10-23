@@ -163,6 +163,39 @@ void speakKeyer(bool on) {
   speakTokenState("K Y R", on);
 }
 
+const char* cwLevelName(CwLevel level) {
+  switch (level) {
+    case CwLevel::Pitch: return "CWPITCH";
+    case CwLevel::Delay: return "CWDELAY";
+    case CwLevel::Speed: break;
+  }
+  return "CWSPEED";
+}
+
+String cwLevelText(CwLevel level, uint16_t value) {
+  String text = String(cwLevelName(level)) + " ";
+  if (level == CwLevel::Speed) return text + String(value) + " WPM";
+  if (level == CwLevel::Pitch) return text + String(value) + " Hz";
+  return text + (value == 0 ? String("FULL") : String(value) + " ms");
+}
+
+void speakCwLevel(CwLevel level, uint16_t value) {
+  if (!g_speechEnabled) return;
+  if (level == CwLevel::Speed) {
+    speakLabel("cw speed");
+    speakDigitsAndPoint(String(value));
+    return;
+  }
+  speakLabel(level == CwLevel::Pitch ? "cw pitch" : "cw delay");
+  if (level == CwLevel::Delay && value == 0) {
+    speakToken("full");
+    return;
+  }
+  speakNumber(String(value));
+  playSilenceMs(60);
+  speakToken(level == CwLevel::Pitch ? "hertz" : "ms");
+}
+
 String procStateText(bool on) {
   return on ? "PROC ON" : "PROC OFF";
 }

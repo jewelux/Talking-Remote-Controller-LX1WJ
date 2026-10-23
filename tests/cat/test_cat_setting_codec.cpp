@@ -333,6 +333,42 @@ TEST(yaesu_bi_kr_digit) {
   CHECK(!asciiOnOffDigitDecode(";", on));
 }
 
+// ---- CW levels ----
+
+TEST(civ_cw_pitch_is_linear_300_to_900) {
+  CHECK_EQ(civCwPitchRawToHz(0), 300);
+  CHECK_EQ(civCwPitchRawToHz(128), 600);
+  CHECK_EQ(civCwPitchRawToHz(255), 900);
+  CHECK_EQ(civCwPitchHzToRaw(300), 0);
+  CHECK_EQ(civCwPitchHzToRaw(600), 128);
+  CHECK_EQ(civCwPitchHzToRaw(900), 255);
+  CHECK_EQ(civCwPitchHzToRaw(1000), 255);
+  // Every 5 Hz step reads back as itself.
+  for (uint16_t hz = 300; hz <= 900; hz += 5) CHECK_EQ(civCwPitchRawToHz(civCwPitchHzToRaw(hz)), hz);
+}
+
+TEST(yaesu_kp_pitch) {
+  uint16_t hz = 0;
+  CHECK(yaesuKpDecode("00;", hz) && hz == 300);
+  CHECK(yaesuKpDecode("40", hz) && hz == 700);
+  CHECK(yaesuKpDecode("75;", hz) && hz == 1050);
+  CHECK(!yaesuKpDecode("76;", hz));
+  CHECK(!yaesuKpDecode("7;", hz));
+  char cmd[8];
+  CHECK(yaesuKpEncode(700, cmd, sizeof(cmd)));
+  CHECK_EQ(cmd, "KP40;");
+  CHECK(yaesuKpEncode(1050, cmd, sizeof(cmd)));
+  CHECK_EQ(cmd, "KP75;");
+}
+
+TEST(ascii_digits) {
+  uint16_t v = 0;
+  CHECK(asciiDigitsDecode("020;", 3, v) && v == 20);
+  CHECK(asciiDigitsDecode("0250", 4, v) && v == 250);
+  CHECK(!asciiDigitsDecode("20;", 3, v));
+  CHECK(!asciiDigitsDecode("0200;", 3, v));
+}
+
 // ---- ASCII lock ----
 
 TEST(lock_digit_decodes_with_the_profile_off_digits) {

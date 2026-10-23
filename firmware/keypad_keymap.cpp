@@ -290,6 +290,15 @@ KeyBinding bank7(char key) {
   switch (key) {
     case '1': return bind(queryBank7BreakIn, toggleBank7BreakIn);
     case '2': return bind(queryBank7Keyer, toggleBank7Keyer);
+    case '3':
+      return bind([] { queryBank7CwLevel(CwLevel::Speed); }, [] { stepBank7CwLevel(CwLevel::Speed, 1); },
+                  [] { stepBank7CwLevel(CwLevel::Speed, -1); });
+    case '4':
+      return bind([] { queryBank7CwLevel(CwLevel::Pitch); }, [] { stepBank7CwLevel(CwLevel::Pitch, 1); },
+                  [] { stepBank7CwLevel(CwLevel::Pitch, -1); });
+    case '5':
+      return bind([] { queryBank7CwLevel(CwLevel::Delay); }, [] { stepBank7CwLevel(CwLevel::Delay, 1); },
+                  [] { stepBank7CwLevel(CwLevel::Delay, -1); });
     default: return {};
   }
 }

@@ -29,6 +29,15 @@ bool asciiQueryBreakIn(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
 bool asciiSetBreakIn(const RadioProfile& sp, bool on);
 bool asciiQueryKeyer(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
 bool asciiSetKeyer(const RadioProfile& sp, bool on);
+// The CW keyer speed (KS, WPM), pitch (Yaesu KP, Hz) and break-in delay (SD, ms) by the
+// profile's settings (caps.getCwSpeed ... setCwDelay); the sets are read back, the delay set to
+// the radio's step nearest ms.
+bool asciiQueryCwSpeed(const RadioProfile& sp, uint16_t& wpmOut, uint32_t timeoutMs);
+bool asciiSetCwSpeed(const RadioProfile& sp, uint16_t wpm);
+bool asciiQueryCwPitch(const RadioProfile& sp, uint16_t& hzOut, uint32_t timeoutMs);
+bool asciiSetCwPitch(const RadioProfile& sp, uint16_t hz);
+bool asciiQueryCwDelayMs(const RadioProfile& sp, uint16_t& msOut, uint32_t timeoutMs);
+bool asciiSetCwDelayMs(const RadioProfile& sp, uint16_t ms);
 // AGC by settings.agc (caps.getAgc, setAgc); the set is read back. AUTO reads back as AUTO.
 bool asciiQueryAgc(const RadioProfile& sp, AgcMode& out, uint32_t timeoutMs);
 bool asciiSetAgc(const RadioProfile& sp, AgcMode mode);

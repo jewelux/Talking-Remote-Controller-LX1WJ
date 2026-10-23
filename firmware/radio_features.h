@@ -124,6 +124,18 @@ FeatureStatus keyerQuery(bool& on);
 FeatureStatus keyerSet(bool on, bool& out);
 FeatureStatus keyerToggle(bool& out);
 
+// The CW keyer speed (WPM), pitch (Hz) and break-in delay (ms, 0 = full break-in on the TS-480 and
+// FT-857/897): caps.getCwSpeed, getCwPitch, getCwDelay. Icom 14 09 (pitch only), the ASCII
+// radios' KS, KP and SD, the FT-8x7 from its EEPROM menus.
+FeatureStatus cwLevelQuery(CwLevel level, uint16_t& valueOut);
+// The values it can be set to; false where it cannot (on the FT-8x7 only experimentally).
+bool cwLevelRange(CwLevel level, uint16_t& minOut, uint16_t& maxOut);
+// Sets value, to the radio's step nearest it, read back into valueOut. Invalid outside the range.
+FeatureStatus cwLevelSet(CwLevel level, uint16_t value, uint16_t& valueOut);
+// delta steps from the value read, kept within the range: 1 WPM, 10 Hz (FT-8x7: its menu step),
+// one delay step of the radio (at least 100 ms on the FT-891 and TS-480).
+FeatureStatus cwLevelStep(CwLevel level, int delta, uint16_t& valueOut);
+
 // Speech processor: FT-857/897 PROC and its menu 74 level, Icom COMP, FTDX10 and FT-891 PR0 and
 // PL, TS-480 PR and its PL input level.
 // These and the mic gain and VOX reads below are Unsupported where the profile's cap (getProc,

@@ -71,7 +71,9 @@
 - Bank 1 `6` says the RF power setting and long press enters it in watts on the FTDX10, FTDX101D,
   FT-891, TS-480 and KX2 too, as on the Icoms
 - Bank 7 is the CW bank: `1` says break-in and long press turns it on or off (Icom: off to semi,
-  semi or full to off), `2` the same for the keyer. On the FT-8x7 setting them is experimental
+  semi or full to off), `2` the same for the keyer, `3` the keyer speed, `4` the CW pitch and `5`
+  the break-in delay (long press one step up, double press one step down). On the FT-8x7 setting
+  them is experimental
 
 ### Frequency
 
@@ -191,6 +193,11 @@
 - `BK?` and `BK OFF | ON | TOGGLE` also work on the IC-7300, IC-705, IC-7760 (with `SEMI` and
   `FULL`; `ON` is semi), FTDX10, FTDX101D/MP and FT-891, and `KYR?` and `KYR OFF | ON | TOGGLE` on
   these Yaesus, each set read back. Not yet tested on these radios
+- `CWSPEED`, `CWPITCH` and `CWDELAY` (`?`, a value, or `STEP <+-n>`) also work on the CAT radios
+  where the sources agree: the speed on the FTDX10, FTDX101D/MP, FT-891 (4–60 WPM), TS-480 (10–60)
+  and KX2 (8–50); the pitch on the IC-7300, IC-705, IC-7760 (300–900 Hz) and these Yaesus
+  (300–1050 Hz); the delay on the FTDX10 and FT-891 (30–3000 ms) and TS-480 (0–1000 ms,
+  `CWDELAY FULL` or 0 for full break-in). Each set is read back. Not yet tested on these radios
 
 ### Radio profiles
 

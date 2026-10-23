@@ -47,6 +47,12 @@ void speakBreakIn(BreakInMode mode);
 String keyerText(bool on);
 void speakKeyer(bool on);
 
+// "CWSPEED 20 WPM", "CWPITCH 700 Hz", "CWDELAY 250 ms", "CWDELAY FULL"; spoken as the FT-8x7
+// CW menus are.
+const char* cwLevelName(CwLevel level);
+String cwLevelText(CwLevel level, uint16_t value);
+void speakCwLevel(CwLevel level, uint16_t value);
+
 // "PROC ON", "PROC OFF"; "processor on".
 String procStateText(bool on);
 void speakProcState(bool on);

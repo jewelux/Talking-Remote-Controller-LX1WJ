@@ -807,6 +807,32 @@ static void printCwSwitchHelp() {
   if (caps.getKeyer) helpLine(caps.setKeyer ? "KYR? | KYR OFF | ON | TOGGLE  (CW keyer)" : "KYR?  (CW keyer)");
 }
 
+// CWSPEED, CWPITCH and CWDELAY over CAT, with the radio's ranges.
+static void printCwLevelHelp() {
+  if (currentProtocolType() == PROTO_YAESU_FT8X7) return;
+  const RadioCapabilities& caps = currentProfile().caps;
+  const struct {
+    CwLevel level;
+    const char* unit;
+    bool has;
+  } kLevels[] = {{CwLevel::Speed, "WPM", caps.getCwSpeed}, {CwLevel::Pitch, "Hz", caps.getCwPitch},
+                 {CwLevel::Delay, "ms", caps.getCwDelay}};
+  for (const auto& l : kLevels) {
+    if (!l.has) continue;
+    const char* name = cwLevelName(l.level);
+    char line[96];
+    uint16_t min = 0;
+    uint16_t max = 0;
+    if (cwLevelRange(l.level, min, max)) {
+      snprintf(line, sizeof(line), "%s? | %s <%u..%u> | %s STEP <+-n>  (%s%s)", name, name, (unsigned)min,
+               (unsigned)max, name, l.unit, l.level == CwLevel::Delay && min == 0 ? ", 0 or FULL is full break-in" : "");
+    } else {
+      snprintf(line, sizeof(line), "%s?", name);
+    }
+    helpLine(line);
+  }
+}
+
 // RF power over CAT, with the radio's range.
 static void printRfPowerHelp() {
   if (!currentProfile().caps.getRfPower || currentProtocolType() == PROTO_YAESU_FT8X7) return;
@@ -935,6 +961,7 @@ void printHelp(const String& topicArg) {
     printFrontEndHelp();
     printRfPowerHelp();
     printCwSwitchHelp();
+    printCwLevelHelp();
     printTxSettingsHelp();
     helpLine("RIT? | RIT <Hz> | RIT STEP <+-Hz> | RIT OFF | ON | TOGGLE");
     helpLine("RXTX?");
@@ -1038,6 +1065,7 @@ void printHelp(const String& topicArg) {
     printFrontEndHelp();
     printRfPowerHelp();
     printCwSwitchHelp();
+    printCwLevelHelp();
     printTxSettingsHelp();
     helpLine("RXTX?");
     helpLine("SPLIT? | SPLIT OFF | ON | TOGGLE");
@@ -1815,6 +1843,55 @@ static bool handleConsoleCwSwitches(const String& upper) {
     if (reportFeatureFailure(status, "KYR")) return true;
     Serial.println(keyerText(on));
     speakKeyer(on);
+    return true;
+  }
+  return false;
+}
+
+// CWSPEED, CWPITCH, CWDELAY on the CAT radios: ? | <value> | STEP <+-n>, CWDELAY FULL where the
+// radio has it. The FT-8x7 keeps its own (handleConsoleFt8x7LevelSet).
+static bool handleConsoleCwLevels(const String& line, const String& upper) {
+  if (isCurrentYaesuFt8x7()) return false;
+  for (const CwLevel level : {CwLevel::Speed, CwLevel::Pitch, CwLevel::Delay}) {
+    const String name = cwLevelName(level);
+    uint16_t value = 0;
+    FeatureStatus status = FeatureStatus::Unsupported;
+    if (upper == name + "?") {
+      status = cwLevelQuery(level, value);
+      if (reportFeatureFailure(status, (name + "?").c_str())) return true;
+    } else if (upper.startsWith(name + " STEP ")) {
+      int32_t delta = 0;
+      if (!parseStepArg(line, upper, (name + " STEP ").c_str(), delta)) return false;
+      status = cwLevelStep(level, (int)delta, value);
+      if (reportFeatureFailure(status, name.c_str())) return true;
+    } else if (upper.startsWith(name + " ")) {
+      String arg = upper.substring(name.length() + 1);
+      arg.trim();
+      long want = 0;
+      if (level == CwLevel::Delay && arg == "FULL") {
+        want = 0;
+      } else if (!parseRangedIntArg(upper, (name + " ").c_str(), 0, 9999, want)) {
+        return false;
+      }
+      status = cwLevelSet(level, (uint16_t)want, value);
+      if (status == FeatureStatus::Invalid) {
+        uint16_t min = 0;
+        uint16_t max = 0;
+        (void)cwLevelRange(level, min, max);
+        Serial.print(name);
+        Serial.print(" -> invalid (use ");
+        Serial.print((int)min);
+        Serial.print("..");
+        Serial.print((int)max);
+        Serial.println(")");
+        return true;
+      }
+      if (reportFeatureFailure(status, name.c_str())) return true;
+    } else {
+      continue;
+    }
+    Serial.println(cwLevelText(level, value));
+    speakCwLevel(level, value);
     return true;
   }
   return false;
@@ -3778,6 +3855,7 @@ void processCommand(String line) {
   if (handleConsoleFrontEnd(upper)) return;
   if (handleConsoleCwSwitches(upper)) return;
   if (handleConsoleYaesuFt8x7Commands(line, upper)) return;
+  if (handleConsoleCwLevels(line, upper)) return;
   if (handleConsoleFt847Commands(upper)) return;
   if (handleConsoleTxAudioSet(line, upper)) return;
   if (handleConsoleAdjustCommands(line, upper)) return;

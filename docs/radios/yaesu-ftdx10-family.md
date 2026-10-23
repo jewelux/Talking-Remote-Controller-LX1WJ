@@ -29,6 +29,10 @@ Implemented and documented for the current field-test phase:
   set read back. The raw `PA` console commands are gone.
 - break-in and keyer (`BK? | BK OFF | ON | TOGGLE`, `KYR? | KYR OFF | ON | TOGGLE`, Bank 7 `1` and
   `2`): `BI` and `KR`, 0 off and 1 on, as the CAT manuals and Hamlib have them, read back.
+- CW speed, pitch and delay (`CWSPEED <4..60>`, `CWPITCH <300..1050>`, `CWDELAY <30..3000>`,
+  each also `?` and `STEP <+-n>`; Bank 7 `3`, `4`, `5`): `KS` in WPM, `KP` 00..75 for 300..1050
+  Hz, `SD` a step of the VOX delay table (the FTDX10 manual and Hamlib), read back. The FTDX101
+  has no `CWDELAY`: its manual sends `SD` in ms, Hamlib as steps.
 - RF power (`RFPOWER? | RFPOWER <5..100 W>`, Bank 1 `6`): `PC` in watts, as the CAT manuals,
   Hamlib and flrig have it, read back. Not on the FTDX101MP: its manual says 005-100 and Hamlib
   scales `PC` to 200 W.

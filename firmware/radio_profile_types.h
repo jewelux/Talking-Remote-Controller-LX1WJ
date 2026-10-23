@@ -85,6 +85,14 @@ struct RadioCapabilities {
   bool setBreakIn = false;
   bool getKeyer = false;
   bool setKeyer = false;
+  // The CW keyer speed, pitch and break-in delay. The FT-8x7 reads them from its EEPROM and
+  // writes them there under setRadioMenu.
+  bool getCwSpeed = false;
+  bool setCwSpeed = false;
+  bool getCwPitch = false;
+  bool setCwPitch = false;
+  bool getCwDelay = false;
+  bool setCwDelay = false;
   // Speech processor and its level, mic gain, VOX with its gain and delay. The FT-8x7 writes
   // them to the EEPROM under setRadioMenu instead.
   bool getProc = false;
@@ -267,6 +275,16 @@ struct SettingEncodings {
   // An ASCII radio's RF power, rfPowerMinWatts..the profile's rfPowerMaxWatts. CI-V uses 14 0A.
   RfPowerEncoding rfPower = RfPowerEncoding::None;
   uint8_t rfPowerMinWatts = 0;
+  // An ASCII radio's CW: KS in WPM, cwSpeedMinWpm..cwSpeedMaxWpm (0 where none); KP the Yaesu
+  // way, 00..75 = 300..1050 Hz; SD as cwDelay says, cwDelayMinMs..cwDelayMaxMs (YaesuSteps the
+  // VD table, Ms4 in cwDelayStepMs steps). CI-V uses 14 09 for the pitch.
+  uint8_t cwSpeedMinWpm = 0;
+  uint8_t cwSpeedMaxWpm = 0;
+  bool cwPitchKp = false;
+  VoxDelayEncoding cwDelay = VoxDelayEncoding::None;
+  uint16_t cwDelayMinMs = 0;
+  uint16_t cwDelayMaxMs = 0;
+  uint16_t cwDelayStepMs = 0;
 };
 
 inline constexpr AsciiCommandSet kNoAsciiCommands{};

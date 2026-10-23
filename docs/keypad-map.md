@@ -191,9 +191,18 @@ these keys are free.
 | `1` long | break-in on/off | break-in on/off | break-in on/off | break-in on/off (experimental) | break-in on/off (experimental) |
 | `2` short | not available | keyer | keyer (FTDX101, FT-891); Kenwood and Elecraft: not available | keyer | keyer |
 | `2` long | not available | keyer on/off | keyer on/off | keyer on/off (experimental) | keyer on/off (experimental) |
+| `3` short | not available | keyer speed | keyer speed (FTDX101, FT-891, TS-480, KX2) | keyer speed | keyer speed |
+| `3` long | not available | 1 WPM faster | 1 WPM faster | one step faster (experimental) | one step faster (experimental) |
+| `3` double | not available | 1 WPM slower | 1 WPM slower | one step slower (experimental) | one step slower (experimental) |
+| `4` short | CW pitch | CW pitch | CW pitch (FTDX101, FT-891) | CW pitch | CW pitch |
+| `4` long | 10 Hz up | 10 Hz up | 10 Hz up | one step up (experimental) | one step up (experimental) |
+| `4` double | 10 Hz down | 10 Hz down | 10 Hz down | one step down (experimental) | one step down (experimental) |
+| `5` short | not available | break-in delay | break-in delay (FT-891, TS-480) | break-in delay | break-in delay |
+| `5` long | not available | one step longer | one step longer (at least 100 ms) | one step longer (experimental) | one step longer (experimental) |
+| `5` double | not available | one step shorter | one step shorter (at least 100 ms) | one step shorter (experimental) | one step shorter (experimental) |
 
 Icom break-in is off, semi or full; `1` long turns it from off to semi and from semi or full to off.
-The other keys are free.
+A delay of 0 is full break-in (TS-480, FT-857/897). The other keys are free.
 
 ## Bank 8 - Connection and Radio Menu
 
