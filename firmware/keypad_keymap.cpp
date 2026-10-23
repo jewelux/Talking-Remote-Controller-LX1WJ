@@ -137,8 +137,7 @@ KeyBinding bank1(const KeypadTraits& t, char key) {
       if (ftdx10) return bind(SEND("LOCK?"), SEND("LOCK TOGGLE")).help("LOCK", V::Say, V::Toggle);
       return bind(queryBank1Lock, toggleBank1Lock).help("LOCK", V::Say, V::Toggle);
     case '4': return bind(queryBank1Power).help("PO", V::Say);
-    // The FT-8x7 reads its ALC from a 0..15 TX meter, console only (ALC?).
-    case '5': return isFt8x7(t) ? KeyBinding{} : bind(queryBank1Alc).help("ALC", V::Say);
+    case '5': return bind(queryBank1Alc).help("ALC", V::Say);
     case '6': return rfPowerKey(t);
     case '7': return bind(queryBank1Smeter).help("SM", V::Say);
     case '8': return bind(queryBank1Swr).help("SWR", V::Say);

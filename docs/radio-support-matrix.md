@@ -69,8 +69,8 @@ The offset itself is not set over CAT.
 
 `ALC?` (Bank 1 `5`) reads the ALC meter while transmitting, in percent of full scale: on the
 Icoms `15 13`, 0–120 (their CI-V guides and Hamlib), on the FTDX10, FTDX101 and FT-891 `RM4`,
-0–255 (their CAT manuals; flrig scales it so, Hamlib reads the same command). The FT-8x7 has its
-own `ALC?`, 0–15, console only.
+0–255 (their CAT manuals; flrig scales it so, Hamlib reads the same command). The FT-8x7 says its
+own 0–15 meter, from the undocumented `BD`.
 
 ### CW
 

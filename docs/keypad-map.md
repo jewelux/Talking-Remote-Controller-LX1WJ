@@ -94,7 +94,7 @@ ends help mode.
 | `3` short | lock | lock | lock | lock | lock |
 | `3` long | lock on/off | lock on/off | lock on/off | lock on/off | lock on/off |
 | `4` short | output power | output power | output power | output power | output power |
-| `5` short | ALC while transmitting | ALC while transmitting | ALC (FTDX101, FT-891); Kenwood and Elecraft: not available | free | free |
+| `5` short | ALC while transmitting | ALC while transmitting | ALC (FTDX101, FT-891); Kenwood and Elecraft: not available | ALC while transmitting, 0–15 | ALC while transmitting, 0–15 |
 | `6` short | RF power setting (IC-706: free) | RF power setting | RF power setting (FTDX101MP: free) | RF power setting | RF power setting |
 | `6` long | RF power entry | RF power entry | RF power entry | RF power level select (experimental) | RF power entry (experimental) |
 | `7` short | S-meter | S-meter | S-meter | S-meter | S-meter |

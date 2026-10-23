@@ -14,7 +14,7 @@ constexpr SpokenLabel kSpokenLabels[] = {
   {"A/B", "vfo a b"},
   {"A=B", "a equals b"},
   {"AGC", "agc"},
-  {"ALC", "a l c"},
+  {"ALC", "alc"},
   {"ANOTCH", "auto notch"},
   {"ANT", "antenna"},
   {"ATT", "attenuator"},

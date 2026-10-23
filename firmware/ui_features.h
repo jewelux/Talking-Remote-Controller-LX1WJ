@@ -69,7 +69,7 @@ const char* cwLevelName(CwLevel level);
 String cwLevelText(CwLevel level, uint16_t value);
 void speakCwLevel(CwLevel level, uint16_t value);
 
-// "ALC 45%"; "a l c 45 percent".
+// "ALC 45%"; "a.l.c. 45 percent".
 String alcText(uint8_t percent);
 void speakAlc(uint8_t percent);
 

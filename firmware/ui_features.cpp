@@ -253,7 +253,7 @@ String alcText(uint8_t percent) {
 }
 
 void speakAlc(uint8_t percent) {
-  speakTokenPercent("A L C", percent);
+  speakTokenPercent("alc", percent);
 }
 
 String procStateText(bool on) {

@@ -98,8 +98,7 @@ KEYMAP_ROW(FTDX10,          1, '3', "send(LOCK?)",           "send(LOCK TOGGLE)"
 KEYMAP_ROW(NOT(FTDX10),     1, '3', "queryBank1Lock",        "toggleBank1Lock",        "-", "none", "-")
 KEYMAP_ROW(ALL,             1, '4', "queryBank1Power",       "none",                   "-", "none", "-")
 // fixed: ALC was on 'A', and the FTDX10 tuner on '5' (it stays on Bank 4 '0').
-KEYMAP_ROW(NOT(FT8X7),      1, '5', "queryBank1Alc",         "none",                   "-", "none", "-")
-KEYMAP_ROW(FT8X7,           1, '5', "unassigned",            "none",                   "-", "none", "-")
+KEYMAP_ROW(ALL,             1, '5', "queryBank1Alc",        "none",                   "-", "none", "-")
 KEYMAP_ROW(IC7300 | TS480 | FTDX10 | FT891 | FT817 | FT857, 1, '6', "queryBank1RfPower", "beginBank1RfPowerSet", "-", "none", "RFPOWER")
 KEYMAP_ROW(IC706,           1, '6', "unassigned",            "beginBank1RfPowerSet",   "-", "none", "RFPOWER")
 KEYMAP_ROW(FT8X7_OTHER,     1, '6', "unassigned",            "none",                   "-", "none", "-")

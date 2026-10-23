@@ -66,7 +66,8 @@
   press; Bank 6 (repeater and tone) also works on the CAT radios; many keys moved. The new keys are
   not yet tested on the CAT radios
 - Bank 1 `5` says the ALC meter while transmitting, in percent of full scale, on the Icoms and the
-  FTDX10, FTDX101 and FT-891 (console `ALC?`)
+  FTDX10, FTDX101 and FT-891 (console `ALC?`). The FT-817/818/857/897 say the radio's own meter,
+  0 to 15 ("a.l.c. 8"), and "a.l.c. rx" in receive
 - Bank 1 `6` says the RF power setting and long press enters it in watts on the FTDX10, FTDX101D,
   FT-891, TS-480 and KX2 too, as on the Icoms
 - `A`, `B` and `C` act on the bank's focus, the setting of the last key used on that bank: `A`

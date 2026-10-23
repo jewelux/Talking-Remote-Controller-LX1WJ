@@ -1514,21 +1514,31 @@ static void reportFt8x7MeterInReceive(const char* label, const char* meterToken)
   speakToken("rx");
 }
 
-// ALC? and MOD?: a 0..15 meter of 0xBD, printed only.
-static void reportFt8x7BdMeter(const char* command, const char* label, uint8_t YaesuTxMeters::*meter) {
+// ALC? and MOD?: a 0..15 meter of 0xBD. Said with meterToken, printed only without it.
+static void reportFt8x7BdMeter(const char* command, const char* label, uint8_t YaesuTxMeters::*meter,
+                               const char* meterToken) {
   YaesuTxMeters meters;
   if (!yaesuCatQueryTxMeters(meters, true, kCatReplyTimeoutMs)) {
     reportCommandFailure(command, "no reply");
     return;
   }
-  Serial.print(label);
   if (!meters.transmitting) {
+    if (meterToken) {
+      reportFt8x7MeterInReceive(label, meterToken);
+      return;
+    }
+    Serial.print(label);
     Serial.println(": RX (not transmitting)");
     return;
   }
+  Serial.print(label);
   Serial.print(": ");
   Serial.print(meters.*meter);
   Serial.println(" of 15");
+  if (g_speechEnabled && meterToken) {
+    speakLabel(meterToken);
+    speakDigitsAndPoint(String(meters.*meter));
+  }
 }
 
 static void speakFt8x7HighSwr() {
@@ -1582,11 +1592,11 @@ static bool handleConsoleFt8x7Meters(const String& upper) {
     return true;
   }
   if (upper == "ALC?") {
-    reportFt8x7BdMeter("ALC?", "ALC", &YaesuTxMeters::alc);
+    reportFt8x7BdMeter("ALC?", "ALC", &YaesuTxMeters::alc, "alc");
     return true;
   }
   if (upper == "MOD?") {
-    reportFt8x7BdMeter("MOD?", "MOD", &YaesuTxMeters::mod);
+    reportFt8x7BdMeter("MOD?", "MOD", &YaesuTxMeters::mod, nullptr);
     return true;
   }
   return false;

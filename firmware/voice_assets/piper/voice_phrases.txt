@@ -59,6 +59,7 @@ z
 
 # Letter abbreviations
 a g c | | a g c,
+a l c | | a.l.c.
 a m | | A.M
 c w
 c w r
