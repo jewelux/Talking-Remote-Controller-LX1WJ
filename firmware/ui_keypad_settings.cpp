@@ -184,6 +184,7 @@ constexpr FocusActions kFocusActions[] = {
     {Setting::Profile, queryBank9Profile, beginBank9ProfileSelect, resetBank9Profile, stepProfile},
     // A short list: A long steps to the next, as its key does.
     {Setting::SpeechSpeed, queryBank9Speed, stepBank9Speed, nullptr, nullptr},
+    {Setting::Agc, queryBank2Agc, beginBank2AgcSelect, nullptr, nudgeBank2Agc},
 };
 
 const FocusActions* focusActions(Setting setting) {
@@ -226,7 +227,7 @@ void keypadSettingNudge(Setting setting, int8_t dir, bool big) {
     return;
   }
   entry.current(value);
-  if (!ops->confirm) {
+  if (!ops->confirm || !ops->confirm()) {
     writeAndSay(*ops, value, keypadActiveFocusIsNew() ? LabelMode::Always : LabelMode::Never);
     return;
   }
@@ -241,6 +242,36 @@ void keypadSettingNudge(Setting setting, int8_t dir, bool big) {
   speakPlease();
 }
 
+void settingSay(Setting setting) {
+  const SettingOps* ops = settingOps(setting);
+  const char* label = settingInfo(setting).label;
+  printKeypadAction("{}?", label);
+  if (keypadReportIfUnsupported(ops && ops->available(), label)) return;
+  prepareKeypadSpeechResponse();
+  int32_t value = 0;
+  if (keypadReportFeatureFailure(ops->read(value), label)) return;
+  printKeypadStatus("{}", ops->text(value).c_str());
+  ops->speak(value);
+}
+
+void settingEntry(Setting setting) { keypadSettingEntry(setting); }
+
+// A short list on a hold: one step up, from the last back to the first, set at once.
+void settingNext(Setting setting) {
+  const SettingOps* ops = settingOps(setting);
+  const char* label = settingInfo(setting).label;
+  printKeypadAction("{} NEXT", label);
+  if (keypadReportIfUnsupported(ops != nullptr, label)) return;
+  ValueSpec spec;
+  int32_t value = 0;
+  if (!readForStep(*ops, spec, value)) return;
+  ValueEntry entry;
+  entry.begin(spec, knownSeed(value));
+  if (entry.step(1) == ValueEntry::Step::Moved) entry.current(value);
+  else value = spec.min;
+  writeAndSay(*ops, value, LabelMode::Verbose);
+}
+
 // A short says the name, verbose off too.
 void focusSay() {
   const Setting focus = keypadActiveFocus();
@@ -250,19 +281,11 @@ void focusSay() {
     f->say();
     return;
   }
-  const SettingOps* ops = settingOps(focus);
-  if (!ops) {
+  if (!settingOps(focus)) {
     reportNotAvailable("FOCUS");
     return;
   }
-  const char* label = settingInfo(focus).label;
-  printKeypadAction("{}?", label);
-  if (keypadReportIfUnsupported(ops->available(), label)) return;
-  prepareKeypadSpeechResponse();
-  int32_t value = 0;
-  if (keypadReportFeatureFailure(ops->read(value), label)) return;
-  printKeypadStatus("{}", ops->text(value).c_str());
-  ops->speak(value);
+  settingSay(focus);
 }
 
 void focusEntry() {

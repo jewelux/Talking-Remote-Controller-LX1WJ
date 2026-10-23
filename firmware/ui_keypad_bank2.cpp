@@ -1,32 +1,10 @@
-// Bank 2 keypad actions: noise reduction, noise blanker, notch, PBT and filter,
-// and the FT-8x7 settings kept in the EEPROM, among them the FT-817 antenna jack.
+// Bank 2 keypad actions: the NR, NB and notch switches, AGC, preamp and
+// attenuator, the Icom filter shape, and the FT-8x7 settings kept in the EEPROM,
+// among them the FT-817 antenna jack. The levels, PBT and filters are Settings
+// (keypad_setting_ops_rx.cpp).
 #include "ui_keypad_bank.h"
 #include "ui_features.h"
 #include "radio_monitor.h"
-
-static int pbtRawToOffset(uint16_t raw) {
-  if (raw > 255) raw = 255;
-  return (int)raw - 128;
-}
-
-static uint16_t pbtOffsetToRaw(int offset) {
-  if (offset < -128) offset = -128;
-  if (offset > 127) offset = 127;
-  return (uint16_t)(offset + 128);
-}
-
-static void speakSignedStepValue(const String& label, int value) {
-  if (!g_speechEnabled) return;
-  speakLabel(label);
-  if (value < 0) {
-    speakToken("minus");
-    playSilenceMs(60);
-    value = -value;
-  }
-  speakNumber(String(value));
-  playSilenceMs(60);
-  speakToken("step");
-}
 
 void queryBank2Nr() {
   printKeypadAction("NR?");
@@ -55,32 +33,23 @@ void queryBank2Notch() {
   speakNotchState(state);
 }
 
-void queryBank2Ft8x7NrLevel() { queryKeypadFt8x7Setting(Ft8x7Setting::NrLevel); }
-void queryBank2Ft8x7NbLevel() { queryKeypadFt8x7Setting(Ft8x7Setting::NbLevel); }
 void queryBank2Ft8x7Dbf() { queryKeypadFt8x7Setting(Ft8x7Setting::Dbf); }
-void queryBank2Ft8x7LowCut() { queryKeypadFt8x7Setting(Ft8x7Setting::LowCut); }
-void queryBank2Ft8x7HighCut() { queryKeypadFt8x7Setting(Ft8x7Setting::HighCut); }
 void queryBank2Ft8x7MicEq() { queryKeypadFt8x7Setting(Ft8x7Setting::MicEq); }
 void queryBank2Ft8x7Ipo() { queryKeypadFt8x7Setting(Ft8x7Setting::Ipo); }
 void queryBank2Ft817Antenna() { queryKeypadFt8x7Setting(Ft8x7Setting::Antenna); }
-
-static void stepKeypadFt8x7Level(Ft8x7Setting setting, const char* label, int delta) {
-  printKeypadAction("{} STEP {}", label, delta);
-  prepareKeypadSpeechResponse();
-  Ft8x7SettingState state;
-  keypadReportFt8x7Setting(ft8x7LevelStep(setting, delta, state), label, state);
-}
-
-void stepBank2Ft8x7NrLevel(int delta) { stepKeypadFt8x7Level(Ft8x7Setting::NrLevel, "NRLEVEL", delta); }
-void stepBank2Ft8x7NbLevel(int delta) { stepKeypadFt8x7Level(Ft8x7Setting::NbLevel, "NBLEVEL", delta); }
-void stepBank2Ft8x7LowCut(int delta) { stepKeypadFt8x7Level(Ft8x7Setting::LowCut, "HPF", delta); }
-void stepBank2Ft8x7HighCut(int delta) { stepKeypadFt8x7Level(Ft8x7Setting::HighCut, "LPF", delta); }
 
 void toggleBank2Ft8x7Dbf() {
   printKeypadAction("DBF");
   prepareKeypadSpeechResponse();
   Ft8x7SettingState state;
   keypadReportFt8x7Setting(ft8x7FlagSettingToggle(Ft8x7Setting::Dbf, state), "DBF", state);
+}
+
+void toggleBank2Ft817Antenna() {
+  printKeypadAction("ANT");
+  prepareKeypadSpeechResponse();
+  Ft8x7SettingState state;
+  keypadReportFt8x7Setting(ft817AntennaToggle(state), "ANT", state);
 }
 
 void queryBank2Agc() {
@@ -90,26 +59,6 @@ void queryBank2Agc() {
   if (keypadReportFeatureFailure(agcQuery(mode), "AGC?")) return;
   printKeypadStatus("{}", agcText(mode).c_str());
   speakAgc(mode);
-}
-
-void queryBank2YaesuRxLevel(RxLevel level) {
-  const char* label = level == RxLevel::Nr ? "NRLEVEL?" : "NBLEVEL?";
-  printKeypadAction("{}", label);
-  prepareKeypadSpeechResponse();
-  uint16_t value = 0;
-  if (keypadReportFeatureFailure(yaesuRxLevelQuery(level, value), label)) return;
-  printKeypadStatus("{}", rxLevelText(level, value).c_str());
-  speakRxLevel(level, value);
-}
-
-void stepBank2YaesuRxLevel(RxLevel level, int delta) {
-  const char* label = level == RxLevel::Nr ? "NRLEVEL" : "NBLEVEL";
-  printKeypadAction("{} STEP {}", label, delta);
-  prepareKeypadSpeechResponse();
-  uint16_t value = 0;
-  if (keypadReportFeatureFailure(yaesuRxLevelStep(level, delta, value), label)) return;
-  printKeypadStatus("{}", rxLevelText(level, value).c_str());
-  speakRxLevel(level, value);
 }
 
 void queryBank2AutoNotch() {
@@ -212,6 +161,53 @@ void beginBank2AgcSelect() {
   speakPrompt("agc");
 }
 
+// The speed after mode in the select's key order (off, auto, fast, slow, mid) that the radio
+// can be set to, going round; false when there is no other.
+static bool nextAgc(AgcMode mode, int8_t dir, AgcMode& out) {
+  static constexpr AgcMode kOrder[] = {AgcMode::Off, AgcMode::Auto, AgcMode::Fast, AgcMode::Slow, AgcMode::Mid};
+  constexpr int kCount = sizeof(kOrder) / sizeof(kOrder[0]);
+  int at = 0;
+  while (at < kCount && kOrder[at] != mode) ++at;
+  if (at == kCount) at = dir > 0 ? kCount - 1 : 0;
+  for (int n = 1; n < kCount; ++n) {
+    const AgcMode next = kOrder[((at + dir * n) % kCount + kCount) % kCount];
+    if (agcCanSet(next)) {
+      out = next;
+      return next != mode;
+    }
+  }
+  return false;
+}
+
+void nudgeBank2Agc(int8_t dir, bool) {
+  printKeypadAction("AGC {}", dir > 0 ? "UP" : "DOWN");
+  if (keypadReportIfUnsupported(agcCanSetAny(), "AGC")) return;
+  prepareKeypadSpeechResponse();
+  AgcMode mode = AgcMode::Off;
+  if (keypadReportFeatureFailure(agcQuery(mode), "AGC")) return;
+  if (currentProtocolType() == PROTO_YAESU_FT8X7) {
+    EntrySeed seed;
+    seed.known = true;
+    seed.value = (uint8_t)mode;
+    if (!keypadNudgeChoice(kAgcChoice, seed, dir)) {
+      keypadValueLimit("AGC", dir > 0);
+      return;
+    }
+    speakPlease();
+    return;
+  }
+  AgcMode next = mode;
+  if (!nextAgc(mode, dir, next)) {
+    keypadValueLimit("AGC", dir > 0);
+    return;
+  }
+  prepareKeypadRadioWrite();
+  if (keypadReportFeatureFailure(agcSet(next, mode), "AGC")) return;
+  printKeypadStatus("{}", agcText(mode).c_str());
+  LabelModeScope labels(keypadActiveFocusIsNew() ? LabelMode::Always : LabelMode::Never);
+  speakAgc(mode);
+}
+
 void toggleBank2Nr() {
   printKeypadAction("NR");
   prepareKeypadSpeechResponse();
@@ -239,123 +235,6 @@ void toggleBank2Notch() {
   speakNotchState(state);
 }
 
-void queryBank2NrLevel() {
-  printKeypadAction("NRLEVEL?");
-  uint16_t raw = 0;
-  if (!queryNrLevel(raw, kCatReplyTimeoutMs)) {
-    keypadReportFailure("NRLEVEL?");
-    return;
-  }
-  uint8_t percent = levelRawToPercent(raw);
-  printKeypadStatus("NRLEVEL {}%", percent);
-  speakFeatureValue("noisereduction", percent);
-}
-
-void adjustBank2NrLevel(int deltaPercent) {
-  printKeypadAction("NRLEVEL");
-  uint16_t raw = 0;
-  if (!queryNrLevel(raw, kCatReplyTimeoutMs)) { keypadReportFailure("NRLEVEL"); return; }
-  int percent = (int)levelRawToPercent(raw) + deltaPercent;
-  if (percent < 0) percent = 0;
-  if (percent > 100) percent = 100;
-  const uint16_t targetRaw = levelPercentToRaw(percent);
-
-  bool wrote = setNrLevel(targetRaw);
-  if (!wrote) {
-    bool nrOn = false;
-    if (queryNr(nrOn, kCatReplyTimeoutMs) && !nrOn) {
-      (void)setNr(true);
-      wrote = setNrLevel(targetRaw);
-    }
-  }
-
-  uint16_t readBack = 0;
-  if (!queryNrLevel(readBack, kCatReplyTimeoutMs)) {
-    keypadReportFailure("NRLEVEL");
-    return;
-  }
-
-  const uint8_t readPercent = levelRawToPercent(readBack);
-  printKeypadStatus("NRLEVEL {}%", readPercent);
-  if (!wrote && (bool)Serial) {
-    Serial.println("WARN NRLEVEL write not confirmed; using readback value");
-  }
-  speakFeatureValue("noisereduction", readPercent);
-}
-
-void queryBank2NbLevel() {
-  printKeypadAction("NBLEVEL?");
-  uint16_t raw = 0;
-  if (!queryNbLevel(raw, kCatReplyTimeoutMs)) {
-    keypadReportFailure("NBLEVEL?");
-    return;
-  }
-  uint8_t percent = levelRawToPercent(raw);
-  printKeypadStatus("NBLEVEL {}%", percent);
-  speakTokenPercent("noiseblanker", percent);
-}
-
-void adjustBank2NbLevel(int deltaPercent) {
-  printKeypadAction("NBLEVEL");
-  uint16_t raw = 0;
-  if (!queryNbLevel(raw, kCatReplyTimeoutMs)) { keypadReportFailure("NBLEVEL"); return; }
-  int percent = (int)levelRawToPercent(raw) + deltaPercent;
-  if (percent < 0) percent = 0;
-  if (percent > 100) percent = 100;
-  if (!setNbLevel(levelPercentToRaw(percent))) { keypadReportFailure("NBLEVEL"); return; }
-  printKeypadStatus("NBLEVEL {}%", percent);
-  speakTokenPercent("noiseblanker", (uint8_t)percent);
-}
-
-static bool ensureActiveVfoKnownForKeypad() {
-  if (live.activeVfoKnown) return true;
-  uint64_t dummy = 0;
-  return queryVfoFrequency(true, dummy, kCatReplyTimeoutMs);
-}
-
-static bool queryCurrentFilterSlotForKeypad(uint8_t& filterOut) {
-  if (!ensureActiveVfoKnownForKeypad()) return false;
-  uint8_t mode = 0xFF;
-  return queryVfoMode(live.activeVfoA, mode, filterOut, kCatReplyTimeoutMs);
-}
-
-void queryBank2PbtInner() {
-  printKeypadAction("PBT1?");
-  uint16_t raw = 0;
-  if (!queryPbtInner(raw, kCatReplyTimeoutMs)) {
-    keypadReportFailure("PBT1?");
-    return;
-  }
-  printKeypadStatus("PBT1 {} step", pbtRawToOffset(raw));
-  speakSignedStepValue("pbt", pbtRawToOffset(raw));
-}
-
-void adjustBank2PbtInner(int delta) {
-  printKeypadAction("PBT1");
-  uint16_t raw = 0;
-  if (!queryPbtInner(raw, kCatReplyTimeoutMs)) { keypadReportFailure("PBT1"); return; }
-  const int next = pbtRawToOffset(raw) + delta;
-  if (!setPbtInner(pbtOffsetToRaw(next))) { keypadReportFailure("PBT1"); return; }
-  queryBank2PbtInner();
-}
-
-void queryBank2PbtOuter() {
-  printKeypadAction("PBT2?");
-  uint16_t raw = 0;
-  if (!queryPbtOuter(raw, kCatReplyTimeoutMs)) { keypadReportFailure("PBT2?"); return; }
-  printKeypadStatus("PBT2 {} step", pbtRawToOffset(raw));
-  speakSignedStepValue("pbt", pbtRawToOffset(raw));
-}
-
-void adjustBank2PbtOuter(int delta) {
-  printKeypadAction("PBT2");
-  uint16_t raw = 0;
-  if (!queryPbtOuter(raw, kCatReplyTimeoutMs)) { keypadReportFailure("PBT2"); return; }
-  const int next = pbtRawToOffset(raw) + delta;
-  if (!setPbtOuter(pbtOffsetToRaw(next))) { keypadReportFailure("PBT2"); return; }
-  queryBank2PbtOuter();
-}
-
 void toggleBank2FilterShape() {
   printKeypadAction("FILSHAPE");
   bool soft = false;
@@ -365,33 +244,5 @@ void toggleBank2FilterShape() {
   if (g_speechEnabled) {
     speakLabel("filtershape");
     speakToken(!soft ? "soft" : "sharp");
-  }
-}
-
-void queryBank2FilterWidth() {
-  printKeypadAction("FILWIDTH?");
-  uint8_t filter = 0xFF;
-  if (!queryCurrentFilterSlotForKeypad(filter)) { keypadReportFailure("FILWIDTH?"); return; }
-  printKeypadStatus("FILWIDTH {}", filter);
-  if (g_speechEnabled) {
-    speakLabel("filterwidth");
-    playDigit(filter);
-  }
-}
-
-void cycleBank2FilterWidth(int delta) {
-  printKeypadAction("FILWIDTH");
-  uint8_t mode = 0xFF;
-  uint8_t filter = 0xFF;
-  if (!ensureActiveVfoKnownForKeypad()) { keypadReportFailure("FILWIDTH"); return; }
-  if (!queryVfoMode(live.activeVfoA, mode, filter, kCatReplyTimeoutMs)) { keypadReportFailure("FILWIDTH"); return; }
-  int next = (int)filter + delta;
-  if (next < 1) next = 3;
-  if (next > 3) next = 1;
-  if (!setMode(mode, (uint8_t)next)) { keypadReportFailure("FILWIDTH"); return; }
-  printKeypadStatus("FILWIDTH {}", next);
-  if (g_speechEnabled) {
-    speakLabel("filterwidth");
-    playDigit((uint8_t)next);
   }
 }

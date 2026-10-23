@@ -4,6 +4,7 @@
 #include "ui_keypad.h"
 #include "keypad_input.h"
 #include "keypad_keymap.h"
+#include "keypad_setting_ops.h"
 #include "radio_catalog.h"
 #include "radio_monitor.h"
 #include "radio_profile.h"
@@ -71,6 +72,11 @@ static KeypadTraits currentKeypadTraits() {
   t.supportsMonitor = protocolSupportsMonitor();
   t.supportsTransceive = protocolSupportsTransceive();
   t.canGetRfPower = currentProfile().caps.getRfPower;
+  for (uint8_t i = 0; i < (uint8_t)Setting::Count; ++i) {
+    const SettingOps* ops = settingOps((Setting)i);
+    if (ops && ops->available()) t.settings.add((Setting)i);
+  }
+  if (currentProfile().caps.getAgc) t.settings.add(Setting::Agc);
   return t;
 }
 

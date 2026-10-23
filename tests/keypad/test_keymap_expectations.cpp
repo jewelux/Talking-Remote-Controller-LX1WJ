@@ -80,8 +80,9 @@ TEST(expectations_lookup_defaults_to_unassigned) {
 }
 
 TEST(expectations_lookup_picks_the_family_row) {
-  CHECK_EQ(lookup(FTDX10, 2, '5').shortAction, "send(PS?)");
-  CHECK_EQ(lookup(IC706, 2, '4').shortAction, "queryBank2NrLevel");
-  CHECK_EQ(lookup(TS480, 2, '6').shortAction, "unassigned");
+  CHECK_EQ(lookup(FTDX10, 8, '4').shortAction, "send(PS?)");
+  CHECK_EQ(lookup(FT857, 2, '4').shortAction, "settingSay(HPF)");
+  CHECK_EQ(lookup(TS480, 2, '6').shortAction, "settingSay(PBT2)");
+  CHECK_EQ(lookup(TS480, 8, '6').shortAction, "unassigned");
   CHECK_EQ(lookup(IC7300, 9, '4').shortAction, "queryBank9TuningSpeech");
 }

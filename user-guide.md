@@ -105,8 +105,8 @@ levels, and the DSP bandpass filter with its low and high cut (Bank 2), and the 
 antenna jack (`ANT`), and on the FT-857/897 the speech processor (`PROC`, `PROCLEVEL`) and the TX
 equalizer (`MICEQ`). On the IC-7300, IC-705, IC-7760, FTDX10, FTDX101, FT-891 and TS-480 the
 console sets the speech processor, mic gain and VOX without experimental mode (the FTDX101 and
-IC-7760 not all of them), and on these and the KX2 the AGC, also from Bank 2 `A`, and the preamp
-and attenuator (`PREAMP`, `ATT`, Bank 2 `B` and `C`) and, but on the FTDX101MP, the RF power
+IC-7760 not all of them), and on these and the KX2 the AGC, also from Bank 2 `7`, and the preamp
+and attenuator (`PREAMP`, `ATT`, Bank 2 `8` and `9`) and, but on the FTDX101MP, the RF power
 (`RFPOWER`, Bank 1 `6`). The Icoms and these Yaesus also set break-in (`BK`) and the Yaesus the
 keyer (`KYR`), from Bank 7 `1` and `2` too, and the CW speed, pitch and delay (`CWSPEED`,
 `CWPITCH`, `CWDELAY`, Bank 7 `3` to `5`) where the radio has them. In FM the console also sets the
@@ -172,12 +172,13 @@ Use these keypad functions first:
 - Bank 1, `8` short: SWR
 - Bank 1, `9` short or long: read or set mode
 - Bank 2, `1`, `2`, `3` short or long: NR, NB, notch query or toggle
+- Bank 2, `1` and `2` double: NR and NB level
 - Bank 2, `0` short or long: auto notch query or toggle
-- Bank 2, `B` and `C` short or long: preamp and attenuator query, or the next level
-- Bank 2, `5` short, long, or double: power-state query, off, on
-- Bank 2, `6` short: IF info
-- Bank 2, `7` short: radio ID
-- Bank 2, `A` short or long: AGC query or select
+- Bank 2, `7` short or long: AGC query or select
+- Bank 2, `8` and `9` short or long: preamp and attenuator query, or the next level
+- Bank 8, `4` short, long, or double: power-state query, off, on
+- Bank 8, `5` short: radio ID
+- Bank 8, `6` short: IF info
 - Bank 3, `0` short or long: split query or toggle
 - Bank 3, `1` short or long: VFO-A frequency or select VFO-A
 - Bank 3, `2` short or long: VFO-B frequency or select VFO-B

@@ -14,6 +14,8 @@ namespace {
 
 bool isFt8x7Protocol() { return currentProtocolType() == PROTO_YAESU_FT8X7; }
 
+bool always() { return true; }
+
 // ---- RF power, in tenths of a watt ----
 //
 // Whole watts are typed: the radios are set in watts. The IC-705 reads tenths.
@@ -227,8 +229,6 @@ void speakRitOffset(int32_t hz) {
 
 // ---- Speech volume 1..9 and speed, kept by HamTRC ----
 
-bool always() { return true; }
-
 FeatureStatus volumeLimits(ValueSpec& spec) {
   spec.name = "VOLUME";
   spec.setting = Setting::Volume;
@@ -292,13 +292,13 @@ void speakSpeed(int32_t value) {
 
 constexpr SettingOps kOps[] = {
     {Setting::RfPower, "power", rfPowerAvailable, rfPowerLimits, rfPowerRead, rfPowerWrite, rfPowerTextOf,
-     speakRfPowerOf, true},
+     speakRfPowerOf, always},
     {Setting::Ctcss, "ctcss", ctcssAvailable, ctcssLimits, ctcssRead, ctcssWrite, ctcssTextOf, speakCtcssOf},
     {Setting::Dcs, "dcs", dcsAvailable, dcsLimits, dcsRead, dcsWrite, dcsText, speakDcs},
     {Setting::RitOffset, "rit", ritOffsetAvailable, ritOffsetLimits, ritOffsetRead, ritOffsetWrite,
-     ritOffsetText, speakRitOffset, false, 0},
+     ritOffsetText, speakRitOffset, nullptr, 0},
     {Setting::Volume, "volume", always, volumeLimits, volumeRead, volumeWrite, volumeText, speakVolume},
-    {Setting::SpeechSpeed, "speed", always, speedLimits, speedRead, speedWrite, speedText, speakSpeed, false,
+    {Setting::SpeechSpeed, "speed", always, speedLimits, speedRead, speedWrite, speedText, speakSpeed, nullptr,
      (int32_t)SpeechSpeed::Normal},
 };
 
@@ -308,5 +308,5 @@ const SettingOps* settingOps(Setting setting) {
   for (const SettingOps& ops : kOps) {
     if (ops.setting == setting) return &ops;
   }
-  return nullptr;
+  return rxSettingOps(setting);
 }

@@ -94,3 +94,16 @@ struct SettingInfo {
 
 // The row of setting; None and Home have rows too.
 const SettingInfo& settingInfo(Setting setting);
+
+// The settings a radio has: what its keys may name as a focus or a second value.
+class SettingSet {
+ public:
+  void add(Setting setting) { bits_ |= mask(setting); }
+  bool has(Setting setting) const { return (bits_ & mask(setting)) != 0; }
+
+ private:
+  static uint64_t mask(Setting setting) { return (uint64_t)1 << (uint8_t)setting; }
+  uint64_t bits_ = 0;
+};
+
+static_assert((uint8_t)Setting::Count <= 64, "SettingSet holds 64 settings");

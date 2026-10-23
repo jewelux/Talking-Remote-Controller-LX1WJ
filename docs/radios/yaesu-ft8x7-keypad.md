@@ -40,24 +40,28 @@ Important practical note:
 
 ## Bank 2 - Radio Settings
 
-All Bank 2 keys read settings from the radio's EEPROM, since CAT cannot. With experimental mode on, the FT-857/897 DSP keys also change them by writing the EEPROM: long press on `1`, `2`, `3` and `6` switches the setting, long and double press on `4`, `5`, `7` and `8` step it up and down (NR level by 1, NB level by 10, low cut by 60 Hz, high cut by one step). On the FT-817, `2` long switches NB. On both radios, `A` long picks AGC: `0` off, `1` auto, `2` fast, `3` slow, then `Enter`. Otherwise a long press says "not available".
+All Bank 2 keys read settings from the radio's EEPROM, since CAT cannot. With experimental mode on, some also change them by writing the EEPROM: a long press on `1`, `2`, `3` and `5` switches the setting (FT-817: `2` only), and on the FT-857/897 a long press on `4` and `6` opens the low or high cut entry. The NR level, NB level and bandpass width are a double press of `1`, `2` and `5`; a press then a hold opens their entry. `7` long picks AGC: `0` off, `1` auto, `2` fast, `3` slow, then `Enter`. On the FT-817, `0` long switches the antenna jack. Without experimental mode a long press says "not available".
+
+`A`, `B` and `C` act on the last of these keys used (see the [keypad map](../keypad-map.md)): `B` and `C` read the value once and open its entry one step away, ending in "please"; more `B` and `C` presses step with no radio traffic, and `Enter` writes it. They need experimental mode too.
 
 | Key | FT-817 | FT-857/897 |
 |---|---|---|
 | `0` short | `ANT?`: antenna jack of the current band (menu 07) | not available |
 | `1` short | not available (no DSP) | `NR?` (DSP noise reduction) |
+| `1` double click | free | `NRLEVEL?` (menu 49, 1–16) |
 | `2` short | `NB?` | `NB?` |
+| `2` double click | free | `NBLEVEL?` (menu 63, 0–100) |
 | `3` short | not available (no DSP) | `NOTCH?` (DSP auto notch) |
-| `4` short | not available (no DSP) | `NRLEVEL?` (menu 49, 1–16) |
-| `5` short | not available | `NBLEVEL?` (menu 63, 0–100) |
-| `6` short | not available (no DSP) | `DBF?` (DSP bandpass filter) |
-| `7` short | not available (no DSP) | `HPF?`: low cut (menu 46, DSP HPF cutoff) |
-| `8` short | not available (no DSP) | `LPF?`: high cut (menu 47, DSP LPF cutoff) |
-| `9` short | not available (no DSP) | `MICEQ?`: TX equalizer (menu 48) |
-| `A` short | `AGC?` | `AGC?` |
-| `A` long | `AGC` select (experimental) | `AGC` select (experimental) |
-| `B` short | not available | `IPO?`: preamplifier, on when IPO is off (HF and 6 m) |
-| `B` double click | not available | `ATT?`: attenuator (HF and 6 m) |
+| `4` short | not available (no DSP) | `HPF?`: low cut (menu 46, DSP HPF cutoff) |
+| `5` short | not available (no DSP) | `DBF?` (DSP bandpass filter) |
+| `5` double click | free | `BPF?`: bandpass width (menu 45, 60, 120 or 240 Hz) |
+| `6` short | not available (no DSP) | `LPF?`: high cut (menu 47, DSP LPF cutoff) |
+| `7` short | `AGC?` | `AGC?` |
+| `7` long | `AGC` select (experimental) | `AGC` select (experimental) |
+| `8` short | not available | `IPO?`: preamplifier, on when IPO is off (HF and 6 m) |
+| `9` short | not available | `ATT?`: attenuator (HF and 6 m) |
+
+The TX equalizer (`MICEQ?`, menu 48) is on Bank 4 `5`.
 
 IPO and ATT are those of the current band and VFO, also outside the amateur bands (HF and 6 m only). The menu settings are read as the radio last saved them. Break-in, keyer, CW speed, pitch and delay are Bank 7 `1` to `5` (long and double press set them, experimental). FM narrow has no key; the console command `NAR?` reads it. On the FT-857/897, `PROC?` and `PROCLEVEL?` read the speech processor and its level (menu 74). `MICGAIN?` reads the mic gain of the current mode: on the FT-857/897 SSB menu 81, AM menu 5, FM menu 51 or DIG gain menu 37, not in CW and PKT; on the FT-817 SSB menu 46, AM menu 5, FM menu 29, DIG menu 25 or PKT menu 39 or 3 by the packet rate, not in CW. `VOX?`, `VOXGAIN?` and `VOXDELAY?` read VOX, its gain and its delay (FT-857/897 menus 88 and 87, FT-817 menus 51 and 50). With experimental mode on, the console also sets some of these, with no key yet: `MICGAIN <0..100>` and `MICGAIN STEP <+-n>` the mic gain of the current mode, and on the FT-857/897 `PROC ON | OFF | TOGGLE`, `PROCLEVEL <0..100>`, `PROCLEVEL STEP <+-n>` and `MICEQ OFF | LPF | HPF | BOTH`.
 

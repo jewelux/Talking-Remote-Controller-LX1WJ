@@ -29,7 +29,7 @@ they say "not available". This is noted where it is always the case.
 
 ## Focus: A, B and C
 
-On Banks 1, 3, 5, 6, 8 and 9, `A`, `B` and `C` act on the bank's **focus**: the setting of the
+On Banks 1, 2, 3, 5, 6, 8 and 9, `A`, `B` and `C` act on the bank's **focus**: the setting of the
 last key on that bank that has one. A key with nothing to move (a switch, a meter, the frequency)
 leaves the focus as it was. Each bank keeps its own focus, and a profile change puts every bank
 back to its starting focus.
@@ -37,6 +37,7 @@ back to its starting focus.
 | Bank | Keys that set the focus | Starting focus |
 |---|---|---|
 | 1 | `6` RF power, `9` mode | none |
+| 2 | `1` NR level, `2` NB level, `3` notch (Icom), `4` low cut or PBT inner, `5` bandpass width or filter, `6` high cut or PBT outer, `7` AGC, `8` preamp, `9` attenuator | none |
 | 3 | none yet | none |
 | 5 | `1`-`5` RIT offset | RIT offset |
 | 6 | none yet | none |
@@ -49,19 +50,21 @@ With no focus, `A`, `B` and `C` say "not available".
 |---|---|
 | `A` short | the focus, with its name (verbose off too) |
 | `A` long | its entry or pick; speech speed steps to the next |
-| `A` double | back to the centre: RIT offset 0, normal speech speed, profile reset. Only where there is one; elsewhere `A` answers at once |
+| `A` double | back to the centre: PBT 0, RIT offset 0, normal speech speed, profile reset. Only where there is one; elsewhere `A` answers at once |
 | `B` / `C` short | one step up / down |
-| `B` / `C` long | a big step: RF power 5 steps, RIT offset 100 Hz, volume 2; speech speed one step; the mode and the profile not available |
+| `B` / `C` long | a big step: RF power 5 steps, NR and NB level 25 % on Icom and 5 steps elsewhere, PBT 50, low and high cut 5 steps, RIT offset 100 Hz, volume 2; a list (filter, notch, AGC, preamp, attenuator, bandpass width, speech speed) one step; the mode and the profile not available |
 
 The first `B` or `C` after another key names the focus; the next ones give only the value. A step
 past the end of the range says "maximum" or "minimum" and changes nothing.
 
-RF power and the mode wait for `D`: `B` or `C` reads the value once and opens the entry or pick
+RF power, the mode and the FT-8x7 settings kept in the radio's memory (FT-857/897 NR and NB
+level, low and high cut, bandpass width; FT-8x7 AGC) wait for `D`: `B` or `C` reads the value once and opens the entry or pick
 one step away, ending in "please". More `B` and `C` presses step with no radio traffic (RF power
 held: the big step, as before the entry opened), `D` sets,
 `#` cancels. The FT-817/818 power steps through its levels and stops at the lowest and highest. The
 mode walks the modes in the order of the mode select digits and goes round: after the last comes
-the first. The RIT offset, volume and speech speed change at once.
+the first. The FT-8x7 settings need experimental mode; without it `B` and `C` say "not available". The other
+settings change at once.
 
 In a pick of named choices (mode, AGC), `B` and `C` go round. Levels and numbers stop at the end
 with "maximum" or "minimum".
@@ -102,41 +105,42 @@ The FTDX10 tuner is on Bank 4 `0`.
 
 ## Bank 2 - Receiver
 
+Top row: the switches with a level. Middle row: the passband, low side, filter, high side. Bottom
+row: AGC, preamp, attenuator.
+
 | Key | Icom | FTDX10 | Kenwood, Elecraft, other FTDX | FT-817/818 | FT-857/897 |
 |---|---|---|---|---|---|
 | `0` short | auto notch | auto notch | auto notch (FTDX101, FT-891); Kenwood and Elecraft: not available | antenna jack of the band | not available |
-| `0` long | auto notch on/off | auto notch on/off | auto notch on/off | free | not available |
+| `0` long | auto notch on/off | auto notch on/off | auto notch on/off | antenna jack front/rear (experimental) | not available |
 | `1` short | noise reduction | noise reduction | noise reduction | not available | noise reduction |
-| `1` long | noise reduction on/off | noise reduction on/off | noise reduction on/off | not available | noise reduction on/off (experimental) |
+| `1` long | noise reduction on/off | noise reduction on/off | noise reduction on/off; TS-480 off, NR1, NR2 | not available | noise reduction on/off (experimental) |
+| `1` double | NR level | NR level | NR level (FTDX101, FT-891); Kenwood and Elecraft: free | free | NR level |
+| `1` short, then hold | NR level entry | NR level entry | NR level entry (FTDX101, FT-891) | free | NR level entry (experimental) |
 | `2` short | noise blanker | noise blanker | noise blanker | noise blanker | noise blanker |
 | `2` long | noise blanker on/off | noise blanker on/off | noise blanker on/off | noise blanker on/off (experimental) | noise blanker on/off (experimental) |
+| `2` double | NB level | NB level | NB level (FTDX101, FT-891); Kenwood and Elecraft: free | free | NB level |
+| `2` short, then hold | NB level entry | NB level entry | NB level entry (FTDX101, FT-891) | free | NB level entry (experimental) |
 | `3` short | notch | notch | notch | not available | notch |
-| `3` long | notch on/off | notch on/off | notch on/off | not available | notch on/off (experimental) |
-| `4` short | noise reduction level | noise reduction level | noise reduction level (FTDX101, FT-891); Kenwood and Elecraft: not available | not available | noise reduction level |
-| `4` long | NR level up 10 % | NR level up 1 | NR level up 1 | free | NR level up 1 (experimental) |
-| `4` double | NR level down 10 % | NR level down 1 | NR level down 1 | free | NR level down 1 (experimental) |
-| `5` short | noise blanker level | radio power state | noise blanker level (FTDX101, FT-891); Kenwood and Elecraft: not available | not available | noise blanker level |
-| `5` long | NB level up 10 % | radio power off | NB level up 1 | free | NB level up 10 (experimental) |
-| `5` double | NB level down 10 % | radio power on | NB level down 1 | free | NB level down 10 (experimental) |
-| `6` short | PBT inner | radio status line | free | not available | DSP bandpass filter |
-| `6` long | PBT inner up | free | free | free | DSP bandpass filter on/off (experimental) |
-| `6` double | PBT inner down | free | free | free | free |
-| `7` short | PBT outer | radio ID | free | not available | low cut |
-| `7` long | PBT outer up | free | free | free | low cut up 60 Hz (experimental) |
-| `7` double | PBT outer down | free | free | free | low cut down 60 Hz (experimental) |
-| `8` short | filter shape | not available | free | not available | high cut |
-| `8` long | filter shape soft/sharp | free | free | free | high cut up one step (experimental) |
-| `8` double | free | free | free | free | high cut down one step (experimental) |
-| `9` short | filter width | not available | free | not available | TX equalizer |
-| `9` long | next filter | free | free | free | free |
-| `9` double | previous filter | free | free | free | free |
-| `A` short | AGC | AGC | AGC | AGC | AGC |
-| `A` long | AGC select | AGC select | AGC select | AGC select (experimental) | AGC select (experimental) |
-| `B` short | preamp | preamp | preamp | not available | preamplifier (IPO) |
-| `B` long | next preamp level | next preamp level | next preamp level | free | free |
-| `B` double | free | free | free | not available | attenuator |
-| `C` short | attenuator | attenuator | attenuator | not available | attenuator |
-| `C` long | next attenuator step | next attenuator step | next attenuator step | not available | not available |
+| `3` long | notch off, narrow, mid, wide | notch on/off | notch on/off | not available | notch on/off (experimental) |
+| `4` short | PBT inner | not available | not available | not available | low cut |
+| `4` long | PBT inner entry | not available | not available | not available | low cut entry (experimental) |
+| `5` short | filter (1-3) | not available | not available | not available | DSP bandpass filter |
+| `5` long | next filter | free | free | free | DSP bandpass filter on/off (experimental) |
+| `5` double | filter shape | free | free | free | DSP bandpass width |
+| `5` short, then hold | filter shape soft/sharp | free | free | free | DSP bandpass width select (experimental) |
+| `6` short | PBT outer | not available | not available | not available | high cut |
+| `6` long | PBT outer entry | not available | not available | not available | high cut entry (experimental) |
+| `7` short | AGC | AGC | AGC | AGC | AGC |
+| `7` long | AGC select | AGC select | AGC select | AGC select (experimental) | AGC select (experimental) |
+| `8` short | preamp | preamp | preamp | not available | preamplifier (IPO) |
+| `8` long | next preamp level | next preamp level | next preamp level | free | free |
+| `9` short | attenuator | attenuator | attenuator | not available | attenuator |
+| `9` long | next attenuator step | next attenuator step | next attenuator step | free | free |
+| `A` `B` `C` | focus | focus | focus | focus: AGC | focus |
+
+The NR and NB levels are in percent on Icom, in the radio's own steps elsewhere (FTDX10, FTDX101
+and FT-891 NR 1-15, NB 0-10; FT-857/897 NR 1-16, NB 0-100). PBT is in the radio's steps, -128 to
+127, with 0 the centre. The FT-857/897 bandpass width is 60, 120 or 240 Hz.
 
 AGC select: `0` off, `1` auto, `2` fast, `3` slow, `4` mid, then `D`. Only the radio's own speeds
 are taken: Icom fast, mid and slow; FTDX10, FTDX101 and FT-891 all five; TS-480 off, fast and
@@ -146,7 +150,11 @@ available".
 Preamp and attenuator: a hold goes to the next level and from the last one to off. Preamp: IC-7300,
 IC-705, IC-7760, FTDX10 and FTDX101 off, 1, 2; FT-891, TS-480 and KX2 off and on. Attenuator:
 IC-7300 and IC-705 20 dB; IC-7760, FTDX10 and FTDX101 6, 12 and 18 dB; KX2 10 dB; FT-891 and TS-480
-on. The FT-857/897 attenuator is read only; the IC-706, G106 and FT-817 say "not available".
+on. The FT-857/897 preamp and attenuator are read only; the IC-706, G106 and FT-817 say "not
+available".
+
+The FT-857/897 TX equalizer is on Bank 4 `5`; the FTDX10 power state, ID and status line are on
+Bank 8.
 
 ## Bank 3 - VFO and Split
 
@@ -193,6 +201,7 @@ On the FT-817 and FT-857/897, `1` is the VFO in use and `2` the other one.
 | `2` double | monitor level down 10 % | not available | not available | not available | not available |
 | `3` short | transceive | not available | free | free | free |
 | `3` long | transceive on/off | not available | not available | not available | not available |
+| `5` short | free | free | free | not available | TX equalizer |
 
 ## Bank 5 - RIT
 
@@ -268,6 +277,11 @@ A delay of 0 is full break-in (TS-480, FT-857/897). The other keys are free.
 | `2` short | baud rate | baud rate | baud rate | baud rate | baud rate |
 | `2` long | previous baud rate | previous baud rate | previous baud rate | previous baud rate | previous baud rate |
 | `2` double | next baud rate | next baud rate | next baud rate | next baud rate | next baud rate |
+| `4` short | free | radio power state | free | free | free |
+| `4` long | free | radio power off | free | free | free |
+| `4` double | free | radio power on | free | free | free |
+| `5` short | free | radio ID | free | free | free |
+| `6` short | free | radio status line | free | free | free |
 | `7` short | free | free | free | function row | soft key row |
 | `7` long | free | free | free | function row entry (experimental) | soft key row entry (experimental) |
 | `8` short | free | free | free | last menu item | last menu item |

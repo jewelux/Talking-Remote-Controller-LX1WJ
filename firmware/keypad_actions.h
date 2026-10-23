@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 
+#include "keypad_settings.h"
 #include "radio_setting_types.h"
 
 // The keypad actions the keymap (keypad_keymap.cpp) can run. Only plain types
@@ -22,6 +23,13 @@
 // ---- Any bank ----
 // "CMD <key> -> <cmd>", then the console command cmd. Most FTDX10 keys are one.
 void sendKeypadCommand(const char* cmd);
+
+// ---- Any bank: one Setting through its SettingOps ----
+// "not available" where the radio lacks it.
+void settingSay(Setting setting);    // its name and value
+void settingEntry(Setting setting);  // its entry, from the radio's value: "<name> please"
+// A short list (filter, preamp): the next value, from the last back to the first, set at once.
+void settingNext(Setting setting);
 
 // ---- A, B and C: the bank's focus (keypadActiveFocus()) ----
 // "not available" with no focus, or where the radio lacks it.
@@ -54,30 +62,20 @@ void queryBank1Mode();     // "MODE?", sent or staged
 void beginBank1ModeSelect();  // "MODE", mode select, "mode please"
 
 // ---- Bank 2 ----
+// The NR, NB and notch switches; the toggles go off -> on (TS-480 NR 1 -> NR 2, Icom notch
+// NAR -> MID -> WIDE) -> off. Their levels are Settings (settingSay).
 void queryBank2Nr();
 void toggleBank2Nr();
 void queryBank2Nb();
 void toggleBank2Nb();
 void queryBank2Notch();
 void toggleBank2Notch();
-void queryBank2NrLevel();
-void adjustBank2NrLevel(int deltaPercent);
-void queryBank2NbLevel();
-void adjustBank2NbLevel(int deltaPercent);
-void queryBank2PbtInner();
-void adjustBank2PbtInner(int delta);
-void queryBank2PbtOuter();
-void adjustBank2PbtOuter(int delta);
+// Icom filter shape ("FILSHAPE?" is the console command): soft <-> sharp.
 void toggleBank2FilterShape();
-void queryBank2FilterWidth();
-void cycleBank2FilterWidth(int delta);
 // AGC (agcQuery), and its select: 0 off, 1 auto, 2 fast, 3 slow, 4 mid, of the speeds the radio
 // can be set to, then Enter sets it. On the FT-8x7 experimental, written to the EEPROM.
 void queryBank2Agc();
 void beginBank2AgcSelect();
-// The Yaesu ASCII NR and NB levels (yaesuRxLevelQuery) and delta of their steps.
-void queryBank2YaesuRxLevel(RxLevel level);
-void stepBank2YaesuRxLevel(RxLevel level, int delta);
 // The auto notch (autoNotchQuery) and its toggle.
 void queryBank2AutoNotch();
 void toggleBank2AutoNotch();
@@ -88,22 +86,15 @@ void stepBank2Att();
 void queryBank2Preamp();
 void stepBank2Preamp();
 // FT-8x7 settings read from the radio's EEPROM.
-void queryBank2Ft8x7NrLevel();
-void queryBank2Ft8x7NbLevel();
 void queryBank2Ft8x7Dbf();
-void queryBank2Ft8x7LowCut();
-void queryBank2Ft8x7HighCut();
 void queryBank2Ft8x7MicEq();
 void queryBank2Ft8x7Ipo();
 void queryBank2Ft817Antenna();
-// Experimental, FT-857/897, written to the radio's EEPROM; "not available" unless EXPERIMENTAL
-// is on. The steps are the radio's: NR level (menu 49) and NB level (menu 63) 1 each, low cut
-// (menu 46) 60 Hz, high cut (menu 47) about 160 Hz.
-void stepBank2Ft8x7NrLevel(int delta);
-void stepBank2Ft8x7NbLevel(int delta);
+// Experimental, written to the radio's EEPROM; "not available" unless EXPERIMENTAL is on. The
+// FT-857/897 DBF (both its bits, as the radio's key) and the FT-817/818 antenna jack of the
+// current band.
 void toggleBank2Ft8x7Dbf();
-void stepBank2Ft8x7LowCut(int delta);
-void stepBank2Ft8x7HighCut(int delta);
+void toggleBank2Ft817Antenna();
 
 // ---- Bank 3 ----
 void queryBank3Split();

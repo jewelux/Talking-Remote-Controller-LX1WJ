@@ -61,19 +61,26 @@
 - a key that does nothing gives a short beep instead of silence: keys with no action on the current
   bank, and keys an entry or selection does not take
 - choosing a profile number with no stored profile says "not available"
-- Bank 2 `A` says the AGC on every radio, and long press picks it: `0` off, `1` auto, `2` fast,
-  `3` slow, `4` mid, then `D`. Only the speeds the radio has are taken; on the FT-8x7 it is still
-  experimental, and the IC-706 and G106 say "not available". On the FTDX10, Bank 2 `4` no longer
-  reads or sets the AGC and is free
-- Bank 2 `B` says the preamp and `C` the attenuator on every radio but the FT-8x7 (where `B` stays
-  IPO and its double press ATT, and `C` also says ATT); holding either goes to the next level, and
-  from the last one to off. On the FTDX10, Bank 1 `6` no longer reads or toggles the preamp
-- Bank 2 `4` says the noise reduction level on the FTDX10, FTDX101 and FT-891 (1–15, long press
-  one up, double press one down), and `5` the noise blanker level (0–10) on the FTDX101 and FT-891;
-  the FTDX10 keeps its power switch on `5`
-- Bank 2 `0` says the auto notch and long press turns it on or off, on the Icoms and the FTDX10,
-  FTDX101 and FT-891 (console `ANOTCH? | ANOTCH OFF | ON | TOGGLE`, read back). The FT-817 keeps
-  its antenna jack on that key
+- Bank 2 is laid out the same on every radio: the top row the switches with a level, the middle row
+  the passband, the bottom row AGC, preamp and attenuator.
+  - `1` noise reduction and `2` noise blanker: short says it, long turns it on or off, a double
+    press says its level and a press then a hold opens the level's entry. The levels: Icom in
+    percent, FTDX10, FTDX101 and FT-891 in the radio's steps (NR 1–15, NB 0–10), FT-857/897 its
+    menus 49 and 63
+  - `3` notch; on the Icoms long press goes off, narrow, mid, wide
+  - `4` and `6`: Icom PBT inner and outer, FT-857/897 low cut and high cut. Short says it, long opens
+    its entry (PBT takes `*` first for minus)
+  - `5`: Icom filter 1–3, long press the next filter, double press the filter shape, a press then a
+    hold switches the shape. FT-857/897: the DSP bandpass filter, long press on/off, double press
+    its width (60, 120 or 240 Hz), a press then a hold picks the width
+  - `7` AGC: long press picks it, `0` off, `1` auto, `2` fast, `3` slow, `4` mid, then `D`. Only the
+    speeds the radio has are taken; the IC-706 and G106 say "not available"
+  - `8` preamp and `9` attenuator: long press goes to the next level, and from the last one to off.
+    The FT-857/897 reads its IPO and attenuator only
+  - `0` auto notch on the Icoms and the FTDX10, FTDX101 and FT-891 (console `ANOTCH? | ANOTCH OFF |
+    ON | TOGGLE`, read back). FT-817/818: the antenna jack of the band, long press front/rear
+    (experimental)
+  - the FT-8x7 settings are read from the radio's memory and set only in experimental mode
 - Bank 1 `5` says the ALC meter while transmitting, in percent of full scale, on the Icoms and the
   FTDX10, FTDX101 and FT-891 (console `ALC?`)
 - Bank 1 `6` says the RF power setting and long press enters it in watts on the FTDX10, FTDX101D,
@@ -88,14 +95,27 @@
   choice, from the power level or mode the radio has; `A` says it. Nothing changes before `D`.
   The mode and AGC go round, from the last choice to the first; the power level stops at its ends
 - `A`, `B` and `C` act on the bank's focus, the setting of the last key used on that bank (Banks 1,
-  3, 5, 6, 8 and 9 for now): `A` says it, `A` long opens its entry, `A` double puts it back to its
+  2, 3, 5, 6, 8 and 9 for now): `A` says it, `A` long opens its entry, `A` double puts it back to its
   centre, `B` and `C` step it up and down, held for a bigger step. The first step names the
   setting, later ones give just the value. Bank 1: `6` RF power and `9` mode, which wait for `D`
   (`B` or `C` opens the entry or pick one step away, ending in "please"). Bank 5: the RIT offset
-  (Icom), `B`/`C` 10 Hz, held 100 Hz, `A` double 0. Bank 9: the profile as before, until `6` moves
-  it to the speech speed or `7`-`9` to the volume. With no focus they say "not available". RIT and
-  the CAT radios' RF power are not yet tested on a radio
-- keys moved: the FTDX10 tuner is no longer on Bank 1 `5` (it stays on Bank 4 `0`)
+  (Icom), `B`/`C` 10 Hz, held 100 Hz, `A` double 0. Bank 2: the NR and NB levels, PBT (`A`
+  double the centre), the filter or the bandpass width, the Icom notch, AGC, preamp and
+  attenuator, set at once; the FT-8x7 ones and the FT-8x7 AGC wait for `D` and need experimental
+  mode. Bank 9: the profile as before, until `6` moves
+  it to the speech speed or `7`-`9` to the volume. With no focus they say "not available". RIT,
+  the CAT radios' RF power and the Bank 2 focus on the CAT radios are not yet tested on a radio
+- keys moved:
+  - the FTDX10 tuner is no longer on Bank 1 `5` (it stays on Bank 4 `0`)
+  - AGC from Bank 2 `A` to `7`, the preamp (FT-8x7: IPO) from `B` to `8`, the attenuator from `C`
+    to `9`
+  - the NR and NB levels from Bank 2 `4` and `5` to a double press of `1` and `2`
+  - Icom PBT from Bank 2 `6` and `7` to `4` and `6`, the filter from `9` to `5`, the filter shape
+    from `8` to a double press of `5`
+  - FT-857/897: low cut from Bank 2 `7` to `4`, high cut from `8` to `6`, the DSP bandpass filter
+    from `6` to `5`, the TX equalizer from Bank 2 `9` to Bank 4 `5`
+  - FTDX10: the power switch from Bank 2 `5` to Bank 8 `4`, the radio ID from Bank 2 `7` to Bank 8
+    `5`, the status line from Bank 2 `6` to Bank 8 `6`
 - help mode: `D` long turns it on or off. Each bank key press, short, long or double, then says
   what it would do ("toggle" keys add "on off", steps say "up" or "down", entries "choose") and
   changes nothing; `A`, `B` and `C` name the bank's focus. `*` still changes banks; `D` long or `#`

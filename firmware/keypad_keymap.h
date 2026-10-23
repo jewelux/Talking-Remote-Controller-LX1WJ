@@ -29,6 +29,9 @@ struct KeypadTraits {
   bool supportsMonitor = false;     // protocolSupportsMonitor()
   bool supportsTransceive = false;  // protocolSupportsTransceive()
   bool canGetRfPower = false;       // currentProfile().caps.getRfPower
+  // The Bank 2 settings the radio has (settingOps available(), AGC by caps.getAgc): a key
+  // names them as its focus and second value only where they are.
+  SettingSet settings;
 };
 
 // What key does on bank for this radio. An empty binding for keys the keymap

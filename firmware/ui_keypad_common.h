@@ -42,6 +42,9 @@ void keypadSettingNudge(Setting setting, int8_t dir, bool big);
 // (the FT-817/818 level pick) and the mode pick.
 void nudgeBank1RfPower(int8_t dir, bool big);
 void nudgeBank1Mode(int8_t dir);
+// B and C on the AGC focus (ui_keypad_bank2.cpp): over CAT the next speed the radio can be set
+// to, set at once; on the FT-8x7 the AGC pick one away, staged for Enter. A big step is one too.
+void nudgeBank2Agc(int8_t dir, bool big);
 // What a value entry says, called by the state machine.
 void keypadValueDigit(const ValueSpec& spec, char key, const char* digits);
 void keypadValueSay(const ValueSpec& spec, int32_t value);

@@ -153,105 +153,100 @@ KeyBinding bank1(const KeypadTraits& t, char key, Setting focus) {
   }
 }
 
-KeyBinding bank2(const KeypadTraits& t, char key) {
-  const bool civ = t.layout == L::Civ;
-  const bool ftdx10 = t.layout == L::Ftdx10;
-  // FT-817 and FT-857/897: settings the radio keeps in its EEPROM, read only but for AGC ('A'
-  // below), NR, NB and notch ('1'-'3' below) and the FT-857/897 DSP keys '4'-'8', which experimental mode can
-  // change. The FT-817 has no DSP and no readable IPO/ATT, so of these it answers only AGC. Its
-  // '0' is the antenna jack of the current band.
-  if (t.layout == L::Ft817 && key == '0') return bind(queryBank2Ft817Antenna).help("ANT", V::Say);
-  if (t.layout == L::Ft857) {
-    switch (key) {
-      case '4':
-        return bind(queryBank2Ft8x7NrLevel, [] { stepBank2Ft8x7NrLevel(1); }, [] { stepBank2Ft8x7NrLevel(-1); })
-            .help("NRLEVEL", V::Say, V::Up, V::Down);
-      case '5':
-        return bind(queryBank2Ft8x7NbLevel, [] { stepBank2Ft8x7NbLevel(10); }, [] { stepBank2Ft8x7NbLevel(-10); })
-            .help("NBLEVEL", V::Say, V::Up, V::Down);
-      case '6': return bind(queryBank2Ft8x7Dbf, toggleBank2Ft8x7Dbf).help("DBF", V::Say, V::Toggle);
-      case '7':
-        return bind(queryBank2Ft8x7LowCut, [] { stepBank2Ft8x7LowCut(1); }, [] { stepBank2Ft8x7LowCut(-1); })
-            .help("HPF", V::Say, V::Up, V::Down);
-      case '8':
-        return bind(queryBank2Ft8x7HighCut, [] { stepBank2Ft8x7HighCut(1); }, [] { stepBank2Ft8x7HighCut(-1); })
-            .help("LPF", V::Say, V::Up, V::Down);
-      default: break;
-    }
-  }
-  if (t.layout == L::Ft817 || t.layout == L::Ft857) {
-    switch (key) {
-      case '4': return bind(queryBank2Ft8x7NrLevel).help("NRLEVEL", V::Say);
-      case '5': return bind(queryBank2Ft8x7NbLevel).help("NBLEVEL", V::Say);
-      case '6': return bind(queryBank2Ft8x7Dbf).help("DBF", V::Say);
-      case '7': return bind(queryBank2Ft8x7LowCut).help("HPF", V::Say);
-      case '8': return bind(queryBank2Ft8x7HighCut).help("LPF", V::Say);
-      case '9': return bind(queryBank2Ft8x7MicEq).help("MICEQ", V::Say);
-      case 'B': return bind(queryBank2Ft8x7Ipo, nullptr, queryBank2Att).help("IPO", V::Say).helpDouble("ATT", V::Say);
-      default: break;
-    }
-  }
+// Actions on the Setting S, for a key to bind.
+template <Setting S>
+void saySetting() {
+  settingSay(S);
+}
+template <Setting S>
+void enterSetting() {
+  settingEntry(S);
+}
+template <Setting S>
+void nextSetting() {
+  settingNext(S);
+}
+
+// k, with s as its focus where the radio has s.
+Key withFocusIfHas(const KeypadTraits& t, const Key& k, Setting s) {
+  return t.settings.has(s) ? k.withFocus(s) : k;
+}
+
+// A key of its own for S: short says it, long opens its entry (a number) or pick (a list), and
+// it is the focus where the radio has it.
+template <Setting S>
+Key settingKey(const KeypadTraits& t) {
+  const SettingInfo& info = settingInfo(S);
+  const V hold = info.kind == SettingKind::Number ? V::Entry : V::Pick;
+  return withFocusIfHas(t, bind(saySetting<S>, enterSetting<S>).help(info.label, V::Say, hold), S);
+}
+
+// A switch with a level (NR, NB): short says it, long toggles it, a double says the level and a
+// short then hold opens the level's entry, which is the focus. Where the radio has no level,
+// just the switch, with no wait for a double.
+template <Setting Level>
+Key switchWithLevel(const KeypadTraits& t, Action say, Action toggle, const char* label) {
+  if (!t.settings.has(Level)) return bind(say, toggle).help(label, V::Say, V::Toggle);
+  const char* levelLabel = settingInfo(Level).label;
+  return bind(say, toggle, saySetting<Level>, enterSetting<Level>)
+      .withFocus(Level)
+      .help(label, V::Say, V::Toggle)
+      .helpDouble(levelLabel, V::Say)
+      .helpDoubleHold(levelLabel, V::Entry);
+}
+
+// Receive. The top row the switches with a level, the middle row the passband (low side, filter,
+// high side), the bottom row AGC, preamp and attenuator, '0' the auto notch (FT-817: the antenna
+// jack). The FT-8x7 keeps these in its EEPROM: read always, set only experimentally.
+KeyBinding bank2(const KeypadTraits& t, char key, Setting focus) {
+  if (isFocusKey(key)) return focusKey(key, focus);
+  const bool ft8x7 = isFt8x7(t);
   switch (key) {
-    // Every radio but the FT-817 ('0' above): the auto notch.
-    case '0': return bind(queryBank2AutoNotch, toggleBank2AutoNotch).help("ANOTCH", V::Say, V::Toggle);
-    case '1': return bind(queryBank2Nr, toggleBank2Nr).help("NR", V::Say, V::Toggle);
-    case '2': return bind(queryBank2Nb, toggleBank2Nb).help("NB", V::Say, V::Toggle);
-    case '3': return bind(queryBank2Notch, toggleBank2Notch).help("NOTCH", V::Say, V::Toggle);
-    case '4':
-      if (civ) {
-        return bind(queryBank2NrLevel, [] { adjustBank2NrLevel(10); }, [] { adjustBank2NrLevel(-10); })
-            .help("NRLEVEL", V::Say, V::Up, V::Down);
+    case '0':
+      if (t.layout == L::Ft817) {
+        return bind(queryBank2Ft817Antenna, toggleBank2Ft817Antenna).help("ANT", V::Say, V::Toggle);
       }
-      // The Yaesu ASCII radios: RL0 1..15 (other radios say "not available").
-      return bind([] { queryBank2YaesuRxLevel(RxLevel::Nr); }, [] { stepBank2YaesuRxLevel(RxLevel::Nr, 1); },
-                  [] { stepBank2YaesuRxLevel(RxLevel::Nr, -1); })
-          .help("NRLEVEL", V::Say, V::Up, V::Down);
+      return bind(queryBank2AutoNotch, toggleBank2AutoNotch).help("ANOTCH", V::Say, V::Toggle);
+    case '1': return switchWithLevel<Setting::NrLevel>(t, queryBank2Nr, toggleBank2Nr, "NR");
+    case '2': return switchWithLevel<Setting::NbLevel>(t, queryBank2Nb, toggleBank2Nb, "NB");
+    // The Icom notch toggle walks its widths, which B and C step too.
+    case '3':
+      return withFocusIfHas(t, bind(queryBank2Notch, toggleBank2Notch).help("NOTCH", V::Say, V::Toggle),
+                            Setting::Notch);
+    case '4': return ft8x7 ? settingKey<Setting::RxLowCut>(t) : settingKey<Setting::PbtInner>(t);
     case '5':
-      if (civ) {
-        return bind(queryBank2NbLevel, [] { adjustBank2NbLevel(10); }, [] { adjustBank2NbLevel(-10); })
-            .help("NBLEVEL", V::Say, V::Up, V::Down);
+      // FT-857/897: DBF, its bandpass width second. Icom: the filter, its shape second.
+      if (ft8x7) {
+        if (!t.settings.has(Setting::BpfWidth)) return bind(queryBank2Ft8x7Dbf).help("DBF", V::Say);
+        return bind(queryBank2Ft8x7Dbf, toggleBank2Ft8x7Dbf, saySetting<Setting::BpfWidth>,
+                    enterSetting<Setting::BpfWidth>)
+            .withFocus(Setting::BpfWidth)
+            .help("DBF", V::Say, V::Toggle)
+            .helpDouble("BPF", V::Say)
+            .helpDoubleHold("BPF", V::Pick);
       }
-      if (ftdx10) {
-        return bind(SEND("PS?"), SEND("PS OFF"), SEND("PS ON"))
-            .help("PS", V::Say)
-            .helpHold("PS OFF", V::Run)
-            .helpDouble("PS ON", V::Run);
+      if (!t.settings.has(Setting::FilterSlot)) {
+        return bind(saySetting<Setting::FilterSlot>).help("FILWIDTH", V::Say);
       }
-      // The Yaesu ASCII radios: NL0 0..10. The FTDX10 keeps the power switch here.
-      return bind([] { queryBank2YaesuRxLevel(RxLevel::Nb); }, [] { stepBank2YaesuRxLevel(RxLevel::Nb, 1); },
-                  [] { stepBank2YaesuRxLevel(RxLevel::Nb, -1); })
-          .help("NBLEVEL", V::Say, V::Up, V::Down);
-    case '6':
-      if (civ) {
-        return bind(queryBank2PbtInner, [] { adjustBank2PbtInner(10); }, [] { adjustBank2PbtInner(-10); })
-            .help("PBT1", V::Say, V::Up, V::Down);
-      }
-      if (ftdx10) return bind(SEND("IF?")).help("IF", V::Say);
-      return {};
-    case '7':
-      if (civ) {
-        return bind(queryBank2PbtOuter, [] { adjustBank2PbtOuter(10); }, [] { adjustBank2PbtOuter(-10); })
-            .help("PBT2", V::Say, V::Up, V::Down);
-      }
-      if (ftdx10) return bind(SEND("ID?")).help("ID", V::Say);
-      return {};
-    case '8':
-      if (civ) return bind(SEND("FILSHAPE?"), toggleBank2FilterShape).help("FILSHAPE", V::Say, V::Toggle);
-      if (ftdx10) return ftdx10Hidden("FILSHAPE", false);
-      return {};
-    case '9':
-      if (civ) {
-        return bind(queryBank2FilterWidth, [] { cycleBank2FilterWidth(1); }, [] { cycleBank2FilterWidth(-1); })
-            .help("FILWIDTH", V::Say, V::Up, V::Down);
-      }
-      if (ftdx10) return ftdx10Hidden("FILWIDTH", false);
-      return {};
+      return bind(saySetting<Setting::FilterSlot>, nextSetting<Setting::FilterSlot>, SEND("FILSHAPE?"),
+                  toggleBank2FilterShape)
+          .withFocus(Setting::FilterSlot)
+          .help("FILWIDTH", V::Say, V::Next)
+          .helpDouble("FILSHAPE", V::Say)
+          .helpDoubleHold("FILSHAPE", V::Toggle);
+    case '6': return ft8x7 ? settingKey<Setting::RxHighCut>(t) : settingKey<Setting::PbtOuter>(t);
     // Every radio: what agcQuery reads, and the select of the speeds it can be set to.
-    case 'A': return bind(queryBank2Agc, beginBank2AgcSelect).help("AGC", V::Say, V::Pick);
-    // Every radio but the FT-8x7 ('B' above): the preamp and the attenuator, hold for the next
-    // level.
-    case 'B': return bind(queryBank2Preamp, stepBank2Preamp).help("PREAMP", V::Say, V::Next);
-    case 'C': return bind(queryBank2Att, stepBank2Att).help("ATT", V::Say, V::Next);
+    case '7':
+      return withFocusIfHas(t, bind(queryBank2Agc, beginBank2AgcSelect).help("AGC", V::Say, V::Pick), Setting::Agc);
+    // The FT-8x7 reads its IPO and attenuator only (the FT-817/818 not even those); the other
+    // radios step to the next level on a hold.
+    case '8':
+      if (ft8x7) return bind(queryBank2Ft8x7Ipo).help("IPO", V::Say);
+      return withFocusIfHas(t, bind(queryBank2Preamp, stepBank2Preamp).help("PREAMP", V::Say, V::Next),
+                            Setting::Preamp);
+    case '9':
+      if (ft8x7) return bind(queryBank2Att).help("ATT", V::Say);
+      return withFocusIfHas(t, bind(queryBank2Att, stepBank2Att).help("ATT", V::Say, V::Next), Setting::Att);
     default: return {};
   }
 }
@@ -360,6 +355,10 @@ KeyBinding bank4(const KeypadTraits& t, char key) {
       if (ftdx10) return ftdx10Hidden("TRANSCEIVE", true);
       return bind(t.supportsTransceive ? SEND("TRANSCEIVE?") : nullptr, toggleBank4Transceive)
           .help("TRANSCEIVE", V::Say, V::Toggle);
+    case '5':
+      // The FT-857/897 TX equalizer (menu 48), read only.
+      if (t.layout == L::Ft817 || t.layout == L::Ft857) return bind(queryBank2Ft8x7MicEq).help("MICEQ", V::Say);
+      return {};
     default: return {};
   }
 }
@@ -438,6 +437,15 @@ KeyBinding bank8(const KeypadTraits& t, char key, Setting focus) {
     case '2':
       return bind(queryBank8Baud, [] { cycleBank8Baud(-1); }, [] { cycleBank8Baud(1); })
           .help("BAUD", V::Say, V::Down, V::Up);
+    // FTDX10: the radio's power switch, its ID and its status line.
+    case '4':
+      if (t.layout != L::Ftdx10) return {};
+      return bind(SEND("PS?"), SEND("PS OFF"), SEND("PS ON"))
+          .help("PS", V::Say)
+          .helpHold("PS OFF", V::Run)
+          .helpDouble("PS ON", V::Run);
+    case '5': return t.layout == L::Ftdx10 ? bind(SEND("ID?")).help("ID", V::Say) : KeyBinding{};
+    case '6': return t.layout == L::Ftdx10 ? bind(SEND("IF?")).help("IF", V::Say) : KeyBinding{};
     case '7':
       if (ft8x7Menu) return bind(queryBank8Ft8x7Row, beginBank8Ft8x7RowEntry).help("ROW", V::Say, V::Entry);
       return {};
@@ -511,7 +519,7 @@ KeyBinding keymapLookup(const KeypadTraits& traits, uint8_t bank, char key, Sett
   if (focus == Setting::Home) focus = keymapHomeFocus(traits, bank);
   switch (bank) {
     case 1: return bank1(traits, key, focus);
-    case 2: return bank2(traits, key);
+    case 2: return bank2(traits, key, focus);
     case 3: return bank3(traits, key, focus);
     case 4: return bank4(traits, key);
     case 5: return bank5(key, focus);

@@ -181,12 +181,14 @@ The current keypad concept uses radio-specific banks with:
 | Receive / DSP | `NR?`, `NR ON/OFF` | Bank 2: `1` short / `1` long |
 | Receive / DSP | `NB?`, `NB ON/OFF` | Bank 2: `2` short / `2` long |
 | Receive / DSP | `NOTCH?`, `NOTCH ON/OFF`, `NOTCH NAR/MID/WIDE` | Bank 2: `3` short / `3` long |
-| Receive / DSP | `NRLEVEL?`, `NRLEVEL STEP 10/-10` | Bank 2: `4` short / `4` long / `4` double click |
-| Receive / DSP | `NBLEVEL?`, `NBLEVEL STEP 10/-10` | Bank 2: `5` short / `5` long / `5` double click |
-| Receive / DSP | `PBT1?`, `PBT1 STEP 10/-10` | Bank 2: `6` short / `6` long / `6` double click |
-| Receive / DSP | `PBT2?`, `PBT2 STEP 10/-10` | Bank 2: `7` short / `7` long / `7` double click |
-| Receive / DSP | `FILSHAPE?`, `FILSHAPE TOGGLE` | Bank 2: `8` short / `8` long |
-| Receive / DSP | `FILWIDTH?`, `FILWIDTH NEXT/PREV` | Bank 2: `9` short / `9` long / `9` double click |
+| Receive / DSP | `NRLEVEL?`, `NRLEVEL STEP 10/-10` | Bank 2: `1` double click; `1` short then hold for the entry; then `B` / `C` |
+| Receive / DSP | `NBLEVEL?`, `NBLEVEL STEP 10/-10` | Bank 2: `2` double click; `2` short then hold for the entry; then `B` / `C` |
+| Receive / DSP | `PBT1?`, `PBT1 STEP 10/-10` | Bank 2: `4` short / `4` long for the entry; then `B` / `C`, `A` double click centre |
+| Receive / DSP | `PBT2?`, `PBT2 STEP 10/-10` | Bank 2: `6` short / `6` long for the entry; then `B` / `C`, `A` double click centre |
+| Receive / DSP | `FILWIDTH?`, `FILWIDTH NEXT/PREV` | Bank 2: `5` short / `5` long; then `B` / `C` |
+| Receive / DSP | `FILSHAPE?`, `FILSHAPE TOGGLE` | Bank 2: `5` double click / `5` short then hold |
+| Receive / DSP | `AGC?`, `AGC <speed>` | Bank 2: `7` short / `7` long |
+| Receive / DSP | `PREAMP?`, `ATT?` | Bank 2: `8` and `9` short / long for the next level |
 
 ### Bank 3 - VFO / Split / Bandstack
 

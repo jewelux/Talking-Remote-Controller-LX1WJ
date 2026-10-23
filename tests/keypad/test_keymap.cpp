@@ -2,6 +2,7 @@
 // A recording stub implements keypad_actions.h: each action appends its name
 // and arguments, spelled as in keymap_expectations.inc.
 #include <cstdarg>
+#include <initializer_list>
 #include <string>
 
 #include "keymap_expectations.h"
@@ -40,6 +41,18 @@ KeypadTraits traitsFor(uint16_t family) {
   t.supportsMonitor = (family & CIV) != 0;
   t.supportsTransceive = (family & CIV) != 0;
   t.canGetRfPower = family == IC7300 || family == TS480 || family == FTDX10 || family == FT891;
+  // The Bank 2 settings, as the profiles' caps give them.
+  using S = Setting;
+  auto add = [&t](std::initializer_list<Setting> settings) {
+    for (Setting s : settings) t.settings.add(s);
+  };
+  if (family == IC7300) {
+    add({S::NrLevel, S::NbLevel, S::Notch, S::PbtInner, S::PbtOuter, S::FilterSlot, S::Agc, S::Preamp, S::Att});
+  }
+  if (family == TS480) add({S::Agc, S::Preamp, S::Att});
+  if (family == FTDX10 || family == FT891) add({S::NrLevel, S::NbLevel, S::Agc, S::Preamp, S::Att});
+  if (family == FT817) add({S::Agc});
+  if (family == FT857) add({S::NrLevel, S::NbLevel, S::RxLowCut, S::RxHighCut, S::BpfWidth, S::Agc, S::Att});
   return t;
 }
 
@@ -84,6 +97,10 @@ void forEachKey(Fn fn) {
 
 void sendKeypadCommand(const char *cmd) { record("send(%s)", cmd); }
 
+void settingSay(Setting s) { record("settingSay(%s)", settingInfo(s).label); }
+void settingEntry(Setting s) { record("settingEntry(%s)", settingInfo(s).label); }
+void settingNext(Setting s) { record("settingNext(%s)", settingInfo(s).label); }
+
 void focusSay() { record("focusSay"); }
 void focusEntry() { record("focusEntry"); }
 void focusCentre() { record("focusCentre"); }
@@ -112,27 +129,11 @@ void queryBank2Nb() { record("queryBank2Nb"); }
 void toggleBank2Nb() { record("toggleBank2Nb"); }
 void queryBank2Notch() { record("queryBank2Notch"); }
 void toggleBank2Notch() { record("toggleBank2Notch"); }
-void queryBank2NrLevel() { record("queryBank2NrLevel"); }
-void adjustBank2NrLevel(int d) { record("adjustBank2NrLevel(%d)", d); }
-void queryBank2NbLevel() { record("queryBank2NbLevel"); }
-void adjustBank2NbLevel(int d) { record("adjustBank2NbLevel(%d)", d); }
-void queryBank2PbtInner() { record("queryBank2PbtInner"); }
-void adjustBank2PbtInner(int d) { record("adjustBank2PbtInner(%d)", d); }
-void queryBank2PbtOuter() { record("queryBank2PbtOuter"); }
-void adjustBank2PbtOuter(int d) { record("adjustBank2PbtOuter(%d)", d); }
 void toggleBank2FilterShape() { record("toggleBank2FilterShape"); }
-void queryBank2FilterWidth() { record("queryBank2FilterWidth"); }
-void cycleBank2FilterWidth(int d) { record("cycleBank2FilterWidth(%d)", d); }
-void queryBank2Ft8x7NrLevel() { record("queryBank2Ft8x7NrLevel"); }
-void queryBank2Ft8x7NbLevel() { record("queryBank2Ft8x7NbLevel"); }
 void queryBank2Ft8x7Dbf() { record("queryBank2Ft8x7Dbf"); }
-void queryBank2Ft8x7LowCut() { record("queryBank2Ft8x7LowCut"); }
-void queryBank2Ft8x7HighCut() { record("queryBank2Ft8x7HighCut"); }
 void queryBank2Ft8x7MicEq() { record("queryBank2Ft8x7MicEq"); }
 void queryBank2Ft8x7Ipo() { record("queryBank2Ft8x7Ipo"); }
 void queryBank1Alc() { record("queryBank1Alc"); }
-void queryBank2YaesuRxLevel(RxLevel l) { record("queryBank2YaesuRxLevel(%d)", (int)l); }
-void stepBank2YaesuRxLevel(RxLevel l, int d) { record("stepBank2YaesuRxLevel(%d,%d)", (int)l, d); }
 void queryBank2AutoNotch() { record("queryBank2AutoNotch"); }
 void toggleBank2AutoNotch() { record("toggleBank2AutoNotch"); }
 void queryBank2Att() { record("queryBank2Att"); }
@@ -147,12 +148,9 @@ void queryBank7CwLevel(CwLevel l) { record("queryBank7CwLevel(%d)", (int)l); }
 void stepBank7CwLevel(CwLevel l, int d) { record("stepBank7CwLevel(%d,%d)", (int)l, d); }
 void queryBank2Agc() { record("queryBank2Agc"); }
 void queryBank2Ft817Antenna() { record("queryBank2Ft817Antenna"); }
-void stepBank2Ft8x7NrLevel(int d) { record("stepBank2Ft8x7NrLevel(%d)", d); }
-void stepBank2Ft8x7NbLevel(int d) { record("stepBank2Ft8x7NbLevel(%d)", d); }
 void toggleBank2Ft8x7Dbf() { record("toggleBank2Ft8x7Dbf"); }
+void toggleBank2Ft817Antenna() { record("toggleBank2Ft817Antenna"); }
 void beginBank2AgcSelect() { record("beginBank2AgcSelect"); }
-void stepBank2Ft8x7LowCut(int d) { record("stepBank2Ft8x7LowCut(%d)", d); }
-void stepBank2Ft8x7HighCut(int d) { record("stepBank2Ft8x7HighCut(%d)", d); }
 
 void queryBank3Split() { record("queryBank3Split"); }
 void toggleBank3Split() { record("toggleBank3Split"); }
@@ -317,7 +315,8 @@ TEST(keymap_focus_keys_follow_the_focus) {
   CHECK(keymapHomeFocus(t, 5) == Setting::RitOffset);
   CHECK(keymapHomeFocus(t, 9) == Setting::Profile);
   CHECK(keymapHomeFocus(t, 1) == Setting::None);
-  // Banks 2, 4 and 7 get their focus keys with their own layouts.
+  CHECK(keymapLookup(t, 2, 'A', Setting::PbtInner).waitsForDouble);
+  // Banks 4 and 7 get their focus keys with their own layouts.
   CHECK(isEmpty(keymapLookup(t, 4, 'A')));
 }
 

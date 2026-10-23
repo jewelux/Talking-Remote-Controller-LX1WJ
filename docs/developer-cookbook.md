@@ -361,7 +361,7 @@ KeyBinding bank2(const KeypadTraits& t, char key) {
 
 The recipes share one running example: the **preamp**, as a plain on/off
 setting with a key, which exercises every layer. HamTRC has the real one
-(`PREAMP?`, Bank 2 `B`): it adds levels and per-model encodings, so read
+(`PREAMP?`, Bank 2 `8`): it adds levels and per-model encodings, so read
 `preampQuery` in `radio_features.cpp` next to the recipes.
 
 ### 4.1 Add a key action
