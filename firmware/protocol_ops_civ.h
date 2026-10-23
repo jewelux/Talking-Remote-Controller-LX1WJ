@@ -59,6 +59,9 @@ bool civSetBreakIn(const RadioProfile& sp, BreakInMode mode);
 // 14 09, the CW pitch in Hz, 300..900 (caps.getCwPitch, setCwPitch); the set is read back to
 // within the radio's 5 Hz step.
 bool civQueryCwPitchHz(const RadioProfile& sp, uint16_t& hzOut, uint32_t timeoutMs);
+// 16 41, the auto notch (caps.getAutoNotch, setAutoNotch); the set is read back.
+bool civQueryAutoNotch(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
+bool civSetAutoNotch(const RadioProfile& sp, bool on);
 // 15 13, the ALC meter, 0..120 = 0..100 % (caps.getAlc).
 bool civQueryAlcRaw(const RadioProfile& sp, uint16_t& rawOut, uint32_t timeoutMs);
 bool civSetCwPitchHz(const RadioProfile& sp, uint16_t hz);

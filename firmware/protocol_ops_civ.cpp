@@ -646,6 +646,21 @@ static bool civQuery16OnOff(uint8_t subcmd, bool& onOut, uint32_t timeoutMs) {
   return true;
 }
 
+// 16 41: the auto notch, 00 off, 01 on (the IC-7300 manual, the IC-705 and IC-7760 CI-V guides,
+// Hamlib).
+bool civQueryAutoNotch(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
+  if (sp.protocol != PROTO_CIV || !sp.caps.getAutoNotch) return false;
+  return civQuery16OnOff(0x41, onOut, timeoutMs);
+}
+
+bool civSetAutoNotch(const RadioProfile& sp, bool on) {
+  if (sp.protocol != PROTO_CIV || !sp.caps.setAutoNotch) return false;
+  if (!civSetToggleSub(0x41, on)) return false;
+  civSettleAfterWrite();
+  bool readBack = !on;
+  return civQueryAutoNotch(sp, readBack, 800) && readBack == on;
+}
+
 // 16 50: the dial lock.
 bool civQueryDialLock(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
   if (sp.protocol != PROTO_CIV || !sp.caps.getDialLock) return false;

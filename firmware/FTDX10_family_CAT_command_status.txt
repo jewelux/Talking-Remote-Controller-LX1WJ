@@ -10,7 +10,7 @@ AM | VFO-A to memory channel | nein | keine FTDX10-Implementierung gefunden
 AO | AMC output level | nein | keine FTDX10-Implementierung gefunden
 AV | Anti VOX level | nein | keine FTDX10-Implementierung gefunden
 BA | VFO-B to VFO-A | nein | keine FTDX10-Implementierung gefunden
-BC | Auto notch (DNF) | nein | nur BP manual notch vorhanden
+BC | Auto notch (DNF) | implementiert | ANOTCH? und ANOTCH OFF/ON/TOGGLE (BC0, nach CAT-Handbuch und Hamlib), mit Ruecklesen; Bank 2 0
 BD | Band down | nein | keine FTDX10-Implementierung gefunden
 BI | Break-in | implementiert | BK? und BK OFF/ON/TOGGLE (nach CAT-Handbuch und Hamlib), mit Ruecklesen; Bank 7 1
 BM | VFO-B to memory channel | nein | keine FTDX10-Implementierung gefunden

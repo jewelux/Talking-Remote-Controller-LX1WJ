@@ -774,8 +774,10 @@ static void printAgcHelp() {
   helpLine(text.c_str());
 }
 
-// PREAMP and ATT over CAT, with the radio's levels and steps.
+// PREAMP and ATT over CAT, with the radio's levels and steps, and the auto notch.
 static void printFrontEndHelp() {
+  const RadioCapabilities& caps = currentProfile().caps;
+  if (caps.getAutoNotch) helpLine(caps.setAutoNotch ? "ANOTCH? | ANOTCH OFF | ON | TOGGLE  (auto notch)" : "ANOTCH?  (auto notch)");
   const uint8_t levels = preampLevels();
   if (levels) {
     const bool set = currentProfile().caps.setPreamp;
@@ -1738,13 +1740,28 @@ static bool handleConsoleAgc(const String& upper) {
 }
 
 // ATT? | ATT OFF | ON | <dB>, ON the first step, <dB> one of the radio's steps; PREAMP? |
-// PREAMP OFF | ON | <level>, ON level 1.
+// PREAMP OFF | ON | <level>, ON level 1; ANOTCH? | ANOTCH OFF | ON | TOGGLE.
 static bool handleConsoleFrontEnd(const String& upper) {
   if (upper == "ATT?") {
     AttState state;
     if (reportFeatureFailure(attQuery(state), "ATT?")) return true;
     Serial.println(attText(state));
     speakAtt(state);
+    return true;
+  }
+  if (upper == "ANOTCH?") {
+    bool on = false;
+    if (reportFeatureFailure(autoNotchQuery(on), "ANOTCH?")) return true;
+    Serial.println(autoNotchText(on));
+    speakAutoNotch(on);
+    return true;
+  }
+  if (upper == "ANOTCH ON" || upper == "ANOTCH OFF" || upper == "ANOTCH TOGGLE") {
+    bool on = upper == "ANOTCH ON";
+    const FeatureStatus status = upper == "ANOTCH TOGGLE" ? autoNotchToggle(on) : autoNotchSet(on);
+    if (reportFeatureFailure(status, "ANOTCH")) return true;
+    Serial.println(autoNotchText(on));
+    speakAutoNotch(on);
     return true;
   }
   if (upper == "PREAMP?") {

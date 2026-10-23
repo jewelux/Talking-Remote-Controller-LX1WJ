@@ -104,7 +104,7 @@ KEYMAP_ROW(FT8X7,           1, 'A', "unassigned",            "none",            
 
 // ---- Bank 2 ----------------------------------------------------------------
 KEYMAP_ROW(FT817,           2, '0', "queryBank2Ft817Antenna", "none",                  "-")
-KEYMAP_ROW(NOT(FT817),      2, '0', "unassigned",            "none",                   "-")
+KEYMAP_ROW(NOT(FT817),      2, '0', "queryBank2AutoNotch",   "toggleBank2AutoNotch",   "-")
 KEYMAP_ROW(ALL,             2, '1', "queryBank2Nr",          "toggleBank2Nr",          "-")
 KEYMAP_ROW(ALL,             2, '2', "queryBank2Nb",          "toggleBank2Nb",          "-")
 KEYMAP_ROW(ALL,             2, '3', "queryBank2Notch",       "toggleBank2Notch",       "-")

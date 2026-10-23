@@ -27,6 +27,9 @@ bool asciiSetRfPowerWatts(const RadioProfile& sp, uint16_t watts);
 // or off; the sets are read back.
 bool asciiQueryBreakIn(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
 bool asciiSetBreakIn(const RadioProfile& sp, bool on);
+// Yaesu BC0, the auto notch (caps.getAutoNotch, setAutoNotch); the set is read back.
+bool asciiQueryAutoNotch(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
+bool asciiSetAutoNotch(const RadioProfile& sp, bool on);
 bool asciiQueryKeyer(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
 bool asciiSetKeyer(const RadioProfile& sp, bool on);
 // The CW keyer speed (KS, WPM), pitch (Yaesu KP, Hz) and break-in delay (SD, ms) by the

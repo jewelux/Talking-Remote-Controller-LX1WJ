@@ -68,6 +68,9 @@
 - Bank 2 `B` says the preamp and `C` the attenuator on every radio but the FT-8x7 (where `B` stays
   IPO and its double press ATT, and `C` also says ATT); holding either goes to the next level, and
   from the last one to off. On the FTDX10, Bank 1 `6` no longer reads or toggles the preamp
+- Bank 2 `0` says the auto notch and long press turns it on or off, on the Icoms and the FTDX10,
+  FTDX101 and FT-891 (console `ANOTCH? | ANOTCH OFF | ON | TOGGLE`, read back). The FT-817 keeps
+  its antenna jack on that key
 - Bank 1 `A` says the ALC meter while transmitting, in percent of full scale, on the Icoms and the
   FTDX10, FTDX101 and FT-891 (console `ALC?`)
 - Bank 1 `6` says the RF power setting and long press enters it in watts on the FTDX10, FTDX101D,

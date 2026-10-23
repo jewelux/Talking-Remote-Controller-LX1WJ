@@ -153,6 +153,7 @@ Use these keypad functions first:
 - Bank 1, `A` short: ALC while transmitting
 - Bank 1, `9` short or long: read or set mode
 - Bank 2, `1`, `2`, `3` short or long: NR, NB, notch query or toggle
+- Bank 2, `0` short or long: auto notch query or toggle
 - Bank 2, `B` and `C` short or long: preamp and attenuator query, or the next level
 - Bank 2, `5` short, long, or double: power-state query, off, on
 - Bank 2, `6` short: IF info

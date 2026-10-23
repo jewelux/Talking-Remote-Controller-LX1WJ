@@ -51,6 +51,10 @@ the KX2 at 12 W on 80–20 m, so a higher set reads back as an error.
 
 None of these sets is tested on a radio yet.
 
+`ANOTCH?` and `ANOTCH OFF | ON | TOGGLE` (Bank 2 `0`) read and set the auto notch, not the
+manual notch of `NOTCH`: Icom `16 41` and Yaesu `BC0`, 0 off and 1 on (the CI-V guides and CAT
+manuals, Hamlib). The TS-480 reference has no notch command.
+
 `ALC?` (Bank 1 `A`) reads the ALC meter while transmitting, in percent of full scale: on the
 Icoms `15 13`, 0–120 (their CI-V guides and Hamlib), on the FTDX10, FTDX101 and FT-891 `RM4`,
 0–255 (their CAT manuals; flrig scales it so, Hamlib reads the same command). The FT-8x7 has its

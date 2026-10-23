@@ -33,6 +33,7 @@ DSP
 Bank 2, key 1 short or long - NR query or toggle
 Bank 2, key 2 short or long - NB query or toggle
 Bank 2, key 3 short or long - notch query or toggle
+Bank 2, key 0 short or long - auto notch query or toggle
 Bank 2, key A short - AGC query
 Bank 2, key A long - AGC select, then 0 off, 1 auto, 2 fast, 3 slow, 4 mid, then D
 

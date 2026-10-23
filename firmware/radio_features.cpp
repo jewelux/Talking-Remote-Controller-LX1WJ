@@ -86,6 +86,38 @@ FeatureStatus agcSet(AgcMode mode, AgcMode& out) {
   return status;
 }
 
+// ---- Auto notch ----
+
+FeatureStatus autoNotchQuery(bool& on) {
+  const RadioProfile& sp = currentProfile();
+  if (!sp.caps.getAutoNotch) return FeatureStatus::Unsupported;
+  bool ok = false;
+  if (currentProtocolType() == PROTO_CIV) ok = civQueryAutoNotch(sp, on, 800);
+  else if (currentProtocolType() == PROTO_YAESU_FTDX_ASCII) ok = asciiQueryAutoNotch(sp, on, 800);
+  else return FeatureStatus::Unsupported;
+  return ok ? FeatureStatus::Ok : failure(FeatureStatus::NoReply);
+}
+
+FeatureStatus autoNotchSet(bool on) {
+  const RadioProfile& sp = currentProfile();
+  if (!sp.caps.getAutoNotch || !sp.caps.setAutoNotch) return FeatureStatus::Unsupported;
+  bool ok = false;
+  if (currentProtocolType() == PROTO_CIV) ok = civSetAutoNotch(sp, on);
+  else if (currentProtocolType() == PROTO_YAESU_FTDX_ASCII) ok = asciiSetAutoNotch(sp, on);
+  else return FeatureStatus::Unsupported;
+  return ok ? FeatureStatus::Ok : failure(FeatureStatus::Failed);
+}
+
+FeatureStatus autoNotchToggle(bool& on) {
+  if (!currentProfile().caps.setAutoNotch) return FeatureStatus::Unsupported;
+  bool now = false;
+  const FeatureStatus status = autoNotchQuery(now);
+  if (status != FeatureStatus::Ok) return status;
+  const FeatureStatus set = autoNotchSet(!now);
+  if (set == FeatureStatus::Ok) on = !now;
+  return set;
+}
+
 // ---- Attenuator ----
 
 // The ASCII radios with a PA/RA encoding in their profile.

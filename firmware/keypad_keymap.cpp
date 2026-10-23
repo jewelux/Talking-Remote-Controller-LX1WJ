@@ -106,6 +106,8 @@ KeyBinding bank2(const KeypadTraits& t, char key) {
     }
   }
   switch (key) {
+    // Every radio but the FT-817 ('0' above): the auto notch.
+    case '0': return bind(queryBank2AutoNotch, toggleBank2AutoNotch);
     case '1': return bind(queryBank2Nr, toggleBank2Nr);
     case '2': return bind(queryBank2Nb, toggleBank2Nb);
     case '3': return bind(queryBank2Notch, toggleBank2Notch);

@@ -61,6 +61,12 @@ FeatureStatus notchSetWidth(NotchWidth width);
 // On CI-V off -> NAR -> MID -> WIDE -> off; elsewhere on, off.
 FeatureStatus notchToggle(NotchState& out);
 
+// Auto notch (caps.getAutoNotch): Icom 16 41, Yaesu BC0. Not the manual notch above.
+FeatureStatus autoNotchQuery(bool& on);
+FeatureStatus autoNotchSet(bool on);
+// Off -> on -> off, from the state read.
+FeatureStatus autoNotchToggle(bool& on);
+
 // AGC (caps.getAgc): Icom 16 12, the ASCII radios' GT (settings.agc), the FT-8x7 from its
 // EEPROM.
 FeatureStatus agcQuery(AgcMode& out);

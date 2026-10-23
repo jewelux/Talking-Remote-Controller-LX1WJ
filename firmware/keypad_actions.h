@@ -65,6 +65,9 @@ void cycleBank2FilterWidth(int delta);
 // can be set to, then Enter sets it. On the FT-8x7 experimental, written to the EEPROM.
 void queryBank2Agc();
 void beginBank2AgcSelect();
+// The auto notch (autoNotchQuery) and its toggle.
+void queryBank2AutoNotch();
+void toggleBank2AutoNotch();
 // The attenuator (attQuery) and the preamp (preampQuery); the steps go to the next level, from
 // the last one to off.
 void queryBank2Att();

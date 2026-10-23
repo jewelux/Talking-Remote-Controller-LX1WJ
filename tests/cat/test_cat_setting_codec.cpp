@@ -324,6 +324,7 @@ TEST(civ_break_in_off_semi_full) {
   CHECK(!civBreakInEncode(BreakInMode::On, raw));
 }
 
+// BI, KR and BC0 answer one digit after their letters.
 TEST(yaesu_bi_kr_digit) {
   bool on = false;
   CHECK(asciiOnOffDigitDecode("1;", on) && on);

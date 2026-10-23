@@ -54,7 +54,8 @@ they say "not available". This is noted where it is always the case.
 
 | Key | Icom | FTDX10 | Kenwood, Elecraft, other FTDX | FT-817/818 | FT-857/897 |
 |---|---|---|---|---|---|
-| `0` short | free | free | free | antenna jack of the band | free |
+| `0` short | auto notch | auto notch | auto notch (FTDX101, FT-891); Kenwood and Elecraft: not available | antenna jack of the band | not available |
+| `0` long | auto notch on/off | auto notch on/off | auto notch on/off | free | not available |
 | `1` short | noise reduction | noise reduction | noise reduction | not available | noise reduction |
 | `1` long | noise reduction on/off | noise reduction on/off | noise reduction on/off | not available | noise reduction on/off (experimental) |
 | `2` short | noise blanker | noise blanker | noise blanker | noise blanker | noise blanker |

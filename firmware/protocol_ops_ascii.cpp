@@ -210,6 +210,20 @@ bool asciiSetBreakIn(const RadioProfile& sp, bool on) {
   return asciiQueryBreakIn(sp, readBack, 800) && readBack == on;
 }
 
+// BC0n, 0 off, 1 on (the FTDX10, FTDX101 and FT-891 CAT manuals, Hamlib newcat); the FTDX101
+// main band.
+bool asciiQueryAutoNotch(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
+  if (sp.protocol != PROTO_YAESU_FTDX_ASCII || !sp.caps.getAutoNotch) return false;
+  return yaesuQueryOnOff("BC0;", "BC0", onOut, timeoutMs);
+}
+
+bool asciiSetAutoNotch(const RadioProfile& sp, bool on) {
+  if (sp.protocol != PROTO_YAESU_FTDX_ASCII || !sp.caps.setAutoNotch) return false;
+  if (!asciiSendSimpleCommand(on ? "BC01;" : "BC00;")) return false;
+  bool readBack = !on;
+  return asciiQueryAutoNotch(sp, readBack, 800) && readBack == on;
+}
+
 bool asciiQueryKeyer(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
   if (sp.protocol != PROTO_YAESU_FTDX_ASCII || !sp.caps.getKeyer) return false;
   return yaesuQueryOnOff("KR;", "KR", onOut, timeoutMs);

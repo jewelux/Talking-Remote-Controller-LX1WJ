@@ -26,6 +26,10 @@ const char* agcModeName(AgcMode mode);
 String agcText(AgcMode mode);
 void speakAgc(AgcMode mode);
 
+// "ANOTCH ON"; "auto notch on".
+String autoNotchText(bool on);
+void speakAutoNotch(bool on);
+
 // "ATT OFF", "ATT ON", or with its dB: "ATT 12 DB"; "attenuator 12".
 String attText(const AttState& state);
 void speakAtt(const AttState& state);

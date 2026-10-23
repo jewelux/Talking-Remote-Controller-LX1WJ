@@ -92,6 +92,24 @@ void queryBank2Agc() {
   speakAgc(mode);
 }
 
+void queryBank2AutoNotch() {
+  printKeypadAction("ANOTCH?");
+  prepareKeypadSpeechResponse();
+  bool on = false;
+  if (keypadReportFeatureFailure(autoNotchQuery(on), "ANOTCH?")) return;
+  printKeypadStatus("{}", autoNotchText(on).c_str());
+  speakAutoNotch(on);
+}
+
+void toggleBank2AutoNotch() {
+  printKeypadAction("ANOTCH");
+  prepareKeypadSpeechResponse();
+  bool on = false;
+  if (keypadReportFeatureFailure(autoNotchToggle(on), "ANOTCH")) return;
+  printKeypadStatus("{}", autoNotchText(on).c_str());
+  speakAutoNotch(on);
+}
+
 void queryBank2Att() {
   printKeypadAction("ATT?");
   prepareKeypadSpeechResponse();

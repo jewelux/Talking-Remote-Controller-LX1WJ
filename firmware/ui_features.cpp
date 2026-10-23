@@ -84,6 +84,14 @@ void speakAgc(AgcMode mode) {
   speakToken(agcModeName(mode));
 }
 
+String autoNotchText(bool on) {
+  return on ? "ANOTCH ON" : "ANOTCH OFF";
+}
+
+void speakAutoNotch(bool on) {
+  speakTokenState("auto notch", on);
+}
+
 String attText(const AttState& state) {
   if (!state.on) return "ATT OFF";
   if (!state.db) return "ATT ON";

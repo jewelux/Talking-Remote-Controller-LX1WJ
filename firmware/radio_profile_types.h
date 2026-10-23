@@ -44,6 +44,8 @@ struct RadioCapabilities {
   bool setNotch = false;
   bool getNotchWidth = false;
   bool setNotchWidth = false;
+  bool getAutoNotch = false;  // Icom 16 41, Yaesu BC0 (not the manual notch above)
+  bool setAutoNotch = false;
   bool getPbtInner = false;
   bool setPbtInner = false;
   bool getPbtOuter = false;
