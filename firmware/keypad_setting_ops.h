@@ -34,6 +34,9 @@ struct SettingOps {
   int32_t centre = 0;
 };
 
+// For the ops files: a switch, 0 off and 1 on, set where canSet; Unsupported where it cannot be.
+FeatureStatus switchSettingLimits(ValueSpec& spec, Setting setting, bool canSet);
+
 // nullptr for a setting with no ops.
 const SettingOps* settingOps(Setting setting);
 // The Bank 2 receive settings (keypad_setting_ops_rx.cpp), which settingOps also
@@ -41,3 +44,5 @@ const SettingOps* settingOps(Setting setting);
 const SettingOps* rxSettingOps(Setting setting);
 // The Bank 4 phone transmit settings (keypad_setting_ops_tx.cpp), likewise.
 const SettingOps* txSettingOps(Setting setting);
+// The Bank 7 CW settings (keypad_setting_ops_cw.cpp), likewise.
+const SettingOps* cwSettingOps(Setting setting);

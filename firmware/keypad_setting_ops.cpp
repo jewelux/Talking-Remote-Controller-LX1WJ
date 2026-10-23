@@ -309,5 +309,17 @@ const SettingOps* settingOps(Setting setting) {
     if (ops.setting == setting) return &ops;
   }
   if (const SettingOps* rx = rxSettingOps(setting)) return rx;
-  return txSettingOps(setting);
+  if (const SettingOps* tx = txSettingOps(setting)) return tx;
+  return cwSettingOps(setting);
+}
+
+FeatureStatus switchSettingLimits(ValueSpec& spec, Setting setting, bool canSet) {
+  if (!canSet) return FeatureStatus::Unsupported;
+  spec.name = settingInfo(setting).label;
+  spec.setting = setting;
+  spec.min = 0;
+  spec.max = 1;
+  spec.maxDigits = 1;
+  spec.bigSteps = 1;
+  return FeatureStatus::Ok;
 }

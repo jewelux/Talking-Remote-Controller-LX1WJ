@@ -144,11 +144,6 @@ KEYMAP_ROW(IC706,           2, '9', "queryBank2Att",         "stepBank2Att",    
 KEYMAP_ROW(ALL,             2, 'A', "focusSay",              "focusEntry",             "-", "none", "-")
 KEYMAP_ROW(ALL,             2, 'B', "focusStep(1)",          "focusBigStep(1)",        "-", "none", "-")
 KEYMAP_ROW(ALL,             2, 'C', "focusStep(-1)",         "focusBigStep(-1)",       "-", "none", "-")
-KEYMAP_ROW(ALL,             7, '1', "queryBank7BreakIn",     "toggleBank7BreakIn",     "-", "none", "-")
-KEYMAP_ROW(ALL,             7, '2', "queryBank7Keyer",       "toggleBank7Keyer",       "-", "none", "-")
-KEYMAP_ROW(ALL,             7, '3', "queryBank7CwLevel(0)",  "stepBank7CwLevel(0,1)",  "stepBank7CwLevel(0,-1)", "none", "-")
-KEYMAP_ROW(ALL,             7, '4', "queryBank7CwLevel(1)",  "stepBank7CwLevel(1,1)",  "stepBank7CwLevel(1,-1)", "none", "-")
-KEYMAP_ROW(ALL,             7, '5', "queryBank7CwLevel(2)",  "stepBank7CwLevel(2,1)",  "stepBank7CwLevel(2,-1)", "none", "-")
 
 // ---- Bank 3 ----------------------------------------------------------------
 // FT-817 and FT-857/897 track the active VFO: '1' is the current VFO, '2' the
@@ -249,6 +244,39 @@ KEYMAP_ROW(FT8X7,           6, 'C', "focusStep(-1)",         "focusBigStep(-1)",
 KEYMAP_ROW(NOT(FT8X7),      6, 'A', "unassigned",            "none",                   "-", "none", "-")
 KEYMAP_ROW(NOT(FT8X7),      6, 'B', "unassigned",            "none",                   "-", "none", "-")
 KEYMAP_ROW(NOT(FT8X7),      6, 'C', "unassigned",            "none",                   "-", "none", "-")
+
+// ---- Bank 7 ----------------------------------------------------------------
+// The twin of Bank 4: the keyer with its speed on a double, break-in (FT-857/897 QSK time on a
+// double; Icom off, semi, full), sidetone; keyer type, pitch, weight; key reverse, RF power,
+// break-in delay; '0' the tuner.
+KEYMAP_ROW(FTDX10,          7, '0', "send(TUNER?)",          "send(TUNER TOGGLE)",     "send(TUNE)", "none", "-")
+KEYMAP_ROW(NOT(FTDX10),     7, '0', "queryBank4Tuner",       "toggleBank4Tuner",       "triggerBank4Tune", "none", "-")
+KEYMAP_ROW(FTDX10 | FT891 | FT817 | FT857, 7, '1', "settingSay(KYR)", "settingNext(KYR)", "settingSay(CWSPEED)", "settingEntry(CWSPEED)", "CWSPEED")
+// No keyer, but its speed: the speed's own key.
+KEYMAP_ROW(TS480,           7, '1', "settingSay(CWSPEED)",   "settingEntry(CWSPEED)",  "-", "none", "CWSPEED")
+KEYMAP_ROW(IC7300 | IC706 | FT8X7_OTHER, 7, '1', "settingSay(KYR)", "none",            "-", "none", "-")
+KEYMAP_ROW(FT857,           7, '2', "settingSay(BK)",        "settingNext(BK)",        "settingSay(QSK)", "settingEntry(QSK)", "QSK")
+KEYMAP_ROW(IC7300,          7, '2', "settingSay(BK)",        "settingNext(BK)",        "-", "none", "BK")
+KEYMAP_ROW(FTDX10 | FT891 | FT817, 7, '2', "settingSay(BK)", "settingNext(BK)",        "-", "none", "-")
+KEYMAP_ROW(IC706 | TS480 | FT8X7_OTHER, 7, '2', "settingSay(BK)", "none",              "-", "none", "-")
+KEYMAP_ROW(FT817 | FT857,   7, '3', "settingSay(SIDETONE)",  "settingEntry(SIDETONE)", "-", "none", "SIDETONE")
+KEYMAP_ROW(NOT(FT817 | FT857), 7, '3', "settingSay(SIDETONE)", "none",                 "-", "none", "-")
+KEYMAP_ROW(FT857,           7, '4', "settingSay(PADDLE)",    "settingNext(PADDLE)",    "-", "none", "-")
+KEYMAP_ROW(NOT(FT857),      7, '4', "settingSay(PADDLE)",    "none",                   "-", "none", "-")
+KEYMAP_ROW(IC7300 | FTDX10 | FT891 | FT817 | FT857, 7, '5', "settingSay(CWPITCH)", "settingEntry(CWPITCH)", "-", "none", "CWPITCH")
+KEYMAP_ROW(IC706 | TS480 | FT8X7_OTHER, 7, '5', "settingSay(CWPITCH)", "none",        "-", "none", "-")
+KEYMAP_ROW(FT817 | FT857,   7, '6', "settingSay(CWWEIGHT)",  "settingEntry(CWWEIGHT)", "-", "none", "CWWEIGHT")
+KEYMAP_ROW(NOT(FT817 | FT857), 7, '6', "settingSay(CWWEIGHT)", "none",                 "-", "none", "-")
+KEYMAP_ROW(FT817 | FT857,   7, '7', "settingSay(KEYREV)",    "settingNext(KEYREV)",    "-", "none", "-")
+KEYMAP_ROW(NOT(FT817 | FT857), 7, '7', "settingSay(KEYREV)", "none",                   "-", "none", "-")
+KEYMAP_ROW(IC7300 | TS480 | FTDX10 | FT891 | FT817 | FT857, 7, '8', "queryBank1RfPower", "beginBank1RfPowerSet", "-", "none", "RFPOWER")
+KEYMAP_ROW(IC706,           7, '8', "unassigned",            "beginBank1RfPowerSet",   "-", "none", "RFPOWER")
+KEYMAP_ROW(FT8X7_OTHER,     7, '8', "unassigned",            "none",                   "-", "none", "-")
+KEYMAP_ROW(TS480 | FTDX10 | FT891 | FT817 | FT857, 7, '9', "settingSay(CWDELAY)", "settingEntry(CWDELAY)", "-", "none", "CWDELAY")
+KEYMAP_ROW(IC7300 | IC706 | FT8X7_OTHER, 7, '9', "settingSay(CWDELAY)", "none",       "-", "none", "-")
+KEYMAP_ROW(ALL,             7, 'A', "focusSay",              "focusEntry",             "-", "none", "-")
+KEYMAP_ROW(ALL,             7, 'B', "focusStep(1)",          "focusBigStep(1)",        "-", "none", "-")
+KEYMAP_ROW(ALL,             7, 'C', "focusStep(-1)",         "focusBigStep(-1)",       "-", "none", "-")
 
 // ---- Bank 8 ----------------------------------------------------------------
 KEYMAP_ROW(ALL,             8, '1', "queryBank8CivAddress",  "beginBank8CivAddressEntry", "-", "none", "-")

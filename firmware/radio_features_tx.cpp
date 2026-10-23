@@ -192,6 +192,21 @@ FeatureStatus keyerToggle(bool& out) {
   return ft8x7FlagWrite(Ft8x7Setting::Keyer, nullptr, out);
 }
 
+bool breakInSupported() {
+  if (!currentProfile().caps.getBreakIn) return false;
+  return currentProtocolType() == PROTO_CIV || isYaesuAscii() || ft8x7SettingAvailable(Ft8x7Setting::BreakIn);
+}
+
+bool keyerSupported() {
+  if (!currentProfile().caps.getKeyer) return false;
+  return isYaesuAscii() || ft8x7SettingAvailable(Ft8x7Setting::Keyer);
+}
+
+bool keyerCanSet() {
+  if (!keyerSupported()) return false;
+  return isYaesuAscii() ? currentProfile().caps.setKeyer : ft8x7CanWriteMenu();
+}
+
 // ---- ALC ----
 
 FeatureStatus alcQuery(uint8_t& percentOut) {
@@ -263,6 +278,13 @@ FeatureStatus cwLevelQuery(CwLevel level, uint16_t& valueOut) {
     return FeatureStatus::Unsupported;
   }
   return ok ? FeatureStatus::Ok : failure(FeatureStatus::NoReply);
+}
+
+bool cwLevelSupported(CwLevel level) {
+  if (!cwCanGet(level)) return false;
+  if (isFt8x7()) return ft8x7SettingAvailable(ft8x7CwSetting(level));
+  if (currentProtocolType() == PROTO_CIV) return level == CwLevel::Pitch;
+  return isAsciiRadio();
 }
 
 bool cwLevelRange(CwLevel level, uint16_t& minOut, uint16_t& maxOut) {

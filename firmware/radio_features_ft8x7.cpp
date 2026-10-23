@@ -123,6 +123,10 @@ static bool ft8x7SettingSupported(Ft8x7Setting setting, Ft8x7Model model) {
   }
 }
 
+bool ft8x7SettingAvailable(Ft8x7Setting setting) {
+  return isFt8x7() && ft8x7SettingSupported(setting, currentFt8x7Model());
+}
+
 FeatureStatus ft8x7SettingQuery(Ft8x7Setting setting, Ft8x7SettingState& out) {
   const Ft8x7Model model = currentFt8x7Model();
   if (!ft8x7SettingSupported(setting, model)) return FeatureStatus::Unsupported;

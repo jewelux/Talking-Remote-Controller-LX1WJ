@@ -3,7 +3,6 @@
 #include <stdint.h>
 
 #include "keypad_settings.h"
-#include "radio_setting_types.h"
 
 // The keypad actions the keymap (keypad_keymap.cpp) can run. Only plain types
 // here, so the keymap stays Arduino-free and the host tests (tests/keypad) can
@@ -178,17 +177,6 @@ void queryBank8Ft8x7Menu();
 // Experimental: a row or menu item number, then Enter, written to the radio's EEPROM.
 void beginBank8Ft8x7RowEntry();
 void beginBank8Ft8x7MenuEntry();
-
-// ---- Bank 7 ----
-// CW break-in (breakInQuery) and keyer (keyerQuery); the toggles go off -> on (Icom SEMI) -> off.
-void queryBank7BreakIn();
-void toggleBank7BreakIn();
-void queryBank7Keyer();
-void toggleBank7Keyer();
-// The CW speed, pitch and delay (cwLevelQuery), and delta of their steps (cwLevelStep): 1 WPM,
-// 10 Hz, one delay step; on the FT-8x7 the menu step, experimental.
-void queryBank7CwLevel(CwLevel level);
-void stepBank7CwLevel(CwLevel level, int delta);
 
 // ---- Bank 9 ----
 void queryBank9TuningSpeech();

@@ -93,6 +93,22 @@
   - `0` the tuner, as before
   - the FT-8x7 settings are read from the radio's memory and set only in experimental mode. On the
     CAT radios these keys are not yet tested on a radio
+- Bank 7 is the CW bank, laid out like Bank 4: the top row the keyer, break-in and sidetone, the
+  middle row the keyer type, pitch and weight, the bottom row key reverse, RF power and break-in
+  delay.
+  - `1` keyer: short says it, long turns it on or off, a double press says the keyer speed and a
+    press then a hold opens its entry. The TS-480 and KX2, which have no keyer command, get the
+    speed on `1` itself
+  - `2` break-in: long press turns it on or off; on the Icoms it goes off, semi, full. FT-857/897: a
+    double press says the QSK time and a press then a hold opens its entry
+  - `3` sidetone level, `6` CW weight (typed with `*` as the point, `3*5` for 1:3.5) and `7` key
+    reverse on the FT-8x7; `4` the FT-857/897 keyer type, ELEKEY or MICKEY. Other radios say "not
+    available"
+  - `5` CW pitch, `8` RF power (as Bank 1 `6`) and `9` break-in delay: short says it, long opens
+    its entry. On the FT-857/897 the delay steps by 100 ms and the step below the shortest is FULL
+  - `0` the tuner, as on Bank 4
+  - the FT-8x7 settings are read from the radio's memory and set only in experimental mode. On the
+    CAT radios these keys are not yet tested on a radio
 - Bank 1 `5` says the ALC meter while transmitting, in percent of full scale, on the Icoms and the
   FTDX10, FTDX101 and FT-891 (console `ALC?`)
 - Bank 1 `6` says the RF power setting and long press enters it in watts on the FTDX10, FTDX101D,
@@ -106,8 +122,8 @@
 - the FT-817/818 power level, the mode and the AGC picks: `B` and `C` walk to the next or previous
   choice, from the power level or mode the radio has; `A` says it. Nothing changes before `D`.
   The mode and AGC go round, from the last choice to the first; the power level stops at its ends
-- `A`, `B` and `C` act on the bank's focus, the setting of the last key used on that bank (Banks 1
-  to 6, 8 and 9 for now): `A` says it, `A` long opens its entry, `A` double puts it back to its
+- `A`, `B` and `C` act on the bank's focus, the setting of the last key used on that bank: `A`
+  says it, `A` long opens its entry, `A` double puts it back to its
   centre, `B` and `C` step it up and down, held for a bigger step. The first step names the
   setting, later ones give just the value. Bank 1: `6` RF power and `9` mode, which wait for `D`
   (`B` or `C` opens the entry or pick one step away, ending in "please"). Bank 5: the RIT offset
@@ -115,7 +131,9 @@
   double the centre), the filter or the bandpass width, the Icom notch, AGC, preamp and
   attenuator, set at once; the FT-8x7 ones and the FT-8x7 AGC wait for `D` and need experimental
   mode. Bank 4: the processor, VOX and monitor levels, the TX equalizer, mic gain, RF power and
-  VOX delay; the levels step by 5, and the FT-8x7 ones wait for `D`. Bank 9: the profile as before, until `6` moves
+  VOX delay; the levels step by 5, and the FT-8x7 ones wait for `D`. Bank 7: the keyer speed, the
+  QSK time or the Icom break-in, sidetone, pitch, weight, RF power and break-in delay; the FT-8x7
+  ones wait for `D`. Bank 9: the profile as before, until `6` moves
   it to the speech speed or `7`-`9` to the volume. With no focus they say "not available". RIT,
   the CAT radios' RF power and the Bank 2 focus on the CAT radios are not yet tested on a radio
 - keys moved:
@@ -131,14 +149,13 @@
     stepped by 10 on a long and a double press), transceive from Bank 4 `3` to Bank 8 `3`
   - FTDX10: the power switch from Bank 2 `5` to Bank 8 `4`, the radio ID from Bank 2 `7` to Bank 8
     `5`, the status line from Bank 2 `6` to Bank 8 `6`
+  - CW: the keyer from Bank 7 `2` to `1`, break-in from `1` to `2`, the keyer speed from `3` to a
+    double press of `1`, the pitch from `4` to `5`, the break-in delay from `5` to `9`. Long press
+    opens their entry; before, long and double press stepped them up and down
 - help mode: `D` long turns it on or off. Each bank key press, short, long or double, then says
   what it would do ("toggle" keys add "on off", steps say "up" or "down", entries "choose") and
   changes nothing; `A`, `B` and `C` name the bank's focus. `*` still changes banks; `D` long or `#`
   ends it
-- Bank 7 is the CW bank: `1` says break-in and long press turns it on or off (Icom: off to semi,
-  semi or full to off), `2` the same for the keyer, `3` the keyer speed, `4` the CW pitch and `5`
-  the break-in delay (long press one step up, double press one step down). On the FT-8x7 setting
-  them is experimental
 
 ### Frequency
 

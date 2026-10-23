@@ -70,13 +70,13 @@ TEST(expectations_assigned_keys_cover_all_families) {
 }
 
 TEST(expectations_lookup_defaults_to_unassigned) {
-  const Row &r = lookup(IC7300, 7, '9');
+  const Row &r = lookup(IC7300, 8, '9');
   CHECK_EQ(r.shortAction, "unassigned");
   CHECK_EQ(r.longAction, "none");
   CHECK_EQ(r.doubleAction, "-");
   CHECK_EQ(r.doubleHoldAction, "none");
   CHECK_EQ(r.focus, "-");
-  CHECK_EQ(lookup(FT817, 7, 'B').shortAction, "unassigned");
+  CHECK_EQ(lookup(FT817, 8, '0').shortAction, "unassigned");
 }
 
 TEST(expectations_lookup_picks_the_family_row) {

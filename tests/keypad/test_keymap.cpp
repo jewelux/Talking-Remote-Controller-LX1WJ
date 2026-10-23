@@ -41,7 +41,7 @@ KeypadTraits traitsFor(uint16_t family) {
   t.supportsMonitor = (family & CIV) != 0;
   t.supportsTransceive = (family & CIV) != 0;
   t.canGetRfPower = family == IC7300 || family == TS480 || family == FTDX10 || family == FT891;
-  // The Bank 2 and Bank 4 settings, as the profiles' caps give them.
+  // The Bank 2, 4 and 7 settings, as the profiles' caps give them.
   using S = Setting;
   auto add = [&t](std::initializer_list<Setting> settings) {
     for (Setting s : settings) t.settings.add(s);
@@ -59,6 +59,14 @@ KeypadTraits traitsFor(uint16_t family) {
   }
   if (family != IC706 && family != FT8X7_OTHER) add({S::Vox, S::VoxGain, S::MicGain, S::VoxDelay});
   if (family == FT857) add({S::TxEq, S::TxLowCut, S::TxHighCut});
+  // Bank 7.
+  if (family == IC7300) add({S::BreakIn, S::CwPitch});
+  if (family == TS480) add({S::CwSpeed, S::CwDelay});
+  if (family == FTDX10 || family == FT891) add({S::Keyer, S::CwSpeed, S::BreakIn, S::CwPitch, S::CwDelay});
+  if (family == FT817 || family == FT857) {
+    add({S::Keyer, S::CwSpeed, S::BreakIn, S::Sidetone, S::CwPitch, S::CwWeight, S::KeyReverse, S::CwDelay});
+  }
+  if (family == FT857) add({S::Qsk, S::Paddle});
   return t;
 }
 
@@ -145,12 +153,6 @@ void queryBank2Att() { record("queryBank2Att"); }
 void stepBank2Att() { record("stepBank2Att"); }
 void queryBank2Preamp() { record("queryBank2Preamp"); }
 void stepBank2Preamp() { record("stepBank2Preamp"); }
-void queryBank7BreakIn() { record("queryBank7BreakIn"); }
-void toggleBank7BreakIn() { record("toggleBank7BreakIn"); }
-void queryBank7Keyer() { record("queryBank7Keyer"); }
-void toggleBank7Keyer() { record("toggleBank7Keyer"); }
-void queryBank7CwLevel(CwLevel l) { record("queryBank7CwLevel(%d)", (int)l); }
-void stepBank7CwLevel(CwLevel l, int d) { record("stepBank7CwLevel(%d,%d)", (int)l, d); }
 void queryBank2Agc() { record("queryBank2Agc"); }
 void queryBank2Ft817Antenna() { record("queryBank2Ft817Antenna"); }
 void toggleBank2Ft8x7Dbf() { record("toggleBank2Ft8x7Dbf"); }
@@ -318,8 +320,7 @@ TEST(keymap_focus_keys_follow_the_focus) {
   CHECK(keymapHomeFocus(t, 9) == Setting::Profile);
   CHECK(keymapHomeFocus(t, 1) == Setting::None);
   CHECK(keymapLookup(t, 2, 'A', Setting::PbtInner).waitsForDouble);
-  // Bank 7 gets its focus keys with its own layout.
-  CHECK(isEmpty(keymapLookup(t, 7, 'A')));
+  CHECK(keymapLookup(t, 7, 'A', Setting::BreakIn).shortAction != nullptr);
   CHECK(keymapLookup(t, 4, 'A', Setting::MicGain).shortAction != nullptr);
 }
 
@@ -330,7 +331,7 @@ TEST(keymap_ignores_state_machine_keys_and_other_banks) {
     for (uint8_t bank = 0; bank <= 10; ++bank) CHECK(isEmpty(keymapLookup(t, bank, *k)));
   }
   CHECK(isEmpty(keymapLookup(t, 0, '1')));
-  CHECK(isEmpty(keymapLookup(t, 7, '9')));
+  CHECK(isEmpty(keymapLookup(t, 8, '9')));
   CHECK(isEmpty(keymapLookup(t, 10, '1')));
   CHECK(g_calls.empty());
 }

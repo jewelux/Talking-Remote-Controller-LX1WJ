@@ -102,14 +102,15 @@ the noise blanker, and on the FT-857/897 noise reduction, notch, the noise reduc
 levels, and the DSP bandpass filter with its low and high cut (Bank 2), and the RF power (Bank 1
 `6`), the mic gain and VOX with its gain and delay (`MICGAIN`, `VOX`, `VOXGAIN`, `VOXDELAY`, Bank
 4), and on the FT-857/897 the speech processor (`PROC`, `PROCLEVEL`) and the TX equalizer (`MICEQ`,
-Bank 4). From the console it can also set break-in (`BK`) and the keyer (`KYR`), and on the
-FT-817/818 the antenna jack (`ANT`). On the IC-7300, IC-705, IC-7760, FTDX10, FTDX101, FT-891 and TS-480 the
+Bank 4), the keyer with its speed, break-in, the sidetone, CW pitch, weight, key reverse and the
+break-in delay, and on the FT-857/897 the QSK time and the keyer type (Bank 7). From the console it
+can also set the FT-817/818 antenna jack (`ANT`). On the IC-7300, IC-705, IC-7760, FTDX10, FTDX101, FT-891 and TS-480 the
 console and Bank 4 set the speech processor, mic gain and VOX without experimental mode (the FTDX101 and
 IC-7760 not all of them), and on these and the KX2 the AGC, also from Bank 2 `7`, and the preamp
 and attenuator (`PREAMP`, `ATT`, Bank 2 `8` and `9`) and, but on the FTDX101MP, the RF power
 (`RFPOWER`, Bank 1 `6`). The Icoms and these Yaesus also set break-in (`BK`) and the Yaesus the
-keyer (`KYR`), from Bank 7 `1` and `2` too, and the CW speed, pitch and delay (`CWSPEED`,
-`CWPITCH`, `CWDELAY`, Bank 7 `3` to `5`) where the radio has them. In FM the console also sets the
+keyer (`KYR`), from Bank 7 `2` and `1` too, and the CW speed, pitch and delay (`CWSPEED`,
+`CWPITCH`, `CWDELAY`, Bank 7 `1` double, `5` and `9`) where the radio has them. In FM the console also sets the
 tone squelch (`TONE`, `TONEDIR`, `CTCSS`) and the repeater shift (`RPT`). See the [keypad map](docs/keypad-map.md).
 
 ## Practical Everyday Use

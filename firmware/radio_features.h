@@ -140,6 +140,11 @@ FeatureStatus breakInToggle(BreakInMode& out);
 FeatureStatus keyerQuery(bool& on);
 FeatureStatus keyerSet(bool on, bool& out);
 FeatureStatus keyerToggle(bool& out);
+// What these read, by the caps (no radio traffic), and where the keyer can be set (the FT-8x7
+// only experimentally).
+bool breakInSupported();
+bool keyerSupported();
+bool keyerCanSet();
 
 // The ALC meter in percent of full scale (caps.getAlc): Icom 15 13, 0..120; Yaesu RM4, 0..255.
 // 0 when not transmitting. The FT-8x7 reads its own (ALC?, 0..15).
@@ -149,6 +154,8 @@ FeatureStatus alcQuery(uint8_t& percentOut);
 // FT-857/897): caps.getCwSpeed, getCwPitch, getCwDelay. Icom 14 09 (pitch only), the ASCII
 // radios' KS, KP and SD, the FT-8x7 from its EEPROM menus.
 FeatureStatus cwLevelQuery(CwLevel level, uint16_t& valueOut);
+// Whether cwLevelQuery reads level, by the caps (no radio traffic).
+bool cwLevelSupported(CwLevel level);
 // The values it can be set to; false where it cannot (on the FT-8x7 only experimentally).
 bool cwLevelRange(CwLevel level, uint16_t& minOut, uint16_t& maxOut);
 // Sets value, to the radio's step nearest it, which the radio confirms on a read-back, into
@@ -260,6 +267,9 @@ struct Ft8x7SettingState {
 
 // The console command: "AGC?", "IPO?", ...
 const char* ft8x7SettingLabel(Ft8x7Setting setting);
+// Whether the radio's EEPROM map has setting, by the model (no radio traffic); false on other
+// radios.
+bool ft8x7SettingAvailable(Ft8x7Setting setting);
 // Unsupported on other radios, and for IPO/ATT/NAR where the band has none (or is not known).
 // Unexpected when a CW setting's stored value does not fit the map.
 FeatureStatus ft8x7SettingQuery(Ft8x7Setting setting, Ft8x7SettingState& out);

@@ -29,7 +29,7 @@ they say "not available". This is noted where it is always the case.
 
 ## Focus: A, B and C
 
-On Banks 1, 2, 3, 5, 6, 8 and 9, `A`, `B` and `C` act on the bank's **focus**: the setting of the
+On every bank, `A`, `B` and `C` act on the bank's **focus**: the setting of the
 last key on that bank that has one. A key with nothing to move (a switch, a meter, the frequency)
 leaves the focus as it was. Each bank keeps its own focus, and a profile change puts every bank
 back to its starting focus.
@@ -39,8 +39,10 @@ back to its starting focus.
 | 1 | `6` RF power, `9` mode | none |
 | 2 | `1` NR level, `2` NB level, `3` notch (Icom), `4` low cut or PBT inner, `5` bandpass width or filter, `6` high cut or PBT outer, `7` AGC, `8` preamp, `9` attenuator | none |
 | 3 | none yet | none |
+| 4 | `1` processor level, `2` VOX gain, `3` monitor level (Icom), `5` TX equalizer, `7` mic gain, `8` RF power, `9` VOX delay | none |
 | 5 | `1`-`5` RIT offset | RIT offset |
 | 6 | none yet | none |
+| 7 | `1` keyer speed, `2` QSK time (FT-857/897) or break-in (Icom), `3` sidetone, `5` pitch, `6` weight, `8` RF power, `9` break-in delay | none |
 | 8 | none yet | none |
 | 9 | `6` speech speed, `7`-`9` volume | profile |
 
@@ -52,13 +54,13 @@ With no focus, `A`, `B` and `C` say "not available".
 | `A` long | its entry or pick; speech speed steps to the next |
 | `A` double | back to the centre: PBT 0, RIT offset 0, normal speech speed, profile reset. Only where there is one; elsewhere `A` answers at once |
 | `B` / `C` short | one step up / down |
-| `B` / `C` long | a big step: RF power 5 steps, NR and NB level 25 % on Icom and 5 steps elsewhere, PBT 50, low and high cut 5 steps, RIT offset 100 Hz, volume 2; a list (filter, notch, AGC, preamp, attenuator, bandpass width, speech speed) one step; the mode and the profile not available |
+| `B` / `C` long | a big step: RF power 5 steps, NR and NB level 25 % on Icom and 5 steps elsewhere, PBT 50, low and high cut 5 steps, the Bank 4 levels and the sidetone 25, VOX delay, CW speed, pitch, weight, delay and QSK time 5 steps, RIT offset 100 Hz, volume 2; a list (filter, notch, AGC, preamp, attenuator, bandpass width, TX equalizer, Icom break-in, speech speed) one step; the mode and the profile not available |
 
 The first `B` or `C` after another key names the focus; the next ones give only the value. A step
 past the end of the range says "maximum" or "minimum" and changes nothing.
 
-RF power, the mode and the FT-8x7 settings kept in the radio's memory (FT-857/897 NR and NB
-level, low and high cut, bandpass width; FT-8x7 AGC) wait for `D`: `B` or `C` reads the value once and opens the entry or pick
+RF power, the mode and the FT-8x7 settings kept in the radio's memory (the FT-8x7 levels and
+numbers on Banks 2, 4 and 7, and its AGC) wait for `D`: `B` or `C` reads the value once and opens the entry or pick
 one step away, ending in "please". More `B` and `C` presses step with no radio traffic (RF power
 held: the big step, as before the entry opened), `D` sets,
 `#` cancels. The FT-817/818 power steps through its levels and stops at the lowest and highest. The
@@ -279,24 +281,44 @@ these keys are free.
 
 ## Bank 7 - CW
 
+The twin of Bank 4. Top row: the keyer with its speed, break-in, the sidetone. Middle row: the
+keyer type, pitch, weight. Bottom row: key reverse, RF power, break-in delay.
+
 | Key | Icom | FTDX10 | Kenwood, Elecraft, other FTDX | FT-817/818 | FT-857/897 |
 |---|---|---|---|---|---|
-| `1` short | break-in | break-in | break-in (FTDX101, FT-891); Kenwood and Elecraft: not available | break-in | break-in |
-| `1` long | break-in on/off | break-in on/off | break-in on/off | break-in on/off (experimental) | break-in on/off (experimental) |
-| `2` short | not available | keyer | keyer (FTDX101, FT-891); Kenwood and Elecraft: not available | keyer | keyer |
-| `2` long | not available | keyer on/off | keyer on/off | keyer on/off (experimental) | keyer on/off (experimental) |
-| `3` short | not available | keyer speed | keyer speed (FTDX101, FT-891, TS-480, KX2) | keyer speed | keyer speed |
-| `3` long | not available | 1 WPM faster | 1 WPM faster | one step faster (experimental) | one step faster (experimental) |
-| `3` double | not available | 1 WPM slower | 1 WPM slower | one step slower (experimental) | one step slower (experimental) |
-| `4` short | CW pitch | CW pitch | CW pitch (FTDX101, FT-891) | CW pitch | CW pitch |
-| `4` long | 10 Hz up | 10 Hz up | 10 Hz up | one step up (experimental) | one step up (experimental) |
-| `4` double | 10 Hz down | 10 Hz down | 10 Hz down | one step down (experimental) | one step down (experimental) |
-| `5` short | not available | break-in delay | break-in delay (FT-891, TS-480) | break-in delay | break-in delay |
-| `5` long | not available | one step longer | one step longer (at least 100 ms) | one step longer (experimental) | one step longer (experimental) |
-| `5` double | not available | one step shorter | one step shorter (at least 100 ms) | one step shorter (experimental) | one step shorter (experimental) |
+| `0` short | tuner | tuner | tuner | not available | not available |
+| `0` long | tuner on/off | tuner on/off | tuner on/off | not available | not available |
+| `0` double | tune | tune | tune | not available | not available |
+| `1` short | not available | keyer | keyer (FTDX101, FT-891); TS-480, KX2: keyer speed | keyer | keyer |
+| `1` long | free | keyer on/off | keyer on/off; TS-480, KX2: keyer speed entry | keyer on/off (experimental) | keyer on/off (experimental) |
+| `1` double | free | keyer speed | keyer speed (FTDX101, FT-891) | keyer speed | keyer speed |
+| `1` short, then hold | free | keyer speed entry | keyer speed entry (FTDX101, FT-891) | keyer speed entry (experimental) | keyer speed entry (experimental) |
+| `2` short | break-in (IC-706: not available) | break-in | break-in (FTDX101, FT-891); Kenwood and Elecraft: not available | break-in | break-in |
+| `2` long | next: off, semi, full | break-in on/off | break-in on/off | break-in on/off (experimental) | break-in on/off (experimental) |
+| `2` double | free | free | free | free | QSK time |
+| `2` short, then hold | free | free | free | free | QSK time entry (experimental) |
+| `3` short | not available | not available | not available | sidetone level | sidetone level |
+| `3` long | free | free | free | sidetone entry (experimental) | sidetone entry (experimental) |
+| `4` short | not available | not available | not available | not available | keyer type: paddle (ELEKEY) or mic keys (MICKEY) |
+| `4` long | free | free | free | free | keyer type ELEKEY/MICKEY (experimental) |
+| `5` short | CW pitch (IC-706: not available) | CW pitch | CW pitch (FTDX101, FT-891) | CW pitch | CW pitch |
+| `5` long | CW pitch entry | CW pitch entry | CW pitch entry | CW pitch entry (experimental) | CW pitch entry (experimental) |
+| `6` short | not available | not available | not available | CW weight | CW weight |
+| `6` long | free | free | free | CW weight entry (experimental) | CW weight entry (experimental) |
+| `7` short | not available | not available | not available | key reverse | key reverse |
+| `7` long | free | free | free | key reverse on/off (experimental) | key reverse on/off (experimental) |
+| `8` short | RF power setting (IC-706: free) | RF power setting | RF power setting (FTDX101MP: free) | RF power setting | RF power setting |
+| `8` long | RF power entry | RF power entry | RF power entry | RF power level select (experimental) | RF power entry (experimental) |
+| `9` short | not available | break-in delay | break-in delay (FT-891, TS-480) | break-in delay | break-in delay |
+| `9` long | free | break-in delay entry | break-in delay entry | break-in delay entry (experimental) | break-in delay entry (experimental) |
+| `A` `B` `C` | focus | focus | focus | focus | focus |
 
-Icom break-in is off, semi or full; `1` long turns it from off to semi and from semi or full to off.
-A delay of 0 is full break-in (TS-480, FT-857/897). The other keys are free.
+`B`/`C` step the keyer speed by 1 WPM and the pitch by 10 Hz (FT-8x7: its menu step), the
+break-in delay by the radio's own step, the sidetone by 5, the weight by 0.1 and the QSK time by
+the radio's step. Icom break-in is off, semi or full: `2` long goes to the next and from full back
+to off, and `B`/`C` walk it. A delay of 0 is full break-in (TS-480, FT-857/897); on the FT-857/897
+the step below the shortest delay is FULL. The weight is typed with `*` as its point: `3*5` is
+1:3.5.
 
 ## Bank 8 - Connection and Radio Menu
 

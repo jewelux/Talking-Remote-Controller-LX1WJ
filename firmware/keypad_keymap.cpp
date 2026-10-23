@@ -349,11 +349,31 @@ Key settingOrNotAvailable(const KeypadTraits& t) {
   return bind(saySetting<S>, nextSetting<S>).help(info.label, V::Say, V::Toggle);
 }
 
-// A switch S with its level, as switchWithLevel; "not available" where the radio lacks S.
+// A switch S with its level, as switchWithLevel. Where the radio lacks S but has the level (the
+// TS-480 keyer speed), the level's own key; where it has neither, "not available".
 template <Setting S, Setting Level>
 Key switchSettingWithLevel(const KeypadTraits& t) {
-  if (!t.settings.has(S)) return settingOrNotAvailable<S>(t);
-  return switchWithLevel<Level>(t, saySetting<S>, nextSetting<S>, settingInfo(S).label);
+  if (t.settings.has(S)) return switchWithLevel<Level>(t, saySetting<S>, nextSetting<S>, settingInfo(S).label);
+  if (t.settings.has(Level)) return settingKey<Level>(t);
+  return settingOrNotAvailable<S>(t);
+}
+
+// A short list S (two or three named states): short says it, long steps to the next; "not
+// available" where the radio lacks it.
+template <Setting S>
+Key shortListOrNotAvailable(const KeypadTraits& t) {
+  const char* label = settingInfo(S).label;
+  if (!t.settings.has(S)) return bind(saySetting<S>).help(label, V::NotAvailable);
+  return bind(saySetting<S>, nextSetting<S>).help(label, V::Say, V::Next);
+}
+
+// The tuner, '0' on both transmit banks: says it, toggles it, a double tunes.
+KeyBinding tunerKey(const KeypadTraits& t) {
+  const bool ftdx10 = t.layout == L::Ftdx10;
+  return bind(ftdx10 ? SEND("TUNER?") : queryBank4Tuner, ftdx10 ? SEND("TUNER TOGGLE") : toggleBank4Tuner,
+              ftdx10 ? SEND("TUNE") : triggerBank4Tune)
+      .help("TUNER", V::Say, V::Toggle)
+      .helpDouble("TUNE", V::Run);
 }
 
 // Phone transmit, the twin of Bank 2: the top row the switches with a level, the middle row the
@@ -361,13 +381,8 @@ Key switchSettingWithLevel(const KeypadTraits& t) {
 // '0' the tuner. The FT-8x7 keeps these in its EEPROM: read always, set only experimentally.
 KeyBinding bank4(const KeypadTraits& t, char key, Setting focus) {
   if (isFocusKey(key)) return focusKey(key, focus);
-  const bool ftdx10 = t.layout == L::Ftdx10;
   switch (key) {
-    case '0':
-      return bind(ftdx10 ? SEND("TUNER?") : queryBank4Tuner, ftdx10 ? SEND("TUNER TOGGLE") : toggleBank4Tuner,
-                  ftdx10 ? SEND("TUNE") : triggerBank4Tune)
-          .help("TUNER", V::Say, V::Toggle)
-          .helpDouble("TUNE", V::Run);
+    case '0': return tunerKey(t);
     case '1': return switchSettingWithLevel<Setting::Proc, Setting::ProcLevel>(t);
     case '2': return switchSettingWithLevel<Setting::Vox, Setting::VoxGain>(t);
     case '3': return switchSettingWithLevel<Setting::Monitor, Setting::MonitorLevel>(t);
@@ -479,23 +494,35 @@ KeyBinding bank8(const KeypadTraits& t, char key, Setting focus) {
   }
 }
 
-// Bank 7: CW. Every radio; the FT-8x7 sets experimentally.
-KeyBinding bank7(char key) {
+// Break-in: a switch, with the FT-857/897 QSK time second. The Icom off, semi and full are a
+// short list the hold steps through, and B and C walk.
+KeyBinding breakInKey(const KeypadTraits& t) {
+  constexpr Setting kBreakIn = Setting::BreakIn;
+  if (t.settings.has(Setting::Qsk)) return switchSettingWithLevel<kBreakIn, Setting::Qsk>(t);
+  if (!t.settings.has(kBreakIn)) return bind(saySetting<kBreakIn>).help("BK", V::NotAvailable);
+  const Key key = bind(saySetting<kBreakIn>, nextSetting<kBreakIn>);
+  if (t.layout == L::Civ) return key.withFocus(kBreakIn).help("BK", V::Say, V::Next);
+  return key.help("BK", V::Say, V::Toggle);
+}
+
+// CW, the twin of Bank 4: the top row the keyer with its speed, break-in and the sidetone, the
+// middle row the keyer type, pitch and weight, the bottom row key reverse, RF power and the
+// break-in delay, '0' the tuner. The FT-8x7 keeps these in its EEPROM: read always, set only
+// experimentally.
+KeyBinding bank7(const KeypadTraits& t, char key, Setting focus) {
+  if (isFocusKey(key)) return focusKey(key, focus);
   switch (key) {
-    case '1': return bind(queryBank7BreakIn, toggleBank7BreakIn).help("BK", V::Say, V::Toggle);
-    case '2': return bind(queryBank7Keyer, toggleBank7Keyer).help("KYR", V::Say, V::Toggle);
-    case '3':
-      return bind([] { queryBank7CwLevel(CwLevel::Speed); }, [] { stepBank7CwLevel(CwLevel::Speed, 1); },
-                  [] { stepBank7CwLevel(CwLevel::Speed, -1); })
-          .help("CWSPEED", V::Say, V::Up, V::Down);
-    case '4':
-      return bind([] { queryBank7CwLevel(CwLevel::Pitch); }, [] { stepBank7CwLevel(CwLevel::Pitch, 1); },
-                  [] { stepBank7CwLevel(CwLevel::Pitch, -1); })
-          .help("CWPITCH", V::Say, V::Up, V::Down);
-    case '5':
-      return bind([] { queryBank7CwLevel(CwLevel::Delay); }, [] { stepBank7CwLevel(CwLevel::Delay, 1); },
-                  [] { stepBank7CwLevel(CwLevel::Delay, -1); })
-          .help("CWDELAY", V::Say, V::Up, V::Down);
+    case '0': return tunerKey(t);
+    case '1': return switchSettingWithLevel<Setting::Keyer, Setting::CwSpeed>(t);
+    case '2': return breakInKey(t);
+    case '3': return settingOrNotAvailable<Setting::Sidetone>(t);
+    // FT-857/897: the paddle as the keyer (ELEKEY) or the mic keys (MICKEY).
+    case '4': return shortListOrNotAvailable<Setting::Paddle>(t);
+    case '5': return settingOrNotAvailable<Setting::CwPitch>(t);
+    case '6': return settingOrNotAvailable<Setting::CwWeight>(t);
+    case '7': return settingOrNotAvailable<Setting::KeyReverse>(t);
+    case '8': return rfPowerKey(t);
+    case '9': return settingOrNotAvailable<Setting::CwDelay>(t);
     default: return {};
   }
 }
@@ -547,7 +574,7 @@ KeyBinding keymapLookup(const KeypadTraits& traits, uint8_t bank, char key, Sett
     case 4: return bank4(traits, key, focus);
     case 5: return bank5(key, focus);
     case 6: return bank6(traits, key, focus);
-    case 7: return bank7(key);
+    case 7: return bank7(traits, key, focus);
     case 8: return bank8(traits, key, focus);
     case 9: return bank9(key, focus);
     default: return {};

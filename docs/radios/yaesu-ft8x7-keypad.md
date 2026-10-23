@@ -63,7 +63,7 @@ All Bank 2 keys read settings from the radio's EEPROM, since CAT cannot. With ex
 
 The TX equalizer (`MICEQ?`, menu 48) is on Bank 4 `4`-`6`.
 
-IPO and ATT are those of the current band and VFO, also outside the amateur bands (HF and 6 m only). The menu settings are read as the radio last saved them. Break-in, keyer, CW speed, pitch and delay are Bank 7 `1` to `5` (long and double press set them, experimental). FM narrow has no key; the console command `NAR?` reads it. On the FT-857/897, `PROC?` and `PROCLEVEL?` read the speech processor and its level (menu 74). `MICGAIN?` reads the mic gain of the current mode: on the FT-857/897 SSB menu 81, AM menu 5, FM menu 51 or DIG gain menu 37, not in CW and PKT; on the FT-817 SSB menu 46, AM menu 5, FM menu 29, DIG menu 25 or PKT menu 39 or 3 by the packet rate, not in CW. `VOX?`, `VOXGAIN?` and `VOXDELAY?` read VOX, its gain and its delay (FT-857/897 menus 88 and 87, FT-817 menus 51 and 50). These are on Bank 4.
+IPO and ATT are those of the current band and VFO, also outside the amateur bands (HF and 6 m only). The menu settings are read as the radio last saved them. The CW settings are on Bank 7. FM narrow has no key; the console command `NAR?` reads it. On the FT-857/897, `PROC?` and `PROCLEVEL?` read the speech processor and its level (menu 74). `MICGAIN?` reads the mic gain of the current mode: on the FT-857/897 SSB menu 81, AM menu 5, FM menu 51 or DIG gain menu 37, not in CW and PKT; on the FT-817 SSB menu 46, AM menu 5, FM menu 29, DIG menu 25 or PKT menu 39 or 3 by the packet rate, not in CW. `VOX?`, `VOXGAIN?` and `VOXDELAY?` read VOX, its gain and its delay (FT-857/897 menus 88 and 87, FT-817 menus 51 and 50). These are on Bank 4.
 
 ## Bank 3 - VFO / Split
 
@@ -177,6 +177,41 @@ current band, and "not available" before one was set or on another band. The FT-
 encode only: DCS is always BOTH there.
 
 `3` short and `4` short do not read the radio: they speak the last CTCSS tone or DCS code set from the keypad, or the built-in default (`88.5`, `023`) when nothing has been set yet.
+
+## Bank 7 - CW
+
+As Bank 4: a short press reads, a hold sets with experimental mode on. `B` and `C` open the entry
+one step away, and `D` writes it. The FT-817/818 addresses are from the KA7OEI map, not yet tested.
+
+| Key | FT-817 | FT-857/897 |
+|---|---|---|
+| `0` short | not available | not available |
+| `1` short | `KYR?`: keyer | `KYR?`: keyer |
+| `1` long | keyer on/off (experimental) | keyer on/off (experimental) |
+| `1` double | `CWSPEED?`: keyer speed (menu 21) | `CWSPEED?`: keyer speed (menu 30) |
+| `1` short, then hold | keyer speed entry (experimental) | keyer speed entry (experimental) |
+| `2` short | `BK?`: break-in | `BK?`: break-in |
+| `2` long | break-in on/off (experimental) | break-in on/off (experimental) |
+| `2` double | free | `QSK?`: QSK time (menu 28) |
+| `2` short, then hold | free | QSK time entry (experimental) |
+| `3` short | `SIDETONE?`: sidetone level (menu 44) | `SIDETONE?`: sidetone level (menu 29) |
+| `3` long | sidetone entry (experimental) | sidetone entry (experimental) |
+| `4` short | not available | `PADDLE?`: keyer type ELEKEY or MICKEY (menu 26) |
+| `4` long | free | ELEKEY/MICKEY (experimental) |
+| `5` short | `CWPITCH?`: CW pitch (menu 20) | `CWPITCH?`: CW pitch (menu 27) |
+| `5` long | CW pitch entry (experimental) | CW pitch entry (experimental) |
+| `6` short | `CWWEIGHT?`: CW weight (menu 22) | `CWWEIGHT?`: CW weight (menu 32) |
+| `6` long | CW weight entry, `*` as the point (experimental) | CW weight entry, `*` as the point (experimental) |
+| `7` short | `KEYREV?`: key reverse (menu 19) | `KEYREV?`: key reverse (menu 25) |
+| `7` long | key reverse on/off (experimental) | key reverse on/off (experimental) |
+| `8` short | `RFPOWER?` | `RFPOWER?` |
+| `8` long | RF power level select (experimental) | RF power entry (experimental) |
+| `9` short | `CWDELAY?`: break-in delay | `CWDELAY?`: break-in delay (menu 24) |
+| `9` long | break-in delay entry (experimental) | break-in delay entry (experimental) |
+
+`B` and `C` step the speed by 1 WPM, the pitch by the menu's step, the sidetone by 5, the weight by
+0.1, the QSK time by 5 ms and the delay by 100 ms. On the FT-857/897 the step below the shortest
+delay is FULL, and `0` typed in the delay entry sets FULL.
 
 ## Bank 8 - Radio Menu
 

@@ -16,18 +16,6 @@ namespace {
 // The FT-8x7 keeps these in its EEPROM: B and C open the entry, staged for Enter.
 bool isFt8x7Protocol() { return currentProtocolType() == PROTO_YAESU_FT8X7; }
 
-// A switch set where canSet: 0 off, 1 on.
-FeatureStatus switchLimits(ValueSpec& spec, Setting setting, bool canSet) {
-  if (!canSet) return FeatureStatus::Unsupported;
-  spec.name = settingInfo(setting).label;
-  spec.setting = setting;
-  spec.min = 0;
-  spec.max = 1;
-  spec.maxDigits = 1;
-  spec.bigSteps = 1;
-  return FeatureStatus::Ok;
-}
-
 // A level of 0..max in steps of 5 (1 up to 9).
 FeatureStatus levelLimits(ValueSpec& spec, Setting setting, int32_t min, int32_t max, const char* unit = "") {
   spec.name = settingInfo(setting).label;
@@ -59,7 +47,7 @@ FeatureStatus switchWrite(FeatureStatus (*set)(bool), FeatureStatus (*read)(bool
 
 // ---- Speech processor and its level ----
 
-FeatureStatus procLimits(ValueSpec& spec) { return switchLimits(spec, Setting::Proc, procCanSet()); }
+FeatureStatus procLimits(ValueSpec& spec) { return switchSettingLimits(spec, Setting::Proc, procCanSet()); }
 FeatureStatus procRead(int32_t& value) { return switchRead(procQuery, value); }
 FeatureStatus procWrite(int32_t value, int32_t& readBack) { return switchWrite(procSet, procQuery, value, readBack); }
 String procText(int32_t value) { return procStateText(value != 0); }
@@ -95,7 +83,7 @@ bool voxCanSet() {
   return voxGainRange(min, max);
 }
 
-FeatureStatus voxLimits(ValueSpec& spec) { return switchLimits(spec, Setting::Vox, voxCanSet()); }
+FeatureStatus voxLimits(ValueSpec& spec) { return switchSettingLimits(spec, Setting::Vox, voxCanSet()); }
 FeatureStatus voxRead(int32_t& value) { return switchRead(voxQuery, value); }
 FeatureStatus voxWrite(int32_t value, int32_t& readBack) { return switchWrite(voxSet, voxQuery, value, readBack); }
 String voxText(int32_t value) { return voxStateText(value != 0); }
@@ -131,7 +119,7 @@ void speakVoxGainOf(int32_t value) { speakVoxGain((uint8_t)value); }
 bool monitorAvailable() { return protocolSupportsMonitor() && currentProfile().caps.getMonitor; }
 
 FeatureStatus monitorLimits(ValueSpec& spec) {
-  return switchLimits(spec, Setting::Monitor, monitorAvailable() && currentProfile().caps.setMonitor);
+  return switchSettingLimits(spec, Setting::Monitor, monitorAvailable() && currentProfile().caps.setMonitor);
 }
 
 FeatureStatus monitorQuery(bool& on) {
@@ -243,7 +231,7 @@ constexpr uint8_t kTxCutBit = S == Setting::TxHighCut ? 0x01 : 0x02;
 
 template <Setting S>
 FeatureStatus txCutLimits(ValueSpec& spec) {
-  return switchLimits(spec, S, txEqAvailable() && currentProfile().caps.setRadioMenu);
+  return switchSettingLimits(spec, S, txEqAvailable() && currentProfile().caps.setRadioMenu);
 }
 
 template <Setting S>

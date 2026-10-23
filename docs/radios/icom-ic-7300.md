@@ -228,6 +228,19 @@ The current keypad concept uses radio-specific banks with:
 | Fine tuning / RIT | `RIT STEP -1`, `RIT STEP -500` | Bank 5: `4` short / `4` long |
 | Fine tuning / RIT | `RIT STEP 1`, `RIT STEP 500` | Bank 5: `5` short / `5` long |
 
+### Bank 7 - CW
+
+| Command family | Commands | Bank / keys |
+|---|---|---|
+| Tuner | `TUNER?`, `TUNER ON/OFF`, `TUNE` | Bank 7: `0` short / `0` long / `0` double click |
+| Break-in | `BK?`, `BK OFF / SEMI / FULL` | Bank 7: `2` short / `2` long (off, semi, full) |
+| CW pitch | `CWPITCH?`, `CWPITCH <300..900>` | Bank 7: `5` short / `5` long |
+| RF power | `RFPOWER?`, `RFPOWER <W>` | Bank 7: `8` short / `8` long |
+
+`A`, `B` and `C` act on the last of break-in, pitch and RF power touched: `B`/`C` walk the
+break-in and step the pitch by 10 Hz. The keyer, its speed, the sidetone, weight, key reverse and
+break-in delay say "not available".
+
 ### Bank 8 - Transceive
 
 | Command family | Commands | Bank / keys |
