@@ -8,7 +8,7 @@
 #include "radio_state.h"
 #include "ui_speech.h"
 
-static constexpr uint32_t FT847_CONSOLE_TIMEOUT_MS = 800;
+static constexpr uint32_t FT847_CONSOLE_TIMEOUT_MS = kCatReplyTimeoutMs;
 
 static bool isFt847Profile() { return currentProtocolType() == PROTO_YAESU_FT847; }
 

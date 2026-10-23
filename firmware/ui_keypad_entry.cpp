@@ -22,7 +22,7 @@ static bool rejectFt8x7WriteWhileTx(const char* statusLabel) {
   if (currentIsFt857Family()) return false;
   if (!currentProfile().caps.getRxTx) return false;
   bool tx = false;
-  if (!queryRxTxStatus(tx, 800) || !tx) return false;
+  if (!queryRxTxStatus(tx, kCatReplyTimeoutMs) || !tx) return false;
   printKeypadStatus("{} -> TX", statusLabel);
   speakRxTxState(true);
   return true;

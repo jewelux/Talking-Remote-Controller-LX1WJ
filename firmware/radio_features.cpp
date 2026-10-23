@@ -30,7 +30,7 @@ static bool isTs480() {
 // The ASCII radios with a GT encoding in their profile.
 static bool isAsciiAgc() {
   const ProtocolType pt = currentProtocolType();
-  return (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) &&
+  return isAsciiProtocol(pt) &&
          currentProfile().settings.agc != AgcEncoding::None;
 }
 
@@ -39,9 +39,9 @@ FeatureStatus agcQuery(AgcMode& out) {
   if (!sp.caps.getAgc) return FeatureStatus::Unsupported;
   bool ok = false;
   if (currentProtocolType() == PROTO_CIV) {
-    ok = civQueryAgc(sp, out, 800);
+    ok = civQueryAgc(sp, out, kCatReplyTimeoutMs);
   } else if (isAsciiAgc()) {
-    ok = asciiQueryAgc(sp, out, 800);
+    ok = asciiQueryAgc(sp, out, kCatReplyTimeoutMs);
   } else if (isFt8x7()) {
     Ft8x7SettingState state;
     const FeatureStatus status = ft8x7SettingQuery(Ft8x7Setting::Agc, state);
@@ -101,7 +101,7 @@ FeatureStatus yaesuRxLevelQuery(RxLevel level, uint16_t& valueOut) {
   uint16_t min = 0;
   uint16_t max = 0;
   if (!yaesuRxLevelRange(level, min, max)) return FeatureStatus::Unsupported;
-  return asciiQueryRxLevel(currentProfile(), level, valueOut, 800) ? FeatureStatus::Ok
+  return asciiQueryRxLevel(currentProfile(), level, valueOut, kCatReplyTimeoutMs) ? FeatureStatus::Ok
                                                                      : failure(FeatureStatus::NoReply);
 }
 
@@ -137,8 +137,8 @@ FeatureStatus autoNotchQuery(bool& on) {
   const RadioProfile& sp = currentProfile();
   if (!sp.caps.getAutoNotch) return FeatureStatus::Unsupported;
   bool ok = false;
-  if (currentProtocolType() == PROTO_CIV) ok = civQueryAutoNotch(sp, on, 800);
-  else if (currentProtocolType() == PROTO_YAESU_FTDX_ASCII) ok = asciiQueryAutoNotch(sp, on, 800);
+  if (currentProtocolType() == PROTO_CIV) ok = civQueryAutoNotch(sp, on, kCatReplyTimeoutMs);
+  else if (currentProtocolType() == PROTO_YAESU_FTDX_ASCII) ok = asciiQueryAutoNotch(sp, on, kCatReplyTimeoutMs);
   else return FeatureStatus::Unsupported;
   return ok ? FeatureStatus::Ok : failure(FeatureStatus::NoReply);
 }
@@ -168,7 +168,7 @@ FeatureStatus autoNotchToggle(bool& on) {
 // The ASCII radios with a PA/RA encoding in their profile.
 static bool isAsciiFrontEnd() {
   const ProtocolType pt = currentProtocolType();
-  return (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) &&
+  return isAsciiProtocol(pt) &&
          currentProfile().settings.frontEnd != FrontEndEncoding::None;
 }
 
@@ -191,13 +191,13 @@ FeatureStatus attQuery(AttState& out) {
   if (!hasCatAtt()) return FeatureStatus::Unsupported;
   if (currentProtocolType() == PROTO_CIV) {
     uint8_t db = 0;
-    if (!civQueryAttDb(sp, db, 800)) return failure(FeatureStatus::NoReply);
+    if (!civQueryAttDb(sp, db, kCatReplyTimeoutMs)) return failure(FeatureStatus::NoReply);
     out.on = db != 0;
     out.db = db;
     return FeatureStatus::Ok;
   }
   uint8_t step = 0;
-  if (!asciiQueryAttStep(sp, step, 800)) return failure(FeatureStatus::NoReply);
+  if (!asciiQueryAttStep(sp, step, kCatReplyTimeoutMs)) return failure(FeatureStatus::NoReply);
   out.on = step != 0;
   out.db = attStepDb(step);
   return FeatureStatus::Ok;
@@ -247,8 +247,8 @@ uint8_t preampLevels() {
 FeatureStatus preampQuery(uint8_t& levelOut) {
   if (!preampLevels()) return FeatureStatus::Unsupported;
   const RadioProfile& sp = currentProfile();
-  const bool ok = currentProtocolType() == PROTO_CIV ? civQueryPreampLevel(sp, levelOut, 800)
-                                                     : asciiQueryPreampLevel(sp, levelOut, 800);
+  const bool ok = currentProtocolType() == PROTO_CIV ? civQueryPreampLevel(sp, levelOut, kCatReplyTimeoutMs)
+                                                     : asciiQueryPreampLevel(sp, levelOut, kCatReplyTimeoutMs);
   return ok ? FeatureStatus::Ok : failure(FeatureStatus::NoReply);
 }
 
@@ -281,7 +281,7 @@ static constexpr uint8_t kTs480NrLevels = 2;
 static bool ts480ReadNrLevel(uint8_t& level) {
   const RadioProfile& sp = currentProfile();
   String line;
-  if (!transactAsciiCommand(sp.commands->nrGet, line, sp.commands->nrReplyPrefix, 800)) return false;
+  if (!transactAsciiCommand(sp.commands->nrGet, line, sp.commands->nrReplyPrefix, kCatReplyTimeoutMs)) return false;
   int start = (int)strlen(sp.commands->nrReplyPrefix);
   int semi = line.indexOf(';', start);
   if (semi < 0) semi = line.length();

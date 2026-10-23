@@ -72,7 +72,7 @@ static bool ft8x7OnVfo(bool targetVfoA, bool retry, Op op) {
 // Keep in sync with the protocol dispatch in the functions below.
 bool protocolSupportsTuner() {
   const ProtocolType pt = currentProtocolType();
-  return pt == PROTO_CIV || pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII;
+  return pt == PROTO_CIV || isAsciiProtocol(pt);
 }
 bool protocolSupportsMonitor() { return currentProtocolType() == PROTO_CIV; }
 bool protocolSupportsTransceive() { return currentProtocolType() == PROTO_CIV; }
@@ -84,7 +84,7 @@ bool queryFrequency(uint64_t& hzOut, uint32_t timeoutMs) {
   ProtocolType pt = currentProtocolType();
   const RadioProfile& sp = currentProfile();
   if (pt == PROTO_CIV) return civQueryFrequency(sp, hzOut, timeoutMs);
-  if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiQueryFrequency(sp, hzOut, timeoutMs);
+  if (isAsciiProtocol(pt)) return asciiQueryFrequency(sp, hzOut, timeoutMs);
   if (pt == PROTO_YAESU_FT8X7) return yaesuCatQueryFrequency(sp, hzOut, timeoutMs);
   if (pt == PROTO_YAESU_FT847) return ft847QueryFrequency(sp, hzOut, timeoutMs);
   return false;
@@ -94,7 +94,7 @@ bool setFrequency(uint64_t hz) {
   ProtocolType pt = currentProtocolType();
   const RadioProfile& sp = currentProfile();
   if (pt == PROTO_CIV) return civSetFrequency(sp, hz);
-  if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiSetFrequency(sp, hz);
+  if (isAsciiProtocol(pt)) return asciiSetFrequency(sp, hz);
   if (pt == PROTO_YAESU_FT8X7) return yaesuCatSetFrequency(sp, hz);
   if (pt == PROTO_YAESU_FT847) return ft847SetFrequency(sp, hz);
   return false;
@@ -104,7 +104,7 @@ bool queryMode(uint8_t& modeOut, uint32_t timeoutMs) {
   ProtocolType pt = currentProtocolType();
   const RadioProfile& sp = currentProfile();
   if (pt == PROTO_CIV) return civQueryMode(sp, modeOut, timeoutMs);
-  if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiQueryMode(sp, modeOut, timeoutMs);
+  if (isAsciiProtocol(pt)) return asciiQueryMode(sp, modeOut, timeoutMs);
   if (pt == PROTO_YAESU_FT8X7) return yaesuCatQueryMode(sp, modeOut, timeoutMs);
   if (pt == PROTO_YAESU_FT847) return ft847QueryMode(sp, modeOut, timeoutMs);
   return false;
@@ -114,7 +114,7 @@ bool setMode(uint8_t mode, uint8_t filter) {
   ProtocolType pt = currentProtocolType();
   const RadioProfile& sp = currentProfile();
   if (pt == PROTO_CIV) return civSetMode(sp, mode, filter);
-  if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiSetMode(sp, mode);
+  if (isAsciiProtocol(pt)) return asciiSetMode(sp, mode);
   if (pt == PROTO_YAESU_FT8X7) return yaesuCatSetMode(sp, mode);
   if (pt == PROTO_YAESU_FT847) return ft847SetMode(sp, mode);
   return false;
@@ -127,7 +127,7 @@ bool canSetMode(uint8_t mode) {
   // CI-V sends the mode as it is; the others need the profile's code for it.
   if (pt == PROTO_CIV) return true;
   String code;
-  if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) {
+  if (isAsciiProtocol(pt)) {
     return sp.commands->modeSetFormat[0] && profileModeCodeForInternal(sp, mode, code);
   }
   if (pt == PROTO_YAESU_FT8X7 || pt == PROTO_YAESU_FT847) return profileModeCodeForInternal(sp, mode, code);
@@ -138,7 +138,7 @@ bool querySMeterRaw(int32_t& rawOut, uint32_t timeoutMs) {
   ProtocolType pt = currentProtocolType();
   const RadioProfile& sp = currentProfile();
   if (pt == PROTO_CIV) return civQuerySMeterRaw(sp, rawOut, timeoutMs);
-  if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiQuerySMeterRaw(sp, rawOut, timeoutMs);
+  if (isAsciiProtocol(pt)) return asciiQuerySMeterRaw(sp, rawOut, timeoutMs);
   if (pt == PROTO_YAESU_FT8X7) return yaesuCatQuerySMeterRaw(sp, rawOut, timeoutMs);
   if (pt == PROTO_YAESU_FT847) return ft847QuerySMeterRaw(sp, rawOut, timeoutMs);
   return false;
@@ -160,7 +160,7 @@ bool queryPoMeterRaw(int32_t& rawOut, uint32_t timeoutMs) {
   ProtocolType pt = currentProtocolType();
   const RadioProfile& sp = currentProfile();
   if (pt == PROTO_CIV) return civQueryPoMeterRaw(sp, rawOut, timeoutMs);
-  if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiQueryPoMeterRaw(sp, rawOut, timeoutMs);
+  if (isAsciiProtocol(pt)) return asciiQueryPoMeterRaw(sp, rawOut, timeoutMs);
   if (pt == PROTO_YAESU_FT8X7) return yaesuCatQueryPoMeterRaw(sp, rawOut, timeoutMs);
   return false;
 }
@@ -169,7 +169,7 @@ bool querySWRRaw(int32_t& rawOut, uint32_t timeoutMs) {
   ProtocolType pt = currentProtocolType();
   const RadioProfile& sp = currentProfile();
   if (pt == PROTO_CIV) return civQuerySWRRaw(sp, rawOut, timeoutMs);
-  if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiQuerySWRRaw(sp, rawOut, timeoutMs);
+  if (isAsciiProtocol(pt)) return asciiQuerySWRRaw(sp, rawOut, timeoutMs);
   if (pt == PROTO_YAESU_FT8X7) return yaesuCatQuerySWRRaw(sp, rawOut, timeoutMs);
   return false;
 }
@@ -178,7 +178,7 @@ bool queryNr(bool& onOut, uint32_t timeoutMs) {
   ProtocolType pt = currentProtocolType();
   const RadioProfile& sp = currentProfile();
   if (pt == PROTO_CIV) return civQueryNr(sp, onOut, timeoutMs);
-  if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiQueryNr(sp, onOut, timeoutMs);
+  if (isAsciiProtocol(pt)) return asciiQueryNr(sp, onOut, timeoutMs);
   if (pt == PROTO_YAESU_FT8X7) return yaesuFt8x7QueryFlag(Ft8x7Flag::Dnr, onOut, timeoutMs);
   return false;
 }
@@ -187,7 +187,7 @@ bool setNr(bool on) {
   ProtocolType pt = currentProtocolType();
   const RadioProfile& sp = currentProfile();
   if (pt == PROTO_CIV) return civSetNr(sp, on);
-  if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiSetNr(sp, on);
+  if (isAsciiProtocol(pt)) return asciiSetNr(sp, on);
   if (pt == PROTO_YAESU_FT8X7) return yaesuFt8x7SetFlag(Ft8x7Flag::Dnr, on, YAESU_CAT_REPLY_TIMEOUT_MS) == YaesuEepromWrite::Ok;
   return false;
 }
@@ -210,7 +210,7 @@ bool queryNb(bool& onOut, uint32_t timeoutMs) {
   ProtocolType pt = currentProtocolType();
   const RadioProfile& sp = currentProfile();
   if (pt == PROTO_CIV) return civQueryNb(sp, onOut, timeoutMs);
-  if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiQueryNb(sp, onOut, timeoutMs);
+  if (isAsciiProtocol(pt)) return asciiQueryNb(sp, onOut, timeoutMs);
   if (pt == PROTO_YAESU_FT8X7) return yaesuFt8x7QueryFlag(Ft8x7Flag::Nb, onOut, timeoutMs);
   return false;
 }
@@ -219,7 +219,7 @@ bool setNb(bool on) {
   ProtocolType pt = currentProtocolType();
   const RadioProfile& sp = currentProfile();
   if (pt == PROTO_CIV) return civSetNb(sp, on);
-  if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiSetNb(sp, on);
+  if (isAsciiProtocol(pt)) return asciiSetNb(sp, on);
   if (pt == PROTO_YAESU_FT8X7) return yaesuFt8x7SetFlag(Ft8x7Flag::Nb, on, YAESU_CAT_REPLY_TIMEOUT_MS) == YaesuEepromWrite::Ok;
   return false;
 }
@@ -242,7 +242,7 @@ bool queryNotch(bool& onOut, uint32_t timeoutMs) {
   ProtocolType pt = currentProtocolType();
   const RadioProfile& sp = currentProfile();
   if (pt == PROTO_CIV) return civQueryNotch(sp, onOut, timeoutMs);
-  if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiQueryNotch(sp, onOut, timeoutMs);
+  if (isAsciiProtocol(pt)) return asciiQueryNotch(sp, onOut, timeoutMs);
   if (pt == PROTO_YAESU_FT8X7) return yaesuFt8x7QueryFlag(Ft8x7Flag::Dnf, onOut, timeoutMs);
   return false;
 }
@@ -251,7 +251,7 @@ bool setNotch(bool on) {
   ProtocolType pt = currentProtocolType();
   const RadioProfile& sp = currentProfile();
   if (pt == PROTO_CIV) return civSetNotch(sp, on);
-  if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiSetNotch(sp, on);
+  if (isAsciiProtocol(pt)) return asciiSetNotch(sp, on);
   if (pt == PROTO_YAESU_FT8X7) return yaesuFt8x7SetFlag(Ft8x7Flag::Dnf, on, YAESU_CAT_REPLY_TIMEOUT_MS) == YaesuEepromWrite::Ok;
   return false;
 }
@@ -312,7 +312,7 @@ bool queryDialLock(bool& onOut, uint32_t timeoutMs) {
   ProtocolType pt = currentProtocolType();
   const RadioProfile& sp = currentProfile();
   if (pt == PROTO_CIV) return civQueryDialLock(sp, onOut, timeoutMs);
-  if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiQueryLock(sp, onOut, timeoutMs);
+  if (isAsciiProtocol(pt)) return asciiQueryLock(sp, onOut, timeoutMs);
   if (pt == PROTO_YAESU_FT8X7) {
     // The FT-817/818 and FT-857/897 keep the lock in their EEPROM, so a lock set on the front
     // panel counts too. Other models get the state HamTRC last set.
@@ -332,7 +332,7 @@ bool setDialLock(bool on) {
   ProtocolType pt = currentProtocolType();
   const RadioProfile& sp = currentProfile();
   if (pt == PROTO_CIV) return civSetDialLock(sp, on);
-  if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiSetLock(sp, on);
+  if (isAsciiProtocol(pt)) return asciiSetLock(sp, on);
   if (pt == PROTO_YAESU_FT8X7) {
     yaesuCatSetLockDocumentedRaw(on);
     rememberDialLockState(on);
@@ -408,7 +408,7 @@ bool queryTuner(bool& onOut, uint32_t timeoutMs) {
   ProtocolType pt = currentProtocolType();
   const RadioProfile& sp = currentProfile();
   if (pt == PROTO_CIV) return civQueryTuner(sp, onOut, timeoutMs);
-  if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiQueryTuner(sp, onOut, timeoutMs);
+  if (isAsciiProtocol(pt)) return asciiQueryTuner(sp, onOut, timeoutMs);
   return false;
 }
 
@@ -416,7 +416,7 @@ bool setTuner(bool on) {
   ProtocolType pt = currentProtocolType();
   const RadioProfile& sp = currentProfile();
   if (pt == PROTO_CIV) return civSetTuner(sp, on);
-  if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiSetTuner(sp, on);
+  if (isAsciiProtocol(pt)) return asciiSetTuner(sp, on);
   return false;
 }
 
@@ -424,7 +424,7 @@ bool startTune() {
   ProtocolType pt = currentProtocolType();
   const RadioProfile& sp = currentProfile();
   if (pt == PROTO_CIV) return civStartTune(sp);
-  if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiStartTune(sp);
+  if (isAsciiProtocol(pt)) return asciiStartTune(sp);
   return false;
 }
 
@@ -497,7 +497,7 @@ bool queryVfoFrequency(bool targetVfoA, uint64_t& hzOut, uint32_t timeoutMs) {
   ProtocolType pt = currentProtocolType();
   const RadioProfile& sp = currentProfile();
   if (pt == PROTO_CIV) return civQueryVfoFrequency(sp, targetVfoA, hzOut, timeoutMs);
-  if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiQueryVfoFrequency(sp, targetVfoA, hzOut, timeoutMs);
+  if (isAsciiProtocol(pt)) return asciiQueryVfoFrequency(sp, targetVfoA, hzOut, timeoutMs);
   if (pt == PROTO_YAESU_FT8X7 && sp.caps.getVfo && sp.caps.setVfo && currentIsFt817Family()) {
     return ft8x7OnVfo(targetVfoA, true, [&] { return queryFrequency(hzOut, timeoutMs); });
   }
@@ -508,7 +508,7 @@ bool setVfoFrequency(bool targetVfoA, uint64_t hz) {
   ProtocolType pt = currentProtocolType();
   const RadioProfile& sp = currentProfile();
   if (pt == PROTO_CIV) return civSetVfoFrequency(sp, targetVfoA, hz);
-  if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiSetVfoFrequency(sp, targetVfoA, hz);
+  if (isAsciiProtocol(pt)) return asciiSetVfoFrequency(sp, targetVfoA, hz);
   if (pt == PROTO_YAESU_FT8X7 && sp.caps.setVfo && sp.caps.setFreq && currentIsFt817Family()) {
     return ft8x7OnVfo(targetVfoA, false, [&] { return setFrequency(hz); });
   }
@@ -547,7 +547,7 @@ bool setVfoMode(bool targetVfoA, uint8_t mode, uint8_t filter) {
   if (pt == PROTO_CIV) return civSetVfoMode(sp, targetVfoA, mode, filter);
   if (pt == PROTO_YAESU_FTDX_ASCII && sp.caps.setVfoMode) {
     (void)filter;
-    if (!ensureYaesuFtdxActiveVfoKnown(sp, 800)) return false;
+    if (!ensureYaesuFtdxActiveVfoKnown(sp, kCatReplyTimeoutMs)) return false;
     const bool priorVfoA = live.activeVfoA;
     if (priorVfoA != targetVfoA && !selectYaesuFtdxVfo(sp, targetVfoA)) return false;
     delay(40);
@@ -565,7 +565,7 @@ bool canSetVfoFrequency(bool targetVfoA) {
   ProtocolType pt = currentProtocolType();
   const RadioProfile& sp = currentProfile();
   if (pt == PROTO_CIV) return sp.caps.setVfo;
-  if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) {
+  if (isAsciiProtocol(pt)) {
     return (targetVfoA ? sp.commands->vfoASetFormat : sp.commands->vfoBSetFormat)[0] != '\0';
   }
   if (pt == PROTO_YAESU_FT8X7) return sp.caps.setVfo && sp.caps.setFreq && currentIsFt817Family();
@@ -584,8 +584,8 @@ bool ft8x7CopyActiveVfoToOther() {
   if (currentProtocolType() != PROTO_YAESU_FT8X7) return false;
   uint64_t hz = 0;
   uint8_t mode = 0xFF;
-  if (!queryFrequency(hz, 800)) return false;
-  if (!queryMode(mode, 800)) return false;
+  if (!queryFrequency(hz, kCatReplyTimeoutMs)) return false;
+  if (!queryMode(mode, kCatReplyTimeoutMs)) return false;
   return ft8x7OnOtherVfo(false, [&] {
     if (!setFrequency(hz)) return false;
     delay(YAESU_CAT_VFO_SETTLE_MS);
@@ -607,7 +607,7 @@ bool querySplit(bool& onOut, uint32_t timeoutMs) {
   ProtocolType pt = currentProtocolType();
   const RadioProfile& sp = currentProfile();
   if (pt == PROTO_CIV) return civQuerySplit(sp, onOut, timeoutMs);
-  if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiQuerySplit(sp, onOut, timeoutMs);
+  if (isAsciiProtocol(pt)) return asciiQuerySplit(sp, onOut, timeoutMs);
   if (pt == PROTO_YAESU_FT8X7 && sp.caps.getSplit) return yaesuCatQuerySplit(onOut, timeoutMs);
   return false;
 }
@@ -616,7 +616,7 @@ bool setSplit(bool on) {
   ProtocolType pt = currentProtocolType();
   const RadioProfile& sp = currentProfile();
   if (pt == PROTO_CIV) return civSetSplit(sp, on);
-  if (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) return asciiSetSplit(sp, on);
+  if (isAsciiProtocol(pt)) return asciiSetSplit(sp, on);
   if (pt == PROTO_YAESU_FT8X7) {
     yaesuCatSetSplit(on);
     return true;

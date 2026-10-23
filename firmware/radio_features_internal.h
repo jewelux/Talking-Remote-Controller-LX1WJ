@@ -42,6 +42,12 @@ inline bool isFt8x7() {
   return currentProtocolType() == PROTO_YAESU_FT8X7;
 }
 
+// Kenwood, Elecraft or the Yaesu FTDX family; the profile's caps and settings say which commands
+// the radio has.
+inline bool isAsciiRadio() {
+  return isAsciiProtocol(currentProtocolType());
+}
+
 // FT-8x7: flips flag from the EEPROM byte read for the write. on is the flag as written.
 inline FeatureStatus ft8x7ToggleFlag(Ft8x7Flag flag, bool& on) {
   return eepromWriteStatus(yaesuFt8x7ToggleFlag(flag, on, kFt8x7TimeoutMs));

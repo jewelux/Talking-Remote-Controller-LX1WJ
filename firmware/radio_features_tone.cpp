@@ -31,12 +31,12 @@ static FeatureStatus catToneQuery(YaesuToneMode& out) {
   if (currentProtocolType() == PROTO_CIV) {
     bool tone = false;
     bool tsql = false;
-    if (!civQueryTone(sp, tone, tsql, 800)) return failure(FeatureStatus::NoReply);
+    if (!civQueryTone(sp, tone, tsql, kCatReplyTimeoutMs)) return failure(FeatureStatus::NoReply);
     out = ctcssMode(tone || tsql, tsql);
     return FeatureStatus::Ok;
   }
   uint8_t code = 0;
-  if (!asciiQueryToneCode(sp, code, 800)) return failure(FeatureStatus::NoReply);
+  if (!asciiQueryToneCode(sp, code, kCatReplyTimeoutMs)) return failure(FeatureStatus::NoReply);
   out = ctcssMode(code == 1 || code == 2, code == 1);
   if (code == 3) {
     out.tx = YaesuToneType::Dcs;
@@ -61,8 +61,8 @@ FeatureStatus ctcssToneQuery(uint16_t& tenthsOut) {
   const RadioProfile& sp = currentProfile();
   if (!sp.caps.getCtcss) return FeatureStatus::Unsupported;
   bool ok = false;
-  if (currentProtocolType() == PROTO_CIV) ok = civQueryCtcssTenths(sp, tenthsOut, 800);
-  else if (currentProtocolType() == PROTO_YAESU_FTDX_ASCII) ok = asciiQueryCtcssTenths(sp, tenthsOut, 800);
+  if (currentProtocolType() == PROTO_CIV) ok = civQueryCtcssTenths(sp, tenthsOut, kCatReplyTimeoutMs);
+  else if (currentProtocolType() == PROTO_YAESU_FTDX_ASCII) ok = asciiQueryCtcssTenths(sp, tenthsOut, kCatReplyTimeoutMs);
   else return FeatureStatus::Unsupported;
   return ok ? FeatureStatus::Ok : failure(FeatureStatus::NoReply);
 }
@@ -84,8 +84,8 @@ FeatureStatus rptShiftQuery(RptShift& out) {
   const RadioProfile& sp = currentProfile();
   if (!sp.caps.getRptShift) return FeatureStatus::Unsupported;
   bool ok = false;
-  if (currentProtocolType() == PROTO_CIV) ok = civQueryRptShift(sp, out, 800);
-  else if (currentProtocolType() == PROTO_YAESU_FTDX_ASCII) ok = asciiQueryRptShift(sp, out, 800);
+  if (currentProtocolType() == PROTO_CIV) ok = civQueryRptShift(sp, out, kCatReplyTimeoutMs);
+  else if (currentProtocolType() == PROTO_YAESU_FTDX_ASCII) ok = asciiQueryRptShift(sp, out, kCatReplyTimeoutMs);
   else return FeatureStatus::Unsupported;
   return ok ? FeatureStatus::Ok : failure(FeatureStatus::NoReply);
 }

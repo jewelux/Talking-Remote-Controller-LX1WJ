@@ -9,9 +9,9 @@
 static bool queryDialLockReliable(bool& onOut) {
   // One EEPROM read on the FT-8x7. No stale fallback: a toggle must start from the radio's real
   // state.
-  if (currentProtocolType() == PROTO_YAESU_FT8X7) return queryDialLock(onOut, 800);
+  if (currentProtocolType() == PROTO_YAESU_FT8X7) return queryDialLock(onOut, kCatReplyTimeoutMs);
   for (uint8_t attempt = 0; attempt < 3; ++attempt) {
-    if (queryDialLock(onOut, 800)) {
+    if (queryDialLock(onOut, kCatReplyTimeoutMs)) {
       rememberDialLockState(onOut);
       return true;
     }
@@ -42,7 +42,7 @@ void queryBank1RxTx() {
     return;
   }
   bool tx = false;
-  if (!queryRxTxStatus(tx, 800)) { keypadReportFailure("RXTX?"); return; }
+  if (!queryRxTxStatus(tx, kCatReplyTimeoutMs)) { keypadReportFailure("RXTX?"); return; }
   printKeypadStatus("{}", tx ? "TX" : "RX");
   speakRxTxState(tx);
 }
@@ -50,7 +50,7 @@ void queryBank1RxTx() {
 void queryBank1Frequency() {
   printKeypadAction("FREQ?");
   uint64_t hz = 0;
-  if (!queryFrequency(hz, 800)) {
+  if (!queryFrequency(hz, kCatReplyTimeoutMs)) {
     keypadReportFailure("FREQ?");
     return;
   }
@@ -62,10 +62,10 @@ void queryBank1Frequency() {
 void queryBank1TxFrequency() {
   printKeypadAction("TXFREQ?");
   uint64_t hz = 0;
-  if (!queryTxFrequency(hz, 800)) {
+  if (!queryTxFrequency(hz, kCatReplyTimeoutMs)) {
     // FT-8x7 without a TX frequency reply: say the frequency instead.
     if (currentProtocolType() == PROTO_YAESU_FT8X7) {
-      if (queryFrequency(hz, 800)) {
+      if (queryFrequency(hz, kCatReplyTimeoutMs)) {
         printKeypadStatus("TXFREQ: {} MHz", RadioFrequency::fromHz(hz));
         speakQueriedFrequencyHz(hz);
       } else {
@@ -85,7 +85,7 @@ void queryBank1Ft857TxFrequency() {
   printKeypadAction("TXFREQ?");
   uint64_t hz = 0;
   bool splitOn = false;
-  if (querySplit(splitOn, 800) && !splitOn && queryFrequency(hz, 800)) {
+  if (querySplit(splitOn, kCatReplyTimeoutMs) && !splitOn && queryFrequency(hz, kCatReplyTimeoutMs)) {
     printKeypadStatus("TXFREQ: {} MHz", RadioFrequency::fromHz(hz));
     speakQueriedFrequencyHz(hz);
   } else {
@@ -119,7 +119,7 @@ void roundActiveFrequency(uint32_t stepHz) {
   prepareKeypadRadioWrite();
 
   uint64_t hz = 0;
-  if (!queryFrequency(hz, 800)) {
+  if (!queryFrequency(hz, kCatReplyTimeoutMs)) {
     // Radio not responding: do not round or announce a stale value.
     keypadReportFailure("ROUND");
     return;

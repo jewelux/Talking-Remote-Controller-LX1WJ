@@ -67,24 +67,27 @@ uint16_t asciiVoxDelayMsStepBy(uint16_t ms, int steps, uint16_t minMs, uint16_t 
   return asciiVoxDelayMsRound((uint16_t)(stepped < 0 ? 0 : stepped > 60000 ? 60000 : stepped), minMs, maxMs, stepMs);
 }
 
-static bool threeDigits(const char* s, uint8_t& out) {
+// n digits, then the end or ';'.
+static bool exactDigits(const char* s, size_t n, int& valueOut) {
+  if (!s) return false;
   int value = 0;
-  for (int i = 0; i < 3; ++i) {
+  for (size_t i = 0; i < n; ++i) {
     if (s[i] < '0' || s[i] > '9') return false;
     value = value * 10 + (s[i] - '0');
   }
-  if (value > 100) return false;
-  out = (uint8_t)value;
+  if (s[n] != '\0' && s[n] != ';') return false;
+  valueOut = value;
   return true;
 }
 
 bool kenwoodProcLevelsDecode(const char* digits, uint8_t& inputOut, uint8_t& outputOut) {
-  if (!digits || strlen(digits) < 6 || (digits[6] != '\0' && digits[6] != ';')) return false;
-  uint8_t input = 0;
-  uint8_t output = 0;
-  if (!threeDigits(digits, input) || !threeDigits(digits + 3, output)) return false;
-  inputOut = input;
-  outputOut = output;
+  int both = 0;
+  if (!exactDigits(digits, 6, both)) return false;
+  const int input = both / 1000;
+  const int output = both % 1000;
+  if (input > 100 || output > 100) return false;
+  inputOut = (uint8_t)input;
+  outputOut = (uint8_t)output;
   return true;
 }
 
@@ -135,19 +138,6 @@ const char* asciiAgcReadCommand(AgcEncoding encoding) {
     case AgcEncoding::None: break;
   }
   return nullptr;
-}
-
-// n digits, then the end or ';'.
-static bool exactDigits(const char* s, size_t n, int& valueOut) {
-  if (!s) return false;
-  int value = 0;
-  for (size_t i = 0; i < n; ++i) {
-    if (s[i] < '0' || s[i] > '9') return false;
-    value = value * 10 + (s[i] - '0');
-  }
-  if (s[n] != '\0' && s[n] != ';') return false;
-  valueOut = value;
-  return true;
 }
 
 bool asciiAgcDecode(AgcEncoding encoding, const char* digits, AgcMode& out) {

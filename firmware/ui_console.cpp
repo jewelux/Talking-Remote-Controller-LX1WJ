@@ -45,13 +45,13 @@ static void probeYaesuFt817ModeTxRx(const char* phaseLabel) {
   Serial.println(phaseLabel);
   yaesuCatFlushInput();
   delay(90);
-  printYaesuProbeByte("  MODE: ", yaesuCatQueryModeRawByte(raw, 800), raw);
+  printYaesuProbeByte("  MODE: ", yaesuCatQueryModeRawByte(raw, kCatReplyTimeoutMs), raw);
   yaesuCatFlushInput();
   delay(90);
-  printYaesuProbeByte("  TX:   ", yaesuCatQueryTxStatusRaw(raw, 800), raw);
+  printYaesuProbeByte("  TX:   ", yaesuCatQueryTxStatusRaw(raw, kCatReplyTimeoutMs), raw);
   yaesuCatFlushInput();
   delay(90);
-  printYaesuProbeByte("  RX:   ", yaesuCatQueryRxStatusRaw(raw, 800), raw);
+  printYaesuProbeByte("  RX:   ", yaesuCatQueryRxStatusRaw(raw, kCatReplyTimeoutMs), raw);
 }
 
 static void printLiveToneStateSummary() {
@@ -98,7 +98,7 @@ static void printYaesuFt817FmContext() {
   Serial.println("[FT-817 FM CONTEXT]");
 
   uint64_t hz = 0;
-  if (queryFrequency(hz, 800)) {
+  if (queryFrequency(hz, kCatReplyTimeoutMs)) {
     Serial.print("  FREQ:        ");
     Serial.print(hzToMHzString3(hz));
     Serial.println(" MHz");
@@ -107,7 +107,7 @@ static void printYaesuFt817FmContext() {
   }
 
   uint8_t mode = 0xFF;
-  if (queryMode(mode, 800)) {
+  if (queryMode(mode, kCatReplyTimeoutMs)) {
     Serial.print("  MODE:        ");
     Serial.println(modeToString(mode));
   } else {
@@ -115,7 +115,7 @@ static void printYaesuFt817FmContext() {
   }
 
   uint8_t raw = 0;
-  if (yaesuCatQueryModeRawByte(raw, 800)) {
+  if (yaesuCatQueryModeRawByte(raw, kCatReplyTimeoutMs)) {
     Serial.print("  MODE RAW:    0x");
     if (raw < 0x10) Serial.print('0');
     Serial.println(raw, HEX);
@@ -123,7 +123,7 @@ static void printYaesuFt817FmContext() {
     Serial.println("  MODE RAW:    no reply");
   }
 
-  if (yaesuCatQueryTxStatusRaw(raw, 800)) {
+  if (yaesuCatQueryTxStatusRaw(raw, kCatReplyTimeoutMs)) {
     Serial.print("  TX RAW:      0x");
     if (raw < 0x10) Serial.print('0');
     Serial.println(raw, HEX);
@@ -131,7 +131,7 @@ static void printYaesuFt817FmContext() {
     Serial.println("  TX RAW:      no reply");
   }
 
-  if (yaesuCatQueryRxStatusRaw(raw, 800)) {
+  if (yaesuCatQueryRxStatusRaw(raw, kCatReplyTimeoutMs)) {
     Serial.print("  RX RAW:      0x");
     if (raw < 0x10) Serial.print('0');
     Serial.println(raw, HEX);
@@ -140,7 +140,7 @@ static void printYaesuFt817FmContext() {
   }
 
   bool splitOn = false;
-  if (querySplit(splitOn, 800)) {
+  if (querySplit(splitOn, kCatReplyTimeoutMs)) {
     Serial.print("  SPLIT:       ");
     Serial.println(splitOn ? "on" : "off");
   } else {
@@ -163,7 +163,7 @@ static bool queryCurrentModeValue(uint8_t& modeOut) {
     modeOut = live.mode;
     return true;
   }
-  return queryMode(modeOut, 800);
+  return queryMode(modeOut, kCatReplyTimeoutMs);
 }
 
 static bool queryCurrentFilterSlot(uint8_t& filterOut) {
@@ -171,10 +171,10 @@ static bool queryCurrentFilterSlot(uint8_t& filterOut) {
   uint8_t filter = 0xFF;
   const bool hadKnown = live.activeVfoKnown;
   if (!hadKnown) {
-    if (!queryVfoMode(true, mode, filter, 800)) return false;
+    if (!queryVfoMode(true, mode, filter, kCatReplyTimeoutMs)) return false;
   }
   if (live.activeVfoKnown) {
-    return queryVfoMode(live.activeVfoA, mode, filterOut, 800);
+    return queryVfoMode(live.activeVfoA, mode, filterOut, kCatReplyTimeoutMs);
   }
   filterOut = filter;
   return true;
@@ -1283,8 +1283,8 @@ static bool handleConsoleProfileCommands(const String& line, const String& upper
     uint8_t bandCode = 0;
     BandStackEntry entry;
     if (reg < 1 || reg > 3) { Serial.println("BSTACK? -> invalid register (use 1..3)"); return true; }
-    if (!queryFrequency(hz, 800) || !bandCodeFromFrequency(hz, bandCode)) { Serial.println("BSTACK? -> no current band"); return true; }
-    if (!queryBandStackEntry(bandCode, (uint8_t)reg, entry, 800)) { reportCommandFailure("BSTACK?", "no reply"); return true; }
+    if (!queryFrequency(hz, kCatReplyTimeoutMs) || !bandCodeFromFrequency(hz, bandCode)) { Serial.println("BSTACK? -> no current band"); return true; }
+    if (!queryBandStackEntry(bandCode, (uint8_t)reg, entry, kCatReplyTimeoutMs)) { reportCommandFailure("BSTACK?", "no reply"); return true; }
     Serial.print("BSTACK ");
     Serial.print(bandLabelForCode(entry.bandCode));
     Serial.print("M REG");
@@ -1313,8 +1313,8 @@ static bool handleConsoleProfileCommands(const String& line, const String& upper
     uint8_t bandCode = 0;
     BandStackEntry entry;
     if (reg < 1 || reg > 3) { Serial.println("BSTACK -> invalid register (use 1..3)"); return true; }
-    if (!queryFrequency(hz, 800) || !bandCodeFromFrequency(hz, bandCode)) { Serial.println("BSTACK -> no current band"); return true; }
-    if (!queryBandStackEntry(bandCode, (uint8_t)reg, entry, 800)) { reportCommandFailure("BSTACK", "no reply"); return true; }
+    if (!queryFrequency(hz, kCatReplyTimeoutMs) || !bandCodeFromFrequency(hz, bandCode)) { Serial.println("BSTACK -> no current band"); return true; }
+    if (!queryBandStackEntry(bandCode, (uint8_t)reg, entry, kCatReplyTimeoutMs)) { reportCommandFailure("BSTACK", "no reply"); return true; }
     if (!applyFrequencyAndTrack(entry.freqHz, true) || !applyModeAndTrack(entry.mode, entry.filter)) { reportCommandFailure("BSTACK", "failed"); return true; }
     Serial.print("BSTACK ");
     Serial.print(bandLabelForCode(entry.bandCode));
@@ -1499,7 +1499,7 @@ static void reportFt8x7MeterInReceive(const char* label, const char* meterToken)
 // ALC? and MOD?: a 0..15 meter of 0xBD, printed only.
 static void reportFt8x7BdMeter(const char* command, const char* label, uint8_t YaesuTxMeters::*meter) {
   YaesuTxMeters meters;
-  if (!yaesuCatQueryTxMeters(meters, true, 800)) {
+  if (!yaesuCatQueryTxMeters(meters, true, kCatReplyTimeoutMs)) {
     reportCommandFailure(command, "no reply");
     return;
   }
@@ -1523,7 +1523,7 @@ static bool handleConsoleFt8x7Meters(const String& upper) {
   if (upper == "PO?") {
     if (!currentProfile().caps.getPower) { reportNotAvailable("PO? -> not enabled in this profile"); return true; }
     YaesuTxMeters meters;
-    if (!yaesuCatQueryTxMeters(meters, false, 800)) { reportCommandFailure("PO?", "no reply"); return true; }
+    if (!yaesuCatQueryTxMeters(meters, false, kCatReplyTimeoutMs)) { reportCommandFailure("PO?", "no reply"); return true; }
     if (!meters.transmitting) { reportFt8x7MeterInReceive("PO", "power"); return true; }
     rememberLivePower(meters.po, millis());
     Serial.print("PO: ");
@@ -1542,7 +1542,7 @@ static bool handleConsoleFt8x7Meters(const String& upper) {
   if (upper == "SWR?") {
     if (!currentProfile().caps.getSwr) { reportNotAvailable("SWR? -> not enabled in this profile"); return true; }
     YaesuTxMeters meters;
-    if (!yaesuCatQueryTxMeters(meters, true, 800)) { reportCommandFailure("SWR?", "no reply"); return true; }
+    if (!yaesuCatQueryTxMeters(meters, true, kCatReplyTimeoutMs)) { reportCommandFailure("SWR?", "no reply"); return true; }
     if (!meters.transmitting) { reportFt8x7MeterInReceive("SWR", "swr"); return true; }
     rememberLiveSwr(meters.swr, millis());
     const float swr = yaesuSwrFromMeter(meters.swr);
@@ -2220,7 +2220,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     const bool isFt857Family = currentIsFt857Family();
 
     uint64_t hz = 0;
-    if (queryFrequency(hz, 800)) {
+    if (queryFrequency(hz, kCatReplyTimeoutMs)) {
       Serial.print("  FREQ: ");
       Serial.print(hzToMHzString3(hz));
       Serial.println(" MHz");
@@ -2229,7 +2229,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     }
 
     uint8_t mode = 0xFF;
-    if (queryMode(mode, 800)) {
+    if (queryMode(mode, kCatReplyTimeoutMs)) {
       Serial.print("  MODE: ");
       Serial.println(modeToString(mode));
     } else {
@@ -2237,32 +2237,32 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     }
 
     int32_t raw = 0;
-    if (yaesuCatQuerySMeterRaw(currentProfile(), raw, 800)) {
+    if (yaesuCatQuerySMeterRaw(currentProfile(), raw, kCatReplyTimeoutMs)) {
       Serial.print("  SM: ");
       Serial.println(raw);
     } else {
       Serial.println("  SM: no reply");
     }
-    if (yaesuCatQueryPoMeterRaw(currentProfile(), raw, 800)) {
+    if (yaesuCatQueryPoMeterRaw(currentProfile(), raw, kCatReplyTimeoutMs)) {
       Serial.print("  PO: ");
       Serial.println(raw);
     } else {
       Serial.println("  PO: no reply");
     }
-    if (yaesuCatQuerySWRRaw(currentProfile(), raw, 800)) {
+    if (yaesuCatQuerySWRRaw(currentProfile(), raw, kCatReplyTimeoutMs)) {
       Serial.print("  SWR: ");
       Serial.println(raw);
     } else {
       Serial.println("  SWR: no reply");
     }
-    if (yaesuCatQueryAlcRaw(raw, 800)) {
+    if (yaesuCatQueryAlcRaw(raw, kCatReplyTimeoutMs)) {
       Serial.print("  ALC: ");
       Serial.println(raw);
     } else {
       Serial.println("  ALC: no reply");
     }
     if (isFt817) {
-      if (yaesuCatQueryVolumeRaw(raw, 800)) {
+      if (yaesuCatQueryVolumeRaw(raw, kCatReplyTimeoutMs)) {
         Serial.print("  VOL: ");
         Serial.println(raw);
       } else {
@@ -2274,7 +2274,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
       Serial.println("  VOL: model unknown");
     }
     if (isFt817) {
-      if (yaesuCatQuerySquelchRaw(raw, 800)) {
+      if (yaesuCatQuerySquelchRaw(raw, kCatReplyTimeoutMs)) {
         Serial.print("  SQL: ");
         Serial.println(raw);
       } else {
@@ -2288,7 +2288,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
 
     if (isFt817 || isFt857Family) {
       uint8_t status = 0;
-      if (yaesuCatQueryTxStatusRaw(status, 800)) {
+      if (yaesuCatQueryTxStatusRaw(status, kCatReplyTimeoutMs)) {
         Serial.print("  STATUS: 0x");
         if (status < 0x10) Serial.print('0');
         Serial.println(status, HEX);
@@ -2349,7 +2349,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     }
     // The FT-817/818 keeps the tone mode per band: remember the band it is set on.
     uint64_t hz = 0;
-    if (currentIsFt817Family() && !queryFrequency(hz, 800)) hz = 0;  // not known
+    if (currentIsFt817Family() && !queryFrequency(hz, kCatReplyTimeoutMs)) hz = 0;  // not known
     yaesuCatSetToneDcsModeRaw(modeByte, hz);
     Serial.print("YTMODE 0x");
     if (modeByte < 0x10) Serial.print('0');
@@ -2538,7 +2538,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
 
   if (upper == "YMODEBYTE?") {
     uint8_t modeByte = 0;
-    if (!yaesuCatQueryModeRawByte(modeByte, 800)) {
+    if (!yaesuCatQueryModeRawByte(modeByte, kCatReplyTimeoutMs)) {
       reportCommandFailure("YMODEBYTE?", "no reply");
       return true;
     }
@@ -2624,7 +2624,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
 
   if (upper == "YRXSTATUS?") {
     uint8_t raw = 0;
-    if (!yaesuCatQueryRxStatusRaw(raw, 800)) { reportCommandFailure("YRXSTATUS?", "no reply"); return true; }
+    if (!yaesuCatQueryRxStatusRaw(raw, kCatReplyTimeoutMs)) { reportCommandFailure("YRXSTATUS?", "no reply"); return true; }
     Serial.print("YRXSTATUS: 0x");
     if (raw < 0x10) Serial.print('0');
     Serial.println(raw, HEX);
@@ -2632,7 +2632,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
   }
   if (upper == "YTXSTATUS?" || upper == "YSTATUS?") {
     uint8_t raw = 0;
-    if (!yaesuCatQueryTxStatusRaw(raw, 800)) {
+    if (!yaesuCatQueryTxStatusRaw(raw, kCatReplyTimeoutMs)) {
       reportCommandFailure((upper == "YSTATUS?") ? "YSTATUS?" : "YTXSTATUS?", "no reply");
       return true;
     }
@@ -2643,7 +2643,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
   }
   if (upper == "RXTX?" && currentIsFt857Family()) {
     bool tx = false;
-    if (!queryRxTxStatus(tx, 800)) { reportCommandFailure("RXTX?", "no reply"); return true; }
+    if (!queryRxTxStatus(tx, kCatReplyTimeoutMs)) { reportCommandFailure("RXTX?", "no reply"); return true; }
     Serial.println(tx ? "TX" : "RX");
     return true;
   }
@@ -2653,7 +2653,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
       return true;
     }
     int32_t raw = 0;
-    if (!yaesuCatQueryVolumeRaw(raw, 800)) { reportCommandFailure("VOL?", "no reply"); return true; }
+    if (!yaesuCatQueryVolumeRaw(raw, kCatReplyTimeoutMs)) { reportCommandFailure("VOL?", "no reply"); return true; }
     Serial.print("VOL: ");
     Serial.println(raw);
     return true;
@@ -2664,7 +2664,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
       return true;
     }
     int32_t raw = 0;
-    if (!yaesuCatQuerySquelchRaw(raw, 800)) { reportCommandFailure("SQL?", "no reply"); return true; }
+    if (!yaesuCatQuerySquelchRaw(raw, kCatReplyTimeoutMs)) { reportCommandFailure("SQL?", "no reply"); return true; }
     Serial.print("SQL: ");
     Serial.println(raw);
     return true;
@@ -2793,7 +2793,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
       Serial.println("YCAT? -> use 10 hex digits, e.g. 0000000003");
       return true;
     }
-    if (!yaesuCatTransact5(cmd, rsp, 800)) {
+    if (!yaesuCatTransact5(cmd, rsp, kCatReplyTimeoutMs)) {
       reportCommandFailure("YCAT?", "no reply");
       return true;
     }
@@ -2810,7 +2810,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
     }
     const uint8_t cmd[5] = {0x00, 0x00, 0x00, 0x00, opcode};
     uint8_t rsp = 0;
-    if (!yaesuCatTransact1(cmd, rsp, 800)) {
+    if (!yaesuCatTransact1(cmd, rsp, kCatReplyTimeoutMs)) {
       reportCommandFailure("YCAT1?", "no reply");
       return true;
     }
@@ -2998,7 +2998,7 @@ static bool handleConsoleAdjustCommands(const String& line, const String& upper)
       stepHz = (uint32_t)step;
     }
     uint64_t hz = 0;
-    if (!queryFrequency(hz, 800)) { reportCommandFailure("ROUND", "no reply"); return true; }
+    if (!queryFrequency(hz, kCatReplyTimeoutMs)) { reportCommandFailure("ROUND", "no reply"); return true; }
     const uint64_t rounded = RadioFrequency::fromHz(hz).roundedTo(stepHz).hz();
     if (rounded != hz && !applyFrequencyAndTrack(rounded, true)) { reportCommandFailure("ROUND", "failed"); return true; }
     Serial.print("ROUND: ");
@@ -3013,13 +3013,13 @@ static bool handleConsoleAdjustCommands(const String& line, const String& upper)
   if (upper.startsWith("NRLEVEL STEP")) {
     if (!parseStepArg(line, upper, "NRLEVEL STEP ", step)) { Serial.println("NRLEVEL STEP -> use a signed percent, e.g. NRLEVEL STEP 10"); return true; }
     uint16_t raw = 0;
-    if (!queryNrLevel(raw, 800)) { reportCommandFailure("NRLEVEL STEP", "no reply"); return true; }
+    if (!queryNrLevel(raw, kCatReplyTimeoutMs)) { reportCommandFailure("NRLEVEL STEP", "no reply"); return true; }
     const int percent = (int)clampInt32((int32_t)levelRawToPercent(raw) + step, 0, 100);
     bool wrote = setNrLevel(levelPercentToRaw(percent));
     if (!wrote) {
       // Some radios take the level only while NR is on.
       bool nrOn = false;
-      if (queryNr(nrOn, 800) && !nrOn && setNr(true)) wrote = setNrLevel(levelPercentToRaw(percent));
+      if (queryNr(nrOn, kCatReplyTimeoutMs) && !nrOn && setNr(true)) wrote = setNrLevel(levelPercentToRaw(percent));
     }
     if (!wrote) { reportCommandFailure("NRLEVEL STEP", "failed"); return true; }
     Serial.print("NRLEVEL ");
@@ -3031,7 +3031,7 @@ static bool handleConsoleAdjustCommands(const String& line, const String& upper)
   if (upper.startsWith("NBLEVEL STEP")) {
     if (!parseStepArg(line, upper, "NBLEVEL STEP ", step)) { Serial.println("NBLEVEL STEP -> use a signed percent, e.g. NBLEVEL STEP 10"); return true; }
     uint16_t raw = 0;
-    if (!queryNbLevel(raw, 800)) { reportCommandFailure("NBLEVEL STEP", "no reply"); return true; }
+    if (!queryNbLevel(raw, kCatReplyTimeoutMs)) { reportCommandFailure("NBLEVEL STEP", "no reply"); return true; }
     const int percent = (int)clampInt32((int32_t)levelRawToPercent(raw) + step, 0, 100);
     if (!setNbLevel(levelPercentToRaw(percent))) { reportCommandFailure("NBLEVEL STEP", "failed"); return true; }
     Serial.print("NBLEVEL ");
@@ -3043,7 +3043,7 @@ static bool handleConsoleAdjustCommands(const String& line, const String& upper)
   if (upper.startsWith("MONLEVEL STEP")) {
     if (!parseStepArg(line, upper, "MONLEVEL STEP ", step)) { Serial.println("MONLEVEL STEP -> use a signed percent, e.g. MONLEVEL STEP 10"); return true; }
     uint16_t raw = 0;
-    if (!queryMonitorLevel(raw, 800)) { reportCommandFailure("MONLEVEL STEP", "no reply"); return true; }
+    if (!queryMonitorLevel(raw, kCatReplyTimeoutMs)) { reportCommandFailure("MONLEVEL STEP", "no reply"); return true; }
     const int percent = (int)clampInt32((int32_t)levelRawToPercent(raw) + step, 0, 100);
     if (!setMonitorLevel(levelPercentToRaw(percent))) { reportCommandFailure("MONLEVEL STEP", "failed"); return true; }
     Serial.print("MONLEVEL ");
@@ -3061,7 +3061,7 @@ static bool handleConsoleAdjustCommands(const String& line, const String& upper)
       return true;
     }
     uint16_t raw = 0;
-    if (!(pbt1Step ? queryPbtInner(raw, 800) : queryPbtOuter(raw, 800))) { reportCommandFailure(label, "no reply"); return true; }
+    if (!(pbt1Step ? queryPbtInner(raw, kCatReplyTimeoutMs) : queryPbtOuter(raw, kCatReplyTimeoutMs))) { reportCommandFailure(label, "no reply"); return true; }
     const int value = (int)clampInt32((int32_t)pbtRawToOffset(raw) + step, -128, 127);
     if (!(pbt1Step ? setPbtInner(pbtOffsetToRaw(value)) : setPbtOuter(pbtOffsetToRaw(value)))) { reportCommandFailure(label, "failed"); return true; }
     Serial.print(label);
@@ -3074,7 +3074,7 @@ static bool handleConsoleAdjustCommands(const String& line, const String& upper)
   if (upper.startsWith("RIT STEP")) {
     if (!parseStepArg(line, upper, "RIT STEP ", step)) { Serial.println("RIT STEP -> use signed Hz, e.g. RIT STEP -100"); return true; }
     int32_t offset = 0;
-    if (!queryRitOffsetHz(offset, 800)) { reportCommandFailure("RIT STEP", "no reply"); return true; }
+    if (!queryRitOffsetHz(offset, kCatReplyTimeoutMs)) { reportCommandFailure("RIT STEP", "no reply"); return true; }
     const int32_t hz = clampInt32(offset + step, -9999, 9999);
     if (!setRitOffsetHz(hz)) { reportCommandFailure("RIT STEP", "failed"); return true; }
     Serial.print("RIT ");
@@ -3085,14 +3085,14 @@ static bool handleConsoleAdjustCommands(const String& line, const String& upper)
   }
   if (upper == "RIT TOGGLE") {
     bool on = false;
-    if (!toggleRitEnabled(on, 800)) { reportCommandFailure("RIT TOGGLE", "failed"); return true; }
+    if (!toggleRitEnabled(on, kCatReplyTimeoutMs)) { reportCommandFailure("RIT TOGGLE", "failed"); return true; }
     Serial.println(on ? "RIT ON" : "RIT OFF");
     speakTokenState("rit", on);
     return true;
   }
   if (upper == "MONITOR TOGGLE") {
     bool on = false;
-    if (!queryMonitorEnabled(on, 800)) { reportCommandFailure("MONITOR TOGGLE", "no reply"); return true; }
+    if (!queryMonitorEnabled(on, kCatReplyTimeoutMs)) { reportCommandFailure("MONITOR TOGGLE", "no reply"); return true; }
     if (!setMonitorEnabled(!on)) { reportCommandFailure("MONITOR TOGGLE", "failed"); return true; }
     Serial.println(!on ? "MONITOR ON" : "MONITOR OFF");
     if (g_speechEnabled) speakTokenState("monitor", !on);
@@ -3100,7 +3100,7 @@ static bool handleConsoleAdjustCommands(const String& line, const String& upper)
   }
   if (upper == "TRANSCEIVE TOGGLE") {
     bool on = false;
-    if (!queryTransceiveEnabled(on, 800)) { reportCommandFailure("TRANSCEIVE TOGGLE", "no reply"); return true; }
+    if (!queryTransceiveEnabled(on, kCatReplyTimeoutMs)) { reportCommandFailure("TRANSCEIVE TOGGLE", "no reply"); return true; }
     if (!setTransceiveEnabled(!on)) { reportCommandFailure("TRANSCEIVE TOGGLE", "failed"); return true; }
     Serial.println(!on ? "TRANSCEIVE ON" : "TRANSCEIVE OFF");
     if (g_speechEnabled) speakTokenState("transceiver", !on);
@@ -3108,7 +3108,7 @@ static bool handleConsoleAdjustCommands(const String& line, const String& upper)
   }
   if (upper == "FILSHAPE TOGGLE") {
     bool soft = false;
-    if (!queryFilterShape(soft, 800)) { reportCommandFailure("FILSHAPE TOGGLE", "no reply"); return true; }
+    if (!queryFilterShape(soft, kCatReplyTimeoutMs)) { reportCommandFailure("FILSHAPE TOGGLE", "no reply"); return true; }
     if (!setFilterShape(!soft)) { reportCommandFailure("FILSHAPE TOGGLE", "failed"); return true; }
     Serial.println(!soft ? "FILSHAPE SOFT" : "FILSHAPE SHARP");
     if (g_speechEnabled) {
@@ -3152,8 +3152,7 @@ static bool isRawAsciiConsoleCommand(const String& upper) {
 }
 
 static bool currentProtocolIsAscii() {
-  const ProtocolType pt = currentProtocolType();
-  return pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII;
+  return isAsciiProtocol(currentProtocolType());
 }
 
 // VFO B as FB with the profile's digit count (11 on Kenwood/Elecraft, 9 on Yaesu).
@@ -3226,7 +3225,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   if (upper == "FB?") {
     String rsp;
     uint64_t hz = 0;
-    if (!transactAsciiCommand("FB;", rsp, "FB", 800) || !parseAsciiUnsignedResponse(rsp, "FB", hz)) {
+    if (!transactAsciiCommand("FB;", rsp, "FB", kCatReplyTimeoutMs) || !parseAsciiUnsignedResponse(rsp, "FB", hz)) {
       reportCommandFailure("FB?", "no reply");
       return true;
     }
@@ -3252,7 +3251,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   }
   if (upper == "IF?") {
     String rsp;
-    if (!asciiQueryStatusLine(sp, rsp, 800)) { reportCommandFailure("IF?", "no reply"); return true; }
+    if (!asciiQueryStatusLine(sp, rsp, kCatReplyTimeoutMs)) { reportCommandFailure("IF?", "no reply"); return true; }
     Serial.print("IF: ");
     Serial.println(rsp);
     speakConsoleTokenOrGap("if");
@@ -3260,7 +3259,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   }
   if (upper == "ID?") {
     String rsp;
-    if (!asciiQueryIdLine(sp, rsp, 800)) { reportCommandFailure("ID?", "no reply"); return true; }
+    if (!asciiQueryIdLine(sp, rsp, kCatReplyTimeoutMs)) { reportCommandFailure("ID?", "no reply"); return true; }
     Serial.print("ID: ");
     printAsciiReplyPayload(rsp, sp.commands->idReplyPrefix);
     speakConsoleTokenOrGap("id");
@@ -3268,14 +3267,14 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   }
   if (upper == "OM?") {
     String rsp;
-    if (!asciiQueryOmLine(sp, rsp, 800)) { reportCommandFailure("OM?", "no reply"); return true; }
+    if (!asciiQueryOmLine(sp, rsp, kCatReplyTimeoutMs)) { reportCommandFailure("OM?", "no reply"); return true; }
     Serial.print("OM: ");
     printAsciiReplyPayload(rsp, sp.commands->omReplyPrefix);
     return true;
   }
   if (upper == "FR?") {
     String rsp;
-    if (!transactAsciiCommand("FR;", rsp, "FR", 800)) { reportCommandFailure("FR?", "no reply"); return true; }
+    if (!transactAsciiCommand("FR;", rsp, "FR", kCatReplyTimeoutMs)) { reportCommandFailure("FR?", "no reply"); return true; }
     Serial.print("FR: ");
     printAsciiReplyPayload(rsp, "FR");
     return true;
@@ -3287,7 +3286,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   }
   if (upper == "FT?") {
     String rsp;
-    if (!transactAsciiCommand("FT;", rsp, "FT", 800)) { reportCommandFailure("FT?", "no reply"); return true; }
+    if (!transactAsciiCommand("FT;", rsp, "FT", kCatReplyTimeoutMs)) { reportCommandFailure("FT?", "no reply"); return true; }
     Serial.print("FT: ");
     printAsciiReplyPayload(rsp, "FT");
     return true;
@@ -3314,7 +3313,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   }
   if (upper == "AK?") {
     String rsp;
-    if (!transactAsciiCommand("AK;", rsp, "AK", 800)) { reportCommandFailure("AK?", "no reply"); return true; }
+    if (!transactAsciiCommand("AK;", rsp, "AK", kCatReplyTimeoutMs)) { reportCommandFailure("AK?", "no reply"); return true; }
     Serial.print("AK: ");
     printAsciiReplyPayload(rsp, "AK");
     return true;
@@ -3394,7 +3393,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   }
   if (upper == "TUNER?") {
     bool on = false;
-    if (!queryTuner(on, 800)) { reportCommandFailure("TUNER?", "no reply"); return true; }
+    if (!queryTuner(on, kCatReplyTimeoutMs)) { reportCommandFailure("TUNER?", "no reply"); return true; }
     Serial.println(on ? "TUNER ON" : "TUNER OFF");
     speakTokenState("tuner", on);
     return true;
@@ -3413,7 +3412,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   }
   if (upper == "TUNER TOGGLE") {
     bool on = false;
-    if (!queryTuner(on, 800)) { reportCommandFailure("TUNER TOGGLE", "no reply"); return true; }
+    if (!queryTuner(on, kCatReplyTimeoutMs)) { reportCommandFailure("TUNER TOGGLE", "no reply"); return true; }
     if (!setTuner(!on)) { reportCommandFailure("TUNER TOGGLE", "failed"); return true; }
     Serial.println(!on ? "TUNER ON" : "TUNER OFF");
     speakTokenState("tuner", !on);
@@ -3427,14 +3426,14 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   }
   if (upper == "RXTX?") {
     bool tx = false;
-    if (!queryRxTxStatus(tx, 800)) { reportCommandFailure("RXTX?", "no reply"); return true; }
+    if (!queryRxTxStatus(tx, kCatReplyTimeoutMs)) { reportCommandFailure("RXTX?", "no reply"); return true; }
     Serial.println(tx ? "TX" : "RX");
     if (g_speechEnabled) speakToken(tx ? "tx" : "rx");
     return true;
   }
   if (upper == "TXFREQ?") {
     uint64_t hz = 0;
-    if (!queryTxFrequency(hz, 800)) { reportCommandFailure("TXFREQ?", "no reply"); return true; }
+    if (!queryTxFrequency(hz, kCatReplyTimeoutMs)) { reportCommandFailure("TXFREQ?", "no reply"); return true; }
     Serial.print("TXFREQ: ");
     Serial.print(hzToMHzString3(hz));
     Serial.println(" MHz");
@@ -3455,7 +3454,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   }
   if (upper == "MAIN?") {
     uint64_t hz = 0;
-    if (!queryVfoFrequency(true, hz, 800)) { reportCommandFailure("MAIN?", "no reply"); return true; }
+    if (!queryVfoFrequency(true, hz, kCatReplyTimeoutMs)) { reportCommandFailure("MAIN?", "no reply"); return true; }
     Serial.print("MAIN: ");
     Serial.print(hzToMHzString3(hz));
     Serial.println(" MHz");
@@ -3464,7 +3463,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   }
   if (upper == "SUB?") {
     uint64_t hz = 0;
-    if (!queryVfoFrequency(false, hz, 800)) { reportCommandFailure("SUB?", "no reply"); return true; }
+    if (!queryVfoFrequency(false, hz, kCatReplyTimeoutMs)) { reportCommandFailure("SUB?", "no reply"); return true; }
     Serial.print("SUB: ");
     Serial.print(hzToMHzString3(hz));
     Serial.println(" MHz");
@@ -3474,7 +3473,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   if (upper.startsWith("MAIN MODE?")) {
     uint8_t mode = 0xFF;
     uint8_t filter = 0xFF;
-    if (!queryVfoMode(true, mode, filter, 800)) { reportCommandFailure("MAIN MODE?", "no reply"); return true; }
+    if (!queryVfoMode(true, mode, filter, kCatReplyTimeoutMs)) { reportCommandFailure("MAIN MODE?", "no reply"); return true; }
     Serial.print("MAIN MODE: ");
     Serial.println(modeToString(mode));
     speakModeReply(mode);
@@ -3483,7 +3482,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   if (upper.startsWith("SUB MODE?")) {
     uint8_t mode = 0xFF;
     uint8_t filter = 0xFF;
-    if (!queryVfoMode(false, mode, filter, 800)) { reportCommandFailure("SUB MODE?", "no reply"); return true; }
+    if (!queryVfoMode(false, mode, filter, kCatReplyTimeoutMs)) { reportCommandFailure("SUB MODE?", "no reply"); return true; }
     Serial.print("SUB MODE: ");
     Serial.println(modeToString(mode));
     speakModeReply(mode);
@@ -3513,7 +3512,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   }
   if (upper == "VFOA?") {
     uint64_t hz = 0;
-    if (!queryVfoFrequency(true, hz, 800)) { reportCommandFailure("VFOA?", "no reply"); return true; }
+    if (!queryVfoFrequency(true, hz, kCatReplyTimeoutMs)) { reportCommandFailure("VFOA?", "no reply"); return true; }
     Serial.print("VFOA: ");
     Serial.print(hzToMHzString3(hz));
     Serial.println(" MHz");
@@ -3522,7 +3521,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   }
   if (upper == "VFOB?") {
     uint64_t hz = 0;
-    if (!queryVfoFrequency(false, hz, 800)) { reportCommandFailure("VFOB?", "no reply"); return true; }
+    if (!queryVfoFrequency(false, hz, kCatReplyTimeoutMs)) { reportCommandFailure("VFOB?", "no reply"); return true; }
     Serial.print("VFOB: ");
     Serial.print(hzToMHzString3(hz));
     Serial.println(" MHz");
@@ -3532,7 +3531,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   if (upper.startsWith("VFOA MODE?")) {
     uint8_t mode = 0xFF;
     uint8_t filter = 0xFF;
-    if (!queryVfoMode(true, mode, filter, 800)) { reportCommandFailure("VFOA MODE?", "no reply"); return true; }
+    if (!queryVfoMode(true, mode, filter, kCatReplyTimeoutMs)) { reportCommandFailure("VFOA MODE?", "no reply"); return true; }
     Serial.print("VFOA MODE: ");
     Serial.println(modeToString(mode));
     speakModeReply(mode);
@@ -3541,7 +3540,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   if (upper.startsWith("VFOB MODE?")) {
     uint8_t mode = 0xFF;
     uint8_t filter = 0xFF;
-    if (!queryVfoMode(false, mode, filter, 800)) { reportCommandFailure("VFOB MODE?", "no reply"); return true; }
+    if (!queryVfoMode(false, mode, filter, kCatReplyTimeoutMs)) { reportCommandFailure("VFOB MODE?", "no reply"); return true; }
     Serial.print("VFOB MODE: ");
     Serial.println(modeToString(mode));
     speakModeReply(mode);
@@ -3583,7 +3582,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   }
   if (upper == "SPLIT?") {
     bool on = false;
-    if (!querySplit(on, 800)) { reportCommandFailure("SPLIT?", "no reply"); return true; }
+    if (!querySplit(on, kCatReplyTimeoutMs)) { reportCommandFailure("SPLIT?", "no reply"); return true; }
     Serial.println(on ? "SPLIT ON" : "SPLIT OFF");
     speakTokenState("split", on);
     return true;
@@ -3603,8 +3602,8 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   if (upper == "RIT?") {
     bool on = false;
     int32_t offset = 0;
-    if (!queryRitEnabled(on, 800)) { reportCommandFailure("RIT?", "no reply"); return true; }
-    if (!queryRitOffsetHz(offset, 800)) {
+    if (!queryRitEnabled(on, kCatReplyTimeoutMs)) { reportCommandFailure("RIT?", "no reply"); return true; }
+    if (!queryRitOffsetHz(offset, kCatReplyTimeoutMs)) {
       Serial.println(on ? "RIT ON" : "RIT OFF");
       speakTokenState("rit", on);
       return true;
@@ -3640,7 +3639,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   if (handleConsoleFeatureCommand(upper)) return true;
   if (upper == "PBT1?") {
     uint16_t raw = 0;
-    if (!queryPbtInner(raw, 800)) { reportCommandFailure("PBT1?", "no reply"); return true; }
+    if (!queryPbtInner(raw, kCatReplyTimeoutMs)) { reportCommandFailure("PBT1?", "no reply"); return true; }
     Serial.print("PBT1 ");
     Serial.print(pbtRawToOffset(raw));
     Serial.println(" step");
@@ -3649,7 +3648,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   }
   if (upper == "PBT2?") {
     uint16_t raw = 0;
-    if (!queryPbtOuter(raw, 800)) { reportCommandFailure("PBT2?", "no reply"); return true; }
+    if (!queryPbtOuter(raw, kCatReplyTimeoutMs)) { reportCommandFailure("PBT2?", "no reply"); return true; }
     Serial.print("PBT2 ");
     Serial.print(pbtRawToOffset(raw));
     Serial.println(" step");
@@ -3658,7 +3657,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   }
   if (upper == "LOCK?") {
     bool on = false;
-    if (!queryDialLock(on, 800)) { reportCommandFailure("LOCK?", "no reply"); return true; }
+    if (!queryDialLock(on, kCatReplyTimeoutMs)) { reportCommandFailure("LOCK?", "no reply"); return true; }
     Serial.println(on ? "LOCK ON" : "LOCK OFF");
     speakTokenState("lock", on);
     return true;
@@ -3677,7 +3676,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   }
   if (upper == "LOCK TOGGLE") {
     bool on = false;
-    if (!queryDialLock(on, 800)) { reportCommandFailure("LOCK TOGGLE", "no reply"); return true; }
+    if (!queryDialLock(on, kCatReplyTimeoutMs)) { reportCommandFailure("LOCK TOGGLE", "no reply"); return true; }
     if (!setDialLock(!on)) { reportCommandFailure("LOCK TOGGLE", "failed"); return true; }
     Serial.println(!on ? "LOCK ON" : "LOCK OFF");
     speakTokenState("lock", !on);
@@ -3685,7 +3684,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   }
   if (upper == "FILSHAPE?") {
     bool soft = false;
-    if (!queryFilterShape(soft, 800)) { reportCommandFailure("FILSHAPE?", "no reply"); return true; }
+    if (!queryFilterShape(soft, kCatReplyTimeoutMs)) { reportCommandFailure("FILSHAPE?", "no reply"); return true; }
     Serial.println(soft ? "FILSHAPE SOFT" : "FILSHAPE SHARP");
     if (g_speechEnabled) {
       speakLabel("filtershape");
@@ -3724,7 +3723,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   }
   if (upper == "MONITOR?") {
     bool on = false;
-    if (!queryMonitorEnabled(on, 800)) { reportCommandFailure("MONITOR?", "no reply"); return true; }
+    if (!queryMonitorEnabled(on, kCatReplyTimeoutMs)) { reportCommandFailure("MONITOR?", "no reply"); return true; }
     Serial.println(on ? "MONITOR ON" : "MONITOR OFF");
     if (g_speechEnabled) speakTokenState("monitor", on);
     return true;
@@ -3743,7 +3742,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   }
   if (upper == "MONLEVEL?") {
     uint16_t raw = 0;
-    if (!queryMonitorLevel(raw, 800)) { reportCommandFailure("MONLEVEL?", "no reply"); return true; }
+    if (!queryMonitorLevel(raw, kCatReplyTimeoutMs)) { reportCommandFailure("MONLEVEL?", "no reply"); return true; }
     Serial.print("MONLEVEL ");
     Serial.print((int)levelRawToPercent(raw));
     Serial.println("%");
@@ -3752,14 +3751,14 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   }
   if (upper == "TRANSCEIVE?") {
     bool on = false;
-    if (!queryTransceiveEnabled(on, 800)) { reportCommandFailure("TRANSCEIVE?", "no reply"); return true; }
+    if (!queryTransceiveEnabled(on, kCatReplyTimeoutMs)) { reportCommandFailure("TRANSCEIVE?", "no reply"); return true; }
     Serial.println(on ? "TRANSCEIVE ON" : "TRANSCEIVE OFF");
     if (g_speechEnabled) speakTokenState("transceiver", on);
     return true;
   }
   if (upper == "NRLEVEL?") {
     uint16_t raw = 0;
-    if (!queryNrLevel(raw, 800)) { reportCommandFailure("NRLEVEL?", "no reply"); return true; }
+    if (!queryNrLevel(raw, kCatReplyTimeoutMs)) { reportCommandFailure("NRLEVEL?", "no reply"); return true; }
     Serial.print("NRLEVEL ");
     Serial.print((int)levelRawToPercent(raw));
     Serial.println("%");
@@ -3778,7 +3777,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   }
   if (upper == "NBLEVEL?") {
     uint16_t raw = 0;
-    if (!queryNbLevel(raw, 800)) { reportCommandFailure("NBLEVEL?", "no reply"); return true; }
+    if (!queryNbLevel(raw, kCatReplyTimeoutMs)) { reportCommandFailure("NBLEVEL?", "no reply"); return true; }
     Serial.print("NBLEVEL ");
     Serial.print((int)levelRawToPercent(raw));
     Serial.println("%");
@@ -3865,7 +3864,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   }
   if (upper == "PS?") {
     bool on = false;
-    if (!asciiQueryPowerState(sp, on, 800)) { reportCommandFailure("PS?", "no reply"); return true; }
+    if (!asciiQueryPowerState(sp, on, kCatReplyTimeoutMs)) { reportCommandFailure("PS?", "no reply"); return true; }
     Serial.println(on ? "PS ON" : "PS OFF");
     if (g_speechEnabled) speakTokenState("ps", on);
     return true;
@@ -3884,7 +3883,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   }
   if (upper == "SPLIT TOGGLE") {
     bool on = false;
-    if (!querySplit(on, 800)) { reportCommandFailure("SPLIT TOGGLE", "no reply"); return true; }
+    if (!querySplit(on, kCatReplyTimeoutMs)) { reportCommandFailure("SPLIT TOGGLE", "no reply"); return true; }
     if (!setSplit(!on)) { reportCommandFailure("SPLIT TOGGLE", "failed"); return true; }
     Serial.println(!on ? "SPLIT ON" : "SPLIT OFF");
     speakTokenState("split", !on);

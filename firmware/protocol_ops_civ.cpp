@@ -92,6 +92,15 @@ static void civSettleAfterWrite() {
   pumpIncoming(40);
 }
 
+// After a write: settles, then reads the setting back with query; true when the radio has expected.
+template <typename T, typename U>
+static bool civSettleAndVerify(const RadioProfile& sp, bool (*query)(const RadioProfile&, T&, uint32_t),
+                               const U& expected) {
+  civSettleAfterWrite();
+  T readBack{};
+  return query(sp, readBack, kCatReplyTimeoutMs) && readBack == expected;
+}
+
 static bool civQueryMenuByte(uint8_t group, uint16_t item, uint8_t& valueOut, uint32_t timeoutMs) {
   civFlushInput();
   const uint8_t sub[] = {group, (uint8_t)((item >> 8) & 0xFF), (uint8_t)(item & 0xFF)};
@@ -179,7 +188,7 @@ static bool civSetMainSubFrequency(uint8_t mainSub, uint64_t hz) {
   civSendMainSub(mainSub, 0x05, bcd, 5);
   civSettleAfterWrite();
   uint64_t readBack = 0;
-  return civQueryMainSubFrequency(mainSub, readBack, 800) && readBack == hz;
+  return civQueryMainSubFrequency(mainSub, readBack, kCatReplyTimeoutMs) && readBack == hz;
 }
 
 static bool civQueryMainSubMode(uint8_t mainSub, uint8_t& modeOut, uint8_t& filterOut, uint32_t timeoutMs) {
@@ -199,7 +208,7 @@ static bool civSetMainSubMode(uint8_t mainSub, uint8_t mode, uint8_t filter) {
   civSettleAfterWrite();
   uint8_t readMode = 0xFF;
   uint8_t readFilter = 0xFF;
-  return civQueryMainSubMode(mainSub, readMode, readFilter, 800) &&
+  return civQueryMainSubMode(mainSub, readMode, readFilter, kCatReplyTimeoutMs) &&
          readMode == mode &&
          readFilter == filter;
 }
@@ -246,7 +255,7 @@ bool civSetFrequency(const RadioProfile& sp, uint64_t hz) {
   delay(40);
   pumpIncoming(40);
   uint64_t readHz = 0;
-  return queryFrequency(readHz, 800) && (readHz == hz);
+  return queryFrequency(readHz, kCatReplyTimeoutMs) && (readHz == hz);
 }
 
 bool civQueryMode(const RadioProfile& sp, uint8_t& modeOut, uint32_t timeoutMs) {
@@ -323,9 +332,7 @@ bool civQueryRfPowerLevel(const RadioProfile& sp, uint16_t& valueOut, uint32_t t
 bool civSetRfPowerLevel(const RadioProfile& sp, uint16_t value) {
   if (!sp.caps.setRfPower) return false;
   if (!civSet14Value(0x0A, value)) return false;
-  civSettleAfterWrite();
-  uint16_t readBack = 0;
-  return civQueryRfPowerLevel(sp, readBack, 800) && readBack == value;
+  return civSettleAndVerify(sp, civQueryRfPowerLevel, value);
 }
 
 bool civQueryNr(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
@@ -336,9 +343,7 @@ bool civQueryNr(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
 bool civSetNr(const RadioProfile& sp, bool on) {
   if (!sp.caps.setNr) return false;
   if (!civSetToggleSub(0x40, on)) return false;
-  civSettleAfterWrite();
-  bool readBack = false;
-  return civQueryNr(sp, readBack, 800) && (readBack == on);
+  return civSettleAndVerify(sp, civQueryNr, on);
 }
 
 bool civQueryNrLevel(const RadioProfile& sp, uint16_t& valueOut, uint32_t timeoutMs) {
@@ -351,17 +356,17 @@ bool civSetNrLevel(const RadioProfile& sp, uint16_t value) {
   if (!civSet14Value(0x06, value)) return false;
   civSettleAfterWrite();
   uint16_t readBack = 0;
-  if (civQueryNrLevel(sp, readBack, 800) && readBack == value) return true;
+  if (civQueryNrLevel(sp, readBack, kCatReplyTimeoutMs) && readBack == value) return true;
 
   bool nrOn = false;
-  if (civQueryNr(sp, nrOn, 800) && !nrOn) {
+  if (civQueryNr(sp, nrOn, kCatReplyTimeoutMs) && !nrOn) {
     if (!civSetNr(sp, true)) return false;
     if (!civSet14Value(0x06, value)) return false;
     civSettleAfterWrite();
-    if (civQueryNrLevel(sp, readBack, 800) && readBack == value) return true;
+    if (civQueryNrLevel(sp, readBack, kCatReplyTimeoutMs) && readBack == value) return true;
   }
 
-  return civQueryNrLevel(sp, readBack, 800) && (readBack >= (value > 1 ? value - 1 : 0)) && (readBack <= value + 1);
+  return civQueryNrLevel(sp, readBack, kCatReplyTimeoutMs) && (readBack >= (value > 1 ? value - 1 : 0)) && (readBack <= value + 1);
 }
 
 bool civQueryNb(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
@@ -372,9 +377,7 @@ bool civQueryNb(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
 bool civSetNb(const RadioProfile& sp, bool on) {
   if (!sp.caps.setNb) return false;
   if (!civSetToggleSub(0x22, on)) return false;
-  civSettleAfterWrite();
-  bool readBack = false;
-  return civQueryNb(sp, readBack, 800) && (readBack == on);
+  return civSettleAndVerify(sp, civQueryNb, on);
 }
 
 bool civQueryNbLevel(const RadioProfile& sp, uint16_t& valueOut, uint32_t timeoutMs) {
@@ -385,9 +388,7 @@ bool civQueryNbLevel(const RadioProfile& sp, uint16_t& valueOut, uint32_t timeou
 bool civSetNbLevel(const RadioProfile& sp, uint16_t value) {
   if (sp.protocol != PROTO_CIV || !sp.caps.setNbLevel) return false;
   if (!civSet14Value(0x12, value)) return false;
-  civSettleAfterWrite();
-  uint16_t readBack = 0;
-  return civQueryNbLevel(sp, readBack, 800) && (readBack == value);
+  return civSettleAndVerify(sp, civQueryNbLevel, value);
 }
 
 bool civQueryProc(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
@@ -443,7 +444,7 @@ static bool civSetToggleSubChecked(uint8_t subcmd, bool on) {
   if (!civSetToggleSub(subcmd, on)) return false;
   civSettleAfterWrite();
   bool readBack = false;
-  return civQueryToggleSub(subcmd, readBack, 800) && readBack == on;
+  return civQueryToggleSub(subcmd, readBack, kCatReplyTimeoutMs) && readBack == on;
 }
 
 // Sets a 14 level and reads it back.
@@ -451,7 +452,7 @@ static bool civSet14ValueChecked(uint8_t subcmd, uint16_t value) {
   if (!civSet14Value(subcmd, value)) return false;
   civSettleAfterWrite();
   uint16_t readBack = 0;
-  return civQuery14Value(subcmd, readBack, 800) && readBack == value;
+  return civQuery14Value(subcmd, readBack, kCatReplyTimeoutMs) && readBack == value;
 }
 
 bool civSetProc(const RadioProfile& sp, bool on) {
@@ -484,9 +485,7 @@ bool civSetVoxDelayMs(const RadioProfile& sp, uint16_t ms) {
   if (sp.protocol != PROTO_CIV || !sp.caps.setVox || !civVoxDelayAddr(sp.model, addr) || ms > 2000) return false;
   const uint8_t tenths = (uint8_t)((ms + 50) / 100);
   if (!civSetMenuByte(0x05, addr, (uint8_t)(((tenths / 10) << 4) | (tenths % 10)))) return false;
-  civSettleAfterWrite();
-  uint16_t readBack = 0;
-  return civQueryVoxDelayMs(sp, readBack, 800) && readBack == tenths * 100;
+  return civSettleAndVerify(sp, civQueryVoxDelayMs, tenths * 100);
 }
 
 bool civQueryNotch(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
@@ -497,9 +496,7 @@ bool civQueryNotch(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
 bool civSetNotch(const RadioProfile& sp, bool on) {
   if (!sp.caps.setNotch) return false;
   if (!civSetToggleSub(0x48, on)) return false;
-  civSettleAfterWrite();
-  bool readBack = false;
-  return civQueryNotch(sp, readBack, 800) && (readBack == on);
+  return civSettleAndVerify(sp, civQueryNotch, on);
 }
 
 // 16 57: the manual notch width (00 wide, 01 mid, 02 narrow).
@@ -513,9 +510,7 @@ bool civQueryNotchWidth(const RadioProfile& sp, NotchWidth& widthOut, uint32_t t
 bool civSetNotchWidth(const RadioProfile& sp, NotchWidth width) {
   if (!sp.caps.setNotchWidth || width == NOTCH_WIDTH_UNKNOWN) return false;
   if (!civSet16Byte(0x57, encodeIcomNotchWidth(width))) return false;
-  civSettleAfterWrite();
-  NotchWidth readBack = NOTCH_WIDTH_UNKNOWN;
-  return civQueryNotchWidth(sp, readBack, 800) && readBack == width;
+  return civSettleAndVerify(sp, civQueryNotchWidth, width);
 }
 
 bool civQueryPbtInner(const RadioProfile& sp, uint16_t& valueOut, uint32_t timeoutMs) {
@@ -528,7 +523,7 @@ bool civSetPbtInner(const RadioProfile& sp, uint16_t value) {
   if (!civSet14Value(0x07, value)) return false;
   civSettleAfterWrite();
   uint16_t readBack = 0;
-  return civQueryPbtInner(sp, readBack, 800) &&
+  return civQueryPbtInner(sp, readBack, kCatReplyTimeoutMs) &&
          readBack >= (value > 1 ? value - 1 : 0) &&
          readBack <= value + 1;
 }
@@ -543,7 +538,7 @@ bool civSetPbtOuter(const RadioProfile& sp, uint16_t value) {
   if (!civSet14Value(0x08, value)) return false;
   civSettleAfterWrite();
   uint16_t readBack = 0;
-  return civQueryPbtOuter(sp, readBack, 800) &&
+  return civQueryPbtOuter(sp, readBack, kCatReplyTimeoutMs) &&
          readBack >= (value > 1 ? value - 1 : 0) &&
          readBack <= value + 1;
 }
@@ -560,9 +555,7 @@ bool civSetAgc(const RadioProfile& sp, AgcMode mode) {
   uint8_t raw = 0;
   if (sp.protocol != PROTO_CIV || !sp.caps.setAgc || !civAgcEncode(mode, raw)) return false;
   if (!civSet16Byte(0x12, raw)) return false;
-  civSettleAfterWrite();
-  AgcMode readBack = AgcMode::Off;
-  return civQueryAgc(sp, readBack, 800) && readBack == mode;
+  return civSettleAndVerify(sp, civQueryAgc, mode);
 }
 
 // 16 02: 00 off, 01 P.AMP1, 02 P.AMP2 (the IC-7300, IC-705 and IC-7760 CI-V guides, Hamlib).
@@ -575,9 +568,7 @@ bool civQueryPreampLevel(const RadioProfile& sp, uint8_t& levelOut, uint32_t tim
 bool civSetPreampLevel(const RadioProfile& sp, uint8_t level) {
   if (sp.protocol != PROTO_CIV || !sp.caps.setPreamp || level > sp.settings.preampLevels) return false;
   if (!civSet16Byte(0x02, level)) return false;
-  civSettleAfterWrite();
-  uint8_t readBack = 0xFF;
-  return civQueryPreampLevel(sp, readBack, 800) && readBack == level;
+  return civSettleAndVerify(sp, civQueryPreampLevel, level);
 }
 
 // 11: the attenuator in dB, BCD, with no sub command (the CI-V guides, Hamlib).
@@ -596,9 +587,7 @@ bool civSetAttDb(const RadioProfile& sp, uint8_t db) {
   civFlushInput();
   const uint8_t pl[] = {civAttEncode(db)};
   civSend(0x11, pl, 1);
-  civSettleAfterWrite();
-  uint8_t readBack = 0xFF;
-  return civQueryAttDb(sp, readBack, 800) && readBack == db;
+  return civSettleAndVerify(sp, civQueryAttDb, db);
 }
 
 // 16 47: 00 off, 01 semi, 02 full (the IC-7300 manual, the IC-705 and IC-7760 CI-V guides,
@@ -613,9 +602,7 @@ bool civSetBreakIn(const RadioProfile& sp, BreakInMode mode) {
   uint8_t raw = 0;
   if (sp.protocol != PROTO_CIV || !sp.caps.setBreakIn || !civBreakInEncode(mode, raw)) return false;
   if (!civSet16Byte(0x47, raw)) return false;
-  civSettleAfterWrite();
-  BreakInMode readBack = BreakInMode::On;
-  return civQueryBreakIn(sp, readBack, 800) && readBack == mode;
+  return civSettleAndVerify(sp, civQueryBreakIn, mode);
 }
 
 // 14 09: 0000 = 300 Hz, 0128 = 600 Hz, 0255 = 900 Hz (the IC-7300 manual, the IC-705 and IC-7760
@@ -633,7 +620,7 @@ bool civSetCwPitchHz(const RadioProfile& sp, uint16_t hz) {
   if (!civSet14Value(0x09, civCwPitchHzToRaw(hz))) return false;
   civSettleAfterWrite();
   uint16_t readBack = 0;
-  if (!civQueryCwPitchHz(sp, readBack, 800)) return false;
+  if (!civQueryCwPitchHz(sp, readBack, kCatReplyTimeoutMs)) return false;
   return readBack + 5 >= hz && readBack <= hz + 5;
 }
 
@@ -656,9 +643,7 @@ bool civQueryAutoNotch(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) 
 bool civSetAutoNotch(const RadioProfile& sp, bool on) {
   if (sp.protocol != PROTO_CIV || !sp.caps.setAutoNotch) return false;
   if (!civSetToggleSub(0x41, on)) return false;
-  civSettleAfterWrite();
-  bool readBack = !on;
-  return civQueryAutoNotch(sp, readBack, 800) && readBack == on;
+  return civSettleAndVerify(sp, civQueryAutoNotch, on);
 }
 
 // 16 42 and 16 43 (the IC-7300 manual, the IC-705 and IC-7760 CI-V guides, Hamlib).
@@ -677,7 +662,7 @@ bool civSetTone(const RadioProfile& sp, bool tone, bool tsql) {
   civSettleAfterWrite();
   bool toneBack = !tone;
   bool tsqlBack = !tsql;
-  return civQueryTone(sp, toneBack, tsqlBack, 800) && toneBack == tone && tsqlBack == tsql;
+  return civQueryTone(sp, toneBack, tsqlBack, kCatReplyTimeoutMs) && toneBack == tone && tsqlBack == tsql;
 }
 
 // 1B 00 and 1B 01: 00 08 85 = 88.5 Hz (the CI-V guides, Hamlib).
@@ -709,7 +694,7 @@ bool civSetCtcssTenths(const RadioProfile& sp, uint16_t tenths) {
   civSetToneFreq(0x01, tenths);
   uint16_t rptBack = 0;
   uint16_t sqlBack = 0;
-  return civQueryToneFreq(0x00, rptBack, 800) && civQueryToneFreq(0x01, sqlBack, 800) && rptBack == tenths &&
+  return civQueryToneFreq(0x00, rptBack, kCatReplyTimeoutMs) && civQueryToneFreq(0x01, sqlBack, kCatReplyTimeoutMs) && rptBack == tenths &&
          sqlBack == tenths;
 }
 
@@ -735,9 +720,7 @@ bool civSetRptShift(const RadioProfile& sp, RptShift shift) {
   const uint8_t pl[] = {(uint8_t)(shift == RptShift::Minus ? 0x11 : shift == RptShift::Plus ? 0x12 : 0x10)};
   civFlushInput();
   civSend(0x0F, pl, 1);
-  civSettleAfterWrite();
-  RptShift readBack = shift == RptShift::Simplex ? RptShift::Plus : RptShift::Simplex;
-  return civQueryRptShift(sp, readBack, 800) && readBack == shift;
+  return civSettleAndVerify(sp, civQueryRptShift, shift);
 }
 
 // 16 50: the dial lock.
@@ -749,9 +732,7 @@ bool civQueryDialLock(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
 bool civSetDialLock(const RadioProfile& sp, bool on) {
   if (sp.protocol != PROTO_CIV || !sp.caps.setDialLock) return false;
   if (!civSetToggleSub(0x50, on)) return false;
-  civSettleAfterWrite();
-  bool readBack = false;
-  return civQueryDialLock(sp, readBack, 800) && readBack == on;
+  return civSettleAndVerify(sp, civQueryDialLock, on);
 }
 
 // 16 56: the DSP filter type (00 sharp, 01 soft).
@@ -763,9 +744,7 @@ bool civQueryFilterShape(const RadioProfile& sp, bool& softOut, uint32_t timeout
 bool civSetFilterShape(const RadioProfile& sp, bool soft) {
   if (sp.protocol != PROTO_CIV || !sp.caps.setFilterShape) return false;
   if (!civSetToggleSub(0x56, soft)) return false;
-  civSettleAfterWrite();
-  bool readBack = false;
-  return civQueryFilterShape(sp, readBack, 800) && readBack == soft;
+  return civSettleAndVerify(sp, civQueryFilterShape, soft);
 }
 
 // 16 45: the monitor (1C 02 is the transmit frequency monitor, a different function).
@@ -777,9 +756,7 @@ bool civQueryMonitorEnabled(const RadioProfile& sp, bool& onOut, uint32_t timeou
 bool civSetMonitorEnabled(const RadioProfile& sp, bool on) {
   if (sp.protocol != PROTO_CIV || !sp.caps.setMonitor) return false;
   if (!civSetToggleSub(0x45, on)) return false;
-  civSettleAfterWrite();
-  bool readBack = false;
-  return civQueryMonitorEnabled(sp, readBack, 800) && readBack == on;
+  return civSettleAndVerify(sp, civQueryMonitorEnabled, on);
 }
 
 bool civQueryMonitorLevel(const RadioProfile& sp, uint16_t& valueOut, uint32_t timeoutMs) {
@@ -790,9 +767,7 @@ bool civQueryMonitorLevel(const RadioProfile& sp, uint16_t& valueOut, uint32_t t
 bool civSetMonitorLevel(const RadioProfile& sp, uint16_t value) {
   if (sp.protocol != PROTO_CIV || !sp.caps.setMonitorLevel) return false;
   if (!civSet14Value(0x15, value)) return false;
-  civSettleAfterWrite();
-  uint16_t readBack = 0;
-  return civQueryMonitorLevel(sp, readBack, 800) && readBack == value;
+  return civSettleAndVerify(sp, civQueryMonitorLevel, value);
 }
 
 // The 1A 05 menu address of the CI-V transceive setting, as the model's CI-V guide and Hamlib
@@ -819,9 +794,7 @@ bool civSetTransceiveEnabled(const RadioProfile& sp, bool on) {
   uint16_t addr = 0;
   if (sp.protocol != PROTO_CIV || !sp.caps.setTransceive || !civTransceiveAddr(sp.model, addr)) return false;
   if (!civSetMenuByte(0x05, addr, on ? 0x01 : 0x00)) return false;
-  civSettleAfterWrite();
-  bool readBack = false;
-  return civQueryTransceiveEnabled(sp, readBack, 800) && readBack == on;
+  return civSettleAndVerify(sp, civQueryTransceiveEnabled, on);
 }
 
 bool civQueryBandStackEntry(const RadioProfile& sp, uint8_t bandCode, uint8_t registerCode, BandStackEntry& entryOut, uint32_t timeoutMs) {
@@ -854,9 +827,7 @@ bool civQueryTuner(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
 bool civSetTuner(const RadioProfile& sp, bool on) {
   if (sp.protocol != PROTO_CIV || !sp.caps.setTuner) return false;
   if (!civSet1CByte(0x01, on ? 0x01 : 0x00)) return false;
-  civSettleAfterWrite();
-  bool readBack = false;
-  return civQueryTuner(sp, readBack, 800) && (readBack == on);
+  return civSettleAndVerify(sp, civQueryTuner, on);
 }
 
 bool civStartTune(const RadioProfile& sp) {
@@ -934,14 +905,14 @@ static bool civEnsureActiveVfoKnown(const RadioProfile& sp) {
   if (sp.protocol != PROTO_CIV) return false;
 
   uint64_t currentHz = 0;
-  if (!civQueryFrequency(sp, currentHz, 800)) return false;
+  if (!civQueryFrequency(sp, currentHz, kCatReplyTimeoutMs)) return false;
 
   const bool hadKnown = live.activeVfoKnown;
   const bool priorVfoA = live.activeVfoA;
 
   if (!civSelectVfoA(sp)) return false;
   uint64_t vfoAHz = 0;
-  if (!civQueryFrequency(sp, vfoAHz, 800)) return false;
+  if (!civQueryFrequency(sp, vfoAHz, kCatReplyTimeoutMs)) return false;
 
   bool activeWasA = (vfoAHz == currentHz);
   rememberActiveVfo(activeWasA);
@@ -983,7 +954,7 @@ bool civSetVfoFrequency(const RadioProfile& sp, bool targetVfoA, uint64_t hz) {
   civSend(0x25, pl, 6);
   civSettleAfterWrite();
   uint64_t readBack = 0;
-  return civQueryVfoFrequency(sp, targetVfoA, readBack, 800) && readBack == hz;
+  return civQueryVfoFrequency(sp, targetVfoA, readBack, kCatReplyTimeoutMs) && readBack == hz;
 }
 
 bool civQueryVfoMode(const RadioProfile& sp, bool targetVfoA, uint8_t& modeOut, uint8_t& filterOut, uint32_t timeoutMs) {
@@ -1011,7 +982,7 @@ bool civSetVfoMode(const RadioProfile& sp, bool targetVfoA, uint8_t mode, uint8_
   civSettleAfterWrite();
   uint8_t readMode = 0xFF;
   uint8_t readFilter = 0xFF;
-  return civQueryVfoMode(sp, targetVfoA, readMode, readFilter, 800) &&
+  return civQueryVfoMode(sp, targetVfoA, readMode, readFilter, kCatReplyTimeoutMs) &&
          readMode == mode &&
          readFilter == filter;
 }
@@ -1032,9 +1003,7 @@ bool civSetSplit(const RadioProfile& sp, bool on) {
   civFlushInput();
   const uint8_t data[] = {(uint8_t)(on ? 0x01 : 0x00)};
   civSend(0x0F, data, 1);
-  civSettleAfterWrite();
-  bool readBack = false;
-  return civQuerySplit(sp, readBack, 800) && (readBack == on);
+  return civSettleAndVerify(sp, civQuerySplit, on);
 }
 
 bool civQueryRitEnabled(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
@@ -1049,9 +1018,7 @@ bool civQueryRitEnabled(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs)
 bool civSetRitEnabled(const RadioProfile& sp, bool on) {
   if (sp.protocol != PROTO_CIV || !sp.caps.setRit) return false;
   if (!civSet21Byte(0x01, on ? 0x01 : 0x00)) return false;
-  civSettleAfterWrite();
-  bool readBack = false;
-  return civQueryRitEnabled(sp, readBack, 800) && (readBack == on);
+  return civSettleAndVerify(sp, civQueryRitEnabled, on);
 }
 
 bool civQueryRitOffsetHz(const RadioProfile& sp, int32_t& hzOut, uint32_t timeoutMs) {
@@ -1095,5 +1062,5 @@ bool civSetRitOffsetHz(const RadioProfile& sp, int32_t hz) {
 
   (void)civWriteRitOffsetFrame(pl, sizeof(pl));
   int32_t readBack = 0;
-  return civQueryRitOffsetHz(sp, readBack, 800) && (readBack == hz);
+  return civQueryRitOffsetHz(sp, readBack, kCatReplyTimeoutMs) && (readBack == hz);
 }

@@ -13,7 +13,7 @@ static constexpr uint32_t YAESU_CAT_FREQ_MODE_SETTLE_MS = 140;
 static constexpr uint32_t YAESU_CAT_VFO_SETTLE_MS = 120;
 static constexpr uint32_t YAESU_CAT_VFO_RETURN_GAP_MS = 180;
 // How long a read for the keypad or the console waits for its reply.
-static constexpr uint32_t YAESU_CAT_REPLY_TIMEOUT_MS = 800;
+static constexpr uint32_t YAESU_CAT_REPLY_TIMEOUT_MS = kCatReplyTimeoutMs;
 
 bool yaesuCatQueryFrequency(const RadioProfile& sp, uint64_t& hzOut, uint32_t timeoutMs);
 bool yaesuCatQueryModeRawByte(uint8_t& modeByteOut, uint32_t timeoutMs);

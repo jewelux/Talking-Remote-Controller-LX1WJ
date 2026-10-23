@@ -242,7 +242,7 @@ void toggleBank2Notch() {
 void queryBank2NrLevel() {
   printKeypadAction("NRLEVEL?");
   uint16_t raw = 0;
-  if (!queryNrLevel(raw, 800)) {
+  if (!queryNrLevel(raw, kCatReplyTimeoutMs)) {
     keypadReportFailure("NRLEVEL?");
     return;
   }
@@ -254,7 +254,7 @@ void queryBank2NrLevel() {
 void adjustBank2NrLevel(int deltaPercent) {
   printKeypadAction("NRLEVEL");
   uint16_t raw = 0;
-  if (!queryNrLevel(raw, 800)) { keypadReportFailure("NRLEVEL"); return; }
+  if (!queryNrLevel(raw, kCatReplyTimeoutMs)) { keypadReportFailure("NRLEVEL"); return; }
   int percent = (int)levelRawToPercent(raw) + deltaPercent;
   if (percent < 0) percent = 0;
   if (percent > 100) percent = 100;
@@ -263,14 +263,14 @@ void adjustBank2NrLevel(int deltaPercent) {
   bool wrote = setNrLevel(targetRaw);
   if (!wrote) {
     bool nrOn = false;
-    if (queryNr(nrOn, 800) && !nrOn) {
+    if (queryNr(nrOn, kCatReplyTimeoutMs) && !nrOn) {
       (void)setNr(true);
       wrote = setNrLevel(targetRaw);
     }
   }
 
   uint16_t readBack = 0;
-  if (!queryNrLevel(readBack, 800)) {
+  if (!queryNrLevel(readBack, kCatReplyTimeoutMs)) {
     keypadReportFailure("NRLEVEL");
     return;
   }
@@ -286,7 +286,7 @@ void adjustBank2NrLevel(int deltaPercent) {
 void queryBank2NbLevel() {
   printKeypadAction("NBLEVEL?");
   uint16_t raw = 0;
-  if (!queryNbLevel(raw, 800)) {
+  if (!queryNbLevel(raw, kCatReplyTimeoutMs)) {
     keypadReportFailure("NBLEVEL?");
     return;
   }
@@ -298,7 +298,7 @@ void queryBank2NbLevel() {
 void adjustBank2NbLevel(int deltaPercent) {
   printKeypadAction("NBLEVEL");
   uint16_t raw = 0;
-  if (!queryNbLevel(raw, 800)) { keypadReportFailure("NBLEVEL"); return; }
+  if (!queryNbLevel(raw, kCatReplyTimeoutMs)) { keypadReportFailure("NBLEVEL"); return; }
   int percent = (int)levelRawToPercent(raw) + deltaPercent;
   if (percent < 0) percent = 0;
   if (percent > 100) percent = 100;
@@ -310,19 +310,19 @@ void adjustBank2NbLevel(int deltaPercent) {
 static bool ensureActiveVfoKnownForKeypad() {
   if (live.activeVfoKnown) return true;
   uint64_t dummy = 0;
-  return queryVfoFrequency(true, dummy, 800);
+  return queryVfoFrequency(true, dummy, kCatReplyTimeoutMs);
 }
 
 static bool queryCurrentFilterSlotForKeypad(uint8_t& filterOut) {
   if (!ensureActiveVfoKnownForKeypad()) return false;
   uint8_t mode = 0xFF;
-  return queryVfoMode(live.activeVfoA, mode, filterOut, 800);
+  return queryVfoMode(live.activeVfoA, mode, filterOut, kCatReplyTimeoutMs);
 }
 
 void queryBank2PbtInner() {
   printKeypadAction("PBT1?");
   uint16_t raw = 0;
-  if (!queryPbtInner(raw, 800)) {
+  if (!queryPbtInner(raw, kCatReplyTimeoutMs)) {
     keypadReportFailure("PBT1?");
     return;
   }
@@ -333,7 +333,7 @@ void queryBank2PbtInner() {
 void adjustBank2PbtInner(int delta) {
   printKeypadAction("PBT1");
   uint16_t raw = 0;
-  if (!queryPbtInner(raw, 800)) { keypadReportFailure("PBT1"); return; }
+  if (!queryPbtInner(raw, kCatReplyTimeoutMs)) { keypadReportFailure("PBT1"); return; }
   const int next = pbtRawToOffset(raw) + delta;
   if (!setPbtInner(pbtOffsetToRaw(next))) { keypadReportFailure("PBT1"); return; }
   queryBank2PbtInner();
@@ -342,7 +342,7 @@ void adjustBank2PbtInner(int delta) {
 void queryBank2PbtOuter() {
   printKeypadAction("PBT2?");
   uint16_t raw = 0;
-  if (!queryPbtOuter(raw, 800)) { keypadReportFailure("PBT2?"); return; }
+  if (!queryPbtOuter(raw, kCatReplyTimeoutMs)) { keypadReportFailure("PBT2?"); return; }
   printKeypadStatus("PBT2 {} step", pbtRawToOffset(raw));
   speakSignedStepValue("pbt", pbtRawToOffset(raw));
 }
@@ -350,7 +350,7 @@ void queryBank2PbtOuter() {
 void adjustBank2PbtOuter(int delta) {
   printKeypadAction("PBT2");
   uint16_t raw = 0;
-  if (!queryPbtOuter(raw, 800)) { keypadReportFailure("PBT2"); return; }
+  if (!queryPbtOuter(raw, kCatReplyTimeoutMs)) { keypadReportFailure("PBT2"); return; }
   const int next = pbtRawToOffset(raw) + delta;
   if (!setPbtOuter(pbtOffsetToRaw(next))) { keypadReportFailure("PBT2"); return; }
   queryBank2PbtOuter();
@@ -359,7 +359,7 @@ void adjustBank2PbtOuter(int delta) {
 void toggleBank2FilterShape() {
   printKeypadAction("FILSHAPE");
   bool soft = false;
-  if (!queryFilterShape(soft, 800)) { keypadReportFailure("FILSHAPE"); return; }
+  if (!queryFilterShape(soft, kCatReplyTimeoutMs)) { keypadReportFailure("FILSHAPE"); return; }
   if (!setFilterShape(!soft)) { keypadReportFailure("FILSHAPE"); return; }
   printKeypadStatus("FILSHAPE {}", !soft ? "SOFT" : "SHARP");
   if (g_speechEnabled) {
@@ -384,7 +384,7 @@ void cycleBank2FilterWidth(int delta) {
   uint8_t mode = 0xFF;
   uint8_t filter = 0xFF;
   if (!ensureActiveVfoKnownForKeypad()) { keypadReportFailure("FILWIDTH"); return; }
-  if (!queryVfoMode(live.activeVfoA, mode, filter, 800)) { keypadReportFailure("FILWIDTH"); return; }
+  if (!queryVfoMode(live.activeVfoA, mode, filter, kCatReplyTimeoutMs)) { keypadReportFailure("FILWIDTH"); return; }
   int next = (int)filter + delta;
   if (next < 1) next = 3;
   if (next > 3) next = 1;

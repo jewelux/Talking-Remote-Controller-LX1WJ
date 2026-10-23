@@ -11,11 +11,6 @@ const RadioProfile& slot(uint8_t number) {
   return p ? *p : kMissing;
 }
 
-bool isAscii(ProtocolType protocol) {
-  return protocol == PROTO_KENWOOD_ASCII || protocol == PROTO_ELECRAFT_ASCII ||
-         protocol == PROTO_YAESU_FTDX_ASCII;
-}
-
 }  // namespace
 
 // ---- The table as a whole ----
@@ -54,7 +49,7 @@ TEST(civ_radios_have_an_address) {
 TEST(ascii_radios_have_freq_and_mode_commands) {
   for (size_t i = 0; i < profileCount(); ++i) {
     const RadioProfile& p = profileAt(i);
-    if (!isAscii(p.protocol)) continue;
+    if (!isAsciiProtocol(p.protocol)) continue;
     CHECK(p.commands->freqGet[0] != '\0');
     CHECK(p.commands->freqSetFormat[0] != '\0');
     CHECK(p.commands->modeGet[0] != '\0');
@@ -208,7 +203,7 @@ TEST(every_vox_delay_encoding_is_complete) {
   for (size_t i = 0; i < profileCount(); ++i) {
     const SettingEncodings& s = profileAt(i).settings;
     if (s.voxDelay == VoxDelayEncoding::None) continue;
-    CHECK(isAscii(profileAt(i).protocol));
+    CHECK(isAsciiProtocol(profileAt(i).protocol));
     CHECK(profileAt(i).caps.getVox);
     CHECK(s.voxDelayMaxMs > s.voxDelayMinMs);
     if (s.voxDelay == VoxDelayEncoding::Ms4) CHECK(s.voxDelayStepMs > 0);
@@ -236,8 +231,8 @@ TEST(agc_caps_and_encodings) {
 TEST(every_ascii_agc_cap_has_an_encoding) {
   for (size_t i = 0; i < profileCount(); ++i) {
     const RadioProfile& p = profileAt(i);
-    if (isAscii(p.protocol) && p.caps.getAgc) CHECK(p.settings.agc != AgcEncoding::None);
-    if (p.settings.agc != AgcEncoding::None) CHECK(isAscii(p.protocol));
+    if (isAsciiProtocol(p.protocol) && p.caps.getAgc) CHECK(p.settings.agc != AgcEncoding::None);
+    if (p.settings.agc != AgcEncoding::None) CHECK(isAsciiProtocol(p.protocol));
   }
 }
 
@@ -285,8 +280,8 @@ TEST(every_preamp_and_att_cap_has_an_encoding) {
     for (uint8_t k = 1; k < s.attLevels; ++k) CHECK(s.attDb[k] > s.attDb[k - 1]);
     if (p.caps.getPreamp) CHECK(s.preampLevels > 0);
     if (p.caps.getAtt && p.protocol != PROTO_YAESU_FT8X7) CHECK(s.attLevels > 0);
-    if (isAscii(p.protocol) && (p.caps.getPreamp || p.caps.getAtt)) CHECK(s.frontEnd != FrontEndEncoding::None);
-    if (s.frontEnd != FrontEndEncoding::None) CHECK(isAscii(p.protocol));
+    if (isAsciiProtocol(p.protocol) && (p.caps.getPreamp || p.caps.getAtt)) CHECK(s.frontEnd != FrontEndEncoding::None);
+    if (s.frontEnd != FrontEndEncoding::None) CHECK(isAsciiProtocol(p.protocol));
   }
 }
 
@@ -312,8 +307,8 @@ TEST(rf_power_caps_and_ranges) {
 TEST(every_ascii_rf_power_cap_has_an_encoding) {
   for (size_t i = 0; i < profileCount(); ++i) {
     const RadioProfile& p = profileAt(i);
-    if (isAscii(p.protocol) && p.caps.getRfPower) CHECK(p.settings.rfPower != RfPowerEncoding::None);
-    if (p.settings.rfPower != RfPowerEncoding::None) CHECK(isAscii(p.protocol));
+    if (isAsciiProtocol(p.protocol) && p.caps.getRfPower) CHECK(p.settings.rfPower != RfPowerEncoding::None);
+    if (p.settings.rfPower != RfPowerEncoding::None) CHECK(isAsciiProtocol(p.protocol));
     CHECK(p.settings.rfPowerMinWatts < p.rfPowerMaxWatts);
   }
 }
@@ -380,7 +375,7 @@ TEST(every_cw_level_cap_has_an_encoding) {
     const RadioProfile& p = profileAt(i);
     const SettingEncodings& s = p.settings;
     if (p.protocol == PROTO_CIV) CHECK(!p.caps.getCwSpeed && !p.caps.getCwDelay);
-    if (!isAscii(p.protocol)) continue;
+    if (!isAsciiProtocol(p.protocol)) continue;
     if (p.caps.getCwSpeed) CHECK(s.cwSpeedMaxWpm > s.cwSpeedMinWpm);
     if (p.caps.getCwPitch) CHECK(s.cwPitchKp && p.protocol == PROTO_YAESU_FTDX_ASCII);
     if (p.caps.getCwDelay) {

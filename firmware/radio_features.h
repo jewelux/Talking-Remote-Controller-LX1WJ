@@ -83,8 +83,8 @@ FeatureStatus agcQuery(AgcMode& out);
 // all five; TS-480 OFF, FAST, SLOW; KX2 FAST, SLOW), and experimentally (caps.setRadioMenu) on the
 // FT-8x7, which has no MID.
 bool agcCanSet(AgcMode mode);
-// Sets mode, read back into out. Unsupported where agcCanSet is false; FT-8x7 errors as
-// procLevelSet.
+// Sets mode, which the radio confirms on a read-back, into out. Unsupported where agcCanSet is
+// false; FT-8x7 errors as procLevelSet.
 FeatureStatus agcSet(AgcMode mode, AgcMode& out);
 
 // The RX attenuator. db is 0 where the radio does not say how many dB it takes off.
@@ -100,7 +100,8 @@ FeatureStatus attQuery(AttState& out);
 // not known).
 uint8_t attSteps();
 uint8_t attStepDb(uint8_t step);
-// Sets step (0 off, 1..attSteps()), read back into out. Invalid above attSteps().
+// Sets step (0 off, 1..attSteps()), which the radio confirms on a read-back, into out. Invalid
+// above attSteps().
 FeatureStatus attSet(uint8_t step, AttState& out);
 // Off -> step 1 -> ... -> the last step -> off, from the attenuator read.
 FeatureStatus attStep(AttState& out);
@@ -110,8 +111,8 @@ FeatureStatus attStep(AttState& out);
 // there is none.
 uint8_t preampLevels();
 FeatureStatus preampQuery(uint8_t& levelOut);
-// Sets level (0..preampLevels()), read back into levelOut. Unsupported without caps.setPreamp,
-// Invalid above preampLevels().
+// Sets level (0..preampLevels()), which the radio confirms on a read-back, into levelOut.
+// Unsupported without caps.setPreamp, Invalid above preampLevels().
 FeatureStatus preampSet(uint8_t level, uint8_t& levelOut);
 // Off -> 1 -> ... -> off, from the level read.
 FeatureStatus preampStep(uint8_t& levelOut);
@@ -122,7 +123,7 @@ FeatureStatus preampStep(uint8_t& levelOut);
 FeatureStatus rfPowerQuery(uint16_t& tenthsOut);
 // The watts it can be set to; false where it cannot (caps.setRfPower).
 bool rfPowerRange(uint16_t& minOut, uint16_t& maxOut);
-// Sets watts, read back into tenthsOut. Invalid outside rfPowerRange.
+// Sets watts, which the radio confirms on a read-back, into tenthsOut. Invalid outside rfPowerRange.
 FeatureStatus rfPowerSet(uint16_t watts, uint16_t& tenthsOut);
 
 // CW break-in (caps.getBreakIn) and the keyer (caps.getKeyer): Icom 16 47 (break-in only), Yaesu
@@ -131,7 +132,8 @@ FeatureStatus breakInQuery(BreakInMode& out);
 // Whether the radio can be set to mode: Icom OFF, SEMI, FULL and ON (as SEMI); Yaesu OFF and ON;
 // on the FT-8x7 OFF and ON, experimentally (caps.setRadioMenu).
 bool breakInCanSet(BreakInMode mode);
-// Sets mode, read back into out; Unsupported where breakInCanSet is false.
+// Sets mode, which the radio confirms on a read-back, into out; Unsupported where breakInCanSet
+// is false.
 FeatureStatus breakInSet(BreakInMode mode, BreakInMode& out);
 // Off -> on (Icom SEMI) -> off, from the break-in read.
 FeatureStatus breakInToggle(BreakInMode& out);
@@ -149,7 +151,8 @@ FeatureStatus alcQuery(uint8_t& percentOut);
 FeatureStatus cwLevelQuery(CwLevel level, uint16_t& valueOut);
 // The values it can be set to; false where it cannot (on the FT-8x7 only experimentally).
 bool cwLevelRange(CwLevel level, uint16_t& minOut, uint16_t& maxOut);
-// Sets value, to the radio's step nearest it, read back into valueOut. Invalid outside the range.
+// Sets value, to the radio's step nearest it, which the radio confirms on a read-back, into
+// valueOut. Invalid outside the range.
 FeatureStatus cwLevelSet(CwLevel level, uint16_t value, uint16_t& valueOut);
 // delta steps from the value read, kept within the range: 1 WPM, 10 Hz (FT-8x7: its menu step),
 // one delay step of the radio (at least 100 ms on the FT-891 and TS-480).

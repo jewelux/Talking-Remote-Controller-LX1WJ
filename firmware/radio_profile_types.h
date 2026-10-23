@@ -17,6 +17,11 @@ enum ProtocolType : uint8_t {
   PROTO_YAESU_FT847 = 5  // 5-byte CAT like the FT-8x7, but its own opcodes (protocol_ft847.*)
 };
 
+// The ASCII CAT protocols (protocol_ops_ascii.h): Kenwood, Elecraft and the Yaesu FTDX family.
+constexpr bool isAsciiProtocol(ProtocolType protocol) {
+  return protocol == PROTO_KENWOOD_ASCII || protocol == PROTO_ELECRAFT_ASCII || protocol == PROTO_YAESU_FTDX_ASCII;
+}
+
 // Only bool members, all off unless a profile sets them: EXPERIMENTAL ON sets
 // them all through a bool array (radio_catalog.cpp).
 struct RadioCapabilities {

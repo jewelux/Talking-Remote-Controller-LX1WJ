@@ -467,14 +467,9 @@ constexpr bool civRadiosHaveAnAddress() {
   return true;
 }
 
-constexpr bool isAscii(ProtocolType protocol) {
-  return protocol == PROTO_KENWOOD_ASCII || protocol == PROTO_ELECRAFT_ASCII ||
-         protocol == PROTO_YAESU_FTDX_ASCII;
-}
-
 constexpr bool asciiRadiosHaveFreqAndModeCommands() {
   for (const RadioProfile& p : kProfiles) {
-    if (!isAscii(p.protocol)) continue;
+    if (!isAsciiProtocol(p.protocol)) continue;
     const AsciiCommandSet& c = *p.commands;
     if (!c.freqGet[0] || !c.freqSetFormat[0] || !c.modeGet[0] || !c.modeSetFormat[0]) return false;
   }
