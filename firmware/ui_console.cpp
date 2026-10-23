@@ -24,14 +24,6 @@
 #include "ui_keypad_common.h"
 #include "firmware_version.h"
 
-static uint16_t rfPowerRawToWatts(uint16_t raw) {
-  return rfPowerRawToWatts(raw, currentProfile().rfPowerMaxWatts);
-}
-
-static uint16_t rfPowerWattsToRaw(int watts) {
-  return rfPowerWattsToRaw(watts, currentProfile().rfPowerMaxWatts);
-}
-
 static int pbtRawToOffset(uint16_t raw) {
   if (raw > 255) raw = 255;
   return (int)raw - 128;
@@ -803,6 +795,20 @@ static void printFrontEndHelp() {
   helpLine(text.c_str());
 }
 
+// RF power over CAT, with the radio's range.
+static void printRfPowerHelp() {
+  if (!currentProfile().caps.getRfPower || currentProtocolType() == PROTO_YAESU_FT8X7) return;
+  uint16_t min = 0;
+  uint16_t max = 0;
+  if (!rfPowerRange(min, max)) {
+    helpLine("RFPOWER?");
+    return;
+  }
+  char line[48];
+  snprintf(line, sizeof(line), "RFPOWER? | RFPOWER <%u..%u W>", (unsigned)min, (unsigned)max);
+  helpLine(line);
+}
+
 // PROC, mic gain and VOX over CAT, as far as the profile has them, with the radio's ranges.
 static void printTxSettingsHelp() {
   const RadioCapabilities& caps = currentProfile().caps;
@@ -899,9 +905,6 @@ void printHelp(const String& topicArg) {
   helpLine("VOLUME? | VOLUME <1..9> | VOLUME STEP <+-n>");
 
   if (otherRadio) {
-    char rfPowerLine[48];
-    snprintf(rfPowerLine, sizeof(rfPowerLine), "RFPOWER? | RFPOWER <0..%d W>",
-             (int)(currentProfile().rfPowerMaxWatts ? currentProfile().rfPowerMaxWatts : 100));
     helpHeading(HELP_RADIO, "IC-7300 / CI-V extensions:");
     helpLine("CIVADDR? | CIVADDR <hex>");
     helpLine("NBLEVEL? | NBLEVEL <0..100> | NBLEVEL STEP <+-n>");
@@ -918,8 +921,8 @@ void printHelp(const String& topicArg) {
     helpLine("PBT2? | PBT2 <-128..127> | CENTER | STEP <+-n>");
     printAgcHelp();
     printFrontEndHelp();
+    printRfPowerHelp();
     printTxSettingsHelp();
-    helpLine(rfPowerLine);
     helpLine("RIT? | RIT <Hz> | RIT STEP <+-Hz> | RIT OFF | ON | TOGGLE");
     helpLine("RXTX?");
     helpLine("SPLIT? | SPLIT OFF | ON | TOGGLE");
@@ -1020,6 +1023,7 @@ void printHelp(const String& topicArg) {
     helpLine("NR? | NR OFF | ON | TOGGLE");
     printAgcHelp();
     printFrontEndHelp();
+    printRfPowerHelp();
     printTxSettingsHelp();
     helpLine("RXTX?");
     helpLine("SPLIT? | SPLIT OFF | ON | TOGGLE");
@@ -3095,39 +3099,28 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     return true;
   }
   if (upper == "RFPOWER?") {
-    uint16_t raw = 0;
-    if (!queryRfPowerLevel(raw, 800)) { reportCommandFailure("RFPOWER?", "no reply"); return true; }
-    const uint16_t watts = rfPowerRawToWatts(raw);
-    Serial.print("RFPOWER ");
-    Serial.print((int)watts);
-    Serial.println(" W");
-    if (g_speechEnabled) {
-      speakLabel("power");
-      speakNumber(String((int)watts));
-      playSilenceMs(60);
-      speakToken("watts");
-    }
+    uint16_t tenths = 0;
+    if (reportFeatureFailure(rfPowerQuery(tenths), "RFPOWER?")) return true;
+    Serial.println(rfPowerText(tenths));
+    speakRfPower(tenths);
     return true;
   }
   if (upper.startsWith("RFPOWER ")) {
-    int watts = line.substring(8).toInt();
-    const uint16_t maxWatts = currentProfile().rfPowerMaxWatts ? currentProfile().rfPowerMaxWatts : 100;
-    if (watts < 0 || watts > maxWatts) {
-      Serial.print("RFPOWER -> invalid (use 0..");
-      Serial.print((int)maxWatts);
+    uint16_t min = 0;
+    uint16_t max = 0;
+    long watts = 0;
+    if (rfPowerRange(min, max) && !parseRangedIntArg(upper, "RFPOWER ", min, max, watts)) {
+      Serial.print("RFPOWER -> invalid (use ");
+      Serial.print((int)min);
+      Serial.print("..");
+      Serial.print((int)max);
       Serial.println(" W)");
       return true;
     }
-    if (!setRfPowerLevel(rfPowerWattsToRaw(watts))) { reportCommandFailure("RFPOWER", "failed"); return true; }
-    Serial.print("RFPOWER ");
-    Serial.print(watts);
-    Serial.println(" W");
-    if (g_speechEnabled) {
-      speakLabel("power");
-      speakNumber(String(watts));
-      playSilenceMs(60);
-      speakToken("watts");
-    }
+    uint16_t tenths = 0;
+    if (reportFeatureFailure(rfPowerSet((uint16_t)watts, tenths), "RFPOWER")) return true;
+    Serial.println(rfPowerText(tenths));
+    speakRfPower(tenths);
     return true;
   }
   if (upper == "TUNER?") {

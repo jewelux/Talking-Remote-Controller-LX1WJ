@@ -76,7 +76,7 @@ constexpr uint32_t kKx2Bauds[] = {4800, 9600, 19200, 38400};
 
 constexpr RadioCapabilities kKx2Caps = {
     .getFreq = true, .setFreq = true, .getMode = true, .setMode = true,
-    .getSmeter = true, .getPower = true, .getSwr = true,
+    .getSmeter = true, .getPower = true, .getRfPower = true, .setRfPower = true, .getSwr = true,
     .getNb = true, .setNb = true,
     .getAgc = true, .setAgc = true,
     .getAtt = true, .setAtt = true, .getPreamp = true, .setPreamp = true,
@@ -84,10 +84,11 @@ constexpr RadioCapabilities kKx2Caps = {
 
 // GT002 fast and GT004 slow (the Elecraft programmer's reference and Hamlib). No off: Hamlib
 // sends GT000, the reference has off only in the K2's extended format. PA0/PA1 and RA00/RA01, the
-// attenuator 10 dB (both).
+// attenuator 10 dB (both). PCnnn in watts, 0..15 (12 on 80-20 m: a set the radio refuses reads
+// back as an error).
 constexpr SettingEncodings kKx2Settings = {
     .agc = AgcEncoding::ElecraftGt, .frontEnd = FrontEndEncoding::Kenwood, .preampLevels = 1,
-    .attLevels = 1, .attDb = {10},
+    .attLevels = 1, .attDb = {10}, .rfPower = RfPowerEncoding::PcWatts,
 };
 
 constexpr AsciiCommandSet kKx2Commands = {
@@ -114,7 +115,7 @@ constexpr uint32_t kTs480Bauds[] = {4800, 9600, 19200, 38400, 57600};
 // PR, PL, MG, VX, VG and VD as in the TS-480 PC command reference and Hamlib kenwood.c.
 constexpr RadioCapabilities kTs480Caps = {
     .getFreq = true, .setFreq = true, .getMode = true, .setMode = true,
-    .getSmeter = true, .getSwr = true,
+    .getSmeter = true, .getRfPower = true, .setRfPower = true, .getSwr = true,
     .getNr = true, .setNr = true, .getNb = true, .setNb = true,
     .getAgc = true, .setAgc = true,
     .getAtt = true, .setAtt = true, .getPreamp = true, .setPreamp = true,
@@ -124,11 +125,12 @@ constexpr RadioCapabilities kTs480Caps = {
 
 // VD 0..3000 ms in 150 ms steps, VG 0..9, GT 000 off, 001 fast, 002 slow, PA0/PA1 and
 // RA00/RA01 (TS-480 PC command reference; Hamlib agrees, and has 12 dB for both, which the
-// reference does not give).
+// reference does not give). PC in watts, 5..100 on the TS-480SAT (25 in AM; the HX goes to 200,
+// which is not offered); Hamlib and flrig agree.
 constexpr SettingEncodings kTs480Settings = {
     .voxDelay = VoxDelayEncoding::Ms4, .voxDelayMinMs = 0, .voxDelayMaxMs = 3000, .voxDelayStepMs = 150,
     .voxGainMax = 9, .agc = AgcEncoding::KenwoodGt, .frontEnd = FrontEndEncoding::Kenwood,
-    .preampLevels = 1, .attLevels = 1,
+    .preampLevels = 1, .attLevels = 1, .rfPower = RfPowerEncoding::PcWatts, .rfPowerMinWatts = 5,
 };
 
 constexpr AsciiCommandSet kTs480Commands = {
@@ -198,7 +200,7 @@ constexpr uint32_t kYaesuAsciiBauds[] = {4800, 9600, 19200, 38400};
 
 constexpr RadioCapabilities kFtdx10Caps = {
     .getFreq = true, .setFreq = true, .getMode = true, .setMode = true,
-    .getSmeter = true, .getPower = true, .getSwr = true, .getRxTx = true, .getTxFreq = true,
+    .getSmeter = true, .getPower = true, .getRfPower = true, .setRfPower = true, .getSwr = true, .getRxTx = true, .getTxFreq = true,
     .getNr = true, .setNr = true, .getNb = true, .setNb = true,
     .getNotch = true, .setNotch = true,
     .getDialLock = true, .setDialLock = true,
@@ -223,18 +225,27 @@ constexpr RadioCapabilities kFtdx101Caps = [] {
   return caps;
 }();
 
+// The FTDX101MP: as the FTDX101D, but no RF power: its CAT manual gives PC 005..100, Hamlib
+// scales PC to its 200 W.
+constexpr RadioCapabilities kFtdx101MpCaps = [] {
+  RadioCapabilities caps = kFtdx101Caps;
+  caps.getRfPower = false;
+  caps.setRfPower = false;
+  return caps;
+}();
+
 // VD, GT0, PA0 and RA0 as the FTDX10 and FTDX101 CAT manuals and Hamlib have them: VD a step,
 // 30..3000 ms; PA0 0 IPO, 1 AMP1, 2 AMP2; RA0 0 off, 1..3 6, 12 and 18 dB. The FTDX101 sends
-// them for the main band.
+// them for the main band. PC in watts, 5..100 (the manuals, Hamlib and flrig).
 constexpr SettingEncodings kFtdx10Settings = {
     .voxDelay = VoxDelayEncoding::YaesuSteps, .voxDelayMinMs = 30, .voxDelayMaxMs = 3000,
     .agc = AgcEncoding::YaesuGt0, .frontEnd = FrontEndEncoding::Yaesu, .preampLevels = 2,
-    .attLevels = 3, .attDb = {6, 12, 18},
+    .attLevels = 3, .attDb = {6, 12, 18}, .rfPower = RfPowerEncoding::PcWatts, .rfPowerMinWatts = 5,
 };
 
 constexpr RadioCapabilities kFt891Caps = {
     .getFreq = true, .setFreq = true, .getMode = true, .setMode = true,
-    .getSmeter = true, .getPower = true, .getSwr = true,
+    .getSmeter = true, .getPower = true, .getRfPower = true, .setRfPower = true, .getSwr = true,
     .getDialLock = true, .setDialLock = true,
     .getTuner = true, .setTuner = true, .startTune = true,
     .getVfo = true, .setVfo = true,
@@ -246,10 +257,11 @@ constexpr RadioCapabilities kFt891Caps = {
 
 // PR0, PL, MG, VX, VG, VD, GT0, PA0 and RA0 as the FT-891 CAT manual and Hamlib newcat have
 // them (flrig agrees but for GT, which it lacks); VD in ms, 30..3000 in 10 ms steps; PA0 0 IPO,
-// 1 AMP; RA0 0 off, 1 on (Hamlib's 12 dB is not in the manual).
+// 1 AMP; RA0 0 off, 1 on (Hamlib's 12 dB is not in the manual); PC in watts, 5..100.
 constexpr SettingEncodings kFt891Settings = {
     .voxDelay = VoxDelayEncoding::Ms4, .voxDelayMinMs = 30, .voxDelayMaxMs = 3000, .voxDelayStepMs = 10,
     .agc = AgcEncoding::YaesuGt0, .frontEnd = FrontEndEncoding::Yaesu, .preampLevels = 1, .attLevels = 1,
+    .rfPower = RfPowerEncoding::PcWatts, .rfPowerMinWatts = 5,
 };
 
 constexpr AsciiCommandSet kFtdx10Commands = {
@@ -337,7 +349,8 @@ constexpr RadioProfile kProfiles[] = {
     {.slot = 6, .name = "Elecraft KX2", .vendor = VoiceVendor::Elecraft, .voiceDigits = "2",
      .protocol = PROTO_ELECRAFT_ASCII,
      .link = {.port = RadioPort::Rs232, .baud = 38400, .bauds = kKx2Bauds},
-     .caps = kKx2Caps, .commands = &kKx2Commands, .modes = &kKx2Modes, .settings = kKx2Settings},
+     .caps = kKx2Caps, .commands = &kKx2Commands, .modes = &kKx2Modes, .settings = kKx2Settings,
+     .rfPowerMaxWatts = 15},
     {.slot = 7, .name = "Kenwood TS-480", .vendor = VoiceVendor::Kenwood, .voiceDigits = "480",
      .model = RadioModel::Ts480, .protocol = PROTO_KENWOOD_ASCII,
      .link = {.port = RadioPort::Rs232, .baud = 9600, .bauds = kTs480Bauds},
@@ -367,7 +380,7 @@ constexpr RadioProfile kProfiles[] = {
     {.slot = 13, .name = "Yaesu FTDX-101MP", .vendor = VoiceVendor::Yaesu, .voiceDigits = "101",
      .protocol = PROTO_YAESU_FTDX_ASCII,
      .link = {.port = RadioPort::Rs232, .baud = 38400, .bauds = kYaesuAsciiBauds},
-     .caps = kFtdx101Caps, .commands = &kFtdx101Commands, .modes = &kYaesuAsciiModes,
+     .caps = kFtdx101MpCaps, .commands = &kFtdx101Commands, .modes = &kYaesuAsciiModes,
      .settings = kFtdx10Settings},
     {.slot = 14, .name = "Yaesu FT-818", .vendor = VoiceVendor::Yaesu, .voiceDigits = "818",
      .model = RadioModel::Ft818, .protocol = PROTO_YAESU_FT8X7,

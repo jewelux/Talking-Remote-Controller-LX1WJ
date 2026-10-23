@@ -101,6 +101,15 @@ FeatureStatus preampSet(uint8_t level, uint8_t& levelOut);
 // Off -> 1 -> ... -> off, from the level read.
 FeatureStatus preampStep(uint8_t& levelOut);
 
+// RF power over CAT (caps.getRfPower), in tenths of a watt: Icom 14 0A scaled to the profile's
+// rfPowerMaxWatts, the ASCII radios' PC (settings.rfPower). The FT-8x7 keeps its own
+// (ft8x7SettingQuery, ft8x7RfPowerSet); here it is Unsupported.
+FeatureStatus rfPowerQuery(uint16_t& tenthsOut);
+// The watts it can be set to; false where it cannot (caps.setRfPower).
+bool rfPowerRange(uint16_t& minOut, uint16_t& maxOut);
+// Sets watts, read back into tenthsOut. Invalid outside rfPowerRange.
+FeatureStatus rfPowerSet(uint16_t watts, uint16_t& tenthsOut);
+
 // Speech processor: FT-857/897 PROC and its menu 74 level, Icom COMP, FTDX10 and FT-891 PR0 and
 // PL, TS-480 PR and its PL input level.
 // These and the mic gain and VOX reads below are Unsupported where the profile's cap (getProc,

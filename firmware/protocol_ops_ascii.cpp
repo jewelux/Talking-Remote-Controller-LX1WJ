@@ -171,6 +171,26 @@ bool asciiSetAgc(const RadioProfile& sp, AgcMode mode) {
   return asciiQueryAgc(sp, readBack, 800) && readBack == mode;
 }
 
+// PC in watts (the CAT manuals and PC command reference, Hamlib and flrig; Elecraft's reference
+// and Hamlib for the KX2).
+bool asciiQueryRfPowerTenths(const RadioProfile& sp, uint16_t& tenthsOut, uint32_t timeoutMs) {
+  if (!sp.caps.getRfPower || sp.settings.rfPower == RfPowerEncoding::None) return false;
+  String line;
+  if (!transactAsciiCommand("PC;", line, "PC", timeoutMs)) return false;
+  return asciiRfPowerDecode(line.c_str() + 2, tenthsOut);
+}
+
+bool asciiSetRfPowerWatts(const RadioProfile& sp, uint16_t watts) {
+  char cmd[8];
+  if (!sp.caps.setRfPower || sp.settings.rfPower == RfPowerEncoding::None ||
+      !asciiRfPowerEncode(watts, cmd, sizeof(cmd))) {
+    return false;
+  }
+  if (!asciiSendSimpleCommand(cmd)) return false;
+  uint16_t readBack = 0;
+  return asciiQueryRfPowerTenths(sp, readBack, 800) && readBack == watts * 10;
+}
+
 bool asciiQueryPowerState(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
   if (!sp.commands->powerStateGet[0] || !sp.commands->powerStateReplyPrefix[0]) return false;
   String line;

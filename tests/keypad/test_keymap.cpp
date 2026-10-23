@@ -38,7 +38,7 @@ KeypadTraits traitsFor(uint16_t family) {
   // Monitor and transceive are PROTO_CIV only (radio_protocol.cpp).
   t.supportsMonitor = (family & CIV) != 0;
   t.supportsTransceive = (family & CIV) != 0;
-  t.canGetRfPower = family == IC7300;
+  t.canGetRfPower = family == IC7300 || family == TS480 || family == FTDX10 || family == FT891;
   return t;
 }
 

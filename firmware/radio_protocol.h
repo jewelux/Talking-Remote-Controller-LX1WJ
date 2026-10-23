@@ -22,8 +22,6 @@ bool querySMeterRaw(int32_t& rawOut, uint32_t timeoutMs = 800);
 SMeterReading sMeterFromRaw(int32_t raw);
 bool queryPoMeterRaw(int32_t& rawOut, uint32_t timeoutMs = 800);
 bool querySWRRaw(int32_t& rawOut, uint32_t timeoutMs = 800);
-bool queryRfPowerLevel(uint16_t& valueOut, uint32_t timeoutMs = 800);
-bool setRfPowerLevel(uint16_t value);
 bool queryNr(bool& onOut, uint32_t timeoutMs = 800);
 bool setNr(bool on);
 bool queryNrLevel(uint16_t& valueOut, uint32_t timeoutMs = 800);

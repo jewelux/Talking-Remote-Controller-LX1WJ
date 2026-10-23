@@ -116,6 +116,25 @@ void speakPreamp(uint8_t level) {
   playDigit(level);
 }
 
+// 25 -> "2.5", 50 -> "5".
+static String wattsText(uint16_t tenths) {
+  String text = String((int)(tenths / 10));
+  if (tenths % 10) text += "." + String((int)(tenths % 10));
+  return text;
+}
+
+String rfPowerText(uint16_t tenths) {
+  return String("RFPOWER ") + wattsText(tenths) + " W";
+}
+
+void speakRfPower(uint16_t tenths) {
+  if (!g_speechEnabled) return;
+  speakLabel("power");
+  speakNumber(wattsText(tenths));
+  playSilenceMs(60);
+  speakToken("watts");
+}
+
 String procStateText(bool on) {
   return on ? "PROC ON" : "PROC OFF";
 }
@@ -318,12 +337,6 @@ static String spelledLetters(const char* name) {
   return spelled;
 }
 
-// 25 -> "2.5", 50 -> "5".
-static String wattsText(uint16_t tenths) {
-  String text = String((int)(tenths / 10));
-  if (tenths % 10) text += "." + String((int)(tenths % 10));
-  return text;
-}
 
 const char* ft817PowerLevelName(Ft817PowerLevel level) {
   switch (level) {

@@ -27,6 +27,9 @@ Implemented and documented for the current field-test phase:
   on the FT-891 `PREAMP OFF | ON` and `ATT OFF | ON`, Bank 2 `B` and `C`): `PA0` 0 IPO, 1 AMP1,
   2 AMP2 and `RA0` 0 off, 1..3 for 6, 12 and 18 dB, as the CAT manuals and Hamlib have them, each
   set read back. The raw `PA` console commands are gone.
+- RF power (`RFPOWER? | RFPOWER <5..100 W>`, Bank 1 `6`): `PC` in watts, as the CAT manuals,
+  Hamlib and flrig have it, read back. Not on the FTDX101MP: its manual says 005-100 and Hamlib
+  scales `PC` to 200 W.
 - AGC read and set (`AGC?`, `AGC OFF | FAST | MID | SLOW | AUTO`, Bank 2 `A`): `GT0`, as the CAT
   manual and Hamlib have it; auto reads back as auto, whichever speed the radio picked
 - speech processor and its level (`PR0`, `PL`), mic gain (`MG`), VOX with its gain and delay

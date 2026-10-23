@@ -290,6 +290,26 @@ TEST(att_steps_cycle_through_off) {
   CHECK_EQ(attStepOfDb(three, 3, 9), 0);
 }
 
+// ---- RF power ----
+
+TEST(ascii_pc_in_watts) {
+  char cmd[8];
+  CHECK(asciiRfPowerEncode(5, cmd, sizeof(cmd)));
+  CHECK_EQ(cmd, "PC005;");
+  CHECK(asciiRfPowerEncode(100, cmd, sizeof(cmd)));
+  CHECK_EQ(cmd, "PC100;");
+  CHECK(!asciiRfPowerEncode(1000, cmd, sizeof(cmd)));
+  uint16_t tenths = 0;
+  CHECK(asciiRfPowerDecode("050;", tenths) && tenths == 500);
+  CHECK(asciiRfPowerDecode("100", tenths) && tenths == 1000);
+  // Elecraft K22: PCnnnx, x 0 for tenths, 1 for watts.
+  CHECK(asciiRfPowerDecode("0050;", tenths) && tenths == 5);
+  CHECK(asciiRfPowerDecode("0101;", tenths) && tenths == 100);
+  CHECK(!asciiRfPowerDecode("0102;", tenths));
+  CHECK(!asciiRfPowerDecode("05;", tenths));
+  CHECK(!asciiRfPowerDecode("05A;", tenths));
+}
+
 // ---- ASCII lock ----
 
 TEST(lock_digit_decodes_with_the_profile_off_digits) {

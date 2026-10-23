@@ -27,6 +27,58 @@ static bool procSupported() {
   return currentProtocolType() == PROTO_CIV || isAsciiCat() || currentFt8x7Model() == Ft8x7Model::Ft857;
 }
 
+// ---- RF power ----
+
+static bool isAsciiRfPower() {
+  const ProtocolType pt = currentProtocolType();
+  return (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) &&
+         currentProfile().settings.rfPower != RfPowerEncoding::None;
+}
+
+static uint16_t profileMaxWatts() {
+  const uint16_t max = currentProfile().rfPowerMaxWatts;
+  return max ? max : 100;
+}
+
+FeatureStatus rfPowerQuery(uint16_t& tenthsOut) {
+  const RadioProfile& sp = currentProfile();
+  if (!sp.caps.getRfPower) return FeatureStatus::Unsupported;
+  if (currentProtocolType() == PROTO_CIV) {
+    uint16_t raw = 0;
+    if (!civQueryRfPowerLevel(sp, raw, 800)) return failure(FeatureStatus::NoReply);
+    tenthsOut = (uint16_t)(rfPowerRawToWatts(raw, profileMaxWatts()) * 10);
+    return FeatureStatus::Ok;
+  }
+  if (!isAsciiRfPower()) return FeatureStatus::Unsupported;
+  return asciiQueryRfPowerTenths(sp, tenthsOut, 800) ? FeatureStatus::Ok : failure(FeatureStatus::NoReply);
+}
+
+bool rfPowerRange(uint16_t& minOut, uint16_t& maxOut) {
+  const RadioProfile& sp = currentProfile();
+  if (!sp.caps.getRfPower || !sp.caps.setRfPower) return false;
+  if (currentProtocolType() != PROTO_CIV && !isAsciiRfPower()) return false;
+  minOut = sp.settings.rfPowerMinWatts;
+  maxOut = profileMaxWatts();
+  return true;
+}
+
+FeatureStatus rfPowerSet(uint16_t watts, uint16_t& tenthsOut) {
+  uint16_t min = 0;
+  uint16_t max = 0;
+  if (!rfPowerRange(min, max)) return FeatureStatus::Unsupported;
+  if (watts < min || watts > max) return FeatureStatus::Invalid;
+  const RadioProfile& sp = currentProfile();
+  if (currentProtocolType() == PROTO_CIV) {
+    const uint16_t raw = rfPowerWattsToRaw(watts, max);
+    if (!civSetRfPowerLevel(sp, raw)) return failure(FeatureStatus::Failed);
+    tenthsOut = (uint16_t)(rfPowerRawToWatts(raw, max) * 10);
+    return FeatureStatus::Ok;
+  }
+  if (!asciiSetRfPowerWatts(sp, watts)) return failure(FeatureStatus::Failed);
+  tenthsOut = (uint16_t)(watts * 10);
+  return FeatureStatus::Ok;
+}
+
 FeatureStatus procQuery(bool& on) {
   if (!procSupported()) return FeatureStatus::Unsupported;
   const RadioProfile& sp = currentProfile();

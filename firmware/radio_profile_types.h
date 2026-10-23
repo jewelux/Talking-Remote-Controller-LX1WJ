@@ -258,6 +258,9 @@ struct SettingEncodings {
   uint8_t preampLevels = 0;
   uint8_t attLevels = 0;
   uint8_t attDb[3] = {};
+  // An ASCII radio's RF power, rfPowerMinWatts..the profile's rfPowerMaxWatts. CI-V uses 14 0A.
+  RfPowerEncoding rfPower = RfPowerEncoding::None;
+  uint8_t rfPowerMinWatts = 0;
 };
 
 inline constexpr AsciiCommandSet kNoAsciiCommands{};

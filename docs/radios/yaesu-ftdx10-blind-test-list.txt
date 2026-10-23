@@ -21,6 +21,8 @@ Tuner and front end
 Bank 1, key 5 short - tuner state
 Bank 1, key 5 long - tuner on or off
 Bank 1, key 5 double - start tune
+Bank 1, key 6 short - RF power setting
+Bank 1, key 6 long - RF power entry in watts, then D
 Bank 2, key B short - preamp state
 Bank 2, key B long - next preamp level
 Bank 2, key C short - attenuator state

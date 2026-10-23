@@ -300,6 +300,24 @@ uint8_t attStepOfDb(const uint8_t* attDb, uint8_t levels, uint8_t db) {
   return 0;
 }
 
+bool asciiRfPowerDecode(const char* digits, uint16_t& tenthsOut) {
+  int value = 0;
+  if (exactDigits(digits, 3, value)) {
+    tenthsOut = (uint16_t)(value * 10);
+    return true;
+  }
+  int range = 0;
+  if (!exactDigits(digits, 4, range)) return false;
+  value = range / 10;
+  if (range % 10 > 1) return false;
+  tenthsOut = (uint16_t)(range % 10 ? value * 10 : value);
+  return true;
+}
+
+bool asciiRfPowerEncode(uint16_t watts, char* out, size_t size) {
+  return watts <= 999 && snprintf(out, size, "PC%03u;", (unsigned)watts) == 6;
+}
+
 bool asciiLockDigitDecode(char digit, const char* offDigits, bool& onOut) {
   if (digit < '0' || digit > '9') return false;
   onOut = strchr(offDigits, digit) == nullptr;

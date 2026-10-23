@@ -58,10 +58,10 @@ KeyBinding bank1(const KeypadTraits& t, char key) {
       if (t.layout == L::Ftdx10) return bind(SEND("TUNER?"), SEND("TUNER TOGGLE"), SEND("TUNE"));
       return {};
     case '6':
-      if (t.layout == L::Civ) return bind(t.canGetRfPower ? queryBank1RfPower : nullptr, beginBank1RfPowerSet);
       // FT-8x7: experimental; the FT-817/818 picks a level.
       if (t.layout == L::Ft857 || t.layout == L::Ft817) return bind(queryBank1RfPower, beginBank1RfPowerSet);
-      return {};
+      if (t.layout == L::Ft8x7) return {};
+      return bind(t.canGetRfPower ? queryBank1RfPower : nullptr, beginBank1RfPowerSet);
     case '7': return bind(queryBank1Smeter);
     case '8': return bind(queryBank1Swr);
     case '9': return bind(queryBank1Mode, beginBank1ModeSelect);

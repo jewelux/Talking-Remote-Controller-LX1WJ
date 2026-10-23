@@ -24,3 +24,9 @@ enum class FrontEndEncoding : uint8_t {
   Yaesu,    // PA0n, RA0n (FTDX10/101, FT-891)
   Kenwood,  // PAn, RAnn (TS-480, KX2); the TS-480 answers PAn0 and RAnn00
 };
+
+// How an ASCII radio's PC reads and sets the RF power. The Icoms all use 14 0A.
+enum class RfPowerEncoding : uint8_t {
+  None,
+  PcWatts,  // PCnnn in watts (FTDX10, FTDX101D, FT-891, TS-480, KX2); the KX2 may answer PCnnnx
+};

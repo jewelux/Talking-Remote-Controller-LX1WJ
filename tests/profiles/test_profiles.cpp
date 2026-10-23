@@ -290,6 +290,34 @@ TEST(every_preamp_and_att_cap_has_an_encoding) {
   }
 }
 
+// RF power: Icom 14 0A, the ASCII radios' PC in watts; not on the FTDX101MP, whose manual and
+// Hamlib disagree on the scale.
+TEST(rf_power_caps_and_ranges) {
+  const uint8_t settable[] = {1, 3, 17, 18, 6, 7, 11, 12, 15};
+  for (uint8_t s : settable) CHECK(slot(s).caps.getRfPower && slot(s).caps.setRfPower);
+  const uint8_t pc[] = {6, 7, 11, 12, 15};
+  for (uint8_t s : pc) CHECK(slot(s).settings.rfPower == RfPowerEncoding::PcWatts);
+  CHECK(!slot(13).caps.getRfPower && !slot(13).caps.setRfPower);
+  CHECK_EQ(slot(6).rfPowerMaxWatts, 15);
+  CHECK_EQ(slot(6).settings.rfPowerMinWatts, 0);
+  const uint8_t five[] = {7, 11, 12, 15};
+  for (uint8_t s : five) {
+    CHECK_EQ(slot(s).settings.rfPowerMinWatts, 5);
+    CHECK_EQ(slot(s).rfPowerMaxWatts, 100);
+  }
+  CHECK_EQ(slot(17).rfPowerMaxWatts, 10);
+}
+
+// An ASCII radio reads the RF power only through its PC encoding, and only ASCII radios have one.
+TEST(every_ascii_rf_power_cap_has_an_encoding) {
+  for (size_t i = 0; i < profileCount(); ++i) {
+    const RadioProfile& p = profileAt(i);
+    if (isAscii(p.protocol) && p.caps.getRfPower) CHECK(p.settings.rfPower != RfPowerEncoding::None);
+    if (p.settings.rfPower != RfPowerEncoding::None) CHECK(isAscii(p.protocol));
+    CHECK(p.settings.rfPowerMinWatts < p.rfPowerMaxWatts);
+  }
+}
+
 TEST(g106_is_ttl_civ_with_freq_and_mode_only) {
   const RadioProfile& g106 = slot(5);
   CHECK(g106.protocol == PROTO_CIV);

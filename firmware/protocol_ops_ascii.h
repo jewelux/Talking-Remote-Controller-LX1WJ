@@ -19,6 +19,10 @@ bool asciiQueryPreampLevel(const RadioProfile& sp, uint8_t& levelOut, uint32_t t
 bool asciiSetPreampLevel(const RadioProfile& sp, uint8_t level);
 bool asciiQueryAttStep(const RadioProfile& sp, uint8_t& stepOut, uint32_t timeoutMs);
 bool asciiSetAttStep(const RadioProfile& sp, uint8_t step);
+// The RF power by settings.rfPower (caps.getRfPower, setRfPower), in tenths of a watt; the set,
+// in watts, is read back.
+bool asciiQueryRfPowerTenths(const RadioProfile& sp, uint16_t& tenthsOut, uint32_t timeoutMs);
+bool asciiSetRfPowerWatts(const RadioProfile& sp, uint16_t watts);
 // AGC by settings.agc (caps.getAgc, setAgc); the set is read back. AUTO reads back as AUTO.
 bool asciiQueryAgc(const RadioProfile& sp, AgcMode& out, uint32_t timeoutMs);
 bool asciiSetAgc(const RadioProfile& sp, AgcMode mode);

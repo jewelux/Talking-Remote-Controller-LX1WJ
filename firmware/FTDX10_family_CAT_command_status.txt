@@ -65,7 +65,7 @@ OI | Opposite band information | nein | keine FTDX10-Implementierung gefunden
 OS | Offset (repeater shift) | nein | keine FTDX10-Implementierung gefunden
 PA | Pre-amp (IPO) | implementiert | PREAMP? und PREAMP OFF/1/2 (PA0, nach CAT-Handbuch und Hamlib), mit Ruecklesen; Bank 2 B
 PB | Play back | nein | keine FTDX10-Implementierung gefunden
-PC | Power control | nein | nur Meterabfrage vorhanden, keine Power-Control-Implementierung
+PC | Power control | implementiert | RFPOWER? und RFPOWER 5..100 W (PC in Watt, nach CAT-Handbuch, Hamlib und flrig), mit Ruecklesen; Bank 1 6; nicht beim FTDX101MP
 PL | Speech processor level | teilweise | PL read ueber Konsole PROCLEVEL? vorhanden, nicht am Radio getestet
 PR | Speech processor | teilweise | PR0 read ueber Konsole PROC? vorhanden, nicht am Radio getestet; Handbuch: 1 = aus, 2 = ein, gelesen wird 0 = aus, 1 = ein wie Hamlib es beim FTDX101/FT-991 fand
 PS | Power switch | teilweise | PS read/on/off in ASCII-Konsole vorhanden, spezieller FTDX10/101 Power-on-Workaround implementiert

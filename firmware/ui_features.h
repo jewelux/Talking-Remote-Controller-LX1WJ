@@ -34,6 +34,10 @@ void speakAtt(const AttState& state);
 String preampText(uint8_t level);
 void speakPreamp(uint8_t level);
 
+// "RFPOWER 50 W", "RFPOWER 0.5 W"; "power 50 watts".
+String rfPowerText(uint16_t tenths);
+void speakRfPower(uint16_t tenths);
+
 // "PROC ON", "PROC OFF"; "processor on".
 String procStateText(bool on);
 void speakProcState(bool on);

@@ -81,6 +81,13 @@ uint8_t attNextStep(const uint8_t* attDb, uint8_t levels, bool on, uint8_t db);
 // The step of attDb that is db dB, from 1; 0 where none is.
 uint8_t attStepOfDb(const uint8_t* attDb, uint8_t levels, uint8_t db);
 
+// The RF power of a PC reply in tenths of a watt, given what follows "PC": nnn watts, or the
+// Elecraft K22 nnnx, x 0 for tenths and 1 for watts (the ';' may be left out). False on anything
+// else.
+bool asciiRfPowerDecode(const char* digits, uint16_t& tenthsOut);
+// "PCnnn;" for watts (0..999), into out.
+bool asciiRfPowerEncode(uint16_t watts, char* out, size_t size);
+
 // An ASCII lock reply digit: on unless it is one of offDigits ("0", or "04" on the FTDX101).
 // False when digit is not a digit.
 bool asciiLockDigitDecode(char digit, const char* offDigits, bool& onOut);

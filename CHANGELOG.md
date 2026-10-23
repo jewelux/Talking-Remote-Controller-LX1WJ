@@ -67,8 +67,9 @@
   reads or sets the AGC and is free
 - Bank 2 `B` says the preamp and `C` the attenuator on every radio but the FT-8x7 (where `B` stays
   IPO and its double press ATT, and `C` also says ATT); holding either goes to the next level, and
-  from the last one to off. On the FTDX10, Bank 1 `6` no longer reads or toggles the preamp and is
-  free
+  from the last one to off. On the FTDX10, Bank 1 `6` no longer reads or toggles the preamp
+- Bank 1 `6` says the RF power setting and long press enters it in watts on the FTDX10, FTDX101D,
+  FT-891, TS-480 and KX2 too, as on the Icoms
 
 ### Frequency
 
@@ -182,6 +183,9 @@
   FT-891, TS-480 and KX2. Attenuator 20 dB on the IC-7300 and IC-705; 6, 12 and 18 dB on the
   IC-7760, FTDX10 and FTDX101D/MP; 10 dB on the KX2; on and off on the FT-891 and TS-480. The
   raw `PA?`, `PA ON`, `PA OFF` and `PA TOGGLE` are gone. Not yet tested on these radios
+- `RFPOWER?` and `RFPOWER <W>` also work on the FTDX10, FTDX101D, FT-891 and TS-480 (5–100 W) and
+  the KX2 (0–15 W), each set read back; `HELP` gives the radio's range. Not on the FTDX101MP, whose
+  manual and Hamlib disagree on the scale. Not yet tested on these radios
 
 ### Radio profiles
 
