@@ -50,8 +50,6 @@ bool asciiSetYaesuMicGain(const RadioProfile& sp, uint8_t level);
 bool asciiSetYaesuVox(const RadioProfile& sp, bool on);
 bool asciiSetYaesuVoxGain(const RadioProfile& sp, uint8_t level);
 bool asciiSetYaesuVoxDelayMs(const RadioProfile& sp, uint16_t ms);
-// The VD delay steps of its steps from the one nearest ms, kept within 30..3000.
-uint16_t asciiYaesuVoxDelayStep(uint16_t ms, int steps);
 bool asciiQueryActiveVfoA(const RadioProfile& sp, bool& vfoAOut, uint32_t timeoutMs);
 bool asciiSelectVfoA(const RadioProfile& sp);
 bool asciiSelectVfoB(const RadioProfile& sp);

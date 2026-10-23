@@ -25,16 +25,11 @@
 #include "firmware_version.h"
 
 static uint16_t rfPowerRawToWatts(uint16_t raw) {
-  const uint16_t maxWatts = currentProfile().rfPowerMaxWatts ? currentProfile().rfPowerMaxWatts : 100;
-  if (raw >= 255) return maxWatts;
-  return (uint16_t)((raw * (uint32_t)maxWatts + 127U) / 255U);
+  return rfPowerRawToWatts(raw, currentProfile().rfPowerMaxWatts);
 }
 
 static uint16_t rfPowerWattsToRaw(int watts) {
-  const uint16_t maxWatts = currentProfile().rfPowerMaxWatts ? currentProfile().rfPowerMaxWatts : 100;
-  if (watts < 0) watts = 0;
-  if (watts > maxWatts) watts = maxWatts;
-  return (uint16_t)((watts * 255UL + (maxWatts / 2U)) / maxWatts);
+  return rfPowerWattsToRaw(watts, currentProfile().rfPowerMaxWatts);
 }
 
 static int pbtRawToOffset(uint16_t raw) {

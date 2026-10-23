@@ -62,6 +62,7 @@ to completion, and that action talks to the radio synchronously.
 | Shared features | `radio_features.*`, `ui_features.*` | NR, NB and notch, used by both keypad and console |
 | Radio API | `radio_protocol.*`, `radio_runtime.*`, `radio_state.*` | Protocol-independent calls, and the tracked `live` state |
 | Protocols | `protocol_ops_*`, `protocol_*`, `packet_*`, `transport_serial.*` | CI-V, Kenwood/Elecraft/FTDX ASCII, Yaesu FT-8x7 5-byte CAT |
+| CAT setting values | `cat_setting_codec.*` | How CAT radios encode setting values: CI-V levels and RF power, the Yaesu ASCII VOX delay steps, lock reply digits. No `Arduino.h` |
 | FT-8x7 fields | `ft8x7_codec.*`, `ft8x7_eeprom_map.*`, `ft8x7_model.h` | CAT frame fields, the EEPROM map per model, the FT-8x7 model from the `RadioModel`. No `Arduino.h`; `protocol_ft8x7_eeprom.*` reads the EEPROM with them |
 | Profiles | `radio_profile_types.h`, `radio_profile_table.*`, `radio_catalog.*`, `radio_profile.*` | What a radio is (connection, protocol, capabilities, command strings), the built-in radios, the active one, and switching between them. The types and the table have no `Arduino.h` |
 | Speech | `ui_speech.*`, `voice_pack*`, `audio_stretch.*` | Tokens, the audio queue, the clips in the voice pack partition, and the speech speed (time-stretch). `voice_pack_format.*` and `audio_stretch.*` have no `Arduino.h` |
@@ -129,13 +130,14 @@ built into the firmware, `voice_fallback.h`) and prints `VOICE PACK MISSING`;
 
 ### Host tests (no hardware)
 
-The keypad logic and the FT-8x7 frame and EEPROM decoding are plain C++ and
-are tested with g++:
+The keypad logic, the FT-8x7 frame and EEPROM decoding and the CAT setting
+values are plain C++ and are tested with g++:
 
 ```sh
 make -C tests/keypad               # build and run everything
 make -C tests/keypad FILTER=hold   # only tests whose name contains "hold"
 make -C tests/ft8x7                # FT-817/857/897 CAT fields and EEPROM map
+make -C tests/cat                  # CAT setting values (CI-V levels, Yaesu ASCII steps)
 make -C tests/audio                # voice pack layout, speech speed
 ```
 

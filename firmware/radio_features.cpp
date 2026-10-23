@@ -1,4 +1,5 @@
 #include "radio_features.h"
+#include "cat_setting_codec.h"
 #include "packet_ascii.h"
 #include "protocol_ascii.h"
 #include "protocol_ops_ascii.h"
@@ -898,7 +899,7 @@ FeatureStatus voxDelayStep(int delta, uint16_t& msOut) {
   uint16_t ms = 0;
   const FeatureStatus status = voxDelayQuery(ms);
   if (status != FeatureStatus::Ok) return status;
-  if (target == TxWrite::Ftdx10) return voxDelaySet(asciiYaesuVoxDelayStep(ms, delta), msOut);
+  if (target == TxWrite::Ftdx10) return voxDelaySet(yaesuAsciiVoxDelayStepBy(ms, delta), msOut);
   // CI-V: 100 ms steps.
   if (delta > 20) delta = 20;
   if (delta < -20) delta = -20;
