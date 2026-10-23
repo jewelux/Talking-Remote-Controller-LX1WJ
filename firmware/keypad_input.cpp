@@ -120,10 +120,20 @@ void KeypadInput::onKey(char key, KeyGesture gesture, uint32_t nowMs) {
     return;
   }
   if (gesture == KeyGesture::Held) {
+    if (key == valueStepKey_) {
+      valueStepKey_ = 0;
+      if (mode_ == InputMode::ValueEntry) stepValue(key, value_.spec().bigSteps);
+      return;
+    }
     held(key);
     return;
   }
   if (gesture != KeyGesture::Released) return;
+  // A B or C short in value entry: one step, unless a key ended the entry meanwhile.
+  if (key == valueStepKey_) {
+    valueStepKey_ = 0;
+    if (mode_ == InputMode::ValueEntry) stepValue(key, 1);
+  }
 
   // The '*' hold that opened bank select ends here. Its release is silent even
   // when the hold was not tracked.
@@ -158,6 +168,7 @@ bool KeypadInput::coPressed(char key, KeyGesture gesture) {
       coPress_ = true;
       pending_.active = false;
       oneShotBank_ = 0;
+      valueStepKey_ = 0;
       listener_.onRejected("TWO KEYS");
     }
     down_.set(key);
@@ -173,7 +184,8 @@ bool KeypadInput::coPressed(char key, KeyGesture gesture) {
 
 // Bank, profile and choice select and the entries have no long or double
 // action, so their keys act as soon as they go down. The hold and release
-// that follow do nothing, even once the key has ended the mode.
+// that follow do nothing, even once the key has ended the mode. Except B and C
+// in value entry: they wait, and held they take a big step.
 void KeypadInput::pressedInMode(char key) {
   swallowed_.set(key);
   // The '*' that opened bank select, pressed again: silent.
@@ -248,6 +260,7 @@ void KeypadInput::resetFocus() {
 
 void KeypadInput::beginValueEntry(const ValueSpec& spec, const EntrySeed& seed, TargetVfo targetVfo) {
   beginEntry(InputMode::ValueEntry, targetVfo);
+  valueStepKey_ = 0;
   value_.begin(spec, seed);
 }
 
@@ -398,7 +411,8 @@ char KeypadInput::choiceKeyAt(int at) const {
   return at < 10 ? (char)('0' + at) : 0;
 }
 
-// Value entry: digits and '*' type, A says the value so far, B and C step it.
+// Value entry: digits and '*' type, A says the value so far, B and C step it
+// once released, or by its big step once held.
 void KeypadInput::pressedValue(char key) {
   const ValueSpec& spec = value_.spec();
   if (key == 'A') {
@@ -408,20 +422,28 @@ void KeypadInput::pressedValue(char key) {
       return;
     }
   } else if (key == 'B' || key == 'C') {
-    const int8_t dir = key == 'B' ? 1 : -1;
-    switch (value_.step(dir)) {
-      case ValueEntry::Step::Moved: {
-        int32_t v = 0;
-        value_.current(v);
-        listener_.onValueStepped(spec, v);
-        return;
-      }
-      case ValueEntry::Step::AtLimit: listener_.onLimit(spec.name, dir > 0); return;
-      case ValueEntry::Step::NoValue: break;
-    }
+    valueStepKey_ = key;
+    return;
   } else if (value_.type(key)) {
     listener_.onValueDigit(spec, key, value_.digits());
     return;
+  }
+  const char label[2] = {key, '\0'};
+  reportRejected(spec.name, label);
+}
+
+void KeypadInput::stepValue(char key, uint8_t times) {
+  const ValueSpec& spec = value_.spec();
+  const int8_t dir = key == 'B' ? 1 : -1;
+  switch (value_.step(dir, times)) {
+    case ValueEntry::Step::Moved: {
+      int32_t v = 0;
+      value_.current(v);
+      listener_.onValueStepped(spec, v);
+      return;
+    }
+    case ValueEntry::Step::AtLimit: listener_.onLimit(spec.name, dir > 0); return;
+    case ValueEntry::Step::NoValue: break;
   }
   const char label[2] = {key, '\0'};
   reportRejected(spec.name, label);

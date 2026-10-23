@@ -57,7 +57,8 @@ The first `B` or `C` after another key names the focus; the next ones give only 
 past the end of the range says "maximum" or "minimum" and changes nothing.
 
 RF power and the mode wait for `D`: `B` or `C` reads the value once and opens the entry or pick
-one step away, ending in "please". More `B` and `C` presses step with no radio traffic, `D` sets,
+one step away, ending in "please". More `B` and `C` presses step with no radio traffic (RF power
+held: the big step, as before the entry opened), `D` sets,
 `#` cancels. The FT-817/818 power steps through its levels and stops at the lowest and highest. The
 mode walks the modes in the order of the mode select digits and goes round: after the last comes
 the first. The RIT offset, volume and speech speed change at once.

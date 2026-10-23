@@ -1695,12 +1695,45 @@ TEST(input_value_entry_out_of_range_stays) {
   CHECK_LOG(f, "limit RFPOWER max", "value staged RFPOWER 1000", "value commit RFPOWER 1000 vfo0");
 }
 
-TEST(input_value_entry_ignores_holds_and_clears_and_times_out) {
+// B and C held take the big step, up to the end of the range; other holds act as a press.
+TEST(input_value_entry_holds_take_a_big_step) {
   Fake f;
   KeypadInput in(f);
   in.beginValueEntry(powerSpec(), seedOf(450));
   hold(in, 'B');
+  hold(in, 'C');
+  hold(in, 'C');
+  CHECK_LOG(f, "value step RFPOWER 500", "value step RFPOWER 450", "value step RFPOWER 400");
+  in.beginValueEntry(powerSpec(), seedOf(980));
+  hold(in, 'B');
+  hold(in, 'B');
+  hold(in, 'A');
+  CHECK_LOG(f, "value step RFPOWER 1000", "limit RFPOWER max", "value say RFPOWER 1000");
+  in.beginValueEntry(powerSpec());
+  hold(in, 'C');
+  CHECK_LOG(f, "rejected RFPOWER C");
+}
+
+// B and C step on their release: one that went down before the entry ended does nothing.
+TEST(input_value_entry_steps_on_release) {
+  Fake f;
+  KeypadInput in(f);
+  in.beginValueEntry(powerSpec(), seedOf(450));
+  in.onKey('B', KeyGesture::Pressed, 0);
+  CHECK_LOG(f);
+  in.onKey('B', KeyGesture::Released, 0);
   CHECK_LOG(f, "value step RFPOWER 460");
+  in.onKey('C', KeyGesture::Pressed, 0);
+  in.poll(1 + KeypadInput::kEntryTimeoutMs);
+  in.onKey('C', KeyGesture::Released, 1 + KeypadInput::kEntryTimeoutMs);
+  CHECK_EQ(in.mode(), InputMode::Normal);
+  CHECK_LOG(f, "timeout ValueEntry RFPOWER");
+}
+
+TEST(input_value_entry_clears_and_times_out) {
+  Fake f;
+  KeypadInput in(f);
+  in.beginValueEntry(powerSpec(), seedOf(450));
   tap(in, '#');
   CHECK_EQ(in.mode(), InputMode::Normal);
   CHECK_LOG(f, "clear");

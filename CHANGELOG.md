@@ -80,7 +80,7 @@
   FT-891, TS-480 and KX2 too, as on the Icoms
 - the RF power, CTCSS and DCS entries start from the radio's value: `A` says the value so far, `B`
   steps it up and `C` down (RF power 1 W up to 20 W, then 5 W; CTCSS and DCS the next standard
-  tone or code), from a typed number too. `D` sets it. A typed value past the range says
+  tone or code), from a typed number too; held, they take a big step of 5. `D` sets it. A typed value past the range says
   "maximum" or "minimum" and the end value followed by "please": nothing is set yet, and a second
   `D` sets it. A step past the end says "maximum" or "minimum" and changes nothing. CTCSS takes
   `*` as the point (`88*5`) as well as `885`

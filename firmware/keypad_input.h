@@ -290,6 +290,8 @@ class KeypadInput {
   // order), or 0 past the end.
   char choiceKeyAt(int at) const;
   void pressedValue(char key);
+  // B or C (key) in value entry, times steps: at the end it says which, with no value it beeps.
+  void stepValue(char key, uint8_t times);
   void pressedEntry(const EntrySpec& entry, char key);
   bool takesDigit(const EntrySpec& entry, char key) const;
   void enter();
@@ -328,6 +330,8 @@ class KeypadInput {
   bool choiceKnown_ = false;
   uint8_t choiceValue_ = 0;
   ValueEntry value_;
+  // B or C down in value entry, waiting for its release (a step) or hold (a big step), or 0.
+  char valueStepKey_ = 0;
   KeySet swallowed_;
   DoubleClick pending_;
   // Keys that are down now, and whether two were down at once: every event is
