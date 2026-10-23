@@ -242,14 +242,15 @@ FeatureStatus notchToggle(NotchState& out) {
 
 // ---- Speech processor ----
 
-static bool isFtdx10() {
-  return currentRadioModel() == RadioModel::Ftdx10;
+static bool isYaesuAscii() {
+  return currentProtocolType() == PROTO_YAESU_FTDX_ASCII;
 }
 
-// The profile's cap, and a read HamTRC has for the radio.
+// The profile's cap, and a read HamTRC has for the radio. The Yaesu ASCII radios read PR, PL,
+// MG, VX, VG and VD; the profile's caps say which of them has the commands.
 static bool procSupported() {
   if (!currentProfile().caps.getProc) return false;
-  return currentProtocolType() == PROTO_CIV || isFtdx10() || currentFt8x7Model() == Ft8x7Model::Ft857;
+  return currentProtocolType() == PROTO_CIV || isYaesuAscii() || currentFt8x7Model() == Ft8x7Model::Ft857;
 }
 
 FeatureStatus procQuery(bool& on) {
@@ -257,7 +258,7 @@ FeatureStatus procQuery(bool& on) {
   const RadioProfile& sp = currentProfile();
   bool ok = false;
   if (currentProtocolType() == PROTO_CIV) ok = civQueryProc(sp, on, 800);
-  else if (isFtdx10()) ok = asciiQueryYaesuProc(sp, on, 800);
+  else if (isYaesuAscii()) ok = asciiQueryYaesuProc(sp, on, 800);
   else ok = yaesuFt8x7QueryFlag(Ft8x7Flag::Proc, on, YAESU_CAT_REPLY_TIMEOUT_MS);
   return ok ? FeatureStatus::Ok : failure(FeatureStatus::NoReply);
 }
@@ -270,7 +271,7 @@ FeatureStatus procLevelQuery(uint8_t& level) {
     uint16_t raw = 0;
     ok = civQueryProcLevel(sp, raw, 800);
     level = levelRawToPercent(raw);
-  } else if (isFtdx10()) {
+  } else if (isYaesuAscii()) {
     ok = asciiQueryYaesuProcLevel(sp, level, 800);
   } else {
     uint16_t value = 0;
@@ -301,7 +302,7 @@ static FeatureStatus ft8x7MicGainQuery(uint8_t& level) {
 
 static bool micGainSupported() {
   if (!currentProfile().caps.getMicGain) return false;
-  return currentProtocolType() == PROTO_CIV || isFtdx10() || currentFt8x7Model() != Ft8x7Model::None;
+  return currentProtocolType() == PROTO_CIV || isYaesuAscii() || currentFt8x7Model() != Ft8x7Model::None;
 }
 
 FeatureStatus micGainQuery(uint8_t& level) {
@@ -312,7 +313,7 @@ FeatureStatus micGainQuery(uint8_t& level) {
     uint16_t raw = 0;
     ok = civQueryMicGain(sp, raw, 800);
     level = levelRawToPercent(raw);
-  } else if (isFtdx10()) {
+  } else if (isYaesuAscii()) {
     ok = asciiQueryYaesuMicGain(sp, level, 800);
   } else {
     return ft8x7MicGainQuery(level);
@@ -324,7 +325,7 @@ FeatureStatus micGainQuery(uint8_t& level) {
 
 static bool voxSupported() {
   if (!currentProfile().caps.getVox) return false;
-  return currentProtocolType() == PROTO_CIV || isFtdx10() || currentFt8x7Model() != Ft8x7Model::None;
+  return currentProtocolType() == PROTO_CIV || isYaesuAscii() || currentFt8x7Model() != Ft8x7Model::None;
 }
 
 FeatureStatus voxQuery(bool& on) {
@@ -332,7 +333,7 @@ FeatureStatus voxQuery(bool& on) {
   const RadioProfile& sp = currentProfile();
   bool ok = false;
   if (currentProtocolType() == PROTO_CIV) ok = civQueryVox(sp, on, 800);
-  else if (isFtdx10()) ok = asciiQueryYaesuVox(sp, on, 800);
+  else if (isYaesuAscii()) ok = asciiQueryYaesuVox(sp, on, 800);
   else ok = yaesuFt8x7QueryFlag(Ft8x7Flag::Vox, on, YAESU_CAT_REPLY_TIMEOUT_MS);
   return ok ? FeatureStatus::Ok : failure(FeatureStatus::NoReply);
 }
@@ -345,7 +346,7 @@ FeatureStatus voxGainQuery(uint8_t& level) {
     uint16_t raw = 0;
     ok = civQueryVoxGain(sp, raw, 800);
     level = levelRawToPercent(raw);
-  } else if (isFtdx10()) {
+  } else if (isYaesuAscii()) {
     ok = asciiQueryYaesuVoxGain(sp, level, 800);
   } else {
     ok = yaesuFt8x7QueryVoxGain(level, YAESU_CAT_REPLY_TIMEOUT_MS);
@@ -360,7 +361,7 @@ FeatureStatus voxDelayQuery(uint16_t& ms) {
   if (currentProtocolType() == PROTO_CIV && !civVoxDelayAddr(sp.model, civAddr)) return FeatureStatus::Unsupported;
   bool ok = false;
   if (currentProtocolType() == PROTO_CIV) ok = civQueryVoxDelayMs(sp, ms, 800);
-  else if (isFtdx10()) ok = asciiQueryYaesuVoxDelayMs(sp, ms, 800);
+  else if (isYaesuAscii()) ok = asciiQueryYaesuVoxDelayMs(sp, ms, 800);
   else ok = yaesuFt8x7QueryVoxDelayMs(ms, YAESU_CAT_REPLY_TIMEOUT_MS);
   return ok ? FeatureStatus::Ok : failure(FeatureStatus::NoReply);
 }
@@ -691,12 +692,12 @@ FeatureStatus ft8x7CwBfoSet(Ft857CwBfo bfo, Ft8x7SettingState& out) {
 
 // Where a write goes: over CAT where the profile has the write cap, or, experimentally
 // (caps.setRadioMenu), to the FT-8x7 EEPROM. ft8x7: the FT-8x7 model keeps the setting.
-enum class TxWrite : uint8_t { None, Civ, Ftdx10, Ft8x7 };
+enum class TxWrite : uint8_t { None, Civ, YaesuAscii, Ft8x7 };
 
 static TxWrite txWriteTarget(bool readable, bool capSet, bool ft8x7) {
   if (!readable) return TxWrite::None;
   if (currentProtocolType() == PROTO_CIV) return capSet ? TxWrite::Civ : TxWrite::None;
-  if (isFtdx10()) return capSet ? TxWrite::Ftdx10 : TxWrite::None;
+  if (isYaesuAscii()) return capSet ? TxWrite::YaesuAscii : TxWrite::None;
   return ft8x7 && currentProfile().caps.setRadioMenu ? TxWrite::Ft8x7 : TxWrite::None;
 }
 
@@ -705,7 +706,7 @@ static FeatureStatus catWriteStatus(bool ok) {
   return ok ? FeatureStatus::Ok : failure(FeatureStatus::Failed);
 }
 
-// Sets a CAT level of 0..100 percent: CI-V scaled to 0..255, FTDX10 as it is. levelOut is the
+// Sets a CAT level of 0..100 percent: CI-V scaled to 0..255, Yaesu ASCII as it is. levelOut is the
 // level set.
 template <typename CivSet, typename AsciiSet>
 static FeatureStatus catLevelSet(TxWrite target, uint8_t level, CivSet civSet, AsciiSet asciiSet,
@@ -737,7 +738,7 @@ FeatureStatus procSet(bool on) {
   switch (procWriteTarget()) {
     case TxWrite::None: return FeatureStatus::Unsupported;
     case TxWrite::Civ: return catWriteStatus(civSetProc(sp, on));
-    case TxWrite::Ftdx10: return catWriteStatus(asciiSetYaesuProc(sp, on));
+    case TxWrite::YaesuAscii: return catWriteStatus(asciiSetYaesuProc(sp, on));
     case TxWrite::Ft8x7: break;
   }
   return eepromWriteStatus(yaesuFt8x7SetFlag(Ft8x7Flag::Proc, on, kFt8x7TimeoutMs));
@@ -815,7 +816,7 @@ FeatureStatus voxSet(bool on) {
   switch (voxWriteTarget()) {
     case TxWrite::None: return FeatureStatus::Unsupported;
     case TxWrite::Civ: return catWriteStatus(civSetVox(sp, on));
-    case TxWrite::Ftdx10: return catWriteStatus(asciiSetYaesuVox(sp, on));
+    case TxWrite::YaesuAscii: return catWriteStatus(asciiSetYaesuVox(sp, on));
     case TxWrite::Ft8x7: break;
   }
   return eepromWriteStatus(yaesuFt8x7SetFlag(Ft8x7Flag::Vox, on, kFt8x7TimeoutMs));
@@ -868,7 +869,7 @@ bool voxDelayRange(uint16_t& minOut, uint16_t& maxOut) {
   if (target == TxWrite::Civ) {
     minOut = 0;
     maxOut = 2000;
-  } else if (target == TxWrite::Ftdx10) {
+  } else if (target == TxWrite::YaesuAscii) {
     minOut = 30;
   } else if (currentIsFt817Family()) {
     maxOut = 2500;
@@ -899,7 +900,7 @@ FeatureStatus voxDelayStep(int delta, uint16_t& msOut) {
   uint16_t ms = 0;
   const FeatureStatus status = voxDelayQuery(ms);
   if (status != FeatureStatus::Ok) return status;
-  if (target == TxWrite::Ftdx10) return voxDelaySet(yaesuAsciiVoxDelayStepBy(ms, delta), msOut);
+  if (target == TxWrite::YaesuAscii) return voxDelaySet(yaesuAsciiVoxDelayStepBy(ms, delta), msOut);
   // CI-V: 100 ms steps.
   if (delta > 20) delta = 20;
   if (delta < -20) delta = -20;
