@@ -36,6 +36,7 @@ constexpr SpokenLabel kSpokenLabels[] = {
   {"EXPERIMENTAL", "experimental"},
   {"FILSHAPE", "filtershape"},
   {"FILWIDTH", "filterwidth"},
+  {"FOCUS", "focus"},
   {"FREQ", "frequency"},
   {"HPF", "lowcut"},
   {"ID", "i d"},
