@@ -46,6 +46,14 @@ struct RadioCapabilities {
   bool setNotchWidth = false;
   bool getAutoNotch = false;  // Icom 16 41, Yaesu BC0 (not the manual notch above)
   bool setAutoNotch = false;
+  // CAT tone squelch (CTCSS encode, or encode and decode), its tone, and the repeater shift. The
+  // FT-8x7 has its own (radio_features_tone.cpp, Bank 6) and leaves these off.
+  bool getTone = false;
+  bool setTone = false;
+  bool getCtcss = false;
+  bool setCtcss = false;
+  bool getRptShift = false;
+  bool setRptShift = false;
   bool getPbtInner = false;
   bool setPbtInner = false;
   bool getPbtOuter = false;

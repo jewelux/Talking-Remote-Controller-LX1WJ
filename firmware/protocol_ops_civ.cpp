@@ -661,6 +661,85 @@ bool civSetAutoNotch(const RadioProfile& sp, bool on) {
   return civQueryAutoNotch(sp, readBack, 800) && readBack == on;
 }
 
+// 16 42 and 16 43 (the IC-7300 manual, the IC-705 and IC-7760 CI-V guides, Hamlib).
+bool civQueryTone(const RadioProfile& sp, bool& toneOut, bool& tsqlOut, uint32_t timeoutMs) {
+  if (sp.protocol != PROTO_CIV || !sp.caps.getTone) return false;
+  return civQuery16OnOff(0x42, toneOut, timeoutMs) && civQuery16OnOff(0x43, tsqlOut, timeoutMs);
+}
+
+bool civSetTone(const RadioProfile& sp, bool tone, bool tsql) {
+  if (sp.protocol != PROTO_CIV || !sp.caps.setTone || (tone && tsql)) return false;
+  // The one turned off first, so the two are never on together.
+  const uint8_t offFirst = tone ? 0x43 : 0x42;
+  if (!civSetToggleSub(offFirst, false)) return false;
+  civSettleAfterWrite();
+  if (!civSetToggleSub(tone ? 0x42 : 0x43, tone || tsql)) return false;
+  civSettleAfterWrite();
+  bool toneBack = !tone;
+  bool tsqlBack = !tsql;
+  return civQueryTone(sp, toneBack, tsqlBack, 800) && toneBack == tone && tsqlBack == tsql;
+}
+
+// 1B 00 and 1B 01: 00 08 85 = 88.5 Hz (the CI-V guides, Hamlib).
+static bool civQueryToneFreq(uint8_t subcmd, uint16_t& tenthsOut, uint32_t timeoutMs) {
+  civFlushInput();
+  const uint8_t sub[] = {subcmd};
+  civSend(0x1B, sub, 1);
+  const std::optional<CivFrame> d = waitReply(0x1B, timeoutMs);
+  if (!d || d->payloadLen < 4 || d->payload[0] != subcmd) return false;
+  return civToneDecode(d->payload.data() + 1, tenthsOut);
+}
+
+static void civSetToneFreq(uint8_t subcmd, uint16_t tenths) {
+  uint8_t pl[4] = {subcmd};
+  civToneEncode(tenths, pl + 1);
+  civFlushInput();
+  civSend(0x1B, pl, sizeof(pl));
+  civSettleAfterWrite();
+}
+
+bool civQueryCtcssTenths(const RadioProfile& sp, uint16_t& tenthsOut, uint32_t timeoutMs) {
+  if (sp.protocol != PROTO_CIV || !sp.caps.getCtcss) return false;
+  return civQueryToneFreq(0x00, tenthsOut, timeoutMs);
+}
+
+bool civSetCtcssTenths(const RadioProfile& sp, uint16_t tenths) {
+  if (sp.protocol != PROTO_CIV || !sp.caps.setCtcss) return false;
+  civSetToneFreq(0x00, tenths);
+  civSetToneFreq(0x01, tenths);
+  uint16_t rptBack = 0;
+  uint16_t sqlBack = 0;
+  return civQueryToneFreq(0x00, rptBack, 800) && civQueryToneFreq(0x01, sqlBack, 800) && rptBack == tenths &&
+         sqlBack == tenths;
+}
+
+// 0F: the IC-705 CI-V guide and Hamlib.
+bool civQueryRptShift(const RadioProfile& sp, RptShift& out, uint32_t timeoutMs) {
+  if (sp.protocol != PROTO_CIV || !sp.caps.getRptShift) return false;
+  civFlushInput();
+  civSend(0x0F, nullptr, 0);
+  const std::optional<CivFrame> d = waitReply(0x0F, timeoutMs);
+  if (!d || d->payloadLen < 1) return false;
+  switch (d->payload[0]) {
+    case 0x00:
+    case 0x01:
+    case 0x10: out = RptShift::Simplex; return true;
+    case 0x11: out = RptShift::Minus; return true;
+    case 0x12: out = RptShift::Plus; return true;
+    default: return false;
+  }
+}
+
+bool civSetRptShift(const RadioProfile& sp, RptShift shift) {
+  if (sp.protocol != PROTO_CIV || !sp.caps.setRptShift) return false;
+  const uint8_t pl[] = {(uint8_t)(shift == RptShift::Minus ? 0x11 : shift == RptShift::Plus ? 0x12 : 0x10)};
+  civFlushInput();
+  civSend(0x0F, pl, 1);
+  civSettleAfterWrite();
+  RptShift readBack = shift == RptShift::Simplex ? RptShift::Plus : RptShift::Simplex;
+  return civQueryRptShift(sp, readBack, 800) && readBack == shift;
+}
+
 // 16 50: the dial lock.
 bool civQueryDialLock(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
   if (sp.protocol != PROTO_CIV || !sp.caps.getDialLock) return false;

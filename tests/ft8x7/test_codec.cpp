@@ -220,3 +220,22 @@ TEST(tone_mode_from_byte_refuses_other_bytes) {
   CHECK(mode.tx == YaesuToneType::Dcs);
   CHECK(mode.rx == YaesuToneType::Dcs);
 }
+
+// The Yaesu CN tone numbers, as the FTDX10, FTDX101 and FT-891 CAT manuals list them.
+TEST(ctcss_tone_index_matches_the_cn_table) {
+  uint8_t index = 0;
+  CHECK(yaesuCtcssToneIndex(670, index) && index == 0);
+  CHECK(yaesuCtcssToneIndex(885, index) && index == 8);
+  CHECK(yaesuCtcssToneIndex(1598, index) && index == 26);
+  CHECK(yaesuCtcssToneIndex(2181, index) && index == 43);
+  CHECK(yaesuCtcssToneIndex(2541, index) && index == 49);
+  CHECK(!yaesuCtcssToneIndex(886, index));
+  uint16_t tenths = 0;
+  CHECK(yaesuCtcssToneAt(0, tenths) && tenths == 670);
+  CHECK(yaesuCtcssToneAt(49, tenths) && tenths == 2541);
+  CHECK(!yaesuCtcssToneAt(50, tenths));
+  for (uint8_t i = 0; i < 50; ++i) {
+    CHECK(yaesuCtcssToneAt(i, tenths));
+    CHECK(yaesuCtcssToneIndex(tenths, index) && index == i);
+  }
+}

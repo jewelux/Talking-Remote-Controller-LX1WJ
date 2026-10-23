@@ -111,6 +111,10 @@ bool yaesuMeterDecode(const char* digits, uint16_t& rawOut);
 // raw of fullScale as 0..100 %, rounded; above fullScale is 100.
 uint8_t meterPercent(uint16_t raw, uint16_t fullScale);
 
+// Icom 1B 00 / 01: a tone in tenths of a Hz as three BCD bytes, 88.5 Hz = 00 08 85.
+void civToneEncode(uint16_t tenths, uint8_t out[3]);
+bool civToneDecode(const uint8_t* bcd, uint16_t& tenthsOut);
+
 // An ASCII lock reply digit: on unless it is one of offDigits ("0", or "04" on the FTDX101).
 // False when digit is not a digit.
 bool asciiLockDigitDecode(char digit, const char* offDigits, bool& onOut);

@@ -418,6 +418,22 @@ TEST(nr_nb_level_caps) {
   for (uint8_t s : no) CHECK(!slot(s).caps.getNrLevel && !slot(s).caps.getNbLevel);
 }
 
+// Tone squelch and its CTCSS tone: the Icoms (16 42/43, 1B 00) and the Yaesu ASCII radios (CT0,
+// CN00); the repeater shift on the IC-705 (0F) and these Yaesus (OS0). The FT-8x7 has its own.
+TEST(tone_and_repeater_caps) {
+  const uint8_t tone[] = {1, 3, 17, 18, 11, 12, 13, 15};
+  for (uint8_t s : tone) {
+    const RadioCapabilities& c = slot(s).caps;
+    CHECK(c.getTone && c.setTone && c.getCtcss && c.setCtcss);
+  }
+  const uint8_t rpt[] = {17, 11, 12, 13, 15};
+  for (uint8_t s : rpt) CHECK(slot(s).caps.getRptShift && slot(s).caps.setRptShift);
+  const uint8_t noRpt[] = {1, 3, 18};
+  for (uint8_t s : noRpt) CHECK(!slot(s).caps.getRptShift);
+  const uint8_t none[] = {2, 4, 5, 6, 7, 8, 9, 10, 14, 16};
+  for (uint8_t s : none) CHECK(!slot(s).caps.getTone && !slot(s).caps.getCtcss && !slot(s).caps.getRptShift);
+}
+
 TEST(g106_is_ttl_civ_with_freq_and_mode_only) {
   const RadioProfile& g106 = slot(5);
   CHECK(g106.protocol == PROTO_CIV);

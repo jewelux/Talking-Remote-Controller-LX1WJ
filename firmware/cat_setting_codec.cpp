@@ -398,6 +398,25 @@ uint8_t meterPercent(uint16_t raw, uint16_t fullScale) {
   return (uint8_t)((raw * 100U + fullScale / 2U) / fullScale);
 }
 
+void civToneEncode(uint16_t tenths, uint8_t out[3]) {
+  if (tenths > 9999) tenths = 9999;
+  out[0] = 0x00;
+  out[1] = (uint8_t)(((tenths / 1000) << 4) | ((tenths / 100) % 10));
+  out[2] = (uint8_t)((((tenths / 10) % 10) << 4) | (tenths % 10));
+}
+
+bool civToneDecode(const uint8_t* bcd, uint16_t& tenthsOut) {
+  uint16_t value = 0;
+  for (int i = 0; i < 3; ++i) {
+    const uint8_t hi = bcd[i] >> 4;
+    const uint8_t lo = bcd[i] & 0x0F;
+    if (hi > 9 || lo > 9) return false;
+    value = (uint16_t)(value * 100 + hi * 10 + lo);
+  }
+  tenthsOut = value;
+  return true;
+}
+
 bool asciiLockDigitDecode(char digit, const char* offDigits, bool& onOut) {
   if (digit < '0' || digit > '9') return false;
   onOut = strchr(offDigits, digit) == nullptr;

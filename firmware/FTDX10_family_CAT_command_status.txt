@@ -20,10 +20,10 @@ BU | Band up | nein | keine FTDX10-Implementierung gefunden
 BY | Busy | nein | keine FTDX10-Implementierung gefunden
 CF | RIT/XIT | nein | keine FTDX10-Implementierung gefunden
 CH | Channel up/down | nein | keine FTDX10-Implementierung gefunden
-CN | CTCSS number | nein | keine FTDX10-Implementierung gefunden
+CN | CTCSS number | implementiert | CTCSS? und CTCSS <Hz> (CN00, 50-Ton-Tabelle des Handbuchs, nach Hamlib), mit Ruecklesen
 CO | Contour/APF | nein | keine FTDX10-Implementierung gefunden
 CS | CW spot | nein | keine FTDX10-Implementierung gefunden
-CT | CTCSS | nein | keine FTDX10-Implementierung gefunden
+CT | CTCSS | implementiert | TONE?/TONE OFF/CTCSS und TONEDIR NEXT (CT0 1 ENC/DEC, 2 ENC, nach Handbuch und Hamlib), mit Ruecklesen
 DA | LCD contrast/dimmer | nein | keine FTDX10-Implementierung gefunden
 DN | Down | nein | keine FTDX10-Implementierung gefunden
 DT | Date and time | nein | keine FTDX10-Implementierung gefunden
@@ -62,7 +62,7 @@ NB | Noise blanker | implementiert | read/on/off vorhanden
 NL | Noise blanker level | implementiert | NBLEVEL? und NBLEVEL 0..10 (NL0, nach CAT-Handbuch und Hamlib), mit Ruecklesen; Konsole (Bank 2 5 bleibt PS)
 NR | Noise reduction (DNR) | implementiert | read/on/off vorhanden
 OI | Opposite band information | nein | keine FTDX10-Implementierung gefunden
-OS | Offset (repeater shift) | nein | keine FTDX10-Implementierung gefunden
+OS | Offset (repeater shift) | implementiert | RPT? und RPT SIMPLEX/PLUS/MINUS (OS0, nur FM, nach Handbuch und Hamlib), mit Ruecklesen
 PA | Pre-amp (IPO) | implementiert | PREAMP? und PREAMP OFF/1/2 (PA0, nach CAT-Handbuch und Hamlib), mit Ruecklesen; Bank 2 B
 PB | Play back | nein | keine FTDX10-Implementierung gefunden
 PC | Power control | implementiert | RFPOWER? und RFPOWER 5..100 W (PC in Watt, nach CAT-Handbuch, Hamlib und flrig), mit Ruecklesen; Bank 1 6; nicht beim FTDX101MP

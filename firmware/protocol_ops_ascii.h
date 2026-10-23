@@ -31,6 +31,15 @@ bool asciiSetBreakIn(const RadioProfile& sp, bool on);
 // getNbLevel, setNbLevel; the set is read back.
 bool asciiQueryRxLevel(const RadioProfile& sp, RxLevel level, uint16_t& valueOut, uint32_t timeoutMs);
 bool asciiSetRxLevel(const RadioProfile& sp, RxLevel level, uint16_t value);
+// Yaesu CT0 (0 off, 1 CTCSS encode and decode, 2 CTCSS encode; the FT-891 answers 3 for DCS),
+// CN00 (the CTCSS tone, in tenths of a Hz) and OS0 (repeater shift, FM only): caps.getTone,
+// getCtcss, getRptShift and their sets, read back.
+bool asciiQueryToneCode(const RadioProfile& sp, uint8_t& codeOut, uint32_t timeoutMs);
+bool asciiSetToneCode(const RadioProfile& sp, uint8_t code);
+bool asciiQueryCtcssTenths(const RadioProfile& sp, uint16_t& tenthsOut, uint32_t timeoutMs);
+bool asciiSetCtcssTenths(const RadioProfile& sp, uint16_t tenths);
+bool asciiQueryRptShift(const RadioProfile& sp, RptShift& out, uint32_t timeoutMs);
+bool asciiSetRptShift(const RadioProfile& sp, RptShift shift);
 // Yaesu BC0, the auto notch (caps.getAutoNotch, setAutoNotch); the set is read back.
 bool asciiQueryAutoNotch(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
 bool asciiSetAutoNotch(const RadioProfile& sp, bool on);

@@ -201,6 +201,10 @@
 - `BK?` and `BK OFF | ON | TOGGLE` also work on the IC-7300, IC-705, IC-7760 (with `SEMI` and
   `FULL`; `ON` is semi), FTDX10, FTDX101D/MP and FT-891, and `KYR?` and `KYR OFF | ON | TOGGLE` on
   these Yaesus, each set read back. Not yet tested on these radios
+- `TONE? | TONE OFF | CTCSS`, `TONEDIR? | TONEDIR NEXT` and `CTCSS? | CTCSS <Hz>` also work on the
+  IC-7300, IC-705, IC-7760, FTDX10, FTDX101D/MP and FT-891: CTCSS only, both ways or encode only
+  (TX), and the tone read from the radio. `RPT? | RPT SIMPLEX | PLUS | MINUS` sets the repeater
+  shift on the IC-705 and these Yaesus (FM). Each set is read back. Not yet tested on these radios
 - `NRLEVEL` (1–15) and `NBLEVEL` (0–10), each `?`, a level or `STEP <+-n>`, also work on the
   FTDX10, FTDX101D/MP and FT-891, in the radio's own steps, read back. On the FTDX10 they said
   "not available" before. Not yet tested on these radios

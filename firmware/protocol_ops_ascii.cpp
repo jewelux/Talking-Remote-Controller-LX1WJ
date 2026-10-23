@@ -1,6 +1,7 @@
 #include "protocol_ops_ascii.h"
 
 #include "cat_setting_codec.h"
+#include "ft8x7_codec.h"
 #include "protocol_ascii.h"
 #include "radio_protocol.h"
 #include "transport_serial.h"
@@ -239,6 +240,63 @@ bool asciiSetRxLevel(const RadioProfile& sp, RxLevel level, uint16_t value) {
   if (!asciiSendSimpleCommand(cmd)) return false;
   uint16_t readBack = 0;
   return asciiQueryRxLevel(sp, level, readBack, 800) && readBack == value;
+}
+
+// CT0n, CN00nnn, OS0n (the FTDX10, FTDX101 and FT-891 CAT manuals, Hamlib newcat); the FTDX101
+// main band.
+bool asciiQueryToneCode(const RadioProfile& sp, uint8_t& codeOut, uint32_t timeoutMs) {
+  if (sp.protocol != PROTO_YAESU_FTDX_ASCII || !sp.caps.getTone) return false;
+  String line;
+  if (!transactAsciiCommand("CT0;", line, "CT0", timeoutMs)) return false;
+  uint16_t code = 0;
+  if (!asciiDigitsDecode(line.c_str() + 3, 1, code) || code > 3) return false;
+  codeOut = (uint8_t)code;
+  return true;
+}
+
+bool asciiSetToneCode(const RadioProfile& sp, uint8_t code) {
+  if (sp.protocol != PROTO_YAESU_FTDX_ASCII || !sp.caps.setTone || code > 2) return false;
+  char cmd[6];
+  snprintf(cmd, sizeof(cmd), "CT0%u;", (unsigned)code);
+  if (!asciiSendSimpleCommand(cmd)) return false;
+  uint8_t readBack = 0xFF;
+  return asciiQueryToneCode(sp, readBack, 800) && readBack == code;
+}
+
+bool asciiQueryCtcssTenths(const RadioProfile& sp, uint16_t& tenthsOut, uint32_t timeoutMs) {
+  if (sp.protocol != PROTO_YAESU_FTDX_ASCII || !sp.caps.getCtcss) return false;
+  String line;
+  if (!transactAsciiCommand("CN00;", line, "CN00", timeoutMs)) return false;
+  uint16_t index = 0;
+  return asciiDigitsDecode(line.c_str() + 4, 3, index) && index <= 255 && yaesuCtcssToneAt((uint8_t)index, tenthsOut);
+}
+
+bool asciiSetCtcssTenths(const RadioProfile& sp, uint16_t tenths) {
+  uint8_t index = 0;
+  if (sp.protocol != PROTO_YAESU_FTDX_ASCII || !sp.caps.setCtcss || !yaesuCtcssToneIndex(tenths, index)) return false;
+  char cmd[10];
+  snprintf(cmd, sizeof(cmd), "CN00%03u;", (unsigned)index);
+  if (!asciiSendSimpleCommand(cmd)) return false;
+  uint16_t readBack = 0;
+  return asciiQueryCtcssTenths(sp, readBack, 800) && readBack == tenths;
+}
+
+bool asciiQueryRptShift(const RadioProfile& sp, RptShift& out, uint32_t timeoutMs) {
+  if (sp.protocol != PROTO_YAESU_FTDX_ASCII || !sp.caps.getRptShift) return false;
+  String line;
+  if (!transactAsciiCommand("OS0;", line, "OS0", timeoutMs)) return false;
+  uint16_t code = 0;
+  if (!asciiDigitsDecode(line.c_str() + 3, 1, code) || code > 2) return false;
+  out = code == 1 ? RptShift::Plus : code == 2 ? RptShift::Minus : RptShift::Simplex;
+  return true;
+}
+
+bool asciiSetRptShift(const RadioProfile& sp, RptShift shift) {
+  if (sp.protocol != PROTO_YAESU_FTDX_ASCII || !sp.caps.setRptShift) return false;
+  const char* cmd = shift == RptShift::Plus ? "OS01;" : shift == RptShift::Minus ? "OS02;" : "OS00;";
+  if (!asciiSendSimpleCommand(cmd)) return false;
+  RptShift readBack = shift == RptShift::Simplex ? RptShift::Plus : RptShift::Simplex;
+  return asciiQueryRptShift(sp, readBack, 800) && readBack == shift;
 }
 
 // BC0n, 0 off, 1 on (the FTDX10, FTDX101 and FT-891 CAT manuals, Hamlib newcat); the FTDX101

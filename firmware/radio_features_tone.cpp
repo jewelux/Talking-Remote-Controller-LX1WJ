@@ -12,6 +12,94 @@
 #include "radio_state.h"
 #include "radio_utils.h"
 
+// ---- Tone squelch over CAT ----
+
+static bool isCatTone() {
+  const ProtocolType pt = currentProtocolType();
+  return currentProfile().caps.getTone && (pt == PROTO_CIV || pt == PROTO_YAESU_FTDX_ASCII);
+}
+
+static YaesuToneMode ctcssMode(bool tx, bool rx) {
+  YaesuToneMode mode;
+  if (tx) mode.tx = YaesuToneType::Ctcss;
+  if (rx) mode.rx = YaesuToneType::Ctcss;
+  return mode;
+}
+
+static FeatureStatus catToneQuery(YaesuToneMode& out) {
+  const RadioProfile& sp = currentProfile();
+  if (currentProtocolType() == PROTO_CIV) {
+    bool tone = false;
+    bool tsql = false;
+    if (!civQueryTone(sp, tone, tsql, 800)) return failure(FeatureStatus::NoReply);
+    out = ctcssMode(tone || tsql, tsql);
+    return FeatureStatus::Ok;
+  }
+  uint8_t code = 0;
+  if (!asciiQueryToneCode(sp, code, 800)) return failure(FeatureStatus::NoReply);
+  out = ctcssMode(code == 1 || code == 2, code == 1);
+  if (code == 3) {
+    out.tx = YaesuToneType::Dcs;
+    out.rx = YaesuToneType::Dcs;
+  }
+  return FeatureStatus::Ok;
+}
+
+// Off, CTCSS both or CTCSS TX only.
+static FeatureStatus catToneSet(const YaesuToneMode& mode) {
+  const RadioProfile& sp = currentProfile();
+  if (!sp.caps.setTone) return FeatureStatus::Unsupported;
+  const bool tx = mode.tx == YaesuToneType::Ctcss;
+  const bool rx = mode.rx == YaesuToneType::Ctcss;
+  bool ok = false;
+  if (currentProtocolType() == PROTO_CIV) ok = civSetTone(sp, tx && !rx, tx && rx);
+  else ok = asciiSetToneCode(sp, !tx ? 0 : rx ? 1 : 2);
+  return ok ? FeatureStatus::Ok : failure(FeatureStatus::Failed);
+}
+
+FeatureStatus ctcssToneQuery(uint16_t& tenthsOut) {
+  const RadioProfile& sp = currentProfile();
+  if (!sp.caps.getCtcss) return FeatureStatus::Unsupported;
+  bool ok = false;
+  if (currentProtocolType() == PROTO_CIV) ok = civQueryCtcssTenths(sp, tenthsOut, 800);
+  else if (currentProtocolType() == PROTO_YAESU_FTDX_ASCII) ok = asciiQueryCtcssTenths(sp, tenthsOut, 800);
+  else return FeatureStatus::Unsupported;
+  return ok ? FeatureStatus::Ok : failure(FeatureStatus::NoReply);
+}
+
+FeatureStatus ctcssToneSet(uint16_t tenths, uint16_t& tenthsOut) {
+  const RadioProfile& sp = currentProfile();
+  const ProtocolType pt = currentProtocolType();
+  if (!sp.caps.getCtcss || !sp.caps.setCtcss || (pt != PROTO_CIV && pt != PROTO_YAESU_FTDX_ASCII)) {
+    return FeatureStatus::Unsupported;
+  }
+  if (!yaesuCtcssTenthsValid(tenths)) return FeatureStatus::Invalid;
+  const bool ok = pt == PROTO_CIV ? civSetCtcssTenths(sp, tenths) : asciiSetCtcssTenths(sp, tenths);
+  if (!ok) return failure(FeatureStatus::Failed);
+  tenthsOut = tenths;
+  return FeatureStatus::Ok;
+}
+
+FeatureStatus rptShiftQuery(RptShift& out) {
+  const RadioProfile& sp = currentProfile();
+  if (!sp.caps.getRptShift) return FeatureStatus::Unsupported;
+  bool ok = false;
+  if (currentProtocolType() == PROTO_CIV) ok = civQueryRptShift(sp, out, 800);
+  else if (currentProtocolType() == PROTO_YAESU_FTDX_ASCII) ok = asciiQueryRptShift(sp, out, 800);
+  else return FeatureStatus::Unsupported;
+  return ok ? FeatureStatus::Ok : failure(FeatureStatus::NoReply);
+}
+
+FeatureStatus rptShiftSet(RptShift shift) {
+  const RadioProfile& sp = currentProfile();
+  if (!sp.caps.getRptShift || !sp.caps.setRptShift) return FeatureStatus::Unsupported;
+  bool ok = false;
+  if (currentProtocolType() == PROTO_CIV) ok = civSetRptShift(sp, shift);
+  else if (currentProtocolType() == PROTO_YAESU_FTDX_ASCII) ok = asciiSetRptShift(sp, shift);
+  else return FeatureStatus::Unsupported;
+  return ok ? FeatureStatus::Ok : failure(FeatureStatus::Failed);
+}
+
 // ---- FT-8x7 tone squelch ----
 
 static bool toneSupported() {
@@ -30,8 +118,9 @@ static bool ft817ToneModeHolds(uint64_t hz) {
 // hz: on the FT-817/818 the frequency read, also when the mode is not known; a change sets the
 // mode with it. 0 on the FT-857/897, which reads the mode from the radio.
 static FeatureStatus toneModeQueryAt(uint64_t& hz, YaesuToneMode& out) {
-  if (!toneSupported()) return FeatureStatus::Unsupported;
   hz = 0;
+  if (isCatTone()) return catToneQuery(out);
+  if (!toneSupported()) return FeatureStatus::Unsupported;
   if (!currentIsFt857Family()) {
     if (!queryFrequency(hz, kFt8x7TimeoutMs)) return failure(FeatureStatus::NoReply);
     if (!ft817ToneModeHolds(hz)) return FeatureStatus::Unsupported;
@@ -49,6 +138,7 @@ FeatureStatus toneModeQuery(YaesuToneMode& out) {
 }
 
 FeatureStatus toneOff() {
+  if (isCatTone()) return catToneSet(YaesuToneMode());
   if (!toneSupported()) return FeatureStatus::Unsupported;
   // The FT-817/818 remembers off for the band it is on. Off is sent also when the frequency
   // cannot be read; then no band is remembered.
@@ -58,6 +148,17 @@ FeatureStatus toneOff() {
 }
 
 FeatureStatus toneTypeSet(YaesuToneType type, YaesuToneMode& out) {
+  // Over CAT CTCSS only, keeping TX only; from off or DCS, both.
+  if (isCatTone()) {
+    if (type != YaesuToneType::Ctcss) return FeatureStatus::Unsupported;
+    YaesuToneMode current;
+    const FeatureStatus status = catToneQuery(current);
+    if (status != FeatureStatus::Ok) return status;
+    const YaesuToneMode want = ctcssMode(true, !(current.txOnly() && current.tx == YaesuToneType::Ctcss));
+    const FeatureStatus set = catToneSet(want);
+    if (set == FeatureStatus::Ok) out = want;
+    return set;
+  }
   if (!toneSupported() || type == YaesuToneType::None) return FeatureStatus::Unsupported;
   uint64_t hz = 0;
   YaesuToneMode current;
@@ -74,6 +175,21 @@ FeatureStatus toneTypeSet(YaesuToneType type, YaesuToneMode& out) {
 }
 
 FeatureStatus toneDirStep(YaesuToneMode& out) {
+  // Over CAT: both -> TX only -> both, CTCSS only.
+  if (isCatTone()) {
+    YaesuToneMode current;
+    const FeatureStatus status = catToneQuery(current);
+    if (status != FeatureStatus::Ok) return status;
+    if (current.isOff()) {
+      out = current;
+      return FeatureStatus::Ok;
+    }
+    if (current.type() != YaesuToneType::Ctcss) return FeatureStatus::Unsupported;
+    const YaesuToneMode want = ctcssMode(true, current.txOnly());
+    const FeatureStatus set = catToneSet(want);
+    if (set == FeatureStatus::Ok) out = want;
+    return set;
+  }
   if (!toneSupported()) return FeatureStatus::Unsupported;
   uint64_t hz = 0;
   YaesuToneMode current;

@@ -388,6 +388,24 @@ TEST(yaesu_rm_meter_and_percent) {
   CHECK_EQ(meterPercent(10, 0), 0);
 }
 
+// ---- Tone ----
+
+TEST(civ_tone_is_three_bcd_bytes) {
+  uint8_t bcd[3] = {};
+  civToneEncode(885, bcd);
+  CHECK_EQ(bcd[0], 0x00);
+  CHECK_EQ(bcd[1], 0x08);
+  CHECK_EQ(bcd[2], 0x85);
+  civToneEncode(2541, bcd);
+  CHECK_EQ(bcd[1], 0x25);
+  CHECK_EQ(bcd[2], 0x41);
+  uint16_t tenths = 0;
+  const uint8_t tone[3] = {0x00, 0x16, 0x22};
+  CHECK(civToneDecode(tone, tenths) && tenths == 1622);
+  const uint8_t bad[3] = {0x00, 0x1A, 0x22};
+  CHECK(!civToneDecode(bad, tenths));
+}
+
 // ---- ASCII lock ----
 
 TEST(lock_digit_decodes_with_the_profile_off_digits) {

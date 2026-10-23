@@ -30,6 +30,14 @@ void speakAgc(AgcMode mode);
 String rxLevelText(RxLevel level, uint16_t value);
 void speakRxLevel(RxLevel level, uint16_t value);
 
+// "CTCSS 88.5 Hz"; "c t c s s 88.5".
+String ctcssText(uint16_t tenths);
+void speakCtcss(uint16_t tenths);
+// "RPT PLUS", "RPT MINUS", "RPT SIMPLEX"; "repeater plus", "repeater off" (as Bank 6).
+const char* rptShiftName(RptShift shift);
+String rptShiftText(RptShift shift);
+void speakRptShift(RptShift shift);
+
 // "ANOTCH ON"; "auto notch on".
 String autoNotchText(bool on);
 void speakAutoNotch(bool on);

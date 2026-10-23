@@ -299,6 +299,8 @@ FeatureStatus ft8x7MicEqSet(YaesuFt857MicEq eq, Ft8x7SettingState& out);
 // holds the value read back. Failed while transmitting or when the read-back differs.
 FeatureStatus ft8x7CwBfoSet(Ft857CwBfo bfo, Ft8x7SettingState& out);
 
+// Tone squelch. Over CAT (caps.getTone): Icom 16 42 and 16 43, Yaesu CT0, CTCSS only, both
+// (encode and decode) or TX (encode only); the FT-891 also reads DCS. On the FT-8x7:
 // FT-8x7 tone squelch. The FT-857/897 reads it from the current band in the EEPROM, live;
 // the FT-817/818 cannot, so there it is the mode HamTRC last set. Unsupported on other radios,
 // outside the amateur bands, on the FT-817/818 before HamTRC has set a mode, and for a mode the
@@ -316,3 +318,10 @@ FeatureStatus toneDirStep(YaesuToneMode& out);
 // tone type and wait for the other. CAT cannot switch it. Unsupported on other radios (the
 // FT-817/818 has none) and outside the amateur bands.
 FeatureStatus splitToneQuery(bool& on);
+// The CTCSS tone over CAT (caps.getCtcss), in tenths of a Hz: Icom 1B 00 (a set writes the tone
+// squelch tone 1B 01 too), Yaesu CN00. Invalid for a tone outside the 50 standard ones.
+FeatureStatus ctcssToneQuery(uint16_t& tenthsOut);
+FeatureStatus ctcssToneSet(uint16_t tenths, uint16_t& tenthsOut);
+// The repeater shift over CAT (caps.getRptShift): the IC-705 0F, Yaesu OS0 (FM only).
+FeatureStatus rptShiftQuery(RptShift& out);
+FeatureStatus rptShiftSet(RptShift shift);

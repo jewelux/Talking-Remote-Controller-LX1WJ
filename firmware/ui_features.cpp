@@ -94,6 +94,40 @@ void speakRxLevel(RxLevel level, uint16_t value) {
   speakDigitsAndPoint(String((int)value));
 }
 
+// 885 -> "88.5".
+static String toneTenthsLabel(uint16_t tenths) {
+  return String((int)(tenths / 10)) + "." + String((int)(tenths % 10));
+}
+
+String ctcssText(uint16_t tenths) {
+  return String("CTCSS ") + toneTenthsLabel(tenths) + " Hz";
+}
+
+void speakCtcss(uint16_t tenths) {
+  if (!g_speechEnabled) return;
+  speakLabel("ctcss");
+  speakDigitsAndPoint(toneTenthsLabel(tenths));
+}
+
+const char* rptShiftName(RptShift shift) {
+  switch (shift) {
+    case RptShift::Plus: return "PLUS";
+    case RptShift::Minus: return "MINUS";
+    case RptShift::Simplex: break;
+  }
+  return "SIMPLEX";
+}
+
+String rptShiftText(RptShift shift) {
+  return String("RPT ") + rptShiftName(shift);
+}
+
+void speakRptShift(RptShift shift) {
+  if (!g_speechEnabled) return;
+  speakLabel("repeater");
+  speakToken(shift == RptShift::Plus ? "plus" : shift == RptShift::Minus ? "minus" : "off");
+}
+
 String autoNotchText(bool on) {
   return on ? "ANOTCH ON" : "ANOTCH OFF";
 }

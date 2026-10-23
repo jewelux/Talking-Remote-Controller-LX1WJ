@@ -62,6 +62,17 @@ bool civQueryCwPitchHz(const RadioProfile& sp, uint16_t& hzOut, uint32_t timeout
 // 16 41, the auto notch (caps.getAutoNotch, setAutoNotch); the set is read back.
 bool civQueryAutoNotch(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
 bool civSetAutoNotch(const RadioProfile& sp, bool on);
+// 16 42 (repeater tone, CTCSS encode) and 16 43 (tone squelch, encode and decode), caps.getTone,
+// setTone; the set turns the other off first and is read back.
+bool civQueryTone(const RadioProfile& sp, bool& toneOut, bool& tsqlOut, uint32_t timeoutMs);
+bool civSetTone(const RadioProfile& sp, bool tone, bool tsql);
+// 1B 00, the repeater tone in tenths of a Hz (caps.getCtcss); the set writes the tone squelch tone
+// (1B 01) the same and reads both back.
+bool civQueryCtcssTenths(const RadioProfile& sp, uint16_t& tenthsOut, uint32_t timeoutMs);
+bool civSetCtcssTenths(const RadioProfile& sp, uint16_t tenths);
+// 0F 10 simplex, 11 DUP-, 12 DUP+ (caps.getRptShift, the IC-705); a split reply (00, 01) is simplex.
+bool civQueryRptShift(const RadioProfile& sp, RptShift& out, uint32_t timeoutMs);
+bool civSetRptShift(const RadioProfile& sp, RptShift shift);
 // 15 13, the ALC meter, 0..120 = 0..100 % (caps.getAlc).
 bool civQueryAlcRaw(const RadioProfile& sp, uint16_t& rawOut, uint32_t timeoutMs);
 bool civSetCwPitchHz(const RadioProfile& sp, uint16_t hz);

@@ -83,6 +83,21 @@ bool yaesuCtcssTenthsValid(uint16_t toneTenths) {
   return containsU16(kValidCtcssTenths, toneTenths);
 }
 
+bool yaesuCtcssToneIndex(uint16_t toneTenths, uint8_t& indexOut) {
+  for (size_t i = 0; i < sizeof(kValidCtcssTenths) / sizeof(kValidCtcssTenths[0]); ++i) {
+    if (kValidCtcssTenths[i] != toneTenths) continue;
+    indexOut = (uint8_t)i;
+    return true;
+  }
+  return false;
+}
+
+bool yaesuCtcssToneAt(uint8_t index, uint16_t& toneTenthsOut) {
+  if (index >= sizeof(kValidCtcssTenths) / sizeof(kValidCtcssTenths[0])) return false;
+  toneTenthsOut = kValidCtcssTenths[index];
+  return true;
+}
+
 bool yaesuDcsCodeValid(uint16_t dcsCode) {
   return containsU16(kValidDcsCodes, dcsCode);
 }

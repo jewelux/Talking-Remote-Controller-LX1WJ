@@ -789,6 +789,18 @@ static void printFrontEndHelp() {
   helpLine(text.c_str());
 }
 
+// TONE, TONEDIR, CTCSS and RPT over CAT, as far as the profile has them.
+static void printCatToneHelp() {
+  if (currentProtocolType() == PROTO_YAESU_FT8X7) return;
+  const RadioCapabilities& caps = currentProfile().caps;
+  if (caps.getTone) {
+    helpLine(caps.setTone ? "TONE? | TONE OFF | CTCSS  (tone squelch)" : "TONE?  (tone squelch)");
+    helpLine(caps.setTone ? "TONEDIR? | TONEDIR NEXT  (BOTH or encode only TX)" : "TONEDIR?");
+  }
+  if (caps.getCtcss) helpLine(caps.setCtcss ? "CTCSS? | CTCSS <Hz>  (a standard tone)" : "CTCSS?");
+  if (caps.getRptShift) helpLine(caps.setRptShift ? "RPT? | RPT SIMPLEX | PLUS | MINUS  (repeater shift, FM)" : "RPT?");
+}
+
 // NRLEVEL and NBLEVEL on the Yaesu ASCII radios, in their steps.
 static void printYaesuRxLevelHelp() {
   uint16_t min = 0;
@@ -964,6 +976,7 @@ void printHelp(const String& topicArg) {
     printRfPowerHelp();
     printCwSwitchHelp();
     printCwLevelHelp();
+    printCatToneHelp();
     if (currentProfile().caps.getAlc) helpLine("ALC?  (while transmitting, percent of full scale)");
     printTxSettingsHelp();
     helpLine("RIT? | RIT <Hz> | RIT STEP <+-Hz> | RIT OFF | ON | TOGGLE");
@@ -1070,6 +1083,7 @@ void printHelp(const String& topicArg) {
     printRfPowerHelp();
     printCwSwitchHelp();
     printCwLevelHelp();
+    printCatToneHelp();
     if (currentProfile().caps.getAlc) helpLine("ALC?  (while transmitting, percent of full scale)");
     printTxSettingsHelp();
     helpLine("RXTX?");
@@ -1902,6 +1916,52 @@ static bool handleConsoleYaesuRxLevels(const String& line, const String& upper) 
     Serial.println(rxLevelText(level, value));
     speakRxLevel(level, value);
     return true;
+  }
+  return false;
+}
+
+// CTCSS? | CTCSS <Hz> and RPT? | RPT SIMPLEX | PLUS | MINUS on the CAT radios; the FT-8x7 has
+// its own (handleConsoleYaesuFt8x7Commands, Bank 6). TONE and TONEDIR are shared.
+static bool handleConsoleCatTone(const String& line, const String& upper) {
+  if (isCurrentYaesuFt8x7()) return false;
+  if (upper == "CTCSS?") {
+    uint16_t tenths = 0;
+    if (reportFeatureFailure(ctcssToneQuery(tenths), "CTCSS?")) return true;
+    Serial.println(ctcssText(tenths));
+    speakCtcss(tenths);
+    return true;
+  }
+  if (upper.startsWith("CTCSS ")) {
+    const float hz = line.substring(6).toFloat();
+    uint16_t tenths = (uint16_t)(hz * 10.0f + 0.5f);
+    const FeatureStatus status = ctcssToneSet(tenths, tenths);
+    if (status == FeatureStatus::Invalid) {
+      Serial.println("CTCSS -> invalid (use a standard tone in Hz, e.g. 88.5)");
+      return true;
+    }
+    if (reportFeatureFailure(status, "CTCSS")) return true;
+    Serial.println(ctcssText(tenths));
+    speakCtcss(tenths);
+    return true;
+  }
+  if (upper == "RPT?") {
+    RptShift shift = RptShift::Simplex;
+    if (reportFeatureFailure(rptShiftQuery(shift), "RPT?")) return true;
+    Serial.println(rptShiftText(shift));
+    speakRptShift(shift);
+    return true;
+  }
+  if (upper.startsWith("RPT ")) {
+    String arg = upper.substring(4);
+    arg.trim();
+    for (const RptShift shift : {RptShift::Simplex, RptShift::Plus, RptShift::Minus}) {
+      if (arg != rptShiftName(shift)) continue;
+      if (reportFeatureFailure(rptShiftSet(shift), "RPT")) return true;
+      Serial.println(rptShiftText(shift));
+      speakRptShift(shift);
+      return true;
+    }
+    return false;
   }
   return false;
 }
@@ -3923,6 +3983,7 @@ void processCommand(String line) {
   if (handleConsoleYaesuFt8x7Commands(line, upper)) return;
   if (handleConsoleCwLevels(line, upper)) return;
   if (handleConsoleYaesuRxLevels(line, upper)) return;
+  if (handleConsoleCatTone(line, upper)) return;
   if (handleConsoleFt847Commands(upper)) return;
   if (handleConsoleTxAudioSet(line, upper)) return;
   if (handleConsoleAdjustCommands(line, upper)) return;

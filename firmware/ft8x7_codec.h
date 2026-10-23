@@ -30,6 +30,10 @@ float yaesuSwrFromMeter(uint8_t bars);
 // FT-8x7 CTCSS tone in tenths of Hz (885 = 88.5 Hz) and DCS code (23 = 023).
 // Only the standard values are valid.
 bool yaesuCtcssTenthsValid(uint16_t toneTenths);
+// The 50 tones in order, 0 = 67.0 Hz .. 49 = 254.1 Hz: the Yaesu CN tone number (the FTDX10,
+// FTDX101 and FT-891 CAT manuals' table). False outside the table.
+bool yaesuCtcssToneIndex(uint16_t toneTenths, uint8_t& indexOut);
+bool yaesuCtcssToneAt(uint8_t index, uint16_t& toneTenthsOut);
 bool yaesuDcsCodeValid(uint16_t dcsCode);
 // The data bytes of a CTCSS tone or DCS code command: the value as four BCD digits (88.5 Hz ->
 // 08 85), then the same again when the radio takes separate TX and RX values (FT-857/897), else

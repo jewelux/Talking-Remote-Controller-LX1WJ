@@ -34,7 +34,7 @@ constexpr RadioCapabilities kIc7300Caps = {
     .getNr = true, .setNr = true, .getNrLevel = true, .setNrLevel = true,
     .getNb = true, .setNb = true, .getNbLevel = true, .setNbLevel = true,
     .getNotch = true, .setNotch = true, .getNotchWidth = true, .setNotchWidth = true,
-    .getAutoNotch = true, .setAutoNotch = true,
+    .getAutoNotch = true, .setAutoNotch = true, .getTone = true, .setTone = true, .getCtcss = true, .setCtcss = true,
     .getPbtInner = true, .setPbtInner = true, .getPbtOuter = true, .setPbtOuter = true,
     .getFilterShape = true, .setFilterShape = true, .getFilterWidth = true, .setFilterWidth = true,
     .getDialLock = true, .setDialLock = true,
@@ -56,8 +56,13 @@ constexpr RadioCapabilities kIc7300Caps = {
 constexpr SettingEncodings kIc7300Settings = {.preampLevels = 2, .attLevels = 1, .attDb = {20}};
 
 // The IC-705: every IC-7300 command is in the IC-705 CI-V reference guide too, and Hamlib has
-// it. 1C 01 drives an external tuner (AH-705).
-constexpr RadioCapabilities kIc705Caps = kIc7300Caps;
+// it. 1C 01 drives an external tuner (AH-705). It also has the repeater shift (0F 10..12).
+constexpr RadioCapabilities kIc705Caps = [] {
+  RadioCapabilities caps = kIc7300Caps;
+  caps.getRptShift = true;
+  caps.setRptShift = true;
+  return caps;
+}();
 
 // The IC-7760: as the IC-7300 (its CI-V reference guide), but no transceive: Hamlib has no
 // address for it. Main and sub go through 29.
@@ -216,6 +221,7 @@ constexpr RadioCapabilities kFtdx10Caps = {
     .getNr = true, .setNr = true, .getNrLevel = true, .setNrLevel = true,
     .getNb = true, .setNb = true, .getNbLevel = true, .setNbLevel = true,
     .getNotch = true, .setNotch = true, .getAutoNotch = true, .setAutoNotch = true,
+    .getTone = true, .setTone = true, .getCtcss = true, .setCtcss = true, .getRptShift = true, .setRptShift = true,
     .getDialLock = true, .setDialLock = true,
     .getTuner = true, .setTuner = true, .startTune = true,
     .getVfo = true, .setVfo = true, .getVfoMode = true, .setVfoMode = true,
@@ -269,7 +275,8 @@ constexpr RadioCapabilities kFt891Caps = {
     .getFreq = true, .setFreq = true, .getMode = true, .setMode = true,
     .getSmeter = true, .getPower = true, .getRfPower = true, .setRfPower = true, .getSwr = true,
     .getAlc = true, .getNrLevel = true, .setNrLevel = true, .getNbLevel = true, .setNbLevel = true,
-    .getAutoNotch = true, .setAutoNotch = true, .getDialLock = true, .setDialLock = true,
+    .getAutoNotch = true, .setAutoNotch = true, .getTone = true, .setTone = true, .getCtcss = true, .setCtcss = true,
+    .getRptShift = true, .setRptShift = true, .getDialLock = true, .setDialLock = true,
     .getTuner = true, .setTuner = true, .startTune = true,
     .getVfo = true, .setVfo = true,
     .getSplit = true, .setSplit = true, .getAgc = true, .setAgc = true,

@@ -59,6 +59,14 @@ menu values on the FT-857/897.
 manual notch of `NOTCH`: Icom `16 41` and Yaesu `BC0`, 0 off and 1 on (the CI-V guides and CAT
 manuals, Hamlib). The TS-480 reference has no notch command.
 
+`TONE`, `TONEDIR` and `CTCSS` read and set the tone squelch over CAT, CTCSS only: both ways (Icom
+TSQL, `16 43`; Yaesu `CT0` 1) or encode only (Icom TONE, `16 42`; Yaesu `CT0` 2), and the tone
+(Icom `1B 00`, which a set also writes to the TSQL tone `1B 01`; Yaesu `CN00`, the 50-tone table of
+the CAT manuals). The FT-891 reads DCS too, but HamTRC sets CTCSS only. `RPT` sets the repeater
+shift on the IC-705 (`0F 10`–`12`) and the FTDX10, FTDX101 and FT-891 (`OS0`, FM only); the
+IC-7300 and IC-7760 have no CI-V command for it. Sources: the CI-V guides and CAT manuals, Hamlib.
+The offset itself is not set over CAT.
+
 `ALC?` (Bank 1 `A`) reads the ALC meter while transmitting, in percent of full scale: on the
 Icoms `15 13`, 0–120 (their CI-V guides and Hamlib), on the FTDX10, FTDX101 and FT-891 `RM4`,
 0–255 (their CAT manuals; flrig scales it so, Hamlib reads the same command). The FT-8x7 has its

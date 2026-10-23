@@ -91,7 +91,8 @@ IC-7760 not all of them), and on these and the KX2 the AGC, also from Bank 2 `A`
 and attenuator (`PREAMP`, `ATT`, Bank 2 `B` and `C`) and, but on the FTDX101MP, the RF power
 (`RFPOWER`, Bank 1 `6`). The Icoms and these Yaesus also set break-in (`BK`) and the Yaesus the
 keyer (`KYR`), from Bank 7 `1` and `2` too, and the CW speed, pitch and delay (`CWSPEED`,
-`CWPITCH`, `CWDELAY`, Bank 7 `3` to `5`) where the radio has them. See the [keypad map](docs/keypad-map.md).
+`CWPITCH`, `CWDELAY`, Bank 7 `3` to `5`) where the radio has them. In FM the console also sets the
+tone squelch (`TONE`, `TONEDIR`, `CTCSS`) and the repeater shift (`RPT`). See the [keypad map](docs/keypad-map.md).
 
 ## Practical Everyday Use
 

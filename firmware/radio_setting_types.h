@@ -19,6 +19,9 @@ enum class CwLevel : uint8_t { Speed, Pitch, Delay };
 // The receive DSP levels: noise reduction and noise blanker.
 enum class RxLevel : uint8_t { Nr, Nb };
 
+// The repeater shift: simplex, or the TX frequency above or below.
+enum class RptShift : uint8_t { Simplex, Plus, Minus };
+
 // How an ASCII radio's GT sets AGC (cat_setting_codec.h). The Icoms all use 16 12.
 enum class AgcEncoding : uint8_t {
   None,
