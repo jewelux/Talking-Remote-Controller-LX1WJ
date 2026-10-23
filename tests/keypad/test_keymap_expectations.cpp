@@ -25,10 +25,15 @@ TEST(expectations_rows_are_well_formed) {
     CHECK(r.shortAction && *r.shortAction);
     CHECK(r.longAction && *r.longAction);
     CHECK(r.doubleAction && *r.doubleAction);
+    CHECK(r.doubleHoldAction && *r.doubleHoldAction);
+    CHECK(r.focus && *r.focus);
     // Each sentinel is only valid in its own column.
     CHECK(!isSentinel(r.shortAction) || strcmp(r.shortAction, "unassigned") == 0);
     CHECK(!isSentinel(r.longAction) || strcmp(r.longAction, "none") == 0);
     CHECK(strcmp(r.doubleAction, "unassigned") != 0);
+    CHECK(!isSentinel(r.doubleHoldAction) || strcmp(r.doubleHoldAction, "none") == 0);
+    // A double hold needs the wait for a double click.
+    CHECK(strcmp(r.doubleHoldAction, "none") == 0 || strcmp(r.doubleAction, "-") != 0);
   }
 }
 
@@ -69,6 +74,8 @@ TEST(expectations_lookup_defaults_to_unassigned) {
   CHECK_EQ(r.shortAction, "unassigned");
   CHECK_EQ(r.longAction, "none");
   CHECK_EQ(r.doubleAction, "-");
+  CHECK_EQ(r.doubleHoldAction, "none");
+  CHECK_EQ(r.focus, "-");
   CHECK_EQ(lookup(FT817, 1, 'B').shortAction, "unassigned");
 }
 

@@ -43,17 +43,19 @@ struct Row {
   const char *shortAction;
   const char *longAction;
   const char *doubleAction;
+  const char *doubleHoldAction;
+  const char *focus;
 };
 
 inline constexpr Row kRows[] = {
-#define KEYMAP_ROW(families, bank, key, shortAction, longAction, doubleAction) \
-  {families, bank, key, shortAction, longAction, doubleAction},
+#define KEYMAP_ROW(families, bank, key, shortAction, longAction, doubleAction, doubleHoldAction, focus) \
+  {families, bank, key, shortAction, longAction, doubleAction, doubleHoldAction, focus},
 #include "keymap_expectations.inc"
 #undef KEYMAP_ROW
 };
 
 // Expectation for a key that no row covers.
-inline constexpr Row kUnassigned = {ALL, 0, 0, "unassigned", "none", "-"};
+inline constexpr Row kUnassigned = {ALL, 0, 0, "unassigned", "none", "-", "none", "-"};
 
 // The row covering (family, bank, key), or kUnassigned.
 inline const Row &lookup(uint16_t family, uint8_t bank, char key) {

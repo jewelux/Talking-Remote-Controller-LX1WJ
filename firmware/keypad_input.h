@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #include "keypad_digit_buffer.h"
+#include "keypad_settings.h"
 
 // Keypad input state machine. It decides what each key event means: which
 // mode is active, which digits an entry takes, when a release is swallowed
@@ -96,6 +97,8 @@ struct KeyBinding {
   // wait with no double action: a quick second press restarts the wait, and the
   // short action then runs once.
   bool waitsForDouble = false;
+  // What A, B and C move once this key has acted on its bank.
+  Setting focus = Setting::None;
 };
 
 // While KeypadInput runs a bank key action: the key and gesture, e.g.

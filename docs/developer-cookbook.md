@@ -777,14 +777,14 @@ and the same situation must always sound the same:
 | The radio did not answer | "timeout" | `keypadReportIfTimedOut` |
 | Invalid value, or the radio refused or answered wrongly | "error" | `speakError` |
 | A radio call returned false | one of the three above | `keypadReportFailure` |
-
-"not available", "timeout" and "error" are said through `speakKeypadFailure`, which
-puts the function's name first when verbose is on ("tuner not available"). It looks
-the trace label up in `kSpokenLabels`; a new label needs a row there (an FT-8x7
-setting like `AGC?` is spelled instead).
 | `#` cancelled something | "cancel" | the listener's `onClear` |
 | An entry or selection waited 30 s for a key | "timeout" | the listener's `onEntryTimeout` |
 | Asking for input | "<thing> please" | e.g. "frequency please" |
+
+"not available", "timeout" and "error" are said through `speakKeypadFailure`, which
+puts the function's name first when verbose is on ("tuner not available"). It looks
+the trace label up in `kSpokenLabels` (`keypad_labels.cpp`); a new label needs a row
+there, or it is spelled letter by letter.
 
 - **Build the answer by appending speech.** Only a new key press interrupts
   speech (`silenceSpeechForKeyPress`), so never call `audioAbortNow()` from an

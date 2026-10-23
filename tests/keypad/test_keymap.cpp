@@ -56,7 +56,7 @@ std::string outcome(KeyAction action, uint8_t bank, char key, const char *gestur
 
 bool isEmpty(const KeyBinding &b) {
   return !b.shortAction && !b.holdAction && !b.doubleAction && !b.doubleHoldAction &&
-         !b.waitsForDouble;
+         !b.waitsForDouble && b.focus == Setting::None;
 }
 
 void checkOutcome(const Family &f, uint8_t bank, char key, const char *gesture,
@@ -282,13 +282,19 @@ TEST(keymap_double_click_matches_expectations) {
   });
 }
 
-// The matrix has no double hold column: Bank 6 '2' is the one key with a double hold.
-TEST(keymap_double_hold) {
+TEST(keymap_double_hold_matches_expectations) {
   forEachKey([](const Family &f, const KeypadTraits &t, uint8_t bank, char key) {
-    const bool expected = (f.bit & FT8X7) && bank == 6 && key == '2';
     const KeyAction action = keymapLookup(t, bank, key).doubleHoldAction;
     checkOutcome(f, bank, key, "double hold", outcome(action, bank, key, "DOUBLE LONG", "none"),
-                 expected ? "setBank6ToneModeDcs" : "none");
+                 lookup(f.bit, bank, key).doubleHoldAction);
+  });
+}
+
+TEST(keymap_focus_matches_expectations) {
+  forEachKey([](const Family &f, const KeypadTraits &t, uint8_t bank, char key) {
+    const Setting focus = keymapLookup(t, bank, key).focus;
+    checkOutcome(f, bank, key, "focus", focus == Setting::None ? "-" : settingInfo(focus).label,
+                 lookup(f.bit, bank, key).focus);
   });
 }
 

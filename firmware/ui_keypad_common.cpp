@@ -1,4 +1,5 @@
 #include "ui_keypad_common.h"
+#include "keypad_labels.h"
 #include "ui_features.h"
 
 #include "radio_catalog.h"
@@ -20,74 +21,12 @@ void keypadForgetRadioActivity() {
   s_writesBeforeKey = serialTransportWriteCount();
 }
 
-struct SpokenLabel {
-  const char* label;  // trace label without '?'
-  const char* words;  // clip tokens
-};
-
-static constexpr SpokenLabel kSpokenLabels[] = {
-  {"A=B", "a equals b"},
-  {"AGC", "agc"},
-  {"ANT", "antenna"},
-  {"ATT", "attenuator"},
-  {"BAUD", "baud"},
-  {"BSTACK", "band stack"},
-  {"CIVADDR", "c i"},
-  {"CTCSS", "ctcss"},
-  {"DBF", "bandpassfilter"},
-  {"DCS", "dcs"},
-  {"FILSHAPE", "filtershape"},
-  {"FILWIDTH", "filterwidth"},
-  {"FREQ", "frequency"},
-  {"HPF", "lowcut"},
-  {"IPO", "preamplifier"},
-  {"LOCK", "lock"},
-  {"LPF", "highcut"},
-  {"MENU", "menu"},
-  {"MICEQ", "tx equalizer"},
-  {"MODE", "mode"},
-  {"MONITOR", "monitor"},
-  {"MONLEVEL", "monitor level"},
-  {"NAR", "narrow"},
-  {"NB", "noiseblanker"},
-  {"NBLEVEL", "noiseblanker level"},
-  {"NOTCH", "notch"},
-  {"NR", "noisereduction"},
-  {"NRLEVEL", "noisereduction level"},
-  {"PBT1", "pbt one"},
-  {"PBT2", "pbt two"},
-  {"PROFILE", "profile"},
-  {"RFPOWER", "power"},
-  {"RIT", "rit"},
-  {"ROUND", "frequency"},
-  {"ROW", "row"},
-  {"RXTX", "transceiver"},
-  {"SPLIT", "split"},
-  {"SPLITTONE", "split tone"},
-  {"TONE", "tone"},
-  {"TONEDIR", "tone"},
-  {"TRANSCEIVE", "transceive"},
-  {"TUNE", "tune"},
-  {"TUNER", "tuner"},
-  {"TXFREQ", "tx frequency"},
-  {"VFO A", "vfo a"},
-  {"VFO B", "vfo b"},
-  {"VFOA", "vfo a"},
-  {"VFOA FREQ", "vfo a frequency"},
-  {"VFOA MODE", "vfo a mode"},
-  {"VFOB", "vfo b"},
-  {"VFOB FREQ", "vfo b frequency"},
-  {"VFOB MODE", "vfo b mode"},
-};
-
-// The FT-8x7 EEPROM settings not in the table (BK?, KYR? ...) are
-// spelled, as their answers say them.
+// A label kSpokenLabels (keypad_labels.cpp) has no row for (CWAUTO?, ...) is
+// spelled, as its answer says it.
 static String spokenLabel(const char* label) {
   String name(label);
   if (name.endsWith("?")) name.remove(name.length() - 1);
-  for (const SpokenLabel& entry : kSpokenLabels) {
-    if (name == entry.label) return entry.words;
-  }
+  if (const char* words = spokenLabelWords(name.c_str())) return words;
   String spelled;
   for (size_t i = 0; i < name.length(); ++i) {
     if (name[i] < 'A' || name[i] > 'Z') return String();
