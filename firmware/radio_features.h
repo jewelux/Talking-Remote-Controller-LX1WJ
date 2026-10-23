@@ -60,14 +60,16 @@ FeatureStatus notchSetWidth(NotchWidth width);
 // On CI-V off -> NAR -> MID -> WIDE -> off; elsewhere on, off.
 FeatureStatus notchToggle(NotchState& out);
 
-// Speech processor: FT-857/897 PROC and its menu 74 level, Icom COMP, FTDX10 PR and PL.
+// Speech processor: FT-857/897 PROC and its menu 74 level, Icom COMP, FTDX10 and FT-891 PR0 and
+// PL, TS-480 PR and its PL input level.
 // These and the mic gain and VOX reads below are Unsupported where the profile's cap (getProc,
 // getMicGain, getVox) is off.
 FeatureStatus procQuery(bool& on);
 // 0..100.
 FeatureStatus procLevelQuery(uint8_t& level);
-// Writes: caps.setProc over CAT (IC-7300, IC-705, IC-7760, FTDX10), and experimentally
-// (caps.setRadioMenu) on the FT-857/897, in the EEPROM. Toggles start from the radio's state.
+// Writes: caps.setProc over CAT (IC-7300, IC-705, IC-7760, FTDX10, FT-891, TS-480), and
+// experimentally (caps.setRadioMenu) on the FT-857/897, in the EEPROM. Toggles start from the
+// radio's state.
 // levelOut holds the level set (on the FT-857/897 read back). Invalid above 100; Failed when the
 // radio does not take it, and on the FT-857/897 while transmitting; Unexpected when the stored
 // byte is out of range (nothing written).
@@ -77,9 +79,9 @@ FeatureStatus procLevelSet(uint8_t level, uint8_t& levelOut);
 // The level read, plus delta, kept within 0..100.
 FeatureStatus procLevelStep(int delta, uint8_t& levelOut);
 
-// Mic gain, 0..100: IC-7300, IC-705, IC-7760, FTDX10, and on the FT-817/818 and FT-857/897 the menu of the current
-// mode (SSB, AM, FM, DIG, on the FT-817 also PKT). Unsupported in CW and WFM, and in the
-// FT-857/897's PKT.
+// Mic gain, 0..100: IC-7300, IC-705, IC-7760, FTDX10, FTDX101, FT-891, TS-480, and on the
+// FT-817/818 and FT-857/897 the menu of the current mode (SSB, AM, FM, DIG, on the FT-817 also
+// PKT). Unsupported in CW and WFM, and in the FT-857/897's PKT.
 FeatureStatus micGainQuery(uint8_t& level);
 // caps.setMicGain over CAT; experimentally (caps.setRadioMenu) on the FT-817/818 and FT-857/897
 // the mic gain of the current mode, as micGainQuery picks it, in the EEPROM. Errors as
@@ -87,29 +89,30 @@ FeatureStatus micGainQuery(uint8_t& level);
 FeatureStatus micGainSet(uint8_t level, uint8_t& levelOut);
 FeatureStatus micGainStep(int delta, uint8_t& levelOut);
 
-// VOX: IC-7300, IC-705, IC-7760, FTDX10 VX and VG, FT-857/897 and its menu 88 gain, FT-817/818 and its menu 51
-// gain.
+// VOX: IC-7300, IC-705, IC-7760, the Yaesu ASCII radios' and the TS-480's VX and VG, FT-857/897
+// and its menu 88 gain, FT-817/818 and its menu 51 gain.
 FeatureStatus voxQuery(bool& on);
-// 0..100.
+// 0..100; on the TS-480 0..9.
 FeatureStatus voxGainQuery(uint8_t& level);
 // In ms: FT-857/897 menu 87, FT-817/818 menu 50, IC-7300, IC-705, IC-7760 (civVoxDelayAddr),
-// FTDX10 VD.
+// FTDX10, FT-891 and TS-480 VD (settings.voxDelay; not the FTDX101).
 FeatureStatus voxDelayQuery(uint16_t& ms);
 // Writes: caps.setVox over CAT, and experimentally (caps.setRadioMenu) on the FT-8x7, in the
 // EEPROM. Errors as procLevelSet.
 FeatureStatus voxSet(bool on);
 FeatureStatus voxToggle(bool& on);
-// The VOX gains the radio takes: 1..100 on the FT-8x7, else 0..100. False where it cannot be set.
+// The VOX gains the radio takes: 1..100 on the FT-8x7, 0..9 on the TS-480, else 0..100. False
+// where it cannot be set.
 bool voxGainRange(uint8_t& minOut, uint8_t& maxOut);
 FeatureStatus voxGainSet(uint8_t level, uint8_t& levelOut);
 FeatureStatus voxGainStep(int delta, uint8_t& levelOut);
-// The VOX delays in ms the radio takes: CI-V 0..2000, FTDX10 30..3000, FT-857/897 100..3000,
-// FT-817/818 100..2500. False where it cannot be set.
+// The VOX delays in ms the radio takes: CI-V 0..2000, FTDX10 and FT-891 30..3000, TS-480 0..3000,
+// FT-857/897 100..3000, FT-817/818 100..2500. False where it cannot be set.
 bool voxDelayRange(uint16_t& minOut, uint16_t& maxOut);
 // Sets the radio's step nearest ms; msOut holds the delay read back. Invalid outside the range.
 FeatureStatus voxDelaySet(uint16_t ms, uint16_t& msOut);
-// delta of the radio's steps (100 ms; FTDX10 its VD steps) from the delay read, kept within the
-// range.
+// delta of the radio's steps (100 ms; FTDX10 its VD steps, TS-480 150 ms) from the delay read, kept
+// within the range.
 FeatureStatus voxDelayStep(int delta, uint16_t& msOut);
 
 // FT-857/897 settings read from the radio's EEPROM, since CAT has no command for them. All but

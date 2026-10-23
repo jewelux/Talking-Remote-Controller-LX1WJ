@@ -165,14 +165,14 @@ TEST(icom_models) {
 // PROC?, MICGAIN? and VOX? say "not available" where the cap is off, instead of waiting for a
 // radio that has no such command.
 TEST(transmit_setting_caps) {
-  const uint8_t on[] = {1, 3, 17, 18, 8, 9, 10, 14, 11};
+  const uint8_t on[] = {1, 3, 17, 18, 8, 9, 10, 14, 11, 12, 13, 15, 7};
   for (uint8_t s : on) {
     CHECK(slot(s).caps.getMicGain);
     CHECK(slot(s).caps.getVox);
   }
-  const uint8_t proc[] = {1, 3, 17, 18, 9, 10, 11};
+  const uint8_t proc[] = {1, 3, 17, 18, 9, 10, 11, 15, 7};
   for (uint8_t s : proc) CHECK(slot(s).caps.getProc);
-  const uint8_t off[] = {2, 4, 5, 6, 7, 12, 13, 15, 16};
+  const uint8_t off[] = {2, 4, 5, 6, 16};
   for (uint8_t s : off) {
     CHECK(!slot(s).caps.getProc);
     CHECK(!slot(s).caps.getMicGain);
@@ -180,6 +180,39 @@ TEST(transmit_setting_caps) {
   }
   CHECK(!slot(8).caps.getProc);   // FT-817
   CHECK(!slot(14).caps.getProc);  // FT-818
+  CHECK(!slot(12).caps.getProc);  // FTDX101D: PR only in Hamlib
+  CHECK(!slot(13).caps.getProc);  // FTDX101MP
+}
+
+// VD per radio: the FTDX10's step table, ms on the FT-891 and TS-480, none on the FTDX101.
+TEST(ascii_vox_delay_and_gain_encodings) {
+  CHECK(slot(11).settings.voxDelay == VoxDelayEncoding::YaesuSteps);
+  CHECK(slot(12).settings.voxDelay == VoxDelayEncoding::None);
+  CHECK(slot(13).settings.voxDelay == VoxDelayEncoding::None);
+  const SettingEncodings& ft891 = slot(15).settings;
+  CHECK(ft891.voxDelay == VoxDelayEncoding::Ms4);
+  CHECK_EQ(ft891.voxDelayMinMs, 30);
+  CHECK_EQ(ft891.voxDelayMaxMs, 3000);
+  CHECK_EQ(ft891.voxDelayStepMs, 10);
+  CHECK_EQ(ft891.voxGainMax, 100);
+  const SettingEncodings& ts480 = slot(7).settings;
+  CHECK(ts480.voxDelay == VoxDelayEncoding::Ms4);
+  CHECK_EQ(ts480.voxDelayMinMs, 0);
+  CHECK_EQ(ts480.voxDelayMaxMs, 3000);
+  CHECK_EQ(ts480.voxDelayStepMs, 150);
+  CHECK_EQ(ts480.voxGainMax, 9);
+}
+
+// A VD the ops can encode: a range, and a step for the ms encoding.
+TEST(every_vox_delay_encoding_is_complete) {
+  for (size_t i = 0; i < profileCount(); ++i) {
+    const SettingEncodings& s = profileAt(i).settings;
+    if (s.voxDelay == VoxDelayEncoding::None) continue;
+    CHECK(isAscii(profileAt(i).protocol));
+    CHECK(profileAt(i).caps.getVox);
+    CHECK(s.voxDelayMaxMs > s.voxDelayMinMs);
+    if (s.voxDelay == VoxDelayEncoding::Ms4) CHECK(s.voxDelayStepMs > 0);
+  }
 }
 
 TEST(g106_is_ttl_civ_with_freq_and_mode_only) {

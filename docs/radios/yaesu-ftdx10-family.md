@@ -7,6 +7,7 @@ Profiles (built in):
 - slot 11: FTDX-10
 - slot 12: FTDX-101D
 - slot 13: FTDX-101MP
+- slot 15: FT-891
 
 ## Current First Block
 
@@ -28,6 +29,11 @@ Implemented and documented for the current field-test phase:
   (`VX`, `VG`, `VD`) read and set, console only (`PROC`, `PROCLEVEL`, `MICGAIN`, `VOX`,
   `VOXGAIN`, `VOXDELAY`). Each set is read back. The sets are not yet tested on a radio: `PROC ON`
   sends `PR01`, and `PR02` (the manual's on) when that does not read back as on
+- on the FT-891 the same, but `VD` is in ms (`VD0030`–`VD3000`, Hamlib and flrig agree). flrig
+  notes that the FT-891 takes `PR` only in SSB; in other modes `PROC` says "error"
+- on the FTDX101D/MP only `MG`, `VX` and `VG`: Hamlib and flrig disagree on `VD` (a step or ms),
+  and only Hamlib sends `PR0`, with the encoding opposite to the manual. Hamlib notes that the
+  FTDX101 takes no `MG` in CW and RTTY
 - power-state query, off, and on path
 - IF query
 - ID query

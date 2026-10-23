@@ -234,6 +234,23 @@ struct Ft8x7Bank6Profile {
   uint16_t dcsDefaultCode = 23;
 };
 
+// How an ASCII radio's VD sets the VOX delay.
+enum class VoxDelayEncoding : uint8_t {
+  None,        // no VD that two sources agree on: VOXDELAY is not available
+  YaesuSteps,  // VD00..33, the step table in cat_setting_codec.h (FTDX10)
+  Ms4,         // VDnnnn in ms, in voxDelayStepMs steps (FT-891, TS-480)
+};
+
+// The setting values of an ASCII radio that differ between models. CI-V and the FT-8x7 keep
+// theirs in code (civVoxDelayAddr, the EEPROM map).
+struct SettingEncodings {
+  VoxDelayEncoding voxDelay = VoxDelayEncoding::None;
+  uint16_t voxDelayMinMs = 0;
+  uint16_t voxDelayMaxMs = 0;
+  uint16_t voxDelayStepMs = 0;  // Ms4: the radio's resolution
+  uint8_t voxGainMax = 100;     // VG 0..voxGainMax
+};
+
 inline constexpr AsciiCommandSet kNoAsciiCommands{};
 inline constexpr ModeCodes kNoModeCodes{};
 
@@ -249,6 +266,7 @@ struct RadioProfile {
   RadioCapabilities caps{};
   const AsciiCommandSet* commands = &kNoAsciiCommands;
   const ModeCodes* modes = &kNoModeCodes;
+  SettingEncodings settings{};
   uint16_t rfPowerMaxWatts = 100;
   Ft8x7Bank6Profile ft8x7Bank6{};
 };

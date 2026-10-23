@@ -139,25 +139,30 @@
   break-in, keyer and IF shift, on the FT-857/897 also PROC, CW speed, the gains and the DSP filter
   widths. `CLAR ON | OFF` is gone, use `RIT ON | OFF`; `CLAR OFFSET` is now `RIT OFFSET`
 - `PROC?` says whether the speech processor is on ("processor on") and `PROCLEVEL?` says its level
-  ("processor level 50"), on the FT-857/897 (menu 74), the IC-7300, IC-705 and IC-7760 (COMP)
-  and the FTDX10. On the FT-857/897, experimental mode can also change them (see below)
+  ("processor level 50"), on the FT-857/897 (menu 74), the IC-7300, IC-705 and IC-7760 (COMP),
+  the FTDX10, the FT-891 and the TS-480 (its processor input level). On the FT-857/897,
+  experimental mode can also change them (see below)
 - `MICGAIN?` says the mic gain ("mic gain 50") on the IC-7300, IC-705 and IC-7760, the FTDX10,
-  the FT-817/818 and the FT-857/897. The FT-817 and FT-857/897 have one for each mode, so it says the one of the
-  current mode: SSB, AM, FM, DIG, and on the FT-817 also packet. In CW, and in packet on the
-  FT-857/897, it says "not available". On the FT-817/818 and FT-857/897, experimental mode can
-  also change it (see below)
+  FTDX101D/MP and FT-891, the TS-480, the FT-817/818 and the FT-857/897. The FT-817 and
+  FT-857/897 have one for each mode, so it says the one of the current mode: SSB, AM, FM, DIG,
+  and on the FT-817 also packet. In CW, and in packet on the FT-857/897, it says "not
+  available". On the FT-817/818 and FT-857/897, experimental mode can also change it (see below)
 - `VOX?` says whether VOX is on ("vox on"), `VOXGAIN?` says its gain ("vox gain 50") and
-  `VOXDELAY?` its delay ("vox delay 500 m s"), on the IC-7300, IC-705 and IC-7760, the FTDX10,
-  the FT-817/818 (menus 51 and 50) and the FT-857/897 (menus 88 and 87). On the other radios
-  these commands say "not available"
+  `VOXDELAY?` its delay ("vox delay 500 m s"), on the IC-7300, IC-705 and IC-7760, the FTDX10
+  and FT-891, the TS-480, the FT-817/818 (menus 51 and 50) and the FT-857/897 (menus 88 and 87).
+  The FTDX101D/MP have VOX and its gain, but no delay. On the other radios these commands say
+  "not available"
 - FT-817/818/857/897: the console reads the CW menu settings: speed, pitch, delay, weight, side
   tone and key reverse, on the FT-857/897 also QSK, auto mode, paddle and BFO (`CWSPEED?`,
   `CWPITCH?` …, see `HELP CW`). Not yet tested on the FT-817/818
-- on the IC-7300, IC-705, IC-7760 and FTDX10 the console can also change these: `PROC ON | OFF |
-  TOGGLE`, `VOX ON | OFF | TOGGLE`, `PROCLEVEL`, `MICGAIN` and `VOXGAIN <0..100>`, and
-  `VOXDELAY <ms>`, set to the radio's nearest step (IC-7300, IC-705, IC-7760 0–2000 ms, FTDX10
-  30–3000 ms). Each also takes `STEP <+-n>`: a level in percent, the delay in the radio's steps.
-  Not yet tested on these radios
+- on the IC-7300, IC-705, IC-7760, FTDX10, FT-891 and TS-480 the console can also change these:
+  `PROC ON | OFF | TOGGLE`, `VOX ON | OFF | TOGGLE`, `PROCLEVEL`, `MICGAIN` and
+  `VOXGAIN <0..100>` (TS-480 `VOXGAIN <0..9>`), and `VOXDELAY <ms>`, set to the radio's nearest
+  step (IC-7300, IC-705, IC-7760 0–2000 ms, FTDX10 and FT-891 30–3000 ms, TS-480 0–3000 ms in
+  150 ms steps). The FTDX101D/MP change mic gain, VOX and its gain. Each also takes
+  `STEP <+-n>`: a level in percent, the delay in the radio's steps (100 ms on the FT-891).
+  `PROCLEVEL` on the TS-480 sets the processor input level and keeps its output level. `HELP`
+  lists only the ones the radio has, with its ranges. Not yet tested on these radios
 
 ### Radio profiles
 

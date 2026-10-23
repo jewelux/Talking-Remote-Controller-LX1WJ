@@ -84,6 +84,46 @@ TEST(yaesu_ascii_vox_delay_step_by) {
   CHECK_EQ(yaesuAsciiVoxDelayStepBy(3000, -1000), 30);
 }
 
+// ---- ASCII VOX delay in ms ----
+
+TEST(vox_delay_ms_rounds_to_the_radio_step) {
+  // TS-480: 0..3000 in 150 ms steps.
+  CHECK_EQ(asciiVoxDelayMsRound(0, 0, 3000, 150), 0);
+  CHECK_EQ(asciiVoxDelayMsRound(500, 0, 3000, 150), 450);
+  CHECK_EQ(asciiVoxDelayMsRound(525, 0, 3000, 150), 600);
+  CHECK_EQ(asciiVoxDelayMsRound(3100, 0, 3000, 150), 3000);
+  // FT-891: 30..3000 in 10 ms steps.
+  CHECK_EQ(asciiVoxDelayMsRound(0, 30, 3000, 10), 30);
+  CHECK_EQ(asciiVoxDelayMsRound(505, 30, 3000, 10), 510);
+  CHECK_EQ(asciiVoxDelayMsRound(9999, 30, 3000, 10), 3000);
+}
+
+TEST(vox_delay_ms_steps_by_at_least_100_ms) {
+  CHECK_EQ(asciiVoxDelayMsStepBy(450, 1, 0, 3000, 150), 600);
+  CHECK_EQ(asciiVoxDelayMsStepBy(450, -4, 0, 3000, 150), 0);
+  CHECK_EQ(asciiVoxDelayMsStepBy(500, 1, 30, 3000, 10), 600);
+  CHECK_EQ(asciiVoxDelayMsStepBy(30, -1, 30, 3000, 10), 30);
+  CHECK_EQ(asciiVoxDelayMsStepBy(2950, 1, 30, 3000, 10), 3000);
+  CHECK_EQ(asciiVoxDelayMsStepBy(100, 1000, 30, 3000, 10), 3000);
+}
+
+// ---- TS-480 processor levels ----
+
+TEST(kenwood_proc_levels_decode) {
+  uint8_t in = 0;
+  uint8_t out = 0;
+  CHECK(kenwoodProcLevelsDecode("050080;", in, out));
+  CHECK_EQ(in, 50);
+  CHECK_EQ(out, 80);
+  CHECK(kenwoodProcLevelsDecode("100000", in, out));
+  CHECK_EQ(in, 100);
+  CHECK_EQ(out, 0);
+  CHECK(!kenwoodProcLevelsDecode("101000;", in, out));
+  CHECK(!kenwoodProcLevelsDecode("05008;", in, out));
+  CHECK(!kenwoodProcLevelsDecode("0500800;", in, out));
+  CHECK(!kenwoodProcLevelsDecode("05a080;", in, out));
+}
+
 // ---- ASCII lock ----
 
 TEST(lock_digit_decodes_with_the_profile_off_digits) {

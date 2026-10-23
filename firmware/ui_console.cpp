@@ -768,6 +768,36 @@ void helpLine(const char* text) {
   Serial.println(text);
 }
 
+// PROC, mic gain and VOX over CAT, as far as the profile has them, with the radio's ranges.
+static void printTxSettingsHelp() {
+  const RadioCapabilities& caps = currentProfile().caps;
+  if (caps.getProc) {
+    helpLine(caps.setProc ? "PROC? | PROC OFF | ON | TOGGLE  (speech processor)" : "PROC?  (speech processor)");
+    helpLine(caps.setProc ? "PROCLEVEL? | PROCLEVEL <0..100> | PROCLEVEL STEP <+-n>" : "PROCLEVEL?");
+  }
+  if (caps.getMicGain) {
+    helpLine(caps.setMicGain ? "MICGAIN? | MICGAIN <0..100> | MICGAIN STEP <+-n>" : "MICGAIN?");
+  }
+  if (!caps.getVox) return;
+  char line[112];
+  uint8_t gainLo = 0;
+  uint8_t gainHi = 0;
+  if (voxGainRange(gainLo, gainHi)) {
+    helpLine("VOX? | VOX OFF | ON | TOGGLE");
+    snprintf(line, sizeof(line), "VOXGAIN? | VOXGAIN <%u..%u> | VOXGAIN STEP <+-n>", (unsigned)gainLo, (unsigned)gainHi);
+    helpLine(line);
+  } else {
+    helpLine("VOX? | VOXGAIN?");
+  }
+  uint16_t delayLo = 0;
+  uint16_t delayHi = 0;
+  if (voxDelayRange(delayLo, delayHi)) {
+    snprintf(line, sizeof(line), "VOXDELAY? | VOXDELAY <%u..%u> | VOXDELAY STEP <+-n>  (ms, to the radio's nearest step)",
+             (unsigned)delayLo, (unsigned)delayHi);
+    helpLine(line);
+  }
+}
+
 static void printHelpIndex() {
   Serial.println("HELP GENERAL   bank, profile, speech, volume, frequency, mode");
   Serial.print("HELP RADIO     commands for ");
@@ -851,12 +881,7 @@ void printHelp(const String& topicArg) {
     helpLine("NR? | NR OFF | ON | TOGGLE");
     helpLine("PBT1? | PBT1 <-128..127> | CENTER | STEP <+-n>");
     helpLine("PBT2? | PBT2 <-128..127> | CENTER | STEP <+-n>");
-    helpLine("PROC? | PROC OFF | ON | TOGGLE  (speech compressor)");
-    helpLine("PROCLEVEL? | PROCLEVEL <0..100> | PROCLEVEL STEP <+-n>");
-    helpLine("MICGAIN? | MICGAIN <0..100> | MICGAIN STEP <+-n>");
-    helpLine("VOX? | VOX OFF | ON | TOGGLE");
-    helpLine("VOXGAIN? | VOXGAIN <0..100> | VOXGAIN STEP <+-n>");
-    helpLine("VOXDELAY? | VOXDELAY <ms> | VOXDELAY STEP <+-n>  (to the radio's nearest step)");
+    printTxSettingsHelp();
     helpLine(rfPowerLine);
     helpLine("RIT? | RIT <Hz> | RIT STEP <+-Hz> | RIT OFF | ON | TOGGLE");
     helpLine("RXTX?");
@@ -960,12 +985,7 @@ void printHelp(const String& topicArg) {
     helpLine("NB? | NB OFF | ON | TOGGLE");
     helpLine("NOTCH? | NOTCH OFF | ON | TOGGLE");
     helpLine("NR? | NR OFF | ON | TOGGLE");
-    helpLine("PROC? | PROC OFF | ON | TOGGLE  (speech processor)");
-    helpLine("PROCLEVEL? | PROCLEVEL <0..100> | PROCLEVEL STEP <+-n>");
-    helpLine("MICGAIN? | MICGAIN <0..100> | MICGAIN STEP <+-n>");
-    helpLine("VOX? | VOX OFF | ON | TOGGLE");
-    helpLine("VOXGAIN? | VOXGAIN <0..100> | VOXGAIN STEP <+-n>");
-    helpLine("VOXDELAY? | VOXDELAY <ms> | VOXDELAY STEP <+-n>  (to the radio's nearest step)");
+    printTxSettingsHelp();
     helpLine("RXTX?");
     helpLine("SPLIT? | SPLIT OFF | ON | TOGGLE");
     helpLine("TUNE");

@@ -257,21 +257,48 @@ bool asciiQueryYaesuRadioInfoFlag(const RadioProfile& sp, const char* code, bool
   return false;
 }
 
+// PROC, mic gain and VOX on the Yaesu ASCII radios and the TS-480. Both use MG, VX, VG and VD;
+// the Yaesus answer PR0 and PL with one level, the TS-480 PR, and PL with an input and an
+// output level (its PC command reference; Hamlib kenwood.c agrees).
+static bool asciiHasTxSettings(const RadioProfile& sp) {
+  return sp.protocol == PROTO_YAESU_FTDX_ASCII || sp.protocol == PROTO_KENWOOD_ASCII;
+}
+
+static bool isKenwood(const RadioProfile& sp) {
+  return sp.protocol == PROTO_KENWOOD_ASCII;
+}
+
 // The FTDX10 manual says 1 = off and 2 = on. Hamlib found that the FTDX101, FT-891 and
-// FT-991, whose manuals say the same, answer 0 = off and 1 = on; the FTDX10 is untested, so
-// this follows them. 2 can only mean on.
-bool asciiQueryYaesuProc(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
-  if (sp.protocol != PROTO_YAESU_FTDX_ASCII) return false;
+// FT-991, whose manuals say the same, answer 0 = off and 1 = on, and flrig reads the FT-891 so;
+// the FTDX10 is untested, so this follows them. 2 can only mean on. The TS-480 answers PR0 or
+// PR1.
+bool asciiQueryProc(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
+  if (!asciiHasTxSettings(sp)) return false;
+  const char* prefix = isKenwood(sp) ? "PR" : "PR0";
   String line;
-  if (!transactAsciiCommand("PR0;", line, "PR0", timeoutMs)) return false;
-  if (line.length() < 4) return false;
-  if (line[3] == '0') { onOut = false; return true; }
-  if (line[3] == '1' || line[3] == '2') { onOut = true; return true; }
+  if (!transactAsciiCommand(isKenwood(sp) ? "PR;" : "PR0;", line, prefix, timeoutMs)) return false;
+  const size_t at = strlen(prefix);
+  if (line.length() <= at) return false;
+  const char state = line[at];
+  if (state == '0') { onOut = false; return true; }
+  if (state == '1' || (!isKenwood(sp) && state == '2')) { onOut = true; return true; }
   return false;
 }
 
-bool asciiQueryYaesuProcLevel(const RadioProfile& sp, uint8_t& levelOut, uint32_t timeoutMs) {
-  if (sp.protocol != PROTO_YAESU_FTDX_ASCII) return false;
+// The TS-480's PL: the input level, which Hamlib reads as the processor level, and the output
+// level.
+static bool kenwoodQueryProcLevels(uint8_t& inputOut, uint8_t& outputOut, uint32_t timeoutMs) {
+  String line;
+  if (!transactAsciiCommand("PL;", line, "PL", timeoutMs)) return false;
+  return kenwoodProcLevelsDecode(line.c_str() + 2, inputOut, outputOut);
+}
+
+bool asciiQueryProcLevel(const RadioProfile& sp, uint8_t& levelOut, uint32_t timeoutMs) {
+  if (!asciiHasTxSettings(sp)) return false;
+  if (isKenwood(sp)) {
+    uint8_t output = 0;
+    return kenwoodQueryProcLevels(levelOut, output, timeoutMs);
+  }
   String line;
   if (!transactAsciiCommand("PL;", line, "PL", timeoutMs)) return false;
   uint64_t value = 0;
@@ -280,51 +307,55 @@ bool asciiQueryYaesuProcLevel(const RadioProfile& sp, uint8_t& levelOut, uint32_
   return true;
 }
 
-bool asciiQueryYaesuMicGain(const RadioProfile& sp, uint8_t& levelOut, uint32_t timeoutMs) {
-  if (sp.protocol != PROTO_YAESU_FTDX_ASCII) return false;
+// Reads "<code><level>;", 0..max.
+static bool asciiQueryLevel(const char* code, uint8_t max, uint8_t& levelOut, uint32_t timeoutMs) {
+  char cmd[6];
+  snprintf(cmd, sizeof(cmd), "%s;", code);
   String line;
-  if (!transactAsciiCommand("MG;", line, "MG", timeoutMs)) return false;
+  if (!transactAsciiCommand(cmd, line, code, timeoutMs)) return false;
   uint64_t value = 0;
-  if (!parseAsciiUnsignedResponse(line, "MG", value) || value > 100) return false;
+  if (!parseAsciiUnsignedResponse(line, code, value) || value > max) return false;
   levelOut = (uint8_t)value;
   return true;
 }
 
-bool asciiQueryYaesuVox(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
-  if (sp.protocol != PROTO_YAESU_FTDX_ASCII) return false;
-  String line;
-  if (!transactAsciiCommand("VX;", line, "VX", timeoutMs)) return false;
-  uint64_t value = 0;
-  if (!parseAsciiUnsignedResponse(line, "VX", value) || value > 1) return false;
+bool asciiQueryMicGain(const RadioProfile& sp, uint8_t& levelOut, uint32_t timeoutMs) {
+  return asciiHasTxSettings(sp) && asciiQueryLevel("MG", 100, levelOut, timeoutMs);
+}
+
+bool asciiQueryVox(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
+  uint8_t value = 0;
+  if (!asciiHasTxSettings(sp) || !asciiQueryLevel("VX", 1, value, timeoutMs)) return false;
   onOut = value == 1;
   return true;
 }
 
-bool asciiQueryYaesuVoxGain(const RadioProfile& sp, uint8_t& levelOut, uint32_t timeoutMs) {
-  if (sp.protocol != PROTO_YAESU_FTDX_ASCII) return false;
-  String line;
-  if (!transactAsciiCommand("VG;", line, "VG", timeoutMs)) return false;
-  uint64_t value = 0;
-  if (!parseAsciiUnsignedResponse(line, "VG", value) || value > 100) return false;
-  levelOut = (uint8_t)value;
-  return true;
+bool asciiQueryVoxGain(const RadioProfile& sp, uint8_t& levelOut, uint32_t timeoutMs) {
+  return asciiHasTxSettings(sp) && asciiQueryLevel("VG", sp.settings.voxGainMax, levelOut, timeoutMs);
 }
 
-// VD answers a step, not ms (cat_setting_codec.h).
-bool asciiQueryYaesuVoxDelayMs(const RadioProfile& sp, uint16_t& msOut, uint32_t timeoutMs) {
-  if (sp.protocol != PROTO_YAESU_FTDX_ASCII) return false;
+// VD answers a step (cat_setting_codec.h) or ms, as the profile's settings say.
+bool asciiQueryVoxDelayMs(const RadioProfile& sp, uint16_t& msOut, uint32_t timeoutMs) {
+  const VoxDelayEncoding encoding = sp.settings.voxDelay;
+  if (!asciiHasTxSettings(sp) || encoding == VoxDelayEncoding::None) return false;
   String line;
   if (!transactAsciiCommand("VD;", line, "VD", timeoutMs)) return false;
   uint64_t value = 0;
-  if (!parseAsciiUnsignedResponse(line, "VD", value) || value >= kYaesuAsciiVoxDelaySteps) return false;
-  msOut = yaesuAsciiVoxDelayStepMs((uint8_t)value);
+  if (!parseAsciiUnsignedResponse(line, "VD", value)) return false;
+  if (encoding == VoxDelayEncoding::YaesuSteps) {
+    if (value >= kYaesuAsciiVoxDelaySteps) return false;
+    msOut = yaesuAsciiVoxDelayStepMs((uint8_t)value);
+    return true;
+  }
+  if (value > sp.settings.voxDelayMaxMs) return false;
+  msOut = (uint16_t)value;
   return true;
 }
 
 // Sends "<code><level, 3 digits>;" and reads it back with query.
 template <typename Query>
-static bool asciiSetYaesuLevel(const RadioProfile& sp, const char* code, uint8_t level, Query query) {
-  if (sp.protocol != PROTO_YAESU_FTDX_ASCII || level > 100) return false;
+static bool asciiSetLevel(const RadioProfile& sp, const char* code, uint8_t level, uint8_t max, Query query) {
+  if (!asciiHasTxSettings(sp) || level > max) return false;
   char cmd[8];
   snprintf(cmd, sizeof(cmd), "%s%03u;", code, (unsigned)level);
   if (!asciiSendSimpleCommand(cmd)) return false;
@@ -332,46 +363,68 @@ static bool asciiSetYaesuLevel(const RadioProfile& sp, const char* code, uint8_t
   return query(sp, readBack, 800) && readBack == level;
 }
 
-// PR01 / PR00 as Hamlib sends on the FTDX101, FT-891 and FT-991; the FTDX10 manual's 2 = on is
-// tried when 1 does not read back as on.
-bool asciiSetYaesuProc(const RadioProfile& sp, bool on) {
-  if (sp.protocol != PROTO_YAESU_FTDX_ASCII || !sp.caps.setProc) return false;
+// Yaesu: PR01 / PR00 as Hamlib and flrig send on the FT-891 (Hamlib also on the FTDX101 and
+// FT-991); the FTDX10 manual's 2 = on is tried when 1 does not read back as on. TS-480: PR1 / PR0.
+bool asciiSetProc(const RadioProfile& sp, bool on) {
+  if (!asciiHasTxSettings(sp) || !sp.caps.setProc) return false;
   bool readBack = !on;
-  if (asciiSendSimpleCommand(on ? "PR01;" : "PR00;") && asciiQueryYaesuProc(sp, readBack, 800) && readBack == on) {
+  if (isKenwood(sp)) {
+    return asciiSendSimpleCommand(on ? "PR1;" : "PR0;") && asciiQueryProc(sp, readBack, 800) && readBack == on;
+  }
+  if (asciiSendSimpleCommand(on ? "PR01;" : "PR00;") && asciiQueryProc(sp, readBack, 800) && readBack == on) {
     return true;
   }
-  return on && asciiSendSimpleCommand("PR02;") && asciiQueryYaesuProc(sp, readBack, 800) && readBack;
+  return on && asciiSendSimpleCommand("PR02;") && asciiQueryProc(sp, readBack, 800) && readBack;
 }
 
-bool asciiSetYaesuProcLevel(const RadioProfile& sp, uint8_t level) {
+// The TS-480 sets the input level and keeps the output level it has (Hamlib sets both to the
+// one value).
+bool asciiSetProcLevel(const RadioProfile& sp, uint8_t level) {
   if (!sp.caps.setProc) return false;
-  return asciiSetYaesuLevel(sp, "PL", level, asciiQueryYaesuProcLevel);
+  if (!isKenwood(sp)) return asciiSetLevel(sp, "PL", level, 100, asciiQueryProcLevel);
+  if (level > 100) return false;
+  uint8_t input = 0;
+  uint8_t output = 0;
+  if (!kenwoodQueryProcLevels(input, output, 800)) return false;
+  char cmd[12];
+  snprintf(cmd, sizeof(cmd), "PL%03u%03u;", (unsigned)level, (unsigned)output);
+  if (!asciiSendSimpleCommand(cmd)) return false;
+  uint8_t outputBack = 0;
+  return kenwoodQueryProcLevels(input, outputBack, 800) && input == level && outputBack == output;
 }
 
-bool asciiSetYaesuMicGain(const RadioProfile& sp, uint8_t level) {
+bool asciiSetMicGain(const RadioProfile& sp, uint8_t level) {
   if (!sp.caps.setMicGain) return false;
-  return asciiSetYaesuLevel(sp, "MG", level, asciiQueryYaesuMicGain);
+  return asciiSetLevel(sp, "MG", level, 100, asciiQueryMicGain);
 }
 
-bool asciiSetYaesuVox(const RadioProfile& sp, bool on) {
-  if (sp.protocol != PROTO_YAESU_FTDX_ASCII || !sp.caps.setVox) return false;
+bool asciiSetVox(const RadioProfile& sp, bool on) {
+  if (!asciiHasTxSettings(sp) || !sp.caps.setVox) return false;
   bool readBack = !on;
-  return asciiSendSimpleCommand(on ? "VX1;" : "VX0;") && asciiQueryYaesuVox(sp, readBack, 800) && readBack == on;
+  return asciiSendSimpleCommand(on ? "VX1;" : "VX0;") && asciiQueryVox(sp, readBack, 800) && readBack == on;
 }
 
-bool asciiSetYaesuVoxGain(const RadioProfile& sp, uint8_t level) {
+bool asciiSetVoxGain(const RadioProfile& sp, uint8_t level) {
   if (!sp.caps.setVox) return false;
-  return asciiSetYaesuLevel(sp, "VG", level, asciiQueryYaesuVoxGain);
+  return asciiSetLevel(sp, "VG", level, sp.settings.voxGainMax, asciiQueryVoxGain);
 }
 
-bool asciiSetYaesuVoxDelayMs(const RadioProfile& sp, uint16_t ms) {
-  if (sp.protocol != PROTO_YAESU_FTDX_ASCII || !sp.caps.setVox) return false;
-  const uint8_t best = yaesuAsciiVoxDelayNearestStep(ms);
-  char cmd[8];
-  snprintf(cmd, sizeof(cmd), "VD%02u;", (unsigned)best);
+bool asciiSetVoxDelayMs(const RadioProfile& sp, uint16_t ms) {
+  const SettingEncodings& enc = sp.settings;
+  if (!asciiHasTxSettings(sp) || !sp.caps.setVox || enc.voxDelay == VoxDelayEncoding::None) return false;
+  char cmd[10];
+  uint16_t expected = 0;
+  if (enc.voxDelay == VoxDelayEncoding::YaesuSteps) {
+    const uint8_t best = yaesuAsciiVoxDelayNearestStep(ms);
+    snprintf(cmd, sizeof(cmd), "VD%02u;", (unsigned)best);
+    expected = yaesuAsciiVoxDelayStepMs(best);
+  } else {
+    expected = asciiVoxDelayMsRound(ms, enc.voxDelayMinMs, enc.voxDelayMaxMs, enc.voxDelayStepMs);
+    snprintf(cmd, sizeof(cmd), "VD%04u;", (unsigned)expected);
+  }
   if (!asciiSendSimpleCommand(cmd)) return false;
   uint16_t readBack = 0;
-  return asciiQueryYaesuVoxDelayMs(sp, readBack, 800) && readBack == yaesuAsciiVoxDelayStepMs(best);
+  return asciiQueryVoxDelayMs(sp, readBack, 800) && readBack == expected;
 }
 
 bool asciiQueryActiveVfoA(const RadioProfile& sp, bool& vfoAOut, uint32_t timeoutMs) {

@@ -1,7 +1,7 @@
 #pragma once
 
-// How CAT radios encode setting values: CI-V levels, RF power, the Yaesu ASCII VOX delay
-// steps and the ASCII lock reply. No Arduino.h, so the host tests (tests/cat) can build it.
+// How CAT radios encode setting values: CI-V levels, RF power, the ASCII VOX delay, the
+// TS-480 processor levels and the ASCII lock reply. No Arduino.h, so the host tests (tests/cat) can build it.
 
 #include <stdint.h>
 
@@ -21,6 +21,16 @@ uint16_t yaesuAsciiVoxDelayStepMs(uint8_t step);
 uint8_t yaesuAsciiVoxDelayNearestStep(uint16_t ms);
 // The ms of the step nearest ms, moved by steps and kept within the table.
 uint16_t yaesuAsciiVoxDelayStepBy(uint16_t ms, int steps);
+
+// A VOX delay sent in ms (VDnnnn, FT-891 and TS-480): ms rounded to the nearest multiple of
+// stepMs and kept within minMs..maxMs.
+uint16_t asciiVoxDelayMsRound(uint16_t ms, uint16_t minMs, uint16_t maxMs, uint16_t stepMs);
+// ms moved by steps of stepMs, at least 100 ms each, then rounded and kept as above.
+uint16_t asciiVoxDelayMsStepBy(uint16_t ms, int steps, uint16_t minMs, uint16_t maxMs, uint16_t stepMs);
+
+// The TS-480 PL reply after "PL": the processor input level, then its output level, three digits
+// and 0..100 each. False on anything else.
+bool kenwoodProcLevelsDecode(const char* digits, uint8_t& inputOut, uint8_t& outputOut);
 
 // An ASCII lock reply digit: on unless it is one of offDigits ("0", or "04" on the FTDX101).
 // False when digit is not a digit.

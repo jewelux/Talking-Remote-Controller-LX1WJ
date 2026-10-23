@@ -32,24 +32,23 @@ bool asciiSetNotch(const RadioProfile& sp, bool on);
 bool asciiQueryLock(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
 bool asciiSetLock(const RadioProfile& sp, bool on);
 bool asciiQueryYaesuRadioInfoFlag(const RadioProfile& sp, const char* code, bool& onOut, uint32_t timeoutMs);
-// Yaesu FTDX speech processor (PR0) and its level (PL, 0..100).
-bool asciiQueryYaesuProc(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
-bool asciiQueryYaesuProcLevel(const RadioProfile& sp, uint8_t& levelOut, uint32_t timeoutMs);
-// Yaesu FTDX mic gain (MG, 0..100).
-bool asciiQueryYaesuMicGain(const RadioProfile& sp, uint8_t& levelOut, uint32_t timeoutMs);
-// Yaesu FTDX VOX (VX) and its gain (VG, 0..100).
-bool asciiQueryYaesuVox(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
-bool asciiQueryYaesuVoxGain(const RadioProfile& sp, uint8_t& levelOut, uint32_t timeoutMs);
-// Yaesu FTDX VOX delay (VD), in ms.
-bool asciiQueryYaesuVoxDelayMs(const RadioProfile& sp, uint16_t& msOut, uint32_t timeoutMs);
-// The writes of the above, each read back: caps.setProc, setMicGain, setVox. Levels 0..100; the
-// VOX delay goes to the VD step nearest ms, 30..3000. Not yet tested on a radio.
-bool asciiSetYaesuProc(const RadioProfile& sp, bool on);
-bool asciiSetYaesuProcLevel(const RadioProfile& sp, uint8_t level);
-bool asciiSetYaesuMicGain(const RadioProfile& sp, uint8_t level);
-bool asciiSetYaesuVox(const RadioProfile& sp, bool on);
-bool asciiSetYaesuVoxGain(const RadioProfile& sp, uint8_t level);
-bool asciiSetYaesuVoxDelayMs(const RadioProfile& sp, uint16_t ms);
+// Speech processor (Yaesu PR0, TS-480 PR) and its level (PL, 0..100; on the TS-480 the input
+// level), mic gain (MG, 0..100), VOX (VX), its gain (VG, 0..settings.voxGainMax) and delay (VD,
+// in ms, as settings.voxDelay says): the Yaesu ASCII radios and the TS-480.
+bool asciiQueryProc(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
+bool asciiQueryProcLevel(const RadioProfile& sp, uint8_t& levelOut, uint32_t timeoutMs);
+bool asciiQueryMicGain(const RadioProfile& sp, uint8_t& levelOut, uint32_t timeoutMs);
+bool asciiQueryVox(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
+bool asciiQueryVoxGain(const RadioProfile& sp, uint8_t& levelOut, uint32_t timeoutMs);
+bool asciiQueryVoxDelayMs(const RadioProfile& sp, uint16_t& msOut, uint32_t timeoutMs);
+// The writes of the above, each read back: caps.setProc, setMicGain, setVox. The VOX delay goes
+// to the radio's step nearest ms. Not yet tested on a radio.
+bool asciiSetProc(const RadioProfile& sp, bool on);
+bool asciiSetProcLevel(const RadioProfile& sp, uint8_t level);
+bool asciiSetMicGain(const RadioProfile& sp, uint8_t level);
+bool asciiSetVox(const RadioProfile& sp, bool on);
+bool asciiSetVoxGain(const RadioProfile& sp, uint8_t level);
+bool asciiSetVoxDelayMs(const RadioProfile& sp, uint16_t ms);
 bool asciiQueryActiveVfoA(const RadioProfile& sp, bool& vfoAOut, uint32_t timeoutMs);
 bool asciiSelectVfoA(const RadioProfile& sp);
 bool asciiSelectVfoB(const RadioProfile& sp);

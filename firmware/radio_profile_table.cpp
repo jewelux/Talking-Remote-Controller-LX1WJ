@@ -105,10 +105,19 @@ constexpr ModeCodes kKx2Modes = {
 
 constexpr uint32_t kTs480Bauds[] = {4800, 9600, 19200, 38400, 57600};
 
+// PR, PL, MG, VX, VG and VD as in the TS-480 PC command reference and Hamlib kenwood.c.
 constexpr RadioCapabilities kTs480Caps = {
     .getFreq = true, .setFreq = true, .getMode = true, .setMode = true,
     .getSmeter = true, .getSwr = true,
     .getNr = true, .setNr = true, .getNb = true, .setNb = true,
+    .getProc = true, .setProc = true, .getMicGain = true, .setMicGain = true,
+    .getVox = true, .setVox = true,
+};
+
+// VD 0..3000 ms in 150 ms steps, VG 0..9 (TS-480 PC command reference).
+constexpr SettingEncodings kTs480Settings = {
+    .voxDelay = VoxDelayEncoding::Ms4, .voxDelayMinMs = 0, .voxDelayMaxMs = 3000, .voxDelayStepMs = 150,
+    .voxGainMax = 9,
 };
 
 constexpr AsciiCommandSet kTs480Commands = {
@@ -193,15 +202,17 @@ constexpr RadioCapabilities kFtdx101Caps = [] {
   caps.getTxFreq = false;
   caps.getVfoMode = false;
   caps.setVfoMode = false;
-  // PR, PL, MG, VX, VG and VD are read on the FTDX10 only so far.
+  // MG, VX and VG as Hamlib and flrig send them. No PR or PL: only Hamlib has them, against
+  // the manual's encoding. No VD: Hamlib sends a step, flrig ms.
   caps.getProc = false;
   caps.setProc = false;
-  caps.getMicGain = false;
-  caps.setMicGain = false;
-  caps.getVox = false;
-  caps.setVox = false;
   return caps;
 }();
+
+// VD as the FTDX10 manual and Hamlib have it: a step, 30..3000 ms.
+constexpr SettingEncodings kFtdx10Settings = {
+    .voxDelay = VoxDelayEncoding::YaesuSteps, .voxDelayMinMs = 30, .voxDelayMaxMs = 3000,
+};
 
 constexpr RadioCapabilities kFt891Caps = {
     .getFreq = true, .setFreq = true, .getMode = true, .setMode = true,
@@ -210,6 +221,14 @@ constexpr RadioCapabilities kFt891Caps = {
     .getTuner = true, .setTuner = true, .startTune = true,
     .getVfo = true, .setVfo = true,
     .getSplit = true, .setSplit = true,
+    .getProc = true, .setProc = true, .getMicGain = true, .setMicGain = true,
+    .getVox = true, .setVox = true,
+};
+
+// PR0, PL, MG, VX, VG and VD as Hamlib newcat and flrig send them; VD in ms, 30..3000 (flrig,
+// the FT-891's 10 ms steps).
+constexpr SettingEncodings kFt891Settings = {
+    .voxDelay = VoxDelayEncoding::Ms4, .voxDelayMinMs = 30, .voxDelayMaxMs = 3000, .voxDelayStepMs = 10,
 };
 
 constexpr AsciiCommandSet kFtdx10Commands = {
@@ -303,7 +322,7 @@ constexpr RadioProfile kProfiles[] = {
     {.slot = 7, .name = "Kenwood TS-480", .vendor = VoiceVendor::Kenwood, .voiceDigits = "480",
      .model = RadioModel::Ts480, .protocol = PROTO_KENWOOD_ASCII,
      .link = {.port = RadioPort::Rs232, .baud = 9600, .bauds = kTs480Bauds},
-     .caps = kTs480Caps, .commands = &kTs480Commands, .modes = &kTs480Modes},
+     .caps = kTs480Caps, .commands = &kTs480Commands, .modes = &kTs480Modes, .settings = kTs480Settings},
     {.slot = 8, .name = "Yaesu FT-817", .vendor = VoiceVendor::Yaesu, .voiceDigits = "817",
      .model = RadioModel::Ft817, .protocol = PROTO_YAESU_FT8X7,
      .link = {.port = RadioPort::Rs232, .baud = 4800, .bauds = kFt8x7Bauds},
@@ -319,7 +338,8 @@ constexpr RadioProfile kProfiles[] = {
     {.slot = 11, .name = "Yaesu FTDX-10", .vendor = VoiceVendor::Yaesu, .voiceDigits = "10",
      .model = RadioModel::Ftdx10, .protocol = PROTO_YAESU_FTDX_ASCII,
      .link = {.port = RadioPort::Rs232, .baud = 38400, .bauds = kYaesuAsciiBauds},
-     .caps = kFtdx10Caps, .commands = &kFtdx10Commands, .modes = &kYaesuAsciiModes},
+     .caps = kFtdx10Caps, .commands = &kFtdx10Commands, .modes = &kYaesuAsciiModes,
+     .settings = kFtdx10Settings},
     {.slot = 12, .name = "Yaesu FTDX-101D", .vendor = VoiceVendor::Yaesu, .voiceDigits = "101",
      .protocol = PROTO_YAESU_FTDX_ASCII,
      .link = {.port = RadioPort::Rs232, .baud = 38400, .bauds = kYaesuAsciiBauds},
@@ -335,7 +355,8 @@ constexpr RadioProfile kProfiles[] = {
     {.slot = 15, .name = "Yaesu FT-891", .vendor = VoiceVendor::Yaesu, .voiceDigits = "891",
      .protocol = PROTO_YAESU_FTDX_ASCII,
      .link = {.port = RadioPort::Rs232, .baud = 4800, .bauds = kYaesuAsciiBauds},
-     .caps = kFt891Caps, .commands = &kFt891Commands, .modes = &kYaesuAsciiModes},
+     .caps = kFt891Caps, .commands = &kFt891Commands, .modes = &kYaesuAsciiModes,
+     .settings = kFt891Settings},
     {.slot = 16, .name = "Yaesu FT-847", .vendor = VoiceVendor::Yaesu, .voiceDigits = "847",
      .protocol = PROTO_YAESU_FT847,
      .link = {.port = RadioPort::Rs232, .baud = 4800, .bauds = kFt847Bauds},
