@@ -2,6 +2,7 @@
 
 #include "ft8x7_eeprom_map.h"
 #include "protocol_ops_yaesu.h"
+#include "radio_setting_types.h"
 #include "radio_types.h"
 
 // Radio features the keypad and the console share. Each operation checks the
@@ -59,6 +60,15 @@ FeatureStatus notchSet(bool on);
 FeatureStatus notchSetWidth(NotchWidth width);
 // On CI-V off -> NAR -> MID -> WIDE -> off; elsewhere on, off.
 FeatureStatus notchToggle(NotchState& out);
+
+// AGC (caps.getAgc): on the FT-8x7 from its EEPROM.
+FeatureStatus agcQuery(AgcMode& out);
+// Whether the radio can be set to mode: experimentally (caps.setRadioMenu) on the FT-8x7, which
+// has no MID.
+bool agcCanSet(AgcMode mode);
+// Sets mode, read back into out. Unsupported where agcCanSet is false; FT-8x7 errors as
+// procLevelSet.
+FeatureStatus agcSet(AgcMode mode, AgcMode& out);
 
 // Speech processor: FT-857/897 PROC and its menu 74 level, Icom COMP, FTDX10 and FT-891 PR0 and
 // PL, TS-480 PR and its PL input level.

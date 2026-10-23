@@ -25,6 +25,34 @@ static bool isTs480() {
   return currentRadioModel() == RadioModel::Ts480;
 }
 
+// ---- AGC ----
+
+FeatureStatus agcQuery(AgcMode& out) {
+  if (!currentProfile().caps.getAgc) return FeatureStatus::Unsupported;
+  if (!isFt8x7()) return FeatureStatus::Unsupported;
+  Ft8x7SettingState state;
+  const FeatureStatus status = ft8x7SettingQuery(Ft8x7Setting::Agc, state);
+  if (status == FeatureStatus::Ok) out = ft8x7AgcToMode(state.agc);
+  return status;
+}
+
+bool agcCanSet(AgcMode mode) {
+  const RadioProfile& sp = currentProfile();
+  if (!sp.caps.getAgc || !isFt8x7()) return false;
+  YaesuAgc agc = YaesuAgc::Off;
+  return sp.caps.setRadioMenu && currentFt8x7Model() != Ft8x7Model::None && ft8x7AgcFromMode(mode, agc);
+}
+
+FeatureStatus agcSet(AgcMode mode, AgcMode& out) {
+  if (!agcCanSet(mode)) return FeatureStatus::Unsupported;
+  YaesuAgc agc = YaesuAgc::Off;
+  (void)ft8x7AgcFromMode(mode, agc);
+  Ft8x7SettingState state;
+  const FeatureStatus status = ft8x7AgcSet(agc, state);
+  if (status == FeatureStatus::Ok) out = ft8x7AgcToMode(state.agc);
+  return status;
+}
+
 // The toggles below start from the radio's state, read each time: nothing keeps the remembered
 // one up to date when the radio's own keys change it.
 

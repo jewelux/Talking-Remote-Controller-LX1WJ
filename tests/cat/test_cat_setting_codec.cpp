@@ -124,6 +124,20 @@ TEST(kenwood_proc_levels_decode) {
   CHECK(!kenwoodProcLevelsDecode("05a080;", in, out));
 }
 
+// ---- AGC ----
+
+TEST(ft8x7_agc_maps_both_ways_and_has_no_mid) {
+  const YaesuAgc all[] = {YaesuAgc::Off, YaesuAgc::Fast, YaesuAgc::Slow, YaesuAgc::Auto};
+  for (YaesuAgc agc : all) {
+    YaesuAgc back = YaesuAgc::Off;
+    CHECK(ft8x7AgcFromMode(ft8x7AgcToMode(agc), back));
+    CHECK(back == agc);
+  }
+  CHECK(ft8x7AgcToMode(YaesuAgc::Auto) == AgcMode::Auto);
+  YaesuAgc unused = YaesuAgc::Off;
+  CHECK(!ft8x7AgcFromMode(AgcMode::Mid, unused));
+}
+
 // ---- ASCII lock ----
 
 TEST(lock_digit_decodes_with_the_profile_off_digits) {

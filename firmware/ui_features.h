@@ -20,6 +20,12 @@ void speakNbState(bool on);
 String notchStateText(const NotchState& state);
 void speakNotchState(const NotchState& state);
 
+// "OFF", "FAST", "MID", "SLOW", "AUTO".
+const char* agcModeName(AgcMode mode);
+// "AGC FAST"; "agc fast".
+String agcText(AgcMode mode);
+void speakAgc(AgcMode mode);
+
 // "PROC ON", "PROC OFF"; "processor on".
 String procStateText(bool on);
 void speakProcState(bool on);

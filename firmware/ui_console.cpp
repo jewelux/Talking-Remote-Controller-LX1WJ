@@ -1479,7 +1479,7 @@ static bool handleConsoleFt8x7Meters(const String& upper) {
 // FT-8x7 settings read from the EEPROM, like the Bank 2 and Bank 8 keys.
 static bool handleConsoleFt8x7Settings(const String& upper) {
   static constexpr Ft8x7Setting kSettings[] = {
-    Ft8x7Setting::Agc, Ft8x7Setting::Ipo, Ft8x7Setting::Att, Ft8x7Setting::Nar,
+    Ft8x7Setting::Ipo, Ft8x7Setting::Att, Ft8x7Setting::Nar,
     Ft8x7Setting::Dbf, Ft8x7Setting::BreakIn, Ft8x7Setting::Keyer, Ft8x7Setting::RfPower,
     Ft8x7Setting::Menu, Ft8x7Setting::Row, Ft8x7Setting::IfShift, Ft8x7Setting::NrLevel,
     Ft8x7Setting::NbLevel, Ft8x7Setting::BpfWidth, Ft8x7Setting::LowCut, Ft8x7Setting::HighCut,
@@ -1633,18 +1633,24 @@ static bool handleConsoleFt8x7RfPowerSet(const String& upper) {
   return true;
 }
 
-// Experimental: AGC AUTO | FAST | SLOW | OFF, like Bank 2 `A` long. Other arguments fall through
-// to the raw CAT AGC <hex byte>.
-static bool handleConsoleFt8x7AgcSet(const String& upper) {
+// AGC? and AGC OFF | FAST | MID | SLOW | AUTO, like Bank 2 `A` short and long; on the FT-8x7
+// experimental. Other arguments fall through to the raw CAT AGC <hex byte>.
+static bool handleConsoleAgc(const String& upper) {
+  AgcMode mode = AgcMode::Off;
+  if (upper == "AGC?") {
+    if (reportFeatureFailure(agcQuery(mode), "AGC?")) return true;
+    Serial.println(agcText(mode));
+    speakAgc(mode);
+    return true;
+  }
   if (!upper.startsWith("AGC ")) return false;
   String arg = upper.substring(4);
   arg.trim();
-  for (const YaesuAgc agc : {YaesuAgc::Auto, YaesuAgc::Fast, YaesuAgc::Slow, YaesuAgc::Off}) {
-    if (arg != ft8x7AgcName(agc)) continue;
-    Ft8x7SettingState state;
-    if (reportFeatureFailure(ft8x7AgcSet(agc, state), "AGC")) return true;
-    Serial.println(ft8x7SettingText(state));
-    speakFt8x7Setting(state);
+  for (const AgcMode want : {AgcMode::Off, AgcMode::Fast, AgcMode::Mid, AgcMode::Slow, AgcMode::Auto}) {
+    if (arg != agcModeName(want)) continue;
+    if (reportFeatureFailure(agcSet(want, mode), "AGC")) return true;
+    Serial.println(agcText(mode));
+    speakAgc(mode);
     return true;
   }
   return false;
@@ -1832,12 +1838,12 @@ static bool handleConsoleFt8x7MicEqSet(const String& upper) {
 static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& upper) {
   if (!isCurrentYaesuFt8x7()) return false;
   if (handleConsoleFt8x7Meters(upper)) return true;
+  if (handleConsoleAgc(upper)) return true;
   if (handleConsoleFt8x7Settings(upper)) return true;
   if (handleConsoleFt8x7LevelSet(line, upper)) return true;
   if (handleConsoleFt8x7FlagSet(upper)) return true;
   if (handleConsoleFt817AntennaSet(upper)) return true;
   if (handleConsoleFt8x7RfPowerSet(upper)) return true;
-  if (handleConsoleFt8x7AgcSet(upper)) return true;
   if (handleConsoleFt8x7MicEqSet(upper)) return true;
   if (handleConsoleFt8x7CwBfoSet(upper)) return true;
 

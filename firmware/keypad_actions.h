@@ -58,7 +58,11 @@ void adjustBank2PbtOuter(int delta);
 void toggleBank2FilterShape();
 void queryBank2FilterWidth();
 void cycleBank2FilterWidth(int delta);
-// FT-8x7 settings read from the radio's EEPROM. The FT-817 has only AGC of these.
+// AGC (agcQuery), and its select: 0 off, 1 auto, 2 fast, 3 slow, 4 mid, of the speeds the radio
+// can be set to, then Enter sets it. On the FT-8x7 experimental, written to the EEPROM.
+void queryBank2Agc();
+void beginBank2AgcSelect();
+// FT-8x7 settings read from the radio's EEPROM.
 void queryBank2Ft8x7NrLevel();
 void queryBank2Ft8x7NbLevel();
 void queryBank2Ft8x7Dbf();
@@ -67,7 +71,6 @@ void queryBank2Ft8x7HighCut();
 void queryBank2Ft8x7MicEq();
 void queryBank2Ft8x7Ipo();
 void queryBank2Ft8x7Att();
-void queryBank2Ft8x7Agc();
 void queryBank2Ft817Antenna();
 // Experimental, FT-857/897, written to the radio's EEPROM; "not available" unless EXPERIMENTAL
 // is on. The steps are the radio's: NR level (menu 49) and NB level (menu 63) 1 each, low cut
@@ -75,9 +78,6 @@ void queryBank2Ft817Antenna();
 void stepBank2Ft8x7NrLevel(int delta);
 void stepBank2Ft8x7NbLevel(int delta);
 void toggleBank2Ft8x7Dbf();
-// Experimental, FT-817/818 and FT-857/897: picks AGC with 0 off, 1 auto, 2 fast, 3 slow, then
-// Enter writes it to the radio's EEPROM.
-void beginBank2Ft8x7AgcSelect();
 void stepBank2Ft8x7LowCut(int delta);
 void stepBank2Ft8x7HighCut(int delta);
 

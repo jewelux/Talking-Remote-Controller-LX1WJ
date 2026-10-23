@@ -1,9 +1,14 @@
 #pragma once
 
 // How CAT radios encode setting values: CI-V levels, RF power, the ASCII VOX delay, the
-// TS-480 processor levels and the ASCII lock reply. No Arduino.h, so the host tests (tests/cat) can build it.
+// TS-480 processor levels, AGC and the ASCII lock reply. No Arduino.h, so the host tests
+// (tests/cat) can build it.
 
+#include <stddef.h>
 #include <stdint.h>
+
+#include "ft8x7_eeprom_map.h"
+#include "radio_setting_types.h"
 
 // A CI-V 0x14 level (0..255) as 0..100 %, and back.
 uint8_t levelRawToPercent(uint16_t raw);
@@ -31,6 +36,10 @@ uint16_t asciiVoxDelayMsStepBy(uint16_t ms, int steps, uint16_t minMs, uint16_t 
 // The TS-480 PL reply after "PL": the processor input level, then its output level, three digits
 // and 0..100 each. False on anything else.
 bool kenwoodProcLevelsDecode(const char* digits, uint8_t& inputOut, uint8_t& outputOut);
+
+// The FT-8x7's AGC (its EEPROM menu) as an AgcMode, and back; the FT-8x7 has no MID.
+AgcMode ft8x7AgcToMode(YaesuAgc agc);
+bool ft8x7AgcFromMode(AgcMode mode, YaesuAgc& out);
 
 // An ASCII lock reply digit: on unless it is one of offDigits ("0", or "04" on the FTDX101).
 // False when digit is not a digit.

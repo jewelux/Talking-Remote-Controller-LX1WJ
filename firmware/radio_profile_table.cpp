@@ -133,7 +133,7 @@ constexpr RadioCapabilities kFt817Caps = {
     .getSmeter = true, .getPower = true, .getRfPower = true, .getSwr = true, .getRxTx = true,
     .getNb = true,
     .getVfo = true, .setVfo = true, .getVfoMode = true, .setVfoMode = true,
-    .getSplit = true, .setSplit = true, .getMicGain = true, .getVox = true,
+    .getSplit = true, .setSplit = true, .getAgc = true, .getMicGain = true, .getVox = true,
 };
 
 // The FT-857/897 has no CAT command to pick VFO A or B.
@@ -142,7 +142,8 @@ constexpr RadioCapabilities kFt857Caps = {
     .getSmeter = true, .getPower = true, .getRfPower = true, .getSwr = true, .getRxTx = true,
     .getNr = true, .getNb = true, .getNotch = true,
     .getVfo = true,
-    .getSplit = true, .setSplit = true, .getProc = true, .getMicGain = true, .getVox = true,
+    .getSplit = true, .setSplit = true, .getAgc = true, .getProc = true, .getMicGain = true,
+    .getVox = true,
 };
 
 constexpr ModeCodes kFt8x7Modes = {

@@ -63,7 +63,6 @@ void queryBank2Ft8x7HighCut() { queryKeypadFt8x7Setting(Ft8x7Setting::HighCut); 
 void queryBank2Ft8x7MicEq() { queryKeypadFt8x7Setting(Ft8x7Setting::MicEq); }
 void queryBank2Ft8x7Ipo() { queryKeypadFt8x7Setting(Ft8x7Setting::Ipo); }
 void queryBank2Ft8x7Att() { queryKeypadFt8x7Setting(Ft8x7Setting::Att); }
-void queryBank2Ft8x7Agc() { queryKeypadFt8x7Setting(Ft8x7Setting::Agc); }
 void queryBank2Ft817Antenna() { queryKeypadFt8x7Setting(Ft8x7Setting::Antenna); }
 
 static void stepKeypadFt8x7Level(Ft8x7Setting setting, const char* label, int delta) {
@@ -85,38 +84,57 @@ void toggleBank2Ft8x7Dbf() {
   keypadReportFt8x7Setting(ft8x7FlagSettingToggle(Ft8x7Setting::Dbf, state), "DBF", state);
 }
 
-static constexpr ChoiceOption kFt8x7AgcKeys[] = {
-    {'0', (uint8_t)YaesuAgc::Off},
-    {'1', (uint8_t)YaesuAgc::Auto},
-    {'2', (uint8_t)YaesuAgc::Fast},
-    {'3', (uint8_t)YaesuAgc::Slow},
-};
+void queryBank2Agc() {
+  printKeypadAction("AGC?");
+  prepareKeypadSpeechResponse();
+  AgcMode mode = AgcMode::Off;
+  if (keypadReportFeatureFailure(agcQuery(mode), "AGC?")) return;
+  printKeypadStatus("{}", agcText(mode).c_str());
+  speakAgc(mode);
+}
 
-static void sayPickedFt8x7Agc(char key, uint8_t agc) {
+// 0 off, 1 auto, 2 fast, 3 slow, 4 mid; a key for a speed the radio cannot be set to is rejected.
+static bool pickAgc(char key, uint8_t& value) {
+  static constexpr AgcMode kKeys[] = {AgcMode::Off, AgcMode::Auto, AgcMode::Fast, AgcMode::Slow, AgcMode::Mid};
+  if (key < '0' || key > '4') return false;
+  const AgcMode mode = kKeys[key - '0'];
+  if (!agcCanSet(mode)) return false;
+  value = (uint8_t)mode;
+  return true;
+}
+
+static void sayPickedAgc(char key, uint8_t value) {
   printKeypadCommand("AGC SELECT -> {}", key);
-  printKeypadStatus("AGC STAGE: {}", ft8x7AgcName((YaesuAgc)agc));
-  if (g_speechEnabled) speakToken(ft8x7AgcName((YaesuAgc)agc));
+  printKeypadStatus("AGC STAGE: {}", agcModeName((AgcMode)value));
+  if (g_speechEnabled) speakToken(agcModeName((AgcMode)value));
 }
 
-static void commitFt8x7Agc(uint8_t agc, TargetVfo) {
-  printKeypadCommand("ENTER -> AGC {}", ft8x7AgcName((YaesuAgc)agc));
+static void commitAgc(uint8_t value, TargetVfo) {
+  printKeypadCommand("ENTER -> AGC {}", agcModeName((AgcMode)value));
   prepareKeypadRadioWrite();
-  Ft8x7SettingState state;
-  keypadReportFt8x7Setting(ft8x7AgcSet((YaesuAgc)agc, state), "AGC", state);
+  AgcMode mode = AgcMode::Off;
+  if (keypadReportFeatureFailure(agcSet((AgcMode)value, mode), "AGC")) return;
+  printKeypadStatus("{}", agcText(mode).c_str());
+  speakAgc(mode);
 }
 
-static constexpr ChoiceSpec kFt8x7AgcChoice = {
-    "AGC SELECT", kFt8x7AgcKeys, sizeof(kFt8x7AgcKeys) / sizeof(kFt8x7AgcKeys[0]),
-    nullptr, sayPickedFt8x7Agc, commitFt8x7Agc};
+static constexpr ChoiceSpec kAgcChoice = {"AGC SELECT", nullptr, 0, pickAgc, sayPickedAgc, commitAgc};
 
-void beginBank2Ft8x7AgcSelect() {
-  if (!currentProfile().caps.setRadioMenu) {
+static bool agcCanSetAny() {
+  for (const AgcMode mode : {AgcMode::Off, AgcMode::Fast, AgcMode::Mid, AgcMode::Slow, AgcMode::Auto}) {
+    if (agcCanSet(mode)) return true;
+  }
+  return false;
+}
+
+void beginBank2AgcSelect() {
+  if (!agcCanSetAny()) {
     printKeypadStatus("AGC -> unavailable");
     speakKeypadFailure("AGC", KeypadFailure::NotAvailable);
     return;
   }
   printKeypadAction("AGC");
-  keypadBeginChoiceSelect(kFt8x7AgcChoice);
+  keypadBeginChoiceSelect(kAgcChoice);
   printKeypadStatus("AGC PLEASE");
   speakPrompt("agc");
 }

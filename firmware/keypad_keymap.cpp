@@ -100,7 +100,7 @@ KeyBinding bank2(const KeypadTraits& t, char key) {
       case '7': return bind(queryBank2Ft8x7LowCut);
       case '8': return bind(queryBank2Ft8x7HighCut);
       case '9': return bind(queryBank2Ft8x7MicEq);
-      case 'A': return bind(queryBank2Ft8x7Agc, beginBank2Ft8x7AgcSelect);
+      case 'A': return bind(queryBank2Agc, beginBank2AgcSelect);
       case 'B': return bind(queryBank2Ft8x7Ipo, nullptr, queryBank2Ft8x7Att);
       default: break;
     }

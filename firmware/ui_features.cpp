@@ -63,6 +63,27 @@ void speakNotchState(const NotchState& state) {
   }
 }
 
+const char* agcModeName(AgcMode mode) {
+  switch (mode) {
+    case AgcMode::Fast: return "FAST";
+    case AgcMode::Mid: return "MID";
+    case AgcMode::Slow: return "SLOW";
+    case AgcMode::Auto: return "AUTO";
+    case AgcMode::Off: break;
+  }
+  return "OFF";
+}
+
+String agcText(AgcMode mode) {
+  return String("AGC ") + agcModeName(mode);
+}
+
+void speakAgc(AgcMode mode) {
+  if (!g_speechEnabled) return;
+  speakLabel("agc");
+  speakToken(agcModeName(mode));
+}
+
 String procStateText(bool on) {
   return on ? "PROC ON" : "PROC OFF";
 }

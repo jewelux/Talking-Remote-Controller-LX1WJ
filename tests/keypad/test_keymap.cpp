@@ -124,12 +124,12 @@ void queryBank2Ft8x7HighCut() { record("queryBank2Ft8x7HighCut"); }
 void queryBank2Ft8x7MicEq() { record("queryBank2Ft8x7MicEq"); }
 void queryBank2Ft8x7Ipo() { record("queryBank2Ft8x7Ipo"); }
 void queryBank2Ft8x7Att() { record("queryBank2Ft8x7Att"); }
-void queryBank2Ft8x7Agc() { record("queryBank2Ft8x7Agc"); }
+void queryBank2Agc() { record("queryBank2Agc"); }
 void queryBank2Ft817Antenna() { record("queryBank2Ft817Antenna"); }
 void stepBank2Ft8x7NrLevel(int d) { record("stepBank2Ft8x7NrLevel(%d)", d); }
 void stepBank2Ft8x7NbLevel(int d) { record("stepBank2Ft8x7NbLevel(%d)", d); }
 void toggleBank2Ft8x7Dbf() { record("toggleBank2Ft8x7Dbf"); }
-void beginBank2Ft8x7AgcSelect() { record("beginBank2Ft8x7AgcSelect"); }
+void beginBank2AgcSelect() { record("beginBank2AgcSelect"); }
 void stepBank2Ft8x7LowCut(int d) { record("stepBank2Ft8x7LowCut(%d)", d); }
 void stepBank2Ft8x7HighCut(int d) { record("stepBank2Ft8x7HighCut(%d)", d); }
 

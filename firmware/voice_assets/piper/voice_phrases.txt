@@ -96,6 +96,7 @@ high
 kilohertz
 megahertz
 menu
+mid
 level
 lock
 minus

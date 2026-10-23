@@ -87,6 +87,27 @@ bool kenwoodProcLevelsDecode(const char* digits, uint8_t& inputOut, uint8_t& out
   return true;
 }
 
+AgcMode ft8x7AgcToMode(YaesuAgc agc) {
+  switch (agc) {
+    case YaesuAgc::Fast: return AgcMode::Fast;
+    case YaesuAgc::Slow: return AgcMode::Slow;
+    case YaesuAgc::Auto: return AgcMode::Auto;
+    case YaesuAgc::Off: break;
+  }
+  return AgcMode::Off;
+}
+
+bool ft8x7AgcFromMode(AgcMode mode, YaesuAgc& out) {
+  switch (mode) {
+    case AgcMode::Off: out = YaesuAgc::Off; return true;
+    case AgcMode::Fast: out = YaesuAgc::Fast; return true;
+    case AgcMode::Slow: out = YaesuAgc::Slow; return true;
+    case AgcMode::Auto: out = YaesuAgc::Auto; return true;
+    case AgcMode::Mid: break;
+  }
+  return false;
+}
+
 bool asciiLockDigitDecode(char digit, const char* offDigits, bool& onOut) {
   if (digit < '0' || digit > '9') return false;
   onOut = strchr(offDigits, digit) == nullptr;
