@@ -40,7 +40,7 @@ Global rules:
 
 `A`, `B` and `C` act on the bank's focus, the setting of the last key you used on that bank that
 has one: Bank 1 `6` RF power or `9` mode, Bank 5 the RIT offset, Bank 9 `6` speech speed or
-`7`-`9` volume. A key with nothing to move, such as a meter, leaves the focus as it was. Each bank
+`7`-`9` volume, or `1` the profile. A key with nothing to move, such as a meter, leaves the focus as it was. Each bank
 keeps its own focus. Bank 5 starts on the RIT offset and Bank 9 on the profile.
 
 - `A` short: the focus with its name
@@ -154,7 +154,7 @@ Bank 8 adjusts the connection settings stored for the selected profile.
 Set the same baud rate on the radio. The FT-817, FT-818, FT-857 and FT-897 offer 4800, 9600 and
 38400 baud.
 
-Bank 9, `A` double press resets the selected profile: its baud rate and CI-V address go back to
+Bank 9, `1` double press resets the selected profile: its baud rate and CI-V address go back to
 the profile's defaults, and HamTRC says "profile reset". The console command is
 `PROFILE RESET`; `PROFILE RESET ALL` resets every profile.
 

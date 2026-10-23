@@ -265,7 +265,7 @@ The radio saves a band block on events such as key presses, not while the dial t
 
 - The keypad layout for this family is documented separately in [yaesu-ft8x7-keypad.md](./yaesu-ft8x7-keypad.md).
 - Repeater and tone functions are now concentrated in Bank 6.
-- Profile selection in the current firmware supports up to 24 slots. On the keypad this means Bank 9 `A` long, then one or two digits, then `Enter`.
+- Profile selection in the current firmware supports up to 24 slots. On the keypad this means Bank 9 `1` long, then one or two digits, then `Enter`.
 - For FT8x7 repeater work, `FM` on the intended `VHF/UHF` band should be treated as a practical precondition, not just a recommendation.
 - For FT-857/897, only functions that behaved well in practical testing should be considered product-ready.
 - The recent FT-857/897 Bank 3 work was intentionally kept separate from the FT-817 branch logic; FT-817 and FT-857/897 now have different keypad handling where that matches real device behavior better.

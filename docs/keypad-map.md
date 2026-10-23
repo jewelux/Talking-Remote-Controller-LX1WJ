@@ -348,7 +348,7 @@ the step below the shortest delay is FULL. The weight is typed with `*` as its p
 
 `2` long and double step through the rates the radio offers (see the
 [radio support matrix](radio-support-matrix.md)) and keep the choice for the profile. Set the same
-rate on the radio. Bank 9 `A` double press puts the baud rate and CI-V address back to the
+rate on the radio. Bank 9 `1` double press puts the baud rate and CI-V address back to the
 profile's defaults.
 
 ## Bank 9 - Profile and Speech
@@ -359,6 +359,9 @@ The same on every radio.
 |---|---|
 | `0` short | experimental mode |
 | `0` long | experimental mode on/off |
+| `1` short | profile |
+| `1` long | profile select |
+| `1` double | reset the profile's baud rate and CI-V address to its defaults |
 | `4` short | tuning speech |
 | `4` long | tuning speech on/off |
 | `5` short | verbose |
@@ -368,9 +371,9 @@ The same on every radio.
 | `7` short / long | volume down / down fast |
 | `8` short / long | volume up / up fast |
 | `9` short | volume |
-| `A` `B` `C` | focus: the profile, until `6`-`9` move it to the speech speed or volume |
+| `A` `B` `C` | focus: the profile, until `6`-`9` move it to the speech speed or volume; `1` brings it back |
 
 With the profile as the focus: `A` short profile, `A` long profile select, `A` double reset the
 profile's baud rate and CI-V address to its defaults, `B` next profile, `C` previous profile.
 
-`1`–`3` are free.
+`2` and `3` are free.

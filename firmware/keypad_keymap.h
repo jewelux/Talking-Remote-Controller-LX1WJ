@@ -26,11 +26,10 @@ enum class KeypadLayout : uint8_t {
 // each time it looks up a key.
 struct KeypadTraits {
   KeypadLayout layout = KeypadLayout::Generic;
-  bool supportsMonitor = false;     // protocolSupportsMonitor()
   bool supportsTransceive = false;  // protocolSupportsTransceive()
   bool canGetRfPower = false;       // currentProfile().caps.getRfPower
-  // The Bank 2 settings the radio has (settingOps available(), AGC by caps.getAgc): a key
-  // names them as its focus and second value only where they are.
+  // The settings the radio has (settingOps available(), AGC by caps.getAgc, the Bank 6 shift
+  // and tone type): a key names them as its focus and second value only where they are.
   SettingSet settings;
 };
 

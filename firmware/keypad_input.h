@@ -240,7 +240,6 @@ class KeypadInput {
   TargetVfo entryTargetVfo() const { return entryVfo_; }
   // Choice select with a value picked, waiting for Enter.
   bool choiceStaged() const { return mode_ == InputMode::ChoiceSelect && choiceStaged_; }
-  const ValueEntry& valueEntry() const { return value_; }
   bool doubleClickPending() const { return pending_.active; }
 
  private:

@@ -299,6 +299,7 @@ KEYMAP_ROW(ALL,             8, 'C', "focusStep(-1)",         "focusBigStep(-1)",
 
 // ---- Bank 9 ----------------------------------------------------------------
 KEYMAP_ROW(ALL,             9, '0', "queryBank9Experimental", "toggleBank9Experimental", "-", "none", "-")
+KEYMAP_ROW(ALL,             9, '1', "queryBank9Profile",     "beginBank9ProfileSelect", "resetBank9Profile", "none", "PROFILE")
 KEYMAP_ROW(ALL,             9, '4', "queryBank9TuningSpeech", "toggleBank9TuningSpeech", "-", "none", "-")
 KEYMAP_ROW(ALL,             9, '5', "queryBank9Verbose",     "toggleBank9Verbose",     "-", "none", "-")
 KEYMAP_ROW(ALL,             9, '6', "queryBank9Speed",       "stepBank9Speed",         "-", "none", "SPEED")

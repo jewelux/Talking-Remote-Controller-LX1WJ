@@ -263,9 +263,9 @@ break-in delay say "not available".
 
 | Command family | Commands | Bank / keys |
 |---|---|---|
-| Profile / System | Speak current profile | Bank 9: `A` short |
-| Profile / System | Start profile selection | Bank 9: `A` long, then `1..9`, then `Enter` |
-| Profile / System | `PROFILE RESET` (baud and CI-V address to the defaults) | Bank 9: `A` double click |
+| Profile / System | Speak current profile | Bank 9: `1` or `A` short |
+| Profile / System | Start profile selection | Bank 9: `1` or `A` long, then `1..9`, then `Enter` |
+| Profile / System | `PROFILE RESET` (baud and CI-V address to the defaults) | Bank 9: `1` or `A` double click |
 | Profile / System | `PROFILE NEXT` | Bank 9: `B` short |
 | Profile / System | `PROFILE PREV` | Bank 9: `C` short |
 | Profile / System | `EXPERIMENTAL?`, `EXPERIMENTAL TOGGLE` | Bank 9: `0` short / `0` long |

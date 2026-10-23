@@ -247,6 +247,9 @@ values when the menu is exited.
 | `C` short | `PROFILE PREV` | `PROFILE PREV` |
 | `0` short | `EXPERIMENTAL?` | `EXPERIMENTAL?` |
 | `0` long | `EXPERIMENTAL TOGGLE` | `EXPERIMENTAL TOGGLE` |
+| `1` short | `PROFILE?` | `PROFILE?` |
+| `1` long | `PROFILE SELECT` (slot number, one or two digits, then `Enter`) | `PROFILE SELECT` (slot number, one or two digits, then `Enter`) |
+| `1` double | `PROFILE RESET` | `PROFILE RESET` |
 | `4` short | `TUNINGSPEECH?` | `TUNINGSPEECH?` |
 | `4` long | `TUNINGSPEECH TOGGLE` | `TUNINGSPEECH TOGGLE` |
 | `5` short | `VERBOSE?` | `VERBOSE?` |
@@ -256,6 +259,9 @@ values when the menu is exited.
 | `7` short / long | `VOLUME DOWN` / `VOLUME DOWN FAST` | `VOLUME DOWN` / `VOLUME DOWN FAST` |
 | `8` short / long | `VOLUME UP` / `VOLUME UP FAST` | `VOLUME UP` / `VOLUME UP FAST` |
 | `9` short | `VOLUME?` | `VOLUME?` |
+
+`A`, `B` and `C` act on the profile until `6`-`9` move the focus to the speech speed or the volume;
+`1` brings it back to the profile.
 
 ## Known Limits
 

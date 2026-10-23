@@ -539,13 +539,17 @@ KeyBinding bank7(const KeypadTraits& t, char key, Setting focus) {
 }
 
 // The profile is the home focus: A, B and C select, step and reset it until the speed or
-// volume keys move the focus.
+// volume keys move the focus, and '1' brings it back.
 KeyBinding bank9(char key, Setting focus) {
   if (isFocusKey(key)) return focusKey(key, focus);
   constexpr Setting kVolume = Setting::Volume;
   switch (key) {
     case '0':
       return bind(queryBank9Experimental, toggleBank9Experimental).help("EXPERIMENTAL", V::Say, V::Toggle);
+    case '1':
+      return bind(queryBank9Profile, beginBank9ProfileSelect, resetBank9Profile)
+          .withFocus(Setting::Profile)
+          .help("PROFILE", V::Say, V::Pick, V::Centre);
     case '4':
       return bind(queryBank9TuningSpeech, toggleBank9TuningSpeech).help("TUNINGSPEECH", V::Say, V::Toggle);
     case '5': return bind(queryBank9Verbose, toggleBank9Verbose).help("VERBOSE", V::Say, V::Toggle);

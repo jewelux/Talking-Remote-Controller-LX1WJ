@@ -37,11 +37,10 @@ KeypadTraits traitsFor(uint16_t family) {
   else if (family == FT817) t.layout = KeypadLayout::Ft817;
   else if (family == FT857) t.layout = KeypadLayout::Ft857;
   else if (family == FT8X7_OTHER) t.layout = KeypadLayout::Ft8x7;
-  // Monitor and transceive are PROTO_CIV only (radio_protocol.cpp).
-  t.supportsMonitor = (family & CIV) != 0;
+  // Transceive is PROTO_CIV only (radio_protocol.cpp).
   t.supportsTransceive = (family & CIV) != 0;
   t.canGetRfPower = family == IC7300 || family == TS480 || family == FTDX10 || family == FT891;
-  // The Bank 2, 4 and 7 settings, as the profiles' caps give them.
+  // The settings, as the profiles' caps give them.
   using S = Setting;
   auto add = [&t](std::initializer_list<Setting> settings) {
     for (Setting s : settings) t.settings.add(s);

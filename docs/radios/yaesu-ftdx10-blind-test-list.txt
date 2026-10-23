@@ -7,58 +7,71 @@ PROFILE 12 - FTDX101D
 PROFILE 13 - FTDX101MP
 
 Profile selection on keypad
-Bank 9, key 0 long, enter profile number, then D
+Bank 9, key 1 long, enter profile number, then D
+
+A, B and C
+A short says the value of the last key used in the bank, B and C step it up or down,
+B or C long steps further. RF power and the mode wait for D after B or C.
 
 Safe first keypad checks
 Bank 1, key 0 short - speak frequency
 Bank 1, key 9 short - speak mode
 Bank 1, key 7 short - speak S meter
-Bank 1, key 8 short - speak power meter
-Bank 1, key A short - speak ALC while transmitting
+Bank 1, key 4 short - speak output power
+Bank 1, key 8 short - speak SWR
+Bank 1, key 5 short - speak ALC while transmitting
 Bank 1, key 3 short - speak lock state
 Bank 1, key 3 long - toggle lock
 
 Tuner and front end
-Bank 1, key 5 short - tuner state
-Bank 1, key 5 long - tuner on or off
-Bank 1, key 5 double - start tune
+Bank 4, key 0 short - tuner state
+Bank 4, key 0 long - tuner on or off
+Bank 4, key 0 double - start tune
 Bank 1, key 6 short - RF power setting
 Bank 1, key 6 long - RF power entry in watts, then D
-Bank 2, key B short - preamp state
-Bank 2, key B long - next preamp level
-Bank 2, key C short - attenuator state
-Bank 2, key C long - next attenuator step
+Bank 1, key 6 short, then B or C - RF power one step up or down, then D
+Bank 2, key 8 short - preamp state
+Bank 2, key 8 long - next preamp level
+Bank 2, key 9 short - attenuator state
+Bank 2, key 9 long - next attenuator step
 
 DSP
 Bank 2, key 1 short or long - NR query or toggle
+Bank 2, key 1 double - NR level query; then B or C - NR level up or down
 Bank 2, key 2 short or long - NB query or toggle
+Bank 2, key 2 double - NB level query; then B or C - NB level up or down
 Bank 2, key 3 short or long - notch query or toggle
 Bank 2, key 0 short or long - auto notch query or toggle
-Bank 2, key 4 short, long, double - NR level query, up, down
-Bank 2, key A short - AGC query
-Bank 2, key A long - AGC select, then 0 off, 1 auto, 2 fast, 3 slow, 4 mid, then D
+Bank 2, key 7 short - AGC query
+Bank 2, key 7 long - AGC select, then 0 off, 1 auto, 2 fast, 3 slow, 4 mid, then D
+
+Phone transmit
+Bank 4, key 1 short or long - processor query or toggle; double - processor level
+Bank 4, key 2 short or long - VOX query or toggle; double - VOX gain
+Bank 4, key 7 short - mic gain
+Bank 4, key 9 short - VOX delay
 
 CW
-Bank 7, key 1 short or long - break-in query or toggle
-Bank 7, key 2 short or long - keyer query or toggle
-Bank 7, key 3 short, long, double - CW speed query, faster, slower
-Bank 7, key 4 short, long, double - CW pitch query, up, down
-Bank 7, key 5 short, long, double - CW delay query, longer, shorter
+Bank 7, key 1 short or long - keyer query or toggle
+Bank 7, key 1 double - CW speed query; then B or C - faster or slower
+Bank 7, key 2 short or long - break-in query or toggle
+Bank 7, key 5 short - CW pitch query; then B or C - up or down
+Bank 7, key 9 short - CW delay query; then B or C - longer or shorter
 
 Radio information
-Bank 2, key 5 short - power state query
-Bank 2, key 5 long - power off
-Bank 2, key 5 double - power on
-Bank 2, key 6 short - IF information
-Bank 2, key 7 short - radio ID
+Bank 8, key 4 short - power state query
+Bank 8, key 4 long - power off
+Bank 8, key 4 double - power on
+Bank 8, key 5 short - radio ID
+Bank 8, key 6 short - IF information
 
 VFO and split
 Bank 3, key 0 short or long - split query or toggle
 Bank 3, key 1 short or long - VFO-A frequency or select VFO-A
 Bank 3, key 2 short or long - VFO-B frequency or select VFO-B
-Bank 3, key 3 short - RX or TX state
 Bank 3, key 4 short or long - VFO-A mode query or set
 Bank 3, key 5 short or long - VFO-B mode query or set
+Bank 3, key 6 short - RX or TX state
 
 Suggested first test order
 1. Select profile
