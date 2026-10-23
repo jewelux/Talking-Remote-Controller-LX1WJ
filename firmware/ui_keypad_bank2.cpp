@@ -191,7 +191,7 @@ static void commitAgc(uint8_t value, TargetVfo) {
   speakAgc(mode);
 }
 
-static constexpr ChoiceSpec kAgcChoice = {"AGC SELECT", nullptr, 0, pickAgc, sayPickedAgc, commitAgc};
+static constexpr ChoiceSpec kAgcChoice = {"AGC SELECT", nullptr, 0, pickAgc, sayPickedAgc, commitAgc, true};
 
 static bool agcCanSetAny() {
   for (const AgcMode mode : {AgcMode::Off, AgcMode::Fast, AgcMode::Mid, AgcMode::Slow, AgcMode::Auto}) {

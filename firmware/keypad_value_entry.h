@@ -30,6 +30,8 @@ struct ValueSpec {
   // The result is kept within min..max.
   int32_t (*stepFn)(int32_t value, int8_t dir) = nullptr;
   int32_t step = 1;
+  // Steps in a big step (B or C held, in Normal mode): RF power 5, the RIT offset 10.
+  uint8_t bigSteps = 5;
   const char* unit = "";  // shown after the digits in the trace
 };
 
@@ -65,6 +67,8 @@ class ValueEntry {
   bool type(char key);
   // dir 1 (B) or -1 (C), from the value typed or else the value so far.
   Step step(int8_t dir);
+  // times steps at once, stopping at the end: Moved when the first one moved.
+  Step step(int8_t dir, uint8_t times);
   // What Enter sets: the value typed, or the value staged by a step or the seed.
   Result result(int32_t& out) const;
   // A value typed past min..max becomes that end, staged: true when it was past.

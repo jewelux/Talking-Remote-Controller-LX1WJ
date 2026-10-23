@@ -64,7 +64,8 @@ struct ChoiceOption {
 
 // A choice select: a key picks a value and says it, another key replaces it, and Enter applies
 // it. A says the value picked, or else the radio's value it was opened with; B and C walk to the
-// next value up or down, in the order of the options (or of the keys 0-9 that pick() takes).
+// next value up or down, in the order of the options (or of the keys 0-9 that pick() takes); past
+// the last a named choice (mode, AGC) starts again at the first, a level stops there.
 // Any other key beeps ("<name> 7") and the choice stays; only Clear cancels. The mode, the
 // FT-817 power level, ... each have one, kept for as long as the selection runs.
 struct ChoiceSpec {
@@ -78,6 +79,8 @@ struct ChoiceSpec {
   void (*picked)(char key, uint8_t value);
   // Enter: applies value. The mode is already back to Normal.
   void (*commit)(uint8_t value, TargetVfo targetVfo);
+  // B and C go round: named choices (mode, AGC), not levels (the FT-817/818 power).
+  bool cycles = false;
 };
 
 // Keypad library KeyState, without the Arduino types.
@@ -106,6 +109,12 @@ struct KeyBinding {
 // "BANK3 2 LONG". nullptr otherwise. The actions' serial trace starts with it,
 // so an action does not spell out which key runs it.
 const char* keypadActiveKey();
+// While KeypadInput runs a bank key action: the focus of its bank, once the key
+// has set it. What A, B and C act on.
+Setting keypadActiveFocus();
+// True while A, B and C have not acted since the last digit key or bank change:
+// their answer then names the focus ("power 45 watts"); after that just the value.
+bool keypadActiveFocusIsNew();
 
 class KeypadInputListener {
  public:
@@ -116,8 +125,11 @@ class KeypadInputListener {
   // true for a key press.
   virtual void onActivity(bool pressed) = 0;
 
-  // The keymap: what key does on bank, looked up each time it is needed.
-  virtual KeyBinding keyBinding(uint8_t bank, char key) = 0;
+  // The keymap: what key does on bank, looked up each time it is needed. focus:
+  // the bank's focus, which A, B and C are bound for.
+  virtual KeyBinding keyBinding(uint8_t bank, char key, Setting focus) = 0;
+  // The focus of bank before any of its keys has set one (Bank 9: the profile).
+  virtual Setting homeFocus(uint8_t bank) = 0;
 
   // '*' short: say the current bank.
   virtual void onBankQuery(uint8_t bank) = 0;
@@ -188,12 +200,25 @@ class KeypadInput {
   // staged, Enter applies it with no key picked.
   void beginChoiceSelect(const ChoiceSpec& spec, TargetVfo targetVfo = TargetVfo::Current,
                          const EntrySeed& seed = EntrySeed());
+  // A B or C nudge in Normal mode: the choice select opened from seed and walked one value
+  // (dir 1 up, -1 down), staged and said by spec.picked. False, and still Normal, when there
+  // is no value to walk to.
+  bool nudgeChoice(const ChoiceSpec& spec, const EntrySeed& seed, int8_t dir,
+                   TargetVfo targetVfo = TargetVfo::Current);
   // spec is copied.
   void beginValueEntry(const ValueSpec& spec, const EntrySeed& seed = EntrySeed(),
                        TargetVfo targetVfo = TargetVfo::Current);
 
   uint8_t bank() const { return bank_; }
-  void setBank(uint8_t bank) { bank_ = bank; }
+  void setBank(uint8_t bank) {
+    bank_ = bank;
+    named_ = false;
+  }
+  // What A, B and C act on for bank: the setting of the last of its keys that has one, else
+  // its home focus.
+  Setting focus(uint8_t bank) const;
+  // Every bank back to its home focus: the profile changed.
+  void resetFocus();
 
   InputMode mode() const { return mode_; }
   const char* digits() const { return digits_.c_str(); }
@@ -259,8 +284,8 @@ class KeypadInput {
   void pressedChoice(char key);
   // The value key picks in the running choice select.
   bool choiceValue(char key, uint8_t& value) const;
-  // B (dir 1) or C (-1) in choice select.
-  void walkChoice(char key, int8_t dir);
+  // B (dir 1) or C (-1) in choice select: false at the end, with nothing changed.
+  bool walkChoice(char key, int8_t dir);
   // The key of the choice's candidate at (the options, or the keys 0-9 in
   // order), or 0 past the end.
   char choiceKeyAt(int at) const;
@@ -272,8 +297,10 @@ class KeypadInput {
   void clearAll();
   // Drops the entry or selection that waited too long.
   void timeOut();
-  // Runs action with keypadActiveKey() naming it, e.g. "BANK3 2 LONG".
-  void runAction(KeyAction action, uint8_t bank, char key, const char* gesture);
+  // Runs action with keypadActiveKey() naming it, e.g. "BANK3 2 LONG". A digit key first
+  // moves the bank's focus to keyFocus, unless that is None.
+  void runAction(KeyAction action, uint8_t bank, char key, const char* gesture, Setting keyFocus);
+  KeyBinding bindingOf(uint8_t bank, char key) { return listener_.keyBinding(bank, key, focus(bank)); }
   void runShortOrReject(const KeyBinding& binding, uint8_t bank, char key);
   // "<mode> <what>" to onRejected, e.g. "FREQ 6".
   void reportRejected(const char* mode, const char* what);
@@ -283,6 +310,11 @@ class KeypadInput {
   // The bank of the next key only, or 0. It ends once that key has acted or
   // beeped; a short waiting for a double click keeps it until then.
   uint8_t oneShotBank_ = 0;
+  // Each bank's focus, by bank number; Home until one of its keys sets one.
+  Setting focus_[10] = {Setting::Home, Setting::Home, Setting::Home, Setting::Home, Setting::Home,
+                        Setting::Home, Setting::Home, Setting::Home, Setting::Home, Setting::Home};
+  // A, B or C has said the focus name since the last digit key or bank change.
+  bool named_ = false;
   InputMode mode_ = InputMode::Normal;
   // The longest entry is a frequency: 12 characters, plus a point the old code
   // accepted even after them.

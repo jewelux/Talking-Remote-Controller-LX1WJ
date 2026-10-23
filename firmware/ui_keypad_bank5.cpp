@@ -1,22 +1,9 @@
 // Bank 5 keypad actions: RIT.
 #include "ui_keypad_bank.h"
+#include "keypad_setting_ops.h"
 #include "radio_frequency.h"
 
-static void speakRitOffsetValue(int32_t hz) {
-  if (!g_speechEnabled) return;
-  speakLabel("rit");
-  if (hz > 0) {
-    speakToken("plus");
-    playSilenceMs(60);
-  }
-  if (hz < 0) {
-    speakToken("minus");
-    playSilenceMs(60);
-  }
-  speakNumber(String(hz < 0 ? -hz : hz));
-  playSilenceMs(60);
-  speakToken("hertz");
-}
+static void speakRitOffsetValue(int32_t hz) { settingOps(Setting::RitOffset)->speak(hz); }
 
 void queryBank5Rit() {
   printKeypadAction("RIT?");

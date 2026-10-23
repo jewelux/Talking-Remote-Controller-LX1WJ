@@ -184,12 +184,40 @@ static void beginFt817PowerSelect() {
   speakPrompt("power");
 }
 
+static bool picksFt817PowerLevel() {
+  return currentProtocolType() == PROTO_YAESU_FT8X7 && currentIsFt817Family() && currentProfile().caps.setRfPower;
+}
+
 void beginBank1RfPowerSet() {
-  if (currentProtocolType() == PROTO_YAESU_FT8X7 && currentIsFt817Family() && currentProfile().caps.setRfPower) {
+  if (picksFt817PowerLevel()) {
     beginFt817PowerSelect();
     return;
   }
   keypadSettingEntry(Setting::RfPower);
+}
+
+void nudgeBank1RfPower(int8_t dir, bool big) {
+  if (!picksFt817PowerLevel()) {
+    keypadSettingNudge(Setting::RfPower, dir, big);
+    return;
+  }
+  // Four levels: a big step is one too.
+  printKeypadAction("RFPOWER {}", dir > 0 ? "UP" : "DOWN");
+  prepareKeypadSpeechResponse();
+  Ft8x7SettingState state;
+  if (keypadReportFeatureFailure(ft8x7SettingQuery(Ft8x7Setting::RfPower, state), "RFPOWER")) return;
+  if (!state.hasPowerLevel) {
+    keypadReportFeatureFailure(FeatureStatus::NoReply, "RFPOWER");
+    return;
+  }
+  EntrySeed seed;
+  seed.known = true;
+  seed.value = (uint8_t)state.powerLevel;
+  if (!keypadNudgeChoice(kFt817PowerChoice, seed, dir)) {
+    keypadValueLimit("RFPOWER", dir > 0);
+    return;
+  }
+  speakPlease();
 }
 
 void toggleBank1Lock() {
@@ -231,4 +259,20 @@ void beginBank1ModeSelect() {
   printKeypadAction("MODE");
   printKeypadStatus("MODE PLEASE");
   speakPrompt("mode");
+}
+
+// The mode is read, never stepped live: the pick opens one mode away, in digit order.
+void nudgeBank1Mode(int8_t dir) {
+  printKeypadAction("MODE {}", dir > 0 ? "UP" : "DOWN");
+  prepareKeypadSpeechResponse();
+  uint8_t mode = 0;
+  if (!queryMode(mode, kCatReplyTimeoutMs)) {
+    keypadReportFailure("MODE");
+    return;
+  }
+  if (!keypadNudgeModeSelect(mode, dir)) {
+    keypadValueLimit("MODE", dir > 0);
+    return;
+  }
+  speakPlease();
 }

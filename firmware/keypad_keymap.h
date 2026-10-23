@@ -32,5 +32,10 @@ struct KeypadTraits {
 };
 
 // What key does on bank for this radio. An empty binding for keys the keymap
-// does not handle, including '*', 'D' and '#'.
-KeyBinding keymapLookup(const KeypadTraits& traits, uint8_t bank, char key);
+// does not handle, including '*', 'D' and '#'. focus: the bank's focus, which
+// A, B and C are bound for; Home is keymapHomeFocus.
+KeyBinding keymapLookup(const KeypadTraits& traits, uint8_t bank, char key, Setting focus = Setting::Home);
+
+// The focus of bank before any of its keys has set one: Bank 5 the RIT offset,
+// Bank 9 the profile, else None.
+Setting keymapHomeFocus(const KeypadTraits& traits, uint8_t bank);

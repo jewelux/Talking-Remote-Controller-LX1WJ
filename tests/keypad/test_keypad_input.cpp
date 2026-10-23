@@ -43,6 +43,12 @@ struct Fake : KeypadInputListener {
 
   std::set<std::string> holds, shorts, doubles, doubleHolds, waits;
   std::map<std::string, std::function<void()>> hooks;  // "hold 1 0" -> hook
+  std::map<std::string, Setting> focuses;  // "bank key" -> the focus the key sets
+  std::map<uint8_t, Setting> homes;        // bank -> its home focus
+  // The focus A, B and C were last bound for, and what the last action saw.
+  Setting boundFocus = Setting::None;
+  Setting activeFocus = Setting::None;
+  bool activeFocusNew = false;
   std::string validModeDigits = "123456789";
 
   Fake() { g_fake = this; }
@@ -60,6 +66,8 @@ struct Fake : KeypadInputListener {
     }
     const std::string entry = std::string(name) + " " + keyId((uint8_t)(k[4] - '0'), k[6]);
     log.push_back(entry);
+    activeFocus = keypadActiveFocus();
+    activeFocusNew = keypadActiveFocusIsNew();
     auto hook = hooks.find(entry);
     if (hook != hooks.end()) hook->second();
   }
@@ -68,15 +76,22 @@ struct Fake : KeypadInputListener {
     ++activity;
     if (pressed) ++pressedActivity;
   }
-  KeyBinding keyBinding(uint8_t bank, char key) override {
+  KeyBinding keyBinding(uint8_t bank, char key, Setting focus) override {
     const std::string id = keyId(bank, key);
+    if (key >= 'A' && key <= 'C') boundFocus = focus;
     KeyBinding b;
+    auto f = focuses.find(id);
+    if (f != focuses.end()) b.focus = f->second;
     if (shorts.count(id)) b.shortAction = runFakeAction;
     if (holds.count(id)) b.holdAction = runFakeAction;
     if (doubles.count(id)) b.doubleAction = runFakeAction;
     if (doubleHolds.count(id)) b.doubleHoldAction = runFakeAction;
     b.waitsForDouble = waits.count(id) > 0;
     return b;
+  }
+  Setting homeFocus(uint8_t bank) override {
+    auto h = homes.find(bank);
+    return h == homes.end() ? Setting::None : h->second;
   }
   void onBankQuery(uint8_t bank) override { log.push_back("bank? " + std::to_string(bank)); }
   void onBankSelectStart() override { log.push_back("bank please"); }
@@ -136,6 +151,9 @@ void commitFakeMode(uint8_t mode, TargetVfo targetVfo) {
   g_fake->log.push_back("mode commit " + std::to_string(mode) + " vfo" + std::to_string((int)targetVfo));
 }
 constexpr ChoiceSpec kModeChoice = {"MODE SELECT", nullptr, 0, pickFakeMode, pickedFakeMode, commitFakeMode};
+// The same, going round as the firmware's mode select does.
+constexpr ChoiceSpec kCyclingModeChoice = {"MODE SELECT", nullptr, 0, pickFakeMode, pickedFakeMode,
+                                           commitFakeMode, true};
 
 // A choice from a table of keys and values.
 constexpr ChoiceOption kLevelKeys[] = {{'1', 30}, {'4', 0}};
@@ -1736,6 +1754,26 @@ TEST(input_choice_walks_the_keys_pick_takes) {
   CHECK_LOG(f, "mode digit B", "mode commit 1 vfo0", "mode digit C", "mode commit 5 vfo0");
 }
 
+TEST(input_cycling_choice_goes_round) {
+  Fake f;
+  f.validModeDigits = "1235";
+  KeypadInput in(f);
+  in.beginChoiceSelect(kCyclingModeChoice, TargetVfo::Current, seedOf(1));
+  typeKeys(in, "CD");
+  in.beginChoiceSelect(kCyclingModeChoice, TargetVfo::Current, seedOf(5));
+  typeKeys(in, "BD");
+  CHECK_LOG(f, "mode digit C", "mode commit 5 vfo0", "mode digit B", "mode commit 1 vfo0");
+  // A nudge from Normal goes round too.
+  CHECK(in.nudgeChoice(kCyclingModeChoice, seedOf(5), 1));
+  tap(in, 'D');
+  CHECK_LOG(f, "mode digit B", "mode commit 1 vfo0");
+  // With one candidate there is nowhere to go.
+  f.validModeDigits = "2";
+  in.beginChoiceSelect(kCyclingModeChoice, TargetVfo::Current, seedOf(2));
+  tap(in, 'B');
+  CHECK_LOG(f, "limit MODE SELECT max");
+}
+
 TEST(input_choice_staged_seed_is_applied_by_enter) {
   Fake f;
   KeypadInput in(f);
@@ -1743,4 +1781,124 @@ TEST(input_choice_staged_seed_is_applied_by_enter) {
   CHECK(in.choiceStaged());
   tap(in, 'D');
   CHECK_LOG(f, "mode commit 2 vfo1");
+}
+
+// --- Focus ------------------------------------------------------------------
+
+TEST(input_focus_starts_at_home_and_follows_the_keys) {
+  Fake f;
+  f.homes[9] = Setting::Profile;
+  f.shorts = {"9 A", "9 B", "9 6", "9 4"};
+  f.focuses["9 6"] = Setting::SpeechSpeed;
+  KeypadInput in(f);
+  in.setBank(9);
+  CHECK(in.focus(9) == Setting::Profile);
+  tap(in, 'A');
+  CHECK(f.boundFocus == Setting::Profile);
+  CHECK(f.activeFocus == Setting::Profile);
+  tap(in, '6');
+  CHECK(in.focus(9) == Setting::SpeechSpeed);
+  // A key with nothing to move leaves the focus.
+  tap(in, '4');
+  tap(in, 'B');
+  CHECK_LOG(f, "short 9 A", "short 9 6", "short 9 4", "short 9 B");
+  CHECK(f.boundFocus == Setting::SpeechSpeed);
+  CHECK(f.activeFocus == Setting::SpeechSpeed);
+  // A bank with no home focus has none.
+  CHECK(in.focus(1) == Setting::None);
+}
+
+TEST(input_focus_is_named_once_after_a_digit_key) {
+  Fake f;
+  f.shorts = {"1 6", "1 7", "1 B"};
+  f.holds = {"1 B"};
+  f.focuses["1 6"] = Setting::RfPower;
+  KeypadInput in(f);
+  tap(in, '6');
+  tap(in, 'B');
+  CHECK(f.activeFocus == Setting::RfPower);
+  CHECK(f.activeFocusNew);
+  hold(in, 'B');
+  CHECK(!f.activeFocusNew);
+  tap(in, '7');
+  tap(in, 'B');
+  CHECK(f.activeFocusNew);
+  CHECK(f.activeFocus == Setting::RfPower);
+  CHECK_LOG(f, "short 1 6", "short 1 B", "hold 1 B", "short 1 7", "short 1 B");
+  CHECK(keypadActiveFocus() == Setting::None);
+}
+
+TEST(input_focus_is_per_bank_and_named_again_after_a_bank_change) {
+  Fake f;
+  f.shorts = {"1 6", "1 B", "2 3", "2 B"};
+  f.focuses["1 6"] = Setting::RfPower;
+  f.focuses["2 3"] = Setting::Notch;
+  KeypadInput in(f);
+  tap(in, '6');
+  tap(in, 'B');
+  in.setBank(2);
+  tap(in, 'B');
+  CHECK(f.activeFocus == Setting::None);
+  CHECK(f.activeFocusNew);
+  tap(in, '3');
+  in.setBank(1);
+  tap(in, 'B');
+  CHECK(f.activeFocus == Setting::RfPower);
+  CHECK(f.activeFocusNew);
+  // Bank select by key names it again too.
+  hold(in, '*');
+  tap(in, '1');
+  tap(in, 'B');
+  CHECK(f.activeFocusNew);
+  f.take();
+}
+
+TEST(input_one_shot_bank_sets_its_own_focus) {
+  Fake f;
+  f.shorts = {"9 6", "9 A"};
+  f.focuses["9 6"] = Setting::SpeechSpeed;
+  KeypadInput in(f);
+  in.onKey('*', KeyGesture::Pressed, 0);
+  in.onKey('*', KeyGesture::Held, 0);
+  tap(in, '9');
+  in.onKey('*', KeyGesture::Released, 0);
+  tap(in, '6');
+  CHECK(in.focus(9) == Setting::SpeechSpeed);
+  CHECK(in.focus(1) == Setting::None);
+  CHECK_EQ(in.bank(), 1);
+  f.take();
+}
+
+TEST(input_focus_resets_to_home) {
+  Fake f;
+  f.homes[9] = Setting::Profile;
+  f.shorts = {"9 9"};
+  f.focuses["9 9"] = Setting::Volume;
+  KeypadInput in(f);
+  in.setBank(9);
+  tap(in, '9');
+  CHECK(in.focus(9) == Setting::Volume);
+  in.resetFocus();
+  CHECK(in.focus(9) == Setting::Profile);
+  f.take();
+}
+
+TEST(input_choice_nudge_opens_one_value_away) {
+  Fake f;
+  KeypadInput in(f);
+  EntrySeed seed;
+  seed.known = true;
+  seed.value = 30;
+  CHECK(in.nudgeChoice(kLevelChoice, seed, 1));
+  CHECK_LOG(f, "level B 0");
+  CHECK(in.choiceStaged());
+  tap(in, 'D');
+  CHECK_LOG(f, "level commit 0");
+  // At the end: nothing opened, nothing said.
+  CHECK(!in.nudgeChoice(kLevelChoice, seed, -1));
+  CHECK_LOG(f);
+  CHECK(in.mode() == InputMode::Normal);
+  // No value to walk from.
+  CHECK(!in.nudgeChoice(kLevelChoice, EntrySeed(), 1));
+  CHECK(in.mode() == InputMode::Normal);
 }

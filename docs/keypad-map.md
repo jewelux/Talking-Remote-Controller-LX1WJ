@@ -27,6 +27,44 @@ cancels. `*` (bank) and `D`/`#` work the same on every radio and every bank; see
 In the Kenwood column some keys depend on the profile: when the profile has no command for them
 they say "not available". This is noted where it is always the case.
 
+## Focus: A, B and C
+
+On Banks 1, 3, 5, 6, 8 and 9, `A`, `B` and `C` act on the bank's **focus**: the setting of the
+last key on that bank that has one. A key with nothing to move (a switch, a meter, the frequency)
+leaves the focus as it was. Each bank keeps its own focus, and a profile change puts every bank
+back to its starting focus.
+
+| Bank | Keys that set the focus | Starting focus |
+|---|---|---|
+| 1 | `6` RF power, `9` mode | none |
+| 3 | none yet | none |
+| 5 | `1`-`5` RIT offset | RIT offset |
+| 6 | none yet | none |
+| 8 | none yet | none |
+| 9 | `6` speech speed, `7`-`9` volume | profile |
+
+With no focus, `A`, `B` and `C` say "not available".
+
+| Press | Does |
+|---|---|
+| `A` short | the focus, with its name (verbose off too) |
+| `A` long | its entry or pick; speech speed steps to the next |
+| `A` double | back to the centre: RIT offset 0, normal speech speed, profile reset. Only where there is one; elsewhere `A` answers at once |
+| `B` / `C` short | one step up / down |
+| `B` / `C` long | a big step: RF power 5 steps, RIT offset 100 Hz, volume 2; speech speed one step; the mode and the profile not available |
+
+The first `B` or `C` after another key names the focus; the next ones give only the value. A step
+past the end of the range says "maximum" or "minimum" and changes nothing.
+
+RF power and the mode wait for `D`: `B` or `C` reads the value once and opens the entry or pick
+one step away, ending in "please". More `B` and `C` presses step with no radio traffic, `D` sets,
+`#` cancels. The FT-817/818 power steps through its levels and stops at the lowest and highest. The
+mode walks the modes in the order of the mode select digits and goes round: after the last comes
+the first. The RIT offset, volume and speech speed change at once.
+
+In a pick of named choices (mode, AGC), `B` and `C` go round. Levels and numbers stop at the end
+with "maximum" or "minimum".
+
 ## Bank 1 - Status
 
 | Key | Icom | FTDX10 | Kenwood, Elecraft, other FTDX | FT-817/818 | FT-857/897 |
@@ -39,16 +77,16 @@ they say "not available". This is noted where it is always the case.
 | `3` short | lock | lock | lock | lock | lock |
 | `3` long | lock on/off | lock on/off | lock on/off | lock on/off | lock on/off |
 | `4` short | output power | output power | output power | output power | output power |
-| `5` short | free | tuner | free | free | free |
-| `5` long | free | tuner on/off | free | free | free |
-| `5` double | free | tune | free | free | free |
+| `5` short | ALC while transmitting | ALC while transmitting | ALC (FTDX101, FT-891); Kenwood and Elecraft: not available | free | free |
 | `6` short | RF power setting (IC-706: free) | RF power setting | RF power setting (FTDX101MP: free) | RF power setting | RF power setting |
 | `6` long | RF power entry | RF power entry | RF power entry | RF power level select (experimental) | RF power entry (experimental) |
 | `7` short | S-meter | S-meter | S-meter | S-meter | S-meter |
 | `8` short | SWR | SWR | SWR | SWR | SWR |
 | `9` short | mode | mode | mode | mode | mode |
 | `9` long | mode select | mode select | mode select | mode select | mode select |
-| `A` short | ALC while transmitting | ALC while transmitting | ALC (FTDX101, FT-891); Kenwood and Elecraft: not available | free | free |
+| `A` `B` `C` | focus: RF power or mode | focus | focus | focus | focus |
+
+The FTDX10 tuner is on Bank 4 `0`.
 
 ## Bank 2 - Receiver
 
@@ -127,6 +165,7 @@ On the FT-817 and FT-857/897, `1` is the VFO in use and `2` the other one.
 | `8` long | recall band stack 2 | not available | not available | not available | not available |
 | `9` short | band stack 3 | not available | not available | not available | not available |
 | `9` long | recall band stack 3 | not available | not available | not available | not available |
+| `A` `B` `C` | focus (none yet) | focus (none yet) | focus (none yet) | focus (none yet) | focus (none yet) |
 
 ## Bank 4 - Tuner and Monitor
 
@@ -159,6 +198,7 @@ switches RIT on Bank 3 `5`.
 | `3` long | RIT off |
 | `4` short / long | offset down 1 Hz / 500 Hz |
 | `5` short / long | offset up 1 Hz / 500 Hz |
+| `A` `B` `C` | focus: the RIT offset. `B`/`C` 10 Hz, long 100 Hz; `A` long offset entry, `*` first for minus; `A` double offset to 0 |
 
 ## Bank 6 - Repeater and Tone
 
@@ -184,6 +224,7 @@ these keys are free.
 | `5` short | encode only (TX), decode only (RX), encode and decode (both), or split |
 | `5` long | step from both to TX, RX and back to both (FT-817/818: TX and both, CTCSS only) |
 | `6` short | split tone on or off (FT-857/897 menu 79; FT-817/818: not available) |
+| `A` `B` `C` | focus (none yet) |
 
 ## Bank 7 - CW
 
@@ -219,6 +260,7 @@ A delay of 0 is full break-in (TS-480, FT-857/897). The other keys are free.
 | `7` long | free | free | free | function row entry (experimental) | soft key row entry (experimental) |
 | `8` short | free | free | free | last menu item | last menu item |
 | `8` long | free | free | free | menu item entry (experimental) | menu item entry (experimental) |
+| `A` `B` `C` | focus (none yet) | focus (none yet) | focus (none yet) | focus (none yet) | focus (none yet) |
 
 `2` long and double step through the rates the radio offers (see the
 [radio support matrix](radio-support-matrix.md)) and keep the choice for the profile. Set the same
@@ -242,10 +284,9 @@ The same on every radio.
 | `7` short / long | volume down / down fast |
 | `8` short / long | volume up / up fast |
 | `9` short | volume |
-| `A` short | profile |
-| `A` long | profile select |
-| `A` double | reset the profile's baud rate and CI-V address to its defaults |
-| `B` short | next profile |
-| `C` short | previous profile |
+| `A` `B` `C` | focus: the profile, until `6`-`9` move it to the speech speed or volume |
+
+With the profile as the focus: `A` short profile, `A` long profile select, `A` double reset the
+profile's baud rate and CI-V address to its defaults, `B` next profile, `C` previous profile.
 
 `1`–`3` are free.

@@ -26,6 +26,11 @@ struct SettingOps {
   // has it ("power 45 watts").
   String (*text)(int32_t value);
   void (*speak)(int32_t value);
+  // B and C open the entry one step away, staged for Enter, rather than set the
+  // value at once: RF power.
+  bool confirm = false;
+  // What A double sets, where settingInfo says the setting has a centre.
+  int32_t centre = 0;
 };
 
 // nullptr for a setting with no ops.

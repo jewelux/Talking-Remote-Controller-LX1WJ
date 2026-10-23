@@ -95,6 +95,14 @@ ValueEntry::Step ValueEntry::step(int8_t dir) {
   return Step::Moved;
 }
 
+ValueEntry::Step ValueEntry::step(int8_t dir, uint8_t times) {
+  const Step first = step(dir);
+  if (first != Step::Moved) return first;
+  for (uint8_t i = 1; i < times && step(dir) == Step::Moved; ++i) {
+  }
+  return Step::Moved;
+}
+
 ValueEntry::Result ValueEntry::result(int32_t& out) const {
   int32_t v = 0;
   if (parse(v)) {

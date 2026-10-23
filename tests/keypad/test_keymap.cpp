@@ -83,6 +83,12 @@ void forEachKey(Fn fn) {
 
 void sendKeypadCommand(const char *cmd) { record("send(%s)", cmd); }
 
+void focusSay() { record("focusSay"); }
+void focusEntry() { record("focusEntry"); }
+void focusCentre() { record("focusCentre"); }
+void focusStep(int8_t d) { record("focusStep(%d)", (int)d); }
+void focusBigStep(int8_t d) { record("focusBigStep(%d)", (int)d); }
+
 void queryBank1Frequency() { record("queryBank1Frequency"); }
 void beginBank1FrequencySet() { record("beginBank1FrequencySet"); }
 void roundActiveFrequency(uint32_t hz) { record("roundActiveFrequency(%u)", (unsigned)hz); }
@@ -296,6 +302,22 @@ TEST(keymap_focus_matches_expectations) {
     checkOutcome(f, bank, key, "focus", focus == Setting::None ? "-" : settingInfo(focus).label,
                  lookup(f.bit, bank, key).focus);
   });
+}
+
+// A waits for a double only when the focus has a centre; the bank's own focus is passed in.
+TEST(keymap_focus_keys_follow_the_focus) {
+  const KeypadTraits t = traitsFor(IC7300);
+  CHECK(keymapLookup(t, 9, 'A').waitsForDouble);
+  CHECK(keymapLookup(t, 9, 'A', Setting::SpeechSpeed).waitsForDouble);
+  CHECK(!keymapLookup(t, 9, 'A', Setting::Volume).waitsForDouble);
+  CHECK(!keymapLookup(t, 9, 'A', Setting::None).waitsForDouble);
+  CHECK(!keymapLookup(t, 1, 'A', Setting::RfPower).waitsForDouble);
+  CHECK(keymapLookup(t, 1, 'B', Setting::Mode).shortAction != nullptr);
+  CHECK(keymapHomeFocus(t, 5) == Setting::RitOffset);
+  CHECK(keymapHomeFocus(t, 9) == Setting::Profile);
+  CHECK(keymapHomeFocus(t, 1) == Setting::None);
+  // Banks 2, 4 and 7 get their focus keys with their own layouts.
+  CHECK(isEmpty(keymapLookup(t, 4, 'A')));
 }
 
 TEST(keymap_ignores_state_machine_keys_and_other_banks) {

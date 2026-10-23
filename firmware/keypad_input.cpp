@@ -16,16 +16,27 @@ int keyBit(char key) {
 
 bool isDigit(char key) { return key >= '0' && key <= '9'; }
 
-// The key keypadActiveKey() reports; empty while no action runs.
-char g_activeKey[24] = "";
+bool isFocusKey(char key) { return key == 'A' || key == 'B' || key == 'C'; }
 
-// Names the key in g_activeKey while one action runs.
+// The key keypadActiveKey() reports; empty while no action runs. The focus
+// keypadActiveFocus() reports with it.
+char g_activeKey[24] = "";
+Setting g_activeFocus = Setting::None;
+bool g_activeFocusNew = false;
+
+// Names the key and its bank's focus while one action runs.
 class ActiveKey {
  public:
-  ActiveKey(uint8_t bank, char key, const char* gesture) {
+  ActiveKey(uint8_t bank, char key, const char* gesture, Setting focus, bool focusNew) {
     snprintf(g_activeKey, sizeof(g_activeKey), "BANK%u %c %s", (unsigned)bank, key, gesture);
+    g_activeFocus = focus;
+    g_activeFocusNew = focusNew;
   }
-  ~ActiveKey() { g_activeKey[0] = '\0'; }
+  ~ActiveKey() {
+    g_activeKey[0] = '\0';
+    g_activeFocus = Setting::None;
+    g_activeFocusNew = false;
+  }
 };
 
 // Bank select commits on its one digit; profile select takes up to two.
@@ -45,6 +56,10 @@ constexpr EntrySpec kEntries[] = {
 }  // namespace
 
 const char* keypadActiveKey() { return g_activeKey[0] ? g_activeKey : nullptr; }
+
+Setting keypadActiveFocus() { return g_activeFocus; }
+
+bool keypadActiveFocusIsNew() { return g_activeFocusNew; }
 
 const EntrySpec* keypadEntrySpec(InputMode mode) {
   for (const EntrySpec& e : kEntries) {
@@ -195,7 +210,7 @@ void KeypadInput::runPending() {
   pending_.active = false;
   oneShotBank_ = 0;
   listener_.onActivity(false);
-  runShortOrReject(listener_.keyBinding(pending_.bank, pending_.key), pending_.bank, pending_.key);
+  runShortOrReject(bindingOf(pending_.bank, pending_.key), pending_.bank, pending_.key);
 }
 
 void KeypadInput::beginEntry(InputMode mode, TargetVfo targetVfo) {
@@ -210,6 +225,25 @@ void KeypadInput::beginChoiceSelect(const ChoiceSpec& spec, TargetVfo targetVfo,
   choiceKnown_ = seed.known;
   choiceStaged_ = seed.known && seed.staged;
   choiceValue_ = (uint8_t)seed.value;
+}
+
+bool KeypadInput::nudgeChoice(const ChoiceSpec& spec, const EntrySeed& seed, int8_t dir,
+                              TargetVfo targetVfo) {
+  beginChoiceSelect(spec, targetVfo, seed);
+  if (seed.known && walkChoice(dir > 0 ? 'B' : 'C', dir)) return true;
+  mode_ = InputMode::Normal;
+  entryVfo_ = TargetVfo::Current;
+  return false;
+}
+
+Setting KeypadInput::focus(uint8_t bank) const {
+  const Setting f = bank < 10 ? focus_[bank] : Setting::None;
+  return f == Setting::Home ? listener_.homeFocus(bank) : f;
+}
+
+void KeypadInput::resetFocus() {
+  for (Setting& f : focus_) f = Setting::Home;
+  named_ = false;
 }
 
 void KeypadInput::beginValueEntry(const ValueSpec& spec, const EntrySeed& seed, TargetVfo targetVfo) {
@@ -258,10 +292,10 @@ void KeypadInput::held(char key) {
     handled = g->onHold != nullptr;
     if (handled) (this->*g->onHold)();
   } else {
-    const KeyBinding binding = listener_.keyBinding(bank, key);
+    const KeyBinding binding = bindingOf(bank, key);
     const KeyAction action = doubleHold ? binding.doubleHoldAction : binding.holdAction;
     handled = action != nullptr;
-    if (handled) runAction(action, bank, key, doubleHold ? "DOUBLE LONG" : "LONG");
+    if (handled) runAction(action, bank, key, doubleHold ? "DOUBLE LONG" : "LONG", binding.focus);
   }
   if (handled || doubleHold) {
     // Only the waiting key itself can still be waiting here: its long or
@@ -285,13 +319,13 @@ void KeypadInput::held(char key) {
 
 void KeypadInput::releasedNormal(char key, uint32_t nowMs) {
   const uint8_t bank = keyBank();
-  const KeyBinding binding = listener_.keyBinding(bank, key);
+  const KeyBinding binding = bindingOf(bank, key);
   if (pending_.active && pending_.bank == bank && pending_.key == key &&
       (uint32_t)(nowMs - pending_.atMs) <= kDoubleClickMs) {
     pending_.active = false;
     if (binding.doubleAction) {
       oneShotBank_ = 0;
-      runAction(binding.doubleAction, bank, key, "DOUBLE");
+      runAction(binding.doubleAction, bank, key, "DOUBLE", binding.focus);
       return;
     }
   }
@@ -316,8 +350,9 @@ void KeypadInput::pressedChoice(char key) {
     choice_->picked(key, choiceValue_);
     return;
   }
-  if (key == 'B' || key == 'C') {
-    walkChoice(key, key == 'B' ? 1 : -1);
+  if ((key == 'B' || key == 'C') && (choiceStaged_ || choiceKnown_)) {
+    const int8_t dir = key == 'B' ? 1 : -1;
+    if (!walkChoice(key, dir)) listener_.onLimit(choice_->name, dir > 0);
     return;
   }
   uint8_t value = 0;
@@ -333,13 +368,9 @@ void KeypadInput::pressedChoice(char key) {
 
 // From the value picked or the radio's value, to the next candidate the choice
 // takes. A value that is none of them (a mode the keys do not pick) walks from
-// before the first or after the last.
-void KeypadInput::walkChoice(char key, int8_t dir) {
-  if (!choiceStaged_ && !choiceKnown_) {
-    const char label[2] = {key, '\0'};
-    reportRejected(choice_->name, label);
-    return;
-  }
+// before the first or after the last. A choice that cycles goes on from the
+// other end; it stops only when no other candidate is left.
+bool KeypadInput::walkChoice(char key, int8_t dir) {
   int count = 0;
   int at = -1;
   for (char k; (k = choiceKeyAt(count)) != 0; ++count) {
@@ -347,15 +378,19 @@ void KeypadInput::walkChoice(char key, int8_t dir) {
     if (at < 0 && choiceValue(k, v) && v == choiceValue_) at = count;
   }
   if (at < 0) at = dir > 0 ? -1 : count;
-  for (int i = at + dir; i >= 0 && i < count; i += dir) {
+  for (int n = 1; n <= count; ++n) {
+    int i = at + dir * n;
+    if (choice_->cycles) i = (i % count + count) % count;
+    else if (i < 0 || i >= count) break;
+    if (i == at) break;
     uint8_t v = 0;
     if (!choiceValue(choiceKeyAt(i), v)) continue;
     choiceStaged_ = true;
     choiceValue_ = v;
     choice_->picked(key, v);
-    return;
+    return true;
   }
-  listener_.onLimit(choice_->name, dir > 0);
+  return false;
 }
 
 char KeypadInput::choiceKeyAt(int at) const {
@@ -501,10 +536,12 @@ void KeypadInput::commitEntry() {
     // The digit came while '*' was still held: the next key only.
     if (down_.has('*')) {
       oneShotBank_ = bank;
+      named_ = false;
       listener_.onOneShotBank(bank);
       return;
     }
     bank_ = bank;
+    named_ = false;
   }
   listener_.onCommit(mode, digits.c_str(), targetVfo);
 }
@@ -542,14 +579,25 @@ void KeypadInput::timeOut() {
   listener_.onEntryTimeout(mode, name);
 }
 
-void KeypadInput::runAction(KeyAction action, uint8_t bank, char key, const char* gesture) {
-  ActiveKey named(bank, key, gesture);
-  action();
+// A digit key moves the focus and ends the naming: the next A, B or C says the focus name
+// again. A, B and C name it once.
+void KeypadInput::runAction(KeyAction action, uint8_t bank, char key, const char* gesture,
+                            Setting keyFocus) {
+  const bool focusKey = isFocusKey(key);
+  if (!focusKey) {
+    if (keyFocus != Setting::None && bank < 10) focus_[bank] = keyFocus;
+    named_ = false;
+  }
+  {
+    ActiveKey active(bank, key, gesture, focus(bank), !named_);
+    action();
+  }
+  if (focusKey) named_ = true;
 }
 
 void KeypadInput::runShortOrReject(const KeyBinding& binding, uint8_t bank, char key) {
   if (binding.shortAction) {
-    runAction(binding.shortAction, bank, key, "SHORT");
+    runAction(binding.shortAction, bank, key, "SHORT", binding.focus);
     return;
   }
   char label[16];

@@ -15,8 +15,14 @@ void keypadBeginEntry(InputMode mode, TargetVfo targetVfo = TargetVfo::Current);
 void keypadBeginChoiceSelect(const ChoiceSpec& spec, TargetVfo targetVfo = TargetVfo::Current,
                              const EntrySeed& seed = EntrySeed());
 void keypadBeginValueEntry(const ValueSpec& spec, const EntrySeed& seed);
+// A B or C nudge: the choice select opened from seed, one value away, staged and said by its
+// picked(). False, with nothing opened, at the end of the choices.
+bool keypadNudgeChoice(const ChoiceSpec& spec, const EntrySeed& seed, int8_t dir,
+                       TargetVfo targetVfo = TargetVfo::Current);
 // The mode keys (ui_keypad_entry.cpp).
 void keypadBeginModeSelect(TargetVfo targetVfo);
+// The mode select of the current VFO, opened from mode one mode away (keypadNudgeChoice).
+bool keypadNudgeModeSelect(uint8_t mode, int8_t dir);
 void keypadBeginProfileSelect();
 
 // Runs a console command for a key, with the keypad's polling and speech holds.
@@ -29,6 +35,13 @@ void keypadEntryCommit(InputMode mode, const char* digits, TargetVfo targetVfo);
 // The settings engine (ui_keypad_settings.cpp). Opens the entry of setting with
 // its value read from the radio: "power please".
 void keypadSettingEntry(Setting setting);
+// B or C on setting (big: a big step): a live setting is set and said at once; a Confirm
+// one opens its entry one step away, "power 45 watts please".
+void keypadSettingNudge(Setting setting, int8_t dir, bool big);
+// B and C on the Bank 1 focus (ui_keypad_bank1.cpp), read once and staged for Enter: RF power
+// (the FT-817/818 level pick) and the mode pick.
+void nudgeBank1RfPower(int8_t dir, bool big);
+void nudgeBank1Mode(int8_t dir);
 // What a value entry says, called by the state machine.
 void keypadValueDigit(const ValueSpec& spec, char key, const char* digits);
 void keypadValueSay(const ValueSpec& spec, int32_t value);

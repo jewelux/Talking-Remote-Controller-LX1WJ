@@ -35,7 +35,7 @@ Implemented and documented for the current field-test phase:
   `CT0` 1 encode and decode, 2 encode only, and `CN00` with the manual's 50-tone table; repeater
   shift (`RPT? | RPT SIMPLEX | PLUS | MINUS`): `OS0`, FM only. Each set is read back.
 - auto notch (`ANOTCH? | ANOTCH OFF | ON | TOGGLE`, Bank 2 `0`): `BC0`, 0 off and 1 on, read back.
-- ALC meter (`ALC?`, Bank 1 `A`): `RM4`, said in percent of 0..255, as the CAT manuals give the
+- ALC meter (`ALC?`, Bank 1 `5`): `RM4`, said in percent of 0..255, as the CAT manuals give the
   meter.
 - CW speed, pitch and delay (`CWSPEED <4..60>`, `CWPITCH <300..1050>`, `CWDELAY <30..3000>`,
   each also `?` and `STEP <+-n>`; Bank 7 `3`, `4`, `5`): `KS` in WPM, `KP` 00..75 for 300..1050

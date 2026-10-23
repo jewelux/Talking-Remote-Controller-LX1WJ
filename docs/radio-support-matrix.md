@@ -67,7 +67,7 @@ shift on the IC-705 (`0F 10`–`12`) and the FTDX10, FTDX101 and FT-891 (`OS0`, 
 IC-7300 and IC-7760 have no CI-V command for it. Sources: the CI-V guides and CAT manuals, Hamlib.
 The offset itself is not set over CAT.
 
-`ALC?` (Bank 1 `A`) reads the ALC meter while transmitting, in percent of full scale: on the
+`ALC?` (Bank 1 `5`) reads the ALC meter while transmitting, in percent of full scale: on the
 Icoms `15 13`, 0–120 (their CI-V guides and Hamlib), on the FTDX10, FTDX101 and FT-891 `RM4`,
 0–255 (their CAT manuals; flrig scales it so, Hamlib reads the same command). The FT-8x7 has its
 own `ALC?`, 0–15, console only.

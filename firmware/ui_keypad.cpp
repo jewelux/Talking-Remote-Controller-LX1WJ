@@ -98,9 +98,11 @@ class KeypadUiListener : public KeypadInputListener {
     if (pressed) silenceSpeechForKeyPress();
   }
 
-  KeyBinding keyBinding(uint8_t bank, char key) override {
-    return keymapLookup(currentKeypadTraits(), bank, key);
+  KeyBinding keyBinding(uint8_t bank, char key, Setting focus) override {
+    return keymapLookup(currentKeypadTraits(), bank, key, focus);
   }
+
+  Setting homeFocus(uint8_t bank) override { return keymapHomeFocus(currentKeypadTraits(), bank); }
 
   void onBankQuery(uint8_t bank) override {
     printKeypadCommand("* SHORT -> BANK?");
@@ -187,6 +189,10 @@ void keypadBeginValueEntry(const ValueSpec& spec, const EntrySeed& seed) {
   s_input.beginValueEntry(spec, seed);
 }
 
+bool keypadNudgeChoice(const ChoiceSpec& spec, const EntrySeed& seed, int8_t dir, TargetVfo targetVfo) {
+  return s_input.nudgeChoice(spec, seed, dir, targetVfo);
+}
+
 void keypadBeginProfileSelect() {
   s_input.beginProfileSelect();
 }
@@ -198,6 +204,12 @@ void initKeypadUi() {
 }
 
 void pollKeypadUi() {
+  // Another profile, from a key or the console: every bank back to its home focus.
+  static uint8_t focusProfile = g_profileId;
+  if (g_profileId != focusProfile) {
+    focusProfile = g_profileId;
+    s_input.resetFocus();
+  }
   (void)keypad.getKeys();
   s_input.poll(millis());
   // An open entry or selection waits for more keys: keep the radio unpolled.

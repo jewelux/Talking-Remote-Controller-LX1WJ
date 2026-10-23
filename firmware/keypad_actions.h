@@ -23,6 +23,16 @@
 // "CMD <key> -> <cmd>", then the console command cmd. Most FTDX10 keys are one.
 void sendKeypadCommand(const char* cmd);
 
+// ---- A, B and C: the bank's focus (keypadActiveFocus()) ----
+// "not available" with no focus, or where the radio lacks it.
+void focusSay();    // A short: its name and value
+void focusEntry();  // A long: its entry or pick
+void focusCentre(); // A double: back to its centre (RIT 0, normal speed, the profile reset)
+// B (dir 1) or C (-1): one step, or a big one. A live setting is set and said at once; RF
+// power and the mode open their entry or pick one step away, staged for Enter.
+void focusStep(int8_t dir);
+void focusBigStep(int8_t dir);
+
 // ---- Bank 1 ----
 void queryBank1Frequency();
 void beginBank1FrequencySet();

@@ -26,6 +26,26 @@ KeyBinding bind(Action shortAction, Action holdAction = nullptr, Action doubleAc
   return b;
 }
 
+// A digit key that also sets its bank's focus: what A, B and C act on after it.
+KeyBinding withFocus(KeyBinding b, Setting focus) {
+  b.focus = focus;
+  return b;
+}
+
+// A, B and C: say, entry, centre and step on the bank's focus. A waits for a
+// double only when the focus has a centre. With no focus they say "not
+// available".
+KeyBinding focusKey(char key, Setting focus) {
+  switch (key) {
+    case 'A': return bind(focusSay, focusEntry, settingInfo(focus).hasCentre ? focusCentre : nullptr);
+    case 'B': return bind([] { focusStep(1); }, [] { focusBigStep(1); });
+    case 'C': return bind([] { focusStep(-1); }, [] { focusBigStep(-1); });
+    default: return {};
+  }
+}
+
+bool isFocusKey(char key) { return key == 'A' || key == 'B' || key == 'C'; }
+
 // A key that runs the console command cmd, traced "CMD <key> -> <cmd>". The
 // '+' turns the lambda into an Action, so it also works in a conditional.
 #define SEND(cmd) +[] { sendKeypadCommand(cmd); }
@@ -36,7 +56,8 @@ bool isFt8x7(const KeypadTraits& t) {
   return t.layout == L::Ft8x7 || t.layout == L::Ft817 || t.layout == L::Ft857;
 }
 
-KeyBinding bank1(const KeypadTraits& t, char key) {
+KeyBinding bank1(const KeypadTraits& t, char key, Setting focus) {
+  if (isFocusKey(key)) return focusKey(key, focus);
   switch (key) {
     case '0':
       if (t.layout == L::Ftdx10) {
@@ -54,19 +75,18 @@ KeyBinding bank1(const KeypadTraits& t, char key) {
       if (t.layout == L::Ftdx10) return bind(SEND("LOCK?"), SEND("LOCK TOGGLE"));
       return bind(queryBank1Lock, toggleBank1Lock);
     case '4': return bind(queryBank1Power);
-    case '5':
-      if (t.layout == L::Ftdx10) return bind(SEND("TUNER?"), SEND("TUNER TOGGLE"), SEND("TUNE"));
-      return {};
+    // The FT-8x7 reads its ALC from a 0..15 TX meter, console only (ALC?).
+    case '5': return isFt8x7(t) ? KeyBinding{} : bind(queryBank1Alc);
     case '6':
       // FT-8x7: experimental; the FT-817/818 picks a level.
-      if (t.layout == L::Ft857 || t.layout == L::Ft817) return bind(queryBank1RfPower, beginBank1RfPowerSet);
+      if (t.layout == L::Ft857 || t.layout == L::Ft817) {
+        return withFocus(bind(queryBank1RfPower, beginBank1RfPowerSet), Setting::RfPower);
+      }
       if (t.layout == L::Ft8x7) return {};
-      return bind(t.canGetRfPower ? queryBank1RfPower : nullptr, beginBank1RfPowerSet);
+      return withFocus(bind(t.canGetRfPower ? queryBank1RfPower : nullptr, beginBank1RfPowerSet), Setting::RfPower);
     case '7': return bind(queryBank1Smeter);
     case '8': return bind(queryBank1Swr);
-    case '9': return bind(queryBank1Mode, beginBank1ModeSelect);
-    // The FT-8x7 reads its ALC from a 0..15 TX meter, console only (ALC?).
-    case 'A': return isFt8x7(t) ? KeyBinding{} : bind(queryBank1Alc);
+    case '9': return withFocus(bind(queryBank1Mode, beginBank1ModeSelect), Setting::Mode);
     default: return {};
   }
 }
@@ -172,7 +192,8 @@ KeyBinding bank3BandStack(const KeypadTraits& t) {
 
 // FT-817 and FT-857/897 track the active VFO themselves: '1' is the current
 // VFO and '2' the other one.
-KeyBinding bank3(const KeypadTraits& t, char key) {
+KeyBinding bank3(const KeypadTraits& t, char key, Setting focus) {
+  if (isFocusKey(key)) return focusKey(key, focus);
   switch (key) {
     case '0':
       if (t.layout == L::Ftdx10) {
@@ -248,21 +269,25 @@ KeyBinding bank4(const KeypadTraits& t, char key) {
   }
 }
 
-KeyBinding bank5(char key) {
+// The RIT offset is the home focus, and every key but the on/off switch moves it.
+KeyBinding bank5(char key, Setting focus) {
+  if (isFocusKey(key)) return focusKey(key, focus);
+  constexpr Setting kOffset = Setting::RitOffset;
   switch (key) {
     case '0': return bind(queryBank5Rit, toggleBank5Rit, [] { setBank5RitOffset(0); });
-    case '1': return bind([] { adjustBank5Rit(-10); }, [] { adjustBank5Rit(-100); });
-    case '2': return bind([] { adjustBank5Rit(10); }, [] { adjustBank5Rit(100); });
-    case '3': return bind([] { setBank5RitOffset(0); }, setBank5RitOff);
-    case '4': return bind([] { adjustBank5Rit(-1); }, [] { adjustBank5Rit(-500); });
-    case '5': return bind([] { adjustBank5Rit(1); }, [] { adjustBank5Rit(500); });
+    case '1': return withFocus(bind([] { adjustBank5Rit(-10); }, [] { adjustBank5Rit(-100); }), kOffset);
+    case '2': return withFocus(bind([] { adjustBank5Rit(10); }, [] { adjustBank5Rit(100); }), kOffset);
+    case '3': return withFocus(bind([] { setBank5RitOffset(0); }, setBank5RitOff), kOffset);
+    case '4': return withFocus(bind([] { adjustBank5Rit(-1); }, [] { adjustBank5Rit(-500); }), kOffset);
+    case '5': return withFocus(bind([] { adjustBank5Rit(1); }, [] { adjustBank5Rit(500); }), kOffset);
     default: return {};
   }
 }
 
 // FT-8x7 repeater shift, offset and tones. Empty on the other radios.
-KeyBinding bank6(const KeypadTraits& t, char key) {
+KeyBinding bank6(const KeypadTraits& t, char key, Setting focus) {
   if (!isFt8x7(t)) return {};
+  if (isFocusKey(key)) return focusKey(key, focus);
   switch (key) {
     case '0': return bind(setBank6RepeaterOff, setBank6RepeaterMinus, setBank6RepeaterPlus);
     case '1':
@@ -277,7 +302,8 @@ KeyBinding bank6(const KeypadTraits& t, char key) {
   }
 }
 
-KeyBinding bank8(const KeypadTraits& t, char key) {
+KeyBinding bank8(const KeypadTraits& t, char key, Setting focus) {
+  if (isFocusKey(key)) return focusKey(key, focus);
   // FT-817 and FT-857/897: the radio's menu position.
   const bool ft8x7Menu = t.layout == L::Ft817 || t.layout == L::Ft857;
   switch (key) {
@@ -311,18 +337,19 @@ KeyBinding bank7(char key) {
   }
 }
 
-KeyBinding bank9(char key) {
+// The profile is the home focus: A, B and C select, step and reset it until the speed or
+// volume keys move the focus.
+KeyBinding bank9(char key, Setting focus) {
+  if (isFocusKey(key)) return focusKey(key, focus);
+  constexpr Setting kVolume = Setting::Volume;
   switch (key) {
     case '0': return bind(queryBank9Experimental, toggleBank9Experimental);
     case '4': return bind(queryBank9TuningSpeech, toggleBank9TuningSpeech);
     case '5': return bind(queryBank9Verbose, toggleBank9Verbose);
-    case '6': return bind(queryBank9Speed, stepBank9Speed);
-    case '7': return bind([] { adjustBank9Volume(-1); }, [] { adjustBank9Volume(-2); });
-    case '8': return bind([] { adjustBank9Volume(1); }, [] { adjustBank9Volume(2); });
-    case '9': return bind(queryBank9Volume);
-    case 'A': return bind(queryBank9Profile, beginBank9ProfileSelect, resetBank9Profile);
-    case 'B': return bind(selectNextProfile);
-    case 'C': return bind(selectPrevProfile);
+    case '6': return withFocus(bind(queryBank9Speed, stepBank9Speed), Setting::SpeechSpeed);
+    case '7': return withFocus(bind([] { adjustBank9Volume(-1); }, [] { adjustBank9Volume(-2); }), kVolume);
+    case '8': return withFocus(bind([] { adjustBank9Volume(1); }, [] { adjustBank9Volume(2); }), kVolume);
+    case '9': return withFocus(bind(queryBank9Volume), kVolume);
     default: return {};
   }
 }
@@ -331,17 +358,26 @@ KeyBinding bank9(char key) {
 
 }  // namespace
 
-KeyBinding keymapLookup(const KeypadTraits& traits, uint8_t bank, char key) {
+Setting keymapHomeFocus(const KeypadTraits&, uint8_t bank) {
   switch (bank) {
-    case 1: return bank1(traits, key);
+    case 5: return Setting::RitOffset;
+    case 9: return Setting::Profile;
+    default: return Setting::None;
+  }
+}
+
+KeyBinding keymapLookup(const KeypadTraits& traits, uint8_t bank, char key, Setting focus) {
+  if (focus == Setting::Home) focus = keymapHomeFocus(traits, bank);
+  switch (bank) {
+    case 1: return bank1(traits, key, focus);
     case 2: return bank2(traits, key);
-    case 3: return bank3(traits, key);
+    case 3: return bank3(traits, key, focus);
     case 4: return bank4(traits, key);
-    case 5: return bank5(key);
-    case 6: return bank6(traits, key);
+    case 5: return bank5(key, focus);
+    case 6: return bank6(traits, key, focus);
     case 7: return bank7(key);
-    case 8: return bank8(traits, key);
-    case 9: return bank9(key);
+    case 8: return bank8(traits, key, focus);
+    case 9: return bank9(key, focus);
     default: return {};
   }
 }

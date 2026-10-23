@@ -35,6 +35,21 @@ Global rules:
   and ignores both keys until you let go of all of them; nothing is run or cancelled
 - `*` while entering a frequency: the decimal point (see Bank 1 `0` long below)
 
+`A`, `B` and `C` act on the bank's focus, the setting of the last key you used on that bank that
+has one: Bank 1 `6` RF power or `9` mode, Bank 5 the RIT offset, Bank 9 `6` speech speed or
+`7`-`9` volume. A key with nothing to move, such as a meter, leaves the focus as it was. Each bank
+keeps its own focus. Bank 5 starts on the RIT offset and Bank 9 on the profile.
+
+- `A` short: the focus with its name
+- `A` long: its entry or selection
+- `A` double: back to the centre where there is one (RIT offset 0, normal speech speed, profile reset)
+- `B` / `C` short: one step up / down. The first step names the setting, the next ones give only
+  the value. Past the end you hear "maximum" or "minimum" and nothing changes
+- `B` / `C` long: a bigger step; the mode and the profile have none and say "not available"
+- RF power and the mode wait for `D`. `B` or `C` reads the value and opens its entry one step
+  away, ending in "please"; more `B` and `C` presses step, `D` sets, `#` cancels
+- With no focus on the bank, `A`, `B` and `C` say "not available"
+
 Frequencies are spoken in full: the megahertz digits, "point", then the remaining digits with
 trailing zeros dropped (always at least one decimal) — for example 7.12345 MHz is spoken "seven
 point one two three four five", 14.1 MHz is spoken "one four point one", and a whole 7 MHz is
@@ -148,10 +163,10 @@ Use these keypad functions first:
 - Bank 1, `0` short or long: read or set frequency
 - Bank 1, `3` short or long: read or toggle lock
 - Bank 1, `4` short: power meter
-- Bank 1, `5` short, long, or double: tuner query, tuner toggle, tune
+- Bank 4, `0` short, long, or double: tuner query, tuner toggle, tune
+- Bank 1, `5` short: ALC while transmitting
 - Bank 1, `7` short: S-meter
 - Bank 1, `8` short: SWR
-- Bank 1, `A` short: ALC while transmitting
 - Bank 1, `9` short or long: read or set mode
 - Bank 2, `1`, `2`, `3` short or long: NR, NB, notch query or toggle
 - Bank 2, `0` short or long: auto notch query or toggle

@@ -66,6 +66,9 @@
 //   adjustBank9Volume(-2/2) "VOLUME DOWN/UP FAST" + adjustBank9Volume
 //   queryBank9Speed         "SPEED?", says the speech speed
 //   stepBank9Speed          "SPEED NEXT", the next speech speed
+//   focusSay, focusEntry, focusCentre, focusStep(dir), focusBigStep(dir)
+//                           A, B and C on the bank's focus; the rows give the
+//                           home focus (Bank 5 RITOFFSET, Bank 9 PROFILE)
 //   reportFtdx10HiddenKey(K) also stands for reportFtdx10HiddenKeypadAction;
 //                           K is the key the action is bound to (keypadActiveKey())
 //
@@ -96,16 +99,18 @@ KEYMAP_ROW(NOT(FTDX10 | FT857), 1, '2', "queryBank1TxFrequency", "none",        
 KEYMAP_ROW(FTDX10,          1, '3', "send(LOCK?)",           "send(LOCK TOGGLE)",      "-", "none", "-")
 KEYMAP_ROW(NOT(FTDX10),     1, '3', "queryBank1Lock",        "toggleBank1Lock",        "-", "none", "-")
 KEYMAP_ROW(ALL,             1, '4', "queryBank1Power",       "none",                   "-", "none", "-")
-KEYMAP_ROW(FTDX10,          1, '5', "send(TUNER?)",          "send(TUNER TOGGLE)",     "send(TUNE)", "none", "-")
-KEYMAP_ROW(NOT(FTDX10),     1, '5', "unassigned",            "none",                   "-", "none", "-")
-KEYMAP_ROW(IC7300 | TS480 | FTDX10 | FT891 | FT817 | FT857, 1, '6', "queryBank1RfPower", "beginBank1RfPowerSet", "-", "none", "-")
-KEYMAP_ROW(IC706,           1, '6', "unassigned",            "beginBank1RfPowerSet",   "-", "none", "-")
+// fixed: ALC was on 'A', and the FTDX10 tuner on '5' (it stays on Bank 4 '0').
+KEYMAP_ROW(NOT(FT8X7),      1, '5', "queryBank1Alc",         "none",                   "-", "none", "-")
+KEYMAP_ROW(FT8X7,           1, '5', "unassigned",            "none",                   "-", "none", "-")
+KEYMAP_ROW(IC7300 | TS480 | FTDX10 | FT891 | FT817 | FT857, 1, '6', "queryBank1RfPower", "beginBank1RfPowerSet", "-", "none", "RFPOWER")
+KEYMAP_ROW(IC706,           1, '6', "unassigned",            "beginBank1RfPowerSet",   "-", "none", "RFPOWER")
 KEYMAP_ROW(FT8X7_OTHER,     1, '6', "unassigned",            "none",                   "-", "none", "-")
 KEYMAP_ROW(ALL,             1, '7', "queryBank1Smeter",      "none",                   "-", "none", "-")
 KEYMAP_ROW(ALL,             1, '8', "queryBank1Swr",         "none",                   "-", "none", "-")
-KEYMAP_ROW(ALL,             1, '9', "queryBank1Mode",        "beginBank1ModeSelect",   "-", "none", "-")
-KEYMAP_ROW(NOT(FT8X7),      1, 'A', "queryBank1Alc",         "none",                   "-", "none", "-")
-KEYMAP_ROW(FT8X7,           1, 'A', "unassigned",            "none",                   "-", "none", "-")
+KEYMAP_ROW(ALL,             1, '9', "queryBank1Mode",        "beginBank1ModeSelect",   "-", "none", "MODE")
+KEYMAP_ROW(ALL,             1, 'A', "focusSay",              "focusEntry",             "-", "none", "-")
+KEYMAP_ROW(ALL,             1, 'B', "focusStep(1)",          "focusBigStep(1)",        "-", "none", "-")
+KEYMAP_ROW(ALL,             1, 'C', "focusStep(-1)",         "focusBigStep(-1)",       "-", "none", "-")
 
 // ---- Bank 2 ----------------------------------------------------------------
 KEYMAP_ROW(FT817,           2, '0', "queryBank2Ft817Antenna", "none",                  "-", "none", "-")
@@ -183,6 +188,9 @@ KEYMAP_ROW(FTDX10,          3, '8', "queryBank3BandStack(2)", "reportFtdx10Hidde
 KEYMAP_ROW(NOT(FTDX10),     3, '8', "queryBank3BandStack(2)", "recallBank3BandStack(2)", "-", "none", "-")
 KEYMAP_ROW(FTDX10,          3, '9', "queryBank3BandStack(3)", "reportFtdx10HiddenKey(BANK3 9 LONG)", "-", "none", "-")
 KEYMAP_ROW(NOT(FTDX10),     3, '9', "queryBank3BandStack(3)", "recallBank3BandStack(3)", "-", "none", "-")
+KEYMAP_ROW(ALL,             3, 'A', "focusSay",              "focusEntry",             "-", "none", "-")
+KEYMAP_ROW(ALL,             3, 'B', "focusStep(1)",          "focusBigStep(1)",        "-", "none", "-")
+KEYMAP_ROW(ALL,             3, 'C', "focusStep(-1)",         "focusBigStep(-1)",       "-", "none", "-")
 
 // ---- Bank 4 ----------------------------------------------------------------
 KEYMAP_ROW(FTDX10,          4, '0', "send(TUNER?)",          "send(TUNER TOGGLE)",     "send(TUNE)", "none", "-")
@@ -198,11 +206,14 @@ KEYMAP_ROW(NOT(CIV | FTDX10), 4, '3', "unassigned",          "toggleBank4Transce
 
 // ---- Bank 5 ----------------------------------------------------------------
 KEYMAP_ROW(ALL,             5, '0', "queryBank5Rit",         "toggleBank5Rit",         "setBank5RitOffset(0)", "none", "-")
-KEYMAP_ROW(ALL,             5, '1', "adjustBank5Rit(-10)",   "adjustBank5Rit(-100)",   "-", "none", "-")
-KEYMAP_ROW(ALL,             5, '2', "adjustBank5Rit(10)",    "adjustBank5Rit(100)",    "-", "none", "-")
-KEYMAP_ROW(ALL,             5, '3', "setBank5RitOffset(0)",  "setBank5RitOff",         "-", "none", "-")
-KEYMAP_ROW(ALL,             5, '4', "adjustBank5Rit(-1)",    "adjustBank5Rit(-500)",   "-", "none", "-")
-KEYMAP_ROW(ALL,             5, '5', "adjustBank5Rit(1)",     "adjustBank5Rit(500)",    "-", "none", "-")
+KEYMAP_ROW(ALL,             5, '1', "adjustBank5Rit(-10)",   "adjustBank5Rit(-100)",   "-", "none", "RITOFFSET")
+KEYMAP_ROW(ALL,             5, '2', "adjustBank5Rit(10)",    "adjustBank5Rit(100)",    "-", "none", "RITOFFSET")
+KEYMAP_ROW(ALL,             5, '3', "setBank5RitOffset(0)",  "setBank5RitOff",         "-", "none", "RITOFFSET")
+KEYMAP_ROW(ALL,             5, '4', "adjustBank5Rit(-1)",    "adjustBank5Rit(-500)",   "-", "none", "RITOFFSET")
+KEYMAP_ROW(ALL,             5, '5', "adjustBank5Rit(1)",     "adjustBank5Rit(500)",    "-", "none", "RITOFFSET")
+KEYMAP_ROW(ALL,             5, 'A', "focusSay",              "focusEntry",             "focusCentre", "none", "-")
+KEYMAP_ROW(ALL,             5, 'B', "focusStep(1)",          "focusBigStep(1)",        "-", "none", "-")
+KEYMAP_ROW(ALL,             5, 'C', "focusStep(-1)",         "focusBigStep(-1)",       "-", "none", "-")
 
 // ---- Bank 6 ----------------------------------------------------------------
 // Not FT-8x7: fixed, was the actions' "BANK6 reserved" beep (with the double-click
@@ -222,6 +233,12 @@ KEYMAP_ROW(FT8X7,           6, '5', "queryBank6ToneDir",     "stepBank6ToneDir",
 KEYMAP_ROW(NOT(FT8X7),      6, '5', "unassigned",            "none",                   "-", "none", "-")
 KEYMAP_ROW(FT8X7,           6, '6', "queryBank6SplitTone",   "none",                   "-", "none", "-")
 KEYMAP_ROW(NOT(FT8X7),      6, '6', "unassigned",            "none",                   "-", "none", "-")
+KEYMAP_ROW(FT8X7,           6, 'A', "focusSay",              "focusEntry",             "-", "none", "-")
+KEYMAP_ROW(FT8X7,           6, 'B', "focusStep(1)",          "focusBigStep(1)",        "-", "none", "-")
+KEYMAP_ROW(FT8X7,           6, 'C', "focusStep(-1)",         "focusBigStep(-1)",       "-", "none", "-")
+KEYMAP_ROW(NOT(FT8X7),      6, 'A', "unassigned",            "none",                   "-", "none", "-")
+KEYMAP_ROW(NOT(FT8X7),      6, 'B', "unassigned",            "none",                   "-", "none", "-")
+KEYMAP_ROW(NOT(FT8X7),      6, 'C', "unassigned",            "none",                   "-", "none", "-")
 
 // ---- Bank 8 ----------------------------------------------------------------
 KEYMAP_ROW(ALL,             8, '1', "queryBank8CivAddress",  "beginBank8CivAddressEntry", "-", "none", "-")
@@ -230,15 +247,19 @@ KEYMAP_ROW(FT817 | FT857,   8, '7', "queryBank8Ft8x7Row",    "beginBank8Ft8x7Row
 KEYMAP_ROW(NOT(FT817 | FT857), 8, '7', "unassigned",       "none",                   "-", "none", "-")
 KEYMAP_ROW(FT817 | FT857,   8, '8', "queryBank8Ft8x7Menu",   "beginBank8Ft8x7MenuEntry", "-", "none", "-")
 KEYMAP_ROW(NOT(FT817 | FT857), 8, '8', "unassigned",       "none",                   "-", "none", "-")
+KEYMAP_ROW(ALL,             8, 'A', "focusSay",              "focusEntry",             "-", "none", "-")
+KEYMAP_ROW(ALL,             8, 'B', "focusStep(1)",          "focusBigStep(1)",        "-", "none", "-")
+KEYMAP_ROW(ALL,             8, 'C', "focusStep(-1)",         "focusBigStep(-1)",       "-", "none", "-")
 
 // ---- Bank 9 ----------------------------------------------------------------
 KEYMAP_ROW(ALL,             9, '0', "queryBank9Experimental", "toggleBank9Experimental", "-", "none", "-")
 KEYMAP_ROW(ALL,             9, '4', "queryBank9TuningSpeech", "toggleBank9TuningSpeech", "-", "none", "-")
 KEYMAP_ROW(ALL,             9, '5', "queryBank9Verbose",     "toggleBank9Verbose",     "-", "none", "-")
-KEYMAP_ROW(ALL,             9, '6', "queryBank9Speed",       "stepBank9Speed",         "-", "none", "-")
-KEYMAP_ROW(ALL,             9, '7', "adjustBank9Volume(-1)", "adjustBank9Volume(-2)",  "-", "none", "-")
-KEYMAP_ROW(ALL,             9, '8', "adjustBank9Volume(1)",  "adjustBank9Volume(2)",   "-", "none", "-")
-KEYMAP_ROW(ALL,             9, '9', "queryBank9Volume",      "none",                   "-", "none", "-")
-KEYMAP_ROW(ALL,             9, 'A', "queryBank9Profile",     "beginBank9ProfileSelect", "resetBank9Profile", "none", "-")
-KEYMAP_ROW(ALL,             9, 'B', "selectNextProfile",     "none",                   "-", "none", "-")
-KEYMAP_ROW(ALL,             9, 'C', "selectPrevProfile",     "none",                   "-", "none", "-")
+KEYMAP_ROW(ALL,             9, '6', "queryBank9Speed",       "stepBank9Speed",         "-", "none", "SPEED")
+KEYMAP_ROW(ALL,             9, '7', "adjustBank9Volume(-1)", "adjustBank9Volume(-2)",  "-", "none", "VOLUME")
+KEYMAP_ROW(ALL,             9, '8', "adjustBank9Volume(1)",  "adjustBank9Volume(2)",   "-", "none", "VOLUME")
+KEYMAP_ROW(ALL,             9, '9', "queryBank9Volume",      "none",                   "-", "none", "VOLUME")
+// fixed: A, B and C were the profile's alone; the profile is now the home focus.
+KEYMAP_ROW(ALL,             9, 'A', "focusSay",              "focusEntry",             "focusCentre", "none", "-")
+KEYMAP_ROW(ALL,             9, 'B', "focusStep(1)",          "focusBigStep(1)",        "-", "none", "-")
+KEYMAP_ROW(ALL,             9, 'C', "focusStep(-1)",         "focusBigStep(-1)",       "-", "none", "-")

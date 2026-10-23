@@ -74,7 +74,7 @@
 - Bank 2 `0` says the auto notch and long press turns it on or off, on the Icoms and the FTDX10,
   FTDX101 and FT-891 (console `ANOTCH? | ANOTCH OFF | ON | TOGGLE`, read back). The FT-817 keeps
   its antenna jack on that key
-- Bank 1 `A` says the ALC meter while transmitting, in percent of full scale, on the Icoms and the
+- Bank 1 `5` says the ALC meter while transmitting, in percent of full scale, on the Icoms and the
   FTDX10, FTDX101 and FT-891 (console `ALC?`)
 - Bank 1 `6` says the RF power setting and long press enters it in watts on the FTDX10, FTDX101D,
   FT-891, TS-480 and KX2 too, as on the Icoms
@@ -85,7 +85,17 @@
   `D` sets it. A step past the end says "maximum" or "minimum" and changes nothing. CTCSS takes
   `*` as the point (`88*5`) as well as `885`
 - the FT-817/818 power level, the mode and the AGC picks: `B` and `C` walk to the next or previous
-  choice, from the power level or mode the radio has; `A` says it. Nothing changes before `D`
+  choice, from the power level or mode the radio has; `A` says it. Nothing changes before `D`.
+  The mode and AGC go round, from the last choice to the first; the power level stops at its ends
+- `A`, `B` and `C` act on the bank's focus, the setting of the last key used on that bank (Banks 1,
+  3, 5, 6, 8 and 9 for now): `A` says it, `A` long opens its entry, `A` double puts it back to its
+  centre, `B` and `C` step it up and down, held for a bigger step. The first step names the
+  setting, later ones give just the value. Bank 1: `6` RF power and `9` mode, which wait for `D`
+  (`B` or `C` opens the entry or pick one step away, ending in "please"). Bank 5: the RIT offset
+  (Icom), `B`/`C` 10 Hz, held 100 Hz, `A` double 0. Bank 9: the profile as before, until `6` moves
+  it to the speech speed or `7`-`9` to the volume. With no focus they say "not available". RIT and
+  the CAT radios' RF power are not yet tested on a radio
+- keys moved: the FTDX10 tuner is no longer on Bank 1 `5` (it stays on Bank 4 `0`)
 - Bank 7 is the CW bank: `1` says break-in and long press turns it on or off (Icom: off to semi,
   semi or full to off), `2` the same for the keyer, `3` the keyer speed, `4` the CW pitch and `5`
   the break-in delay (long press one step up, double press one step down). On the FT-8x7 setting

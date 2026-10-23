@@ -203,3 +203,14 @@ TEST(value_entry_staged_seed_and_clamped_seed) {
   e.begin(powerSpec(), seedOf(2000, true));
   CHECK_EQ(resultOf(e), 1000);
 }
+
+TEST(value_entry_big_step_stops_at_the_end) {
+  ValueEntry e;
+  e.begin(powerSpec(), seedOf(180));
+  CHECK(e.step(1, 5) == ValueEntry::Step::Moved);
+  CHECK_EQ(resultOf(e), 350);  // 19, 20, 25, 30, 35 watts
+  e.begin(powerSpec(), seedOf(900));
+  CHECK(e.step(1, 5) == ValueEntry::Step::Moved);
+  CHECK_EQ(resultOf(e), 1000);
+  CHECK(e.step(1, 5) == ValueEntry::Step::AtLimit);
+}

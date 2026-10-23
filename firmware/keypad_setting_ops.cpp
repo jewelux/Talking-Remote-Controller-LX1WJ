@@ -3,7 +3,9 @@
 
 #include "ft8x7_codec.h"
 #include "radio_catalog.h"
+#include "radio_features_internal.h"
 #include "radio_globals.h"
+#include "radio_prefs.h"
 #include "radio_protocol.h"
 #include "ui_features.h"
 #include "ui_speech.h"
@@ -181,11 +183,123 @@ void speakDcs(int32_t value) {
   speakDigitsAndPoint(dcsDigits(value));
 }
 
+// ---- RIT offset in Hz: CI-V ----
+
+bool ritOffsetAvailable() { return protocolSupportsRit(); }
+
+FeatureStatus ritOffsetLimits(ValueSpec& spec) {
+  if (!ritOffsetAvailable()) return FeatureStatus::Unsupported;
+  spec.name = "RITOFFSET";
+  spec.setting = Setting::RitOffset;
+  spec.min = -9999;
+  spec.max = 9999;
+  spec.sign = true;
+  spec.maxDigits = 4;
+  spec.step = 10;
+  spec.bigSteps = 10;
+  spec.unit = " Hz";
+  return FeatureStatus::Ok;
+}
+
+FeatureStatus ritOffsetRead(int32_t& value) {
+  return queryRitOffsetHz(value, kCatReplyTimeoutMs) ? FeatureStatus::Ok : failure(FeatureStatus::NoReply);
+}
+
+FeatureStatus ritOffsetWrite(int32_t value, int32_t& readBack) {
+  if (!setRitOffsetHz(value)) return failure(FeatureStatus::Failed);
+  if (!queryRitOffsetHz(readBack, kCatReplyTimeoutMs)) readBack = value;
+  return FeatureStatus::Ok;
+}
+
+String ritOffsetText(int32_t value) { return "RIT " + String(value) + " Hz"; }
+
+void speakRitOffset(int32_t hz) {
+  if (!g_speechEnabled) return;
+  speakLabel("rit");
+  if (hz != 0) {
+    speakToken(hz > 0 ? "plus" : "minus");
+    playSilenceMs(60);
+  }
+  speakNumber(String(hz < 0 ? -hz : hz));
+  playSilenceMs(60);
+  speakToken("hertz");
+}
+
+// ---- Speech volume 1..9 and speed, kept by HamTRC ----
+
+bool always() { return true; }
+
+FeatureStatus volumeLimits(ValueSpec& spec) {
+  spec.name = "VOLUME";
+  spec.setting = Setting::Volume;
+  spec.min = 1;
+  spec.max = 9;
+  spec.maxDigits = 1;
+  spec.bigSteps = 2;
+  return FeatureStatus::Ok;
+}
+
+FeatureStatus volumeRead(int32_t& value) {
+  value = g_volumeLevel;
+  return FeatureStatus::Ok;
+}
+
+FeatureStatus volumeWrite(int32_t value, int32_t& readBack) {
+  applyVolumeLevel((uint8_t)value);
+  saveVolumeToNvs((uint8_t)value);
+  readBack = g_volumeLevel;
+  return FeatureStatus::Ok;
+}
+
+String volumeText(int32_t value) { return "VOLUME " + String(value); }
+
+void speakVolume(int32_t value) {
+  if (!g_speechEnabled) return;
+  speakLabel("volume");
+  speakVolumeLevel((uint8_t)value);
+}
+
+FeatureStatus speedLimits(ValueSpec& spec) {
+  spec.name = "SPEED";
+  spec.setting = Setting::SpeechSpeed;
+  spec.min = (int32_t)SpeechSpeed::Slow;
+  spec.max = (int32_t)SpeechSpeed::Fast;
+  spec.maxDigits = 1;
+  spec.bigSteps = 1;
+  return FeatureStatus::Ok;
+}
+
+FeatureStatus speedRead(int32_t& value) {
+  value = (int32_t)g_speechSpeed;
+  return FeatureStatus::Ok;
+}
+
+FeatureStatus speedWrite(int32_t value, int32_t& readBack) {
+  applySpeechSpeed((SpeechSpeed)value);
+  saveSpeechSpeedToNvs((uint8_t)g_speechSpeed);
+  readBack = (int32_t)g_speechSpeed;
+  return FeatureStatus::Ok;
+}
+
+String speedText(int32_t value) { return String("SPEED ") + speechSpeedName((SpeechSpeed)value); }
+
+// Said at the new speed.
+void speakSpeed(int32_t value) {
+  if (!g_speechEnabled) return;
+  speakLabel("speed");
+  speakToken(speechSpeedName((SpeechSpeed)value));
+}
+
 constexpr SettingOps kOps[] = {
     {Setting::RfPower, "power", rfPowerAvailable, rfPowerLimits, rfPowerRead, rfPowerWrite, rfPowerTextOf,
-     speakRfPowerOf},
+     speakRfPowerOf, true},
     {Setting::Ctcss, "ctcss", ctcssAvailable, ctcssLimits, ctcssRead, ctcssWrite, ctcssTextOf, speakCtcssOf},
     {Setting::Dcs, "dcs", dcsAvailable, dcsLimits, dcsRead, dcsWrite, dcsText, speakDcs},
+    {Setting::RitOffset, "rit", ritOffsetAvailable, ritOffsetLimits, ritOffsetRead, ritOffsetWrite,
+     ritOffsetText, speakRitOffset, false, 0},
+    {Setting::Volume, "volume", always, volumeLimits, volumeRead, volumeWrite, volumeText, speakVolume},
+    {Setting::SpeechSpeed, "speed", always, speedLimits, speedRead, speedWrite, speedText, speakSpeed, false,
+     (int32_t)SpeechSpeed::Normal},
 };
 
 }  // namespace

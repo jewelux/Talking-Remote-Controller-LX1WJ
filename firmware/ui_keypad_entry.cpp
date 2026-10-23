@@ -210,7 +210,8 @@ static void commitMode(uint8_t mode, TargetVfo targetVfo) {
   }
 }
 
-static constexpr ChoiceSpec kModeChoice = {"MODE SELECT", nullptr, 0, pickMode, sayPickedMode, commitMode};
+static constexpr ChoiceSpec kModeChoice = {"MODE SELECT", nullptr, 0, pickMode, sayPickedMode, commitMode,
+                                           true};
 
 // B and C walk from the mode last read, when it is the current VFO's.
 void keypadBeginModeSelect(TargetVfo targetVfo) {
@@ -218,4 +219,11 @@ void keypadBeginModeSelect(TargetVfo targetVfo) {
   seed.known = targetVfo == TargetVfo::Current && live.modeValid;
   seed.value = live.mode;
   keypadBeginChoiceSelect(kModeChoice, targetVfo, seed);
+}
+
+bool keypadNudgeModeSelect(uint8_t mode, int8_t dir) {
+  EntrySeed seed;
+  seed.known = true;
+  seed.value = mode;
+  return keypadNudgeChoice(kModeChoice, seed, dir);
 }

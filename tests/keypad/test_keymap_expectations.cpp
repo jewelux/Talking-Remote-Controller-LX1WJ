@@ -76,7 +76,7 @@ TEST(expectations_lookup_defaults_to_unassigned) {
   CHECK_EQ(r.doubleAction, "-");
   CHECK_EQ(r.doubleHoldAction, "none");
   CHECK_EQ(r.focus, "-");
-  CHECK_EQ(lookup(FT817, 1, 'B').shortAction, "unassigned");
+  CHECK_EQ(lookup(FT817, 4, 'B').shortAction, "unassigned");
 }
 
 TEST(expectations_lookup_picks_the_family_row) {
