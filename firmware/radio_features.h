@@ -124,6 +124,10 @@ FeatureStatus keyerQuery(bool& on);
 FeatureStatus keyerSet(bool on, bool& out);
 FeatureStatus keyerToggle(bool& out);
 
+// The ALC meter in percent of full scale (caps.getAlc): Icom 15 13, 0..120; Yaesu RM4, 0..255.
+// 0 when not transmitting. The FT-8x7 reads its own (ALC?, 0..15).
+FeatureStatus alcQuery(uint8_t& percentOut);
+
 // The CW keyer speed (WPM), pitch (Hz) and break-in delay (ms, 0 = full break-in on the TS-480 and
 // FT-857/897): caps.getCwSpeed, getCwPitch, getCwDelay. Icom 14 09 (pitch only), the ASCII
 // radios' KS, KP and SD, the FT-8x7 from its EEPROM menus.

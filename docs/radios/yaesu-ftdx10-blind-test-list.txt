@@ -14,6 +14,7 @@ Bank 1, key 0 short - speak frequency
 Bank 1, key 9 short - speak mode
 Bank 1, key 7 short - speak S meter
 Bank 1, key 8 short - speak power meter
+Bank 1, key A short - speak ALC while transmitting
 Bank 1, key 3 short - speak lock state
 Bank 1, key 3 long - toggle lock
 

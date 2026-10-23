@@ -29,6 +29,7 @@ struct RadioCapabilities {
   bool getRfPower = false;
   bool setRfPower = false;
   bool getSwr = false;
+  bool getAlc = false;  // the ALC meter while transmitting (Icom 15 13, Yaesu RM4)
   bool getRxTx = false;
   bool getTxFreq = false;
   bool getNr = false;

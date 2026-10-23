@@ -200,6 +200,23 @@ FeatureStatus keyerToggle(bool& out) {
   return ft8x7FlagWrite(Ft8x7Setting::Keyer, nullptr, out);
 }
 
+// ---- ALC ----
+
+FeatureStatus alcQuery(uint8_t& percentOut) {
+  const RadioProfile& sp = currentProfile();
+  if (!sp.caps.getAlc) return FeatureStatus::Unsupported;
+  uint16_t raw = 0;
+  if (currentProtocolType() == PROTO_CIV) {
+    if (!civQueryAlcRaw(sp, raw, 800)) return failure(FeatureStatus::NoReply);
+    percentOut = meterPercent(raw, 120);
+    return FeatureStatus::Ok;
+  }
+  if (currentProtocolType() != PROTO_YAESU_FTDX_ASCII) return FeatureStatus::Unsupported;
+  if (!asciiQueryAlcRaw(sp, raw, 800)) return failure(FeatureStatus::NoReply);
+  percentOut = meterPercent(raw, 255);
+  return FeatureStatus::Ok;
+}
+
 // ---- CW levels ----
 
 static Ft8x7Setting ft8x7CwSetting(CwLevel level) {

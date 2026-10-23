@@ -369,6 +369,24 @@ TEST(ascii_digits) {
   CHECK(!asciiDigitsDecode("0200;", 3, v));
 }
 
+// ---- ALC ----
+
+TEST(yaesu_rm_meter_and_percent) {
+  uint16_t raw = 0;
+  CHECK(yaesuMeterDecode("128;", raw) && raw == 128);
+  // FTDX10 RM4nnn000, FTDX101 RM4nnnmmm.
+  CHECK(yaesuMeterDecode("200000;", raw) && raw == 200);
+  CHECK(yaesuMeterDecode("064255", raw) && raw == 64);
+  CHECK(!yaesuMeterDecode("300;", raw));
+  CHECK(!yaesuMeterDecode("12;", raw));
+  CHECK_EQ(meterPercent(60, 120), 50);
+  CHECK_EQ(meterPercent(120, 120), 100);
+  CHECK_EQ(meterPercent(200, 120), 100);
+  CHECK_EQ(meterPercent(255, 255), 100);
+  CHECK_EQ(meterPercent(0, 255), 0);
+  CHECK_EQ(meterPercent(10, 0), 0);
+}
+
 // ---- ASCII lock ----
 
 TEST(lock_digit_decodes_with_the_profile_off_digits) {

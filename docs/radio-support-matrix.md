@@ -51,6 +51,11 @@ the KX2 at 12 W on 80–20 m, so a higher set reads back as an error.
 
 None of these sets is tested on a radio yet.
 
+`ALC?` (Bank 1 `A`) reads the ALC meter while transmitting, in percent of full scale: on the
+Icoms `15 13`, 0–120 (their CI-V guides and Hamlib), on the FTDX10, FTDX101 and FT-891 `RM4`,
+0–255 (their CAT manuals; flrig scales it so, Hamlib reads the same command). The FT-8x7 has its
+own `ALC?`, 0–15, console only.
+
 ### CW
 
 | Radio | `BK` | `KYR` | `CWSPEED` | `CWPITCH` | `CWDELAY` | Sources |

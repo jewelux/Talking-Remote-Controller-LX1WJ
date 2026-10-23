@@ -79,7 +79,7 @@ RF | Roofing filter | nein | keine FTDX10-Implementierung gefunden
 RG | RF gain | nein | keine FTDX10-Implementierung gefunden
 RI | Radio information | nein | keine FTDX10-Implementierung gefunden
 RL | Noise reduction level | nein | keine FTDX10-Implementierung gefunden
-RM | Read meter | teilweise | konkret RM5 power und RM6 swr vorhanden, kein generischer RM-Zugriff
+RM | Read meter | teilweise | RM4 ALC (ALC?, Bank 1 A, Prozent von 0..255), RM5 power und RM6 swr vorhanden, kein generischer RM-Zugriff
 RS | Radio status | nein | keine FTDX10-Implementierung gefunden
 RT | RIT | nein | keine FTDX10-Implementierung gefunden
 RU | RIT up | nein | keine FTDX10-Implementierung gefunden

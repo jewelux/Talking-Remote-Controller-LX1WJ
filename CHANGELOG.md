@@ -68,6 +68,8 @@
 - Bank 2 `B` says the preamp and `C` the attenuator on every radio but the FT-8x7 (where `B` stays
   IPO and its double press ATT, and `C` also says ATT); holding either goes to the next level, and
   from the last one to off. On the FTDX10, Bank 1 `6` no longer reads or toggles the preamp
+- Bank 1 `A` says the ALC meter while transmitting, in percent of full scale, on the Icoms and the
+  FTDX10, FTDX101 and FT-891 (console `ALC?`)
 - Bank 1 `6` says the RF power setting and long press enters it in watts on the FTDX10, FTDX101D,
   FT-891, TS-480 and KX2 too, as on the Icoms
 - Bank 7 is the CW bank: `1` says break-in and long press turns it on or off (Icom: off to semi,

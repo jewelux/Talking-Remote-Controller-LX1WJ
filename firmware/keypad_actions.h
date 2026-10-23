@@ -39,6 +39,7 @@ void queryBank1RfPower();  // "RFPOWER?", sent or staged
 void beginBank1RfPowerSet();
 void queryBank1Smeter();   // "SM?", sent or staged
 void queryBank1Swr();      // "SWR?", sent or staged
+void queryBank1Alc();      // "ALC?", sent or staged
 void queryBank1Mode();     // "MODE?", sent or staged
 void beginBank1ModeSelect();  // "MODE", mode select, "mode please"
 

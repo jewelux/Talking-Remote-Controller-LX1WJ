@@ -48,6 +48,7 @@ they say "not available". This is noted where it is always the case.
 | `8` short | SWR | SWR | SWR | SWR | SWR |
 | `9` short | mode | mode | mode | mode | mode |
 | `9` long | mode select | mode select | mode select | mode select | mode select |
+| `A` short | ALC while transmitting | ALC while transmitting | ALC (FTDX101, FT-891); Kenwood and Elecraft: not available | free | free |
 
 ## Bank 2 - Receiver
 

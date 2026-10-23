@@ -203,8 +203,8 @@ void toggleBank1Lock() {
 
 static void sendBank1Query(const String& cmd) {
   printKeypadAction("{}", cmd.c_str());
-  // The SWR and RF power replies say their own word, so saying it here too doubles it.
-  if (cmd != "SWR?" && cmd != "RFPOWER?") speakKeypadCommandWord(cmd);
+  // The SWR, RF power and ALC replies say their own word, so saying it here too doubles it.
+  if (cmd != "SWR?" && cmd != "RFPOWER?" && cmd != "ALC?") speakKeypadCommandWord(cmd);
   keypadSendNow(cmd);
 }
 
@@ -215,6 +215,8 @@ void queryBank1RfPower() { sendBank1Query("RFPOWER?"); }
 void queryBank1Smeter() { sendBank1Query("SM?"); }
 
 void queryBank1Swr() { sendBank1Query("SWR?"); }
+
+void queryBank1Alc() { sendBank1Query("ALC?"); }
 
 void queryBank1Mode() { sendBank1Query("MODE?"); }
 

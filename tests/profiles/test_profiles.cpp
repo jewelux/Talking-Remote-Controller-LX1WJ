@@ -391,6 +391,14 @@ TEST(every_cw_level_cap_has_an_encoding) {
   }
 }
 
+// ALC: Icom 15 13 and Yaesu RM4; the FT-8x7 reads its own TX meter, not through this cap.
+TEST(alc_caps) {
+  const uint8_t alc[] = {1, 3, 17, 18, 11, 12, 13, 15};
+  for (uint8_t s : alc) CHECK(slot(s).caps.getAlc);
+  const uint8_t none[] = {2, 4, 5, 6, 7, 8, 9, 10, 14, 16};
+  for (uint8_t s : none) CHECK(!slot(s).caps.getAlc);
+}
+
 TEST(g106_is_ttl_civ_with_freq_and_mode_only) {
   const RadioProfile& g106 = slot(5);
   CHECK(g106.protocol == PROTO_CIV);

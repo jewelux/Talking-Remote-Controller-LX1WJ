@@ -377,6 +377,27 @@ bool asciiDigitsDecode(const char* digits, size_t n, uint16_t& valueOut) {
   return true;
 }
 
+bool yaesuMeterDecode(const char* digits, uint16_t& rawOut) {
+  int value = 0;
+  int both = 0;
+  if (exactDigits(digits, 3, value)) {
+    // value as read
+  } else if (exactDigits(digits, 6, both)) {
+    value = both / 1000;
+  } else {
+    return false;
+  }
+  if (value > 255) return false;
+  rawOut = (uint16_t)value;
+  return true;
+}
+
+uint8_t meterPercent(uint16_t raw, uint16_t fullScale) {
+  if (!fullScale) return 0;
+  if (raw >= fullScale) return 100;
+  return (uint8_t)((raw * 100U + fullScale / 2U) / fullScale);
+}
+
 bool asciiLockDigitDecode(char digit, const char* offDigits, bool& onOut) {
   if (digit < '0' || digit > '9') return false;
   onOut = strchr(offDigits, digit) == nullptr;

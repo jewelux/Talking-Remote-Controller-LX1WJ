@@ -222,6 +222,15 @@ bool asciiSetKeyer(const RadioProfile& sp, bool on) {
   return asciiQueryKeyer(sp, readBack, 800) && readBack == on;
 }
 
+// RM4: the ALC meter, 0..255 (the FTDX10, FTDX101 and FT-891 CAT manuals; Hamlib and flrig read
+// RM4 too).
+bool asciiQueryAlcRaw(const RadioProfile& sp, uint16_t& rawOut, uint32_t timeoutMs) {
+  if (sp.protocol != PROTO_YAESU_FTDX_ASCII || !sp.caps.getAlc) return false;
+  String line;
+  if (!transactAsciiCommand("RM4;", line, "RM4", timeoutMs)) return false;
+  return yaesuMeterDecode(line.c_str() + 3, rawOut);
+}
+
 // KS, three digits in WPM (the Yaesu CAT manuals, the TS-480 PC command reference, Elecraft's
 // reference; Hamlib).
 bool asciiQueryCwSpeed(const RadioProfile& sp, uint16_t& wpmOut, uint32_t timeoutMs) {

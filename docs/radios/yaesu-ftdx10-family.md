@@ -29,6 +29,8 @@ Implemented and documented for the current field-test phase:
   set read back. The raw `PA` console commands are gone.
 - break-in and keyer (`BK? | BK OFF | ON | TOGGLE`, `KYR? | KYR OFF | ON | TOGGLE`, Bank 7 `1` and
   `2`): `BI` and `KR`, 0 off and 1 on, as the CAT manuals and Hamlib have them, read back.
+- ALC meter (`ALC?`, Bank 1 `A`): `RM4`, said in percent of 0..255, as the CAT manuals give the
+  meter.
 - CW speed, pitch and delay (`CWSPEED <4..60>`, `CWPITCH <300..1050>`, `CWDELAY <30..3000>`,
   each also `?` and `STEP <+-n>`; Bank 7 `3`, `4`, `5`): `KS` in WPM, `KP` 00..75 for 300..1050
   Hz, `SD` a step of the VOX delay table (the FTDX10 manual and Hamlib), read back. The FTDX101

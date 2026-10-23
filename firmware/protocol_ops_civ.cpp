@@ -300,6 +300,21 @@ bool civQuerySWRRaw(const RadioProfile& sp, int32_t& rawOut, uint32_t timeoutMs)
   return true;
 }
 
+// 15 13: 0000 minimum, 0120 maximum (the IC-7300 manual, the IC-705 and IC-7760 CI-V guides;
+// Hamlib's ALC table).
+bool civQueryAlcRaw(const RadioProfile& sp, uint16_t& rawOut, uint32_t timeoutMs) {
+  if (sp.protocol != PROTO_CIV || !sp.caps.getAlc) return false;
+  civFlushInput();
+  const uint8_t sub[] = {0x13};
+  civSend(0x15, sub, 1);
+  const std::optional<CivFrame> d = waitReply(0x15, timeoutMs);
+  if (!d || d->payloadLen < 2 || d->payload[0] != 0x13) return false;
+  const int raw = bcdDigitsToInt(d->payload.data() + 1, d->payloadLen - 1);
+  if (raw < 0 || raw > 255) return false;
+  rawOut = (uint16_t)raw;
+  return true;
+}
+
 bool civQueryRfPowerLevel(const RadioProfile& sp, uint16_t& valueOut, uint32_t timeoutMs) {
   if (!sp.caps.getRfPower) return false;
   return civQuery14Value(0x0A, valueOut, timeoutMs);

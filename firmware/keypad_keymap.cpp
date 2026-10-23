@@ -65,6 +65,8 @@ KeyBinding bank1(const KeypadTraits& t, char key) {
     case '7': return bind(queryBank1Smeter);
     case '8': return bind(queryBank1Swr);
     case '9': return bind(queryBank1Mode, beginBank1ModeSelect);
+    // The FT-8x7 reads its ALC from a 0..15 TX meter, console only (ALC?).
+    case 'A': return isFt8x7(t) ? KeyBinding{} : bind(queryBank1Alc);
     default: return {};
   }
 }

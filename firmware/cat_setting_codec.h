@@ -105,6 +105,12 @@ bool yaesuKpEncode(uint16_t hz, char* out, size_t size);
 // The value of a reply of exactly n digits after its letters (the ';' may be left out).
 bool asciiDigitsDecode(const char* digits, size_t n, uint16_t& valueOut);
 
+// A Yaesu RM reply after "RMn": the meter, three digits 0..255, which the FTDX10 and FTDX101
+// follow with three more (a second meter, or 000).
+bool yaesuMeterDecode(const char* digits, uint16_t& rawOut);
+// raw of fullScale as 0..100 %, rounded; above fullScale is 100.
+uint8_t meterPercent(uint16_t raw, uint16_t fullScale);
+
 // An ASCII lock reply digit: on unless it is one of offDigits ("0", or "04" on the FTDX101).
 // False when digit is not a digit.
 bool asciiLockDigitDecode(char digit, const char* offDigits, bool& onOut);

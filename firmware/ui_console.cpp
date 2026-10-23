@@ -962,6 +962,7 @@ void printHelp(const String& topicArg) {
     printRfPowerHelp();
     printCwSwitchHelp();
     printCwLevelHelp();
+    if (currentProfile().caps.getAlc) helpLine("ALC?  (while transmitting, percent of full scale)");
     printTxSettingsHelp();
     helpLine("RIT? | RIT <Hz> | RIT STEP <+-Hz> | RIT OFF | ON | TOGGLE");
     helpLine("RXTX?");
@@ -976,7 +977,7 @@ void printHelp(const String& topicArg) {
     helpLine("VFOA? | VFOA <kHz> | VFOA MODE? | VFOA MODE <n>");
     helpLine("VFOB? | VFOB <kHz> | VFOB MODE? | VFOB MODE <n>");
     helpHeading(HELP_RADIO, "ASCII / Yaesu extensions:");
-    helpLine("ALC? | VOL? | SQL?");
+    helpLine("VOL? | SQL?");
     helpLine("PS? | PS OFF | ON");
     helpLine("PTT OFF | ON");
     helpLine("SM?");
@@ -1066,6 +1067,7 @@ void printHelp(const String& topicArg) {
     printRfPowerHelp();
     printCwSwitchHelp();
     printCwLevelHelp();
+    if (currentProfile().caps.getAlc) helpLine("ALC?  (while transmitting, percent of full scale)");
     printTxSettingsHelp();
     helpLine("RXTX?");
     helpLine("SPLIT? | SPLIT OFF | ON | TOGGLE");
@@ -1848,10 +1850,18 @@ static bool handleConsoleCwSwitches(const String& upper) {
   return false;
 }
 
-// CWSPEED, CWPITCH, CWDELAY on the CAT radios: ? | <value> | STEP <+-n>, CWDELAY FULL where the
-// radio has it. The FT-8x7 keeps its own (handleConsoleFt8x7LevelSet).
+// ALC?, and CWSPEED, CWPITCH, CWDELAY on the CAT radios: ? | <value> | STEP <+-n>, CWDELAY FULL
+// where the radio has it. The FT-8x7 keeps its own (handleConsoleFt8x7Meters,
+// handleConsoleFt8x7LevelSet).
 static bool handleConsoleCwLevels(const String& line, const String& upper) {
   if (isCurrentYaesuFt8x7()) return false;
+  if (upper == "ALC?") {
+    uint8_t percent = 0;
+    if (reportFeatureFailure(alcQuery(percent), "ALC?")) return true;
+    Serial.println(alcText(percent));
+    speakAlc(percent);
+    return true;
+  }
   for (const CwLevel level : {CwLevel::Speed, CwLevel::Pitch, CwLevel::Delay}) {
     const String name = cwLevelName(level);
     uint16_t value = 0;

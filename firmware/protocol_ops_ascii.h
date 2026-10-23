@@ -32,6 +32,8 @@ bool asciiSetKeyer(const RadioProfile& sp, bool on);
 // The CW keyer speed (KS, WPM), pitch (Yaesu KP, Hz) and break-in delay (SD, ms) by the
 // profile's settings (caps.getCwSpeed ... setCwDelay); the sets are read back, the delay set to
 // the radio's step nearest ms.
+// Yaesu RM4, the ALC meter, 0..255 (caps.getAlc).
+bool asciiQueryAlcRaw(const RadioProfile& sp, uint16_t& rawOut, uint32_t timeoutMs);
 bool asciiQueryCwSpeed(const RadioProfile& sp, uint16_t& wpmOut, uint32_t timeoutMs);
 bool asciiSetCwSpeed(const RadioProfile& sp, uint16_t wpm);
 bool asciiQueryCwPitch(const RadioProfile& sp, uint16_t& hzOut, uint32_t timeoutMs);

@@ -196,6 +196,14 @@ void speakCwLevel(CwLevel level, uint16_t value) {
   speakToken(level == CwLevel::Pitch ? "hertz" : "ms");
 }
 
+String alcText(uint8_t percent) {
+  return String("ALC ") + String((int)percent) + "%";
+}
+
+void speakAlc(uint8_t percent) {
+  speakTokenPercent("A L C", percent);
+}
+
 String procStateText(bool on) {
   return on ? "PROC ON" : "PROC OFF";
 }

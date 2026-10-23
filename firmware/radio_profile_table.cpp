@@ -30,7 +30,7 @@ constexpr RadioCapabilities kIc706Caps = {
 constexpr RadioCapabilities kIc7300Caps = {
     .getFreq = true, .setFreq = true, .getMode = true, .setMode = true,
     .getSmeter = true, .getPower = true, .getRfPower = true, .setRfPower = true,
-    .getSwr = true, .getRxTx = true, .getTxFreq = true,
+    .getSwr = true, .getAlc = true, .getRxTx = true, .getTxFreq = true,
     .getNr = true, .setNr = true, .getNrLevel = true, .setNrLevel = true,
     .getNb = true, .setNb = true, .getNbLevel = true, .setNbLevel = true,
     .getNotch = true, .setNotch = true, .getNotchWidth = true, .setNotchWidth = true,
@@ -210,7 +210,8 @@ constexpr uint32_t kYaesuAsciiBauds[] = {4800, 9600, 19200, 38400};
 
 constexpr RadioCapabilities kFtdx10Caps = {
     .getFreq = true, .setFreq = true, .getMode = true, .setMode = true,
-    .getSmeter = true, .getPower = true, .getRfPower = true, .setRfPower = true, .getSwr = true, .getRxTx = true, .getTxFreq = true,
+    .getSmeter = true, .getPower = true, .getRfPower = true, .setRfPower = true, .getSwr = true,
+    .getAlc = true, .getRxTx = true, .getTxFreq = true,
     .getNr = true, .setNr = true, .getNb = true, .setNb = true,
     .getNotch = true, .setNotch = true,
     .getDialLock = true, .setDialLock = true,
@@ -265,7 +266,7 @@ constexpr SettingEncodings kFtdx10Settings = {
 constexpr RadioCapabilities kFt891Caps = {
     .getFreq = true, .setFreq = true, .getMode = true, .setMode = true,
     .getSmeter = true, .getPower = true, .getRfPower = true, .setRfPower = true, .getSwr = true,
-    .getDialLock = true, .setDialLock = true,
+    .getAlc = true, .getDialLock = true, .setDialLock = true,
     .getTuner = true, .setTuner = true, .startTune = true,
     .getVfo = true, .setVfo = true,
     .getSplit = true, .setSplit = true, .getAgc = true, .setAgc = true,

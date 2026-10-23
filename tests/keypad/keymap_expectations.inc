@@ -99,6 +99,8 @@ KEYMAP_ROW(FT8X7_OTHER,     1, '6', "unassigned",            "none",            
 KEYMAP_ROW(ALL,             1, '7', "queryBank1Smeter",      "none",                   "-")
 KEYMAP_ROW(ALL,             1, '8', "queryBank1Swr",         "none",                   "-")
 KEYMAP_ROW(ALL,             1, '9', "queryBank1Mode",        "beginBank1ModeSelect",   "-")
+KEYMAP_ROW(NOT(FT8X7),      1, 'A', "queryBank1Alc",         "none",                   "-")
+KEYMAP_ROW(FT8X7,           1, 'A', "unassigned",            "none",                   "-")
 
 // ---- Bank 2 ----------------------------------------------------------------
 KEYMAP_ROW(FT817,           2, '0', "queryBank2Ft817Antenna", "none",                  "-")
