@@ -110,6 +110,19 @@ bool rfPowerRange(uint16_t& minOut, uint16_t& maxOut);
 // Sets watts, read back into tenthsOut. Invalid outside rfPowerRange.
 FeatureStatus rfPowerSet(uint16_t watts, uint16_t& tenthsOut);
 
+// CW break-in (caps.getBreakIn) and the keyer (caps.getKeyer): the FT-8x7 from its EEPROM.
+FeatureStatus breakInQuery(BreakInMode& out);
+// Whether the radio can be set to mode: on the FT-8x7 OFF and ON, experimentally
+// (caps.setRadioMenu).
+bool breakInCanSet(BreakInMode mode);
+// Sets mode, read back into out; Unsupported where breakInCanSet is false.
+FeatureStatus breakInSet(BreakInMode mode, BreakInMode& out);
+// Off -> on -> off, from the break-in read.
+FeatureStatus breakInToggle(BreakInMode& out);
+FeatureStatus keyerQuery(bool& on);
+FeatureStatus keyerSet(bool on, bool& out);
+FeatureStatus keyerToggle(bool& out);
+
 // Speech processor: FT-857/897 PROC and its menu 74 level, Icom COMP, FTDX10 and FT-891 PR0 and
 // PL, TS-480 PR and its PL input level.
 // These and the mic gain and VOX reads below are Unsupported where the profile's cap (getProc,

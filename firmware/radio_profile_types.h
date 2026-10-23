@@ -79,6 +79,12 @@ struct RadioCapabilities {
   bool setAtt = false;
   bool getPreamp = false;
   bool setPreamp = false;
+  // CW break-in and the electronic keyer. The FT-8x7 reads them from its EEPROM and writes them
+  // there under setRadioMenu.
+  bool getBreakIn = false;
+  bool setBreakIn = false;
+  bool getKeyer = false;
+  bool setKeyer = false;
   // Speech processor and its level, mic gain, VOX with its gain and delay. The FT-8x7 writes
   // them to the EEPROM under setRadioMenu instead.
   bool getProc = false;

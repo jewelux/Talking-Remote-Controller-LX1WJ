@@ -1517,7 +1517,7 @@ static bool handleConsoleFt8x7Meters(const String& upper) {
 static bool handleConsoleFt8x7Settings(const String& upper) {
   static constexpr Ft8x7Setting kSettings[] = {
     Ft8x7Setting::Ipo, Ft8x7Setting::Nar,
-    Ft8x7Setting::Dbf, Ft8x7Setting::BreakIn, Ft8x7Setting::Keyer, Ft8x7Setting::RfPower,
+    Ft8x7Setting::Dbf, Ft8x7Setting::RfPower,
     Ft8x7Setting::Menu, Ft8x7Setting::Row, Ft8x7Setting::IfShift, Ft8x7Setting::NrLevel,
     Ft8x7Setting::NbLevel, Ft8x7Setting::BpfWidth, Ft8x7Setting::LowCut, Ft8x7Setting::HighCut,
     Ft8x7Setting::MicEq, Ft8x7Setting::Antenna, Ft8x7Setting::CwSpeed, Ft8x7Setting::CwPitch,
@@ -1753,6 +1753,59 @@ static bool handleConsoleFrontEnd(const String& upper) {
   return false;
 }
 
+// BK? | BK OFF | ON | SEMI | FULL | TOGGLE, KYR? | KYR OFF | ON | TOGGLE.
+static bool handleConsoleCwSwitches(const String& upper) {
+  if (upper == "BK?") {
+    BreakInMode mode = BreakInMode::Off;
+    if (reportFeatureFailure(breakInQuery(mode), "BK?")) return true;
+    Serial.println(breakInText(mode));
+    speakBreakIn(mode);
+    return true;
+  }
+  if (upper.startsWith("BK ")) {
+    String arg = upper.substring(3);
+    arg.trim();
+    BreakInMode mode = BreakInMode::Off;
+    FeatureStatus status = FeatureStatus::Unsupported;
+    if (arg == "TOGGLE") {
+      status = breakInToggle(mode);
+    } else {
+      bool known = false;
+      for (const BreakInMode want : {BreakInMode::Off, BreakInMode::On, BreakInMode::Semi, BreakInMode::Full}) {
+        if (arg != breakInModeName(want)) continue;
+        known = true;
+        status = breakInSet(want, mode);
+      }
+      if (!known) return false;
+    }
+    if (reportFeatureFailure(status, "BK")) return true;
+    Serial.println(breakInText(mode));
+    speakBreakIn(mode);
+    return true;
+  }
+  if (upper == "KYR?") {
+    bool on = false;
+    if (reportFeatureFailure(keyerQuery(on), "KYR?")) return true;
+    Serial.println(keyerText(on));
+    speakKeyer(on);
+    return true;
+  }
+  if (upper.startsWith("KYR ")) {
+    String arg = upper.substring(4);
+    arg.trim();
+    bool on = false;
+    FeatureStatus status = FeatureStatus::Unsupported;
+    if (arg == "TOGGLE") status = keyerToggle(on);
+    else if (arg == "ON" || arg == "OFF") status = keyerSet(arg == "ON", on);
+    else return false;
+    if (reportFeatureFailure(status, "KYR")) return true;
+    Serial.println(keyerText(on));
+    speakKeyer(on);
+    return true;
+  }
+  return false;
+}
+
 // Experimental: DBF ON | OFF | TOGGLE on the FT-857/897, like Bank 2 `6` long; BK, KYR, KEYREV
 // and CWAUTO the same, and PADDLE ELEKEY | MICKEY | TOGGLE (on = MICKEY).
 static bool handleConsoleFt8x7FlagSet(const String& upper) {
@@ -1764,8 +1817,6 @@ static bool handleConsoleFt8x7FlagSet(const String& upper) {
   };
   static const FlagCommand kCommands[] = {
     {"DBF", Ft8x7Setting::Dbf, "ON", "OFF"},
-    {"BK", Ft8x7Setting::BreakIn, "ON", "OFF"},
-    {"KYR", Ft8x7Setting::Keyer, "ON", "OFF"},
     {"KEYREV", Ft8x7Setting::KeyReverse, "ON", "OFF"},
     {"CWAUTO", Ft8x7Setting::CwAutoMode, "ON", "OFF"},
     {"PADDLE", Ft8x7Setting::Paddle, "MICKEY", "ELEKEY"},
@@ -3711,6 +3762,7 @@ void processCommand(String line) {
   if (handleConsoleToggleCommands(line, upper)) return;
   if (handleConsoleAgc(upper)) return;
   if (handleConsoleFrontEnd(upper)) return;
+  if (handleConsoleCwSwitches(upper)) return;
   if (handleConsoleYaesuFt8x7Commands(line, upper)) return;
   if (handleConsoleFt847Commands(upper)) return;
   if (handleConsoleTxAudioSet(line, upper)) return;

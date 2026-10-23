@@ -38,6 +38,15 @@ void speakPreamp(uint8_t level);
 String rfPowerText(uint16_t tenths);
 void speakRfPower(uint16_t tenths);
 
+// "OFF", "ON", "SEMI", "FULL".
+const char* breakInModeName(BreakInMode mode);
+// "BK SEMI"; "b k semi".
+String breakInText(BreakInMode mode);
+void speakBreakIn(BreakInMode mode);
+// "KYR ON"; "k y r on".
+String keyerText(bool on);
+void speakKeyer(bool on);
+
 // "PROC ON", "PROC OFF"; "processor on".
 String procStateText(bool on);
 void speakProcState(bool on);

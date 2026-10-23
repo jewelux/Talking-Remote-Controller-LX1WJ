@@ -9,6 +9,9 @@
 // SLOW and AUTO.
 enum class AgcMode : uint8_t { Off, Fast, Mid, Slow, Auto };
 
+// CW break-in. On is break-in where CAT has no semi or full (Yaesu BI, the FT-8x7 menu).
+enum class BreakInMode : uint8_t { Off, On, Semi, Full };
+
 // How an ASCII radio's GT sets AGC (cat_setting_codec.h). The Icoms all use 16 12.
 enum class AgcEncoding : uint8_t {
   None,

@@ -135,6 +135,34 @@ void speakRfPower(uint16_t tenths) {
   speakToken("watts");
 }
 
+const char* breakInModeName(BreakInMode mode) {
+  switch (mode) {
+    case BreakInMode::On: return "ON";
+    case BreakInMode::Semi: return "SEMI";
+    case BreakInMode::Full: return "FULL";
+    case BreakInMode::Off: break;
+  }
+  return "OFF";
+}
+
+String breakInText(BreakInMode mode) {
+  return String("BK ") + breakInModeName(mode);
+}
+
+void speakBreakIn(BreakInMode mode) {
+  if (!g_speechEnabled) return;
+  speakLabel("B K");
+  speakToken(breakInModeName(mode));
+}
+
+String keyerText(bool on) {
+  return on ? "KYR ON" : "KYR OFF";
+}
+
+void speakKeyer(bool on) {
+  speakTokenState("K Y R", on);
+}
+
 String procStateText(bool on) {
   return on ? "PROC ON" : "PROC OFF";
 }

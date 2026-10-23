@@ -79,6 +79,72 @@ FeatureStatus rfPowerSet(uint16_t watts, uint16_t& tenthsOut) {
   return FeatureStatus::Ok;
 }
 
+// ---- CW break-in and keyer ----
+
+// The FT-8x7 settings written to the EEPROM, experimentally.
+static bool ft8x7CanWriteMenu() {
+  return isFt8x7() && currentProfile().caps.setRadioMenu && currentFt8x7Model() != Ft8x7Model::None;
+}
+
+static FeatureStatus ft8x7FlagQuery(Ft8x7Setting setting, bool& on) {
+  Ft8x7SettingState state;
+  const FeatureStatus status = ft8x7SettingQuery(setting, state);
+  if (status == FeatureStatus::Ok) on = state.on;
+  return status;
+}
+
+static FeatureStatus ft8x7FlagWrite(Ft8x7Setting setting, const bool* on, bool& out) {
+  Ft8x7SettingState state;
+  const FeatureStatus status = on ? ft8x7FlagSettingSet(setting, *on, state) : ft8x7FlagSettingToggle(setting, state);
+  if (status == FeatureStatus::Ok) out = state.on;
+  return status;
+}
+
+FeatureStatus breakInQuery(BreakInMode& out) {
+  if (!currentProfile().caps.getBreakIn || !isFt8x7()) return FeatureStatus::Unsupported;
+  bool on = false;
+  const FeatureStatus status = ft8x7FlagQuery(Ft8x7Setting::BreakIn, on);
+  if (status == FeatureStatus::Ok) out = on ? BreakInMode::On : BreakInMode::Off;
+  return status;
+}
+
+bool breakInCanSet(BreakInMode mode) {
+  if (!currentProfile().caps.getBreakIn) return false;
+  return ft8x7CanWriteMenu() && (mode == BreakInMode::Off || mode == BreakInMode::On);
+}
+
+FeatureStatus breakInSet(BreakInMode mode, BreakInMode& out) {
+  if (!breakInCanSet(mode)) return FeatureStatus::Unsupported;
+  const bool on = mode != BreakInMode::Off;
+  bool readBack = false;
+  const FeatureStatus status = ft8x7FlagWrite(Ft8x7Setting::BreakIn, &on, readBack);
+  if (status == FeatureStatus::Ok) out = readBack ? BreakInMode::On : BreakInMode::Off;
+  return status;
+}
+
+FeatureStatus breakInToggle(BreakInMode& out) {
+  if (!breakInCanSet(BreakInMode::On)) return FeatureStatus::Unsupported;
+  bool readBack = false;
+  const FeatureStatus status = ft8x7FlagWrite(Ft8x7Setting::BreakIn, nullptr, readBack);
+  if (status == FeatureStatus::Ok) out = readBack ? BreakInMode::On : BreakInMode::Off;
+  return status;
+}
+
+FeatureStatus keyerQuery(bool& on) {
+  if (!currentProfile().caps.getKeyer || !isFt8x7()) return FeatureStatus::Unsupported;
+  return ft8x7FlagQuery(Ft8x7Setting::Keyer, on);
+}
+
+FeatureStatus keyerSet(bool on, bool& out) {
+  if (!currentProfile().caps.getKeyer || !ft8x7CanWriteMenu()) return FeatureStatus::Unsupported;
+  return ft8x7FlagWrite(Ft8x7Setting::Keyer, &on, out);
+}
+
+FeatureStatus keyerToggle(bool& out) {
+  if (!currentProfile().caps.getKeyer || !ft8x7CanWriteMenu()) return FeatureStatus::Unsupported;
+  return ft8x7FlagWrite(Ft8x7Setting::Keyer, nullptr, out);
+}
+
 FeatureStatus procQuery(bool& on) {
   if (!procSupported()) return FeatureStatus::Unsupported;
   const RadioProfile& sp = currentProfile();
