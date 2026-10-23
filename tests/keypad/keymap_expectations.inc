@@ -114,13 +114,15 @@ KEYMAP_ROW(ALL,             1, 'C', "focusStep(-1)",         "focusBigStep(-1)",
 
 // ---- Bank 2 ----------------------------------------------------------------
 KEYMAP_ROW(FT817,           2, '0', "queryBank2Ft817Antenna", "toggleBank2Ft817Antenna", "-", "none", "-")
-KEYMAP_ROW(NOT(FT817),      2, '0', "queryBank2AutoNotch",   "toggleBank2AutoNotch",   "-", "none", "-")
+KEYMAP_ROW(NOT(FT8X7),      2, '0', "queryBank2AutoNotch",   "toggleBank2AutoNotch",   "-", "none", "-")
+KEYMAP_ROW(FT857 | FT8X7_OTHER, 2, '0', "unassigned",        "none",                   "-", "none", "-")
 KEYMAP_ROW(IC7300 | FTDX10 | FT891 | FT857, 2, '1', "queryBank2Nr", "toggleBank2Nr", "settingSay(NRLEVEL)", "settingEntry(NRLEVEL)", "NRLEVEL")
 KEYMAP_ROW(IC706 | TS480 | FT817 | FT8X7_OTHER, 2, '1', "queryBank2Nr", "toggleBank2Nr", "-", "none", "-")
 KEYMAP_ROW(IC7300 | FTDX10 | FT891 | FT857, 2, '2', "queryBank2Nb", "toggleBank2Nb", "settingSay(NBLEVEL)", "settingEntry(NBLEVEL)", "NBLEVEL")
 KEYMAP_ROW(IC706 | TS480 | FT817 | FT8X7_OTHER, 2, '2', "queryBank2Nb", "toggleBank2Nb", "-", "none", "-")
 KEYMAP_ROW(IC7300,          2, '3', "queryBank2Notch",       "toggleBank2Notch",       "-", "none", "NOTCH")
-KEYMAP_ROW(NOT(IC7300),     2, '3', "queryBank2Notch",       "toggleBank2Notch",       "-", "none", "-")
+KEYMAP_ROW(NOT(IC7300 | FT8X7), 2, '3', "queryBank2Notch",   "toggleBank2Notch",       "-", "none", "-")
+KEYMAP_ROW(FT8X7,           2, '3', "queryBank2Ft8x7AutoNotch", "toggleBank2Ft8x7AutoNotch", "-", "none", "-")
 KEYMAP_ROW(FT857,           2, '4', "settingSay(HPF)",       "settingEntry(HPF)",      "-", "none", "HPF")
 KEYMAP_ROW(FT817 | FT8X7_OTHER, 2, '4', "settingSay(HPF)",   "settingEntry(HPF)",      "-", "none", "-")
 KEYMAP_ROW(IC7300,          2, '4', "settingSay(PBT1)",      "settingEntry(PBT1)",     "-", "none", "PBT1")

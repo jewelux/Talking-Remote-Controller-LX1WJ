@@ -20,7 +20,7 @@ constexpr SpokenLabel kSpokenLabels[] = {
   {"ATT", "attenuator"},
   {"BAUD", "baud"},
   {"BK", "breakin"},
-  {"BPF", "b p f"},
+  {"BPF", "cw filterwidth"},
   {"BSTACK", "band stack"},
   {"BSTACK1", "band stack one"},
   {"BSTACK2", "band stack two"},

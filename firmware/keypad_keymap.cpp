@@ -200,7 +200,7 @@ Key switchWithLevel(const KeypadTraits& t, Action say, Action toggle, const char
 
 // Receive. The top row the switches with a level, the middle row the passband (low side, filter,
 // high side), the bottom row AGC, preamp and attenuator, '0' the auto notch (FT-817: the antenna
-// jack). The FT-8x7 keeps these in its EEPROM: read always, set only experimentally.
+// jack). The FT-857/897 DSP has only an auto notch, on '3', so its '0' is free. The FT-8x7 keeps these in its EEPROM: read always, set only experimentally.
 KeyBinding bank2(const KeypadTraits& t, char key, Setting focus) {
   if (isFocusKey(key)) return focusKey(key, focus);
   const bool ft8x7 = isFt8x7(t);
@@ -209,11 +209,13 @@ KeyBinding bank2(const KeypadTraits& t, char key, Setting focus) {
       if (t.layout == L::Ft817) {
         return bind(queryBank2Ft817Antenna, toggleBank2Ft817Antenna).help("ANT", V::Say, V::Toggle);
       }
+      if (ft8x7) return {};
       return bind(queryBank2AutoNotch, toggleBank2AutoNotch).help("ANOTCH", V::Say, V::Toggle);
     case '1': return switchWithLevel<Setting::NrLevel>(t, queryBank2Nr, toggleBank2Nr, "NR");
     case '2': return switchWithLevel<Setting::NbLevel>(t, queryBank2Nb, toggleBank2Nb, "NB");
     // The Icom notch toggle walks its widths, which B and C step too.
     case '3':
+      if (ft8x7) return bind(queryBank2Ft8x7AutoNotch, toggleBank2Ft8x7AutoNotch).help("ANOTCH", V::Say, V::Toggle);
       return withFocusIfHas(t, bind(queryBank2Notch, toggleBank2Notch).help("NOTCH", V::Say, V::Toggle),
                             Setting::Notch);
     case '4': return ft8x7 ? settingKey<Setting::RxLowCut>(t) : settingKey<Setting::PbtInner>(t);

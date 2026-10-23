@@ -69,6 +69,8 @@ void queryBank2Nb();
 void toggleBank2Nb();
 void queryBank2Notch();
 void toggleBank2Notch();
+void queryBank2Ft8x7AutoNotch();
+void toggleBank2Ft8x7AutoNotch();
 // Icom filter shape ("FILSHAPE?" is the console command): soft <-> sharp.
 void toggleBank2FilterShape();
 // AGC (agcQuery), and its select: 0 off, 1 auto, 2 fast, 3 slow, 4 mid, of the speeds the radio

@@ -456,7 +456,7 @@ constexpr SettingOps kRxOps[] = {
      ft857Write<Ft8x7Setting::LowCut>, ft857Text<Ft8x7Setting::LowCut>, ft857Speak<Ft8x7Setting::LowCut>, always},
     {Setting::RxHighCut, "highcut", ft857Available, highCutLimits, ft857Read<Ft8x7Setting::HighCut>,
      ft857Write<Ft8x7Setting::HighCut>, ft857Text<Ft8x7Setting::HighCut>, ft857Speak<Ft8x7Setting::HighCut>, always},
-    {Setting::BpfWidth, "b p f", ft857Available, bpfWidthLimits, ft857Read<Ft8x7Setting::BpfWidth>,
+    {Setting::BpfWidth, "cw filterwidth", ft857Available, bpfWidthLimits, ft857Read<Ft8x7Setting::BpfWidth>,
      ft857Write<Ft8x7Setting::BpfWidth>, ft857Text<Ft8x7Setting::BpfWidth>, ft857Speak<Ft8x7Setting::BpfWidth>,
      always},
     {Setting::PbtInner, "pbt one", pbtAvailable<true>, pbtLimits<true>, pbtRead<true>, pbtWrite<true>,

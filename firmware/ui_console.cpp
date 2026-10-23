@@ -1073,7 +1073,7 @@ void printHelp(const String& topicArg) {
     if (!ft817) helpLine("PADDLE ELEKEY | MICKEY | TOGGLE | CWBFO USB | LSB | AUTO  (experimental: menus 26 and 23)");
     helpLine(ft817 ? "NB?" : "NR? | NB? | NOTCH?");
     helpLine(ft817 ? "NB OFF | ON | TOGGLE  (experimental: writes it to the EEPROM)"
-                   : "NR | NB | NOTCH OFF | ON | TOGGLE  (experimental: writes them to the EEPROM)");
+                   : "NR | NB | NOTCH (auto notch) OFF | ON | TOGGLE  (experimental: writes them to the EEPROM)");
     if (!ft817) {
       helpLine("NRLEVEL? | NBLEVEL? | BPF? | HPF? | LPF? | MICEQ?  (DSP menu settings)");
       helpLine("NRLEVEL <1..16> | NBLEVEL <0..100> | NRLEVEL STEP | NBLEVEL STEP <+-n>  (experimental: menus 49 and 63)");

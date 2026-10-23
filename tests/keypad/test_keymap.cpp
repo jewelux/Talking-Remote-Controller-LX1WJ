@@ -146,6 +146,8 @@ void queryBank2Nb() { record("queryBank2Nb"); }
 void toggleBank2Nb() { record("toggleBank2Nb"); }
 void queryBank2Notch() { record("queryBank2Notch"); }
 void toggleBank2Notch() { record("toggleBank2Notch"); }
+void queryBank2Ft8x7AutoNotch() { record("queryBank2Ft8x7AutoNotch"); }
+void toggleBank2Ft8x7AutoNotch() { record("toggleBank2Ft8x7AutoNotch"); }
 void toggleBank2FilterShape() { record("toggleBank2FilterShape"); }
 void queryBank2Ft8x7Dbf() { record("queryBank2Ft8x7Dbf"); }
 void queryBank2Ft8x7Ipo() { record("queryBank2Ft8x7Ipo"); }

@@ -234,6 +234,25 @@ void toggleBank2Notch() {
   speakNotchState(state);
 }
 
+// The FT-857/897 DSP notch is an auto notch: the notch operations, spoken as the auto notch.
+void queryBank2Ft8x7AutoNotch() {
+  printKeypadAction("ANOTCH?");
+  prepareKeypadSpeechResponse();
+  NotchState state;
+  if (keypadReportFeatureFailure(notchQuery(state), "ANOTCH?")) return;
+  printKeypadStatus("{}", autoNotchText(state.on).c_str());
+  speakAutoNotch(state.on);
+}
+
+void toggleBank2Ft8x7AutoNotch() {
+  printKeypadAction("ANOTCH");
+  prepareKeypadSpeechResponse();
+  NotchState state;
+  if (keypadReportFeatureFailure(notchToggle(state), "ANOTCH")) return;
+  printKeypadStatus("{}", autoNotchText(state.on).c_str());
+  speakAutoNotch(state.on);
+}
+
 void toggleBank2FilterShape() {
   printKeypadAction("FILSHAPE");
   bool soft = false;

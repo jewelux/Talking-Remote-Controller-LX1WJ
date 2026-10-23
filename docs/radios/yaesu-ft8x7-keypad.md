@@ -40,13 +40,13 @@ Important practical note:
 
 ## Bank 2 - Radio Settings
 
-All Bank 2 keys read settings from the radio's EEPROM, since CAT cannot. With experimental mode on, some also change them by writing the EEPROM: a long press on `1`, `2`, `3` and `5` switches the setting (FT-817: `2` only), and on the FT-857/897 a long press on `4` and `6` opens the low or high cut entry. The NR level, NB level and bandpass width are a double press of `1`, `2` and `5`; a press then a hold opens their entry. `7` long picks AGC: `0` off, `1` auto, `2` fast, `3` slow, then `Enter`. On the FT-817, `0` long switches the antenna jack. Without experimental mode a long press says "not available".
+All Bank 2 keys read settings from the radio's EEPROM, since CAT cannot. With experimental mode on, some also change them by writing the EEPROM: a long press on `1`, `2`, `3` and `5` switches the setting (FT-817: `2` only), and on the FT-857/897 a long press on `4` and `6` opens the low or high cut entry. The NR level, NB level and CW filter width are a double press of `1`, `2` and `5`; a press then a hold opens their entry. `7` long picks AGC: `0` off, `1` auto, `2` fast, `3` slow, then `Enter`. On the FT-817, `0` long switches the antenna jack. Without experimental mode a long press says "not available".
 
 `A`, `B` and `C` act on the last of these keys used (see the [keypad map](../keypad-map.md)): `B` and `C` read the value once and open its entry one step away, ending in "please"; more `B` and `C` presses step with no radio traffic, and `Enter` writes it. They need experimental mode too.
 
 | Key | FT-817 | FT-857/897 |
 |---|---|---|
-| `0` short | `ANT?`: antenna jack of the current band (menu 07) | not available |
+| `0` short | `ANT?`: antenna jack of the current band (menu 07) | free (auto notch on `3`) |
 | `1` short | not available (no DSP) | `NR?` (DSP noise reduction) |
 | `1` double click | free | `NRLEVEL?` (menu 49, 1–16) |
 | `2` short | `NB?` | `NB?` |
@@ -54,7 +54,7 @@ All Bank 2 keys read settings from the radio's EEPROM, since CAT cannot. With ex
 | `3` short | not available (no DSP) | `NOTCH?` (DSP auto notch) |
 | `4` short | not available (no DSP) | `HPF?`: low cut (menu 46, DSP HPF cutoff) |
 | `5` short | not available (no DSP) | `DBF?` (DSP bandpass filter) |
-| `5` double click | free | `BPF?`: bandpass width (menu 45, 60, 120 or 240 Hz) |
+| `5` double click | free | `BPF?`: CW filter width (menu 45, DSP bandpass width, 60, 120 or 240 Hz) |
 | `6` short | not available (no DSP) | `LPF?`: high cut (menu 47, DSP LPF cutoff) |
 | `7` short | `AGC?` | `AGC?` |
 | `7` long | `AGC` select (experimental) | `AGC` select (experimental) |

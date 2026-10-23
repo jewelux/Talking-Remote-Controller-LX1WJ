@@ -591,11 +591,11 @@ void speakFt8x7Setting(const Ft8x7SettingState& state) {
     speakDigitsAndPoint(String(state.value));
     return;
   }
-  // "low cut 300 hertz": the radio's HPF cutoff; high cut is its LPF. "b p f 240 hertz": the
-  // DSP bandpass width.
+  // "low cut 300 hertz": the radio's HPF cutoff; high cut is its LPF. "cw filterwidth 240 hertz":
+  // the DSP bandpass width.
   if (state.setting == Ft8x7Setting::BpfWidth || state.setting == Ft8x7Setting::LowCut ||
       state.setting == Ft8x7Setting::HighCut) {
-    speakLabel(state.setting == Ft8x7Setting::BpfWidth ? "b p f"
+    speakLabel(state.setting == Ft8x7Setting::BpfWidth ? "cw filterwidth"
                : state.setting == Ft8x7Setting::LowCut ? "lowcut"
                                                        : "highcut");
     speakNumber(String(state.value));
