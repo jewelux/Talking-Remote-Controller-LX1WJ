@@ -46,7 +46,7 @@ FeatureStatus rfPowerQuery(uint16_t& tenthsOut) {
   if (currentProtocolType() == PROTO_CIV) {
     uint16_t raw = 0;
     if (!civQueryRfPowerLevel(sp, raw, 800)) return failure(FeatureStatus::NoReply);
-    tenthsOut = (uint16_t)(rfPowerRawToWatts(raw, profileMaxWatts()) * 10);
+    tenthsOut = rfPowerRawToTenths(raw, profileMaxWatts());
     return FeatureStatus::Ok;
   }
   if (!isAsciiRfPower()) return FeatureStatus::Unsupported;
@@ -71,7 +71,7 @@ FeatureStatus rfPowerSet(uint16_t watts, uint16_t& tenthsOut) {
   if (currentProtocolType() == PROTO_CIV) {
     const uint16_t raw = rfPowerWattsToRaw(watts, max);
     if (!civSetRfPowerLevel(sp, raw)) return failure(FeatureStatus::Failed);
-    tenthsOut = (uint16_t)(rfPowerRawToWatts(raw, max) * 10);
+    tenthsOut = rfPowerRawToTenths(raw, max);
     return FeatureStatus::Ok;
   }
   if (!asciiSetRfPowerWatts(sp, watts)) return failure(FeatureStatus::Failed);

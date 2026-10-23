@@ -28,17 +28,17 @@ TEST(civ_level_percent_round_trip) {
 // ---- RF power ----
 
 TEST(rf_power_scales_to_the_radio_maximum) {
-  CHECK_EQ(rfPowerRawToWatts(255, 100), 100);
-  CHECK_EQ(rfPowerRawToWatts(0, 100), 0);
-  CHECK_EQ(rfPowerRawToWatts(255, 10), 10);
-  CHECK_EQ(rfPowerRawToWatts(128, 10), 5);
-  CHECK_EQ(rfPowerRawToWatts(255, 200), 200);
+  CHECK_EQ(rfPowerRawToTenths(255, 100), 1000);
+  CHECK_EQ(rfPowerRawToTenths(0, 100), 0);
+  CHECK_EQ(rfPowerRawToTenths(255, 10), 100);
+  CHECK_EQ(rfPowerRawToTenths(128, 10), 50);
+  CHECK_EQ(rfPowerRawToTenths(255, 200), 2000);
   CHECK_EQ(rfPowerWattsToRaw(10, 10), 255);
   CHECK_EQ(rfPowerWattsToRaw(5, 10), 128);
 }
 
 TEST(rf_power_zero_maximum_counts_as_100_watts) {
-  CHECK_EQ(rfPowerRawToWatts(255, 0), 100);
+  CHECK_EQ(rfPowerRawToTenths(255, 0), 1000);
   CHECK_EQ(rfPowerWattsToRaw(100, 0), 255);
 }
 
@@ -51,9 +51,16 @@ TEST(rf_power_watts_round_trip) {
   const uint16_t maxima[] = {10, 100, 200};
   for (uint16_t maxWatts : maxima) {
     for (int watts = 0; watts <= maxWatts; ++watts) {
-      CHECK_EQ(rfPowerRawToWatts(rfPowerWattsToRaw(watts, maxWatts), maxWatts), watts);
+      // One raw step is up to 0.8 W on a 200 W radio: the round trip holds to the watt.
+      CHECK_EQ((rfPowerRawToTenths(rfPowerWattsToRaw(watts, maxWatts), maxWatts) + 5) / 10, watts);
     }
   }
+}
+
+TEST(rf_power_keeps_tenths_on_a_qrp_radio) {
+  // The IC-705: 0.5 W is not rounded to a whole watt.
+  CHECK_EQ(rfPowerRawToTenths(13, 10), 5);
+  CHECK_EQ(rfPowerRawToTenths(3, 10), 1);
 }
 
 // ---- Yaesu ASCII VOX delay ----
@@ -404,6 +411,9 @@ TEST(civ_tone_is_three_bcd_bytes) {
   CHECK(civToneDecode(tone, tenths) && tenths == 1622);
   const uint8_t bad[3] = {0x00, 0x1A, 0x22};
   CHECK(!civToneDecode(bad, tenths));
+  // A first byte other than 00 would not fit the tenths.
+  const uint8_t tooHigh[3] = {0x01, 0x23, 0x45};
+  CHECK(!civToneDecode(tooHigh, tenths));
 }
 
 // ---- ASCII lock ----

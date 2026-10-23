@@ -1933,8 +1933,9 @@ static bool handleConsoleCatTone(const String& line, const String& upper) {
   }
   if (upper.startsWith("CTCSS ")) {
     const float hz = line.substring(6).toFloat();
-    uint16_t tenths = (uint16_t)(hz * 10.0f + 0.5f);
-    const FeatureStatus status = ctcssToneSet(tenths, tenths);
+    uint16_t tenths = 0;
+    const FeatureStatus status =
+        hz > 0.0f && hz < 1000.0f ? ctcssToneSet((uint16_t)(hz * 10.0f + 0.5f), tenths) : FeatureStatus::Invalid;
     if (status == FeatureStatus::Invalid) {
       Serial.println("CTCSS -> invalid (use a standard tone in Hz, e.g. 88.5)");
       return true;

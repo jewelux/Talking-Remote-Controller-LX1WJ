@@ -14,8 +14,9 @@
 uint8_t levelRawToPercent(uint16_t raw);
 uint16_t levelPercentToRaw(int percent);
 
-// A CI-V RF power level (0..255) as watts on a radio of maxWatts (0 counts as 100), and back.
-uint16_t rfPowerRawToWatts(uint16_t raw, uint16_t maxWatts);
+// A CI-V RF power level (0..255) as tenths of a watt on a radio of maxWatts (0 counts as 100), so
+// a QRP radio keeps its fractions; and watts back to the level.
+uint16_t rfPowerRawToTenths(uint16_t raw, uint16_t maxWatts);
 uint16_t rfPowerWattsToRaw(int watts, uint16_t maxWatts);
 
 // Yaesu ASCII (newcat) VD answers a step, not ms: 00..05 = 30, 50, 100, 150, 200, 250 ms, then
@@ -111,7 +112,8 @@ bool yaesuMeterDecode(const char* digits, uint16_t& rawOut);
 // raw of fullScale as 0..100 %, rounded; above fullScale is 100.
 uint8_t meterPercent(uint16_t raw, uint16_t fullScale);
 
-// Icom 1B 00 / 01: a tone in tenths of a Hz as three BCD bytes, 88.5 Hz = 00 08 85.
+// Icom 1B 00 / 01: a tone in tenths of a Hz as three BCD bytes, 88.5 Hz = 00 08 85. Decode is
+// false unless the first byte is 00.
 void civToneEncode(uint16_t tenths, uint8_t out[3]);
 bool civToneDecode(const uint8_t* bcd, uint16_t& tenthsOut);
 

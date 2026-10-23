@@ -15,10 +15,10 @@ uint16_t levelPercentToRaw(int percent) {
   return (uint16_t)((percent * 255 + 50) / 100);
 }
 
-uint16_t rfPowerRawToWatts(uint16_t raw, uint16_t maxWatts) {
+uint16_t rfPowerRawToTenths(uint16_t raw, uint16_t maxWatts) {
   if (!maxWatts) maxWatts = 100;
-  if (raw >= 255) return maxWatts;
-  return (uint16_t)((raw * (uint32_t)maxWatts + 127U) / 255U);
+  if (raw >= 255) return (uint16_t)(maxWatts * 10U);
+  return (uint16_t)((raw * (uint32_t)maxWatts * 10U + 127U) / 255U);
 }
 
 uint16_t rfPowerWattsToRaw(int watts, uint16_t maxWatts) {
@@ -406,8 +406,9 @@ void civToneEncode(uint16_t tenths, uint8_t out[3]) {
 }
 
 bool civToneDecode(const uint8_t* bcd, uint16_t& tenthsOut) {
+  if (bcd[0] != 0x00) return false;
   uint16_t value = 0;
-  for (int i = 0; i < 3; ++i) {
+  for (int i = 1; i < 3; ++i) {
     const uint8_t hi = bcd[i] >> 4;
     const uint8_t lo = bcd[i] & 0x0F;
     if (hi > 9 || lo > 9) return false;
