@@ -116,14 +116,18 @@ KeyBinding bank2(const KeypadTraits& t, char key) {
         return bind(queryBank2NrLevel, [] { adjustBank2NrLevel(10); },
                    [] { adjustBank2NrLevel(-10); });
       }
-      return {};
+      // The Yaesu ASCII radios: RL0 1..15 (other radios say "not available").
+      return bind([] { queryBank2YaesuRxLevel(RxLevel::Nr); }, [] { stepBank2YaesuRxLevel(RxLevel::Nr, 1); },
+                  [] { stepBank2YaesuRxLevel(RxLevel::Nr, -1); });
     case '5':
       if (civ) {
         return bind(queryBank2NbLevel, [] { adjustBank2NbLevel(10); },
                    [] { adjustBank2NbLevel(-10); });
       }
       if (ftdx10) return bind(SEND("PS?"), SEND("PS OFF"), SEND("PS ON"));
-      return {};
+      // The Yaesu ASCII radios: NL0 0..10. The FTDX10 keeps the power switch here.
+      return bind([] { queryBank2YaesuRxLevel(RxLevel::Nb); }, [] { stepBank2YaesuRxLevel(RxLevel::Nb, 1); },
+                  [] { stepBank2YaesuRxLevel(RxLevel::Nb, -1); });
     case '6':
       if (civ) {
         return bind(queryBank2PbtInner, [] { adjustBank2PbtInner(10); },

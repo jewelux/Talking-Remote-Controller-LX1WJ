@@ -693,14 +693,6 @@ static bool handleFtdx10BlockedConsoleCommand(const String& upper) {
     reportNotAvailable("RIT -> hidden on FTDX10 (no clean Yaesu path here)");
     return true;
   }
-  if (upper == "NBLEVEL?" || upper.startsWith("NBLEVEL ")) {
-    reportNotAvailable("NBLEVEL -> hidden on FTDX10 (no clean Yaesu path here)");
-    return true;
-  }
-  if (upper == "NRLEVEL?" || upper.startsWith("NRLEVEL ")) {
-    reportNotAvailable("NRLEVEL -> hidden on FTDX10 (no clean Yaesu path here)");
-    return true;
-  }
   if (upper == "NOTCH NAR" || upper == "NOTCH MID" || upper == "NOTCH WIDE") {
     reportNotAvailable("NOTCH width -> hidden on FTDX10 (only clean ON/OFF path is exposed)");
     return true;
@@ -795,6 +787,14 @@ static void printFrontEndHelp() {
     text += "  (dB)";
   }
   helpLine(text.c_str());
+}
+
+// NRLEVEL and NBLEVEL on the Yaesu ASCII radios, in their steps.
+static void printYaesuRxLevelHelp() {
+  uint16_t min = 0;
+  uint16_t max = 0;
+  if (yaesuRxLevelRange(RxLevel::Nr, min, max)) helpLine("NRLEVEL? | NRLEVEL <1..15> | NRLEVEL STEP <+-n>");
+  if (yaesuRxLevelRange(RxLevel::Nb, min, max)) helpLine("NBLEVEL? | NBLEVEL <0..10> | NBLEVEL STEP <+-n>");
 }
 
 // BK and KYR over CAT, as far as the profile has them.
@@ -1064,6 +1064,7 @@ void printHelp(const String& topicArg) {
     helpLine("NB? | NB OFF | ON | TOGGLE");
     helpLine("NOTCH? | NOTCH OFF | ON | TOGGLE");
     helpLine("NR? | NR OFF | ON | TOGGLE");
+    printYaesuRxLevelHelp();
     printAgcHelp();
     printFrontEndHelp();
     printRfPowerHelp();
@@ -1862,6 +1863,44 @@ static bool handleConsoleCwSwitches(const String& upper) {
     if (reportFeatureFailure(status, "KYR")) return true;
     Serial.println(keyerText(on));
     speakKeyer(on);
+    return true;
+  }
+  return false;
+}
+
+// NRLEVEL and NBLEVEL on the Yaesu ASCII radios, in their steps: ? | <n> | STEP <+-n>. CI-V has
+// its own in percent (handleConsoleRadioCommands), the FT-857/897 its menus.
+static bool handleConsoleYaesuRxLevels(const String& line, const String& upper) {
+  if (currentProtocolType() != PROTO_YAESU_FTDX_ASCII) return false;
+  for (const RxLevel level : {RxLevel::Nr, RxLevel::Nb}) {
+    const String name = level == RxLevel::Nr ? "NRLEVEL" : "NBLEVEL";
+    uint16_t value = 0;
+    if (upper == name + "?") {
+      if (reportFeatureFailure(yaesuRxLevelQuery(level, value), (name + "?").c_str())) return true;
+    } else if (upper.startsWith(name + " STEP ")) {
+      int32_t delta = 0;
+      if (!parseStepArg(line, upper, (name + " STEP ").c_str(), delta)) return false;
+      if (reportFeatureFailure(yaesuRxLevelStep(level, (int)delta, value), name.c_str())) return true;
+    } else if (upper.startsWith(name + " ")) {
+      long want = 0;
+      uint16_t min = 0;
+      uint16_t max = 0;
+      const bool ranged = yaesuRxLevelRange(level, min, max);
+      if (!parseRangedIntArg(upper, (name + " ").c_str(), ranged ? min : 0, ranged ? max : 99, want)) {
+        Serial.print(name);
+        Serial.print(" -> invalid (use ");
+        Serial.print((int)min);
+        Serial.print("..");
+        Serial.print((int)max);
+        Serial.println(")");
+        return true;
+      }
+      if (reportFeatureFailure(yaesuRxLevelSet(level, (uint16_t)want, value), name.c_str())) return true;
+    } else {
+      continue;
+    }
+    Serial.println(rxLevelText(level, value));
+    speakRxLevel(level, value);
     return true;
   }
   return false;
@@ -3883,6 +3922,7 @@ void processCommand(String line) {
   if (handleConsoleCwSwitches(upper)) return;
   if (handleConsoleYaesuFt8x7Commands(line, upper)) return;
   if (handleConsoleCwLevels(line, upper)) return;
+  if (handleConsoleYaesuRxLevels(line, upper)) return;
   if (handleConsoleFt847Commands(upper)) return;
   if (handleConsoleTxAudioSet(line, upper)) return;
   if (handleConsoleAdjustCommands(line, upper)) return;

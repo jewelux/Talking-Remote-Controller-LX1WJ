@@ -407,6 +407,17 @@ TEST(auto_notch_caps) {
   for (uint8_t s : no) CHECK(!slot(s).caps.getAutoNotch);
 }
 
+// NR and NB levels: CI-V 14 06 and 14 12 (IC-7300 family), Yaesu RL0 and NL0.
+TEST(nr_nb_level_caps) {
+  const uint8_t yes[] = {1, 3, 17, 18, 11, 12, 13, 15};
+  for (uint8_t s : yes) {
+    const RadioCapabilities& c = slot(s).caps;
+    CHECK(c.getNrLevel && c.setNrLevel && c.getNbLevel && c.setNbLevel);
+  }
+  const uint8_t no[] = {2, 4, 5, 6, 7, 8, 14, 16};
+  for (uint8_t s : no) CHECK(!slot(s).caps.getNrLevel && !slot(s).caps.getNbLevel);
+}
+
 TEST(g106_is_ttl_civ_with_freq_and_mode_only) {
   const RadioProfile& g106 = slot(5);
   CHECK(g106.protocol == PROTO_CIV);

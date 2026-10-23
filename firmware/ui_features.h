@@ -26,6 +26,10 @@ const char* agcModeName(AgcMode mode);
 String agcText(AgcMode mode);
 void speakAgc(AgcMode mode);
 
+// "NRLEVEL 8", "NBLEVEL 5": a level in the radio's own steps; "noise reduction 8".
+String rxLevelText(RxLevel level, uint16_t value);
+void speakRxLevel(RxLevel level, uint16_t value);
+
 // "ANOTCH ON"; "auto notch on".
 String autoNotchText(bool on);
 void speakAutoNotch(bool on);

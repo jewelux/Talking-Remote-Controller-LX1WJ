@@ -65,6 +65,9 @@ void cycleBank2FilterWidth(int delta);
 // can be set to, then Enter sets it. On the FT-8x7 experimental, written to the EEPROM.
 void queryBank2Agc();
 void beginBank2AgcSelect();
+// The Yaesu ASCII NR and NB levels (yaesuRxLevelQuery) and delta of their steps.
+void queryBank2YaesuRxLevel(RxLevel level);
+void stepBank2YaesuRxLevel(RxLevel level, int delta);
 // The auto notch (autoNotchQuery) and its toggle.
 void queryBank2AutoNotch();
 void toggleBank2AutoNotch();

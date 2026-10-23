@@ -29,6 +29,8 @@ Implemented and documented for the current field-test phase:
   set read back. The raw `PA` console commands are gone.
 - break-in and keyer (`BK? | BK OFF | ON | TOGGLE`, `KYR? | KYR OFF | ON | TOGGLE`, Bank 7 `1` and
   `2`): `BI` and `KR`, 0 off and 1 on, as the CAT manuals and Hamlib have them, read back.
+- NR and NB levels (`NRLEVEL <1..15>`, `NBLEVEL <0..10>`, each also `?` and `STEP <+-n>`;
+  Bank 2 `4` for NR, on the FTDX101 and FT-891 also `5` for NB): `RL0` and `NL0`, read back.
 - auto notch (`ANOTCH? | ANOTCH OFF | ON | TOGGLE`, Bank 2 `0`): `BC0`, 0 off and 1 on, read back.
 - ALC meter (`ALC?`, Bank 1 `A`): `RM4`, said in percent of 0..255, as the CAT manuals give the
   meter.

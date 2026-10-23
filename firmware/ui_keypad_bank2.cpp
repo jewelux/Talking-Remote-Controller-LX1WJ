@@ -92,6 +92,26 @@ void queryBank2Agc() {
   speakAgc(mode);
 }
 
+void queryBank2YaesuRxLevel(RxLevel level) {
+  const char* label = level == RxLevel::Nr ? "NRLEVEL?" : "NBLEVEL?";
+  printKeypadAction("{}", label);
+  prepareKeypadSpeechResponse();
+  uint16_t value = 0;
+  if (keypadReportFeatureFailure(yaesuRxLevelQuery(level, value), label)) return;
+  printKeypadStatus("{}", rxLevelText(level, value).c_str());
+  speakRxLevel(level, value);
+}
+
+void stepBank2YaesuRxLevel(RxLevel level, int delta) {
+  const char* label = level == RxLevel::Nr ? "NRLEVEL" : "NBLEVEL";
+  printKeypadAction("{} STEP {}", label, delta);
+  prepareKeypadSpeechResponse();
+  uint16_t value = 0;
+  if (keypadReportFeatureFailure(yaesuRxLevelStep(level, delta, value), label)) return;
+  printKeypadStatus("{}", rxLevelText(level, value).c_str());
+  speakRxLevel(level, value);
+}
+
 void queryBank2AutoNotch() {
   printKeypadAction("ANOTCH?");
   prepareKeypadSpeechResponse();

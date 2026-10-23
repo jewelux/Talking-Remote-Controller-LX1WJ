@@ -84,6 +84,16 @@ void speakAgc(AgcMode mode) {
   speakToken(agcModeName(mode));
 }
 
+String rxLevelText(RxLevel level, uint16_t value) {
+  return String(level == RxLevel::Nr ? "NRLEVEL " : "NBLEVEL ") + String((int)value);
+}
+
+void speakRxLevel(RxLevel level, uint16_t value) {
+  if (!g_speechEnabled) return;
+  speakLabel(level == RxLevel::Nr ? "noisereduction" : "noiseblanker");
+  speakDigitsAndPoint(String((int)value));
+}
+
 String autoNotchText(bool on) {
   return on ? "ANOTCH ON" : "ANOTCH OFF";
 }

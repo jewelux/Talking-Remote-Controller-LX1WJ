@@ -86,6 +86,51 @@ FeatureStatus agcSet(AgcMode mode, AgcMode& out) {
   return status;
 }
 
+// ---- Yaesu ASCII NR and NB levels ----
+
+bool yaesuRxLevelRange(RxLevel level, uint16_t& minOut, uint16_t& maxOut) {
+  if (currentProtocolType() != PROTO_YAESU_FTDX_ASCII) return false;
+  const RadioCapabilities& caps = currentProfile().caps;
+  if (level == RxLevel::Nr ? !caps.getNrLevel : !caps.getNbLevel) return false;
+  minOut = level == RxLevel::Nr ? 1 : 0;
+  maxOut = level == RxLevel::Nr ? 15 : 10;
+  return true;
+}
+
+FeatureStatus yaesuRxLevelQuery(RxLevel level, uint16_t& valueOut) {
+  uint16_t min = 0;
+  uint16_t max = 0;
+  if (!yaesuRxLevelRange(level, min, max)) return FeatureStatus::Unsupported;
+  return asciiQueryRxLevel(currentProfile(), level, valueOut, 800) ? FeatureStatus::Ok
+                                                                     : failure(FeatureStatus::NoReply);
+}
+
+FeatureStatus yaesuRxLevelSet(RxLevel level, uint16_t value, uint16_t& valueOut) {
+  uint16_t min = 0;
+  uint16_t max = 0;
+  const RadioCapabilities& caps = currentProfile().caps;
+  if (!yaesuRxLevelRange(level, min, max) || (level == RxLevel::Nr ? !caps.setNrLevel : !caps.setNbLevel)) {
+    return FeatureStatus::Unsupported;
+  }
+  if (value < min || value > max) return FeatureStatus::Invalid;
+  if (!asciiSetRxLevel(currentProfile(), level, value)) return failure(FeatureStatus::Failed);
+  valueOut = value;
+  return FeatureStatus::Ok;
+}
+
+FeatureStatus yaesuRxLevelStep(RxLevel level, int delta, uint16_t& valueOut) {
+  uint16_t min = 0;
+  uint16_t max = 0;
+  if (!yaesuRxLevelRange(level, min, max)) return FeatureStatus::Unsupported;
+  uint16_t now = 0;
+  const FeatureStatus status = yaesuRxLevelQuery(level, now);
+  if (status != FeatureStatus::Ok) return status;
+  int next = (int)now + delta;
+  if (next < min) next = min;
+  if (next > max) next = max;
+  return yaesuRxLevelSet(level, (uint16_t)next, valueOut);
+}
+
 // ---- Auto notch ----
 
 FeatureStatus autoNotchQuery(bool& on) {

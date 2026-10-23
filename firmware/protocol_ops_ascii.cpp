@@ -210,6 +210,37 @@ bool asciiSetBreakIn(const RadioProfile& sp, bool on) {
   return asciiQueryBreakIn(sp, readBack, 800) && readBack == on;
 }
 
+// RL0nn 01..15 and NL0nnn 000..010 (the FTDX10, FTDX101 and FT-891 CAT manuals, Hamlib newcat);
+// the FTDX101 main band.
+static bool yaesuRxLevelCaps(const RadioProfile& sp, RxLevel level, bool set) {
+  if (sp.protocol != PROTO_YAESU_FTDX_ASCII) return false;
+  if (level == RxLevel::Nr) return set ? sp.caps.setNrLevel : sp.caps.getNrLevel;
+  return set ? sp.caps.setNbLevel : sp.caps.getNbLevel;
+}
+
+bool asciiQueryRxLevel(const RadioProfile& sp, RxLevel level, uint16_t& valueOut, uint32_t timeoutMs) {
+  if (!yaesuRxLevelCaps(sp, level, false)) return false;
+  const bool nr = level == RxLevel::Nr;
+  String line;
+  if (!transactAsciiCommand(nr ? "RL0;" : "NL0;", line, nr ? "RL0" : "NL0", timeoutMs)) return false;
+  uint16_t value = 0;
+  if (!asciiDigitsDecode(line.c_str() + 3, nr ? 2 : 3, value)) return false;
+  if (nr ? (value < 1 || value > 15) : value > 10) return false;
+  valueOut = value;
+  return true;
+}
+
+bool asciiSetRxLevel(const RadioProfile& sp, RxLevel level, uint16_t value) {
+  if (!yaesuRxLevelCaps(sp, level, true)) return false;
+  const bool nr = level == RxLevel::Nr;
+  if (nr ? (value < 1 || value > 15) : value > 10) return false;
+  char cmd[10];
+  snprintf(cmd, sizeof(cmd), nr ? "RL0%02u;" : "NL0%03u;", (unsigned)value);
+  if (!asciiSendSimpleCommand(cmd)) return false;
+  uint16_t readBack = 0;
+  return asciiQueryRxLevel(sp, level, readBack, 800) && readBack == value;
+}
+
 // BC0n, 0 off, 1 on (the FTDX10, FTDX101 and FT-891 CAT manuals, Hamlib newcat); the FTDX101
 // main band.
 bool asciiQueryAutoNotch(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {

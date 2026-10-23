@@ -124,6 +124,8 @@ void queryBank2Ft8x7HighCut() { record("queryBank2Ft8x7HighCut"); }
 void queryBank2Ft8x7MicEq() { record("queryBank2Ft8x7MicEq"); }
 void queryBank2Ft8x7Ipo() { record("queryBank2Ft8x7Ipo"); }
 void queryBank1Alc() { record("queryBank1Alc"); }
+void queryBank2YaesuRxLevel(RxLevel l) { record("queryBank2YaesuRxLevel(%d)", (int)l); }
+void stepBank2YaesuRxLevel(RxLevel l, int d) { record("stepBank2YaesuRxLevel(%d,%d)", (int)l, d); }
 void queryBank2AutoNotch() { record("queryBank2AutoNotch"); }
 void toggleBank2AutoNotch() { record("toggleBank2AutoNotch"); }
 void queryBank2Att() { record("queryBank2Att"); }

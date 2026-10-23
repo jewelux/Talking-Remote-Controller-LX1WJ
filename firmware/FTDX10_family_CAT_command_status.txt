@@ -59,7 +59,7 @@ MW | Memory write | nein | keine FTDX10-Implementierung gefunden
 MX | MOX set | nein | keine FTDX10-Implementierung gefunden
 NA | Narrow | nein | keine FTDX10-Implementierung gefunden
 NB | Noise blanker | implementiert | read/on/off vorhanden
-NL | Noise blanker level | nein | keine FTDX10-Implementierung gefunden
+NL | Noise blanker level | implementiert | NBLEVEL? und NBLEVEL 0..10 (NL0, nach CAT-Handbuch und Hamlib), mit Ruecklesen; Konsole (Bank 2 5 bleibt PS)
 NR | Noise reduction (DNR) | implementiert | read/on/off vorhanden
 OI | Opposite band information | nein | keine FTDX10-Implementierung gefunden
 OS | Offset (repeater shift) | nein | keine FTDX10-Implementierung gefunden
@@ -78,7 +78,7 @@ RD | RIT down | nein | keine FTDX10-Implementierung gefunden
 RF | Roofing filter | nein | keine FTDX10-Implementierung gefunden
 RG | RF gain | nein | keine FTDX10-Implementierung gefunden
 RI | Radio information | nein | keine FTDX10-Implementierung gefunden
-RL | Noise reduction level | nein | keine FTDX10-Implementierung gefunden
+RL | Noise reduction level | implementiert | NRLEVEL? und NRLEVEL 1..15 (RL0, nach CAT-Handbuch und Hamlib), mit Ruecklesen; Bank 2 4
 RM | Read meter | teilweise | RM4 ALC (ALC?, Bank 1 A, Prozent von 0..255), RM5 power und RM6 swr vorhanden, kein generischer RM-Zugriff
 RS | Radio status | nein | keine FTDX10-Implementierung gefunden
 RT | RIT | nein | keine FTDX10-Implementierung gefunden

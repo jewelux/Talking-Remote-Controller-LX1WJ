@@ -61,6 +61,15 @@ FeatureStatus notchSetWidth(NotchWidth width);
 // On CI-V off -> NAR -> MID -> WIDE -> off; elsewhere on, off.
 FeatureStatus notchToggle(NotchState& out);
 
+// The Yaesu ASCII NR and NB levels (caps.getNrLevel, getNbLevel) in the radio's steps: RL0 1..15,
+// NL0 0..10. CI-V keeps its own level path in percent (queryNrLevel), the FT-857/897 its menus.
+bool yaesuRxLevelRange(RxLevel level, uint16_t& minOut, uint16_t& maxOut);
+FeatureStatus yaesuRxLevelQuery(RxLevel level, uint16_t& valueOut);
+// Invalid outside the range.
+FeatureStatus yaesuRxLevelSet(RxLevel level, uint16_t value, uint16_t& valueOut);
+// delta steps from the level read, kept within the range.
+FeatureStatus yaesuRxLevelStep(RxLevel level, int delta, uint16_t& valueOut);
+
 // Auto notch (caps.getAutoNotch): Icom 16 41, Yaesu BC0. Not the manual notch above.
 FeatureStatus autoNotchQuery(bool& on);
 FeatureStatus autoNotchSet(bool on);

@@ -27,6 +27,10 @@ bool asciiSetRfPowerWatts(const RadioProfile& sp, uint16_t watts);
 // or off; the sets are read back.
 bool asciiQueryBreakIn(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
 bool asciiSetBreakIn(const RadioProfile& sp, bool on);
+// Yaesu RL0 (the NR level, 1..15) and NL0 (the NB level, 0..10), caps.getNrLevel, setNrLevel,
+// getNbLevel, setNbLevel; the set is read back.
+bool asciiQueryRxLevel(const RadioProfile& sp, RxLevel level, uint16_t& valueOut, uint32_t timeoutMs);
+bool asciiSetRxLevel(const RadioProfile& sp, RxLevel level, uint16_t value);
 // Yaesu BC0, the auto notch (caps.getAutoNotch, setAutoNotch); the set is read back.
 bool asciiQueryAutoNotch(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
 bool asciiSetAutoNotch(const RadioProfile& sp, bool on);

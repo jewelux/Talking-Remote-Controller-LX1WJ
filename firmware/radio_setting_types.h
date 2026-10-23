@@ -16,6 +16,9 @@ enum class BreakInMode : uint8_t { Off, On, Semi, Full };
 // in ms (0 is full break-in where the radio has it).
 enum class CwLevel : uint8_t { Speed, Pitch, Delay };
 
+// The receive DSP levels: noise reduction and noise blanker.
+enum class RxLevel : uint8_t { Nr, Nb };
+
 // How an ASCII radio's GT sets AGC (cat_setting_codec.h). The Icoms all use 16 12.
 enum class AgcEncoding : uint8_t {
   None,

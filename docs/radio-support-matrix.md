@@ -51,6 +51,10 @@ the KX2 at 12 W on 80–20 m, so a higher set reads back as an error.
 
 None of these sets is tested on a radio yet.
 
+`NRLEVEL` and `NBLEVEL` are in percent on the Icoms (`14 06`, `14 12`), in the radio's own steps on
+the FTDX10, FTDX101 and FT-891 (`RL0` 1–15, `NL0` 0–10, their CAT manuals and Hamlib), and the
+menu values on the FT-857/897.
+
 `ANOTCH?` and `ANOTCH OFF | ON | TOGGLE` (Bank 2 `0`) read and set the auto notch, not the
 manual notch of `NOTCH`: Icom `16 41` and Yaesu `BC0`, 0 off and 1 on (the CI-V guides and CAT
 manuals, Hamlib). The TS-480 reference has no notch command.

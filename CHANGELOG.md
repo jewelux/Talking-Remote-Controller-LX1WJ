@@ -68,6 +68,9 @@
 - Bank 2 `B` says the preamp and `C` the attenuator on every radio but the FT-8x7 (where `B` stays
   IPO and its double press ATT, and `C` also says ATT); holding either goes to the next level, and
   from the last one to off. On the FTDX10, Bank 1 `6` no longer reads or toggles the preamp
+- Bank 2 `4` says the noise reduction level on the FTDX10, FTDX101 and FT-891 (1–15, long press
+  one up, double press one down), and `5` the noise blanker level (0–10) on the FTDX101 and FT-891;
+  the FTDX10 keeps its power switch on `5`
 - Bank 2 `0` says the auto notch and long press turns it on or off, on the Icoms and the FTDX10,
   FTDX101 and FT-891 (console `ANOTCH? | ANOTCH OFF | ON | TOGGLE`, read back). The FT-817 keeps
   its antenna jack on that key
@@ -198,6 +201,9 @@
 - `BK?` and `BK OFF | ON | TOGGLE` also work on the IC-7300, IC-705, IC-7760 (with `SEMI` and
   `FULL`; `ON` is semi), FTDX10, FTDX101D/MP and FT-891, and `KYR?` and `KYR OFF | ON | TOGGLE` on
   these Yaesus, each set read back. Not yet tested on these radios
+- `NRLEVEL` (1–15) and `NBLEVEL` (0–10), each `?`, a level or `STEP <+-n>`, also work on the
+  FTDX10, FTDX101D/MP and FT-891, in the radio's own steps, read back. On the FTDX10 they said
+  "not available" before. Not yet tested on these radios
 - `CWSPEED`, `CWPITCH` and `CWDELAY` (`?`, a value, or `STEP <+-n>`) also work on the CAT radios
   where the sources agree: the speed on the FTDX10, FTDX101D/MP, FT-891 (4–60 WPM), TS-480 (10–60)
   and KX2 (8–50); the pitch on the IC-7300, IC-705, IC-7760 (300–900 Hz) and these Yaesus

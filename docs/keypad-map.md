@@ -62,12 +62,12 @@ they say "not available". This is noted where it is always the case.
 | `2` long | noise blanker on/off | noise blanker on/off | noise blanker on/off | noise blanker on/off (experimental) | noise blanker on/off (experimental) |
 | `3` short | notch | notch | notch | not available | notch |
 | `3` long | notch on/off | notch on/off | notch on/off | not available | notch on/off (experimental) |
-| `4` short | noise reduction level | free | free | not available | noise reduction level |
-| `4` long | NR level up 10 % | free | free | free | NR level up 1 (experimental) |
-| `4` double | NR level down 10 % | free | free | free | NR level down 1 (experimental) |
-| `5` short | noise blanker level | radio power state | free | not available | noise blanker level |
-| `5` long | NB level up 10 % | radio power off | free | free | NB level up 10 (experimental) |
-| `5` double | NB level down 10 % | radio power on | free | free | NB level down 10 (experimental) |
+| `4` short | noise reduction level | noise reduction level | noise reduction level (FTDX101, FT-891); Kenwood and Elecraft: not available | not available | noise reduction level |
+| `4` long | NR level up 10 % | NR level up 1 | NR level up 1 | free | NR level up 1 (experimental) |
+| `4` double | NR level down 10 % | NR level down 1 | NR level down 1 | free | NR level down 1 (experimental) |
+| `5` short | noise blanker level | radio power state | noise blanker level (FTDX101, FT-891); Kenwood and Elecraft: not available | not available | noise blanker level |
+| `5` long | NB level up 10 % | radio power off | NB level up 1 | free | NB level up 10 (experimental) |
+| `5` double | NB level down 10 % | radio power on | NB level down 1 | free | NB level down 10 (experimental) |
 | `6` short | PBT inner | radio status line | free | not available | DSP bandpass filter |
 | `6` long | PBT inner up | free | free | free | DSP bandpass filter on/off (experimental) |
 | `6` double | PBT inner down | free | free | free | free |
