@@ -138,6 +138,73 @@ TEST(ft8x7_agc_maps_both_ways_and_has_no_mid) {
   CHECK(!ft8x7AgcFromMode(AgcMode::Mid, unused));
 }
 
+TEST(civ_agc_is_fast_mid_slow) {
+  AgcMode mode = AgcMode::Off;
+  CHECK(civAgcDecode(0x01, mode) && mode == AgcMode::Fast);
+  CHECK(civAgcDecode(0x02, mode) && mode == AgcMode::Mid);
+  CHECK(civAgcDecode(0x03, mode) && mode == AgcMode::Slow);
+  CHECK(!civAgcDecode(0x00, mode));
+  CHECK(!civAgcDecode(0x04, mode));
+  uint8_t raw = 0;
+  CHECK(civAgcEncode(AgcMode::Mid, raw) && raw == 0x02);
+  CHECK(!civAgcEncode(AgcMode::Off, raw));
+  CHECK(!civAgcEncode(AgcMode::Auto, raw));
+}
+
+TEST(yaesu_agc_gt0) {
+  CHECK_EQ(asciiAgcReadCommand(AgcEncoding::YaesuGt0), "GT0;");
+  char cmd[8];
+  CHECK(asciiAgcEncode(AgcEncoding::YaesuGt0, AgcMode::Off, cmd, sizeof(cmd)));
+  CHECK_EQ(cmd, "GT00;");
+  CHECK(asciiAgcEncode(AgcEncoding::YaesuGt0, AgcMode::Mid, cmd, sizeof(cmd)));
+  CHECK_EQ(cmd, "GT02;");
+  CHECK(asciiAgcEncode(AgcEncoding::YaesuGt0, AgcMode::Auto, cmd, sizeof(cmd)));
+  CHECK_EQ(cmd, "GT04;");
+  AgcMode mode = AgcMode::Off;
+  CHECK(asciiAgcDecode(AgcEncoding::YaesuGt0, "03;", mode) && mode == AgcMode::Slow);
+  // Auto answers 4, 5 or 6: auto-fast, auto-mid, auto-slow.
+  CHECK(asciiAgcDecode(AgcEncoding::YaesuGt0, "05;", mode) && mode == AgcMode::Auto);
+  CHECK(asciiAgcDecode(AgcEncoding::YaesuGt0, "06", mode) && mode == AgcMode::Auto);
+  CHECK(!asciiAgcDecode(AgcEncoding::YaesuGt0, "07;", mode));
+  CHECK(!asciiAgcDecode(AgcEncoding::YaesuGt0, "13;", mode));
+  CHECK(!asciiAgcDecode(AgcEncoding::YaesuGt0, "0;", mode));
+}
+
+TEST(kenwood_agc_gt) {
+  CHECK_EQ(asciiAgcReadCommand(AgcEncoding::KenwoodGt), "GT;");
+  char cmd[8];
+  CHECK(asciiAgcEncode(AgcEncoding::KenwoodGt, AgcMode::Slow, cmd, sizeof(cmd)));
+  CHECK_EQ(cmd, "GT002;");
+  CHECK(!asciiAgcEncode(AgcEncoding::KenwoodGt, AgcMode::Mid, cmd, sizeof(cmd)));
+  CHECK(!asciiAgcEncode(AgcEncoding::KenwoodGt, AgcMode::Auto, cmd, sizeof(cmd)));
+  AgcMode mode = AgcMode::Slow;
+  CHECK(asciiAgcDecode(AgcEncoding::KenwoodGt, "000;", mode) && mode == AgcMode::Off);
+  CHECK(asciiAgcDecode(AgcEncoding::KenwoodGt, "001;", mode) && mode == AgcMode::Fast);
+  CHECK(!asciiAgcDecode(AgcEncoding::KenwoodGt, "003;", mode));
+  // In FM the TS-480 answers three spaces.
+  CHECK(!asciiAgcDecode(AgcEncoding::KenwoodGt, "   ;", mode));
+}
+
+TEST(elecraft_agc_gt) {
+  char cmd[8];
+  CHECK(asciiAgcEncode(AgcEncoding::ElecraftGt, AgcMode::Fast, cmd, sizeof(cmd)));
+  CHECK_EQ(cmd, "GT002;");
+  CHECK(asciiAgcEncode(AgcEncoding::ElecraftGt, AgcMode::Slow, cmd, sizeof(cmd)));
+  CHECK_EQ(cmd, "GT004;");
+  CHECK(!asciiAgcEncode(AgcEncoding::ElecraftGt, AgcMode::Off, cmd, sizeof(cmd)));
+  AgcMode mode = AgcMode::Off;
+  CHECK(asciiAgcDecode(AgcEncoding::ElecraftGt, "004;", mode) && mode == AgcMode::Slow);
+  CHECK(!asciiAgcDecode(AgcEncoding::ElecraftGt, "000;", mode));
+}
+
+TEST(no_agc_encoding_does_nothing) {
+  char cmd[8];
+  AgcMode mode = AgcMode::Off;
+  CHECK(asciiAgcReadCommand(AgcEncoding::None) == nullptr);
+  CHECK(!asciiAgcEncode(AgcEncoding::None, AgcMode::Fast, cmd, sizeof(cmd)));
+  CHECK(!asciiAgcDecode(AgcEncoding::None, "001;", mode));
+}
+
 // ---- ASCII lock ----
 
 TEST(lock_digit_decodes_with_the_profile_off_digits) {

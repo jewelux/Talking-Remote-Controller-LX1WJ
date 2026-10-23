@@ -35,7 +35,7 @@ EX | Menu | nein | keine FTDX10-Implementierung gefunden
 FA | Frequency VFO-A | implementiert | lesen/schreiben vorhanden
 FB | Frequency VFO-B | implementiert | lesen/schreiben vorhanden
 FN | Fine tuning | nein | keine FTDX10-Implementierung gefunden
-GT | AGC function | teilweise | GT read plus FAST/SLOW/OFF im Profil und in der Konsole, nicht voll ausgewertet
+GT | AGC function | implementiert | AGC? und AGC OFF/FAST/MID/SLOW/AUTO (GT0, nach CAT-Handbuch und Hamlib), mit Ruecklesen; Bank 2 A
 ID | Identification | vorbereitet | generische ASCII-Infrastruktur vorhanden, ftdx10-Profil fuellt ID nicht
 IF | Information | vorbereitet | generische ASCII-Infrastruktur vorhanden, ftdx10-Profil fuellt IF nicht
 IS | IF-shift | nein | keine FTDX10-Implementierung gefunden

@@ -127,13 +127,21 @@ bool asciiSetPreamp(const RadioProfile& sp, bool on) {
   return asciiSendSimpleCommand(on ? sp.commands->preampOnCmd : sp.commands->preampOffCmd);
 }
 
-bool asciiQueryAgcLine(const RadioProfile& sp, String& lineOut, uint32_t timeoutMs) {
-  return asciiQueryRawLine(sp.commands->agcGet, sp.commands->agcReplyPrefix, lineOut, timeoutMs);
+// GT, as the profile's settings.agc encodes it (cat_setting_codec.h).
+bool asciiQueryAgc(const RadioProfile& sp, AgcMode& out, uint32_t timeoutMs) {
+  const char* cmd = asciiAgcReadCommand(sp.settings.agc);
+  if (!sp.caps.getAgc || !cmd) return false;
+  String line;
+  if (!transactAsciiCommand(cmd, line, "GT", timeoutMs)) return false;
+  return asciiAgcDecode(sp.settings.agc, line.c_str() + 2, out);
 }
 
-bool asciiSetAgcCommand(const RadioProfile& sp, const char* cmd) {
-  (void)sp;
-  return asciiSendSimpleCommand(cmd);
+bool asciiSetAgc(const RadioProfile& sp, AgcMode mode) {
+  char cmd[8];
+  if (!sp.caps.setAgc || !asciiAgcEncode(sp.settings.agc, mode, cmd, sizeof(cmd))) return false;
+  if (!asciiSendSimpleCommand(cmd)) return false;
+  AgcMode readBack = AgcMode::Off;
+  return asciiQueryAgc(sp, readBack, 800) && readBack == mode;
 }
 
 bool asciiQueryPowerState(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {

@@ -24,7 +24,8 @@ Implemented and documented for the current field-test phase:
 - tuner read, set, and tune start
 - NR, NB, notch read and set
 - preamp read and set
-- AGC query plus fast and slow presets
+- AGC read and set (`AGC?`, `AGC OFF | FAST | MID | SLOW | AUTO`, Bank 2 `A`): `GT0`, as the CAT
+  manual and Hamlib have it; auto reads back as auto, whichever speed the radio picked
 - speech processor and its level (`PR0`, `PL`), mic gain (`MG`), VOX with its gain and delay
   (`VX`, `VG`, `VD`) read and set, console only (`PROC`, `PROCLEVEL`, `MICGAIN`, `VOX`,
   `VOXGAIN`, `VOXDELAY`). Each set is read back. The sets are not yet tested on a radio: `PROC ON`

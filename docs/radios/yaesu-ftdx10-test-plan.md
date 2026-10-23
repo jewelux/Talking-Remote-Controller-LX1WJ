@@ -63,9 +63,12 @@ NOTCH?
 NOTCH ON
 PA?
 PA ON
-GT?
-GT FAST
-GT SLOW
+AGC?
+AGC FAST
+AGC MID
+AGC SLOW
+AGC AUTO
+AGC OFF
 ```
 
 ## Lock, Tuner, Power
@@ -96,6 +99,6 @@ Example:
 ```text
 FREQ set works
 VFOA MODE works
-GT FAST works
+AGC FAST works
 PS ON wobbles
 ```

@@ -61,10 +61,12 @@ FeatureStatus notchSetWidth(NotchWidth width);
 // On CI-V off -> NAR -> MID -> WIDE -> off; elsewhere on, off.
 FeatureStatus notchToggle(NotchState& out);
 
-// AGC (caps.getAgc): on the FT-8x7 from its EEPROM.
+// AGC (caps.getAgc): Icom 16 12, the ASCII radios' GT (settings.agc), the FT-8x7 from its
+// EEPROM.
 FeatureStatus agcQuery(AgcMode& out);
-// Whether the radio can be set to mode: experimentally (caps.setRadioMenu) on the FT-8x7, which
-// has no MID.
+// Whether the radio can be set to mode: caps.setAgc over CAT (Icom FAST, MID, SLOW; Yaesu ASCII
+// all five; TS-480 OFF, FAST, SLOW; KX2 FAST, SLOW), and experimentally (caps.setRadioMenu) on the
+// FT-8x7, which has no MID.
 bool agcCanSet(AgcMode mode);
 // Sets mode, read back into out. Unsupported where agcCanSet is false; FT-8x7 errors as
 // procLevelSet.

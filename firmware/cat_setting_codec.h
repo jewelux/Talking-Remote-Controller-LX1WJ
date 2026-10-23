@@ -41,6 +41,19 @@ bool kenwoodProcLevelsDecode(const char* digits, uint8_t& inputOut, uint8_t& out
 AgcMode ft8x7AgcToMode(YaesuAgc agc);
 bool ft8x7AgcFromMode(AgcMode mode, YaesuAgc& out);
 
+// Icom 16 12: 01 fast, 02 mid, 03 slow. Hamlib turns AGC off through the time constant
+// instead, so OFF is not offered.
+bool civAgcDecode(uint8_t raw, AgcMode& out);
+bool civAgcEncode(AgcMode mode, uint8_t& rawOut);
+
+// The GT command that reads AGC ("GT0;" on the Yaesus, "GT;" on the others), or nullptr.
+const char* asciiAgcReadCommand(AgcEncoding encoding);
+// The AGC of a GT reply, given what follows "GT" ("0n;" Yaesu, "nnn;" Kenwood and Elecraft; the
+// ';' may be left out). False on anything else.
+bool asciiAgcDecode(AgcEncoding encoding, const char* digits, AgcMode& out);
+// The GT command that sets mode, into out; false where the radio has no such speed.
+bool asciiAgcEncode(AgcEncoding encoding, AgcMode mode, char* out, size_t size);
+
 // An ASCII lock reply digit: on unless it is one of offDigits ("0", or "04" on the FTDX101).
 // False when digit is not a digit.
 bool asciiLockDigitDecode(char digit, const char* offDigits, bool& onOut);

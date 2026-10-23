@@ -43,6 +43,9 @@ bool civQueryNotch(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
 bool civSetNotch(const RadioProfile& sp, bool on);
 bool civQueryNotchWidth(const RadioProfile& sp, NotchWidth& widthOut, uint32_t timeoutMs);
 bool civSetNotchWidth(const RadioProfile& sp, NotchWidth width);
+// 16 12, the AGC time constant preset: FAST, MID, SLOW (caps.getAgc, setAgc); the set is read back.
+bool civQueryAgc(const RadioProfile& sp, AgcMode& out, uint32_t timeoutMs);
+bool civSetAgc(const RadioProfile& sp, AgcMode mode);
 bool civQueryPbtInner(const RadioProfile& sp, uint16_t& valueOut, uint32_t timeoutMs);
 bool civSetPbtInner(const RadioProfile& sp, uint16_t value);
 bool civQueryPbtOuter(const RadioProfile& sp, uint16_t& valueOut, uint32_t timeoutMs);

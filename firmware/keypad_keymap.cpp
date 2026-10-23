@@ -73,8 +73,8 @@ KeyBinding bank1(const KeypadTraits& t, char key) {
 KeyBinding bank2(const KeypadTraits& t, char key) {
   const bool civ = t.layout == L::Civ;
   const bool ftdx10 = t.layout == L::Ftdx10;
-  // FT-817 and FT-857/897: settings the radio keeps in its EEPROM, read only but for AGC, NR, NB
-  // and notch ('1'-'3' below) and the FT-857/897 DSP keys '4'-'8', which experimental mode can
+  // FT-817 and FT-857/897: settings the radio keeps in its EEPROM, read only but for AGC ('A'
+  // below), NR, NB and notch ('1'-'3' below) and the FT-857/897 DSP keys '4'-'8', which experimental mode can
   // change. The FT-817 has no DSP and no readable IPO/ATT, so of these it answers only AGC. Its
   // '0' is the antenna jack of the current band.
   if (t.layout == L::Ft817 && key == '0') return bind(queryBank2Ft817Antenna);
@@ -100,7 +100,6 @@ KeyBinding bank2(const KeypadTraits& t, char key) {
       case '7': return bind(queryBank2Ft8x7LowCut);
       case '8': return bind(queryBank2Ft8x7HighCut);
       case '9': return bind(queryBank2Ft8x7MicEq);
-      case 'A': return bind(queryBank2Agc, beginBank2AgcSelect);
       case 'B': return bind(queryBank2Ft8x7Ipo, nullptr, queryBank2Ft8x7Att);
       default: break;
     }
@@ -114,7 +113,6 @@ KeyBinding bank2(const KeypadTraits& t, char key) {
         return bind(queryBank2NrLevel, [] { adjustBank2NrLevel(10); },
                    [] { adjustBank2NrLevel(-10); });
       }
-      if (ftdx10) return bind(SEND("GT?"), SEND("GT FAST"), SEND("GT SLOW"));
       return {};
     case '5':
       if (civ) {
@@ -148,6 +146,8 @@ KeyBinding bank2(const KeypadTraits& t, char key) {
       }
       if (ftdx10) return bind(reportFtdx10HiddenKey);
       return {};
+    // Every radio: what agcQuery reads, and the select of the speeds it can be set to.
+    case 'A': return bind(queryBank2Agc, beginBank2AgcSelect);
     default: return {};
   }
 }

@@ -27,24 +27,57 @@ static bool isTs480() {
 
 // ---- AGC ----
 
+// The ASCII radios with a GT encoding in their profile.
+static bool isAsciiAgc() {
+  const ProtocolType pt = currentProtocolType();
+  return (pt == PROTO_KENWOOD_ASCII || pt == PROTO_ELECRAFT_ASCII || pt == PROTO_YAESU_FTDX_ASCII) &&
+         currentProfile().settings.agc != AgcEncoding::None;
+}
+
 FeatureStatus agcQuery(AgcMode& out) {
-  if (!currentProfile().caps.getAgc) return FeatureStatus::Unsupported;
-  if (!isFt8x7()) return FeatureStatus::Unsupported;
-  Ft8x7SettingState state;
-  const FeatureStatus status = ft8x7SettingQuery(Ft8x7Setting::Agc, state);
-  if (status == FeatureStatus::Ok) out = ft8x7AgcToMode(state.agc);
-  return status;
+  const RadioProfile& sp = currentProfile();
+  if (!sp.caps.getAgc) return FeatureStatus::Unsupported;
+  bool ok = false;
+  if (currentProtocolType() == PROTO_CIV) {
+    ok = civQueryAgc(sp, out, 800);
+  } else if (isAsciiAgc()) {
+    ok = asciiQueryAgc(sp, out, 800);
+  } else if (isFt8x7()) {
+    Ft8x7SettingState state;
+    const FeatureStatus status = ft8x7SettingQuery(Ft8x7Setting::Agc, state);
+    if (status == FeatureStatus::Ok) out = ft8x7AgcToMode(state.agc);
+    return status;
+  } else {
+    return FeatureStatus::Unsupported;
+  }
+  return ok ? FeatureStatus::Ok : failure(FeatureStatus::NoReply);
 }
 
 bool agcCanSet(AgcMode mode) {
   const RadioProfile& sp = currentProfile();
-  if (!sp.caps.getAgc || !isFt8x7()) return false;
+  if (!sp.caps.getAgc) return false;
+  if (currentProtocolType() == PROTO_CIV) {
+    uint8_t raw = 0;
+    return sp.caps.setAgc && civAgcEncode(mode, raw);
+  }
+  if (isAsciiAgc()) {
+    char cmd[8];
+    return sp.caps.setAgc && asciiAgcEncode(sp.settings.agc, mode, cmd, sizeof(cmd));
+  }
+  if (!isFt8x7()) return false;
   YaesuAgc agc = YaesuAgc::Off;
   return sp.caps.setRadioMenu && currentFt8x7Model() != Ft8x7Model::None && ft8x7AgcFromMode(mode, agc);
 }
 
 FeatureStatus agcSet(AgcMode mode, AgcMode& out) {
   if (!agcCanSet(mode)) return FeatureStatus::Unsupported;
+  const RadioProfile& sp = currentProfile();
+  if (!isFt8x7()) {
+    const bool ok = currentProtocolType() == PROTO_CIV ? civSetAgc(sp, mode) : asciiSetAgc(sp, mode);
+    if (!ok) return failure(FeatureStatus::Failed);
+    out = mode;
+    return FeatureStatus::Ok;
+  }
   YaesuAgc agc = YaesuAgc::Off;
   (void)ft8x7AgcFromMode(mode, agc);
   Ft8x7SettingState state;

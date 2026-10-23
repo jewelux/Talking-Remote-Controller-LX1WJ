@@ -292,7 +292,7 @@ KeyBinding bank2(const KeypadTraits& t, char key) {
         return bind(queryBank2NrLevel, [] { adjustBank2NrLevel(10); },
                    [] { adjustBank2NrLevel(-10); });                 // short, long, double
       }
-      if (ftdx10) return bind(SEND("GT?"), SEND("GT FAST"), SEND("GT SLOW"));
+      if (ftdx10) return bind(SEND("PS?"), SEND("PS OFF"), SEND("PS ON"));
       return {};                                                      // unassigned: beep
     ...
 ```

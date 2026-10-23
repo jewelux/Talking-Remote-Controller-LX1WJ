@@ -42,7 +42,8 @@ constexpr RadioCapabilities kIc7300Caps = {
     .getTuner = true, .setTuner = true, .startTune = true,
     .getVfo = true, .setVfo = true, .getVfoMode = true, .setVfoMode = true,
     .getSplit = true, .setSplit = true, .getRit = true, .setRit = true,
-    .getBandStack = true, .getProc = true, .setProc = true, .getMicGain = true, .setMicGain = true,
+    .getBandStack = true, .getAgc = true, .setAgc = true,
+    .getProc = true, .setProc = true, .getMicGain = true, .setMicGain = true,
     .getVox = true, .setVox = true,
 };
 
@@ -67,7 +68,12 @@ constexpr RadioCapabilities kKx2Caps = {
     .getFreq = true, .setFreq = true, .getMode = true, .setMode = true,
     .getSmeter = true, .getPower = true, .getSwr = true,
     .getNb = true, .setNb = true,
+    .getAgc = true, .setAgc = true,
 };
+
+// GT002 fast and GT004 slow (the Elecraft programmer's reference and Hamlib). No off: Hamlib
+// sends GT000, the reference has off only in the K2's extended format.
+constexpr SettingEncodings kKx2Settings = {.agc = AgcEncoding::ElecraftGt};
 
 constexpr AsciiCommandSet kKx2Commands = {
     .freqGet = "FA;", .freqSetFormat = "FA%011llu;",
@@ -76,12 +82,11 @@ constexpr AsciiCommandSet kKx2Commands = {
     .smeterGet = "SM;", .powerGet = "PO;", .swrGet = "SW;",
     .nbGet = "NB;", .nbOnCmd = "NB1;", .nbOffCmd = "NB0;",
     .preampGet = "PA;", .preampOnCmd = "PA1;", .preampOffCmd = "PA0;",
-    .agcGet = "GT;", .agcFastCmd = "GT002;", .agcSlowCmd = "GT004;",
     .powerStateGet = "PS;", .powerStateOnCmd = "PS1;", .powerStateOffCmd = "PS0;",
     .freqReplyPrefix = "FA", .modeReplyPrefix = "MD", .ifReplyPrefix = "IF",
     .idReplyPrefix = "ID", .omReplyPrefix = "OM", .smeterReplyPrefix = "SM",
     .powerReplyPrefix = "PO", .swrReplyPrefix = "SW", .nbReplyPrefix = "NB",
-    .preampReplyPrefix = "PA", .agcReplyPrefix = "GT", .powerStateReplyPrefix = "PS",
+    .preampReplyPrefix = "PA", .powerStateReplyPrefix = "PS",
 };
 
 constexpr ModeCodes kKx2Modes = {
@@ -97,14 +102,16 @@ constexpr RadioCapabilities kTs480Caps = {
     .getFreq = true, .setFreq = true, .getMode = true, .setMode = true,
     .getSmeter = true, .getSwr = true,
     .getNr = true, .setNr = true, .getNb = true, .setNb = true,
+    .getAgc = true, .setAgc = true,
     .getProc = true, .setProc = true, .getMicGain = true, .setMicGain = true,
     .getVox = true, .setVox = true,
 };
 
-// VD 0..3000 ms in 150 ms steps, VG 0..9 (TS-480 PC command reference).
+// VD 0..3000 ms in 150 ms steps, VG 0..9, GT 000 off, 001 fast, 002 slow (TS-480 PC command
+// reference; Hamlib agrees).
 constexpr SettingEncodings kTs480Settings = {
     .voxDelay = VoxDelayEncoding::Ms4, .voxDelayMinMs = 0, .voxDelayMaxMs = 3000, .voxDelayStepMs = 150,
-    .voxGainMax = 9,
+    .voxGainMax = 9, .agc = AgcEncoding::KenwoodGt,
 };
 
 constexpr AsciiCommandSet kTs480Commands = {
@@ -180,8 +187,9 @@ constexpr RadioCapabilities kFtdx10Caps = {
     .getDialLock = true, .setDialLock = true,
     .getTuner = true, .setTuner = true, .startTune = true,
     .getVfo = true, .setVfo = true, .getVfoMode = true, .setVfoMode = true,
-    .getSplit = true, .setSplit = true, .getProc = true, .setProc = true, .getMicGain = true,
-    .setMicGain = true, .getVox = true, .setVox = true,
+    .getSplit = true, .setSplit = true, .getAgc = true, .setAgc = true,
+    .getProc = true, .setProc = true, .getMicGain = true, .setMicGain = true,
+    .getVox = true, .setVox = true,
 };
 
 constexpr RadioCapabilities kFtdx101Caps = [] {
@@ -197,9 +205,11 @@ constexpr RadioCapabilities kFtdx101Caps = [] {
   return caps;
 }();
 
-// VD as the FTDX10 and FTDX101 CAT manuals and Hamlib have it: a step, 30..3000 ms.
+// VD and GT0 as the FTDX10 and FTDX101 CAT manuals and Hamlib have them: VD a step,
+// 30..3000 ms.
 constexpr SettingEncodings kFtdx10Settings = {
     .voxDelay = VoxDelayEncoding::YaesuSteps, .voxDelayMinMs = 30, .voxDelayMaxMs = 3000,
+    .agc = AgcEncoding::YaesuGt0,
 };
 
 constexpr RadioCapabilities kFt891Caps = {
@@ -208,15 +218,16 @@ constexpr RadioCapabilities kFt891Caps = {
     .getDialLock = true, .setDialLock = true,
     .getTuner = true, .setTuner = true, .startTune = true,
     .getVfo = true, .setVfo = true,
-    .getSplit = true, .setSplit = true,
+    .getSplit = true, .setSplit = true, .getAgc = true, .setAgc = true,
     .getProc = true, .setProc = true, .getMicGain = true, .setMicGain = true,
     .getVox = true, .setVox = true,
 };
 
-// PR0, PL, MG, VX, VG and VD as Hamlib newcat and flrig send them; VD in ms, 30..3000 (flrig,
-// the FT-891's 10 ms steps).
+// PR0, PL, MG, VX, VG, VD and GT0 as the FT-891 CAT manual and Hamlib newcat have them (flrig
+// agrees but for GT, which it lacks); VD in ms, 30..3000 in 10 ms steps.
 constexpr SettingEncodings kFt891Settings = {
     .voxDelay = VoxDelayEncoding::Ms4, .voxDelayMinMs = 30, .voxDelayMaxMs = 3000, .voxDelayStepMs = 10,
+    .agc = AgcEncoding::YaesuGt0,
 };
 
 constexpr AsciiCommandSet kFtdx10Commands = {
@@ -229,7 +240,6 @@ constexpr AsciiCommandSet kFtdx10Commands = {
     .nrGet = "NR0;", .nrOnCmd = "NR01;", .nrOffCmd = "NR00;",
     .nbGet = "NB0;", .nbOnCmd = "NB01;", .nbOffCmd = "NB00;",
     .preampGet = "PA0;", .preampOnCmd = "PA01;", .preampOffCmd = "PA00;",
-    .agcGet = "GT0;", .agcFastCmd = "GT01;", .agcSlowCmd = "GT03;", .agcOffCmd = "GT00;",
     .powerStateGet = "PS;", .powerStateOnCmd = "PS1;", .powerStateOffCmd = "PS0;",
     .tunerGet = "AC;", .tunerOnCmd = "AC001;", .tunerOffCmd = "AC000;", .tuneStartCmd = "AC002;",
     .splitGet = "ST;", .splitOnCmd = "ST1;", .splitOffCmd = "ST0;",
@@ -239,7 +249,7 @@ constexpr AsciiCommandSet kFtdx10Commands = {
     .freqReplyPrefix = "FA", .modeReplyPrefix = "MD0", .ifReplyPrefix = "IF",
     .idReplyPrefix = "ID", .omReplyPrefix = "OM", .smeterReplyPrefix = "SM0",
     .powerReplyPrefix = "RM5", .swrReplyPrefix = "RM6", .nrReplyPrefix = "NR0",
-    .nbReplyPrefix = "NB0", .preampReplyPrefix = "PA0", .agcReplyPrefix = "GT0",
+    .nbReplyPrefix = "NB0", .preampReplyPrefix = "PA0",
     .powerStateReplyPrefix = "PS", .tunerReplyPrefix = "AC", .splitReplyPrefix = "ST",
     .vfoReplyPrefix = "VS", .notchReplyPrefix = "BP0", .lockReplyPrefix = "LK",
 };
@@ -306,7 +316,7 @@ constexpr RadioProfile kProfiles[] = {
     {.slot = 6, .name = "Elecraft KX2", .vendor = VoiceVendor::Elecraft, .voiceDigits = "2",
      .protocol = PROTO_ELECRAFT_ASCII,
      .link = {.port = RadioPort::Rs232, .baud = 38400, .bauds = kKx2Bauds},
-     .caps = kKx2Caps, .commands = &kKx2Commands, .modes = &kKx2Modes},
+     .caps = kKx2Caps, .commands = &kKx2Commands, .modes = &kKx2Modes, .settings = kKx2Settings},
     {.slot = 7, .name = "Kenwood TS-480", .vendor = VoiceVendor::Kenwood, .voiceDigits = "480",
      .model = RadioModel::Ts480, .protocol = PROTO_KENWOOD_ASCII,
      .link = {.port = RadioPort::Rs232, .baud = 9600, .bauds = kTs480Bauds},

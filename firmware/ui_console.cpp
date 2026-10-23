@@ -768,6 +768,20 @@ void helpLine(const char* text) {
   Serial.println(text);
 }
 
+// AGC? and the speeds the radio can be set to.
+static void printAgcHelp() {
+  if (!currentProfile().caps.getAgc) return;
+  String text = "AGC?";
+  const char* separator = " | AGC ";
+  for (const AgcMode mode : {AgcMode::Off, AgcMode::Fast, AgcMode::Mid, AgcMode::Slow, AgcMode::Auto}) {
+    if (!agcCanSet(mode)) continue;
+    text += separator;
+    text += agcModeName(mode);
+    separator = " | ";
+  }
+  helpLine(text.c_str());
+}
+
 // PROC, mic gain and VOX over CAT, as far as the profile has them, with the radio's ranges.
 static void printTxSettingsHelp() {
   const RadioCapabilities& caps = currentProfile().caps;
@@ -881,6 +895,7 @@ void printHelp(const String& topicArg) {
     helpLine("NR? | NR OFF | ON | TOGGLE");
     helpLine("PBT1? | PBT1 <-128..127> | CENTER | STEP <+-n>");
     helpLine("PBT2? | PBT2 <-128..127> | CENTER | STEP <+-n>");
+    printAgcHelp();
     printTxSettingsHelp();
     helpLine(rfPowerLine);
     helpLine("RIT? | RIT <Hz> | RIT STEP <+-Hz> | RIT OFF | ON | TOGGLE");
@@ -897,7 +912,6 @@ void printHelp(const String& topicArg) {
     helpLine("VFOB? | VFOB <kHz> | VFOB MODE? | VFOB MODE <n>");
     helpHeading(HELP_RADIO, "ASCII / Yaesu extensions:");
     helpLine("ALC? | VOL? | SQL?");
-    helpLine("GT? | GT FAST | SLOW | OFF");
     helpLine("PA? | PA OFF | ON | TOGGLE");
     helpLine("PS? | PS OFF | ON");
     helpLine("PTT OFF | ON");
@@ -924,7 +938,6 @@ void printHelp(const String& topicArg) {
     helpLine(ft857Family ? "TONEDIR? | TONEDIR NEXT  (BOTH, encode only TX, decode only RX in turn)"
                          : "TONEDIR? | TONEDIR NEXT  (BOTH or encode only TX)");
     if (ft857Family) helpLine("SPLITTONE?  (menu 79 of the current band, read only)");
-    helpLine("GT? | GT FAST | SLOW | OFF");
     helpLine("PA? | PA OFF | ON | TOGGLE");
     helpLine("PS? | PS OFF | ON");
     if (ft817 || ft857Family) helpLine("VFO SYNC A | B  (set the tracked VFO)");
@@ -985,6 +998,7 @@ void printHelp(const String& topicArg) {
     helpLine("NB? | NB OFF | ON | TOGGLE");
     helpLine("NOTCH? | NOTCH OFF | ON | TOGGLE");
     helpLine("NR? | NR OFF | ON | TOGGLE");
+    printAgcHelp();
     printTxSettingsHelp();
     helpLine("RXTX?");
     helpLine("SPLIT? | SPLIT OFF | ON | TOGGLE");
@@ -994,7 +1008,6 @@ void printHelp(const String& topicArg) {
     helpLine("VFO A | B");
     helpLine("VFOA? | VFOA <kHz> | VFOA MODE? | VFOA MODE <n>");
     helpLine("VFOB? | VFOB <kHz> | VFOB MODE? | VFOB MODE <n>");
-    helpLine("GT? | GT FAST | SLOW | OFF");
     helpLine("PA? | PA OFF | ON | TOGGLE");
     helpLine("PS? | PS OFF | ON");
     helpLine("SM?");
@@ -1006,7 +1019,7 @@ void printHelp(const String& topicArg) {
   if (ft847) {
     printFt847ConsoleDiagHelp();
   } else if (otherRadio || ft8x7) {
-    helpLine("AGC <hex byte>");
+    if (ft8x7) helpLine("AGC <hex byte>  (raw CAT AGC mode byte)");
     helpLine("CIVRAW | CIVRAW? <cmd hex> [payload hex bytes]");
     if (otherRadio) helpLine("LOCKDOC OFF | ON");
     helpLine("YALL?");
@@ -1838,7 +1851,6 @@ static bool handleConsoleFt8x7MicEqSet(const String& upper) {
 static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& upper) {
   if (!isCurrentYaesuFt8x7()) return false;
   if (handleConsoleFt8x7Meters(upper)) return true;
-  if (handleConsoleAgc(upper)) return true;
   if (handleConsoleFt8x7Settings(upper)) return true;
   if (handleConsoleFt8x7LevelSet(line, upper)) return true;
   if (handleConsoleFt8x7FlagSet(upper)) return true;
@@ -3536,36 +3548,6 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     if (g_speechEnabled) speakTokenState("pa", !on);
     return true;
   }
-  if (upper == "GT?") {
-    String rsp;
-    if (!asciiQueryAgcLine(sp, rsp, 800)) { reportCommandFailure("GT?", "no reply"); return true; }
-    Serial.print("GT: ");
-    printAsciiReplyPayload(rsp, sp.commands->agcReplyPrefix);
-    speakConsoleTokenOrGap("gt");
-    return true;
-  }
-  if (upper == "GT FAST") {
-    if (!asciiSetAgcCommand(sp, sp.commands->agcFastCmd)) { reportCommandFailure("GT FAST", "failed"); return true; }
-    Serial.println("GT FAST");
-    speakConsoleTokenOrGap("gt");
-    playSilenceMs(60);
-    speakConsoleTokenOrGap("fast");
-    return true;
-  }
-  if (upper == "GT SLOW") {
-    if (!asciiSetAgcCommand(sp, sp.commands->agcSlowCmd)) { reportCommandFailure("GT SLOW", "failed"); return true; }
-    Serial.println("GT SLOW");
-    speakConsoleTokenOrGap("gt");
-    playSilenceMs(60);
-    speakConsoleTokenOrGap("slow");
-    return true;
-  }
-  if (upper == "GT OFF") {
-    if (!asciiSetAgcCommand(sp, sp.commands->agcOffCmd)) { reportCommandFailure("GT OFF", "failed"); return true; }
-    Serial.println("GT OFF");
-    if (g_speechEnabled) speakTokenState("gt", false);
-    return true;
-  }
   if (upper == "PS?") {
     bool on = false;
     if (!asciiQueryPowerState(sp, on, 800)) { reportCommandFailure("PS?", "no reply"); return true; }
@@ -3681,6 +3663,7 @@ void processCommand(String line) {
   if (handleConsoleConnectionCommands(line, upper)) return;
   if (handleFtdx10BlockedConsoleCommand(upper)) return;
   if (handleConsoleToggleCommands(line, upper)) return;
+  if (handleConsoleAgc(upper)) return;
   if (handleConsoleYaesuFt8x7Commands(line, upper)) return;
   if (handleConsoleFt847Commands(upper)) return;
   if (handleConsoleTxAudioSet(line, upper)) return;

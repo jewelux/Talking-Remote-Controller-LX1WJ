@@ -6,6 +6,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "radio_setting_types.h"
+
 enum ProtocolType : uint8_t {
   PROTO_CIV = 0,
   PROTO_KENWOOD_ASCII = 1,
@@ -164,10 +166,6 @@ struct AsciiCommandSet {
   const char* preampGet = "";
   const char* preampOnCmd = "";
   const char* preampOffCmd = "";
-  const char* agcGet = "";
-  const char* agcFastCmd = "";
-  const char* agcSlowCmd = "";
-  const char* agcOffCmd = "";
   const char* powerStateGet = "";
   const char* powerStateOnCmd = "";
   const char* powerStateOffCmd = "";
@@ -202,7 +200,6 @@ struct AsciiCommandSet {
   const char* nrReplyPrefix = "";
   const char* nbReplyPrefix = "";
   const char* preampReplyPrefix = "";
-  const char* agcReplyPrefix = "";
   const char* powerStateReplyPrefix = "";
   const char* tunerReplyPrefix = "";
   const char* splitReplyPrefix = "";
@@ -252,6 +249,7 @@ struct SettingEncodings {
   uint16_t voxDelayMaxMs = 0;
   uint16_t voxDelayStepMs = 0;  // Ms4: the radio's resolution
   uint8_t voxGainMax = 100;     // VG 0..voxGainMax
+  AgcEncoding agc = AgcEncoding::None;
 };
 
 inline constexpr AsciiCommandSet kNoAsciiCommands{};

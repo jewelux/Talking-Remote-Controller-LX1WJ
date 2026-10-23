@@ -85,8 +85,9 @@ levels, and the DSP bandpass filter with its low and high cut (Bank 2), and the 
 `6`). From the console it can also set the mic gain (`MICGAIN`), VOX with its gain and delay
 (`VOX`, `VOXGAIN`, `VOXDELAY`), break-in (`BK`) and the keyer (`KYR`), on the FT-817/818 the
 antenna jack (`ANT`), and on the FT-857/897 the speech processor (`PROC`, `PROCLEVEL`) and the TX
-equalizer (`MICEQ`). On the IC-7300, IC-705, IC-7760 and FTDX10 the console sets the speech
-processor, mic gain and VOX without experimental mode. See the
+equalizer (`MICEQ`). On the IC-7300, IC-705, IC-7760, FTDX10, FTDX101, FT-891 and TS-480 the
+console sets the speech processor, mic gain and VOX without experimental mode (the FTDX101 and
+IC-7760 not all of them), and on these and the KX2 the AGC, also from Bank 2 `A`. See the
 [keypad map](docs/keypad-map.md).
 
 ## Practical Everyday Use
@@ -149,10 +150,10 @@ Use these keypad functions first:
 - Bank 1, `8` short: SWR
 - Bank 1, `9` short or long: read or set mode
 - Bank 2, `1`, `2`, `3` short or long: NR, NB, notch query or toggle
-- Bank 2, `4` short, long, or double: AGC query, fast, slow
 - Bank 2, `5` short, long, or double: power-state query, off, on
 - Bank 2, `6` short: IF info
 - Bank 2, `7` short: radio ID
+- Bank 2, `A` short or long: AGC query or select
 - Bank 3, `0` short or long: split query or toggle
 - Bank 3, `1` short or long: VFO-A frequency or select VFO-A
 - Bank 3, `2` short or long: VFO-B frequency or select VFO-B

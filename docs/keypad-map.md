@@ -60,9 +60,9 @@ they say "not available". This is noted where it is always the case.
 | `2` long | noise blanker on/off | noise blanker on/off | noise blanker on/off | noise blanker on/off (experimental) | noise blanker on/off (experimental) |
 | `3` short | notch | notch | notch | not available | notch |
 | `3` long | notch on/off | notch on/off | notch on/off | not available | notch on/off (experimental) |
-| `4` short | noise reduction level | AGC | free | not available | noise reduction level |
-| `4` long | NR level up 10 % | AGC fast | free | free | NR level up 1 (experimental) |
-| `4` double | NR level down 10 % | AGC slow | free | free | NR level down 1 (experimental) |
+| `4` short | noise reduction level | free | free | not available | noise reduction level |
+| `4` long | NR level up 10 % | free | free | free | NR level up 1 (experimental) |
+| `4` double | NR level down 10 % | free | free | free | NR level down 1 (experimental) |
 | `5` short | noise blanker level | radio power state | free | not available | noise blanker level |
 | `5` long | NB level up 10 % | radio power off | free | free | NB level up 10 (experimental) |
 | `5` double | NB level down 10 % | radio power on | free | free | NB level down 10 (experimental) |
@@ -78,10 +78,15 @@ they say "not available". This is noted where it is always the case.
 | `9` short | filter width | not available | free | not available | TX equalizer |
 | `9` long | next filter | free | free | free | free |
 | `9` double | previous filter | free | free | free | free |
-| `A` short | free | free | free | AGC | AGC |
-| `A` long | free | free | free | AGC select (experimental) | AGC select (experimental) |
+| `A` short | AGC | AGC | AGC | AGC | AGC |
+| `A` long | AGC select | AGC select | AGC select | AGC select (experimental) | AGC select (experimental) |
 | `B` short | free | free | free | not available | preamplifier |
 | `B` double | free | free | free | not available | attenuator |
+
+AGC select: `0` off, `1` auto, `2` fast, `3` slow, `4` mid, then `D`. Only the radio's own speeds
+are taken: Icom fast, mid and slow; FTDX10, FTDX101 and FT-891 all five; TS-480 off, fast and
+slow; KX2 fast and slow; FT-8x7 off, auto, fast and slow. The IC-706 and G106 say "not
+available".
 
 ## Bank 3 - VFO and Split
 

@@ -61,6 +61,10 @@
 - a key that does nothing gives a short beep instead of silence: keys with no action on the current
   bank, and keys an entry or selection does not take
 - choosing a profile number with no stored profile says "not available"
+- Bank 2 `A` says the AGC on every radio, and long press picks it: `0` off, `1` auto, `2` fast,
+  `3` slow, `4` mid, then `D`. Only the speeds the radio has are taken; on the FT-8x7 it is still
+  experimental, and the IC-706 and G106 say "not available". On the FTDX10, Bank 2 `4` no longer
+  reads or sets the AGC and is free
 
 ### Frequency
 
@@ -163,6 +167,11 @@
   `STEP <+-n>`: a level in percent, the delay in the radio's steps (100 ms on the FT-891).
   `PROCLEVEL` on the TS-480 sets the processor input level and keeps its output level. `HELP`
   lists only the ones the radio has, with its ranges. Not yet tested on these radios
+- `AGC?` says the AGC ("agc fast") and `AGC OFF | FAST | MID | SLOW | AUTO` sets it, each set read
+  back: on the IC-7300, IC-705 and IC-7760 fast, mid and slow; on the FTDX10, FTDX101D/MP and
+  FT-891 all five, and a Yaesu set to auto reads back as auto; on the TS-480 off, fast and slow
+  (not in FM); on the KX2 fast and slow. `HELP` lists the radio's own. `GT?`, `GT FAST`,
+  `GT SLOW` and `GT OFF` are gone. Not yet tested on these radios
 
 ### Radio profiles
 

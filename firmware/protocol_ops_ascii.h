@@ -14,8 +14,9 @@ bool asciiQueryIdLine(const RadioProfile& sp, String& lineOut, uint32_t timeoutM
 bool asciiQueryOmLine(const RadioProfile& sp, String& lineOut, uint32_t timeoutMs);
 bool asciiQueryPreamp(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
 bool asciiSetPreamp(const RadioProfile& sp, bool on);
-bool asciiQueryAgcLine(const RadioProfile& sp, String& lineOut, uint32_t timeoutMs);
-bool asciiSetAgcCommand(const RadioProfile& sp, const char* cmd);
+// AGC by settings.agc (caps.getAgc, setAgc); the set is read back. AUTO reads back as AUTO.
+bool asciiQueryAgc(const RadioProfile& sp, AgcMode& out, uint32_t timeoutMs);
+bool asciiSetAgc(const RadioProfile& sp, AgcMode mode);
 bool asciiQueryPowerState(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
 bool asciiSetPowerState(const RadioProfile& sp, bool on);
 bool asciiQueryTuner(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);

@@ -1,5 +1,6 @@
 #include "cat_setting_codec.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -106,6 +107,97 @@ bool ft8x7AgcFromMode(AgcMode mode, YaesuAgc& out) {
     case AgcMode::Mid: break;
   }
   return false;
+}
+
+bool civAgcDecode(uint8_t raw, AgcMode& out) {
+  switch (raw) {
+    case 0x01: out = AgcMode::Fast; return true;
+    case 0x02: out = AgcMode::Mid; return true;
+    case 0x03: out = AgcMode::Slow; return true;
+    default: return false;
+  }
+}
+
+bool civAgcEncode(AgcMode mode, uint8_t& rawOut) {
+  switch (mode) {
+    case AgcMode::Fast: rawOut = 0x01; return true;
+    case AgcMode::Mid: rawOut = 0x02; return true;
+    case AgcMode::Slow: rawOut = 0x03; return true;
+    default: return false;
+  }
+}
+
+const char* asciiAgcReadCommand(AgcEncoding encoding) {
+  switch (encoding) {
+    case AgcEncoding::YaesuGt0: return "GT0;";
+    case AgcEncoding::KenwoodGt:
+    case AgcEncoding::ElecraftGt: return "GT;";
+    case AgcEncoding::None: break;
+  }
+  return nullptr;
+}
+
+// n digits, then the end or ';'.
+static bool exactDigits(const char* s, size_t n, int& valueOut) {
+  if (!s) return false;
+  int value = 0;
+  for (size_t i = 0; i < n; ++i) {
+    if (s[i] < '0' || s[i] > '9') return false;
+    value = value * 10 + (s[i] - '0');
+  }
+  if (s[n] != '\0' && s[n] != ';') return false;
+  valueOut = value;
+  return true;
+}
+
+bool asciiAgcDecode(AgcEncoding encoding, const char* digits, AgcMode& out) {
+  int value = 0;
+  switch (encoding) {
+    case AgcEncoding::YaesuGt0: {
+      if (!digits || digits[0] != '0' || !exactDigits(digits + 1, 1, value)) return false;
+      static constexpr AgcMode kModes[] = {AgcMode::Off, AgcMode::Fast, AgcMode::Mid, AgcMode::Slow,
+                                           AgcMode::Auto, AgcMode::Auto, AgcMode::Auto};
+      if (value > 6) return false;
+      out = kModes[value];
+      return true;
+    }
+    case AgcEncoding::KenwoodGt:
+      if (!exactDigits(digits, 3, value) || value > 2) return false;
+      out = value == 0 ? AgcMode::Off : value == 1 ? AgcMode::Fast : AgcMode::Slow;
+      return true;
+    case AgcEncoding::ElecraftGt:
+      if (!exactDigits(digits, 3, value) || (value != 2 && value != 4)) return false;
+      out = value == 2 ? AgcMode::Fast : AgcMode::Slow;
+      return true;
+    case AgcEncoding::None: break;
+  }
+  return false;
+}
+
+bool asciiAgcEncode(AgcEncoding encoding, AgcMode mode, char* out, size_t size) {
+  int code = -1;
+  switch (encoding) {
+    case AgcEncoding::YaesuGt0:
+      switch (mode) {
+        case AgcMode::Off: code = 0; break;
+        case AgcMode::Fast: code = 1; break;
+        case AgcMode::Mid: code = 2; break;
+        case AgcMode::Slow: code = 3; break;
+        case AgcMode::Auto: code = 4; break;
+      }
+      return snprintf(out, size, "GT0%d;", code) == 5;
+    case AgcEncoding::KenwoodGt:
+      if (mode == AgcMode::Off) code = 0;
+      else if (mode == AgcMode::Fast) code = 1;
+      else if (mode == AgcMode::Slow) code = 2;
+      break;
+    case AgcEncoding::ElecraftGt:
+      if (mode == AgcMode::Fast) code = 2;
+      else if (mode == AgcMode::Slow) code = 4;
+      break;
+    case AgcEncoding::None: break;
+  }
+  return code >= 0 && snprintf(out, size, "GT%03d;", code) == 6;
 }
 
 bool asciiLockDigitDecode(char digit, const char* offDigits, bool& onOut) {

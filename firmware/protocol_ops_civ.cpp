@@ -1,5 +1,6 @@
 #include "protocol_ops_civ.h"
 
+#include "cat_setting_codec.h"
 #include "engine_civ.h"
 #include "protocol_ascii.h"
 #include "protocol_civ.h"
@@ -530,6 +531,23 @@ bool civSetPbtOuter(const RadioProfile& sp, uint16_t value) {
   return civQueryPbtOuter(sp, readBack, 800) &&
          readBack >= (value > 1 ? value - 1 : 0) &&
          readBack <= value + 1;
+}
+
+// 16 12: the AGC time constant preset, 01 fast, 02 mid, 03 slow (the IC-7300, IC-705 and IC-7760
+// CI-V guides, Hamlib).
+bool civQueryAgc(const RadioProfile& sp, AgcMode& out, uint32_t timeoutMs) {
+  if (sp.protocol != PROTO_CIV || !sp.caps.getAgc) return false;
+  uint8_t raw = 0;
+  return civQuery16Byte(0x12, raw, timeoutMs) && civAgcDecode(raw, out);
+}
+
+bool civSetAgc(const RadioProfile& sp, AgcMode mode) {
+  uint8_t raw = 0;
+  if (sp.protocol != PROTO_CIV || !sp.caps.setAgc || !civAgcEncode(mode, raw)) return false;
+  if (!civSet16Byte(0x12, raw)) return false;
+  civSettleAfterWrite();
+  AgcMode readBack = AgcMode::Off;
+  return civQueryAgc(sp, readBack, 800) && readBack == mode;
 }
 
 // A 16 function that is only off (00) or on (01); any other byte is not a valid reply.

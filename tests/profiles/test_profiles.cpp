@@ -215,6 +215,32 @@ TEST(every_vox_delay_encoding_is_complete) {
   }
 }
 
+// AGC: Icom 16 12, the ASCII radios by their GT encoding, the FT-8x7 from its EEPROM (set only
+// with EXPERIMENTAL on).
+TEST(agc_caps_and_encodings) {
+  const uint8_t settable[] = {1, 3, 17, 18, 6, 7, 11, 12, 13, 15};
+  for (uint8_t s : settable) CHECK(slot(s).caps.getAgc && slot(s).caps.setAgc);
+  const uint8_t icom[] = {1, 3, 17, 18};
+  for (uint8_t s : icom) CHECK(slot(s).settings.agc == AgcEncoding::None);
+  const uint8_t yaesu[] = {11, 12, 13, 15};
+  for (uint8_t s : yaesu) CHECK(slot(s).settings.agc == AgcEncoding::YaesuGt0);
+  CHECK(slot(7).settings.agc == AgcEncoding::KenwoodGt);
+  CHECK(slot(6).settings.agc == AgcEncoding::ElecraftGt);
+  const uint8_t ft8x7[] = {8, 9, 10, 14};
+  for (uint8_t s : ft8x7) CHECK(slot(s).caps.getAgc && !slot(s).caps.setAgc);
+  const uint8_t none[] = {2, 4, 5, 16};
+  for (uint8_t s : none) CHECK(!slot(s).caps.getAgc && !slot(s).caps.setAgc);
+}
+
+// An ASCII radio reads AGC only through its GT encoding, and only ASCII radios have one.
+TEST(every_ascii_agc_cap_has_an_encoding) {
+  for (size_t i = 0; i < profileCount(); ++i) {
+    const RadioProfile& p = profileAt(i);
+    if (isAscii(p.protocol) && p.caps.getAgc) CHECK(p.settings.agc != AgcEncoding::None);
+    if (p.settings.agc != AgcEncoding::None) CHECK(isAscii(p.protocol));
+  }
+}
+
 TEST(g106_is_ttl_civ_with_freq_and_mode_only) {
   const RadioProfile& g106 = slot(5);
   CHECK(g106.protocol == PROTO_CIV);

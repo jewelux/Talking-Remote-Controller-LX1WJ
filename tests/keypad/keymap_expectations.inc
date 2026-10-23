@@ -109,10 +109,9 @@ KEYMAP_ROW(ALL,             2, '1', "queryBank2Nr",          "toggleBank2Nr",   
 KEYMAP_ROW(ALL,             2, '2', "queryBank2Nb",          "toggleBank2Nb",          "-")
 KEYMAP_ROW(ALL,             2, '3', "queryBank2Notch",       "toggleBank2Notch",       "-")
 KEYMAP_ROW(CIV,             2, '4', "queryBank2NrLevel",     "adjustBank2NrLevel(10)", "adjustBank2NrLevel(-10)")
-KEYMAP_ROW(FTDX10,          2, '4', "send(GT?)",             "send(GT FAST)",          "send(GT SLOW)")
 KEYMAP_ROW(FT817,           2, '4', "queryBank2Ft8x7NrLevel", "none",                  "-")
 KEYMAP_ROW(FT857,           2, '4', "queryBank2Ft8x7NrLevel", "stepBank2Ft8x7NrLevel(1)", "stepBank2Ft8x7NrLevel(-1)")
-KEYMAP_ROW(NOT(CIV | FTDX10 | FT817 | FT857), 2, '4', "unassigned", "none",            "-")
+KEYMAP_ROW(NOT(CIV | FT817 | FT857), 2, '4', "unassigned", "none",                    "-")  // FTDX10: was GT
 KEYMAP_ROW(CIV,             2, '5', "queryBank2NbLevel",     "adjustBank2NbLevel(10)", "adjustBank2NbLevel(-10)")
 KEYMAP_ROW(FTDX10,          2, '5', "send(PS?)",             "send(PS OFF)",           "send(PS ON)")
 KEYMAP_ROW(FT817,           2, '5', "queryBank2Ft8x7NbLevel", "none",                  "-")
@@ -137,8 +136,7 @@ KEYMAP_ROW(CIV,             2, '9', "queryBank2FilterWidth", "cycleBank2FilterWi
 KEYMAP_ROW(FTDX10,          2, '9', "reportFtdx10HiddenKey(BANK2 9 SHORT)", "none",          "-")  // fixed: was unassigned
 KEYMAP_ROW(FT817 | FT857,   2, '9', "queryBank2Ft8x7MicEq",  "none",                   "-")
 KEYMAP_ROW(NOT(CIV | FTDX10 | FT817 | FT857), 2, '9', "unassigned", "none",            "-")
-KEYMAP_ROW(FT817 | FT857,   2, 'A', "queryBank2Agc",         "beginBank2AgcSelect", "-")
-KEYMAP_ROW(NOT(FT817 | FT857), 2, 'A', "unassigned",       "none",                   "-")
+KEYMAP_ROW(ALL,             2, 'A', "queryBank2Agc",         "beginBank2AgcSelect", "-")
 KEYMAP_ROW(FT817 | FT857,   2, 'B', "queryBank2Ft8x7Ipo",    "none",                   "queryBank2Ft8x7Att")
 KEYMAP_ROW(NOT(FT817 | FT857), 2, 'B', "unassigned",       "none",                   "-")
 
