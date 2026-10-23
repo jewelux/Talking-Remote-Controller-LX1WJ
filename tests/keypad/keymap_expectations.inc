@@ -278,7 +278,7 @@ KEYMAP_ROW(ALL,             7, 'C', "focusStep(-1)",         "focusBigStep(-1)",
 
 // ---- Bank 8 ----------------------------------------------------------------
 KEYMAP_ROW(ALL,             8, '1', "queryBank8CivAddress",  "beginBank8CivAddressEntry", "-", "none", "-")
-KEYMAP_ROW(ALL,             8, '2', "queryBank8Baud",        "cycleBank8Baud(-1)",     "cycleBank8Baud(1)", "none", "-")
+KEYMAP_ROW(ALL,             8, '2', "queryBank8Baud",        "beginBank8BaudSelect",   "-", "none", "BAUD")
 KEYMAP_ROW(FTDX10,          8, '3', "reportFtdx10HiddenKey(BANK8 3 SHORT)", "reportFtdx10HiddenKey(BANK8 3 LONG)", "-", "none", "-")
 KEYMAP_ROW(CIV,             8, '3', "send(TRANSCEIVE?)",     "toggleBank8Transceive",  "-", "none", "-")
 KEYMAP_ROW(NOT(CIV | FTDX10), 8, '3', "unassigned",          "toggleBank8Transceive",  "-", "none", "-")
@@ -288,9 +288,9 @@ KEYMAP_ROW(FTDX10,          8, '5', "send(ID?)",             "none",            
 KEYMAP_ROW(NOT(FTDX10),     8, '5', "unassigned",            "none",                   "-", "none", "-")
 KEYMAP_ROW(FTDX10,          8, '6', "send(IF?)",             "none",                   "-", "none", "-")
 KEYMAP_ROW(NOT(FTDX10),     8, '6', "unassigned",            "none",                   "-", "none", "-")
-KEYMAP_ROW(FT817 | FT857,   8, '7', "queryBank8Ft8x7Row",    "beginBank8Ft8x7RowEntry", "-", "none", "-")
+KEYMAP_ROW(FT817 | FT857,   8, '7', "queryBank8Ft8x7Row",    "beginBank8Ft8x7RowEntry", "-", "none", "ROW")
 KEYMAP_ROW(NOT(FT817 | FT857), 8, '7', "unassigned",       "none",                   "-", "none", "-")
-KEYMAP_ROW(FT817 | FT857,   8, '8', "queryBank8Ft8x7Menu",   "beginBank8Ft8x7MenuEntry", "-", "none", "-")
+KEYMAP_ROW(FT817 | FT857,   8, '8', "queryBank8Ft8x7Menu",   "beginBank8Ft8x7MenuEntry", "-", "none", "MENU")
 KEYMAP_ROW(NOT(FT817 | FT857), 8, '8', "unassigned",       "none",                   "-", "none", "-")
 KEYMAP_ROW(ALL,             8, 'A', "focusSay",              "focusEntry",             "-", "none", "-")
 KEYMAP_ROW(ALL,             8, 'B', "focusStep(1)",          "focusBigStep(1)",        "-", "none", "-")

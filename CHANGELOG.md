@@ -72,6 +72,8 @@
   FT-891, TS-480 and KX2 too, as on the Icoms
 - `A`, `B` and `C` act on the bank's focus, the setting of the last key used on that bank: `A`
   says it, `A` long opens its entry, `B` and `C` step it up and down (held: a bigger step)
+- Bank 8: `A`, `B` and `C` act on the baud rate, and after `7` or `8` on the FT-8x7 row or menu
+  item (experimental)
 - entries (RF power, levels, CTCSS, DCS) and picks (mode, AGC) start from the radio's value; `B`
   and `C` step it, `D` sets it. RF power, the mode and the FT-8x7 settings always wait for `D`
 - help mode: `D` long, then each key says what it would do and changes nothing; `D` long or `#`
@@ -218,11 +220,11 @@
   8 FT-817, 9 FT-857, 10 FT-897, 11 FTDX10, 12 FTDX101D, 13 FTDX101MP, 14 FT-818, 15 FT-891,
   17 IC-705, 18 IC-7760
 - the baud rate can be set on every radio, not only on CI-V radios. Bank 8 `2` short says it
-  ("baud 4 8 0 0"), long and double press step down and up through the rates the radio offers
-  (FT-817/818/857/897: 4800, 9600, 38400; FTDX10, FTDX101 and FT-891: 4800 to 38400; TS-480:
-  4800 to 57600; KX2: 4800 to 38400). Before, `2` short and long stepped up and down. Console
-  `BAUD <rate>` refuses other rates and lists them. The choice is kept for each profile, and
-  `PROFILE?` lists the rates
+  ("baud 4 8 0 0"), `2` long picks one, Bank 8 `B` and `C` step up and down through the rates
+  the radio offers (FT-817/818/857/897: 4800, 9600, 38400; FTDX10, FTDX101 and FT-891: 4800 to
+  38400; TS-480: 4800 to 57600; KX2: 4800 to 38400). Before, `2` short and long stepped up and
+  down. Console `BAUD <rate>` refuses other rates and lists them. The choice is kept for each
+  profile, and `PROFILE?` lists the rates
 - Bank 9 `A` double press resets the profile: its baud rate and CI-V address go back to the
   defaults, and HamTRC says "profile reset". Console `PROFILE RESET`, and `PROFILE RESET ALL`
   for every profile

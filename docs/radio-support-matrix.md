@@ -89,8 +89,8 @@ pitch is set to its nearest 5 Hz step. These are not tested on a radio yet eithe
 
 ## Profiles and baud rates
 
-Every profile is built into the firmware. Bank 8 `2` says the baud rate, and its long and double
-press (console `BAUD`) step down and up through the rates the radio offers; the choice is kept for
+Every profile is built into the firmware. Bank 8 `2` says the baud rate, `2` long picks one, and
+Bank 8 `B` and `C` (console `BAUD`) step up and down through the rates the radio offers; the choice is kept for
 the profile, so set the same rate on the radio. On CI-V radios, Bank 8 `1` (console `CIVADDR`)
 speaks or sets the CI-V address. Bank 9 `1` double press (console `PROFILE RESET`, or
 `PROFILE RESET ALL` for every profile) puts both back to the defaults below.

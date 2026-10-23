@@ -118,11 +118,6 @@ bool recentValue(Setting setting, int32_t& value) {
   return true;
 }
 
-const char* stepWord(int8_t dir, bool big) {
-  if (dir > 0) return big ? "UP FAST" : "UP";
-  return big ? "DOWN FAST" : "DOWN";
-}
-
 EntrySeed knownSeed(int32_t value) {
   EntrySeed seed;
   seed.known = true;
@@ -199,6 +194,9 @@ constexpr FocusActions kFocusActions[] = {
     // A short list: A long steps to the next, as its key does.
     {Setting::SpeechSpeed, queryBank9Speed, stepBank9Speed, nullptr, nullptr},
     {Setting::Agc, queryBank2Agc, beginBank2AgcSelect, nullptr, nudgeBank2Agc},
+    {Setting::Baud, queryBank8Baud, beginBank8BaudSelect, nullptr, stepBank8Baud},
+    {Setting::Ft8x7Menu, queryBank8Ft8x7Menu, beginBank8Ft8x7MenuEntry, nullptr, stepBank8Ft8x7Menu},
+    {Setting::Ft8x7Row, queryBank8Ft8x7Row, beginBank8Ft8x7RowEntry, nullptr, stepBank8Ft8x7Row},
 };
 
 const FocusActions* focusActions(Setting setting) {
@@ -225,12 +223,17 @@ void stepFocus(int8_t dir, bool big) {
 
 }  // namespace
 
+const char* keypadStepWord(int8_t dir, bool big) {
+  if (dir > 0) return big ? "UP FAST" : "UP";
+  return big ? "DOWN FAST" : "DOWN";
+}
+
 // A live setting is set at once. A Confirm one (RF power) is read once and its entry opens
 // one step away, staged: "power 45 watts please"; its B and C then step with no radio traffic.
 void keypadSettingNudge(Setting setting, int8_t dir, bool big) {
   const SettingOps* ops = settingOps(setting);
   const char* label = settingInfo(setting).label;
-  printKeypadAction("{} {}", label, stepWord(dir, big));
+  printKeypadAction("{} {}", label, keypadStepWord(dir, big));
   if (keypadReportIfUnsupported(ops != nullptr, label)) return;
   ValueSpec spec;
   int32_t value = 0;

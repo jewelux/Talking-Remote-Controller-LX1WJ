@@ -221,7 +221,7 @@ void queryBank6SplitTone() { record("queryBank6SplitTone"); }
 void queryBank8CivAddress() { record("queryBank8CivAddress"); }
 void beginBank8CivAddressEntry() { record("beginBank8CivAddressEntry"); }
 void queryBank8Baud() { record("queryBank8Baud"); }
-void cycleBank8Baud(int d) { record("cycleBank8Baud(%d)", d); }
+void beginBank8BaudSelect() { record("beginBank8BaudSelect"); }
 void toggleBank8Transceive() { record("toggleBank8Transceive"); }
 void queryBank8Ft8x7Row() { record("queryBank8Ft8x7Row"); }
 void queryBank8Ft8x7Menu() { record("queryBank8Ft8x7Menu"); }
@@ -318,6 +318,8 @@ TEST(keymap_focus_keys_follow_the_focus) {
   CHECK(keymapLookup(t, 1, 'B', Setting::Mode).shortAction != nullptr);
   CHECK(keymapHomeFocus(t, 5) == Setting::RitOffset);
   CHECK(keymapHomeFocus(t, 9) == Setting::Profile);
+  CHECK(keymapHomeFocus(t, 8) == Setting::Baud);
+  CHECK(!keymapLookup(t, 8, 'A').waitsForDouble);
   CHECK(keymapHomeFocus(t, 1) == Setting::None);
   CHECK(keymapLookup(t, 2, 'A', Setting::PbtInner).waitsForDouble);
   CHECK(keymapLookup(t, 7, 'A', Setting::BreakIn).shortAction != nullptr);

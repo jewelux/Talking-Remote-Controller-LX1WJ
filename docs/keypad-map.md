@@ -43,7 +43,7 @@ back to its starting focus.
 | 5 | `1`-`5` RIT offset | RIT offset |
 | 6 | `3` CTCSS tone, `4` DCS code (FT-8x7) | none |
 | 7 | `1` keyer speed, `2` QSK time (FT-857/897) or break-in (Icom), `3` sidetone, `5` pitch, `6` weight, `8` RF power, `9` break-in delay | none |
-| 8 | none yet | none |
+| 8 | `2` baud rate, `7` row and `8` menu item (FT-817/818, FT-857/897) | baud rate |
 | 9 | `7` volume, `8` speech speed | profile |
 
 With no focus, `A`, `B` and `C` say "not available".
@@ -54,7 +54,7 @@ With no focus, `A`, `B` and `C` say "not available".
 | `A` long | its entry or pick; speech speed steps to the next |
 | `A` double | back to the centre: PBT 0, RIT offset 0, normal speech speed, profile reset. Only where there is one; elsewhere `A` answers at once |
 | `B` / `C` short | one step up / down |
-| `B` / `C` long | a big step: RF power 5 steps, NR and NB level 25 % on Icom and 5 steps elsewhere, PBT 50, low and high cut 5 steps, the Bank 4 levels and the sidetone 25, VOX delay, CW speed, pitch, weight, delay and QSK time 5 steps, RIT offset 100 Hz, CTCSS tone and DCS code 5, volume 2; a list (filter, notch, AGC, preamp, attenuator, CW filter width, TX equalizer, Icom break-in, speech speed) one step; the mode and the profile not available |
+| `B` / `C` long | a big step: RF power 5 steps, NR and NB level 25 % on Icom and 5 steps elsewhere, PBT 50, low and high cut 5 steps, the Bank 4 levels and the sidetone 25, VOX delay, CW speed, pitch, weight, delay and QSK time 5 steps, RIT offset 100 Hz, CTCSS tone and DCS code 5, volume 2, FT-8x7 menu item 10 and row 5; a list (filter, notch, AGC, preamp, attenuator, CW filter width, TX equalizer, Icom break-in, speech speed) one step; the mode, the profile and the baud rate not available |
 
 The first `B` or `C` after another key names the focus; the next ones give only the value. A step
 past the end of the range says "maximum" or "minimum" and changes nothing.
@@ -331,8 +331,7 @@ the step below the shortest delay is FULL. The weight is typed with `*` as its p
 | `1` short | CI-V address | not available | not available | not available | not available |
 | `1` long | CI-V address entry | not available | not available | not available | not available |
 | `2` short | baud rate | baud rate | baud rate | baud rate | baud rate |
-| `2` long | previous baud rate | previous baud rate | previous baud rate | previous baud rate | previous baud rate |
-| `2` double | next baud rate | next baud rate | next baud rate | next baud rate | next baud rate |
+| `2` long | baud rate pick | baud rate pick | baud rate pick | baud rate pick | baud rate pick |
 | `3` short | transceive (IC-7760: not available) | not available | free | free | free |
 | `3` long | transceive on/off | not available | not available | not available | not available |
 | `4` short | free | radio power state | free | free | free |
@@ -344,12 +343,18 @@ the step below the shortest delay is FULL. The weight is typed with `*` as its p
 | `7` long | free | free | free | function row entry (experimental) | soft key row entry (experimental) |
 | `8` short | free | free | free | last menu item | last menu item |
 | `8` long | free | free | free | menu item entry (experimental) | menu item entry (experimental) |
-| `A` `B` `C` | focus (none yet) | focus (none yet) | focus (none yet) | focus (none yet) | focus (none yet) |
+| `A` `B` `C` | focus: baud rate | focus: baud rate | focus: baud rate | focus: baud rate, row or menu item | focus: baud rate, row or menu item |
 
-`2` long and double step through the rates the radio offers (see the
-[radio support matrix](radio-support-matrix.md)) and keep the choice for the profile. Set the same
+`2` long opens a pick of the rates the radio offers (see the
+[radio support matrix](radio-support-matrix.md)): `1` the slowest, `2` the next and so on, `D` sets
+it. `B` and `C` step through the same rates at once. Either way the choice is kept for the profile. Set the same
 rate on the radio. Bank 9 `1` double press puts the baud rate and CI-V address back to the
 profile's defaults.
+
+The baud rate is the starting focus, and `2` brings it back: `B` and `C` step to the next and
+previous rate and go round. `7` and `8` (FT-8x7) move the focus to the row or menu item; `B` and `C` set it one up
+or down at once, and stop with "maximum" or "minimum". The row and menu item
+need experimental mode, as their entries do.
 
 ## Bank 9 - Profile and Speech
 

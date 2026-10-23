@@ -167,8 +167,8 @@ void queryBank6SplitTone();
 void queryBank8CivAddress();
 void beginBank8CivAddressEntry();
 void queryBank8Baud();  // "BAUD?", says "baud 4800"
-// 1: the next rate the radio offers, -1: the previous one, wrapping around.
-void cycleBank8Baud(int delta);
+// The rates the radio offers on keys 1, 2, ... (slowest first); Enter sets the one picked.
+void beginBank8BaudSelect();
 void toggleBank8Transceive();
 // FT-8x7: the soft key (function) row and menu item saved when the radio's menu was last exited.
 void queryBank8Ft8x7Row();

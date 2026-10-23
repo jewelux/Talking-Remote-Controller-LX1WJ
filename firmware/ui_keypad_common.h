@@ -43,6 +43,13 @@ void nudgeBank1Mode(int8_t dir);
 // B and C on the AGC focus (ui_keypad_bank2.cpp): over CAT the next speed the radio can be set
 // to, set at once; on the FT-8x7 the AGC pick one away, staged for Enter. A big step is one too.
 void nudgeBank2Agc(int8_t dir, bool big);
+// B and C on the Bank 8 focuses (ui_keypad_bank8.cpp), set at once: the next or previous baud
+// rate, going round (no big step); the FT-8x7 menu item or row one up or down (big 10 or 5).
+void stepBank8Baud(int8_t dir, bool big);
+void stepBank8Ft8x7Menu(int8_t dir, bool big);
+void stepBank8Ft8x7Row(int8_t dir, bool big);
+// "UP", "DOWN FAST" and so on, for a B or C trace.
+const char* keypadStepWord(int8_t dir, bool big);
 // What a value entry says, called by the state machine.
 void keypadValueDigit(const ValueSpec& spec, char key, const char* digits);
 void keypadValueSay(const ValueSpec& spec, int32_t value);

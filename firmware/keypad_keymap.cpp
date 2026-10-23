@@ -461,14 +461,13 @@ KeyBinding bank6(const KeypadTraits& t, char key) {
   }
 }
 
+// The baud is the home focus; the FT-8x7 menu and row move it.
 KeyBinding bank8(const KeypadTraits& t, char key) {
   // FT-817 and FT-857/897: the radio's menu position.
   const bool ft8x7Menu = t.layout == L::Ft817 || t.layout == L::Ft857;
   switch (key) {
     case '1': return bind(queryBank8CivAddress, beginBank8CivAddressEntry).help("CIVADDR", V::Say, V::Entry);
-    case '2':
-      return bind(queryBank8Baud, [] { cycleBank8Baud(-1); }, [] { cycleBank8Baud(1); })
-          .help("BAUD", V::Say, V::Down, V::Up);
+    case '2': return bind(queryBank8Baud, beginBank8BaudSelect).withFocus(Setting::Baud).help("BAUD", V::Say, V::Pick);
     case '3':
       if (t.layout == L::Ftdx10) return ftdx10Hidden("TRANSCEIVE", true);
       return bind(t.supportsTransceive ? SEND("TRANSCEIVE?") : nullptr, toggleBank8Transceive)
@@ -483,11 +482,15 @@ KeyBinding bank8(const KeypadTraits& t, char key) {
     case '5': return t.layout == L::Ftdx10 ? bind(SEND("ID?")).help("ID", V::Say) : KeyBinding{};
     case '6': return t.layout == L::Ftdx10 ? bind(SEND("IF?")).help("IF", V::Say) : KeyBinding{};
     case '7':
-      if (ft8x7Menu) return bind(queryBank8Ft8x7Row, beginBank8Ft8x7RowEntry).help("ROW", V::Say, V::Entry);
-      return {};
+      if (!ft8x7Menu) return {};
+      return bind(queryBank8Ft8x7Row, beginBank8Ft8x7RowEntry)
+          .withFocus(Setting::Ft8x7Row)
+          .help("ROW", V::Say, V::Entry);
     case '8':
-      if (ft8x7Menu) return bind(queryBank8Ft8x7Menu, beginBank8Ft8x7MenuEntry).help("MENU", V::Say, V::Entry);
-      return {};
+      if (!ft8x7Menu) return {};
+      return bind(queryBank8Ft8x7Menu, beginBank8Ft8x7MenuEntry)
+          .withFocus(Setting::Ft8x7Menu)
+          .help("MENU", V::Say, V::Entry);
     default: return {};
   }
 }
@@ -553,6 +556,7 @@ KeyBinding bank9(char key) {
 Setting keymapHomeFocus(const KeypadTraits&, uint8_t bank) {
   switch (bank) {
     case 5: return Setting::RitOffset;
+    case 8: return Setting::Baud;
     case 9: return Setting::Profile;
     default: return Setting::None;
   }

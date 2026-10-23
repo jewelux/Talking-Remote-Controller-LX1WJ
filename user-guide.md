@@ -40,15 +40,15 @@ Global rules:
 
 `A`, `B` and `C` act on the bank's focus, the setting of the last key you used on that bank that
 has one: Bank 1 `6` RF power or `9` mode, Bank 5 the RIT offset, Bank 9 `7` volume or
-`8` speech speed, or `1` the profile. A key with nothing to move, such as a meter, leaves the focus as it was. Each bank
-keeps its own focus. Bank 5 starts on the RIT offset and Bank 9 on the profile.
+`8` speech speed, or `1` the profile, Bank 8 `2` baud rate, `7` row or `8` menu item. A key with nothing to move, such as a meter, leaves the focus as it was. Each bank
+keeps its own focus. Bank 5 starts on the RIT offset, Bank 8 on the baud rate and Bank 9 on the profile.
 
 - `A` short: the focus with its name
 - `A` long: its entry or selection
 - `A` double: back to the centre where there is one (RIT offset 0, normal speech speed, profile reset)
 - `B` / `C` short: one step up / down. The first step names the setting, the next ones give only
   the value. Past the end you hear "maximum" or "minimum" and nothing changes
-- `B` / `C` long: a bigger step; the mode and the profile have none and say "not available"
+- `B` / `C` long: a bigger step; the mode, the profile and the baud rate have none and say "not available"
 - RF power and the mode wait for `D`. `B` or `C` reads the value and opens its entry one step
   away, ending in "please"; more `B` and `C` presses step, `D` sets, `#` cancels
 - With no focus on the bank, `A`, `B` and `C` say "not available"
@@ -153,11 +153,12 @@ Mode digits:
 Bank 8 adjusts the connection settings stored for the selected profile.
 
 - Bank 8, `2` short: speak the current baud rate
-- Bank 8, `2` long: move to the previous baud rate the radio offers
-- Bank 8, `2` double press: move to the next baud rate
+- Bank 8, `2` long, a digit, `D`: pick a baud rate; `1` is the slowest the radio offers, `2` the
+  next, and so on
 - CI-V radios only: Bank 8, `1` short: speak the current CI-V address
 - CI-V radios only: Bank 8, `1` long, digits, `D`: set CI-V address as a decimal value from `0`
   to `255`
+- Bank 8, `B` / `C`: move to the next / previous baud rate the radio offers
 
 Set the same baud rate on the radio. The FT-817, FT-818, FT-857 and FT-897 offer 4800, 9600 and
 38400 baud.

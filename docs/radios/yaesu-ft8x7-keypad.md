@@ -221,11 +221,12 @@ delay is FULL, and `0` typed in the delay entry sets FULL.
 | Key | FT-817 | FT-857/897 |
 |---|---|---|
 | `2` short | `BAUD?` | `BAUD?` |
-| `2` long / double | previous / next baud rate (4800, 9600, 38400) | previous / next baud rate (4800, 9600, 38400) |
+| `2` long | baud rate pick: `1` 4800, `2` 9600, `3` 38400, then `D` | baud rate pick: `1` 4800, `2` 9600, `3` 38400, then `D` |
 | `7` short | `ROW?` (function row) | `ROW?` (soft key row) |
 | `7` long | experimental: `ROW <n>`, then digits, then `Enter` (1–12) | experimental: `ROW <n>`, then digits, then `Enter` (1–17) |
 | `8` short | `MENU?` (last menu item) | `MENU?` (last menu item) |
 | `8` long | experimental: `MENU <n>`, then digits, then `Enter` (1–52, 1–57 with menu 52 EXTEND on) | experimental: `MENU <n>`, then digits, then `Enter` (1–88, 1–91 with menu 1 EXT MENU on) |
+| `A` `B` `C` | focus: baud rate (4800, 9600, 38400), or row / menu item after `7` / `8` | focus: baud rate, or row / menu item after `7` / `8` |
 
 `MENU?` and `ROW?` are saved only when the radio's menu is exited. Set the same baud rate in the
 radio's CAT RATE menu.

@@ -66,6 +66,10 @@ enum class Setting : uint8_t {
   CwWeight,
   KeyReverse,
   CwDelay,
+  // Bank 8
+  Baud,
+  Ft8x7Menu,
+  Ft8x7Row,
   // Bank 9
   Profile,
   SpeechSpeed,
