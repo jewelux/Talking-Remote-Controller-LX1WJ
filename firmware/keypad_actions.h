@@ -87,7 +87,6 @@ void queryBank2Preamp();
 void stepBank2Preamp();
 // FT-8x7 settings read from the radio's EEPROM.
 void queryBank2Ft8x7Dbf();
-void queryBank2Ft8x7MicEq();
 void queryBank2Ft8x7Ipo();
 void queryBank2Ft817Antenna();
 // Experimental, written to the radio's EEPROM; "not available" unless EXPERIMENTAL is on. The
@@ -134,10 +133,6 @@ void recallBank3BandStack(uint8_t reg);
 void queryBank4Tuner();
 void toggleBank4Tuner();
 void triggerBank4Tune();
-void toggleBank4Monitor();
-void queryBank4MonitorLevel();
-void adjustBank4MonitorLevel(int deltaPercent);
-void toggleBank4Transceive();
 
 // ---- Bank 5 ----
 void queryBank5Rit();
@@ -176,6 +171,7 @@ void beginBank8CivAddressEntry();
 void queryBank8Baud();  // "BAUD?", says "baud 4800"
 // 1: the next rate the radio offers, -1: the previous one, wrapping around.
 void cycleBank8Baud(int delta);
+void toggleBank8Transceive();
 // FT-8x7: the soft key (function) row and menu item saved when the radio's menu was last exited.
 void queryBank8Ft8x7Row();
 void queryBank8Ft8x7Menu();

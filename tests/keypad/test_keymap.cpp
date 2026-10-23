@@ -41,7 +41,7 @@ KeypadTraits traitsFor(uint16_t family) {
   t.supportsMonitor = (family & CIV) != 0;
   t.supportsTransceive = (family & CIV) != 0;
   t.canGetRfPower = family == IC7300 || family == TS480 || family == FTDX10 || family == FT891;
-  // The Bank 2 settings, as the profiles' caps give them.
+  // The Bank 2 and Bank 4 settings, as the profiles' caps give them.
   using S = Setting;
   auto add = [&t](std::initializer_list<Setting> settings) {
     for (Setting s : settings) t.settings.add(s);
@@ -53,6 +53,12 @@ KeypadTraits traitsFor(uint16_t family) {
   if (family == FTDX10 || family == FT891) add({S::NrLevel, S::NbLevel, S::Agc, S::Preamp, S::Att});
   if (family == FT817) add({S::Agc});
   if (family == FT857) add({S::NrLevel, S::NbLevel, S::RxLowCut, S::RxHighCut, S::BpfWidth, S::Agc, S::Att});
+  if (family == IC7300) add({S::Monitor, S::MonitorLevel});
+  if (family == IC7300 || family == TS480 || family == FTDX10 || family == FT891 || family == FT857) {
+    add({S::Proc, S::ProcLevel});
+  }
+  if (family != IC706 && family != FT8X7_OTHER) add({S::Vox, S::VoxGain, S::MicGain, S::VoxDelay});
+  if (family == FT857) add({S::TxEq, S::TxLowCut, S::TxHighCut});
   return t;
 }
 
@@ -131,7 +137,6 @@ void queryBank2Notch() { record("queryBank2Notch"); }
 void toggleBank2Notch() { record("toggleBank2Notch"); }
 void toggleBank2FilterShape() { record("toggleBank2FilterShape"); }
 void queryBank2Ft8x7Dbf() { record("queryBank2Ft8x7Dbf"); }
-void queryBank2Ft8x7MicEq() { record("queryBank2Ft8x7MicEq"); }
 void queryBank2Ft8x7Ipo() { record("queryBank2Ft8x7Ipo"); }
 void queryBank1Alc() { record("queryBank1Alc"); }
 void queryBank2AutoNotch() { record("queryBank2AutoNotch"); }
@@ -186,10 +191,6 @@ void recallBank3BandStack(uint8_t r) { record("recallBank3BandStack(%u)", r); }
 void queryBank4Tuner() { record("queryBank4Tuner"); }
 void toggleBank4Tuner() { record("toggleBank4Tuner"); }
 void triggerBank4Tune() { record("triggerBank4Tune"); }
-void toggleBank4Monitor() { record("toggleBank4Monitor"); }
-void queryBank4MonitorLevel() { record("queryBank4MonitorLevel"); }
-void adjustBank4MonitorLevel(int d) { record("adjustBank4MonitorLevel(%d)", d); }
-void toggleBank4Transceive() { record("toggleBank4Transceive"); }
 
 void queryBank5Rit() { record("queryBank5Rit"); }
 void toggleBank5Rit() { record("toggleBank5Rit"); }
@@ -218,6 +219,7 @@ void queryBank8CivAddress() { record("queryBank8CivAddress"); }
 void beginBank8CivAddressEntry() { record("beginBank8CivAddressEntry"); }
 void queryBank8Baud() { record("queryBank8Baud"); }
 void cycleBank8Baud(int d) { record("cycleBank8Baud(%d)", d); }
+void toggleBank8Transceive() { record("toggleBank8Transceive"); }
 void queryBank8Ft8x7Row() { record("queryBank8Ft8x7Row"); }
 void queryBank8Ft8x7Menu() { record("queryBank8Ft8x7Menu"); }
 void beginBank8Ft8x7RowEntry() { record("beginBank8Ft8x7RowEntry"); }
@@ -316,8 +318,9 @@ TEST(keymap_focus_keys_follow_the_focus) {
   CHECK(keymapHomeFocus(t, 9) == Setting::Profile);
   CHECK(keymapHomeFocus(t, 1) == Setting::None);
   CHECK(keymapLookup(t, 2, 'A', Setting::PbtInner).waitsForDouble);
-  // Banks 4 and 7 get their focus keys with their own layouts.
-  CHECK(isEmpty(keymapLookup(t, 4, 'A')));
+  // Bank 7 gets its focus keys with its own layout.
+  CHECK(isEmpty(keymapLookup(t, 7, 'A')));
+  CHECK(keymapLookup(t, 4, 'A', Setting::MicGain).shortAction != nullptr);
 }
 
 TEST(keymap_ignores_state_machine_keys_and_other_banks) {

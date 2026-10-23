@@ -308,5 +308,6 @@ const SettingOps* settingOps(Setting setting) {
   for (const SettingOps& ops : kOps) {
     if (ops.setting == setting) return &ops;
   }
-  return rxSettingOps(setting);
+  if (const SettingOps* rx = rxSettingOps(setting)) return rx;
+  return txSettingOps(setting);
 }

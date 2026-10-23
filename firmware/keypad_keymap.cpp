@@ -118,6 +118,16 @@ Key ftdx10Hidden(const char* label, bool hold, bool dbl = false) {
       .help(label, V::NotAvailable, V::NotAvailable, V::NotAvailable);
 }
 
+// RF power, on Bank 1 and the transmit banks: its entry waits for Enter on every radio. The
+// FT-8x7 sets it experimentally; the FT-817/818 picks a level.
+KeyBinding rfPowerKey(const KeypadTraits& t) {
+  if (t.layout == L::Ft8x7) return {};
+  const bool reads = t.layout == L::Ft857 || t.layout == L::Ft817 || t.canGetRfPower;
+  return bind(reads ? queryBank1RfPower : nullptr, beginBank1RfPowerSet)
+      .withFocus(Setting::RfPower)
+      .help("RFPOWER", V::Say, t.layout == L::Ft817 ? V::Pick : V::Entry);
+}
+
 KeyBinding bank1(const KeypadTraits& t, char key, Setting focus) {
   if (isFocusKey(key)) return focusKey(key, focus);
   const bool ftdx10 = t.layout == L::Ftdx10;
@@ -138,14 +148,7 @@ KeyBinding bank1(const KeypadTraits& t, char key, Setting focus) {
     case '4': return bind(queryBank1Power).help("PO", V::Say);
     // The FT-8x7 reads its ALC from a 0..15 TX meter, console only (ALC?).
     case '5': return isFt8x7(t) ? KeyBinding{} : bind(queryBank1Alc).help("ALC", V::Say);
-    case '6': {
-      // FT-8x7: experimental; the FT-817/818 picks a level.
-      if (t.layout == L::Ft8x7) return {};
-      const bool reads = t.layout == L::Ft857 || t.layout == L::Ft817 || t.canGetRfPower;
-      return bind(reads ? queryBank1RfPower : nullptr, beginBank1RfPowerSet)
-          .withFocus(Setting::RfPower)
-          .help("RFPOWER", V::Say, t.layout == L::Ft817 ? V::Pick : V::Entry);
-    }
+    case '6': return rfPowerKey(t);
     case '7': return bind(queryBank1Smeter).help("SM", V::Say);
     case '8': return bind(queryBank1Swr).help("SWR", V::Say);
     case '9': return bind(queryBank1Mode, beginBank1ModeSelect).withFocus(Setting::Mode).help("MODE", V::Say, V::Pick);
@@ -336,7 +339,28 @@ KeyBinding bank3(const KeypadTraits& t, char key, Setting focus) {
   }
 }
 
-KeyBinding bank4(const KeypadTraits& t, char key) {
+// A key for a setting S the radio may lack: where it has it, its say and toggle (a switch) or its
+// key of its own; else "not available" on a short.
+template <Setting S>
+Key settingOrNotAvailable(const KeypadTraits& t) {
+  const SettingInfo& info = settingInfo(S);
+  if (!t.settings.has(S)) return bind(saySetting<S>).help(info.label, V::NotAvailable);
+  if (info.kind != SettingKind::Switch) return settingKey<S>(t);
+  return bind(saySetting<S>, nextSetting<S>).help(info.label, V::Say, V::Toggle);
+}
+
+// A switch S with its level, as switchWithLevel; "not available" where the radio lacks S.
+template <Setting S, Setting Level>
+Key switchSettingWithLevel(const KeypadTraits& t) {
+  if (!t.settings.has(S)) return settingOrNotAvailable<S>(t);
+  return switchWithLevel<Level>(t, saySetting<S>, nextSetting<S>, settingInfo(S).label);
+}
+
+// Phone transmit, the twin of Bank 2: the top row the switches with a level, the middle row the
+// TX passband (low side, equalizer, high side), the bottom row mic gain, RF power and VOX delay,
+// '0' the tuner. The FT-8x7 keeps these in its EEPROM: read always, set only experimentally.
+KeyBinding bank4(const KeypadTraits& t, char key, Setting focus) {
+  if (isFocusKey(key)) return focusKey(key, focus);
   const bool ftdx10 = t.layout == L::Ftdx10;
   switch (key) {
     case '0':
@@ -344,21 +368,16 @@ KeyBinding bank4(const KeypadTraits& t, char key) {
                   ftdx10 ? SEND("TUNE") : triggerBank4Tune)
           .help("TUNER", V::Say, V::Toggle)
           .helpDouble("TUNE", V::Run);
-    case '1':
-      if (ftdx10) return ftdx10Hidden("MONITOR", true);
-      return bind(t.supportsMonitor ? SEND("MONITOR?") : nullptr, toggleBank4Monitor).help("MONITOR", V::Say, V::Toggle);
-    case '2':
-      if (ftdx10) return ftdx10Hidden("MONLEVEL", true, true);
-      return bind(queryBank4MonitorLevel, [] { adjustBank4MonitorLevel(10); }, [] { adjustBank4MonitorLevel(-10); })
-          .help("MONLEVEL", V::Say, V::Up, V::Down);
-    case '3':
-      if (ftdx10) return ftdx10Hidden("TRANSCEIVE", true);
-      return bind(t.supportsTransceive ? SEND("TRANSCEIVE?") : nullptr, toggleBank4Transceive)
-          .help("TRANSCEIVE", V::Say, V::Toggle);
-    case '5':
-      // The FT-857/897 TX equalizer (menu 48), read only.
-      if (t.layout == L::Ft817 || t.layout == L::Ft857) return bind(queryBank2Ft8x7MicEq).help("MICEQ", V::Say);
-      return {};
+    case '1': return switchSettingWithLevel<Setting::Proc, Setting::ProcLevel>(t);
+    case '2': return switchSettingWithLevel<Setting::Vox, Setting::VoxGain>(t);
+    case '3': return switchSettingWithLevel<Setting::Monitor, Setting::MonitorLevel>(t);
+    // FT-857/897: the TX equalizer's HPF, the whole equalizer, its LPF.
+    case '4': return settingOrNotAvailable<Setting::TxLowCut>(t);
+    case '5': return settingOrNotAvailable<Setting::TxEq>(t);
+    case '6': return settingOrNotAvailable<Setting::TxHighCut>(t);
+    case '7': return settingOrNotAvailable<Setting::MicGain>(t);
+    case '8': return rfPowerKey(t);
+    case '9': return settingOrNotAvailable<Setting::VoxDelay>(t);
     default: return {};
   }
 }
@@ -437,6 +456,10 @@ KeyBinding bank8(const KeypadTraits& t, char key, Setting focus) {
     case '2':
       return bind(queryBank8Baud, [] { cycleBank8Baud(-1); }, [] { cycleBank8Baud(1); })
           .help("BAUD", V::Say, V::Down, V::Up);
+    case '3':
+      if (t.layout == L::Ftdx10) return ftdx10Hidden("TRANSCEIVE", true);
+      return bind(t.supportsTransceive ? SEND("TRANSCEIVE?") : nullptr, toggleBank8Transceive)
+          .help("TRANSCEIVE", V::Say, V::Toggle);
     // FTDX10: the radio's power switch, its ID and its status line.
     case '4':
       if (t.layout != L::Ftdx10) return {};
@@ -521,7 +544,7 @@ KeyBinding keymapLookup(const KeypadTraits& traits, uint8_t bank, char key, Sett
     case 1: return bank1(traits, key, focus);
     case 2: return bank2(traits, key, focus);
     case 3: return bank3(traits, key, focus);
-    case 4: return bank4(traits, key);
+    case 4: return bank4(traits, key, focus);
     case 5: return bank5(key, focus);
     case 6: return bank6(traits, key, focus);
     case 7: return bank7(key);

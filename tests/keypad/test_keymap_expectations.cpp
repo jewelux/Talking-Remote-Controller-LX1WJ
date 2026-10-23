@@ -76,7 +76,7 @@ TEST(expectations_lookup_defaults_to_unassigned) {
   CHECK_EQ(r.doubleAction, "-");
   CHECK_EQ(r.doubleHoldAction, "none");
   CHECK_EQ(r.focus, "-");
-  CHECK_EQ(lookup(FT817, 4, 'B').shortAction, "unassigned");
+  CHECK_EQ(lookup(FT817, 7, 'B').shortAction, "unassigned");
 }
 
 TEST(expectations_lookup_picks_the_family_row) {
@@ -85,4 +85,6 @@ TEST(expectations_lookup_picks_the_family_row) {
   CHECK_EQ(lookup(TS480, 2, '6').shortAction, "settingSay(PBT2)");
   CHECK_EQ(lookup(TS480, 8, '6').shortAction, "unassigned");
   CHECK_EQ(lookup(IC7300, 9, '4').shortAction, "queryBank9TuningSpeech");
+  CHECK_EQ(lookup(FT857, 4, '5').shortAction, "settingSay(MICEQ)");
+  CHECK_EQ(lookup(IC7300, 8, '3').longAction, "toggleBank8Transceive");
 }

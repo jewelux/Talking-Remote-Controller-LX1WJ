@@ -100,11 +100,11 @@ On the FT-817/818 and FT-857/897, experimental mode also lets HamTRC change sett
 only read, by writing them to the radio's memory: the menu item and soft key row (Bank 8), AGC and
 the noise blanker, and on the FT-857/897 noise reduction, notch, the noise reduction and blanker
 levels, and the DSP bandpass filter with its low and high cut (Bank 2), and the RF power (Bank 1
-`6`). From the console it can also set the mic gain (`MICGAIN`), VOX with its gain and delay
-(`VOX`, `VOXGAIN`, `VOXDELAY`), break-in (`BK`) and the keyer (`KYR`), on the FT-817/818 the
-antenna jack (`ANT`), and on the FT-857/897 the speech processor (`PROC`, `PROCLEVEL`) and the TX
-equalizer (`MICEQ`). On the IC-7300, IC-705, IC-7760, FTDX10, FTDX101, FT-891 and TS-480 the
-console sets the speech processor, mic gain and VOX without experimental mode (the FTDX101 and
+`6`), the mic gain and VOX with its gain and delay (`MICGAIN`, `VOX`, `VOXGAIN`, `VOXDELAY`, Bank
+4), and on the FT-857/897 the speech processor (`PROC`, `PROCLEVEL`) and the TX equalizer (`MICEQ`,
+Bank 4). From the console it can also set break-in (`BK`) and the keyer (`KYR`), and on the
+FT-817/818 the antenna jack (`ANT`). On the IC-7300, IC-705, IC-7760, FTDX10, FTDX101, FT-891 and TS-480 the
+console and Bank 4 set the speech processor, mic gain and VOX without experimental mode (the FTDX101 and
 IC-7760 not all of them), and on these and the KX2 the AGC, also from Bank 2 `7`, and the preamp
 and attenuator (`PREAMP`, `ATT`, Bank 2 `8` and `9`) and, but on the FTDX101MP, the RF power
 (`RFPOWER`, Bank 1 `6`). The Icoms and these Yaesus also set break-in (`BK`) and the Yaesus the

@@ -39,3 +39,5 @@ const SettingOps* settingOps(Setting setting);
 // The Bank 2 receive settings (keypad_setting_ops_rx.cpp), which settingOps also
 // finds.
 const SettingOps* rxSettingOps(Setting setting);
+// The Bank 4 phone transmit settings (keypad_setting_ops_tx.cpp), likewise.
+const SettingOps* txSettingOps(Setting setting);

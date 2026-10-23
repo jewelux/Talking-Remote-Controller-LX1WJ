@@ -2,7 +2,7 @@
 
 This document describes the current keypad layout for the Yaesu FT-817, FT-857, and FT-897 family.
 It lists the keys these radios have of their own; [the keypad map](../keypad-map.md) has every
-bank, Bank 4, 5 and 7 included, for all radios.
+bank, Bank 5 and 7 included, for all radios.
 
 > The layout is experimental and may still change.
 
@@ -61,9 +61,9 @@ All Bank 2 keys read settings from the radio's EEPROM, since CAT cannot. With ex
 | `8` short | not available | `IPO?`: preamplifier, on when IPO is off (HF and 6 m) |
 | `9` short | not available | `ATT?`: attenuator (HF and 6 m) |
 
-The TX equalizer (`MICEQ?`, menu 48) is on Bank 4 `5`.
+The TX equalizer (`MICEQ?`, menu 48) is on Bank 4 `4`-`6`.
 
-IPO and ATT are those of the current band and VFO, also outside the amateur bands (HF and 6 m only). The menu settings are read as the radio last saved them. Break-in, keyer, CW speed, pitch and delay are Bank 7 `1` to `5` (long and double press set them, experimental). FM narrow has no key; the console command `NAR?` reads it. On the FT-857/897, `PROC?` and `PROCLEVEL?` read the speech processor and its level (menu 74). `MICGAIN?` reads the mic gain of the current mode: on the FT-857/897 SSB menu 81, AM menu 5, FM menu 51 or DIG gain menu 37, not in CW and PKT; on the FT-817 SSB menu 46, AM menu 5, FM menu 29, DIG menu 25 or PKT menu 39 or 3 by the packet rate, not in CW. `VOX?`, `VOXGAIN?` and `VOXDELAY?` read VOX, its gain and its delay (FT-857/897 menus 88 and 87, FT-817 menus 51 and 50). With experimental mode on, the console also sets some of these, with no key yet: `MICGAIN <0..100>` and `MICGAIN STEP <+-n>` the mic gain of the current mode, and on the FT-857/897 `PROC ON | OFF | TOGGLE`, `PROCLEVEL <0..100>`, `PROCLEVEL STEP <+-n>` and `MICEQ OFF | LPF | HPF | BOTH`.
+IPO and ATT are those of the current band and VFO, also outside the amateur bands (HF and 6 m only). The menu settings are read as the radio last saved them. Break-in, keyer, CW speed, pitch and delay are Bank 7 `1` to `5` (long and double press set them, experimental). FM narrow has no key; the console command `NAR?` reads it. On the FT-857/897, `PROC?` and `PROCLEVEL?` read the speech processor and its level (menu 74). `MICGAIN?` reads the mic gain of the current mode: on the FT-857/897 SSB menu 81, AM menu 5, FM menu 51 or DIG gain menu 37, not in CW and PKT; on the FT-817 SSB menu 46, AM menu 5, FM menu 29, DIG menu 25 or PKT menu 39 or 3 by the packet rate, not in CW. `VOX?`, `VOXGAIN?` and `VOXDELAY?` read VOX, its gain and its delay (FT-857/897 menus 88 and 87, FT-817 menus 51 and 50). These are on Bank 4.
 
 ## Bank 3 - VFO / Split
 
@@ -97,6 +97,39 @@ FT-817 Bank 3 note:
 FT-857/897 Bank 3 note:
 
 - `5` short switches RIT off and straight back on when RIT is on, since the radio cannot report RIT otherwise. If the knob was tuning IF shift at that moment, it tunes RIT afterwards (EEPROM `0x6A` bit 3). `5` long does not do this: it moves the knob to RIT only when it switches RIT on.
+
+## Bank 4 - Phone Transmit
+
+The FT-8x7 keeps these in its EEPROM: a short press reads, a hold sets with experimental mode on.
+`B` and `C` open the entry one step away, and `D` writes it.
+
+| Key | FT-817 | FT-857/897 |
+|---|---|---|
+| `0` short | not available | not available |
+| `1` short | not available | `PROC?`: speech processor |
+| `1` long | free | processor on/off (experimental) |
+| `1` double | free | `PROCLEVEL?`: processor level (menu 74) |
+| `1` short, then hold | free | processor level entry (experimental) |
+| `2` short | `VOX?` | `VOX?` |
+| `2` long | VOX on/off (experimental) | VOX on/off (experimental) |
+| `2` double | `VOXGAIN?`: VOX gain (menu 51) | `VOXGAIN?`: VOX gain (menu 88) |
+| `2` short, then hold | VOX gain entry (experimental) | VOX gain entry (experimental) |
+| `4` short | not available | TX low cut: the TX equalizer's HPF (menu 48) |
+| `4` long | free | TX low cut on/off (experimental) |
+| `5` short | not available | `MICEQ?`: TX equalizer (menu 48) |
+| `5` long | free | TX equalizer select (experimental) |
+| `6` short | not available | TX high cut: the TX equalizer's LPF (menu 48) |
+| `6` long | free | TX high cut on/off (experimental) |
+| `7` short | `MICGAIN?`: mic gain of the mode | `MICGAIN?`: mic gain of the mode |
+| `7` long | mic gain entry (experimental) | mic gain entry (experimental) |
+| `8` short | `RFPOWER?` | `RFPOWER?` |
+| `8` long | RF power level select (experimental) | RF power entry (experimental) |
+| `9` short | `VOXDELAY?`: VOX delay (menu 50) | `VOXDELAY?`: VOX delay (menu 87) |
+| `9` long | VOX delay entry (experimental) | VOX delay entry (experimental) |
+
+The mic gain is that of the mode in use when the key is pressed; an entry sets that mode's gain
+even if the mode changes before `D`. `4` and `6` switch one filter of the TX equalizer and keep
+the other.
 
 ## Bank 6 - Repeater / Tone
 

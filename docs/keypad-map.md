@@ -153,7 +153,7 @@ IC-7300 and IC-705 20 dB; IC-7760, FTDX10 and FTDX101 6, 12 and 18 dB; KX2 10 dB
 on. The FT-857/897 preamp and attenuator are read only; the IC-706, G106 and FT-817 say "not
 available".
 
-The FT-857/897 TX equalizer is on Bank 4 `5`; the FTDX10 power state, ID and status line are on
+The FT-857/897 TX equalizer is on Bank 4 `4`-`6`; the FTDX10 power state, ID and status line are on
 Bank 8.
 
 ## Bank 3 - VFO and Split
@@ -187,21 +187,51 @@ On the FT-817 and FT-857/897, `1` is the VFO in use and `2` the other one.
 | `9` long | recall band stack 3 | not available | not available | not available | not available |
 | `A` `B` `C` | focus (none yet) | focus (none yet) | focus (none yet) | focus (none yet) | focus (none yet) |
 
-## Bank 4 - Tuner and Monitor
+## Bank 4 - Phone Transmit
+
+The twin of Bank 2. Top row: the switches with a level. Middle row: the TX passband, low side,
+equalizer, high side. Bottom row: mic gain, RF power, VOX delay.
 
 | Key | Icom | FTDX10 | Kenwood, Elecraft, other FTDX | FT-817/818 | FT-857/897 |
 |---|---|---|---|---|---|
 | `0` short | tuner | tuner | tuner | not available | not available |
 | `0` long | tuner on/off | tuner on/off | tuner on/off | not available | not available |
 | `0` double | tune | tune | tune | not available | not available |
-| `1` short | monitor | not available | free | free | free |
-| `1` long | monitor on/off | not available | not available | not available | not available |
-| `2` short | monitor level | not available | not available | not available | not available |
-| `2` long | monitor level up 10 % | not available | not available | not available | not available |
-| `2` double | monitor level down 10 % | not available | not available | not available | not available |
-| `3` short | transceive | not available | free | free | free |
-| `3` long | transceive on/off | not available | not available | not available | not available |
-| `5` short | free | free | free | not available | TX equalizer |
+| `1` short | speech processor (IC-706: not available) | speech processor | speech processor (FT-891, TS-480); others: not available | not available | speech processor |
+| `1` long | processor on/off | processor on/off | processor on/off (FT-891, TS-480) | free | processor on/off (experimental) |
+| `1` double | processor level | processor level | processor level (FT-891, TS-480) | free | processor level |
+| `1` short, then hold | processor level entry | processor level entry | processor level entry (FT-891, TS-480) | free | processor level entry (experimental) |
+| `2` short | VOX (IC-706: not available) | VOX | VOX (FTDX101, FT-891, TS-480); others: not available | VOX | VOX |
+| `2` long | VOX on/off | VOX on/off | VOX on/off | VOX on/off (experimental) | VOX on/off (experimental) |
+| `2` double | VOX gain | VOX gain | VOX gain | VOX gain | VOX gain |
+| `2` short, then hold | VOX gain entry | VOX gain entry | VOX gain entry | VOX gain entry (experimental) | VOX gain entry (experimental) |
+| `3` short | monitor (IC-706: not available) | not available | not available | not available | not available |
+| `3` long | monitor on/off | free | free | free | free |
+| `3` double | monitor level | free | free | free | free |
+| `3` short, then hold | monitor level entry | free | free | free | free |
+| `4` short | not available | not available | not available | not available | TX low cut (the equalizer's HPF) |
+| `4` long | free | free | free | free | TX low cut on/off (experimental) |
+| `5` short | not available | not available | not available | not available | TX equalizer |
+| `5` long | free | free | free | free | TX equalizer select (experimental) |
+| `6` short | not available | not available | not available | not available | TX high cut (the equalizer's LPF) |
+| `6` long | free | free | free | free | TX high cut on/off (experimental) |
+| `7` short | mic gain (IC-706: not available) | mic gain | mic gain (FTDX101, FT-891, TS-480); others: not available | mic gain of the mode | mic gain of the mode |
+| `7` long | mic gain entry | mic gain entry | mic gain entry | mic gain entry (experimental) | mic gain entry (experimental) |
+| `8` short | RF power setting (IC-706: free) | RF power setting | RF power setting (FTDX101MP: free) | RF power setting | RF power setting |
+| `8` long | RF power entry | RF power entry | RF power entry | RF power level select (experimental) | RF power entry (experimental) |
+| `9` short | VOX delay (IC-7300, IC-705) | VOX delay | VOX delay (FT-891, TS-480) | VOX delay | VOX delay |
+| `9` long | VOX delay entry | VOX delay entry | VOX delay entry | VOX delay entry (experimental) | VOX delay entry (experimental) |
+| `A` `B` `C` | focus | focus | focus | focus | focus |
+
+The levels are 0-100 (TS-480 VOX gain 0-9, FT-8x7 VOX gain 1-100); `B`/`C` step them by 5. The
+VOX delay steps by the radio's own step: 100 ms on Icom and the FT-8x7, the radio's table on the
+FTDX10, 150 ms on the TS-480. The FT-8x7 mic gain is that of the mode in use when the key is
+pressed, and an entry sets that mode's gain even if the mode changes before `D`.
+
+TX equalizer select: `0` off, `1` high cut, `2` low cut, `3` both, then `D`. `4` and `6` switch one
+of its two filters and keep the other.
+
+Transceive is on Bank 8 `3`.
 
 ## Bank 5 - RIT
 
@@ -277,6 +307,8 @@ A delay of 0 is full break-in (TS-480, FT-857/897). The other keys are free.
 | `2` short | baud rate | baud rate | baud rate | baud rate | baud rate |
 | `2` long | previous baud rate | previous baud rate | previous baud rate | previous baud rate | previous baud rate |
 | `2` double | next baud rate | next baud rate | next baud rate | next baud rate | next baud rate |
+| `3` short | transceive (IC-7760: not available) | not available | free | free | free |
+| `3` long | transceive on/off | not available | not available | not available | not available |
 | `4` short | free | radio power state | free | free | free |
 | `4` long | free | radio power off | free | free | free |
 | `4` double | free | radio power on | free | free | free |

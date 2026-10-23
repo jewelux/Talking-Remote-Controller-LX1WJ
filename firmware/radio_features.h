@@ -162,6 +162,13 @@ FeatureStatus cwLevelStep(CwLevel level, int delta, uint16_t& valueOut);
 // PL, TS-480 PR and its PL input level.
 // These and the mic gain and VOX reads below are Unsupported where the profile's cap (getProc,
 // getMicGain, getVox) is off.
+// What these read, by the caps (no radio traffic), and where they can be set (the FT-8x7 only
+// experimentally).
+bool procSupported();
+bool procCanSet();
+bool micGainSupported();
+bool micGainCanSet();
+bool voxSupported();
 FeatureStatus procQuery(bool& on);
 // 0..100.
 FeatureStatus procLevelQuery(uint8_t& level);
@@ -186,6 +193,10 @@ FeatureStatus micGainQuery(uint8_t& level);
 // procLevelSet.
 FeatureStatus micGainSet(uint8_t level, uint8_t& levelOut);
 FeatureStatus micGainStep(int delta, uint8_t& levelOut);
+// FT-8x7: the mic gain menu of the current mode, and a set of that menu's gain (experimental),
+// so a keypad entry sets the mode it was opened in. Errors as micGainQuery and micGainSet.
+FeatureStatus ft8x7MicGainMenu(Ft8x7MicGain& gain);
+FeatureStatus ft8x7MicGainSet(Ft8x7MicGain gain, uint8_t level, uint8_t& levelOut);
 
 // VOX: IC-7300, IC-705, IC-7760, the Yaesu ASCII radios' and the TS-480's VX and VG, FT-857/897
 // and its menu 88 gain, FT-817/818 and its menu 51 gain.

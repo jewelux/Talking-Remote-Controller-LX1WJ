@@ -203,14 +203,19 @@ The current keypad concept uses radio-specific banks with:
 | VFO / Split / Bandstack | `BSTACK? 2`, `BSTACK 2` | Bank 3: `8` short / `8` long |
 | VFO / Split / Bandstack | `BSTACK? 3`, `BSTACK 3` | Bank 3: `9` short / `9` long |
 
-### Bank 4 - TX / Monitor / Antenna
+### Bank 4 - Phone Transmit
 
 | Command family | Commands | Bank / keys |
 |---|---|---|
-| TX / Monitor / Antenna | `TUNER?`, `TUNER ON/OFF`, `TUNE` | Bank 4: `0` short / `0` long / `0` double click |
-| TX / Monitor / Antenna | `MONITOR?`, `MONITOR TOGGLE` | Bank 4: `1` short / `1` long |
-| TX / Monitor / Antenna | `MONLEVEL?`, `MONLEVEL STEP 10/-10` | Bank 4: `2` short / `2` long / `2` double click |
-| TX / Monitor / Antenna | `TRANSCEIVE?`, `TRANSCEIVE TOGGLE` | Bank 4: `3` short / `3` long |
+| Tuner | `TUNER?`, `TUNER ON/OFF`, `TUNE` | Bank 4: `0` short / `0` long / `0` double click |
+| Speech processor | `PROC?`, `PROC TOGGLE`, `PROCLEVEL?`, `PROCLEVEL <0..100>` | Bank 4: `1` short / `1` long / `1` double click / `1` short, then hold |
+| VOX | `VOX?`, `VOX TOGGLE`, `VOXGAIN?`, `VOXGAIN <0..100>` | Bank 4: `2` short / `2` long / `2` double click / `2` short, then hold |
+| Monitor | `MONITOR?`, `MONITOR TOGGLE`, `MONLEVEL?`, `MONLEVEL <0..100>` | Bank 4: `3` short / `3` long / `3` double click / `3` short, then hold |
+| Mic gain | `MICGAIN?`, `MICGAIN <0..100>` | Bank 4: `7` short / `7` long |
+| RF power | `RFPOWER?`, `RFPOWER <W>` | Bank 4: `8` short / `8` long |
+| VOX delay | `VOXDELAY?`, `VOXDELAY <ms>` | Bank 4: `9` short / `9` long |
+
+`A`, `B` and `C` act on the level last touched: `B`/`C` step it by 5 (VOX delay 100 ms).
 
 ### Bank 5 - Fine Tuning / RIT
 
@@ -222,6 +227,12 @@ The current keypad concept uses radio-specific banks with:
 | Fine tuning / RIT | `RIT 0`, `RIT OFF` | Bank 5: `3` short / `3` long |
 | Fine tuning / RIT | `RIT STEP -1`, `RIT STEP -500` | Bank 5: `4` short / `4` long |
 | Fine tuning / RIT | `RIT STEP 1`, `RIT STEP 500` | Bank 5: `5` short / `5` long |
+
+### Bank 8 - Transceive
+
+| Command family | Commands | Bank / keys |
+|---|---|---|
+| Transceive | `TRANSCEIVE?`, `TRANSCEIVE TOGGLE` | Bank 8: `3` short / `3` long |
 
 ### Bank 9 - Profile / System
 

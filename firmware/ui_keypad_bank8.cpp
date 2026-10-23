@@ -1,4 +1,4 @@
-// Bank 8 keypad actions: baud rate, CI-V address, and the FT-8x7 menu item and row.
+// Bank 8 keypad actions: baud rate, CI-V address, transceive, and the FT-8x7 menu item and row.
 #include "ui_keypad_bank.h"
 #include "radio_profile.h"
 
@@ -81,4 +81,14 @@ void cycleBank8Baud(int delta) {
   if (!setCurrentBaud(baud)) return;
   printKeypadStatus("BAUD {}", baud);
   speakBaudValue(baud, true);
+}
+
+void toggleBank8Transceive() {
+  printKeypadAction("TRANSCEIVE");
+  if (keypadReportIfUnsupported(protocolSupportsTransceive(), "TRANSCEIVE")) return;
+  bool on = false;
+  if (!queryTransceiveEnabled(on, kCatReplyTimeoutMs)) { keypadReportFailure("TRANSCEIVE"); return; }
+  if (!setTransceiveEnabled(!on)) { keypadReportFailure("TRANSCEIVE"); return; }
+  printKeypadStatus("TRANSCEIVE {}", !on ? "ON" : "OFF");
+  speakTokenState("transceiver", !on);
 }

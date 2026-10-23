@@ -81,6 +81,18 @@
     ON | TOGGLE`, read back). FT-817/818: the antenna jack of the band, long press front/rear
     (experimental)
   - the FT-8x7 settings are read from the radio's memory and set only in experimental mode
+- Bank 4 is the phone transmit bank, laid out like Bank 2: the top row the switches with a level,
+  the middle row the TX passband, the bottom row mic gain, RF power and VOX delay.
+  - `1` speech processor, `2` VOX and `3` monitor (Icom): short says it, long turns it on or off, a
+    double press says its level and a press then a hold opens the level's entry
+  - FT-857/897: `4` TX low cut and `6` TX high cut, the two filters of the TX equalizer (menu 48),
+    long press switches one and keeps the other; `5` the TX equalizer, long press picks `0` off,
+    `1` high cut, `2` low cut, `3` both, then `D`. Other radios say "not available"
+  - `7` mic gain, `8` RF power (as Bank 1 `6`) and `9` VOX delay: short says it, long opens its
+    entry. The FT-8x7 mic gain is that of the mode in use, and its entry sets that mode's gain
+  - `0` the tuner, as before
+  - the FT-8x7 settings are read from the radio's memory and set only in experimental mode. On the
+    CAT radios these keys are not yet tested on a radio
 - Bank 1 `5` says the ALC meter while transmitting, in percent of full scale, on the Icoms and the
   FTDX10, FTDX101 and FT-891 (console `ALC?`)
 - Bank 1 `6` says the RF power setting and long press enters it in watts on the FTDX10, FTDX101D,
@@ -94,15 +106,16 @@
 - the FT-817/818 power level, the mode and the AGC picks: `B` and `C` walk to the next or previous
   choice, from the power level or mode the radio has; `A` says it. Nothing changes before `D`.
   The mode and AGC go round, from the last choice to the first; the power level stops at its ends
-- `A`, `B` and `C` act on the bank's focus, the setting of the last key used on that bank (Banks 1,
-  2, 3, 5, 6, 8 and 9 for now): `A` says it, `A` long opens its entry, `A` double puts it back to its
+- `A`, `B` and `C` act on the bank's focus, the setting of the last key used on that bank (Banks 1
+  to 6, 8 and 9 for now): `A` says it, `A` long opens its entry, `A` double puts it back to its
   centre, `B` and `C` step it up and down, held for a bigger step. The first step names the
   setting, later ones give just the value. Bank 1: `6` RF power and `9` mode, which wait for `D`
   (`B` or `C` opens the entry or pick one step away, ending in "please"). Bank 5: the RIT offset
   (Icom), `B`/`C` 10 Hz, held 100 Hz, `A` double 0. Bank 2: the NR and NB levels, PBT (`A`
   double the centre), the filter or the bandpass width, the Icom notch, AGC, preamp and
   attenuator, set at once; the FT-8x7 ones and the FT-8x7 AGC wait for `D` and need experimental
-  mode. Bank 9: the profile as before, until `6` moves
+  mode. Bank 4: the processor, VOX and monitor levels, the TX equalizer, mic gain, RF power and
+  VOX delay; the levels step by 5, and the FT-8x7 ones wait for `D`. Bank 9: the profile as before, until `6` moves
   it to the speech speed or `7`-`9` to the volume. With no focus they say "not available". RIT,
   the CAT radios' RF power and the Bank 2 focus on the CAT radios are not yet tested on a radio
 - keys moved:
@@ -114,6 +127,8 @@
     from `8` to a double press of `5`
   - FT-857/897: low cut from Bank 2 `7` to `4`, high cut from `8` to `6`, the DSP bandpass filter
     from `6` to `5`, the TX equalizer from Bank 2 `9` to Bank 4 `5`
+  - Icom: the monitor from Bank 4 `1` to `3`, its level from `2` to a double press of `3` (it was
+    stepped by 10 on a long and a double press), transceive from Bank 4 `3` to Bank 8 `3`
   - FTDX10: the power switch from Bank 2 `5` to Bank 8 `4`, the radio ID from Bank 2 `7` to Bank 8
     `5`, the status line from Bank 2 `6` to Bank 8 `6`
 - help mode: `D` long turns it on or off. Each bank key press, short, long or double, then says

@@ -16,7 +16,7 @@
 
 // The profile's cap, and a read HamTRC has for the radio. The ASCII radios read PR, PL, MG, VX,
 // VG and VD; the profile's caps say which of them has the commands.
-static bool procSupported() {
+bool procSupported() {
   if (!currentProfile().caps.getProc) return false;
   return currentProtocolType() == PROTO_CIV || isAsciiRadio() || currentFt8x7Model() == Ft8x7Model::Ft857;
 }
@@ -395,7 +395,7 @@ FeatureStatus procLevelQuery(uint8_t& level) {
 
 // The FT-8x7 keeps a mic gain per mode; the raw mode byte also tells PKT and the narrow modes
 // apart, which the profile's mode codes do not.
-static FeatureStatus ft8x7CurrentMicGain(Ft8x7MicGain& gain) {
+FeatureStatus ft8x7MicGainMenu(Ft8x7MicGain& gain) {
   uint8_t modeByte = 0;
   if (!yaesuCatQueryModeRawByte(modeByte, YAESU_CAT_REPLY_TIMEOUT_MS)) return failure(FeatureStatus::NoReply);
   if (!ft8x7MicGainForMode(modeByte, gain) || !yaesuFt8x7HasMicGain(gain)) return FeatureStatus::Unsupported;
@@ -404,13 +404,13 @@ static FeatureStatus ft8x7CurrentMicGain(Ft8x7MicGain& gain) {
 
 static FeatureStatus ft8x7MicGainQuery(uint8_t& level) {
   Ft8x7MicGain gain = Ft8x7MicGain::Ssb;
-  const FeatureStatus status = ft8x7CurrentMicGain(gain);
+  const FeatureStatus status = ft8x7MicGainMenu(gain);
   if (status != FeatureStatus::Ok) return status;
   if (!yaesuFt8x7QueryMicGain(gain, level, YAESU_CAT_REPLY_TIMEOUT_MS)) return failure(FeatureStatus::NoReply);
   return FeatureStatus::Ok;
 }
 
-static bool micGainSupported() {
+bool micGainSupported() {
   if (!currentProfile().caps.getMicGain) return false;
   return currentProtocolType() == PROTO_CIV || isAsciiRadio() || currentFt8x7Model() != Ft8x7Model::None;
 }
@@ -433,7 +433,7 @@ FeatureStatus micGainQuery(uint8_t& level) {
 
 // ---- VOX ----
 
-static bool voxSupported() {
+bool voxSupported() {
   if (!currentProfile().caps.getVox) return false;
   return currentProtocolType() == PROTO_CIV || isAsciiRadio() || currentFt8x7Model() != Ft8x7Model::None;
 }
@@ -523,6 +523,8 @@ static TxWrite procWriteTarget() {
   return txWriteTarget(procSupported(), currentProfile().caps.setProc, currentIsFt857Family());
 }
 
+bool procCanSet() { return procWriteTarget() != TxWrite::None; }
+
 FeatureStatus procSet(bool on) {
   const RadioProfile& sp = currentProfile();
   switch (procWriteTarget()) {
@@ -574,13 +576,20 @@ static TxWrite micGainWriteTarget() {
   return txWriteTarget(micGainSupported(), currentProfile().caps.setMicGain, true);
 }
 
+bool micGainCanSet() { return micGainWriteTarget() != TxWrite::None; }
+
+FeatureStatus ft8x7MicGainSet(Ft8x7MicGain gain, uint8_t level, uint8_t& levelOut) {
+  if (micGainWriteTarget() != TxWrite::Ft8x7) return FeatureStatus::Unsupported;
+  return eepromWriteStatus(yaesuFt8x7SetMicGain(gain, level, levelOut, kFt8x7TimeoutMs));
+}
+
 FeatureStatus micGainSet(uint8_t level, uint8_t& levelOut) {
   const TxWrite target = micGainWriteTarget();
   if (target == TxWrite::None) return FeatureStatus::Unsupported;
   if (target != TxWrite::Ft8x7) return catLevelSet(target, level, civSetMicGain, asciiSetMicGain, levelOut);
   // The FT-8x7 keeps a mic gain per mode: the current mode's, as micGainQuery picks it.
   Ft8x7MicGain gain = Ft8x7MicGain::Ssb;
-  const FeatureStatus status = ft8x7CurrentMicGain(gain);
+  const FeatureStatus status = ft8x7MicGainMenu(gain);
   if (status != FeatureStatus::Ok) return status;
   return eepromWriteStatus(yaesuFt8x7SetMicGain(gain, level, levelOut, kFt8x7TimeoutMs));
 }
@@ -592,7 +601,7 @@ FeatureStatus micGainStep(int delta, uint8_t& levelOut) {
     return catLevelStep(target, delta, micGainQuery, civSetMicGain, asciiSetMicGain, levelOut);
   }
   Ft8x7MicGain gain = Ft8x7MicGain::Ssb;
-  const FeatureStatus status = ft8x7CurrentMicGain(gain);
+  const FeatureStatus status = ft8x7MicGainMenu(gain);
   if (status != FeatureStatus::Ok) return status;
   return eepromWriteStatus(yaesuFt8x7StepMicGain(gain, delta, levelOut, kFt8x7TimeoutMs));
 }
