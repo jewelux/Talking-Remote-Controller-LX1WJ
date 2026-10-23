@@ -112,8 +112,9 @@ New features and new radios come with a new firmware.
 Each set is read back. The sets are not yet tested on a radio.
 
 The IC-705 and IC-7760 profiles answer these too. The VOX delay sits at a different menu
-address on each model (IC-7300 `1A 05 0191`, IC-705 `0359`, IC-7760 `0182`, as Hamlib reads
-them); the IC-705 and IC-7760 ones are not yet tested on a radio.
+address on each model: IC-7300 `1A 05 0191`, IC-705 `0359`, as each CI-V guide and Hamlib give
+them. The IC-7760 has no `VOXDELAY`: Hamlib reads `0182`, which its CI-V guide lists as the
+Internet access line, and the guide puts the VOX delay at `0365`.
 
 ### VFO / Split / Bandstack
 

@@ -7,8 +7,8 @@ It is meant as a short engineering overview, not as a promise list.
 |---|---|---|---|---|---|---|---|---|---|
 | ICOM IC-7300 | CI-V | implemented | implemented | implemented | implemented | implemented | implemented | tested on hardware | See `docs/radios/icom-ic-7300.md` for the extended command map. |
 | ICOM IC-7300 RS-232 | RS-232 | implemented | implemented | implemented | implemented | implemented | implemented | not recently verified | Intended to mirror the CI-V path. |
-| ICOM IC-705 | CI-V | implemented | implemented | implemented | implemented | implemented | implemented | not tested | The IC-7300's CI-V commands that Hamlib also lists for the IC-705. No tuner, band stack, filter type, notch width or transceive. |
-| ICOM IC-7760 | CI-V | implemented | implemented | implemented | implemented | implemented | implemented | not tested | As the IC-705 plus the tuner; main and sub through command 29. |
+| ICOM IC-705 | CI-V | implemented | implemented | implemented | implemented | implemented | implemented | not tested | Everything the IC-7300 has, checked against the IC-705 CI-V reference guide; the tuner command drives an AH-705. |
+| ICOM IC-7760 | CI-V | implemented | implemented | implemented | implemented | implemented | implemented | not tested | As the IC-7300 (its CI-V reference guide) but no transceive and no VOX delay; main and sub through command 29. |
 | ICOM IC-706 CI-V | CI-V | implemented | implemented | n/a | implemented | n/a | implemented | not recently verified | Frequency, mode and S-meter. No IC-706 variant has the PO or SWR meter command. |
 | ICOM IC-706 RS-232 | RS-232 | implemented | implemented | n/a | implemented | n/a | implemented | not recently verified | As the CI-V slot. |
 | Xiegu G106 | CI-V (TTL) | implemented | implemented | n/a | n/a | n/a | implemented | not recently verified | Frequency and mode only. |
@@ -33,8 +33,8 @@ them in its EEPROM: see the FT-8x7 pages.
 
 | Radio | `PROC`, `PROCLEVEL` | `MICGAIN` | `VOX`, `VOXGAIN` | `VOXDELAY` | Sources |
 |---|---|---|---|---|---|
-| IC-7300 | COMP, 0–100 | 0–100 | 0–100 | 0–2000 ms | CI-V manual, Hamlib |
-| IC-705, IC-7760 | COMP, 0–100 | 0–100 | 0–100 | 0–2000 ms | Hamlib |
+| IC-7300, IC-705 | COMP, 0–100 | 0–100 | 0–100 | 0–2000 ms | CI-V guide, Hamlib |
+| IC-7760 | COMP, 0–100 | 0–100 | 0–100 | – | CI-V guide, Hamlib |
 | FTDX10 | `PR0`, `PL` 0–100 | 0–100 | 0–100 | 30–3000 ms (VD step) | CAT manual, Hamlib |
 | FTDX101D/MP | – | 0–100 | 0–100 | – | Hamlib, flrig |
 | FT-891 | `PR0`, `PL` 0–100 | 0–100 | 0–100 | 30–3000 ms | Hamlib, flrig |

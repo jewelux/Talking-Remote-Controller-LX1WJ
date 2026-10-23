@@ -94,13 +94,13 @@ TEST(icom_caps_per_model) {
   CHECK_EQ(ic705.rfPowerMaxWatts, 10);
   CHECK(ic705.caps.getRfPower && ic705.caps.getNrLevel && ic705.caps.getDialLock);
   CHECK(ic705.caps.getVfo && ic705.caps.getSplit && ic705.caps.getRit && ic705.caps.getRxTx);
-  CHECK(!ic705.caps.getTuner && !ic705.caps.getTransceive && !ic705.caps.getBandStack);
-  CHECK(!ic705.caps.getFilterShape && !ic705.caps.getNotchWidth);
+  CHECK(ic705.caps.getTuner && ic705.caps.getTransceive && ic705.caps.getBandStack);
+  CHECK(ic705.caps.getFilterShape && ic705.caps.getNotchWidth);
 
   const RadioProfile& ic7760 = slot(18);
-  CHECK(ic7760.caps.getTuner && ic7760.caps.getDialLock);
-  CHECK(!ic7760.caps.getTransceive && !ic7760.caps.getBandStack);
-  CHECK(!ic7760.caps.getFilterShape && !ic7760.caps.getNotchWidth);
+  CHECK(ic7760.caps.getTuner && ic7760.caps.getDialLock && ic7760.caps.getBandStack);
+  CHECK(ic7760.caps.getFilterShape && ic7760.caps.getNotchWidth);
+  CHECK(!ic7760.caps.getTransceive && !ic7760.caps.setTransceive);
 
   const uint8_t ic706[] = {2, 4};
   for (uint8_t s : ic706) {

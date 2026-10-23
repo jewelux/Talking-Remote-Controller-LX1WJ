@@ -46,29 +46,16 @@ constexpr RadioCapabilities kIc7300Caps = {
     .getVox = true, .setVox = true,
 };
 
-// The IC-705: the IC-7300's commands that Hamlib lists for the IC-705 too. It has no internal
-// tuner, and its band stack, filter type, notch width and transceive are not confirmed.
-constexpr RadioCapabilities kIc705Caps = [] {
+// The IC-705: every IC-7300 command is in the IC-705 CI-V reference guide too, and Hamlib has
+// it. 1C 01 drives an external tuner (AH-705).
+constexpr RadioCapabilities kIc705Caps = kIc7300Caps;
+
+// The IC-7760: as the IC-7300 (its CI-V reference guide), but no transceive: Hamlib has no
+// address for it. Main and sub go through 29.
+constexpr RadioCapabilities kIc7760Caps = [] {
   RadioCapabilities caps = kIc7300Caps;
-  caps.getNotchWidth = false;
-  caps.setNotchWidth = false;
-  caps.getFilterShape = false;
-  caps.setFilterShape = false;
   caps.getTransceive = false;
   caps.setTransceive = false;
-  caps.getTuner = false;
-  caps.setTuner = false;
-  caps.startTune = false;
-  caps.getBandStack = false;
-  return caps;
-}();
-
-// The IC-7760: as the IC-705, plus its internal tuner. Main and sub go through 29.
-constexpr RadioCapabilities kIc7760Caps = [] {
-  RadioCapabilities caps = kIc705Caps;
-  caps.getTuner = true;
-  caps.setTuner = true;
-  caps.startTune = true;
   return caps;
 }();
 

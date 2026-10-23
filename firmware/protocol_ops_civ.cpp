@@ -399,13 +399,13 @@ bool civQueryVoxGain(const RadioProfile& sp, uint16_t& valueOut, uint32_t timeou
   return civQuery14Value(0x16, valueOut, timeoutMs);
 }
 
-// The 1A 05 menu address of the VOX delay, from Hamlib's VOXDELAY of each model. Other models
-// keep it elsewhere (the IC-7300 MK2 at 0267, the IC-9700 at 0330) or have none.
+// The 1A 05 menu address of the VOX delay, where Hamlib's VOXDELAY and the model's CI-V guide
+// agree. Other models keep it elsewhere (the IC-7300 MK2 at 0267, the IC-9700 at 0330). The
+// IC-7760 has none here: Hamlib says 0182, its guide 0365, and 0182 is its Internet access line.
 bool civVoxDelayAddr(RadioModel model, uint16_t& addrOut) {
   switch (model) {
     case RadioModel::Ic7300: addrOut = 0x0191; return true;
     case RadioModel::Ic705: addrOut = 0x0359; return true;
-    case RadioModel::Ic7760: addrOut = 0x0182; return true;
     default: return false;
   }
 }
@@ -596,11 +596,12 @@ bool civSetMonitorLevel(const RadioProfile& sp, uint16_t value) {
   return civQueryMonitorLevel(sp, readBack, 800) && readBack == value;
 }
 
-// The 1A 05 menu address of the CI-V transceive setting. The IC-7300's is in its manual and in
-// Hamlib; other models keep it elsewhere, and none of theirs is confirmed by two sources yet.
+// The 1A 05 menu address of the CI-V transceive setting, as the model's CI-V guide and Hamlib
+// give it. The IC-7760's guide says 0150, but Hamlib has none for it.
 static bool civTransceiveAddr(RadioModel model, uint16_t& addrOut) {
   switch (model) {
     case RadioModel::Ic7300: addrOut = 0x0071; return true;
+    case RadioModel::Ic705: addrOut = 0x0131; return true;
     default: return false;
   }
 }

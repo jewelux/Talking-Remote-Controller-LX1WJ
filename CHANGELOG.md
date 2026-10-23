@@ -189,14 +189,16 @@
   commands in Icom's CI-V table. Before, on the IC-7300 they changed the beep level limit, the
   confirmation beep, the band edge beep and the transmit frequency monitor instead, and read those
   back as if they worked. If you used them, check these four settings in the radio's menu
-- IC-705 and IC-7760: `TRANSCEIVE` says "not available". It sent the IC-7300's menu address,
-  which is a different item on these radios
-- each Icom gets only the commands confirmed for it, and a command the radio lacks says "not
-  available" at once instead of waiting for a timeout. The IC-705 now has RF power (up to 10 W),
-  NR and NB levels, the manual notch, twin PBT, lock, monitor, VFO A/B, split and RIT; it has no
-  tuner, band stack, filter type or notch width. The IC-7760 loses band stack, filter type and
-  notch width until their commands are confirmed for it. The IC-706 reads frequency, mode and the
-  S-meter, no longer power and SWR
+- IC-705 and IC-7760: `TRANSCEIVE` sent the IC-7300's menu address, which is a different item on
+  these radios. The IC-705 now uses its own (0131); on the IC-7760 it says "not available"
+- IC-7760: `VOXDELAY` says "not available". It wrote menu item 0182, which the IC-7760 CI-V guide
+  lists as the Internet access line setting; the guide puts the VOX delay elsewhere than Hamlib
+  does. If you used `VOXDELAY` on an IC-7760, check that setting in the radio's menu
+- each Icom gets only the commands its CI-V guide and Hamlib agree on, and a command the radio
+  lacks says "not available" at once instead of waiting for a timeout. The IC-705 now has
+  everything the IC-7300 has: RF power (up to 10 W), NR and NB levels, the manual notch and its
+  width, twin PBT, filter type, lock, monitor, the external tuner (AH-705), band stack, VFO A/B,
+  split and RIT. The IC-706 reads frequency, mode and the S-meter, no longer power and SWR
 - console commands the radio profile cannot do say "not available" (they printed "no reply")
 - FTDX101D/MP: `LOCK ON | OFF` sends LK7 and LK4 as these radios expect (main and sub dial
   together), and a read of 4 counts as unlocked. Before, LK1 and LK0 locked or unlocked the main
