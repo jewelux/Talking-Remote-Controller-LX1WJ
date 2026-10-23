@@ -310,6 +310,29 @@ TEST(ascii_pc_in_watts) {
   CHECK(!asciiRfPowerDecode("05A;", tenths));
 }
 
+// ---- Break-in and keyer ----
+
+TEST(civ_break_in_off_semi_full) {
+  BreakInMode mode = BreakInMode::On;
+  CHECK(civBreakInDecode(0x00, mode) && mode == BreakInMode::Off);
+  CHECK(civBreakInDecode(0x01, mode) && mode == BreakInMode::Semi);
+  CHECK(civBreakInDecode(0x02, mode) && mode == BreakInMode::Full);
+  CHECK(!civBreakInDecode(0x03, mode));
+  uint8_t raw = 9;
+  CHECK(civBreakInEncode(BreakInMode::Full, raw) && raw == 0x02);
+  CHECK(civBreakInEncode(BreakInMode::Off, raw) && raw == 0x00);
+  CHECK(!civBreakInEncode(BreakInMode::On, raw));
+}
+
+TEST(yaesu_bi_kr_digit) {
+  bool on = false;
+  CHECK(asciiOnOffDigitDecode("1;", on) && on);
+  CHECK(asciiOnOffDigitDecode("0", on) && !on);
+  CHECK(!asciiOnOffDigitDecode("2;", on));
+  CHECK(!asciiOnOffDigitDecode("10;", on));
+  CHECK(!asciiOnOffDigitDecode(";", on));
+}
+
 // ---- ASCII lock ----
 
 TEST(lock_digit_decodes_with_the_profile_off_digits) {

@@ -53,6 +53,9 @@ bool civQueryPreampLevel(const RadioProfile& sp, uint8_t& levelOut, uint32_t tim
 bool civSetPreampLevel(const RadioProfile& sp, uint8_t level);
 bool civQueryAttDb(const RadioProfile& sp, uint8_t& dbOut, uint32_t timeoutMs);
 bool civSetAttDb(const RadioProfile& sp, uint8_t db);
+// 16 47, CW break-in OFF, SEMI or FULL (caps.getBreakIn, setBreakIn); the set is read back.
+bool civQueryBreakIn(const RadioProfile& sp, BreakInMode& out, uint32_t timeoutMs);
+bool civSetBreakIn(const RadioProfile& sp, BreakInMode mode);
 bool civQueryPbtInner(const RadioProfile& sp, uint16_t& valueOut, uint32_t timeoutMs);
 bool civSetPbtInner(const RadioProfile& sp, uint16_t value);
 bool civQueryPbtOuter(const RadioProfile& sp, uint16_t& valueOut, uint32_t timeoutMs);

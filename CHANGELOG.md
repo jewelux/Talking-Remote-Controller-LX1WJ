@@ -70,6 +70,8 @@
   from the last one to off. On the FTDX10, Bank 1 `6` no longer reads or toggles the preamp
 - Bank 1 `6` says the RF power setting and long press enters it in watts on the FTDX10, FTDX101D,
   FT-891, TS-480 and KX2 too, as on the Icoms
+- Bank 7 is the CW bank: `1` says break-in and long press turns it on or off (Icom: off to semi,
+  semi or full to off), `2` the same for the keyer. On the FT-8x7 setting them is experimental
 
 ### Frequency
 
@@ -186,6 +188,9 @@
 - `RFPOWER?` and `RFPOWER <W>` also work on the FTDX10, FTDX101D, FT-891 and TS-480 (5–100 W) and
   the KX2 (0–15 W), each set read back; `HELP` gives the radio's range. Not on the FTDX101MP, whose
   manual and Hamlib disagree on the scale. Not yet tested on these radios
+- `BK?` and `BK OFF | ON | TOGGLE` also work on the IC-7300, IC-705, IC-7760 (with `SEMI` and
+  `FULL`; `ON` is semi), FTDX10, FTDX101D/MP and FT-891, and `KYR?` and `KYR OFF | ON | TOGGLE` on
+  these Yaesus, each set read back. Not yet tested on these radios
 
 ### Radio profiles
 

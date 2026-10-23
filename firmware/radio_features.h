@@ -110,14 +110,15 @@ bool rfPowerRange(uint16_t& minOut, uint16_t& maxOut);
 // Sets watts, read back into tenthsOut. Invalid outside rfPowerRange.
 FeatureStatus rfPowerSet(uint16_t watts, uint16_t& tenthsOut);
 
-// CW break-in (caps.getBreakIn) and the keyer (caps.getKeyer): the FT-8x7 from its EEPROM.
+// CW break-in (caps.getBreakIn) and the keyer (caps.getKeyer): Icom 16 47 (break-in only), Yaesu
+// BI and KR, the FT-8x7 from its EEPROM.
 FeatureStatus breakInQuery(BreakInMode& out);
-// Whether the radio can be set to mode: on the FT-8x7 OFF and ON, experimentally
-// (caps.setRadioMenu).
+// Whether the radio can be set to mode: Icom OFF, SEMI, FULL and ON (as SEMI); Yaesu OFF and ON;
+// on the FT-8x7 OFF and ON, experimentally (caps.setRadioMenu).
 bool breakInCanSet(BreakInMode mode);
 // Sets mode, read back into out; Unsupported where breakInCanSet is false.
 FeatureStatus breakInSet(BreakInMode mode, BreakInMode& out);
-// Off -> on -> off, from the break-in read.
+// Off -> on (Icom SEMI) -> off, from the break-in read.
 FeatureStatus breakInToggle(BreakInMode& out);
 FeatureStatus keyerQuery(bool& on);
 FeatureStatus keyerSet(bool on, bool& out);

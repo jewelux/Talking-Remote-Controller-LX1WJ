@@ -24,7 +24,7 @@
 //
 // Each (family, bank, key) is covered by at most one row. A key that no row
 // covers is short "unassigned", long "none", double "-". Every key that does
-// something for any family has rows covering all families. Bank 7 is empty.
+// something for any family has rows covering all families.
 //
 // Only the bank keys 0-9 and A-C are here. '*', '#', 'D', the entries, bank,
 // profile and mode select belong to the input state machine and have their
@@ -138,6 +138,8 @@ KEYMAP_ROW(ALL,             2, 'A', "queryBank2Agc",         "beginBank2AgcSelec
 KEYMAP_ROW(FT817 | FT857,   2, 'B', "queryBank2Ft8x7Ipo",    "none",                   "queryBank2Att")
 KEYMAP_ROW(NOT(FT817 | FT857), 2, 'B', "queryBank2Preamp", "stepBank2Preamp",        "-")
 KEYMAP_ROW(ALL,             2, 'C', "queryBank2Att",         "stepBank2Att",           "-")
+KEYMAP_ROW(ALL,             7, '1', "queryBank7BreakIn",     "toggleBank7BreakIn",     "-")
+KEYMAP_ROW(ALL,             7, '2', "queryBank7Keyer",       "toggleBank7Keyer",       "-")
 
 // ---- Bank 3 ----------------------------------------------------------------
 // FT-817 and FT-857/897 track the active VFO: '1' is the current VFO, '2' the

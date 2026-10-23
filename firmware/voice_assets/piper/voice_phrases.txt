@@ -97,6 +97,7 @@ kilohertz
 megahertz
 menu
 mid
+semi
 level
 lock
 minus

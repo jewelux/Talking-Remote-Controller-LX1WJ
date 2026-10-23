@@ -285,6 +285,15 @@ KeyBinding bank8(const KeypadTraits& t, char key) {
   }
 }
 
+// Bank 7: CW. Every radio; the FT-8x7 sets experimentally.
+KeyBinding bank7(char key) {
+  switch (key) {
+    case '1': return bind(queryBank7BreakIn, toggleBank7BreakIn);
+    case '2': return bind(queryBank7Keyer, toggleBank7Keyer);
+    default: return {};
+  }
+}
+
 KeyBinding bank9(char key) {
   switch (key) {
     case '0': return bind(queryBank9Experimental, toggleBank9Experimental);
@@ -313,6 +322,7 @@ KeyBinding keymapLookup(const KeypadTraits& traits, uint8_t bank, char key) {
     case 4: return bank4(traits, key);
     case 5: return bank5(key);
     case 6: return bank6(traits, key);
+    case 7: return bank7(key);
     case 8: return bank8(traits, key);
     case 9: return bank9(key);
     default: return {};

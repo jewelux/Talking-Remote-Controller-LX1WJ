@@ -318,6 +318,32 @@ bool asciiRfPowerEncode(uint16_t watts, char* out, size_t size) {
   return watts <= 999 && snprintf(out, size, "PC%03u;", (unsigned)watts) == 6;
 }
 
+bool civBreakInDecode(uint8_t raw, BreakInMode& out) {
+  switch (raw) {
+    case 0x00: out = BreakInMode::Off; return true;
+    case 0x01: out = BreakInMode::Semi; return true;
+    case 0x02: out = BreakInMode::Full; return true;
+    default: return false;
+  }
+}
+
+bool civBreakInEncode(BreakInMode mode, uint8_t& rawOut) {
+  switch (mode) {
+    case BreakInMode::Off: rawOut = 0x00; return true;
+    case BreakInMode::Semi: rawOut = 0x01; return true;
+    case BreakInMode::Full: rawOut = 0x02; return true;
+    case BreakInMode::On: break;
+  }
+  return false;
+}
+
+bool asciiOnOffDigitDecode(const char* digits, bool& onOut) {
+  int value = 0;
+  if (!exactDigits(digits, 1, value) || value > 1) return false;
+  onOut = value == 1;
+  return true;
+}
+
 bool asciiLockDigitDecode(char digit, const char* offDigits, bool& onOut) {
   if (digit < '0' || digit > '9') return false;
   onOut = strchr(offDigits, digit) == nullptr;

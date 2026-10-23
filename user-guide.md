@@ -89,7 +89,8 @@ equalizer (`MICEQ`). On the IC-7300, IC-705, IC-7760, FTDX10, FTDX101, FT-891 an
 console sets the speech processor, mic gain and VOX without experimental mode (the FTDX101 and
 IC-7760 not all of them), and on these and the KX2 the AGC, also from Bank 2 `A`, and the preamp
 and attenuator (`PREAMP`, `ATT`, Bank 2 `B` and `C`) and, but on the FTDX101MP, the RF power
-(`RFPOWER`, Bank 1 `6`). See the [keypad map](docs/keypad-map.md).
+(`RFPOWER`, Bank 1 `6`). The Icoms and these Yaesus also set break-in (`BK`) and the Yaesus the
+keyer (`KYR`), from Bank 7 `1` and `2` too. See the [keypad map](docs/keypad-map.md).
 
 ## Practical Everyday Use
 

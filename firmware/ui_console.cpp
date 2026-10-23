@@ -795,6 +795,18 @@ static void printFrontEndHelp() {
   helpLine(text.c_str());
 }
 
+// BK and KYR over CAT, as far as the profile has them.
+static void printCwSwitchHelp() {
+  const RadioCapabilities& caps = currentProfile().caps;
+  if (currentProtocolType() == PROTO_YAESU_FT8X7) return;
+  if (caps.getBreakIn) {
+    if (breakInCanSet(BreakInMode::Full)) helpLine("BK? | BK OFF | ON | SEMI | FULL | TOGGLE  (CW break-in, ON is SEMI)");
+    else if (breakInCanSet(BreakInMode::On)) helpLine("BK? | BK OFF | ON | TOGGLE  (CW break-in)");
+    else helpLine("BK?  (CW break-in)");
+  }
+  if (caps.getKeyer) helpLine(caps.setKeyer ? "KYR? | KYR OFF | ON | TOGGLE  (CW keyer)" : "KYR?  (CW keyer)");
+}
+
 // RF power over CAT, with the radio's range.
 static void printRfPowerHelp() {
   if (!currentProfile().caps.getRfPower || currentProtocolType() == PROTO_YAESU_FT8X7) return;
@@ -922,6 +934,7 @@ void printHelp(const String& topicArg) {
     printAgcHelp();
     printFrontEndHelp();
     printRfPowerHelp();
+    printCwSwitchHelp();
     printTxSettingsHelp();
     helpLine("RIT? | RIT <Hz> | RIT STEP <+-Hz> | RIT OFF | ON | TOGGLE");
     helpLine("RXTX?");
@@ -1024,6 +1037,7 @@ void printHelp(const String& topicArg) {
     printAgcHelp();
     printFrontEndHelp();
     printRfPowerHelp();
+    printCwSwitchHelp();
     printTxSettingsHelp();
     helpLine("RXTX?");
     helpLine("SPLIT? | SPLIT OFF | ON | TOGGLE");

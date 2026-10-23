@@ -100,22 +100,51 @@ static FeatureStatus ft8x7FlagWrite(Ft8x7Setting setting, const bool* on, bool& 
   return status;
 }
 
+static bool isYaesuAscii() {
+  return currentProtocolType() == PROTO_YAESU_FTDX_ASCII;
+}
+
 FeatureStatus breakInQuery(BreakInMode& out) {
-  if (!currentProfile().caps.getBreakIn || !isFt8x7()) return FeatureStatus::Unsupported;
+  const RadioProfile& sp = currentProfile();
+  if (!sp.caps.getBreakIn) return FeatureStatus::Unsupported;
+  if (currentProtocolType() == PROTO_CIV) {
+    return civQueryBreakIn(sp, out, 800) ? FeatureStatus::Ok : failure(FeatureStatus::NoReply);
+  }
   bool on = false;
-  const FeatureStatus status = ft8x7FlagQuery(Ft8x7Setting::BreakIn, on);
+  FeatureStatus status = FeatureStatus::Unsupported;
+  if (isYaesuAscii()) {
+    status = asciiQueryBreakIn(sp, on, 800) ? FeatureStatus::Ok : failure(FeatureStatus::NoReply);
+  } else if (isFt8x7()) {
+    status = ft8x7FlagQuery(Ft8x7Setting::BreakIn, on);
+  }
   if (status == FeatureStatus::Ok) out = on ? BreakInMode::On : BreakInMode::Off;
   return status;
 }
 
 bool breakInCanSet(BreakInMode mode) {
-  if (!currentProfile().caps.getBreakIn) return false;
-  return ft8x7CanWriteMenu() && (mode == BreakInMode::Off || mode == BreakInMode::On);
+  const RadioProfile& sp = currentProfile();
+  if (!sp.caps.getBreakIn) return false;
+  if (currentProtocolType() == PROTO_CIV) return sp.caps.setBreakIn;
+  const bool onOff = mode == BreakInMode::Off || mode == BreakInMode::On;
+  if (isYaesuAscii()) return sp.caps.setBreakIn && onOff;
+  return ft8x7CanWriteMenu() && onOff;
 }
 
 FeatureStatus breakInSet(BreakInMode mode, BreakInMode& out) {
   if (!breakInCanSet(mode)) return FeatureStatus::Unsupported;
+  const RadioProfile& sp = currentProfile();
+  if (currentProtocolType() == PROTO_CIV) {
+    const BreakInMode want = mode == BreakInMode::On ? BreakInMode::Semi : mode;
+    if (!civSetBreakIn(sp, want)) return failure(FeatureStatus::Failed);
+    out = want;
+    return FeatureStatus::Ok;
+  }
   const bool on = mode != BreakInMode::Off;
+  if (isYaesuAscii()) {
+    if (!asciiSetBreakIn(sp, on)) return failure(FeatureStatus::Failed);
+    out = mode;
+    return FeatureStatus::Ok;
+  }
   bool readBack = false;
   const FeatureStatus status = ft8x7FlagWrite(Ft8x7Setting::BreakIn, &on, readBack);
   if (status == FeatureStatus::Ok) out = readBack ? BreakInMode::On : BreakInMode::Off;
@@ -124,24 +153,50 @@ FeatureStatus breakInSet(BreakInMode mode, BreakInMode& out) {
 
 FeatureStatus breakInToggle(BreakInMode& out) {
   if (!breakInCanSet(BreakInMode::On)) return FeatureStatus::Unsupported;
-  bool readBack = false;
-  const FeatureStatus status = ft8x7FlagWrite(Ft8x7Setting::BreakIn, nullptr, readBack);
-  if (status == FeatureStatus::Ok) out = readBack ? BreakInMode::On : BreakInMode::Off;
-  return status;
+  if (isFt8x7()) {
+    bool readBack = false;
+    const FeatureStatus status = ft8x7FlagWrite(Ft8x7Setting::BreakIn, nullptr, readBack);
+    if (status == FeatureStatus::Ok) out = readBack ? BreakInMode::On : BreakInMode::Off;
+    return status;
+  }
+  BreakInMode now = BreakInMode::Off;
+  const FeatureStatus status = breakInQuery(now);
+  if (status != FeatureStatus::Ok) return status;
+  return breakInSet(now == BreakInMode::Off ? BreakInMode::On : BreakInMode::Off, out);
 }
 
 FeatureStatus keyerQuery(bool& on) {
-  if (!currentProfile().caps.getKeyer || !isFt8x7()) return FeatureStatus::Unsupported;
-  return ft8x7FlagQuery(Ft8x7Setting::Keyer, on);
+  const RadioProfile& sp = currentProfile();
+  if (!sp.caps.getKeyer) return FeatureStatus::Unsupported;
+  if (isYaesuAscii()) return asciiQueryKeyer(sp, on, 800) ? FeatureStatus::Ok : failure(FeatureStatus::NoReply);
+  if (isFt8x7()) return ft8x7FlagQuery(Ft8x7Setting::Keyer, on);
+  return FeatureStatus::Unsupported;
 }
 
 FeatureStatus keyerSet(bool on, bool& out) {
-  if (!currentProfile().caps.getKeyer || !ft8x7CanWriteMenu()) return FeatureStatus::Unsupported;
+  const RadioProfile& sp = currentProfile();
+  if (!sp.caps.getKeyer) return FeatureStatus::Unsupported;
+  if (isYaesuAscii()) {
+    if (!sp.caps.setKeyer) return FeatureStatus::Unsupported;
+    if (!asciiSetKeyer(sp, on)) return failure(FeatureStatus::Failed);
+    out = on;
+    return FeatureStatus::Ok;
+  }
+  if (!ft8x7CanWriteMenu()) return FeatureStatus::Unsupported;
   return ft8x7FlagWrite(Ft8x7Setting::Keyer, &on, out);
 }
 
 FeatureStatus keyerToggle(bool& out) {
-  if (!currentProfile().caps.getKeyer || !ft8x7CanWriteMenu()) return FeatureStatus::Unsupported;
+  const RadioProfile& sp = currentProfile();
+  if (!sp.caps.getKeyer) return FeatureStatus::Unsupported;
+  if (isYaesuAscii()) {
+    if (!sp.caps.setKeyer) return FeatureStatus::Unsupported;
+    bool now = false;
+    const FeatureStatus status = keyerQuery(now);
+    if (status != FeatureStatus::Ok) return status;
+    return keyerSet(!now, out);
+  }
+  if (!ft8x7CanWriteMenu()) return FeatureStatus::Unsupported;
   return ft8x7FlagWrite(Ft8x7Setting::Keyer, nullptr, out);
 }
 

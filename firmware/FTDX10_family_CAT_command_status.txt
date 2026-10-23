@@ -12,7 +12,7 @@ AV | Anti VOX level | nein | keine FTDX10-Implementierung gefunden
 BA | VFO-B to VFO-A | nein | keine FTDX10-Implementierung gefunden
 BC | Auto notch (DNF) | nein | nur BP manual notch vorhanden
 BD | Band down | nein | keine FTDX10-Implementierung gefunden
-BI | Break-in | nein | keine FTDX10-Implementierung gefunden
+BI | Break-in | implementiert | BK? und BK OFF/ON/TOGGLE (nach CAT-Handbuch und Hamlib), mit Ruecklesen; Bank 7 1
 BM | VFO-B to memory channel | nein | keine FTDX10-Implementierung gefunden
 BP | Manual notch | teilweise | BP0/BP0000/BP0001 fuer on/off implementiert, volle Frequenzparameter nicht
 BS | Band select | nein | keine FTDX10-Implementierung gefunden
@@ -41,7 +41,7 @@ IF | Information | vorbereitet | generische ASCII-Infrastruktur vorhanden, ftdx1
 IS | IF-shift | nein | keine FTDX10-Implementierung gefunden
 KM | Keyer memory | nein | keine FTDX10-Implementierung gefunden
 KP | Key pitch | nein | keine FTDX10-Implementierung gefunden
-KR | Keyer | nein | keine FTDX10-Implementierung gefunden
+KR | Keyer | implementiert | KYR? und KYR OFF/ON/TOGGLE (nach CAT-Handbuch und Hamlib), mit Ruecklesen; Bank 7 2
 KS | Key speed | nein | keine FTDX10-Implementierung gefunden
 KY | CW keying | nein | keine FTDX10-Implementierung gefunden
 LK | Lock | implementiert | read/on/off vorhanden

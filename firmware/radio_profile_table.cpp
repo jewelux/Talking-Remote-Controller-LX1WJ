@@ -44,6 +44,7 @@ constexpr RadioCapabilities kIc7300Caps = {
     .getSplit = true, .setSplit = true, .getRit = true, .setRit = true,
     .getBandStack = true, .getAgc = true, .setAgc = true,
     .getAtt = true, .setAtt = true, .getPreamp = true, .setPreamp = true,
+    .getBreakIn = true, .setBreakIn = true,
     .getProc = true, .setProc = true, .getMicGain = true, .setMicGain = true,
     .getVox = true, .setVox = true,
 };
@@ -209,6 +210,7 @@ constexpr RadioCapabilities kFtdx10Caps = {
     .getVfo = true, .setVfo = true, .getVfoMode = true, .setVfoMode = true,
     .getSplit = true, .setSplit = true, .getAgc = true, .setAgc = true,
     .getAtt = true, .setAtt = true, .getPreamp = true, .setPreamp = true,
+    .getBreakIn = true, .setBreakIn = true, .getKeyer = true, .setKeyer = true,
     .getProc = true, .setProc = true, .getMicGain = true, .setMicGain = true,
     .getVox = true, .setVox = true,
 };
@@ -252,6 +254,7 @@ constexpr RadioCapabilities kFt891Caps = {
     .getVfo = true, .setVfo = true,
     .getSplit = true, .setSplit = true, .getAgc = true, .setAgc = true,
     .getAtt = true, .setAtt = true, .getPreamp = true, .setPreamp = true,
+    .getBreakIn = true, .setBreakIn = true, .getKeyer = true, .setKeyer = true,
     .getProc = true, .setProc = true, .getMicGain = true, .setMicGain = true,
     .getVox = true, .setVox = true,
 };

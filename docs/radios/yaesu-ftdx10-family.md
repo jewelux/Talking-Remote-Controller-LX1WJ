@@ -27,6 +27,8 @@ Implemented and documented for the current field-test phase:
   on the FT-891 `PREAMP OFF | ON` and `ATT OFF | ON`, Bank 2 `B` and `C`): `PA0` 0 IPO, 1 AMP1,
   2 AMP2 and `RA0` 0 off, 1..3 for 6, 12 and 18 dB, as the CAT manuals and Hamlib have them, each
   set read back. The raw `PA` console commands are gone.
+- break-in and keyer (`BK? | BK OFF | ON | TOGGLE`, `KYR? | KYR OFF | ON | TOGGLE`, Bank 7 `1` and
+  `2`): `BI` and `KR`, 0 off and 1 on, as the CAT manuals and Hamlib have them, read back.
 - RF power (`RFPOWER? | RFPOWER <5..100 W>`, Bank 1 `6`): `PC` in watts, as the CAT manuals,
   Hamlib and flrig have it, read back. Not on the FTDX101MP: its manual says 005-100 and Hamlib
   scales `PC` to 200 W.

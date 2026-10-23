@@ -127,6 +127,10 @@ void queryBank2Att() { record("queryBank2Att"); }
 void stepBank2Att() { record("stepBank2Att"); }
 void queryBank2Preamp() { record("queryBank2Preamp"); }
 void stepBank2Preamp() { record("stepBank2Preamp"); }
+void queryBank7BreakIn() { record("queryBank7BreakIn"); }
+void toggleBank7BreakIn() { record("toggleBank7BreakIn"); }
+void queryBank7Keyer() { record("queryBank7Keyer"); }
+void toggleBank7Keyer() { record("toggleBank7Keyer"); }
 void queryBank2Agc() { record("queryBank2Agc"); }
 void queryBank2Ft817Antenna() { record("queryBank2Ft817Antenna"); }
 void stepBank2Ft8x7NrLevel(int d) { record("stepBank2Ft8x7NrLevel(%d)", d); }
@@ -288,7 +292,7 @@ TEST(keymap_ignores_state_machine_keys_and_other_banks) {
     for (uint8_t bank = 0; bank <= 10; ++bank) CHECK(isEmpty(keymapLookup(t, bank, *k)));
   }
   CHECK(isEmpty(keymapLookup(t, 0, '1')));
-  CHECK(isEmpty(keymapLookup(t, 7, '1')));
+  CHECK(isEmpty(keymapLookup(t, 7, '9')));
   CHECK(isEmpty(keymapLookup(t, 10, '1')));
   CHECK(g_calls.empty());
 }

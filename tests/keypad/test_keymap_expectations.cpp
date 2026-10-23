@@ -21,7 +21,6 @@ TEST(expectations_rows_are_well_formed) {
     CHECK(r.families != 0);
     CHECK_EQ(r.families & ~ALL, 0);
     CHECK(r.bank >= 1 && r.bank <= 9);
-    CHECK(r.bank != 7);
     CHECK(isBankKey(r.key));
     CHECK(r.shortAction && *r.shortAction);
     CHECK(r.longAction && *r.longAction);
@@ -66,7 +65,7 @@ TEST(expectations_assigned_keys_cover_all_families) {
 }
 
 TEST(expectations_lookup_defaults_to_unassigned) {
-  const Row &r = lookup(IC7300, 7, '1');
+  const Row &r = lookup(IC7300, 7, '9');
   CHECK_EQ(r.shortAction, "unassigned");
   CHECK_EQ(r.longAction, "none");
   CHECK_EQ(r.doubleAction, "-");

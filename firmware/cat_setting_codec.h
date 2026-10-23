@@ -88,6 +88,12 @@ bool asciiRfPowerDecode(const char* digits, uint16_t& tenthsOut);
 // "PCnnn;" for watts (0..999), into out.
 bool asciiRfPowerEncode(uint16_t watts, char* out, size_t size);
 
+// Icom 16 47: 00 off, 01 semi, 02 full break-in. Encode takes OFF, SEMI and FULL.
+bool civBreakInDecode(uint8_t raw, BreakInMode& out);
+bool civBreakInEncode(BreakInMode mode, uint8_t& rawOut);
+// One digit, 0 off or 1 on, then the end or ';' (Yaesu BI and KR, after the two letters).
+bool asciiOnOffDigitDecode(const char* digits, bool& onOut);
+
 // An ASCII lock reply digit: on unless it is one of offDigits ("0", or "04" on the FTDX101).
 // False when digit is not a digit.
 bool asciiLockDigitDecode(char digit, const char* offDigits, bool& onOut);

@@ -35,6 +35,10 @@ Bank 2, key 3 short or long - notch query or toggle
 Bank 2, key A short - AGC query
 Bank 2, key A long - AGC select, then 0 off, 1 auto, 2 fast, 3 slow, 4 mid, then D
 
+CW
+Bank 7, key 1 short or long - break-in query or toggle
+Bank 7, key 2 short or long - keyer query or toggle
+
 Radio information
 Bank 2, key 5 short - power state query
 Bank 2, key 5 long - power off

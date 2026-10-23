@@ -586,6 +586,23 @@ bool civSetAttDb(const RadioProfile& sp, uint8_t db) {
   return civQueryAttDb(sp, readBack, 800) && readBack == db;
 }
 
+// 16 47: 00 off, 01 semi, 02 full (the IC-7300 manual, the IC-705 and IC-7760 CI-V guides,
+// Hamlib, flrig).
+bool civQueryBreakIn(const RadioProfile& sp, BreakInMode& out, uint32_t timeoutMs) {
+  if (sp.protocol != PROTO_CIV || !sp.caps.getBreakIn) return false;
+  uint8_t raw = 0;
+  return civQuery16Byte(0x47, raw, timeoutMs) && civBreakInDecode(raw, out);
+}
+
+bool civSetBreakIn(const RadioProfile& sp, BreakInMode mode) {
+  uint8_t raw = 0;
+  if (sp.protocol != PROTO_CIV || !sp.caps.setBreakIn || !civBreakInEncode(mode, raw)) return false;
+  if (!civSet16Byte(0x47, raw)) return false;
+  civSettleAfterWrite();
+  BreakInMode readBack = BreakInMode::On;
+  return civQueryBreakIn(sp, readBack, 800) && readBack == mode;
+}
+
 // A 16 function that is only off (00) or on (01); any other byte is not a valid reply.
 static bool civQuery16OnOff(uint8_t subcmd, bool& onOut, uint32_t timeoutMs) {
   uint8_t raw = 0;

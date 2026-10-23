@@ -191,6 +191,37 @@ bool asciiSetRfPowerWatts(const RadioProfile& sp, uint16_t watts) {
   return asciiQueryRfPowerTenths(sp, readBack, 800) && readBack == watts * 10;
 }
 
+// BI and KR, 0 off and 1 on (the FTDX10, FTDX101 and FT-891 CAT manuals, Hamlib newcat).
+static bool yaesuQueryOnOff(const char* cmd, const char* prefix, bool& onOut, uint32_t timeoutMs) {
+  String line;
+  if (!transactAsciiCommand(cmd, line, prefix, timeoutMs)) return false;
+  return asciiOnOffDigitDecode(line.c_str() + strlen(prefix), onOut);
+}
+
+bool asciiQueryBreakIn(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
+  if (sp.protocol != PROTO_YAESU_FTDX_ASCII || !sp.caps.getBreakIn) return false;
+  return yaesuQueryOnOff("BI;", "BI", onOut, timeoutMs);
+}
+
+bool asciiSetBreakIn(const RadioProfile& sp, bool on) {
+  if (sp.protocol != PROTO_YAESU_FTDX_ASCII || !sp.caps.setBreakIn) return false;
+  if (!asciiSendSimpleCommand(on ? "BI1;" : "BI0;")) return false;
+  bool readBack = !on;
+  return asciiQueryBreakIn(sp, readBack, 800) && readBack == on;
+}
+
+bool asciiQueryKeyer(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
+  if (sp.protocol != PROTO_YAESU_FTDX_ASCII || !sp.caps.getKeyer) return false;
+  return yaesuQueryOnOff("KR;", "KR", onOut, timeoutMs);
+}
+
+bool asciiSetKeyer(const RadioProfile& sp, bool on) {
+  if (sp.protocol != PROTO_YAESU_FTDX_ASCII || !sp.caps.setKeyer) return false;
+  if (!asciiSendSimpleCommand(on ? "KR1;" : "KR0;")) return false;
+  bool readBack = !on;
+  return asciiQueryKeyer(sp, readBack, 800) && readBack == on;
+}
+
 bool asciiQueryPowerState(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
   if (!sp.commands->powerStateGet[0] || !sp.commands->powerStateReplyPrefix[0]) return false;
   String line;

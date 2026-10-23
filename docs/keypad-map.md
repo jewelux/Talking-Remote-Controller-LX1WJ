@@ -183,9 +183,17 @@ these keys are free.
 | `5` long | step from both to TX, RX and back to both (FT-817/818: TX and both, CTCSS only) |
 | `6` short | split tone on or off (FT-857/897 menu 79; FT-817/818: not available) |
 
-## Bank 7
+## Bank 7 - CW
 
-Empty on every radio: all keys are free.
+| Key | Icom | FTDX10 | Kenwood, Elecraft, other FTDX | FT-817/818 | FT-857/897 |
+|---|---|---|---|---|---|
+| `1` short | break-in | break-in | break-in (FTDX101, FT-891); Kenwood and Elecraft: not available | break-in | break-in |
+| `1` long | break-in on/off | break-in on/off | break-in on/off | break-in on/off (experimental) | break-in on/off (experimental) |
+| `2` short | not available | keyer | keyer (FTDX101, FT-891); Kenwood and Elecraft: not available | keyer | keyer |
+| `2` long | not available | keyer on/off | keyer on/off | keyer on/off (experimental) | keyer on/off (experimental) |
+
+Icom break-in is off, semi or full; `1` long turns it from off to semi and from semi or full to off.
+The other keys are free.
 
 ## Bank 8 - Connection and Radio Menu
 

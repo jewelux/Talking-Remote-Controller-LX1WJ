@@ -23,6 +23,12 @@ bool asciiSetAttStep(const RadioProfile& sp, uint8_t step);
 // in watts, is read back.
 bool asciiQueryRfPowerTenths(const RadioProfile& sp, uint16_t& tenthsOut, uint32_t timeoutMs);
 bool asciiSetRfPowerWatts(const RadioProfile& sp, uint16_t watts);
+// Yaesu BI (break-in, caps.getBreakIn, setBreakIn) and KR (keyer, caps.getKeyer, setKeyer), on
+// or off; the sets are read back.
+bool asciiQueryBreakIn(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
+bool asciiSetBreakIn(const RadioProfile& sp, bool on);
+bool asciiQueryKeyer(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
+bool asciiSetKeyer(const RadioProfile& sp, bool on);
 // AGC by settings.agc (caps.getAgc, setAgc); the set is read back. AUTO reads back as AUTO.
 bool asciiQueryAgc(const RadioProfile& sp, AgcMode& out, uint32_t timeoutMs);
 bool asciiSetAgc(const RadioProfile& sp, AgcMode mode);

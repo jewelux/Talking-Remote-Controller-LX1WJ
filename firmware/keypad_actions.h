@@ -173,6 +173,13 @@ void queryBank8Ft8x7Menu();
 void beginBank8Ft8x7RowEntry();
 void beginBank8Ft8x7MenuEntry();
 
+// ---- Bank 7 ----
+// CW break-in (breakInQuery) and keyer (keyerQuery); the toggles go off -> on (Icom SEMI) -> off.
+void queryBank7BreakIn();
+void toggleBank7BreakIn();
+void queryBank7Keyer();
+void toggleBank7Keyer();
+
 // ---- Bank 9 ----
 void queryBank9TuningSpeech();
 void toggleBank9TuningSpeech();

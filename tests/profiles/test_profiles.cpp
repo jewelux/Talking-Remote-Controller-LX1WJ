@@ -318,6 +318,28 @@ TEST(every_ascii_rf_power_cap_has_an_encoding) {
   }
 }
 
+// Break-in: Icom 16 47, Yaesu BI; keyer: Yaesu KR; the FT-8x7 from its EEPROM (set only with
+// EXPERIMENTAL on).
+TEST(break_in_and_keyer_caps) {
+  const uint8_t icom[] = {1, 3, 17, 18};
+  for (uint8_t s : icom) {
+    CHECK(slot(s).caps.getBreakIn && slot(s).caps.setBreakIn);
+    CHECK(!slot(s).caps.getKeyer);
+  }
+  const uint8_t yaesu[] = {11, 12, 13, 15};
+  for (uint8_t s : yaesu) {
+    const RadioCapabilities& c = slot(s).caps;
+    CHECK(c.getBreakIn && c.setBreakIn && c.getKeyer && c.setKeyer);
+  }
+  const uint8_t ft8x7[] = {8, 9, 10, 14};
+  for (uint8_t s : ft8x7) {
+    const RadioCapabilities& c = slot(s).caps;
+    CHECK(c.getBreakIn && !c.setBreakIn && c.getKeyer && !c.setKeyer);
+  }
+  const uint8_t none[] = {2, 4, 5, 6, 7, 16};
+  for (uint8_t s : none) CHECK(!slot(s).caps.getBreakIn && !slot(s).caps.getKeyer);
+}
+
 TEST(g106_is_ttl_civ_with_freq_and_mode_only) {
   const RadioProfile& g106 = slot(5);
   CHECK(g106.protocol == PROTO_CIV);
