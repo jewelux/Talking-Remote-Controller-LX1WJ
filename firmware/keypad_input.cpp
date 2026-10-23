@@ -270,7 +270,7 @@ void KeypadInput::beginValueEntry(const ValueSpec& spec, const EntrySeed& seed, 
 const KeypadInput::GlobalKey* KeypadInput::globalKey(char key) const {
   static const GlobalKey kKeys[] = {
       {'*', "BANK", true, &KeypadInput::sayBank, &KeypadInput::beginBankSelect},
-      {'D', "ENTER", false, &KeypadInput::enter, nullptr},
+      {'D', "ENTER", false, &KeypadInput::enter, &KeypadInput::toggleHelp},
       {'#', "CLEAR", false, &KeypadInput::clearAll, nullptr},
   };
   for (const GlobalKey& g : kKeys) {
@@ -280,6 +280,12 @@ const KeypadInput::GlobalKey* KeypadInput::globalKey(char key) const {
 }
 
 void KeypadInput::sayBank() { listener_.onBankQuery(bank_); }
+
+// D long. Holds act in Normal mode only, so an entry keeps its D.
+void KeypadInput::toggleHelp() {
+  help_ = !help_;
+  listener_.onHelpMode(help_);
+}
 
 void KeypadInput::beginBankSelect() {
   mode_ = InputMode::BankSelect;
@@ -308,7 +314,10 @@ void KeypadInput::held(char key) {
     const KeyBinding binding = bindingOf(bank, key);
     const KeyAction action = doubleHold ? binding.doubleHoldAction : binding.holdAction;
     handled = action != nullptr;
-    if (handled) runAction(action, bank, key, doubleHold ? "DOUBLE LONG" : "LONG", binding.focus);
+    if (handled) {
+      runAction(action, doubleHold ? binding.doubleHoldHelp : binding.holdHelp, bank, key,
+                doubleHold ? "DOUBLE LONG" : "LONG", binding.focus);
+    }
   }
   if (handled || doubleHold) {
     // Only the waiting key itself can still be waiting here: its long or
@@ -338,7 +347,7 @@ void KeypadInput::releasedNormal(char key, uint32_t nowMs) {
     pending_.active = false;
     if (binding.doubleAction) {
       oneShotBank_ = 0;
-      runAction(binding.doubleAction, bank, key, "DOUBLE", binding.focus);
+      runAction(binding.doubleAction, binding.doubleHelp, bank, key, "DOUBLE", binding.focus);
       return;
     }
   }
@@ -569,9 +578,15 @@ void KeypadInput::commitEntry() {
 }
 
 // Clear ('#') cancels every mode, entry, staged mode, waiting double click and
-// one-shot bank, and beeps when there is none. Keys still held keep their
-// swallowed release.
+// one-shot bank, and beeps when there is none. In help mode it ends help instead. Keys still
+// held keep their swallowed release.
 void KeypadInput::clearAll() {
+  if (help_ && mode_ == InputMode::Normal) {
+    pending_.active = false;
+    oneShotBank_ = 0;
+    toggleHelp();
+    return;
+  }
   if (mode_ == InputMode::Normal && !pending_.active && !oneShotBank_) {
     listener_.onRejected("CLEAR");
     return;
@@ -602,24 +617,27 @@ void KeypadInput::timeOut() {
 }
 
 // A digit key moves the focus and ends the naming: the next A, B or C says the focus name
-// again. A, B and C name it once.
-void KeypadInput::runAction(KeyAction action, uint8_t bank, char key, const char* gesture,
-                            Setting keyFocus) {
+// again. A, B and C name it once. Help mode moves the focus too, so A, B and C then tell
+// what they would move.
+void KeypadInput::runAction(KeyAction action, const GestureHelp& help, uint8_t bank, char key,
+                            const char* gesture, Setting keyFocus) {
   const bool focusKey = isFocusKey(key);
   if (!focusKey) {
     if (keyFocus != Setting::None && bank < 10) focus_[bank] = keyFocus;
     named_ = false;
   }
-  {
-    ActiveKey active(bank, key, gesture, focus(bank), !named_);
-    action();
+  ActiveKey active(bank, key, gesture, focus(bank), !named_);
+  if (help_) {
+    listener_.onHelp(keypadActiveKey(), help);
+    return;
   }
+  action();
   if (focusKey) named_ = true;
 }
 
 void KeypadInput::runShortOrReject(const KeyBinding& binding, uint8_t bank, char key) {
   if (binding.shortAction) {
-    runAction(binding.shortAction, bank, key, "SHORT", binding.focus);
+    runAction(binding.shortAction, binding.shortHelp, bank, key, "SHORT", binding.focus);
     return;
   }
   char label[16];

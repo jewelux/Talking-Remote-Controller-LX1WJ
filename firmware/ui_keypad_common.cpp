@@ -229,6 +229,7 @@ void speakHelp(const GestureHelp& help) {
   const String name = help.label ? spokenLabel(help.label) : String();
   if (name.length()) speakLabel(name);
   if (help.verb == HelpVerb::Toggle) speakToken("on off");
+  if (help.verb == HelpVerb::NotAvailable) speakNotAvailable();
 }
 
 void speakPrompt(const char* token) {

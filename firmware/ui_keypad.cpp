@@ -88,6 +88,25 @@ void keypadSendNow(const String& cmd) {
 
 namespace {
 
+// The verb of a help trace: "CMD BANK2 1 LONG -> HELP TOGGLE NR".
+const char* helpVerbName(HelpVerb verb) {
+  switch (verb) {
+    case HelpVerb::Say: return "SAY";
+    case HelpVerb::Toggle: return "TOGGLE";
+    case HelpVerb::Next: return "NEXT";
+    case HelpVerb::Entry: return "ENTRY";
+    case HelpVerb::Pick: return "PICK";
+    case HelpVerb::Run: return "RUN";
+    case HelpVerb::Centre: return "CENTRE";
+    case HelpVerb::Up: return "UP";
+    case HelpVerb::Down: return "DOWN";
+    case HelpVerb::UpFast: return "UP FAST";
+    case HelpVerb::DownFast: return "DOWN FAST";
+    case HelpVerb::NotAvailable: return "NOT AVAILABLE";
+    default: return "NONE";
+  }
+}
+
 class KeypadUiListener : public KeypadInputListener {
  public:
   void onActivity(bool pressed) override {
@@ -103,6 +122,16 @@ class KeypadUiListener : public KeypadInputListener {
   }
 
   Setting homeFocus(uint8_t bank) override { return keymapHomeFocus(currentKeypadTraits(), bank); }
+
+  void onHelpMode(bool on) override {
+    printKeypadCommand("HELP {}", on ? "ON" : "OFF");
+    speakHelpMode(on);
+  }
+
+  void onHelp(const char* key, const GestureHelp& help) override {
+    printKeypadCommand("{} -> HELP {} {}", key, helpVerbName(help.verb), help.label ? help.label : "");
+    speakHelp(help);
+  }
 
   void onBankQuery(uint8_t bank) override {
     printKeypadCommand("* SHORT -> BANK?");

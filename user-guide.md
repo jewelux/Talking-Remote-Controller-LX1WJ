@@ -34,6 +34,9 @@ Global rules:
 - Press one key at a time. If a second key goes down while another is still held, the radio beeps
   and ignores both keys until you let go of all of them; nothing is run or cancelled
 - `*` while entering a frequency: the decimal point (see Bank 1 `0` long below)
+- `D` long: help mode on or off. In help mode each key press (short, long or double) says what it
+  would do, for example "up power" or "choose mode", and changes nothing. `*` still changes banks.
+  `D` long or `#` ends help mode
 
 `A`, `B` and `C` act on the bank's focus, the setting of the last key you used on that bank that
 has one: Bank 1 `6` RF power or `9` mode, Bank 5 the RIT offset, Bank 9 `6` speech speed or

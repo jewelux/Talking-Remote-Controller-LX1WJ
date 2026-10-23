@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #include "keypad_digit_buffer.h"
+#include "keypad_help.h"
 #include "keypad_settings.h"
 #include "keypad_value_entry.h"
 
@@ -103,6 +104,11 @@ struct KeyBinding {
   bool waitsForDouble = false;
   // What A, B and C move once this key has acted on its bank.
   Setting focus = Setting::None;
+  // What help mode says for each gesture instead of running its action.
+  GestureHelp shortHelp;
+  GestureHelp holdHelp;
+  GestureHelp doubleHelp;
+  GestureHelp doubleHoldHelp;
 };
 
 // While KeypadInput runs a bank key action: the key and gesture, e.g.
@@ -130,6 +136,12 @@ class KeypadInputListener {
   virtual KeyBinding keyBinding(uint8_t bank, char key, Setting focus) = 0;
   // The focus of bank before any of its keys has set one (Bank 9: the profile).
   virtual Setting homeFocus(uint8_t bank) = 0;
+
+  // D long in Normal mode turned help mode on or off; '#' turned it off.
+  virtual void onHelpMode(bool on) = 0;
+  // Help mode: a bank key gesture that has an action, e.g. "BANK2 1 LONG". It says help
+  // instead of running; the focus has moved as the action would have moved it.
+  virtual void onHelp(const char* key, const GestureHelp& help) = 0;
 
   // '*' short: say the current bank.
   virtual void onBankQuery(uint8_t bank) = 0;
@@ -220,6 +232,9 @@ class KeypadInput {
   // Every bank back to its home focus: the profile changed.
   void resetFocus();
 
+  // Bank keys say what they would do instead of doing it (D long, '#' ends it).
+  bool helpMode() const { return help_; }
+
   InputMode mode() const { return mode_; }
   const char* digits() const { return digits_.c_str(); }
   TargetVfo entryTargetVfo() const { return entryVfo_; }
@@ -270,6 +285,7 @@ class KeypadInput {
   const GlobalKey* globalKey(char key) const;
   void sayBank();
   void beginBankSelect();
+  void toggleHelp();
   // Tracks the keys that are down. True when the event belongs to a co-press
   // and is to be ignored.
   bool coPressed(char key, KeyGesture gesture);
@@ -300,8 +316,9 @@ class KeypadInput {
   // Drops the entry or selection that waited too long.
   void timeOut();
   // Runs action with keypadActiveKey() naming it, e.g. "BANK3 2 LONG". A digit key first
-  // moves the bank's focus to keyFocus, unless that is None.
-  void runAction(KeyAction action, uint8_t bank, char key, const char* gesture, Setting keyFocus);
+  // moves the bank's focus to keyFocus, unless that is None. In help mode help is said instead.
+  void runAction(KeyAction action, const GestureHelp& help, uint8_t bank, char key, const char* gesture,
+                 Setting keyFocus);
   KeyBinding bindingOf(uint8_t bank, char key) { return listener_.keyBinding(bank, key, focus(bank)); }
   void runShortOrReject(const KeyBinding& binding, uint8_t bank, char key);
   // "<mode> <what>" to onRejected, e.g. "FREQ 6".
@@ -317,6 +334,7 @@ class KeypadInput {
                         Setting::Home, Setting::Home, Setting::Home, Setting::Home, Setting::Home};
   // A, B or C has said the focus name since the last digit key or bank change.
   bool named_ = false;
+  bool help_ = false;
   InputMode mode_ = InputMode::Normal;
   // The longest entry is a frequency: 12 characters, plus a point the old code
   // accepted even after them.

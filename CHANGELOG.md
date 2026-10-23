@@ -47,7 +47,7 @@
   "cancel" (it said "ok"; cancelling bank or profile select was silent). With nothing to cancel it
   beeps
 - holding a key that has no long action beeps once the hold time is reached, and releasing it does
-  nothing. Before, the release ran the key's short action. This includes `D` and `#`
+  nothing. Before, the release ran the key's short action. This includes `#`
 - a key that waits for a possible double press (e.g. Bank 1 `0`, `1`, `2`) answers as soon as
   another key is pressed, before that key. Before, the two answers came in the wrong order, or the
   first press was lost
@@ -96,6 +96,10 @@
   it to the speech speed or `7`-`9` to the volume. With no focus they say "not available". RIT and
   the CAT radios' RF power are not yet tested on a radio
 - keys moved: the FTDX10 tuner is no longer on Bank 1 `5` (it stays on Bank 4 `0`)
+- help mode: `D` long turns it on or off. Each bank key press, short, long or double, then says
+  what it would do ("toggle" keys add "on off", steps say "up" or "down", entries "choose") and
+  changes nothing; `A`, `B` and `C` name the bank's focus. `*` still changes banks; `D` long or `#`
+  ends it
 - Bank 7 is the CW bank: `1` says break-in and long press turns it on or off (Icom: off to semi,
   semi or full to off), `2` the same for the keyer, `3` the keyer speed, `4` the CW pitch and `5`
   the break-in delay (long press one step up, double press one step down). On the FT-8x7 setting

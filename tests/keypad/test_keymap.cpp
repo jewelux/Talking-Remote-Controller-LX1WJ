@@ -7,6 +7,7 @@
 #include "keymap_expectations.h"
 #include "keypad_actions.h"
 #include "keypad_keymap.h"
+#include "keypad_labels.h"
 #include "test_runner.h"
 
 using namespace keymap_expect;
@@ -330,4 +331,60 @@ TEST(keymap_ignores_state_machine_keys_and_other_banks) {
   CHECK(isEmpty(keymapLookup(t, 7, '9')));
   CHECK(isEmpty(keymapLookup(t, 10, '1')));
   CHECK(g_calls.empty());
+}
+
+// Help mode says every gesture that has an action, by a name kSpokenLabels has; a gesture with
+// no action has no help. "not available" may stand alone (A, B and C with no focus).
+void checkHelp(const Family &f, uint8_t bank, char key, Setting focus, const char *gesture, KeyAction action,
+               const GestureHelp &help) {
+  const char *problem = nullptr;
+  if (!action) {
+    if (help.verb != HelpVerb::None) problem = "help without an action";
+  } else if (help.verb == HelpVerb::None) {
+    problem = "no help";
+  } else if (!help.label) {
+    if (help.verb != HelpVerb::NotAvailable) problem = "help without a label";
+  } else if (!spokenLabelWords(help.label)) {
+    problem = "help label with no spoken name";
+  }
+  if (!problem) return;
+  fprintf(stderr, "  %s bank %u key %c focus %s %s: %s (%s)\n", f.name, bank, key,
+          settingInfo(focus).label, gesture, problem, help.label ? help.label : "-");
+  ++::test::g_checkFailures;
+}
+
+void checkBindingHelp(const Family &f, uint8_t bank, char key, Setting focus, const KeyBinding &b) {
+  checkHelp(f, bank, key, focus, "short", b.shortAction, b.shortHelp);
+  checkHelp(f, bank, key, focus, "long", b.holdAction, b.holdHelp);
+  checkHelp(f, bank, key, focus, "double", b.doubleAction, b.doubleHelp);
+  checkHelp(f, bank, key, focus, "double hold", b.doubleHoldAction, b.doubleHoldHelp);
+}
+
+TEST(keymap_every_gesture_has_help) {
+  forEachKey([](const Family &f, const KeypadTraits &t, uint8_t bank, char key) {
+    checkBindingHelp(f, bank, key, Setting::Home, keymapLookup(t, bank, key));
+    if (key != 'A' && key != 'B' && key != 'C') return;
+    // A, B and C for every focus a key could give them.
+    for (uint8_t s = 0; s < (uint8_t)Setting::Count; ++s) {
+      if ((Setting)s == Setting::Home) continue;
+      checkBindingHelp(f, bank, key, (Setting)s, keymapLookup(t, bank, key, (Setting)s));
+    }
+  });
+}
+
+TEST(keymap_focus_keys_help_names_the_focus) {
+  const KeypadTraits t = traitsFor(IC7300);
+  const KeyBinding a = keymapLookup(t, 9, 'A');
+  CHECK(strcmp(a.shortHelp.label, "PROFILE") == 0);
+  CHECK(a.shortHelp.verb == HelpVerb::Say);
+  CHECK(a.holdHelp.verb == HelpVerb::Pick);
+  CHECK(a.doubleHelp.verb == HelpVerb::Centre);
+  const KeyBinding b = keymapLookup(t, 1, 'B', Setting::RfPower);
+  CHECK(strcmp(b.shortHelp.label, "RFPOWER") == 0);
+  CHECK(b.shortHelp.verb == HelpVerb::Up);
+  CHECK(b.holdHelp.verb == HelpVerb::UpFast);
+  CHECK(keymapLookup(t, 1, 'A', Setting::RfPower).holdHelp.verb == HelpVerb::Entry);
+  const KeyBinding none = keymapLookup(t, 1, 'C', Setting::None);
+  CHECK(none.shortHelp.label == nullptr);
+  CHECK(none.shortHelp.verb == HelpVerb::NotAvailable);
 }

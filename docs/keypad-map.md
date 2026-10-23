@@ -66,6 +66,17 @@ the first. The RIT offset, volume and speech speed change at once.
 In a pick of named choices (mode, AGC), `B` and `C` go round. Levels and numbers stop at the end
 with "maximum" or "minimum".
 
+## Help mode
+
+`D` long turns help mode on or off ("help on", "help off"). While it is on, every bank key press
+says what it would do and does nothing: the function's name, after "choose" for an entry or pick,
+"next" for a step through a short list, "up" or "down" (held: "up fast", "down fast") for a step,
+or "reset" for back to the centre, and before "on off" for a switch. A function the radio lacks
+says "not available". Every press works: short, long, double and a press then a hold. `A`, `B` and
+`C` tell what they would do with the bank's focus, which the keys pressed in help mode move as they
+normally would. `*` still changes banks. A press with no function beeps as usual. `D` long or `#`
+ends help mode.
+
 ## Bank 1 - Status
 
 | Key | Icom | FTDX10 | Kenwood, Elecraft, other FTDX | FT-817/818 | FT-857/897 |

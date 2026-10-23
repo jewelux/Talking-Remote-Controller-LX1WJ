@@ -87,11 +87,21 @@ struct Fake : KeypadInputListener {
     if (doubles.count(id)) b.doubleAction = runFakeAction;
     if (doubleHolds.count(id)) b.doubleHoldAction = runFakeAction;
     b.waitsForDouble = waits.count(id) > 0;
+    // Help names the gesture and, for A, B and C, the focus they are bound for.
+    b.shortHelp = {"short", HelpVerb::Say};
+    b.holdHelp = {"hold", HelpVerb::Say};
+    b.doubleHelp = {"double", HelpVerb::Say};
+    b.doubleHoldHelp = {"doublehold", HelpVerb::Say};
     return b;
   }
   Setting homeFocus(uint8_t bank) override {
     auto h = homes.find(bank);
     return h == homes.end() ? Setting::None : h->second;
+  }
+  void onHelpMode(bool on) override { log.push_back(on ? "help on" : "help off"); }
+  void onHelp(const char *key, const GestureHelp &help) override {
+    log.push_back(std::string("help ") + key + " " + help.label);
+    activeFocus = keypadActiveFocus();
   }
   void onBankQuery(uint8_t bank) override { log.push_back("bank? " + std::to_string(bank)); }
   void onBankSelectStart() override { log.push_back("bank please"); }
@@ -339,12 +349,11 @@ TEST(input_clear_while_another_key_is_down_is_a_co_press) {
   CHECK_EQ(in.mode(), InputMode::FreqEntry);
 }
 
-TEST(input_hold_of_d_and_hash_is_unassigned_and_swallows_release) {
+TEST(input_hold_of_hash_is_unassigned_and_swallows_release) {
   Fake f;
   KeypadInput in(f);
-  hold(in, 'D');
   hold(in, '#');
-  CHECK_LOG(f, "rejected ENTER LONG", "rejected CLEAR LONG");
+  CHECK_LOG(f, "rejected CLEAR LONG");
 }
 
 TEST(input_hold_of_d_and_hash_in_entry_acts_on_release) {
@@ -1934,4 +1943,106 @@ TEST(input_choice_nudge_opens_one_value_away) {
   // No value to walk from.
   CHECK(!in.nudgeChoice(kLevelChoice, EntrySeed(), 1));
   CHECK(in.mode() == InputMode::Normal);
+}
+
+// --- Help mode ---------------------------------------------------------------
+
+TEST(input_d_hold_toggles_help_mode) {
+  Fake f;
+  KeypadInput in(f);
+  hold(in, 'D');
+  CHECK(in.helpMode());
+  CHECK_LOG(f, "help on");
+  hold(in, 'D');
+  CHECK(!in.helpMode());
+  CHECK_LOG(f, "help off");
+  // D short is still no key in Normal mode, help or not.
+  hold(in, 'D');
+  tap(in, 'D');
+  CHECK_LOG(f, "help on", "rejected ENTER");
+}
+
+TEST(input_help_says_each_gesture_instead_of_running_it) {
+  Fake f;
+  f.shorts = {"2 1", "2 4"};
+  f.holds = {"2 1"};
+  f.doubles = {"2 1"};
+  f.doubleHolds = {"2 1"};
+  f.waits = {"2 1"};
+  KeypadInput in(f);
+  in.setBank(2);
+  hold(in, 'D');
+  f.take();
+  tap(in, '1', 0);
+  in.poll(1000);
+  hold(in, '1', 2000);
+  tap(in, '1', 3000);
+  tap(in, '1', 3100);
+  tap(in, '1', 4000);
+  in.onKey('1', KeyGesture::Pressed, 4100);
+  in.onKey('1', KeyGesture::Held, 4100);
+  in.onKey('1', KeyGesture::Released, 4100);
+  CHECK_LOG(f, "help BANK2 1 SHORT short", "help BANK2 1 LONG hold", "help BANK2 1 DOUBLE double",
+            "help BANK2 1 DOUBLE LONG doublehold");
+  // A gesture with no action beeps as always.
+  hold(in, '4', 5000);
+  tap(in, '7', 5000);
+  CHECK_LOG(f, "rejected BANK2 4 LONG", "rejected BANK2 7");
+  CHECK(in.helpMode());
+}
+
+TEST(input_help_moves_the_focus_for_a_b_and_c) {
+  Fake f;
+  f.shorts = {"1 6", "1 B"};
+  f.focuses["1 6"] = Setting::RfPower;
+  KeypadInput in(f);
+  hold(in, 'D');
+  tap(in, '6');
+  CHECK(in.focus(1) == Setting::RfPower);
+  tap(in, 'B');
+  CHECK(f.boundFocus == Setting::RfPower);
+  CHECK(f.activeFocus == Setting::RfPower);
+  CHECK_LOG(f, "help on", "help BANK1 6 SHORT short", "help BANK1 B SHORT short");
+}
+
+TEST(input_help_keeps_bank_select_and_ends_with_hash) {
+  Fake f;
+  f.shorts = {"3 1"};
+  KeypadInput in(f);
+  hold(in, 'D');
+  hold(in, '*');
+  tap(in, '3');
+  tap(in, '1');
+  CHECK_EQ(in.bank(), 3);
+  tap(in, '#');
+  CHECK(!in.helpMode());
+  CHECK_LOG(f, "help on", "bank please", "commit BankSelect [3] vfo0", "help BANK3 1 SHORT short", "help off");
+  // Out of help, '#' with nothing to cancel beeps again, and keys act.
+  tap(in, '#');
+  tap(in, '1');
+  CHECK_LOG(f, "rejected CLEAR", "short 3 1");
+}
+
+TEST(input_help_hash_drops_a_waiting_short) {
+  Fake f;
+  f.shorts = {"1 1"};
+  f.doubles = {"1 1"};
+  f.waits = {"1 1"};
+  KeypadInput in(f);
+  hold(in, 'D');
+  tap(in, '1', 0);
+  tap(in, '#', 10);
+  in.poll(1000);
+  CHECK(!in.helpMode());
+  CHECK_LOG(f, "help on", "help off");
+}
+
+TEST(input_help_hold_does_not_toggle_in_an_entry) {
+  Fake f;
+  KeypadInput in(f);
+  in.beginEntry(InputMode::CivAddrEntry);
+  typeKeys(in, "5");
+  hold(in, 'D');
+  CHECK(!in.helpMode());
+  CHECK_LOG(f, "digit CivAddrEntry 5 5", "commit CivAddrEntry [5] vfo0");
 }

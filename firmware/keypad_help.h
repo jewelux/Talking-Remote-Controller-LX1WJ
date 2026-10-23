@@ -19,6 +19,7 @@ enum class HelpVerb : uint8_t {
   Down,      // "down", then the name
   UpFast,    // "up fast", then the name
   DownFast,  // "down fast", then the name
+  NotAvailable,  // the radio lacks it (an FTDX10 hidden key): the name, if any, then "not available"
 };
 
 struct GestureHelp {
