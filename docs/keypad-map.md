@@ -41,7 +41,7 @@ back to its starting focus.
 | 3 | none yet | none |
 | 4 | `1` processor level, `2` VOX gain, `3` monitor level (Icom), `5` TX equalizer, `7` mic gain, `8` RF power, `9` VOX delay | none |
 | 5 | `1`-`5` RIT offset | RIT offset |
-| 6 | none yet | none |
+| 6 | `3` CTCSS tone, `4` DCS code (FT-8x7) | none |
 | 7 | `1` keyer speed, `2` QSK time (FT-857/897) or break-in (Icom), `3` sidetone, `5` pitch, `6` weight, `8` RF power, `9` break-in delay | none |
 | 8 | none yet | none |
 | 9 | `6` speech speed, `7`-`9` volume | profile |
@@ -54,7 +54,7 @@ With no focus, `A`, `B` and `C` say "not available".
 | `A` long | its entry or pick; speech speed steps to the next |
 | `A` double | back to the centre: PBT 0, RIT offset 0, normal speech speed, profile reset. Only where there is one; elsewhere `A` answers at once |
 | `B` / `C` short | one step up / down |
-| `B` / `C` long | a big step: RF power 5 steps, NR and NB level 25 % on Icom and 5 steps elsewhere, PBT 50, low and high cut 5 steps, the Bank 4 levels and the sidetone 25, VOX delay, CW speed, pitch, weight, delay and QSK time 5 steps, RIT offset 100 Hz, volume 2; a list (filter, notch, AGC, preamp, attenuator, bandpass width, TX equalizer, Icom break-in, speech speed) one step; the mode and the profile not available |
+| `B` / `C` long | a big step: RF power 5 steps, NR and NB level 25 % on Icom and 5 steps elsewhere, PBT 50, low and high cut 5 steps, the Bank 4 levels and the sidetone 25, VOX delay, CW speed, pitch, weight, delay and QSK time 5 steps, RIT offset 100 Hz, CTCSS tone and DCS code 5, volume 2; a list (filter, notch, AGC, preamp, attenuator, bandpass width, TX equalizer, Icom break-in, speech speed) one step; the mode and the profile not available |
 
 The first `B` or `C` after another key names the focus; the next ones give only the value. A step
 past the end of the range says "maximum" or "minimum" and changes nothing.
@@ -255,29 +255,33 @@ switches RIT on Bank 3 `5`.
 
 ## Bank 6 - Repeater and Tone
 
-FT-8x7 only (FT-817/818 and FT-857/897); on every other radio
-these keys are free.
+The same keys on every radio that has the commands. Over CAT the tone is CTCSS only: no DCS and no
+repeater offset. Kenwood, Elecraft, other FTDX: the FT-891 has the FTDX10's keys; the TS-480, KX2
+and KX3 say "not available".
 
-| Key | FT-8x7 |
-|---|---|
-| `0` short | repeater shift off |
-| `0` long | repeater shift minus |
-| `0` double | repeater shift plus |
-| `1` short | repeater offset preset 1 (0.6 MHz) |
-| `1` long | repeater offset preset 2 (7.6 MHz) |
-| `1` double | repeater offset entry in kHz |
-| `2` short | tone type: off, CTCSS or DCS |
-| `2` long | CTCSS |
-| `2` double | tone off |
-| `2` short, then hold | DCS |
-| `3` short | CTCSS tone (the last set, or 88.5 Hz) |
-| `3` long | CTCSS tone entry |
-| `4` short | DCS code (the last set, or 023) |
-| `4` long | DCS code entry |
-| `5` short | encode only (TX), decode only (RX), encode and decode (both), or split |
-| `5` long | step from both to TX, RX and back to both (FT-817/818: TX and both, CTCSS only) |
-| `6` short | split tone on or off (FT-857/897 menu 79; FT-817/818: not available) |
-| `A` `B` `C` | focus (none yet) |
+| Key | Icom | FTDX10 | Kenwood, Elecraft, other FTDX | FT-8x7 |
+|---|---|---|---|---|
+| `0` short | repeater shift off (IC-705; others: not available) | repeater shift off | repeater shift off | repeater shift off |
+| `0` long | repeater shift minus (IC-705) | repeater shift minus | repeater shift minus | repeater shift minus |
+| `0` double | repeater shift plus (IC-705) | repeater shift plus | repeater shift plus | repeater shift plus |
+| `1` short | not available | not available | not available | repeater offset preset 1 (0.6 MHz) |
+| `1` long | free | free | free | repeater offset preset 2 (7.6 MHz) |
+| `1` double | free | free | free | repeater offset entry in kHz |
+| `2` short | tone type: off or CTCSS (IC-706: not available) | tone type: off or CTCSS | tone type: off or CTCSS | tone type: off, CTCSS or DCS |
+| `2` long | CTCSS | CTCSS | CTCSS | CTCSS |
+| `2` double | tone off | tone off | tone off | tone off |
+| `2` short, then hold | free | free | free | DCS |
+| `3` short | CTCSS tone (IC-706: not available) | CTCSS tone | CTCSS tone | CTCSS tone (the last set, or 88.5 Hz) |
+| `3` long | CTCSS tone entry | CTCSS tone entry | CTCSS tone entry | CTCSS tone entry |
+| `4` short | not available | not available | not available | DCS code (the last set, or 023) |
+| `4` long | free | free | free | DCS code entry |
+| `5` short | encode only (TX) or encode and decode (both) | the same | the same | encode only (TX), decode only (RX), encode and decode (both), or split |
+| `5` long | step between both and TX | step between both and TX | step between both and TX | step from both to TX, RX and back to both (FT-817/818: TX and both, CTCSS only) |
+| `6` short | free | free | free | split tone on or off (FT-857/897 menu 79; FT-817/818: not available) |
+| `A` `B` `C` | focus | focus | focus | focus |
+
+`B`/`C` walk the CTCSS tones one at a time (long: 5 tones) and the DCS codes likewise, and set
+each at once. A walk stops at the first and last tone or code.
 
 ## Bank 7 - CW
 

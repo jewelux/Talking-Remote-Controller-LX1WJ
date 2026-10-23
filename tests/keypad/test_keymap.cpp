@@ -67,6 +67,10 @@ KeypadTraits traitsFor(uint16_t family) {
     add({S::Keyer, S::CwSpeed, S::BreakIn, S::Sidetone, S::CwPitch, S::CwWeight, S::KeyReverse, S::CwDelay});
   }
   if (family == FT857) add({S::Qsk, S::Paddle});
+  // Bank 6.
+  if (family & (FT8X7 | FTDX10 | FT891)) add({S::RptShift, S::ToneType, S::Ctcss});
+  if (family == IC7300) add({S::ToneType, S::Ctcss});
+  if (family & FT8X7) add({S::Dcs});
   return t;
 }
 
@@ -212,10 +216,6 @@ void queryBank6Tone() { record("queryBank6Tone"); }
 void queryBank6ToneDir() { record("queryBank6ToneDir"); }
 void stepBank6ToneDir() { record("stepBank6ToneDir"); }
 void queryBank6SplitTone() { record("queryBank6SplitTone"); }
-void queryBank6CtcssDefault() { record("queryBank6CtcssDefault"); }
-void beginBank6CtcssEntry() { record("beginBank6CtcssEntry"); }
-void queryBank6DcsDefault() { record("queryBank6DcsDefault"); }
-void beginBank6DcsEntry() { record("beginBank6DcsEntry"); }
 
 void queryBank8CivAddress() { record("queryBank8CivAddress"); }
 void beginBank8CivAddressEntry() { record("beginBank8CivAddressEntry"); }

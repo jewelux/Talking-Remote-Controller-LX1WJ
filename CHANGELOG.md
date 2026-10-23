@@ -109,6 +109,11 @@
   - `0` the tuner, as on Bank 4
   - the FT-8x7 settings are read from the radio's memory and set only in experimental mode. On the
     CAT radios these keys are not yet tested on a radio
+- Bank 6, repeater and tone, also works on the CAT radios that have these commands, with the same
+  keys as on the FT-8x7: `2` the tone type and `5` encode or decode (CTCSS only) and `3` the CTCSS
+  tone on the IC-7300, IC-705, IC-7760, FTDX10, FTDX101 and FT-891, and `0` the repeater shift on
+  the IC-705, FTDX10, FTDX101 and FT-891. The repeater offset (`1`) and DCS (`4`) say "not
+  available" there. Not yet tested on a radio
 - Bank 1 `5` says the ALC meter while transmitting, in percent of full scale, on the Icoms and the
   FTDX10, FTDX101 and FT-891 (console `ALC?`)
 - Bank 1 `6` says the RF power setting and long press enters it in watts on the FTDX10, FTDX101D,
@@ -133,7 +138,8 @@
   mode. Bank 4: the processor, VOX and monitor levels, the TX equalizer, mic gain, RF power and
   VOX delay; the levels step by 5, and the FT-8x7 ones wait for `D`. Bank 7: the keyer speed, the
   QSK time or the Icom break-in, sidetone, pitch, weight, RF power and break-in delay; the FT-8x7
-  ones wait for `D`. Bank 9: the profile as before, until `6` moves
+  ones wait for `D`. Bank 6: `3` the CTCSS tone and `4` the DCS code, set at once on every radio,
+  so `B` and `C` walk the tones. Bank 9: the profile as before, until `6` moves
   it to the speech speed or `7`-`9` to the volume. With no focus they say "not available". RIT,
   the CAT radios' RF power and the Bank 2 focus on the CAT radios are not yet tested on a radio
 - keys moved:

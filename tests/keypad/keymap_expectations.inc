@@ -221,29 +221,28 @@ KEYMAP_ROW(ALL,             5, 'B', "focusStep(1)",          "focusBigStep(1)", 
 KEYMAP_ROW(ALL,             5, 'C', "focusStep(-1)",         "focusBigStep(-1)",       "-", "none", "-")
 
 // ---- Bank 6 ----------------------------------------------------------------
-// Not FT-8x7: fixed, was the actions' "BANK6 reserved" beep (with the double-click
-// wait on '0'-'2'); now the keys are unassigned.
-KEYMAP_ROW(FT8X7,           6, '0', "setBank6RepeaterOff",   "setBank6RepeaterMinus",  "setBank6RepeaterPlus", "none", "-")
-KEYMAP_ROW(NOT(FT8X7),      6, '0', "unassigned",            "none",                   "-", "none", "-")
+// The CAT radios: fixed, the keys were unassigned before Bank 6 came to them. The shift
+// where the profile sets it (FTDX10, FT-891), CTCSS and the tone where it has them (also
+// the IC-7300); the rest says "not available". '6' (split tone) stays FT-8x7 only.
+KEYMAP_ROW(FT8X7 | FTDX10 | FT891, 6, '0', "setBank6RepeaterOff", "setBank6RepeaterMinus", "setBank6RepeaterPlus", "none", "-")
+KEYMAP_ROW(IC7300 | IC706 | TS480, 6, '0', "settingSay(RPT)",   "none",                   "-", "none", "-")
 KEYMAP_ROW(FT8X7,           6, '1', "setBank6RepeaterOffsetPreset(1)", "setBank6RepeaterOffsetPreset(2)", "beginBank6RepeaterOffsetEntry", "none", "-")
-KEYMAP_ROW(NOT(FT8X7),      6, '1', "unassigned",            "none",                   "-", "none", "-")
+KEYMAP_ROW(NOT(FT8X7),      6, '1', "setBank6RepeaterOffsetPreset(1)", "none",           "-", "none", "-")
 // '2' double hold (a short press, then a hold): setBank6ToneModeDcs, checked in test_keymap.cpp.
 KEYMAP_ROW(FT8X7,           6, '2', "queryBank6Tone",        "setBank6ToneModeCtcss",  "setBank6ToneOff", "setBank6ToneModeDcs", "-")
-KEYMAP_ROW(NOT(FT8X7),      6, '2', "unassigned",            "none",                   "-", "none", "-")
-KEYMAP_ROW(FT8X7,           6, '3', "queryBank6CtcssDefault", "beginBank6CtcssEntry",  "-", "none", "-")
-KEYMAP_ROW(NOT(FT8X7),      6, '3', "unassigned",            "none",                   "-", "none", "-")
-KEYMAP_ROW(FT8X7,           6, '4', "queryBank6DcsDefault",  "beginBank6DcsEntry",     "-", "none", "-")
-KEYMAP_ROW(NOT(FT8X7),      6, '4', "unassigned",            "none",                   "-", "none", "-")
-KEYMAP_ROW(FT8X7,           6, '5', "queryBank6ToneDir",     "stepBank6ToneDir",       "-", "none", "-")
-KEYMAP_ROW(NOT(FT8X7),      6, '5', "unassigned",            "none",                   "-", "none", "-")
+KEYMAP_ROW(IC7300 | FTDX10 | FT891, 6, '2', "queryBank6Tone", "setBank6ToneModeCtcss",  "setBank6ToneOff", "none", "-")
+KEYMAP_ROW(IC706 | TS480,   6, '2', "queryBank6Tone",        "none",                   "-", "none", "-")
+KEYMAP_ROW(FT8X7 | IC7300 | FTDX10 | FT891, 6, '3', "settingSay(CTCSS)", "settingEntry(CTCSS)", "-", "none", "CTCSS")
+KEYMAP_ROW(IC706 | TS480,   6, '3', "settingSay(CTCSS)",     "none",                   "-", "none", "-")
+KEYMAP_ROW(FT8X7,           6, '4', "settingSay(DCS)",       "settingEntry(DCS)",      "-", "none", "DCS")
+KEYMAP_ROW(NOT(FT8X7),      6, '4', "settingSay(DCS)",       "none",                   "-", "none", "-")
+KEYMAP_ROW(FT8X7 | IC7300 | FTDX10 | FT891, 6, '5', "queryBank6ToneDir", "stepBank6ToneDir", "-", "none", "-")
+KEYMAP_ROW(IC706 | TS480,   6, '5', "queryBank6ToneDir",     "none",                   "-", "none", "-")
 KEYMAP_ROW(FT8X7,           6, '6', "queryBank6SplitTone",   "none",                   "-", "none", "-")
 KEYMAP_ROW(NOT(FT8X7),      6, '6', "unassigned",            "none",                   "-", "none", "-")
-KEYMAP_ROW(FT8X7,           6, 'A', "focusSay",              "focusEntry",             "-", "none", "-")
-KEYMAP_ROW(FT8X7,           6, 'B', "focusStep(1)",          "focusBigStep(1)",        "-", "none", "-")
-KEYMAP_ROW(FT8X7,           6, 'C', "focusStep(-1)",         "focusBigStep(-1)",       "-", "none", "-")
-KEYMAP_ROW(NOT(FT8X7),      6, 'A', "unassigned",            "none",                   "-", "none", "-")
-KEYMAP_ROW(NOT(FT8X7),      6, 'B', "unassigned",            "none",                   "-", "none", "-")
-KEYMAP_ROW(NOT(FT8X7),      6, 'C', "unassigned",            "none",                   "-", "none", "-")
+KEYMAP_ROW(ALL,             6, 'A', "focusSay",              "focusEntry",             "-", "none", "-")
+KEYMAP_ROW(ALL,             6, 'B', "focusStep(1)",          "focusBigStep(1)",        "-", "none", "-")
+KEYMAP_ROW(ALL,             6, 'C', "focusStep(-1)",         "focusBigStep(-1)",       "-", "none", "-")
 
 // ---- Bank 7 ----------------------------------------------------------------
 // The twin of Bank 4: the keyer with its speed on a double, break-in (FT-857/897 QSK time on a

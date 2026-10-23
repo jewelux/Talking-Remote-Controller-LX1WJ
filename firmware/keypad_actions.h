@@ -141,15 +141,16 @@ void adjustBank5Rit(int32_t deltaHz);
 void setBank5RitOff();  // "RIT OFF", RIT off or "RIT -> unsupported"
 
 // ---- Bank 6 ----
+// The repeater shift: on the FT-8x7 its own CAT command, elsewhere caps.setRptShift.
 void setBank6RepeaterOff();
 void setBank6RepeaterMinus();
 void setBank6RepeaterPlus();
-// preset 1 or 2: the profile's rpt_offset_1 or rpt_offset_2 (default 600 kHz
-// and 7.6 MHz).
+// FT-8x7: preset 1 or 2, the profile's rpt_offset_1 or rpt_offset_2 (default
+// 600 kHz and 7.6 MHz).
 void setBank6RepeaterOffsetPreset(uint8_t preset);
 void beginBank6RepeaterOffsetEntry();
 // The tone squelch type ("TONE?"), and off, CTCSS or DCS; CTCSS and DCS keep
-// encode only.
+// encode only. Over CAT CTCSS only.
 void queryBank6Tone();
 void setBank6ToneOff();
 void setBank6ToneModeCtcss();
@@ -159,10 +160,6 @@ void queryBank6ToneDir();
 void stepBank6ToneDir();
 // FT-857/897 split tone, menu 79 ("SPLITTONE?").
 void queryBank6SplitTone();
-void queryBank6CtcssDefault();
-void beginBank6CtcssEntry();
-void queryBank6DcsDefault();
-void beginBank6DcsEntry();
 
 // ---- Bank 8 ----
 void queryBank8CivAddress();

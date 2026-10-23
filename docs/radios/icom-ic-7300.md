@@ -228,6 +228,18 @@ The current keypad concept uses radio-specific banks with:
 | Fine tuning / RIT | `RIT STEP -1`, `RIT STEP -500` | Bank 5: `4` short / `4` long |
 | Fine tuning / RIT | `RIT STEP 1`, `RIT STEP 500` | Bank 5: `5` short / `5` long |
 
+### Bank 6 - Repeater / Tone
+
+| Command family | Commands | Bank / keys |
+|---|---|---|
+| Repeater shift (IC-705) | `RPT SIMPLEX`, `RPT MINUS`, `RPT PLUS` | Bank 6: `0` short / `0` long / `0` double click |
+| Tone squelch | `TONE?`, `TONE CTCSS`, `TONE OFF` | Bank 6: `2` short / `2` long / `2` double click |
+| CTCSS tone | `CTCSS?`, `CTCSS <Hz>` | Bank 6: `3` short / `3` long |
+| Encode or decode | `TONEDIR?`, `TONEDIR NEXT` | Bank 6: `5` short / `5` long |
+
+After `3`, `B`/`C` walk the CTCSS tones and set each at once. The repeater offset and DCS say
+"not available"; the IC-7300 and IC-7760 also have no repeater shift. Not yet tested on a radio.
+
 ### Bank 7 - CW
 
 | Command family | Commands | Bank / keys |

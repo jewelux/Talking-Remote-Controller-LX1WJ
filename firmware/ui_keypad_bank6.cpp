@@ -1,4 +1,4 @@
-// Bank 6 keypad actions: FT-8x7 repeater shift, offset and tones.
+// Bank 6 keypad actions: repeater shift, the FT-8x7 repeater offset, and tone squelch.
 #include "ui_keypad_bank.h"
 #include "protocol_ops_yaesu.h"
 #include "radio_frequency.h"
@@ -10,23 +10,22 @@ static uint32_t currentFt8x7RepeaterOffsetHz(uint8_t index) {
   return currentProfile().ft8x7Bank6.repeaterOffsetsHz[index];
 }
 
-static uint16_t currentFt8x7DefaultCtcssTenths() {
-  return currentProfile().ft8x7Bank6.ctcssDefaultTenths;
-}
-
-static uint16_t currentFt8x7DefaultDcsCode() {
-  return currentProfile().ft8x7Bank6.dcsDefaultCode;
-}
-
-static void setBank6Ft8x7RepeaterShift(uint8_t shiftByte, const char* label) {
-  printKeypadAction("RPT {}", label);
-  yaesuCatSetRepeaterShiftRaw(shiftByte);
-  printKeypadStatus("RPT {}", label);
-  if (!g_speechEnabled) return;
-  speakLabel("repeater");
-  if (String(label) == "MINUS") speakToken("minus");
-  else if (String(label) == "PLUS") speakToken("plus");
-  else speakToken("off");
+// The FT-8x7 sends its own shift byte and cannot read it back. A CAT radio sets the shift and
+// says what it reads back: the Yaesu OS0 works in FM only.
+static void setBank6RepeaterShift(RptShift shift, uint8_t ft8x7Byte) {
+  printKeypadAction("{}", rptShiftText(shift).c_str());
+  if (currentProtocolType() == PROTO_YAESU_FT8X7) {
+    yaesuCatSetRepeaterShiftRaw(ft8x7Byte);
+    printKeypadStatus("{}", rptShiftText(shift).c_str());
+    speakRptShift(shift);
+    return;
+  }
+  prepareKeypadRadioWrite();
+  if (keypadReportFeatureFailure(rptShiftSet(shift), "RPT")) return;
+  RptShift readBack = shift;
+  if (rptShiftQuery(readBack) != FeatureStatus::Ok) readBack = shift;
+  printKeypadStatus("{}", rptShiftText(readBack).c_str());
+  speakRptShift(readBack);
 }
 
 static void setBank6Ft8x7RepeaterOffsetHz(uint64_t hz) {
@@ -59,23 +58,24 @@ void beginBank6RepeaterOffsetEntry() {
   }
 }
 
-void beginBank6CtcssEntry() { keypadSettingEntry(Setting::Ctcss); }
-
-void beginBank6DcsEntry() { keypadSettingEntry(Setting::Dcs); }
-
 void setBank6RepeaterOff() {
-  setBank6Ft8x7RepeaterShift(0x89, "OFF");
+  setBank6RepeaterShift(RptShift::Simplex, 0x89);
 }
 
 void setBank6RepeaterMinus() {
-  setBank6Ft8x7RepeaterShift(0x09, "MINUS");
+  setBank6RepeaterShift(RptShift::Minus, 0x09);
 }
 
 void setBank6RepeaterPlus() {
-  setBank6Ft8x7RepeaterShift(0x49, "PLUS");
+  setBank6RepeaterShift(RptShift::Plus, 0x49);
 }
 
 void setBank6RepeaterOffsetPreset(uint8_t preset) {
+  if (currentProtocolType() != PROTO_YAESU_FT8X7) {
+    printKeypadAction("RPTSHIFT");
+    keypadReportIfUnsupported(false, "RPTSHIFT");
+    return;
+  }
   setBank6Ft8x7RepeaterOffsetHz(currentFt8x7RepeaterOffsetHz(preset - 1));
 }
 
@@ -132,24 +132,3 @@ void queryBank6SplitTone() {
   speakSplitTone(on);
 }
 
-void queryBank6CtcssDefault() {
-  char label[12] = "";
-  uint16_t toneTenths = live.ctcssValid ? live.ctcssTenths : currentFt8x7DefaultCtcssTenths();
-  formatCtcssTenthsLabel(toneTenths, label, sizeof(label));
-  printKeypadAction("CTCSS {}", label);
-  printKeypadStatus("CTCSS {}", label);
-  if (!g_speechEnabled) return;
-  speakLabel("ctcss");
-  speakDigitsAndPoint(label);
-}
-
-void queryBank6DcsDefault() {
-  char label[8] = "";
-  const uint16_t dcsCode = live.dcsValid ? live.dcsCode : currentFt8x7DefaultDcsCode();
-  snprintf(label, sizeof(label), "%03u", (unsigned)dcsCode);
-  printKeypadAction("DCS {}", label);
-  printKeypadStatus("DCS {}", label);
-  if (!g_speechEnabled) return;
-  speakLabel("dcs");
-  speakDigitsAndPoint(label);
-}

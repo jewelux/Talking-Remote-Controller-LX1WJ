@@ -178,6 +178,9 @@ encode only: DCS is always BOTH there.
 
 `3` short and `4` short do not read the radio: they speak the last CTCSS tone or DCS code set from the keypad, or the built-in default (`88.5`, `023`) when nothing has been set yet.
 
+After `3` or `4`, `B` and `C` walk the CTCSS tones or DCS codes from that one and set each at
+once (held: 5 at a time); these are CAT commands, so no experimental mode and no `D`.
+
 ## Bank 7 - CW
 
 As Bank 4: a short press reads, a hold sets with experimental mode on. `B` and `C` open the entry

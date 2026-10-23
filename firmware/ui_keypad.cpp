@@ -76,7 +76,12 @@ static KeypadTraits currentKeypadTraits() {
     const SettingOps* ops = settingOps((Setting)i);
     if (ops && ops->available()) t.settings.add((Setting)i);
   }
-  if (currentProfile().caps.getAgc) t.settings.add(Setting::Agc);
+  const RadioCapabilities& caps = currentProfile().caps;
+  if (caps.getAgc) t.settings.add(Setting::Agc);
+  // Bank 6: the FT-8x7 sets the shift and the tone by its own CAT commands.
+  const bool ft8x7 = currentProtocolType() == PROTO_YAESU_FT8X7;
+  if (ft8x7 || caps.setRptShift) t.settings.add(Setting::RptShift);
+  if (ft8x7 || caps.getTone) t.settings.add(Setting::ToneType);
   return t;
 }
 

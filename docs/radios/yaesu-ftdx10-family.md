@@ -33,7 +33,8 @@ Implemented and documented for the current field-test phase:
   Bank 2 `1` and `2` double press): `RL0` and `NL0`, read back.
 - tone squelch (`TONE? | TONE OFF | CTCSS`, `TONEDIR? | TONEDIR NEXT`, `CTCSS? | CTCSS <Hz>`):
   `CT0` 1 encode and decode, 2 encode only, and `CN00` with the manual's 50-tone table; repeater
-  shift (`RPT? | RPT SIMPLEX | PLUS | MINUS`): `OS0`, FM only. Each set is read back.
+  shift (`RPT? | RPT SIMPLEX | PLUS | MINUS`): `OS0`, FM only. Each set is read back. Bank 6: `0`
+  the shift, `2` the tone, `3` the CTCSS tone (`B`/`C` walk the tones), `5` encode or decode.
 - auto notch (`ANOTCH? | ANOTCH OFF | ON | TOGGLE`, Bank 2 `0`): `BC0`, 0 off and 1 on, read back.
 - ALC meter (`ALC?`, Bank 1 `5`): `RM4`, said in percent of 0..255, as the CAT manuals give the
   meter.

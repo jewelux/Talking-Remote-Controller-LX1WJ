@@ -432,32 +432,43 @@ KeyBinding bank5(char key, Setting focus) {
   }
 }
 
-// FT-8x7 repeater shift, offset and tones. Empty on the other radios.
+// Repeater and tone: '0' the shift, '1' the FT-8x7 offset, '2' the tone type, '3' the CTCSS
+// tone, '4' the DCS code, '5' encode or decode, '6' the FT-857/897 split tone. The CAT radios
+// have the shift, CTCSS and its tone where their profile does; a CTCSS or DCS step is set at
+// once, as these are CAT commands on every radio.
 KeyBinding bank6(const KeypadTraits& t, char key, Setting focus) {
-  if (!isFt8x7(t)) return {};
   if (isFocusKey(key)) return focusKey(key, focus);
+  const bool ft8x7 = isFt8x7(t);
+  const bool tone = t.settings.has(Setting::ToneType);
   switch (key) {
     case '0':
+      if (!t.settings.has(Setting::RptShift)) return bind(saySetting<Setting::RptShift>).help("RPT", V::NotAvailable);
       return bind(setBank6RepeaterOff, setBank6RepeaterMinus, setBank6RepeaterPlus)
           .helpShort("RPT OFF", V::Run)
           .helpHold("RPT MINUS", V::Run)
           .helpDouble("RPT PLUS", V::Run);
     case '1':
+      // No CAT radio sets its offset: the preset says "not available".
+      if (!ft8x7) return bind([] { setBank6RepeaterOffsetPreset(1); }).help("RPTSHIFT", V::NotAvailable);
       return bind([] { setBank6RepeaterOffsetPreset(1); }, [] { setBank6RepeaterOffsetPreset(2); },
                   beginBank6RepeaterOffsetEntry)
           .helpShort("RPTSHIFT1", V::Run)
           .helpHold("RPTSHIFT2", V::Run)
           .helpDouble("RPTSHIFT", V::Entry);
     case '2':
-      return bind(queryBank6Tone, setBank6ToneModeCtcss, setBank6ToneOff, setBank6ToneModeDcs)
+      if (!tone) return bind(queryBank6Tone).help("TONE", V::NotAvailable);
+      return bind(queryBank6Tone, setBank6ToneModeCtcss, setBank6ToneOff,
+                  t.settings.has(Setting::Dcs) ? setBank6ToneModeDcs : nullptr)
           .help("TONE", V::Say)
           .helpHold("TONE CTCSS", V::Run)
           .helpDouble("TONE OFF", V::Run)
           .helpDoubleHold("TONE DCS", V::Run);
-    case '3': return bind(queryBank6CtcssDefault, beginBank6CtcssEntry).help("CTCSS", V::Say, V::Entry);
-    case '4': return bind(queryBank6DcsDefault, beginBank6DcsEntry).help("DCS", V::Say, V::Entry);
-    case '5': return bind(queryBank6ToneDir, stepBank6ToneDir).help("TONEDIR", V::Say, V::Next);
-    case '6': return bind(queryBank6SplitTone).help("SPLITTONE", V::Say);
+    case '3': return settingOrNotAvailable<Setting::Ctcss>(t);
+    case '4': return settingOrNotAvailable<Setting::Dcs>(t);
+    case '5':
+      if (!tone) return bind(queryBank6ToneDir).help("TONEDIR", V::NotAvailable);
+      return bind(queryBank6ToneDir, stepBank6ToneDir).help("TONEDIR", V::Say, V::Next);
+    case '6': return ft8x7 ? bind(queryBank6SplitTone).help("SPLITTONE", V::Say) : KeyBinding{};
     default: return {};
   }
 }
