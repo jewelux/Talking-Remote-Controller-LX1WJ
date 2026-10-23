@@ -6,6 +6,7 @@
 #include "cat_setting_codec.h"
 #include "ft8x7_eeprom_map.h"
 #include "radio_catalog.h"
+#include "radio_features_internal.h"
 #include "radio_globals.h"
 #include "radio_protocol.h"
 #include "ui_features.h"
@@ -14,7 +15,6 @@
 namespace {
 
 // The FT-8x7 keeps these in its EEPROM: B and C open the entry, staged for Enter.
-bool isFt8x7Protocol() { return currentProtocolType() == PROTO_YAESU_FT8X7; }
 
 Ft8x7SettingState ft8x7State(Ft8x7Setting setting, int32_t value) {
   Ft8x7SettingState state;
@@ -26,7 +26,7 @@ Ft8x7SettingState ft8x7State(Ft8x7Setting setting, int32_t value) {
 
 // ---- The keyer ----
 
-FeatureStatus keyerLimits(ValueSpec& spec) { return switchSettingLimits(spec, Setting::Keyer, keyerCanSet()); }
+FeatureStatus keyerLimits(ValueSpec& spec) { return switchSettingLimits(spec, keyerCanSet()); }
 
 FeatureStatus keyerRead(int32_t& value) {
   bool on = false;
@@ -47,7 +47,6 @@ void speakKeyerOf(int32_t value) { speakKeyer(value != 0); }
 
 // ---- Break-in: Icom off, semi, full; the others off and on ----
 
-bool isCiv() { return currentProtocolType() == PROTO_CIV; }
 
 // Icom: off -> semi -> full, and back.
 int32_t stepCivBreakIn(int32_t mode, int8_t dir) {
@@ -59,7 +58,7 @@ int32_t stepCivBreakIn(int32_t mode, int8_t dir) {
 }
 
 FeatureStatus breakInLimits(ValueSpec& spec) {
-  const FeatureStatus status = switchSettingLimits(spec, Setting::BreakIn, breakInCanSet(BreakInMode::On));
+  const FeatureStatus status = switchSettingLimits(spec, breakInCanSet(BreakInMode::On));
   if (status != FeatureStatus::Ok || !isCiv()) return status;
   spec.max = (int32_t)BreakInMode::Full;
   spec.stepFn = stepCivBreakIn;
@@ -139,15 +138,11 @@ FeatureStatus cwLimits(ValueSpec& spec) {
   uint16_t min = 0;
   uint16_t max = 0;
   if (!cwLevelRange(L, min, max)) return FeatureStatus::Unsupported;
-  const Setting setting = L == CwLevel::Speed ? Setting::CwSpeed : L == CwLevel::Pitch ? Setting::CwPitch
-                                                                                       : Setting::CwDelay;
-  spec.name = settingInfo(setting).label;
-  spec.setting = setting;
   spec.min = min;
   spec.max = max;
   spec.maxDigits = L == CwLevel::Speed ? 2 : 4;
   spec.unit = L == CwLevel::Speed ? " WPM" : L == CwLevel::Pitch ? " Hz" : " ms";
-  if (isFt8x7Protocol()) {
+  if (isFt8x7()) {
     spec.stepFn = L == CwLevel::Delay ? stepFt8x7CwDelay : stepFt8x7Cw<ft8x7CwLevelOf(L)>;
     if (L == CwLevel::Delay && ft8x7CwDelayHasFull(currentFt8x7Model())) spec.min = 0;
   } else if (L == CwLevel::Pitch) {
@@ -169,7 +164,7 @@ FeatureStatus cwRead(int32_t& value) {
 // The FT-8x7 set takes the FT-857/897 FULL delay, which cwLevelRange leaves out.
 template <CwLevel L>
 FeatureStatus cwWrite(int32_t value, int32_t& readBack) {
-  if (isFt8x7Protocol()) {
+  if (isFt8x7()) {
     Ft8x7SettingState state;
     const FeatureStatus status = ft8x7LevelSet(ft8x7CwSettingOf(L), (uint16_t)value, state);
     readBack = state.value;
@@ -218,15 +213,13 @@ void ft8x7Speak(int32_t value) {
 
 // Sidetone 0..100 in steps of 5; the weight 1:2.5..1:4.5 in tenths, typed with '*' as its
 // point; QSK in the radio's steps.
-template <Ft8x7Setting S, Setting K>
+template <Ft8x7Setting S>
 FeatureStatus ft8x7LevelLimits(ValueSpec& spec) {
   uint16_t min = 0;
   uint16_t max = 0;
   if (!ft8x7Available<S>() || !currentProfile().caps.setRadioMenu || !ft8x7LevelRange(S, min, max)) {
     return FeatureStatus::Unsupported;
   }
-  spec.name = settingInfo(K).label;
-  spec.setting = K;
   spec.min = min;
   spec.max = max;
   spec.maxDigits = S == Ft8x7Setting::Sidetone ? 3 : 2;
@@ -251,9 +244,9 @@ FeatureStatus ft8x7LevelWrite(int32_t value, int32_t& readBack) {
   return status;
 }
 
-template <Ft8x7Setting S, Setting K>
+template <Ft8x7Setting S>
 FeatureStatus ft8x7FlagLimits(ValueSpec& spec) {
-  return switchSettingLimits(spec, K, ft8x7Available<S>() && currentProfile().caps.setRadioMenu);
+  return switchSettingLimits(spec, ft8x7Available<S>() && currentProfile().caps.setRadioMenu);
 }
 
 template <Ft8x7Setting S>
@@ -264,36 +257,35 @@ FeatureStatus ft8x7FlagWrite(int32_t value, int32_t& readBack) {
   return status;
 }
 
-bool always() { return true; }
 
 constexpr SettingOps kCwOps[] = {
-    {Setting::Keyer, "keyer", keyerSupported, keyerLimits, keyerRead, keyerWrite, keyerTextOf, speakKeyerOf},
-    {Setting::CwSpeed, "cw speed", cwAvailable<CwLevel::Speed>, cwLimits<CwLevel::Speed>, cwRead<CwLevel::Speed>,
-     cwWrite<CwLevel::Speed>, cwText<CwLevel::Speed>, speakCw<CwLevel::Speed>, isFt8x7Protocol},
-    {Setting::BreakIn, "breakin", breakInSupported, breakInLimits, breakInRead, breakInWrite, breakInTextOf,
+    {Setting::Keyer, keyerSupported, keyerLimits, keyerRead, keyerWrite, keyerTextOf, speakKeyerOf},
+    {Setting::CwSpeed, cwAvailable<CwLevel::Speed>, cwLimits<CwLevel::Speed>, cwRead<CwLevel::Speed>,
+     cwWrite<CwLevel::Speed>, cwText<CwLevel::Speed>, speakCw<CwLevel::Speed>, isFt8x7},
+    {Setting::BreakIn, breakInSupported, breakInLimits, breakInRead, breakInWrite, breakInTextOf,
      speakBreakInOf},
-    {Setting::Qsk, "q s k", ft8x7Available<Ft8x7Setting::Qsk>, ft8x7LevelLimits<Ft8x7Setting::Qsk, Setting::Qsk>,
+    {Setting::Qsk, ft8x7Available<Ft8x7Setting::Qsk>, ft8x7LevelLimits<Ft8x7Setting::Qsk>,
      ft8x7Read<Ft8x7Setting::Qsk>, ft8x7LevelWrite<Ft8x7Setting::Qsk>, ft8x7Text<Ft8x7Setting::Qsk>,
      ft8x7Speak<Ft8x7Setting::Qsk>, always},
-    {Setting::Sidetone, "sidetone", ft8x7Available<Ft8x7Setting::Sidetone>,
-     ft8x7LevelLimits<Ft8x7Setting::Sidetone, Setting::Sidetone>, ft8x7Read<Ft8x7Setting::Sidetone>,
+    {Setting::Sidetone, ft8x7Available<Ft8x7Setting::Sidetone>,
+     ft8x7LevelLimits<Ft8x7Setting::Sidetone>, ft8x7Read<Ft8x7Setting::Sidetone>,
      ft8x7LevelWrite<Ft8x7Setting::Sidetone>, ft8x7Text<Ft8x7Setting::Sidetone>, ft8x7Speak<Ft8x7Setting::Sidetone>,
      always},
-    {Setting::Paddle, "paddle", ft8x7Available<Ft8x7Setting::Paddle>,
-     ft8x7FlagLimits<Ft8x7Setting::Paddle, Setting::Paddle>, ft8x7Read<Ft8x7Setting::Paddle>,
+    {Setting::Paddle, ft8x7Available<Ft8x7Setting::Paddle>,
+     ft8x7FlagLimits<Ft8x7Setting::Paddle>, ft8x7Read<Ft8x7Setting::Paddle>,
      ft8x7FlagWrite<Ft8x7Setting::Paddle>, ft8x7Text<Ft8x7Setting::Paddle>, ft8x7Speak<Ft8x7Setting::Paddle>},
-    {Setting::CwPitch, "cw pitch", cwAvailable<CwLevel::Pitch>, cwLimits<CwLevel::Pitch>, cwRead<CwLevel::Pitch>,
-     cwWrite<CwLevel::Pitch>, cwText<CwLevel::Pitch>, speakCw<CwLevel::Pitch>, isFt8x7Protocol},
-    {Setting::CwWeight, "cw weight", ft8x7Available<Ft8x7Setting::CwWeight>,
-     ft8x7LevelLimits<Ft8x7Setting::CwWeight, Setting::CwWeight>, ft8x7Read<Ft8x7Setting::CwWeight>,
+    {Setting::CwPitch, cwAvailable<CwLevel::Pitch>, cwLimits<CwLevel::Pitch>, cwRead<CwLevel::Pitch>,
+     cwWrite<CwLevel::Pitch>, cwText<CwLevel::Pitch>, speakCw<CwLevel::Pitch>, isFt8x7},
+    {Setting::CwWeight, ft8x7Available<Ft8x7Setting::CwWeight>,
+     ft8x7LevelLimits<Ft8x7Setting::CwWeight>, ft8x7Read<Ft8x7Setting::CwWeight>,
      ft8x7LevelWrite<Ft8x7Setting::CwWeight>, ft8x7Text<Ft8x7Setting::CwWeight>, ft8x7Speak<Ft8x7Setting::CwWeight>,
      always},
-    {Setting::KeyReverse, "key reverse", ft8x7Available<Ft8x7Setting::KeyReverse>,
-     ft8x7FlagLimits<Ft8x7Setting::KeyReverse, Setting::KeyReverse>, ft8x7Read<Ft8x7Setting::KeyReverse>,
+    {Setting::KeyReverse, ft8x7Available<Ft8x7Setting::KeyReverse>,
+     ft8x7FlagLimits<Ft8x7Setting::KeyReverse>, ft8x7Read<Ft8x7Setting::KeyReverse>,
      ft8x7FlagWrite<Ft8x7Setting::KeyReverse>, ft8x7Text<Ft8x7Setting::KeyReverse>,
      ft8x7Speak<Ft8x7Setting::KeyReverse>},
-    {Setting::CwDelay, "cw delay", cwAvailable<CwLevel::Delay>, cwLimits<CwLevel::Delay>, cwRead<CwLevel::Delay>,
-     cwWrite<CwLevel::Delay>, cwText<CwLevel::Delay>, speakCw<CwLevel::Delay>, isFt8x7Protocol},
+    {Setting::CwDelay, cwAvailable<CwLevel::Delay>, cwLimits<CwLevel::Delay>, cwRead<CwLevel::Delay>,
+     cwWrite<CwLevel::Delay>, cwText<CwLevel::Delay>, speakCw<CwLevel::Delay>, isFt8x7},
 };
 
 }  // namespace

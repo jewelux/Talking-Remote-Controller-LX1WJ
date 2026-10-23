@@ -13,9 +13,7 @@
 
 namespace {
 
-bool isCiv() { return currentProtocolType() == PROTO_CIV; }
 bool isYaesuAscii() { return currentProtocolType() == PROTO_YAESU_FTDX_ASCII; }
-bool always() { return true; }
 
 // ---- FT-857/897 DSP menus, kept in the EEPROM ----
 //
@@ -52,14 +50,12 @@ int32_t stepFt857(int32_t value, int8_t dir) {
 }
 
 template <Ft8x7Setting S>
-FeatureStatus ft857Limits(ValueSpec& spec, Setting setting) {
+FeatureStatus ft857Limits(ValueSpec& spec) {
   uint16_t min = 0;
   uint16_t max = 0;
   if (!currentIsFt857Family() || !ft857LevelWritable(S) || !ft8x7LevelRange(S, min, max)) {
     return FeatureStatus::Unsupported;
   }
-  spec.name = settingInfo(setting).label;
-  spec.setting = setting;
   spec.min = min;
   spec.max = max;
   spec.maxDigits = max >= 1000 ? 4 : 3;
@@ -116,15 +112,12 @@ bool rxLevelAvailable() {
 
 template <RxLevel L>
 FeatureStatus rxLevelLimits(ValueSpec& spec) {
-  constexpr Setting kSetting = L == RxLevel::Nr ? Setting::NrLevel : Setting::NbLevel;
   constexpr Ft8x7Setting kFt857 = L == RxLevel::Nr ? Ft8x7Setting::NrLevel : Ft8x7Setting::NbLevel;
-  if (currentIsFt857Family()) return ft857Limits<kFt857>(spec, kSetting);
+  if (currentIsFt857Family()) return ft857Limits<kFt857>(spec);
   const RadioCapabilities& caps = currentProfile().caps;
   if (!rxLevelAvailable<L>() || !(L == RxLevel::Nr ? caps.setNrLevel : caps.setNbLevel)) {
     return FeatureStatus::Unsupported;
   }
-  spec.name = settingInfo(kSetting).label;
-  spec.setting = kSetting;
   if (isCiv()) {
     spec.min = 0;
     spec.max = 100;
@@ -210,9 +203,9 @@ bool rxLevelConfirm() { return currentIsFt857Family(); }
 
 bool ft857Available() { return currentIsFt857Family(); }
 
-FeatureStatus lowCutLimits(ValueSpec& spec) { return ft857Limits<Ft8x7Setting::LowCut>(spec, Setting::RxLowCut); }
-FeatureStatus highCutLimits(ValueSpec& spec) { return ft857Limits<Ft8x7Setting::HighCut>(spec, Setting::RxHighCut); }
-FeatureStatus bpfWidthLimits(ValueSpec& spec) { return ft857Limits<Ft8x7Setting::BpfWidth>(spec, Setting::BpfWidth); }
+FeatureStatus lowCutLimits(ValueSpec& spec) { return ft857Limits<Ft8x7Setting::LowCut>(spec); }
+FeatureStatus highCutLimits(ValueSpec& spec) { return ft857Limits<Ft8x7Setting::HighCut>(spec); }
+FeatureStatus bpfWidthLimits(ValueSpec& spec) { return ft857Limits<Ft8x7Setting::BpfWidth>(spec); }
 
 // ---- Icom passband tuning: -128..127 steps of the radio's level, 0 the centre ----
 
@@ -226,8 +219,6 @@ FeatureStatus pbtLimits(ValueSpec& spec) {
   if (!pbtAvailable<Inner>() || !(Inner ? currentProfile().caps.setPbtInner : currentProfile().caps.setPbtOuter)) {
     return FeatureStatus::Unsupported;
   }
-  spec.name = Inner ? "PBT1" : "PBT2";
-  spec.setting = Inner ? Setting::PbtInner : Setting::PbtOuter;
   spec.min = -128;
   spec.max = 127;
   spec.sign = true;
@@ -283,8 +274,6 @@ bool filterSlotAvailable() { return isCiv() && currentProfile().caps.getFilterWi
 
 FeatureStatus filterSlotLimits(ValueSpec& spec) {
   if (!filterSlotAvailable() || !currentProfile().caps.setFilterWidth) return FeatureStatus::Unsupported;
-  spec.name = "FILWIDTH";
-  spec.setting = Setting::FilterSlot;
   spec.min = 1;
   spec.max = 3;
   spec.maxDigits = 1;
@@ -330,8 +319,6 @@ bool notchAvailable() { return isCiv() && currentProfile().caps.getNotchWidth; }
 FeatureStatus notchLimits(ValueSpec& spec) {
   const RadioCapabilities& caps = currentProfile().caps;
   if (!notchAvailable() || !caps.setNotch || !caps.setNotchWidth) return FeatureStatus::Unsupported;
-  spec.name = "NOTCH";
-  spec.setting = Setting::Notch;
   spec.min = 0;
   spec.max = 3;
   spec.maxDigits = 1;
@@ -371,8 +358,6 @@ bool preampAvailable() { return currentProfile().caps.getPreamp && preampLevels(
 
 FeatureStatus preampLimits(ValueSpec& spec) {
   if (!preampAvailable() || !currentProfile().caps.setPreamp) return FeatureStatus::Unsupported;
-  spec.name = "PREAMP";
-  spec.setting = Setting::Preamp;
   spec.min = 0;
   spec.max = preampLevels();
   spec.maxDigits = 1;
@@ -403,8 +388,6 @@ bool attAvailable() { return currentProfile().caps.getAtt; }
 
 FeatureStatus attLimits(ValueSpec& spec) {
   if (!attAvailable() || attSteps() == 0) return FeatureStatus::Unsupported;
-  spec.name = "ATT";
-  spec.setting = Setting::Att;
   spec.min = 0;
   spec.max = attSteps();
   spec.maxDigits = 1;
@@ -446,29 +429,29 @@ String attTextOf(int32_t value) { return attText(attStateOf(value)); }
 void speakAttOf(int32_t value) { speakAtt(attStateOf(value)); }
 
 constexpr SettingOps kRxOps[] = {
-    {Setting::NrLevel, "noisereduction level", rxLevelAvailable<RxLevel::Nr>, rxLevelLimits<RxLevel::Nr>,
+    {Setting::NrLevel, rxLevelAvailable<RxLevel::Nr>, rxLevelLimits<RxLevel::Nr>,
      rxLevelRead<RxLevel::Nr>, rxLevelWrite<RxLevel::Nr>, rxLevelTextOf<RxLevel::Nr>, speakRxLevelOf<RxLevel::Nr>,
      rxLevelConfirm},
-    {Setting::NbLevel, "noiseblanker level", rxLevelAvailable<RxLevel::Nb>, rxLevelLimits<RxLevel::Nb>,
+    {Setting::NbLevel, rxLevelAvailable<RxLevel::Nb>, rxLevelLimits<RxLevel::Nb>,
      rxLevelRead<RxLevel::Nb>, rxLevelWrite<RxLevel::Nb>, rxLevelTextOf<RxLevel::Nb>, speakRxLevelOf<RxLevel::Nb>,
      rxLevelConfirm},
-    {Setting::RxLowCut, "lowcut", ft857Available, lowCutLimits, ft857Read<Ft8x7Setting::LowCut>,
+    {Setting::RxLowCut, ft857Available, lowCutLimits, ft857Read<Ft8x7Setting::LowCut>,
      ft857Write<Ft8x7Setting::LowCut>, ft857Text<Ft8x7Setting::LowCut>, ft857Speak<Ft8x7Setting::LowCut>, always},
-    {Setting::RxHighCut, "highcut", ft857Available, highCutLimits, ft857Read<Ft8x7Setting::HighCut>,
+    {Setting::RxHighCut, ft857Available, highCutLimits, ft857Read<Ft8x7Setting::HighCut>,
      ft857Write<Ft8x7Setting::HighCut>, ft857Text<Ft8x7Setting::HighCut>, ft857Speak<Ft8x7Setting::HighCut>, always},
-    {Setting::BpfWidth, "cw filterwidth", ft857Available, bpfWidthLimits, ft857Read<Ft8x7Setting::BpfWidth>,
+    {Setting::BpfWidth, ft857Available, bpfWidthLimits, ft857Read<Ft8x7Setting::BpfWidth>,
      ft857Write<Ft8x7Setting::BpfWidth>, ft857Text<Ft8x7Setting::BpfWidth>, ft857Speak<Ft8x7Setting::BpfWidth>,
      always},
-    {Setting::PbtInner, "pbt one", pbtAvailable<true>, pbtLimits<true>, pbtRead<true>, pbtWrite<true>,
-     pbtText<true>, speakPbt<true>, nullptr, 0},
-    {Setting::PbtOuter, "pbt two", pbtAvailable<false>, pbtLimits<false>, pbtRead<false>, pbtWrite<false>,
-     pbtText<false>, speakPbt<false>, nullptr, 0},
-    {Setting::FilterSlot, "filterwidth", filterSlotAvailable, filterSlotLimits, filterSlotRead, filterSlotWrite,
+    {Setting::PbtInner, pbtAvailable<true>, pbtLimits<true>, pbtRead<true>, pbtWrite<true>,
+     pbtText<true>, speakPbt<true>},
+    {Setting::PbtOuter, pbtAvailable<false>, pbtLimits<false>, pbtRead<false>, pbtWrite<false>,
+     pbtText<false>, speakPbt<false>},
+    {Setting::FilterSlot, filterSlotAvailable, filterSlotLimits, filterSlotRead, filterSlotWrite,
      filterSlotText, speakFilterSlot},
-    {Setting::Notch, "notch", notchAvailable, notchLimits, notchRead, notchWrite, notchText, speakNotch},
-    {Setting::Preamp, "preamplifier", preampAvailable, preampLimits, preampRead, preampWrite, preampTextOf,
+    {Setting::Notch, notchAvailable, notchLimits, notchRead, notchWrite, notchText, speakNotch},
+    {Setting::Preamp, preampAvailable, preampLimits, preampRead, preampWrite, preampTextOf,
      speakPreampOf},
-    {Setting::Att, "attenuator", attAvailable, attLimits, attRead, attWrite, attTextOf, speakAttOf},
+    {Setting::Att, attAvailable, attLimits, attRead, attWrite, attTextOf, speakAttOf},
 };
 
 }  // namespace

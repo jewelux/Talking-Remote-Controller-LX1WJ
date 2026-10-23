@@ -1,18 +1,31 @@
 // The keypad's settings engine: entries of a Setting through its SettingOps
 // (keypad_setting_ops.cpp), and what a value entry says while it runs.
+#include "keypad_labels.h"
 #include "keypad_setting_ops.h"
 #include "ui_keypad_common.h"
 #include "ui_speech.h"
 
+namespace {
+
+// What ops->limits fills in: named after its setting.
+ValueSpec specOf(Setting setting) {
+  ValueSpec spec;
+  spec.name = settingInfo(setting).label;
+  spec.setting = setting;
+  return spec;
+}
+
+}  // namespace
+
 // The radio's value is read once here, so B and C step from it with no more
 // radio traffic; Enter writes once.
-void keypadSettingEntry(Setting setting) {
+void settingEntry(Setting setting) {
   const SettingOps* ops = settingOps(setting);
   const char* label = settingInfo(setting).label;
   if (keypadReportIfUnsupported(ops && ops->available(), label)) return;
   printKeypadAction("{} ENTRY", label);
   prepareKeypadSpeechResponse();
-  ValueSpec spec;
+  ValueSpec spec = specOf(setting);
   if (keypadReportFeatureFailure(ops->limits(spec), label)) return;
   EntrySeed seed;
   int32_t value = 0;
@@ -24,7 +37,7 @@ void keypadSettingEntry(Setting setting) {
   keypadBeginValueEntry(spec, seed);
   if (seed.known) printKeypadStatus("{} PLEASE ({})", label, ops->text(value).c_str());
   else printKeypadStatus("{} PLEASE", label);
-  speakPrompt(ops->prompt);
+  if (const char* words = spokenLabelWords(label)) speakPrompt(words);
 }
 
 void keypadValueDigit(const ValueSpec& spec, char key, const char* digits) {
@@ -146,6 +159,7 @@ bool readForStep(const SettingOps& ops, ValueSpec& spec, int32_t& value) {
   const char* label = settingInfo(ops.setting).label;
   if (keypadReportIfUnsupported(ops.available(), label)) return false;
   prepareKeypadSpeechResponse();
+  spec = specOf(ops.setting);
   if (keypadReportFeatureFailure(ops.limits(spec), label)) return false;
   if (recentValue(ops.setting, value)) return true;
   return !keypadReportFeatureFailure(ops.read(value), label);
@@ -155,7 +169,7 @@ bool readForStep(const SettingOps& ops, ValueSpec& spec, int32_t& value) {
 struct FocusActions {
   Setting setting;
   KeyAction say;     // nullptr: read and said through its SettingOps
-  KeyAction entry;   // nullptr: keypadSettingEntry
+  KeyAction entry;   // nullptr: settingEntry
   KeyAction centre;  // nullptr: its SettingOps centre
   void (*step)(int8_t dir, bool big);  // nullptr: keypadSettingNudge
 };
@@ -194,18 +208,19 @@ const FocusActions* focusActions(Setting setting) {
   return nullptr;
 }
 
+// A focus with no action of its own for a gesture goes through its SettingOps: false, with
+// "not available" said, where it has none.
+bool focusHasOps(Setting focus) {
+  if (settingOps(focus)) return true;
+  reportNotAvailable("FOCUS");
+  return false;
+}
+
 void stepFocus(int8_t dir, bool big) {
   const Setting focus = keypadActiveFocus();
   const FocusActions* f = focusActions(focus);
-  if (f && f->step) {
-    f->step(dir, big);
-    return;
-  }
-  if (!settingOps(focus)) {
-    reportNotAvailable("FOCUS");
-    return;
-  }
-  keypadSettingNudge(focus, dir, big);
+  if (f && f->step) f->step(dir, big);
+  else if (focusHasOps(focus)) keypadSettingNudge(focus, dir, big);
 }
 
 }  // namespace
@@ -254,8 +269,6 @@ void settingSay(Setting setting) {
   ops->speak(value);
 }
 
-void settingEntry(Setting setting) { keypadSettingEntry(setting); }
-
 // A short list on a hold: one step up, from the last back to the first, set at once.
 void settingNext(Setting setting) {
   const SettingOps* ops = settingOps(setting);
@@ -277,29 +290,15 @@ void focusSay() {
   const Setting focus = keypadActiveFocus();
   LabelModeScope named(LabelMode::Always);
   const FocusActions* f = focusActions(focus);
-  if (f && f->say) {
-    f->say();
-    return;
-  }
-  if (!settingOps(focus)) {
-    reportNotAvailable("FOCUS");
-    return;
-  }
-  settingSay(focus);
+  if (f && f->say) f->say();
+  else if (focusHasOps(focus)) settingSay(focus);
 }
 
 void focusEntry() {
   const Setting focus = keypadActiveFocus();
   const FocusActions* f = focusActions(focus);
-  if (f && f->entry) {
-    f->entry();
-    return;
-  }
-  if (!settingOps(focus)) {
-    reportNotAvailable("FOCUS");
-    return;
-  }
-  keypadSettingEntry(focus);
+  if (f && f->entry) f->entry();
+  else if (focusHasOps(focus)) settingEntry(focus);
 }
 
 void focusCentre() {

@@ -236,6 +236,7 @@ Per band and VFO, a 28-byte block. VFO A blocks: 160 m `0xBA`, 80 m `0xD6`, 5 MH
 | +4 | 7 | unknown; not RIT (set in blocks with a zero RIT offset too). Saved with the band's working state |
 | +4 | 3..0 | tone mode, saved as soon as it changes: bits 3..2 what is sent, bits 1..0 what the squelch waits for, each 01 = CTCSS, 10 = DCS (CTCSS 5, CTCSS encode 4, CTCSS decode 1, DCS A, DCS encode 8, DCS decode 2, off 0). Measured by setting each CAT tone mode on 2 m FM; front panel changes show the same. Mixed modes with split tone: DCS sent, CTCSS awaited 9; CTCSS sent, DCS awaited 6. `TONE?`, `TONEDIR?`, Bank 6 `2` and `5` |
 | +4 | 4 | split tone (menu 79), per band, saved on leaving the menu (2 m and 10 m kept separate values). Switching it off keeps a mixed mode in bits 3..0. `SPLITTONE?`, Bank 6 `6` |
+| +6, +7 | all | CTCSS tone, as its index in the radio's tone list (0 = 67.0 Hz, 8 = 88.5 Hz, 10 = 94.8 Hz); both bytes held the same value. Written at once by the CAT tone command, no band change needed. Measured in the general coverage block on 26.935 MHz FM; +7 may be the decode tone with split tone, not checked |
 | +10..+11 | all | the RIT offset, signed, 10 Hz units, big-endian (`FF AA` = −860 Hz), measured on 20 m against the frequency the radio reports with RIT on. Kept when RIT is switched off. Current only after the radio saves the block: a band change saves it, turning the knob or a short press of CLAR does not. The IF shift offset is not here. `YSETTINGS?` shows it as `RITOFFSET` |
 | +12..+15 | all | frequency, 10 Hz units, big-endian |
 

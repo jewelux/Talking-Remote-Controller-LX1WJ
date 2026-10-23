@@ -32,11 +32,9 @@ void speakKeypadCommandWord(const String& cmd);
 // Entries and selections (ui_keypad_entry.cpp), called by the state machine.
 void keypadEntryDigit(const EntrySpec& entry, char key, const char* digits);
 void keypadEntryCommit(InputMode mode, const char* digits, TargetVfo targetVfo);
-// The settings engine (ui_keypad_settings.cpp). Opens the entry of setting with
-// its value read from the radio: "power please".
-void keypadSettingEntry(Setting setting);
-// B or C on setting (big: a big step): a live setting is set and said at once; a Confirm
-// one opens its entry one step away, "power 45 watts please".
+// The settings engine (ui_keypad_settings.cpp). B or C on setting (big: a big step): a live
+// setting is set and said at once; a Confirm one opens its entry one step away, "power 45
+// watts please".
 void keypadSettingNudge(Setting setting, int8_t dir, bool big);
 // B and C on the Bank 1 focus (ui_keypad_bank1.cpp), read once and staged for Enter: RF power
 // (the FT-817/818 level pick) and the mode pick.

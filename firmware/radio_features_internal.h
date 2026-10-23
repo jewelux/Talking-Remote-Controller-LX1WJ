@@ -42,6 +42,10 @@ inline bool isFt8x7() {
   return currentProtocolType() == PROTO_YAESU_FT8X7;
 }
 
+inline bool isCiv() {
+  return currentProtocolType() == PROTO_CIV;
+}
+
 // Kenwood, Elecraft or the Yaesu FTDX family; the profile's caps and settings say which commands
 // the radio has.
 inline bool isAsciiRadio() {

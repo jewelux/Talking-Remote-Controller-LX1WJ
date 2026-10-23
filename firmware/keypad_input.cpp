@@ -16,8 +16,6 @@ int keyBit(char key) {
 
 bool isDigit(char key) { return key >= '0' && key <= '9'; }
 
-bool isFocusKey(char key) { return key == 'A' || key == 'B' || key == 'C'; }
-
 // The key keypadActiveKey() reports; empty while no action runs. The focus
 // keypadActiveFocus() reports with it.
 char g_activeKey[24] = "";
@@ -525,16 +523,8 @@ void KeypadInput::enter() {
     return;
   }
   if (mode_ == InputMode::ValueEntry) {
-    // A value past the range says so and becomes that end, staged for another Enter.
     int32_t v = 0;
     const ValueEntry::Result result = value_.result(v);
-    if (result == ValueEntry::Result::AboveMax || result == ValueEntry::Result::BelowMin) {
-      value_.snapToRange();
-      value_.current(v);
-      listener_.onLimit(value_.spec().name, result == ValueEntry::Result::AboveMax);
-      listener_.onValueStaged(value_.spec(), v);
-      return;
-    }
     switch (result) {
       case ValueEntry::Result::Ok: {
         const TargetVfo targetVfo = entryVfo_;
@@ -544,8 +534,16 @@ void KeypadInput::enter() {
         return;
       }
       case ValueEntry::Result::None: reportRejected(value_.spec().name, "D"); return;
-      default: return;
+      // A value past the range says so and becomes that end, staged for another Enter.
+      case ValueEntry::Result::AboveMax:
+      case ValueEntry::Result::BelowMin:
+        value_.snapToRange();
+        value_.current(v);
+        listener_.onLimit(value_.spec().name, result == ValueEntry::Result::AboveMax);
+        listener_.onValueStaged(value_.spec(), v);
+        return;
     }
+    return;
   }
 
   if (digits_.empty()) {

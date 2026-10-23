@@ -8,12 +8,13 @@
 // How the keypad reads, sets and says one Setting on the current radio. What
 // differs per radio stays inside: one RfPower covers the Icom level, the ASCII
 // PC and the FT-857/897 menu 75.
+// Its entry asks with the label's spoken name: "power please".
 struct SettingOps {
   Setting setting;
-  const char* prompt;  // the word its entry asks with: "power" -> "power please"
   // The radio has it, by its caps; no radio traffic.
   bool (*available)();
-  // Fills spec for an entry: range, steps and how it is typed. May read the
+  // Fills spec for an entry: range, steps and how it is typed; its name and
+  // setting are already set. May read the
   // radio (the band group of the FT-857/897 power). Unsupported where it
   // cannot be set.
   FeatureStatus (*limits)(ValueSpec& spec);
@@ -35,7 +36,9 @@ struct SettingOps {
 };
 
 // For the ops files: a switch, 0 off and 1 on, set where canSet; Unsupported where it cannot be.
-FeatureStatus switchSettingLimits(ValueSpec& spec, Setting setting, bool canSet);
+FeatureStatus switchSettingLimits(ValueSpec& spec, bool canSet);
+// For the ops tables: available on every radio, or a confirm that always waits for Enter.
+inline bool always() { return true; }
 
 // nullptr for a setting with no ops.
 const SettingOps* settingOps(Setting setting);

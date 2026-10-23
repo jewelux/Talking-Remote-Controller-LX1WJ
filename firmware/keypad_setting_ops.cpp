@@ -12,9 +12,7 @@
 
 namespace {
 
-bool isFt8x7Protocol() { return currentProtocolType() == PROTO_YAESU_FT8X7; }
 
-bool always() { return true; }
 
 // ---- RF power, in tenths of a watt ----
 //
@@ -35,14 +33,12 @@ bool rfPowerAvailable() { return currentProfile().caps.setRfPower; }
 FeatureStatus rfPowerLimits(ValueSpec& spec) {
   uint16_t min = 0;
   uint16_t max = 0;
-  if (isFt8x7Protocol()) {
+  if (isFt8x7()) {
     const FeatureStatus status = ft8x7RfPowerRange(s_rfPowerHz, min, max);
     if (status != FeatureStatus::Ok) return status;
   } else if (!rfPowerRange(min, max)) {
     return FeatureStatus::Unsupported;
   }
-  spec.name = "RFPOWER";
-  spec.setting = Setting::RfPower;
   spec.min = min * 10;
   spec.max = max * 10;
   spec.scale = 1;
@@ -55,7 +51,7 @@ FeatureStatus rfPowerLimits(ValueSpec& spec) {
 FeatureStatus rfPowerRead(int32_t& value) {
   uint16_t tenths = 0;
   FeatureStatus status;
-  if (isFt8x7Protocol()) {
+  if (isFt8x7()) {
     Ft8x7SettingState state;
     status = ft8x7SettingQuery(Ft8x7Setting::RfPower, state);
     tenths = state.wattsTenths;
@@ -68,7 +64,7 @@ FeatureStatus rfPowerRead(int32_t& value) {
 
 FeatureStatus rfPowerWrite(int32_t value, int32_t& readBack) {
   const uint16_t watts = (uint16_t)((value + 5) / 10);
-  if (isFt8x7Protocol()) {
+  if (isFt8x7()) {
     Ft8x7SettingState state;
     const FeatureStatus status = ft8x7RfPowerSet(watts, state, s_rfPowerHz);
     readBack = state.wattsTenths;
@@ -88,7 +84,7 @@ void speakRfPowerOf(int32_t value) { speakRfPower((uint16_t)value); }
 // The FT-8x7 cannot read its tone: the one HamTRC last set, else the profile's default. Its
 // write fails only for a tone that is not a standard one.
 
-bool ctcssAvailable() { return isFt8x7Protocol() || currentProfile().caps.setCtcss; }
+bool ctcssAvailable() { return isFt8x7() || currentProfile().caps.setCtcss; }
 
 int32_t stepCtcss(int32_t tenths, int8_t dir) { return yaesuCtcssToneStep((uint16_t)tenths, dir); }
 
@@ -98,8 +94,6 @@ FeatureStatus ctcssLimits(ValueSpec& spec) {
   uint16_t last = 0;
   yaesuCtcssToneAt(0, first);
   yaesuCtcssToneAt(49, last);
-  spec.name = "CTCSS";
-  spec.setting = Setting::Ctcss;
   spec.min = first;
   spec.max = last;
   spec.scale = 1;
@@ -112,7 +106,7 @@ FeatureStatus ctcssLimits(ValueSpec& spec) {
 }
 
 FeatureStatus ctcssRead(int32_t& value) {
-  if (isFt8x7Protocol()) {
+  if (isFt8x7()) {
     value = live.ctcssValid ? live.ctcssTenths : currentProfile().ft8x7Bank6.ctcssDefaultTenths;
     return FeatureStatus::Ok;
   }
@@ -123,7 +117,7 @@ FeatureStatus ctcssRead(int32_t& value) {
 }
 
 FeatureStatus ctcssWrite(int32_t value, int32_t& readBack) {
-  if (isFt8x7Protocol()) {
+  if (isFt8x7()) {
     if (!yaesuCatSetCtcssTenths((uint16_t)value)) return FeatureStatus::Invalid;
     readBack = value;
     return FeatureStatus::Ok;
@@ -139,7 +133,7 @@ void speakCtcssOf(int32_t value) { speakCtcss((uint16_t)value); }
 
 // ---- DCS code: FT-8x7 only, written like the tone ----
 
-bool dcsAvailable() { return isFt8x7Protocol(); }
+bool dcsAvailable() { return isFt8x7(); }
 
 int32_t stepDcs(int32_t code, int8_t dir) { return yaesuDcsCodeStep((uint16_t)code, dir); }
 
@@ -149,8 +143,6 @@ FeatureStatus dcsLimits(ValueSpec& spec) {
   uint16_t last = 0;
   yaesuDcsCodeAt(0, first);
   yaesuDcsCodeAt(103, last);
-  spec.name = "DCS";
-  spec.setting = Setting::Dcs;
   spec.min = first;
   spec.max = last;
   spec.maxDigits = 3;
@@ -159,13 +151,11 @@ FeatureStatus dcsLimits(ValueSpec& spec) {
 }
 
 FeatureStatus dcsRead(int32_t& value) {
-  if (!dcsAvailable()) return FeatureStatus::Unsupported;
   value = live.dcsValid ? live.dcsCode : currentProfile().ft8x7Bank6.dcsDefaultCode;
   return FeatureStatus::Ok;
 }
 
 FeatureStatus dcsWrite(int32_t value, int32_t& readBack) {
-  if (!dcsAvailable()) return FeatureStatus::Unsupported;
   if (!yaesuCatSetDcsCode((uint16_t)value)) return FeatureStatus::Invalid;
   readBack = value;
   return FeatureStatus::Ok;
@@ -191,8 +181,6 @@ bool ritOffsetAvailable() { return protocolSupportsRit(); }
 
 FeatureStatus ritOffsetLimits(ValueSpec& spec) {
   if (!ritOffsetAvailable()) return FeatureStatus::Unsupported;
-  spec.name = "RITOFFSET";
-  spec.setting = Setting::RitOffset;
   spec.min = -9999;
   spec.max = 9999;
   spec.sign = true;
@@ -230,8 +218,6 @@ void speakRitOffset(int32_t hz) {
 // ---- Speech volume 1..9 and speed, kept by HamTRC ----
 
 FeatureStatus volumeLimits(ValueSpec& spec) {
-  spec.name = "VOLUME";
-  spec.setting = Setting::Volume;
   spec.min = 1;
   spec.max = 9;
   spec.maxDigits = 1;
@@ -260,8 +246,6 @@ void speakVolume(int32_t value) {
 }
 
 FeatureStatus speedLimits(ValueSpec& spec) {
-  spec.name = "SPEED";
-  spec.setting = Setting::SpeechSpeed;
   spec.min = (int32_t)SpeechSpeed::Slow;
   spec.max = (int32_t)SpeechSpeed::Fast;
   spec.maxDigits = 1;
@@ -291,14 +275,14 @@ void speakSpeed(int32_t value) {
 }
 
 constexpr SettingOps kOps[] = {
-    {Setting::RfPower, "power", rfPowerAvailable, rfPowerLimits, rfPowerRead, rfPowerWrite, rfPowerTextOf,
+    {Setting::RfPower, rfPowerAvailable, rfPowerLimits, rfPowerRead, rfPowerWrite, rfPowerTextOf,
      speakRfPowerOf, always},
-    {Setting::Ctcss, "ctcss", ctcssAvailable, ctcssLimits, ctcssRead, ctcssWrite, ctcssTextOf, speakCtcssOf},
-    {Setting::Dcs, "dcs", dcsAvailable, dcsLimits, dcsRead, dcsWrite, dcsText, speakDcs},
-    {Setting::RitOffset, "rit", ritOffsetAvailable, ritOffsetLimits, ritOffsetRead, ritOffsetWrite,
-     ritOffsetText, speakRitOffset, nullptr, 0},
-    {Setting::Volume, "volume", always, volumeLimits, volumeRead, volumeWrite, volumeText, speakVolume},
-    {Setting::SpeechSpeed, "speed", always, speedLimits, speedRead, speedWrite, speedText, speakSpeed, nullptr,
+    {Setting::Ctcss, ctcssAvailable, ctcssLimits, ctcssRead, ctcssWrite, ctcssTextOf, speakCtcssOf},
+    {Setting::Dcs, dcsAvailable, dcsLimits, dcsRead, dcsWrite, dcsText, speakDcs},
+    {Setting::RitOffset, ritOffsetAvailable, ritOffsetLimits, ritOffsetRead, ritOffsetWrite,
+     ritOffsetText, speakRitOffset},
+    {Setting::Volume, always, volumeLimits, volumeRead, volumeWrite, volumeText, speakVolume},
+    {Setting::SpeechSpeed, always, speedLimits, speedRead, speedWrite, speedText, speakSpeed, nullptr,
      (int32_t)SpeechSpeed::Normal},
 };
 
@@ -313,10 +297,8 @@ const SettingOps* settingOps(Setting setting) {
   return cwSettingOps(setting);
 }
 
-FeatureStatus switchSettingLimits(ValueSpec& spec, Setting setting, bool canSet) {
+FeatureStatus switchSettingLimits(ValueSpec& spec, bool canSet) {
   if (!canSet) return FeatureStatus::Unsupported;
-  spec.name = settingInfo(setting).label;
-  spec.setting = setting;
   spec.min = 0;
   spec.max = 1;
   spec.maxDigits = 1;

@@ -193,7 +193,7 @@ void beginBank1RfPowerSet() {
     beginFt817PowerSelect();
     return;
   }
-  keypadSettingEntry(Setting::RfPower);
+  settingEntry(Setting::RfPower);
 }
 
 void nudgeBank1RfPower(int8_t dir, bool big) {

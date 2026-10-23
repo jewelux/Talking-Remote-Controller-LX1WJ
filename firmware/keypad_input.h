@@ -122,6 +122,9 @@ Setting keypadActiveFocus();
 // their answer then names the focus ("power 45 watts"); after that just the value.
 bool keypadActiveFocusIsNew();
 
+// A, B and C: the keys that act on the bank's focus.
+inline bool isFocusKey(char key) { return key == 'A' || key == 'B' || key == 'C'; }
+
 class KeypadInputListener {
  public:
   virtual ~KeypadInputListener() = default;

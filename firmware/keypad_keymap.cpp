@@ -80,27 +80,19 @@ Key bind(Action shortAction, Action holdAction = nullptr, Action doubleAction = 
 // available".
 KeyBinding focusKey(char key, Setting focus) {
   const SettingInfo& info = settingInfo(focus);
-  if (focus == Setting::None) {
-    switch (key) {
-      case 'A': return bind(focusSay, focusEntry).help(nullptr, V::NotAvailable, V::NotAvailable);
-      case 'B':
-        return bind([] { focusStep(1); }, [] { focusBigStep(1); }).help(nullptr, V::NotAvailable, V::NotAvailable);
-      case 'C':
-        return bind([] { focusStep(-1); }, [] { focusBigStep(-1); }).help(nullptr, V::NotAvailable, V::NotAvailable);
-      default: return {};
-    }
-  }
+  const bool none = focus == Setting::None;
+  const char* label = none ? nullptr : info.label;
+  const auto verb = [none](V v) { return none ? V::NotAvailable : v; };
   switch (key) {
     case 'A':
       return bind(focusSay, focusEntry, info.hasCentre ? focusCentre : nullptr)
-          .help(info.label, V::Say, info.kind == SettingKind::Number ? V::Entry : V::Pick, V::Centre);
-    case 'B': return bind([] { focusStep(1); }, [] { focusBigStep(1); }).help(info.label, V::Up, V::UpFast);
-    case 'C': return bind([] { focusStep(-1); }, [] { focusBigStep(-1); }).help(info.label, V::Down, V::DownFast);
+          .help(label, verb(V::Say), verb(info.kind == SettingKind::Number ? V::Entry : V::Pick), V::Centre);
+    case 'B': return bind([] { focusStep(1); }, [] { focusBigStep(1); }).help(label, verb(V::Up), verb(V::UpFast));
+    case 'C':
+      return bind([] { focusStep(-1); }, [] { focusBigStep(-1); }).help(label, verb(V::Down), verb(V::DownFast));
     default: return {};
   }
 }
-
-bool isFocusKey(char key) { return key == 'A' || key == 'B' || key == 'C'; }
 
 // A key that runs the console command cmd, traced "CMD <key> -> <cmd>". The
 // '+' turns the lambda into an Action, so it also works in a conditional.
@@ -128,8 +120,7 @@ KeyBinding rfPowerKey(const KeypadTraits& t) {
       .help("RFPOWER", V::Say, t.layout == L::Ft817 ? V::Pick : V::Entry);
 }
 
-KeyBinding bank1(const KeypadTraits& t, char key, Setting focus) {
-  if (isFocusKey(key)) return focusKey(key, focus);
+KeyBinding bank1(const KeypadTraits& t, char key) {
   const bool ftdx10 = t.layout == L::Ftdx10;
   switch (key) {
     case '0':
@@ -200,9 +191,9 @@ Key switchWithLevel(const KeypadTraits& t, Action say, Action toggle, const char
 
 // Receive. The top row the switches with a level, the middle row the passband (low side, filter,
 // high side), the bottom row AGC, preamp and attenuator, '0' the auto notch (FT-817: the antenna
-// jack). The FT-857/897 DSP has only an auto notch, on '3', so its '0' is free. The FT-8x7 keeps these in its EEPROM: read always, set only experimentally.
-KeyBinding bank2(const KeypadTraits& t, char key, Setting focus) {
-  if (isFocusKey(key)) return focusKey(key, focus);
+// jack). The FT-857/897 DSP has only an auto notch, on '3', so its '0' is free. The FT-8x7
+// keeps these in its EEPROM: read always, set only experimentally.
+KeyBinding bank2(const KeypadTraits& t, char key) {
   const bool ft8x7 = isFt8x7(t);
   switch (key) {
     case '0':
@@ -266,8 +257,7 @@ KeyBinding bank3BandStack(const KeypadTraits& t, const char* label) {
 
 // FT-817 and FT-857/897 track the active VFO themselves: '1' is the current
 // VFO and '2' the other one.
-KeyBinding bank3(const KeypadTraits& t, char key, Setting focus) {
-  if (isFocusKey(key)) return focusKey(key, focus);
+KeyBinding bank3(const KeypadTraits& t, char key) {
   const bool ftdx10 = t.layout == L::Ftdx10;
   switch (key) {
     case '0':
@@ -381,8 +371,7 @@ KeyBinding tunerKey(const KeypadTraits& t) {
 // Phone transmit, the twin of Bank 2: the top row the switches with a level, the middle row the
 // TX passband (low side, equalizer, high side), the bottom row mic gain, RF power and VOX delay,
 // '0' the tuner. The FT-8x7 keeps these in its EEPROM: read always, set only experimentally.
-KeyBinding bank4(const KeypadTraits& t, char key, Setting focus) {
-  if (isFocusKey(key)) return focusKey(key, focus);
+KeyBinding bank4(const KeypadTraits& t, char key) {
   switch (key) {
     case '0': return tunerKey(t);
     case '1': return switchSettingWithLevel<Setting::Proc, Setting::ProcLevel>(t);
@@ -400,8 +389,7 @@ KeyBinding bank4(const KeypadTraits& t, char key, Setting focus) {
 }
 
 // The RIT offset is the home focus, and every key but the on/off switch moves it.
-KeyBinding bank5(char key, Setting focus) {
-  if (isFocusKey(key)) return focusKey(key, focus);
+KeyBinding bank5(char key) {
   constexpr Setting kOffset = Setting::RitOffset;
   constexpr const char* kLabel = "RITOFFSET";
   switch (key) {
@@ -438,8 +426,7 @@ KeyBinding bank5(char key, Setting focus) {
 // tone, '4' the DCS code, '5' encode or decode, '6' the FT-857/897 split tone. The CAT radios
 // have the shift, CTCSS and its tone where their profile does; a CTCSS or DCS step is set at
 // once, as these are CAT commands on every radio.
-KeyBinding bank6(const KeypadTraits& t, char key, Setting focus) {
-  if (isFocusKey(key)) return focusKey(key, focus);
+KeyBinding bank6(const KeypadTraits& t, char key) {
   const bool ft8x7 = isFt8x7(t);
   const bool tone = t.settings.has(Setting::ToneType);
   switch (key) {
@@ -475,8 +462,7 @@ KeyBinding bank6(const KeypadTraits& t, char key, Setting focus) {
   }
 }
 
-KeyBinding bank8(const KeypadTraits& t, char key, Setting focus) {
-  if (isFocusKey(key)) return focusKey(key, focus);
+KeyBinding bank8(const KeypadTraits& t, char key) {
   // FT-817 and FT-857/897: the radio's menu position.
   const bool ft8x7Menu = t.layout == L::Ft817 || t.layout == L::Ft857;
   switch (key) {
@@ -522,8 +508,7 @@ KeyBinding breakInKey(const KeypadTraits& t) {
 // middle row the keyer type, pitch and weight, the bottom row key reverse, RF power and the
 // break-in delay, '0' the tuner. The FT-8x7 keeps these in its EEPROM: read always, set only
 // experimentally.
-KeyBinding bank7(const KeypadTraits& t, char key, Setting focus) {
-  if (isFocusKey(key)) return focusKey(key, focus);
+KeyBinding bank7(const KeypadTraits& t, char key) {
   switch (key) {
     case '0': return tunerKey(t);
     case '1': return switchSettingWithLevel<Setting::Keyer, Setting::CwSpeed>(t);
@@ -542,8 +527,7 @@ KeyBinding bank7(const KeypadTraits& t, char key, Setting focus) {
 
 // The profile is the home focus: A, B and C select, step and reset it until the volume ('7')
 // or speed ('8') key moves the focus, and '1' brings it back.
-KeyBinding bank9(char key, Setting focus) {
-  if (isFocusKey(key)) return focusKey(key, focus);
+KeyBinding bank9(char key) {
   constexpr Setting kVolume = Setting::Volume;
   switch (key) {
     case '0':
@@ -576,17 +560,17 @@ Setting keymapHomeFocus(const KeypadTraits&, uint8_t bank) {
 }
 
 KeyBinding keymapLookup(const KeypadTraits& traits, uint8_t bank, char key, Setting focus) {
-  if (focus == Setting::Home) focus = keymapHomeFocus(traits, bank);
+  if (bank < 1 || bank > 9) return {};
+  if (isFocusKey(key)) return focusKey(key, focus == Setting::Home ? keymapHomeFocus(traits, bank) : focus);
   switch (bank) {
-    case 1: return bank1(traits, key, focus);
-    case 2: return bank2(traits, key, focus);
-    case 3: return bank3(traits, key, focus);
-    case 4: return bank4(traits, key, focus);
-    case 5: return bank5(key, focus);
-    case 6: return bank6(traits, key, focus);
-    case 7: return bank7(traits, key, focus);
-    case 8: return bank8(traits, key, focus);
-    case 9: return bank9(key, focus);
-    default: return {};
+    case 1: return bank1(traits, key);
+    case 2: return bank2(traits, key);
+    case 3: return bank3(traits, key);
+    case 4: return bank4(traits, key);
+    case 5: return bank5(key);
+    case 6: return bank6(traits, key);
+    case 7: return bank7(traits, key);
+    case 8: return bank8(traits, key);
+    default: return bank9(key);
   }
 }

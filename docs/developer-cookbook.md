@@ -309,8 +309,7 @@ constexpr EntrySpec kEntries[] = {
 ### The keymap
 
 ```cpp
-KeyBinding bank2(const KeypadTraits& t, char key, Setting focus) {
-  if (isFocusKey(key)) return focusKey(key, focus);                 // A, B, C
+KeyBinding bank2(const KeypadTraits& t, char key) {      // A, B and C: focusKey, in keymapLookup
   const bool ft8x7 = isFt8x7(t);
   switch (key) {
     case '1': return switchWithLevel<Setting::NrLevel>(t, queryBank2Nr, toggleBank2Nr, "NR");
@@ -538,22 +537,22 @@ from that one description, on every radio. Example: the CW pitch (Bank 7 `5`).
 
    The kind (`Switch`, `List`, `Number`) picks the help wording, the bool says
    whether A double brings it back to a centre, and the label is the trace
-   label. Add the label's words to `kSpokenLabels` (`keypad_labels.cpp`).
+   label. Add the label's words to `kSpokenLabels` (`keypad_labels.cpp`);
+   its entry prompt says them too ("cw pitch please").
 
 2. **Describe it on the radio.** Add a `SettingOps` row in the ops file of its
    bank (`keypad_setting_ops_rx.cpp`, `_tx`, `_cw`, or
    `keypad_setting_ops.cpp` for the rest):
 
    ```cpp
-   {Setting::CwPitch, "cw pitch", cwAvailable<CwLevel::Pitch>, cwLimits<CwLevel::Pitch>, cwRead<CwLevel::Pitch>,
-    cwWrite<CwLevel::Pitch>, cwText<CwLevel::Pitch>, speakCw<CwLevel::Pitch>, isFt8x7Protocol},
+   {Setting::CwPitch, cwAvailable<CwLevel::Pitch>, cwLimits<CwLevel::Pitch>, cwRead<CwLevel::Pitch>,
+    cwWrite<CwLevel::Pitch>, cwText<CwLevel::Pitch>, speakCw<CwLevel::Pitch>, isFt8x7},
    ```
 
    | Field | Does |
    |---|---|
-   | `prompt` | The words of its entry prompt: "cw pitch please" |
    | `available` | The radio has it, by its caps; no radio traffic |
-   | `limits` | Fills the `ValueSpec`: range, `step` or `stepFn`, `bigSteps`, `scale` and `pointDigits` for a fraction, `sign` for a minus, digits and unit. `Unsupported` where it cannot be set |
+   | `limits` | Fills the `ValueSpec` (its name and setting already set): range, `step` or `stepFn`, `bigSteps`, `scale` and `pointDigits` for a fraction, `sign` for a minus, digits and unit. `Unsupported` where it cannot be set |
    | `read`, `write` | The shared feature functions (recipe 4.4), in the spec's units; `write` returns the value read back |
    | `text`, `speak` | Trace text and speech of one value, from `ui_features.*` |
    | `confirm` | True where B and C stage the entry for `D` instead of writing at once: RF power, the FT-8x7 EEPROM settings |

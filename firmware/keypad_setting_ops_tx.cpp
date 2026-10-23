@@ -14,12 +14,9 @@
 namespace {
 
 // The FT-8x7 keeps these in its EEPROM: B and C open the entry, staged for Enter.
-bool isFt8x7Protocol() { return currentProtocolType() == PROTO_YAESU_FT8X7; }
 
 // A level of 0..max in steps of 5 (1 up to 9).
-FeatureStatus levelLimits(ValueSpec& spec, Setting setting, int32_t min, int32_t max, const char* unit = "") {
-  spec.name = settingInfo(setting).label;
-  spec.setting = setting;
+FeatureStatus levelLimits(ValueSpec& spec, int32_t min, int32_t max, const char* unit = "") {
   spec.min = min;
   spec.max = max;
   spec.maxDigits = 3;
@@ -47,7 +44,7 @@ FeatureStatus switchWrite(FeatureStatus (*set)(bool), FeatureStatus (*read)(bool
 
 // ---- Speech processor and its level ----
 
-FeatureStatus procLimits(ValueSpec& spec) { return switchSettingLimits(spec, Setting::Proc, procCanSet()); }
+FeatureStatus procLimits(ValueSpec& spec) { return switchSettingLimits(spec, procCanSet()); }
 FeatureStatus procRead(int32_t& value) { return switchRead(procQuery, value); }
 FeatureStatus procWrite(int32_t value, int32_t& readBack) { return switchWrite(procSet, procQuery, value, readBack); }
 String procText(int32_t value) { return procStateText(value != 0); }
@@ -55,7 +52,7 @@ void speakProc(int32_t value) { speakProcState(value != 0); }
 
 FeatureStatus procLevelLimits(ValueSpec& spec) {
   if (!procCanSet()) return FeatureStatus::Unsupported;
-  return levelLimits(spec, Setting::ProcLevel, 0, 100);
+  return levelLimits(spec, 0, 100);
 }
 
 FeatureStatus procLevelRead(int32_t& value) {
@@ -83,7 +80,7 @@ bool voxCanSet() {
   return voxGainRange(min, max);
 }
 
-FeatureStatus voxLimits(ValueSpec& spec) { return switchSettingLimits(spec, Setting::Vox, voxCanSet()); }
+FeatureStatus voxLimits(ValueSpec& spec) { return switchSettingLimits(spec, voxCanSet()); }
 FeatureStatus voxRead(int32_t& value) { return switchRead(voxQuery, value); }
 FeatureStatus voxWrite(int32_t value, int32_t& readBack) { return switchWrite(voxSet, voxQuery, value, readBack); }
 String voxText(int32_t value) { return voxStateText(value != 0); }
@@ -94,7 +91,7 @@ FeatureStatus voxGainLimits(ValueSpec& spec) {
   uint8_t min = 0;
   uint8_t max = 0;
   if (!voxGainRange(min, max)) return FeatureStatus::Unsupported;
-  return levelLimits(spec, Setting::VoxGain, min, max);
+  return levelLimits(spec, min, max);
 }
 
 FeatureStatus voxGainRead(int32_t& value) {
@@ -119,7 +116,7 @@ void speakVoxGainOf(int32_t value) { speakVoxGain((uint8_t)value); }
 bool monitorAvailable() { return protocolSupportsMonitor() && currentProfile().caps.getMonitor; }
 
 FeatureStatus monitorLimits(ValueSpec& spec) {
-  return switchSettingLimits(spec, Setting::Monitor, monitorAvailable() && currentProfile().caps.setMonitor);
+  return switchSettingLimits(spec, monitorAvailable() && currentProfile().caps.setMonitor);
 }
 
 FeatureStatus monitorQuery(bool& on) {
@@ -143,7 +140,7 @@ bool monitorLevelAvailable() { return protocolSupportsMonitor() && currentProfil
 
 FeatureStatus monitorLevelLimits(ValueSpec& spec) {
   if (!monitorLevelAvailable() || !currentProfile().caps.setMonitorLevel) return FeatureStatus::Unsupported;
-  return levelLimits(spec, Setting::MonitorLevel, 0, 100, " %");
+  return levelLimits(spec, 0, 100, " %");
 }
 
 FeatureStatus monitorLevelRead(int32_t& value) {
@@ -199,8 +196,6 @@ Ft8x7SettingState micEqState(int32_t value) {
 
 FeatureStatus txEqLimits(ValueSpec& spec) {
   if (!txEqAvailable() || !currentProfile().caps.setRadioMenu) return FeatureStatus::Unsupported;
-  spec.name = "MICEQ";
-  spec.setting = Setting::TxEq;
   spec.min = (int32_t)YaesuFt857MicEq::Off;
   spec.max = (int32_t)YaesuFt857MicEq::Both;
   spec.maxDigits = 1;
@@ -231,7 +226,7 @@ constexpr uint8_t kTxCutBit = S == Setting::TxHighCut ? 0x01 : 0x02;
 
 template <Setting S>
 FeatureStatus txCutLimits(ValueSpec& spec) {
-  return switchSettingLimits(spec, S, txEqAvailable() && currentProfile().caps.setRadioMenu);
+  return switchSettingLimits(spec, txEqAvailable() && currentProfile().caps.setRadioMenu);
 }
 
 template <Setting S>
@@ -272,11 +267,11 @@ Ft8x7MicGain s_micGainMenu = Ft8x7MicGain::Ssb;
 
 FeatureStatus micGainLimits(ValueSpec& spec) {
   if (!micGainCanSet()) return FeatureStatus::Unsupported;
-  if (isFt8x7Protocol()) {
+  if (isFt8x7()) {
     const FeatureStatus status = ft8x7MicGainMenu(s_micGainMenu);
     if (status != FeatureStatus::Ok) return status;
   }
-  return levelLimits(spec, Setting::MicGain, 0, 100);
+  return levelLimits(spec, 0, 100);
 }
 
 FeatureStatus micGainRead(int32_t& value) {
@@ -288,7 +283,7 @@ FeatureStatus micGainRead(int32_t& value) {
 
 FeatureStatus micGainWrite(int32_t value, int32_t& readBack) {
   uint8_t level = 0;
-  const FeatureStatus status = isFt8x7Protocol() ? ft8x7MicGainSet(s_micGainMenu, (uint8_t)value, level)
+  const FeatureStatus status = isFt8x7() ? ft8x7MicGainSet(s_micGainMenu, (uint8_t)value, level)
                                                  : micGainSet((uint8_t)value, level);
   readBack = level;
   return status;
@@ -310,8 +305,6 @@ FeatureStatus voxDelayLimits(ValueSpec& spec) {
   uint16_t min = 0;
   uint16_t max = 0;
   if (!voxDelayRange(min, max)) return FeatureStatus::Unsupported;
-  spec.name = "VOXDELAY";
-  spec.setting = Setting::VoxDelay;
   spec.min = min;
   spec.max = max;
   spec.maxDigits = 4;
@@ -339,29 +332,28 @@ FeatureStatus voxDelayWrite(int32_t value, int32_t& readBack) {
 String voxDelayTextOf(int32_t value) { return voxDelayText((uint16_t)value); }
 void speakVoxDelayOf(int32_t value) { speakVoxDelay((uint16_t)value); }
 
-bool always() { return true; }
 
 constexpr SettingOps kTxOps[] = {
-    {Setting::Proc, "processor", procSupported, procLimits, procRead, procWrite, procText, speakProc},
-    {Setting::ProcLevel, "processor level", procSupported, procLevelLimits, procLevelRead, procLevelWrite,
-     procLevelTextOf, speakProcLevelOf, isFt8x7Protocol},
-    {Setting::Vox, "vox", voxSupported, voxLimits, voxRead, voxWrite, voxText, speakVox},
-    {Setting::VoxGain, "voxgain", voxSupported, voxGainLimits, voxGainRead, voxGainWrite, voxGainTextOf,
-     speakVoxGainOf, isFt8x7Protocol},
-    {Setting::Monitor, "monitor", monitorAvailable, monitorLimits, monitorRead, monitorWrite, monitorText,
+    {Setting::Proc, procSupported, procLimits, procRead, procWrite, procText, speakProc},
+    {Setting::ProcLevel, procSupported, procLevelLimits, procLevelRead, procLevelWrite,
+     procLevelTextOf, speakProcLevelOf, isFt8x7},
+    {Setting::Vox, voxSupported, voxLimits, voxRead, voxWrite, voxText, speakVox},
+    {Setting::VoxGain, voxSupported, voxGainLimits, voxGainRead, voxGainWrite, voxGainTextOf,
+     speakVoxGainOf, isFt8x7},
+    {Setting::Monitor, monitorAvailable, monitorLimits, monitorRead, monitorWrite, monitorText,
      speakMonitor},
-    {Setting::MonitorLevel, "monitor level", monitorLevelAvailable, monitorLevelLimits, monitorLevelRead,
+    {Setting::MonitorLevel, monitorLevelAvailable, monitorLevelLimits, monitorLevelRead,
      monitorLevelWrite, monitorLevelText, speakMonitorLevel},
-    {Setting::TxEq, "tx equalizer", txEqAvailable, txEqLimits, txEqRead, txEqWrite, txEqText, speakTxEq, always},
-    {Setting::TxLowCut, "tx lowcut", txEqAvailable, txCutLimits<Setting::TxLowCut>, txCutRead<Setting::TxLowCut>,
+    {Setting::TxEq, txEqAvailable, txEqLimits, txEqRead, txEqWrite, txEqText, speakTxEq, always},
+    {Setting::TxLowCut, txEqAvailable, txCutLimits<Setting::TxLowCut>, txCutRead<Setting::TxLowCut>,
      txCutWrite<Setting::TxLowCut>, txCutText<Setting::TxLowCut>, speakTxCut<Setting::TxLowCut>},
-    {Setting::TxHighCut, "tx highcut", txEqAvailable, txCutLimits<Setting::TxHighCut>,
+    {Setting::TxHighCut, txEqAvailable, txCutLimits<Setting::TxHighCut>,
      txCutRead<Setting::TxHighCut>, txCutWrite<Setting::TxHighCut>, txCutText<Setting::TxHighCut>,
      speakTxCut<Setting::TxHighCut>},
-    {Setting::MicGain, "micgain", micGainSupported, micGainLimits, micGainRead, micGainWrite, micGainTextOf,
-     speakMicGainOf, isFt8x7Protocol},
-    {Setting::VoxDelay, "voxdelay", voxSupported, voxDelayLimits, voxDelayRead, voxDelayWrite, voxDelayTextOf,
-     speakVoxDelayOf, isFt8x7Protocol},
+    {Setting::MicGain, micGainSupported, micGainLimits, micGainRead, micGainWrite, micGainTextOf,
+     speakMicGainOf, isFt8x7},
+    {Setting::VoxDelay, voxSupported, voxDelayLimits, voxDelayRead, voxDelayWrite, voxDelayTextOf,
+     speakVoxDelayOf, isFt8x7},
 };
 
 }  // namespace

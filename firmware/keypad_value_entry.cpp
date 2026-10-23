@@ -98,7 +98,8 @@ ValueEntry::Step ValueEntry::step(int8_t dir) {
 ValueEntry::Step ValueEntry::step(int8_t dir, uint8_t times) {
   const Step first = step(dir);
   if (first != Step::Moved) return first;
-  for (uint8_t i = 1; i < times && step(dir) == Step::Moved; ++i) {
+  for (uint8_t i = 1; i < times; ++i) {
+    if (step(dir) != Step::Moved) break;
   }
   return Step::Moved;
 }
