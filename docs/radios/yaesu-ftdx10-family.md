@@ -31,9 +31,9 @@ Implemented and documented for the current field-test phase:
   sends `PR01`, and `PR02` (the manual's on) when that does not read back as on
 - on the FT-891 the same, but `VD` is in ms (`VD0030`–`VD3000`, Hamlib and flrig agree). flrig
   notes that the FT-891 takes `PR` only in SSB; in other modes `PROC` says "error"
-- on the FTDX101D/MP only `MG`, `VX` and `VG`: Hamlib and flrig disagree on `VD` (a step or ms),
-  and only Hamlib sends `PR0`, with the encoding opposite to the manual. Hamlib notes that the
-  FTDX101 takes no `MG` in CW and RTTY
+- on the FTDX101D/MP the same but `PR` and `PL`: its CAT manual says `PR01` is off and `PR02` on,
+  Hamlib that `PR01` is on. `VD` is a step as on the FTDX10 (the CAT manual and Hamlib; flrig
+  sends ms). Hamlib notes that the FTDX101 takes no `MG` in CW and RTTY
 - power-state query, off, and on path
 - IF query
 - ID query

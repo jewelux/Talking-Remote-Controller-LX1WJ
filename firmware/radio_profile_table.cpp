@@ -189,14 +189,14 @@ constexpr RadioCapabilities kFtdx101Caps = [] {
   caps.getTxFreq = false;
   caps.getVfoMode = false;
   caps.setVfoMode = false;
-  // MG, VX and VG as Hamlib and flrig send them. No PR or PL: only Hamlib has them, against
-  // the manual's encoding. No VD: Hamlib sends a step, flrig ms.
+  // MG, VX, VG, and VD as on the FTDX10 (the CAT manual and Hamlib; flrig sends ms). No PR or
+  // PL: the manual says PR01 is off, Hamlib that it is on.
   caps.getProc = false;
   caps.setProc = false;
   return caps;
 }();
 
-// VD as the FTDX10 manual and Hamlib have it: a step, 30..3000 ms.
+// VD as the FTDX10 and FTDX101 CAT manuals and Hamlib have it: a step, 30..3000 ms.
 constexpr SettingEncodings kFtdx10Settings = {
     .voxDelay = VoxDelayEncoding::YaesuSteps, .voxDelayMinMs = 30, .voxDelayMaxMs = 3000,
 };
@@ -330,11 +330,13 @@ constexpr RadioProfile kProfiles[] = {
     {.slot = 12, .name = "Yaesu FTDX-101D", .vendor = VoiceVendor::Yaesu, .voiceDigits = "101",
      .protocol = PROTO_YAESU_FTDX_ASCII,
      .link = {.port = RadioPort::Rs232, .baud = 38400, .bauds = kYaesuAsciiBauds},
-     .caps = kFtdx101Caps, .commands = &kFtdx101Commands, .modes = &kYaesuAsciiModes},
+     .caps = kFtdx101Caps, .commands = &kFtdx101Commands, .modes = &kYaesuAsciiModes,
+     .settings = kFtdx10Settings},
     {.slot = 13, .name = "Yaesu FTDX-101MP", .vendor = VoiceVendor::Yaesu, .voiceDigits = "101",
      .protocol = PROTO_YAESU_FTDX_ASCII,
      .link = {.port = RadioPort::Rs232, .baud = 38400, .bauds = kYaesuAsciiBauds},
-     .caps = kFtdx101Caps, .commands = &kFtdx101Commands, .modes = &kYaesuAsciiModes},
+     .caps = kFtdx101Caps, .commands = &kFtdx101Commands, .modes = &kYaesuAsciiModes,
+     .settings = kFtdx10Settings},
     {.slot = 14, .name = "Yaesu FT-818", .vendor = VoiceVendor::Yaesu, .voiceDigits = "818",
      .model = RadioModel::Ft818, .protocol = PROTO_YAESU_FT8X7,
      .link = {.port = RadioPort::Rs232, .baud = 4800, .bauds = kFt8x7Bauds},

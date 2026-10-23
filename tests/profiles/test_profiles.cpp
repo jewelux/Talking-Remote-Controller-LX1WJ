@@ -184,11 +184,11 @@ TEST(transmit_setting_caps) {
   CHECK(!slot(13).caps.getProc);  // FTDX101MP
 }
 
-// VD per radio: the FTDX10's step table, ms on the FT-891 and TS-480, none on the FTDX101.
+// VD per radio: the step table on the FTDX10 and FTDX101, ms on the FT-891 and TS-480.
 TEST(ascii_vox_delay_and_gain_encodings) {
   CHECK(slot(11).settings.voxDelay == VoxDelayEncoding::YaesuSteps);
-  CHECK(slot(12).settings.voxDelay == VoxDelayEncoding::None);
-  CHECK(slot(13).settings.voxDelay == VoxDelayEncoding::None);
+  CHECK(slot(12).settings.voxDelay == VoxDelayEncoding::YaesuSteps);
+  CHECK(slot(13).settings.voxDelay == VoxDelayEncoding::YaesuSteps);
   const SettingEncodings& ft891 = slot(15).settings;
   CHECK(ft891.voxDelay == VoxDelayEncoding::Ms4);
   CHECK_EQ(ft891.voxDelayMinMs, 30);

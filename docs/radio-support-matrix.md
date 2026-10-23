@@ -36,7 +36,7 @@ them in its EEPROM: see the FT-8x7 pages.
 | IC-7300, IC-705 | COMP, 0–100 | 0–100 | 0–100 | 0–2000 ms | CI-V guide, Hamlib |
 | IC-7760 | COMP, 0–100 | 0–100 | 0–100 | – | CI-V guide, Hamlib |
 | FTDX10 | `PR0`, `PL` 0–100 | 0–100 | 0–100 | 30–3000 ms (VD step) | CAT manual, Hamlib |
-| FTDX101D/MP | – | 0–100 | 0–100 | – | Hamlib, flrig |
+| FTDX101D/MP | – | 0–100 | 0–100 | 30–3000 ms (VD step) | CAT manual, Hamlib, flrig |
 | FT-891 | `PR0`, `PL` 0–100 | 0–100 | 0–100 | 30–3000 ms | Hamlib, flrig |
 | TS-480 | `PR`, `PL` input 0–100 | 0–100 | `VG` 0–9 | 0–3000 ms, 150 ms steps | PC command reference, Hamlib |
 
