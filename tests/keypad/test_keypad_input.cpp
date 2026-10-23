@@ -19,12 +19,10 @@ const char *modeName(InputMode m) {
     case InputMode::BankSelect: return "BankSelect";
     case InputMode::ProfileSelect: return "ProfileSelect";
     case InputMode::ChoiceSelect: return "ChoiceSelect";
+    case InputMode::ValueEntry: return "ValueEntry";
     case InputMode::FreqEntry: return "FreqEntry";
-    case InputMode::RfPowerEntry: return "RfPowerEntry";
     case InputMode::CivAddrEntry: return "CivAddrEntry";
     case InputMode::RptOffsetEntry: return "RptOffsetEntry";
-    case InputMode::CtcssEntry: return "CtcssEntry";
-    case InputMode::DcsEntry: return "DcsEntry";
     case InputMode::MenuEntry: return "MenuEntry";
     case InputMode::RowEntry: return "RowEntry";
     case InputMode::SweepStartEntry: return "SweepStartEntry";
@@ -48,6 +46,12 @@ struct Fake : KeypadInputListener {
 
   std::set<std::string> holds, shorts, doubles, doubleHolds, waits;
   std::map<std::string, std::function<void()>> hooks;  // "hold 1 0" -> hook
+  std::map<std::string, Setting> focuses;  // "bank key" -> the focus the key sets
+  std::map<uint8_t, Setting> homes;        // bank -> its home focus
+  // The focus A, B and C were last bound for, and what the last action saw.
+  Setting boundFocus = Setting::None;
+  Setting activeFocus = Setting::None;
+  bool activeFocusNew = false;
   std::string validModeDigits = "123456789";
 
   Fake() { g_fake = this; }
@@ -65,6 +69,8 @@ struct Fake : KeypadInputListener {
     }
     const std::string entry = std::string(name) + " " + keyId((uint8_t)(k[4] - '0'), k[6]);
     log.push_back(entry);
+    activeFocus = keypadActiveFocus();
+    activeFocusNew = keypadActiveFocusIsNew();
     auto hook = hooks.find(entry);
     if (hook != hooks.end()) hook->second();
   }
@@ -73,21 +79,57 @@ struct Fake : KeypadInputListener {
     ++activity;
     if (pressed) ++pressedActivity;
   }
-  KeyBinding keyBinding(uint8_t bank, char key) override {
+  KeyBinding keyBinding(uint8_t bank, char key, Setting focus) override {
     const std::string id = keyId(bank, key);
+    if (key >= 'A' && key <= 'C') boundFocus = focus;
     KeyBinding b;
+    auto f = focuses.find(id);
+    if (f != focuses.end()) b.focus = f->second;
     if (shorts.count(id)) b.shortAction = runFakeAction;
     if (holds.count(id)) b.holdAction = runFakeAction;
     if (doubles.count(id)) b.doubleAction = runFakeAction;
     if (doubleHolds.count(id)) b.doubleHoldAction = runFakeAction;
     b.waitsForDouble = waits.count(id) > 0;
+    // Help names the gesture and, for A, B and C, the focus they are bound for.
+    b.shortHelp = {"short", HelpVerb::Say};
+    b.holdHelp = {"hold", HelpVerb::Say};
+    b.doubleHelp = {"double", HelpVerb::Say};
+    b.doubleHoldHelp = {"doublehold", HelpVerb::Say};
     return b;
+  }
+  Setting homeFocus(uint8_t bank) override {
+    auto h = homes.find(bank);
+    return h == homes.end() ? Setting::None : h->second;
+  }
+  void onHelpMode(bool on) override { log.push_back(on ? "help on" : "help off"); }
+  void onHelp(const char *key, const GestureHelp &help) override {
+    log.push_back(std::string("help ") + key + " " + help.label);
+    activeFocus = keypadActiveFocus();
   }
   void onBankQuery(uint8_t bank) override { log.push_back("bank? " + std::to_string(bank)); }
   void onBankSelectStart() override { log.push_back("bank please"); }
   void onOneShotBank(uint8_t bank) override { log.push_back("once " + std::to_string(bank)); }
   void onDigitAccepted(const EntrySpec &entry, char key, const char *digits) override {
     log.push_back(std::string("digit ") + modeName(entry.mode) + " " + key + " " + digits);
+  }
+  void onValueDigit(const ValueSpec &spec, char key, const char *digits) override {
+    log.push_back(std::string("value digit ") + spec.name + " " + key + " " + digits);
+  }
+  void onValueSay(const ValueSpec &spec, int32_t value) override {
+    log.push_back(std::string("value say ") + spec.name + " " + std::to_string(value));
+  }
+  void onValueStepped(const ValueSpec &spec, int32_t value) override {
+    log.push_back(std::string("value step ") + spec.name + " " + std::to_string(value));
+  }
+  void onValueStaged(const ValueSpec &spec, int32_t value) override {
+    log.push_back(std::string("value staged ") + spec.name + " " + std::to_string(value));
+  }
+  void onLimit(const char *name, bool atMax) override {
+    log.push_back(std::string("limit ") + name + (atMax ? " max" : " min"));
+  }
+  void onValueCommit(const ValueSpec &spec, int32_t value, TargetVfo targetVfo) override {
+    log.push_back(std::string("value commit ") + spec.name + " " + std::to_string(value) + " vfo" +
+                  std::to_string((int)targetVfo));
   }
   void onRejected(const char *label) override {
     log.push_back(std::string("rejected ") + label);
@@ -122,6 +164,9 @@ void commitFakeMode(uint8_t mode, TargetVfo targetVfo) {
   g_fake->log.push_back("mode commit " + std::to_string(mode) + " vfo" + std::to_string((int)targetVfo));
 }
 constexpr ChoiceSpec kModeChoice = {"MODE SELECT", nullptr, 0, pickFakeMode, pickedFakeMode, commitFakeMode};
+// The same, going round as the firmware's mode select does.
+constexpr ChoiceSpec kCyclingModeChoice = {"MODE SELECT", nullptr, 0, pickFakeMode, pickedFakeMode,
+                                           commitFakeMode, true};
 
 // A choice from a table of keys and values.
 constexpr ChoiceOption kLevelKeys[] = {{'1', 30}, {'4', 0}};
@@ -307,23 +352,22 @@ TEST(input_clear_while_another_key_is_down_is_a_co_press) {
   CHECK_EQ(in.mode(), InputMode::FreqEntry);
 }
 
-TEST(input_hold_of_d_and_hash_is_unassigned_and_swallows_release) {
+TEST(input_hold_of_hash_is_unassigned_and_swallows_release) {
   Fake f;
   KeypadInput in(f);
-  hold(in, 'D');
   hold(in, '#');
-  CHECK_LOG(f, "rejected ENTER LONG", "rejected CLEAR LONG");
+  CHECK_LOG(f, "rejected CLEAR LONG");
 }
 
 TEST(input_hold_of_d_and_hash_in_entry_acts_on_release) {
   Fake f;
   KeypadInput in(f);
-  in.beginEntry(InputMode::RfPowerEntry);
+  in.beginEntry(InputMode::CivAddrEntry);
   typeKeys(in, "5");
   hold(in, 'D');
-  in.beginEntry(InputMode::RfPowerEntry);
+  in.beginEntry(InputMode::CivAddrEntry);
   hold(in, '#');
-  CHECK_LOG(f, "digit RfPowerEntry 5 5", "commit RfPowerEntry [5] vfo0", "clear");
+  CHECK_LOG(f, "digit CivAddrEntry 5 5", "commit CivAddrEntry [5] vfo0", "clear");
 }
 
 // --- Double click ------------------------------------------------------------
@@ -1000,17 +1044,6 @@ TEST(input_frequency_entry_point_counts_toward_length) {
   CHECK_LOG(f, "digit FreqEntry 4 1234567*1234", "rejected FREQ 5");
 }
 
-TEST(input_rf_power_entry_limits) {
-  Fake f;
-  KeypadInput in(f);
-  in.beginEntry(InputMode::RfPowerEntry);
-  typeKeys(in, "1004*BD");
-  CHECK_LOG(f, "digit RfPowerEntry 1 1", "digit RfPowerEntry 0 10",
-                        "digit RfPowerEntry 0 100", "rejected RFPOWER 4",
-                        "rejected RFPOWER *", "rejected RFPOWER B",
-                        "commit RfPowerEntry [100] vfo0");
-}
-
 TEST(input_civ_address_entry_limits) {
   Fake f;
   KeypadInput in(f);
@@ -1029,8 +1062,6 @@ TEST(input_bank6_entry_limits) {
   };
   const Case cases[] = {
       {InputMode::RptOffsetEntry, "5000", "RPTSHIFT"},
-      {InputMode::CtcssEntry, "1318", "CTCSS"},
-      {InputMode::DcsEntry, "023", "DCS"},
   };
   for (const Case &c : cases) {
     Fake f;
@@ -1159,19 +1190,19 @@ TEST(input_co_press_keeps_the_entry_and_forgets_swallowed_releases) {
   Fake f;
   f.shorts = {"1 5"};
   KeypadInput in(f);
-  in.beginEntry(InputMode::RfPowerEntry);
+  in.beginEntry(InputMode::CivAddrEntry);
   in.onKey('5', KeyGesture::Pressed, 0);
   in.onKey('6', KeyGesture::Pressed, 0);
   in.onKey('5', KeyGesture::Released, 0);
   in.onKey('6', KeyGesture::Released, 0);
-  CHECK_EQ(in.mode(), InputMode::RfPowerEntry);
+  CHECK_EQ(in.mode(), InputMode::CivAddrEntry);
   CHECK_EQ(std::string(in.digits()), std::string("5"));
-  CHECK_LOG(f, "digit RfPowerEntry 5 5", "rejected TWO KEYS");
+  CHECK_LOG(f, "digit CivAddrEntry 5 5", "rejected TWO KEYS");
   tap(in, 'D');
-  in.beginEntry(InputMode::RfPowerEntry);
-  CHECK_LOG(f, "commit RfPowerEntry [5] vfo0");
+  in.beginEntry(InputMode::CivAddrEntry);
+  CHECK_LOG(f, "commit CivAddrEntry [5] vfo0");
   tap(in, '5');
-  CHECK_LOG(f, "digit RfPowerEntry 5 5");
+  CHECK_LOG(f, "digit CivAddrEntry 5 5");
 }
 
 // A key tapped and released before the next goes down is no co-press.
@@ -1187,12 +1218,12 @@ TEST(input_keys_one_after_the_other_are_no_co_press) {
 TEST(input_entry_starts_empty_each_time) {
   Fake f;
   KeypadInput in(f);
-  in.beginEntry(InputMode::RfPowerEntry);
+  in.beginEntry(InputMode::CivAddrEntry);
   typeKeys(in, "5#");
-  in.beginEntry(InputMode::RfPowerEntry);
+  in.beginEntry(InputMode::CivAddrEntry);
   typeKeys(in, "7D");
-  CHECK_LOG(f, "digit RfPowerEntry 5 5", "clear", "digit RfPowerEntry 7 7",
-                        "commit RfPowerEntry [7] vfo0");
+  CHECK_LOG(f, "digit CivAddrEntry 5 5", "clear", "digit CivAddrEntry 7 7",
+                        "commit CivAddrEntry [7] vfo0");
 }
 
 // Like bank and mode select: Enter with nothing typed beeps and the entry
@@ -1204,11 +1235,8 @@ TEST(input_enter_with_nothing_typed_is_unassigned_and_stays) {
   };
   const Case cases[] = {
       {InputMode::FreqEntry, "FREQ D"},
-      {InputMode::RfPowerEntry, "RFPOWER D"},
       {InputMode::CivAddrEntry, "CIVADDR D"},
       {InputMode::RptOffsetEntry, "RPTSHIFT D"},
-      {InputMode::CtcssEntry, "CTCSS D"},
-      {InputMode::DcsEntry, "DCS D"},
       {InputMode::MenuEntry, "MENU D"},
       {InputMode::RowEntry, "ROW D"},
       {InputMode::ProfileSelect, "PROFILE D"},
@@ -1251,10 +1279,8 @@ TEST(input_clear_cancels_a_waiting_short) {
 
 TEST(input_clear_leaves_every_mode) {
   const InputMode modes[] = {InputMode::ProfileSelect,  InputMode::FreqEntry,
-                             InputMode::RfPowerEntry,   InputMode::CivAddrEntry,
-                             InputMode::RptOffsetEntry, InputMode::CtcssEntry,
-                             InputMode::DcsEntry,       InputMode::MenuEntry,
-                             InputMode::RowEntry};
+                             InputMode::CivAddrEntry,   InputMode::RptOffsetEntry,
+                             InputMode::MenuEntry,      InputMode::RowEntry};
   for (InputMode m : modes) {
     Fake f;
     KeypadInput in(f);
@@ -1455,12 +1481,10 @@ TEST(input_choice_select_times_out_under_its_name) {
 
 TEST(input_every_entry_mode_has_its_rules) {
   const InputMode entries[] = {InputMode::BankSelect,     InputMode::ProfileSelect,
-                               InputMode::FreqEntry,      InputMode::RfPowerEntry,
-                               InputMode::CivAddrEntry,   InputMode::RptOffsetEntry,
-                               InputMode::CtcssEntry,     InputMode::DcsEntry,
-                               InputMode::MenuEntry,      InputMode::RowEntry,
-                               InputMode::SweepStartEntry, InputMode::SweepStopEntry,
-                               InputMode::PaVoltEntry};
+                               InputMode::FreqEntry,      InputMode::CivAddrEntry,
+                               InputMode::RptOffsetEntry, InputMode::MenuEntry,
+                               InputMode::RowEntry,       InputMode::SweepStartEntry,
+                               InputMode::SweepStopEntry, InputMode::PaVoltEntry};
   for (InputMode m : entries) {
     const EntrySpec *e = keypadEntrySpec(m);
     CHECK(e != nullptr);
@@ -1471,6 +1495,7 @@ TEST(input_every_entry_mode_has_its_rules) {
   }
   CHECK(keypadEntrySpec(InputMode::Normal) == nullptr);
   CHECK(keypadEntrySpec(InputMode::ChoiceSelect) == nullptr);
+  CHECK(keypadEntrySpec(InputMode::ValueEntry) == nullptr);
 }
 
 // The NanoVNA sweep start and stop take a frequency in MHz, as FREQ does.
@@ -1524,18 +1549,18 @@ TEST(input_entry_times_out_after_no_key) {
 TEST(input_entry_timeout_restarts_with_every_key) {
   Fake f;
   KeypadInput in(f);
-  in.beginEntry(InputMode::RfPowerEntry);
+  in.beginEntry(InputMode::CivAddrEntry);
   in.onKey('5', KeyGesture::Pressed, 20000);
   in.poll(20000 + KeypadInput::kEntryTimeoutMs);
   // The release counts as a key event too.
   in.onKey('5', KeyGesture::Released, 25000);
   in.poll(25000 + KeypadInput::kEntryTimeoutMs);
-  CHECK_EQ(in.mode(), InputMode::RfPowerEntry);
+  CHECK_EQ(in.mode(), InputMode::CivAddrEntry);
   CHECK_EQ(in.digits(), "5");
   in.poll(25001 + KeypadInput::kEntryTimeoutMs);
   CHECK_EQ(in.mode(), InputMode::Normal);
   CHECK_EQ(in.digits(), "");
-  CHECK_LOG(f, "digit RfPowerEntry 5 5", "timeout RfPowerEntry RFPOWER");
+  CHECK_LOG(f, "digit CivAddrEntry 5 5", "timeout CivAddrEntry CIVADDR");
 }
 
 TEST(input_bank_select_times_out) {
@@ -1597,7 +1622,7 @@ TEST(input_every_entry_mode_has_an_entry_spec) {
   for (uint8_t m = 0; m <= (uint8_t)InputMode::PaVoltEntry; ++m) {
     const InputMode mode = (InputMode)m;
     const EntrySpec *entry = keypadEntrySpec(mode);
-    if (mode == InputMode::Normal || mode == InputMode::ChoiceSelect) {
+    if (mode == InputMode::Normal || mode == InputMode::ChoiceSelect || mode == InputMode::ValueEntry) {
       CHECK(entry == nullptr);
       continue;
     }
@@ -1614,4 +1639,465 @@ TEST(input_entry_timeout_without_an_entry_spec) {
   in.poll(1 + KeypadInput::kEntryTimeoutMs);
   CHECK_EQ(in.mode(), InputMode::Normal);
   CHECK_LOG(f, "timeout ? ENTRY");
+}
+
+// --- Value entry -----------------------------------------------------------------------
+
+namespace {
+
+// RF power as the firmware has it: tenths of a watt, whole watts typed, 5..100 W.
+ValueSpec powerSpec() {
+  ValueSpec spec;
+  spec.name = "RFPOWER";
+  spec.setting = Setting::RfPower;
+  spec.min = 50;
+  spec.max = 1000;
+  spec.scale = 1;
+  spec.maxDigits = 3;
+  spec.step = 10;
+  return spec;
+}
+
+ValueSpec toneSpec() {
+  ValueSpec spec;
+  spec.name = "CTCSS";
+  spec.setting = Setting::Ctcss;
+  spec.min = 670;
+  spec.max = 2541;
+  spec.scale = 1;
+  spec.pointDigits = 1;
+  spec.bareInUnits = true;
+  spec.maxDigits = 4;
+  return spec;
+}
+
+EntrySeed seedOf(int32_t value, bool staged = false) {
+  EntrySeed seed;
+  seed.known = true;
+  seed.value = value;
+  seed.staged = staged;
+  return seed;
+}
+
+}  // namespace
+
+TEST(input_value_entry_steps_says_and_sets) {
+  Fake f;
+  KeypadInput in(f);
+  in.beginValueEntry(powerSpec(), seedOf(450));
+  CHECK_EQ(in.mode(), InputMode::ValueEntry);
+  typeKeys(in, "ABBCA");
+  CHECK_LOG(f, "value say RFPOWER 450", "value step RFPOWER 460", "value step RFPOWER 470",
+            "value step RFPOWER 460", "value say RFPOWER 460");
+  tap(in, 'D');
+  CHECK_EQ(in.mode(), InputMode::Normal);
+  CHECK_LOG(f, "value commit RFPOWER 460 vfo0");
+}
+
+TEST(input_value_entry_typed_digits_are_set) {
+  Fake f;
+  KeypadInput in(f);
+  in.beginValueEntry(toneSpec(), seedOf(885));
+  typeKeys(in, "88*5D");
+  CHECK_LOG(f, "value digit CTCSS 8 8", "value digit CTCSS 8 88", "value digit CTCSS * 88.",
+            "value digit CTCSS 5 88.5", "value commit CTCSS 885 vfo0");
+  in.beginValueEntry(toneSpec());
+  typeKeys(in, "885D");
+  CHECK_LOG(f, "value digit CTCSS 8 8", "value digit CTCSS 8 88", "value digit CTCSS 5 885",
+            "value commit CTCSS 885 vfo0");
+}
+
+TEST(input_value_entry_rejects_what_it_does_not_take) {
+  Fake f;
+  KeypadInput in(f);
+  in.beginValueEntry(powerSpec());
+  typeKeys(in, "*1004ABC");
+  CHECK_LOG(f, "rejected RFPOWER *", "value digit RFPOWER 1 1", "value digit RFPOWER 0 10",
+            "value digit RFPOWER 0 100", "rejected RFPOWER 4", "value say RFPOWER 1000",
+            "limit RFPOWER max", "value step RFPOWER 990");
+}
+
+// With nothing typed and no value read, A, B, C and Enter have nothing to work on.
+TEST(input_value_entry_without_a_value_beeps) {
+  Fake f;
+  KeypadInput in(f);
+  in.beginValueEntry(powerSpec());
+  typeKeys(in, "ABCD");
+  CHECK_EQ(in.mode(), InputMode::ValueEntry);
+  CHECK_LOG(f, "rejected RFPOWER A", "rejected RFPOWER B", "rejected RFPOWER C", "rejected RFPOWER D");
+}
+
+// The value read is not set by Enter alone; a staged one is.
+TEST(input_value_entry_enter_sets_only_a_staged_seed) {
+  Fake f;
+  KeypadInput in(f);
+  in.beginValueEntry(powerSpec(), seedOf(450));
+  tap(in, 'D');
+  CHECK_EQ(in.mode(), InputMode::ValueEntry);
+  in.beginValueEntry(powerSpec(), seedOf(450, true), TargetVfo::B);
+  tap(in, 'D');
+  CHECK_LOG(f, "rejected RFPOWER D", "value commit RFPOWER 450 vfo2");
+}
+
+// Past the range, Enter says which end and stages it; the entry stays, and a
+// second Enter sets that end. A says the end too.
+TEST(input_value_entry_out_of_range_stays) {
+  Fake f;
+  KeypadInput in(f);
+  in.beginValueEntry(powerSpec());
+  typeKeys(in, "2D");
+  CHECK_EQ(in.mode(), InputMode::ValueEntry);
+  typeKeys(in, "0D");
+  CHECK_LOG(f, "value digit RFPOWER 2 2", "limit RFPOWER min", "value staged RFPOWER 50",
+            "value digit RFPOWER 0 0", "limit RFPOWER min", "value staged RFPOWER 50");
+  in.beginValueEntry(powerSpec());
+  typeKeys(in, "200A");
+  CHECK_LOG(f, "value digit RFPOWER 2 2", "value digit RFPOWER 0 20", "value digit RFPOWER 0 200",
+            "value say RFPOWER 1000");
+  typeKeys(in, "DD");
+  CHECK_EQ(in.mode(), InputMode::Normal);
+  CHECK_LOG(f, "limit RFPOWER max", "value staged RFPOWER 1000", "value commit RFPOWER 1000 vfo0");
+}
+
+// B and C held take the big step, up to the end of the range; other holds act as a press.
+TEST(input_value_entry_holds_take_a_big_step) {
+  Fake f;
+  KeypadInput in(f);
+  in.beginValueEntry(powerSpec(), seedOf(450));
+  hold(in, 'B');
+  hold(in, 'C');
+  hold(in, 'C');
+  CHECK_LOG(f, "value step RFPOWER 500", "value step RFPOWER 450", "value step RFPOWER 400");
+  in.beginValueEntry(powerSpec(), seedOf(980));
+  hold(in, 'B');
+  hold(in, 'B');
+  hold(in, 'A');
+  CHECK_LOG(f, "value step RFPOWER 1000", "limit RFPOWER max", "value say RFPOWER 1000");
+  in.beginValueEntry(powerSpec());
+  hold(in, 'C');
+  CHECK_LOG(f, "rejected RFPOWER C");
+}
+
+// B and C step on their release: one that went down before the entry ended does nothing.
+TEST(input_value_entry_steps_on_release) {
+  Fake f;
+  KeypadInput in(f);
+  in.beginValueEntry(powerSpec(), seedOf(450));
+  in.onKey('B', KeyGesture::Pressed, 0);
+  CHECK_LOG(f);
+  in.onKey('B', KeyGesture::Released, 0);
+  CHECK_LOG(f, "value step RFPOWER 460");
+  in.onKey('C', KeyGesture::Pressed, 0);
+  in.poll(1 + KeypadInput::kEntryTimeoutMs);
+  in.onKey('C', KeyGesture::Released, 1 + KeypadInput::kEntryTimeoutMs);
+  CHECK_EQ(in.mode(), InputMode::Normal);
+  CHECK_LOG(f, "timeout ValueEntry RFPOWER");
+}
+
+TEST(input_value_entry_clears_and_times_out) {
+  Fake f;
+  KeypadInput in(f);
+  in.beginValueEntry(powerSpec(), seedOf(450));
+  tap(in, '#');
+  CHECK_EQ(in.mode(), InputMode::Normal);
+  CHECK_LOG(f, "clear");
+  in.beginValueEntry(powerSpec(), seedOf(450));
+  in.poll(1 + KeypadInput::kEntryTimeoutMs);
+  CHECK_EQ(in.mode(), InputMode::Normal);
+  CHECK_LOG(f, "timeout ValueEntry RFPOWER");
+}
+
+// --- Choice walk -----------------------------------------------------------------------
+
+TEST(input_choice_walks_its_options_from_the_seed) {
+  Fake f;
+  KeypadInput in(f);
+  in.beginChoiceSelect(kLevelChoice, TargetVfo::Current, seedOf(30));
+  CHECK(!in.choiceStaged());
+  typeKeys(in, "ABBCC");
+  CHECK(in.choiceStaged());
+  tap(in, 'D');
+  CHECK_LOG(f, "level A 30", "level B 0", "limit LEVEL max", "level C 30", "limit LEVEL min",
+            "level commit 30");
+}
+
+TEST(input_choice_without_a_seed_beeps_for_a_b_c) {
+  Fake f;
+  KeypadInput in(f);
+  in.beginChoiceSelect(kLevelChoice);
+  typeKeys(in, "ABC");
+  CHECK_LOG(f, "rejected LEVEL A", "rejected LEVEL B", "rejected LEVEL C");
+  // A picked value is walked from too.
+  typeKeys(in, "1B");
+  CHECK_LOG(f, "level 1 30", "level B 0");
+}
+
+// pick() choices walk the keys 0-9 in order, skipping those it rejects.
+TEST(input_choice_walks_the_keys_pick_takes) {
+  Fake f;
+  f.validModeDigits = "1235";
+  KeypadInput in(f);
+  in.beginChoiceSelect(kModeChoice, TargetVfo::Current, seedOf(3));
+  typeKeys(in, "BD");
+  CHECK_LOG(f, "mode digit B", "mode commit 5 vfo0");
+  in.beginChoiceSelect(kModeChoice, TargetVfo::Current, seedOf(1));
+  tap(in, 'C');
+  CHECK_LOG(f, "limit MODE SELECT min");
+  // A value no key picks walks from before the first or after the last.
+  in.beginChoiceSelect(kModeChoice, TargetVfo::Current, seedOf(7));
+  typeKeys(in, "BD");
+  in.beginChoiceSelect(kModeChoice, TargetVfo::Current, seedOf(7));
+  typeKeys(in, "CD");
+  CHECK_LOG(f, "mode digit B", "mode commit 1 vfo0", "mode digit C", "mode commit 5 vfo0");
+}
+
+TEST(input_cycling_choice_goes_round) {
+  Fake f;
+  f.validModeDigits = "1235";
+  KeypadInput in(f);
+  in.beginChoiceSelect(kCyclingModeChoice, TargetVfo::Current, seedOf(1));
+  typeKeys(in, "CD");
+  in.beginChoiceSelect(kCyclingModeChoice, TargetVfo::Current, seedOf(5));
+  typeKeys(in, "BD");
+  CHECK_LOG(f, "mode digit C", "mode commit 5 vfo0", "mode digit B", "mode commit 1 vfo0");
+  // A nudge from Normal goes round too.
+  CHECK(in.nudgeChoice(kCyclingModeChoice, seedOf(5), 1));
+  tap(in, 'D');
+  CHECK_LOG(f, "mode digit B", "mode commit 1 vfo0");
+  // With one candidate there is nowhere to go.
+  f.validModeDigits = "2";
+  in.beginChoiceSelect(kCyclingModeChoice, TargetVfo::Current, seedOf(2));
+  tap(in, 'B');
+  CHECK_LOG(f, "limit MODE SELECT max");
+}
+
+TEST(input_choice_staged_seed_is_applied_by_enter) {
+  Fake f;
+  KeypadInput in(f);
+  in.beginChoiceSelect(kModeChoice, TargetVfo::A, seedOf(2, true));
+  CHECK(in.choiceStaged());
+  tap(in, 'D');
+  CHECK_LOG(f, "mode commit 2 vfo1");
+}
+
+// --- Focus ------------------------------------------------------------------
+
+TEST(input_focus_starts_at_home_and_follows_the_keys) {
+  Fake f;
+  f.homes[9] = Setting::Profile;
+  f.shorts = {"9 A", "9 B", "9 6", "9 4"};
+  f.focuses["9 6"] = Setting::SpeechSpeed;
+  KeypadInput in(f);
+  in.setBank(9);
+  CHECK(in.focus(9) == Setting::Profile);
+  tap(in, 'A');
+  CHECK(f.boundFocus == Setting::Profile);
+  CHECK(f.activeFocus == Setting::Profile);
+  tap(in, '6');
+  CHECK(in.focus(9) == Setting::SpeechSpeed);
+  // A key with nothing to move leaves the focus.
+  tap(in, '4');
+  tap(in, 'B');
+  CHECK_LOG(f, "short 9 A", "short 9 6", "short 9 4", "short 9 B");
+  CHECK(f.boundFocus == Setting::SpeechSpeed);
+  CHECK(f.activeFocus == Setting::SpeechSpeed);
+  // A bank with no home focus has none.
+  CHECK(in.focus(1) == Setting::None);
+}
+
+TEST(input_focus_is_named_once_after_a_digit_key) {
+  Fake f;
+  f.shorts = {"1 6", "1 7", "1 B"};
+  f.holds = {"1 B"};
+  f.focuses["1 6"] = Setting::RfPower;
+  KeypadInput in(f);
+  tap(in, '6');
+  tap(in, 'B');
+  CHECK(f.activeFocus == Setting::RfPower);
+  CHECK(f.activeFocusNew);
+  hold(in, 'B');
+  CHECK(!f.activeFocusNew);
+  tap(in, '7');
+  tap(in, 'B');
+  CHECK(f.activeFocusNew);
+  CHECK(f.activeFocus == Setting::RfPower);
+  CHECK_LOG(f, "short 1 6", "short 1 B", "hold 1 B", "short 1 7", "short 1 B");
+  CHECK(keypadActiveFocus() == Setting::None);
+}
+
+TEST(input_focus_is_per_bank_and_named_again_after_a_bank_change) {
+  Fake f;
+  f.shorts = {"1 6", "1 B", "2 3", "2 B"};
+  f.focuses["1 6"] = Setting::RfPower;
+  f.focuses["2 3"] = Setting::Notch;
+  KeypadInput in(f);
+  tap(in, '6');
+  tap(in, 'B');
+  in.setBank(2);
+  tap(in, 'B');
+  CHECK(f.activeFocus == Setting::None);
+  CHECK(f.activeFocusNew);
+  tap(in, '3');
+  in.setBank(1);
+  tap(in, 'B');
+  CHECK(f.activeFocus == Setting::RfPower);
+  CHECK(f.activeFocusNew);
+  // Bank select by key names it again too.
+  hold(in, '*');
+  tap(in, '1');
+  tap(in, 'B');
+  CHECK(f.activeFocusNew);
+  f.take();
+}
+
+TEST(input_one_shot_bank_sets_its_own_focus) {
+  Fake f;
+  f.shorts = {"9 6", "9 A"};
+  f.focuses["9 6"] = Setting::SpeechSpeed;
+  KeypadInput in(f);
+  in.onKey('*', KeyGesture::Pressed, 0);
+  in.onKey('*', KeyGesture::Held, 0);
+  tap(in, '9');
+  in.onKey('*', KeyGesture::Released, 0);
+  tap(in, '6');
+  CHECK(in.focus(9) == Setting::SpeechSpeed);
+  CHECK(in.focus(1) == Setting::None);
+  CHECK_EQ(in.bank(), 1);
+  f.take();
+}
+
+TEST(input_focus_resets_to_home) {
+  Fake f;
+  f.homes[9] = Setting::Profile;
+  f.shorts = {"9 9"};
+  f.focuses["9 9"] = Setting::Volume;
+  KeypadInput in(f);
+  in.setBank(9);
+  tap(in, '9');
+  CHECK(in.focus(9) == Setting::Volume);
+  in.resetFocus();
+  CHECK(in.focus(9) == Setting::Profile);
+  f.take();
+}
+
+TEST(input_choice_nudge_opens_one_value_away) {
+  Fake f;
+  KeypadInput in(f);
+  EntrySeed seed;
+  seed.known = true;
+  seed.value = 30;
+  CHECK(in.nudgeChoice(kLevelChoice, seed, 1));
+  CHECK_LOG(f, "level B 0");
+  CHECK(in.choiceStaged());
+  tap(in, 'D');
+  CHECK_LOG(f, "level commit 0");
+  // At the end: nothing opened, nothing said.
+  CHECK(!in.nudgeChoice(kLevelChoice, seed, -1));
+  CHECK_LOG(f);
+  CHECK(in.mode() == InputMode::Normal);
+  // No value to walk from.
+  CHECK(!in.nudgeChoice(kLevelChoice, EntrySeed(), 1));
+  CHECK(in.mode() == InputMode::Normal);
+}
+
+// --- Help mode ---------------------------------------------------------------
+
+TEST(input_d_hold_toggles_help_mode) {
+  Fake f;
+  KeypadInput in(f);
+  hold(in, 'D');
+  CHECK(in.helpMode());
+  CHECK_LOG(f, "help on");
+  hold(in, 'D');
+  CHECK(!in.helpMode());
+  CHECK_LOG(f, "help off");
+  // D short is still no key in Normal mode, help or not.
+  hold(in, 'D');
+  tap(in, 'D');
+  CHECK_LOG(f, "help on", "rejected ENTER");
+}
+
+TEST(input_help_says_each_gesture_instead_of_running_it) {
+  Fake f;
+  f.shorts = {"2 1", "2 4"};
+  f.holds = {"2 1"};
+  f.doubles = {"2 1"};
+  f.doubleHolds = {"2 1"};
+  f.waits = {"2 1"};
+  KeypadInput in(f);
+  in.setBank(2);
+  hold(in, 'D');
+  f.take();
+  tap(in, '1', 0);
+  in.poll(1000);
+  hold(in, '1', 2000);
+  tap(in, '1', 3000);
+  tap(in, '1', 3100);
+  tap(in, '1', 4000);
+  in.onKey('1', KeyGesture::Pressed, 4100);
+  in.onKey('1', KeyGesture::Held, 4100);
+  in.onKey('1', KeyGesture::Released, 4100);
+  CHECK_LOG(f, "help BANK2 1 SHORT short", "help BANK2 1 LONG hold", "help BANK2 1 DOUBLE double",
+            "help BANK2 1 DOUBLE LONG doublehold");
+  // A gesture with no action beeps as always.
+  hold(in, '4', 5000);
+  tap(in, '7', 5000);
+  CHECK_LOG(f, "rejected BANK2 4 LONG", "rejected BANK2 7");
+  CHECK(in.helpMode());
+}
+
+TEST(input_help_moves_the_focus_for_a_b_and_c) {
+  Fake f;
+  f.shorts = {"1 6", "1 B"};
+  f.focuses["1 6"] = Setting::RfPower;
+  KeypadInput in(f);
+  hold(in, 'D');
+  tap(in, '6');
+  CHECK(in.focus(1) == Setting::RfPower);
+  tap(in, 'B');
+  CHECK(f.boundFocus == Setting::RfPower);
+  CHECK(f.activeFocus == Setting::RfPower);
+  CHECK_LOG(f, "help on", "help BANK1 6 SHORT short", "help BANK1 B SHORT short");
+}
+
+TEST(input_help_keeps_bank_select_and_ends_with_hash) {
+  Fake f;
+  f.shorts = {"3 1"};
+  KeypadInput in(f);
+  hold(in, 'D');
+  hold(in, '*');
+  tap(in, '3');
+  tap(in, '1');
+  CHECK_EQ(in.bank(), 3);
+  tap(in, '#');
+  CHECK(!in.helpMode());
+  CHECK_LOG(f, "help on", "bank please", "commit BankSelect [3] vfo0", "help BANK3 1 SHORT short", "help off");
+  // Out of help, '#' with nothing to cancel beeps again, and keys act.
+  tap(in, '#');
+  tap(in, '1');
+  CHECK_LOG(f, "rejected CLEAR", "short 3 1");
+}
+
+TEST(input_help_hash_drops_a_waiting_short) {
+  Fake f;
+  f.shorts = {"1 1"};
+  f.doubles = {"1 1"};
+  f.waits = {"1 1"};
+  KeypadInput in(f);
+  hold(in, 'D');
+  tap(in, '1', 0);
+  tap(in, '#', 10);
+  in.poll(1000);
+  CHECK(!in.helpMode());
+  CHECK_LOG(f, "help on", "help off");
+}
+
+TEST(input_help_hold_does_not_toggle_in_an_entry) {
+  Fake f;
+  KeypadInput in(f);
+  in.beginEntry(InputMode::CivAddrEntry);
+  typeKeys(in, "5");
+  hold(in, 'D');
+  CHECK(!in.helpMode());
+  CHECK_LOG(f, "digit CivAddrEntry 5 5", "commit CivAddrEntry [5] vfo0");
 }

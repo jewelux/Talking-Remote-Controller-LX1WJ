@@ -2,6 +2,7 @@
 
 #include "ft8x7_eeprom_map.h"
 #include "protocol_ops_yaesu.h"
+#include "radio_setting_types.h"
 #include "radio_types.h"
 
 // Radio features the keypad and the console share. Each operation checks the
@@ -60,14 +61,127 @@ FeatureStatus notchSetWidth(NotchWidth width);
 // On CI-V off -> NAR -> MID -> WIDE -> off; elsewhere on, off.
 FeatureStatus notchToggle(NotchState& out);
 
-// Speech processor: FT-857/897 PROC and its menu 74 level, Icom COMP, FTDX10 PR and PL.
+// The Yaesu ASCII NR and NB levels (caps.getNrLevel, getNbLevel) in the radio's steps: RL0 1..15,
+// NL0 0..10. CI-V keeps its own level path in percent (queryNrLevel), the FT-857/897 its menus.
+bool yaesuRxLevelRange(RxLevel level, uint16_t& minOut, uint16_t& maxOut);
+FeatureStatus yaesuRxLevelQuery(RxLevel level, uint16_t& valueOut);
+// Invalid outside the range.
+FeatureStatus yaesuRxLevelSet(RxLevel level, uint16_t value, uint16_t& valueOut);
+// delta steps from the level read, kept within the range.
+FeatureStatus yaesuRxLevelStep(RxLevel level, int delta, uint16_t& valueOut);
+
+// Auto notch (caps.getAutoNotch): Icom 16 41, Yaesu BC0. Not the manual notch above.
+FeatureStatus autoNotchQuery(bool& on);
+FeatureStatus autoNotchSet(bool on);
+// Off -> on -> off, from the state read.
+FeatureStatus autoNotchToggle(bool& on);
+
+// AGC (caps.getAgc): Icom 16 12, the ASCII radios' GT (settings.agc), the FT-8x7 from its
+// EEPROM.
+FeatureStatus agcQuery(AgcMode& out);
+// Whether the radio can be set to mode: caps.setAgc over CAT (Icom FAST, MID, SLOW; Yaesu ASCII
+// all five; TS-480 OFF, FAST, SLOW; KX2 FAST, SLOW), and experimentally (caps.setRadioMenu) on the
+// FT-8x7, which has no MID.
+bool agcCanSet(AgcMode mode);
+// Sets mode, which the radio confirms on a read-back, into out. Unsupported where agcCanSet is
+// false; FT-8x7 errors as procLevelSet.
+FeatureStatus agcSet(AgcMode mode, AgcMode& out);
+
+// The RX attenuator. db is 0 where the radio does not say how many dB it takes off.
+struct AttState {
+  bool on = false;
+  uint8_t db = 0;
+};
+
+// The attenuator (caps.getAtt): Icom 11, the ASCII radios' RA (settings.frontEnd), the FT-857/897
+// from the current band in its EEPROM, Unsupported where the band has none.
+FeatureStatus attQuery(AttState& out);
+// The steps it can be set to (caps.setAtt), 0 where it cannot; step n is attStepDb(n) dB (0 where
+// not known).
+uint8_t attSteps();
+uint8_t attStepDb(uint8_t step);
+// Sets step (0 off, 1..attSteps()), which the radio confirms on a read-back, into out. Invalid
+// above attSteps().
+FeatureStatus attSet(uint8_t step, AttState& out);
+// Off -> step 1 -> ... -> the last step -> off, from the attenuator read.
+FeatureStatus attStep(AttState& out);
+
+// The preamp (caps.getPreamp): Icom 16 02, the ASCII radios' PA. Level 0 is off (Yaesu IPO).
+// preampLevels() is 1 where it is only on or off, 2 with P.AMP1/AMP1 and P.AMP2/AMP2, 0 where
+// there is none.
+uint8_t preampLevels();
+FeatureStatus preampQuery(uint8_t& levelOut);
+// Sets level (0..preampLevels()), which the radio confirms on a read-back, into levelOut.
+// Unsupported without caps.setPreamp, Invalid above preampLevels().
+FeatureStatus preampSet(uint8_t level, uint8_t& levelOut);
+// Off -> 1 -> ... -> off, from the level read.
+FeatureStatus preampStep(uint8_t& levelOut);
+
+// RF power over CAT (caps.getRfPower), in tenths of a watt: Icom 14 0A scaled to the profile's
+// rfPowerMaxWatts, the ASCII radios' PC (settings.rfPower). The FT-8x7 keeps its own
+// (ft8x7SettingQuery, ft8x7RfPowerSet); here it is Unsupported.
+FeatureStatus rfPowerQuery(uint16_t& tenthsOut);
+// The watts it can be set to; false where it cannot (caps.setRfPower).
+bool rfPowerRange(uint16_t& minOut, uint16_t& maxOut);
+// Sets watts, which the radio confirms on a read-back, into tenthsOut. Invalid outside rfPowerRange.
+FeatureStatus rfPowerSet(uint16_t watts, uint16_t& tenthsOut);
+
+// CW break-in (caps.getBreakIn) and the keyer (caps.getKeyer): Icom 16 47 (break-in only), Yaesu
+// BI and KR, the FT-8x7 from its EEPROM.
+FeatureStatus breakInQuery(BreakInMode& out);
+// Whether the radio can be set to mode: Icom OFF, SEMI, FULL and ON (as SEMI); Yaesu OFF and ON;
+// on the FT-8x7 OFF and ON, experimentally (caps.setRadioMenu).
+bool breakInCanSet(BreakInMode mode);
+// Sets mode, which the radio confirms on a read-back, into out; Unsupported where breakInCanSet
+// is false.
+FeatureStatus breakInSet(BreakInMode mode, BreakInMode& out);
+// Off -> on (Icom SEMI) -> off, from the break-in read.
+FeatureStatus breakInToggle(BreakInMode& out);
+FeatureStatus keyerQuery(bool& on);
+FeatureStatus keyerSet(bool on, bool& out);
+FeatureStatus keyerToggle(bool& out);
+// What these read, by the caps (no radio traffic), and where the keyer can be set (the FT-8x7
+// only experimentally).
+bool breakInSupported();
+bool keyerSupported();
+bool keyerCanSet();
+
+// The ALC meter in percent of full scale (caps.getAlc): Icom 15 13, 0..120; Yaesu RM4, 0..255.
+// 0 when not transmitting. The FT-8x7 reads its own (ALC?, 0..15).
+FeatureStatus alcQuery(uint8_t& percentOut);
+
+// The CW keyer speed (WPM), pitch (Hz) and break-in delay (ms, 0 = full break-in on the TS-480 and
+// FT-857/897): caps.getCwSpeed, getCwPitch, getCwDelay. Icom 14 09 (pitch only), the ASCII
+// radios' KS, KP and SD, the FT-8x7 from its EEPROM menus.
+FeatureStatus cwLevelQuery(CwLevel level, uint16_t& valueOut);
+// Whether cwLevelQuery reads level, by the caps (no radio traffic).
+bool cwLevelSupported(CwLevel level);
+// The values it can be set to; false where it cannot (on the FT-8x7 only experimentally).
+bool cwLevelRange(CwLevel level, uint16_t& minOut, uint16_t& maxOut);
+// Sets value, to the radio's step nearest it, which the radio confirms on a read-back, into
+// valueOut. Invalid outside the range.
+FeatureStatus cwLevelSet(CwLevel level, uint16_t value, uint16_t& valueOut);
+// delta steps from the value read, kept within the range: 1 WPM, 10 Hz (FT-8x7: its menu step),
+// one delay step of the radio (at least 100 ms on the FT-891 and TS-480).
+FeatureStatus cwLevelStep(CwLevel level, int delta, uint16_t& valueOut);
+
+// Speech processor: FT-857/897 PROC and its menu 74 level, Icom COMP, FTDX10 and FT-891 PR0 and
+// PL, TS-480 PR and its PL input level.
 // These and the mic gain and VOX reads below are Unsupported where the profile's cap (getProc,
 // getMicGain, getVox) is off.
+// What these read, by the caps (no radio traffic), and where they can be set (the FT-8x7 only
+// experimentally).
+bool procSupported();
+bool procCanSet();
+bool micGainSupported();
+bool micGainCanSet();
+bool voxSupported();
 FeatureStatus procQuery(bool& on);
 // 0..100.
 FeatureStatus procLevelQuery(uint8_t& level);
-// Writes: caps.setProc over CAT (IC-7300, IC-705, IC-7760, FTDX10), and experimentally
-// (caps.setRadioMenu) on the FT-857/897, in the EEPROM. Toggles start from the radio's state.
+// Writes: caps.setProc over CAT (IC-7300, IC-705, IC-7760, FTDX10, FT-891, TS-480), and
+// experimentally (caps.setRadioMenu) on the FT-857/897, in the EEPROM. Toggles start from the
+// radio's state.
 // levelOut holds the level set (on the FT-857/897 read back). Invalid above 100; Failed when the
 // radio does not take it, and on the FT-857/897 while transmitting; Unexpected when the stored
 // byte is out of range (nothing written).
@@ -77,39 +191,44 @@ FeatureStatus procLevelSet(uint8_t level, uint8_t& levelOut);
 // The level read, plus delta, kept within 0..100.
 FeatureStatus procLevelStep(int delta, uint8_t& levelOut);
 
-// Mic gain, 0..100: IC-7300, IC-705, IC-7760, FTDX10, and on the FT-817/818 and FT-857/897 the menu of the current
-// mode (SSB, AM, FM, DIG, on the FT-817 also PKT). Unsupported in CW and WFM, and in the
-// FT-857/897's PKT.
+// Mic gain, 0..100: IC-7300, IC-705, IC-7760, FTDX10, FTDX101, FT-891, TS-480, and on the
+// FT-817/818 and FT-857/897 the menu of the current mode (SSB, AM, FM, DIG, on the FT-817 also
+// PKT). Unsupported in CW and WFM, and in the FT-857/897's PKT.
 FeatureStatus micGainQuery(uint8_t& level);
 // caps.setMicGain over CAT; experimentally (caps.setRadioMenu) on the FT-817/818 and FT-857/897
 // the mic gain of the current mode, as micGainQuery picks it, in the EEPROM. Errors as
 // procLevelSet.
 FeatureStatus micGainSet(uint8_t level, uint8_t& levelOut);
 FeatureStatus micGainStep(int delta, uint8_t& levelOut);
+// FT-8x7: the mic gain menu of the current mode, and a set of that menu's gain (experimental),
+// so a keypad entry sets the mode it was opened in. Errors as micGainQuery and micGainSet.
+FeatureStatus ft8x7MicGainMenu(Ft8x7MicGain& gain);
+FeatureStatus ft8x7MicGainSet(Ft8x7MicGain gain, uint8_t level, uint8_t& levelOut);
 
-// VOX: IC-7300, IC-705, IC-7760, FTDX10 VX and VG, FT-857/897 and its menu 88 gain, FT-817/818 and its menu 51
-// gain.
+// VOX: IC-7300, IC-705, IC-7760, the Yaesu ASCII radios' and the TS-480's VX and VG, FT-857/897
+// and its menu 88 gain, FT-817/818 and its menu 51 gain.
 FeatureStatus voxQuery(bool& on);
-// 0..100.
+// 0..100; on the TS-480 0..9.
 FeatureStatus voxGainQuery(uint8_t& level);
 // In ms: FT-857/897 menu 87, FT-817/818 menu 50, IC-7300, IC-705, IC-7760 (civVoxDelayAddr),
-// FTDX10 VD.
+// FTDX10, FT-891 and TS-480 VD (settings.voxDelay; not the FTDX101).
 FeatureStatus voxDelayQuery(uint16_t& ms);
 // Writes: caps.setVox over CAT, and experimentally (caps.setRadioMenu) on the FT-8x7, in the
 // EEPROM. Errors as procLevelSet.
 FeatureStatus voxSet(bool on);
 FeatureStatus voxToggle(bool& on);
-// The VOX gains the radio takes: 1..100 on the FT-8x7, else 0..100. False where it cannot be set.
+// The VOX gains the radio takes: 1..100 on the FT-8x7, 0..9 on the TS-480, else 0..100. False
+// where it cannot be set.
 bool voxGainRange(uint8_t& minOut, uint8_t& maxOut);
 FeatureStatus voxGainSet(uint8_t level, uint8_t& levelOut);
 FeatureStatus voxGainStep(int delta, uint8_t& levelOut);
-// The VOX delays in ms the radio takes: CI-V 0..2000, FTDX10 30..3000, FT-857/897 100..3000,
-// FT-817/818 100..2500. False where it cannot be set.
+// The VOX delays in ms the radio takes: CI-V 0..2000, FTDX10 and FT-891 30..3000, TS-480 0..3000,
+// FT-857/897 100..3000, FT-817/818 100..2500. False where it cannot be set.
 bool voxDelayRange(uint16_t& minOut, uint16_t& maxOut);
 // Sets the radio's step nearest ms; msOut holds the delay read back. Invalid outside the range.
 FeatureStatus voxDelaySet(uint16_t ms, uint16_t& msOut);
-// delta of the radio's steps (100 ms; FTDX10 its VD steps) from the delay read, kept within the
-// range.
+// delta of the radio's steps (100 ms; FTDX10 its VD steps, TS-480 150 ms) from the delay read, kept
+// within the range.
 FeatureStatus voxDelayStep(int delta, uint16_t& msOut);
 
 // FT-857/897 settings read from the radio's EEPROM, since CAT has no command for them. All but
@@ -148,6 +267,9 @@ struct Ft8x7SettingState {
 
 // The console command: "AGC?", "IPO?", ...
 const char* ft8x7SettingLabel(Ft8x7Setting setting);
+// Whether the radio's EEPROM map has setting, by the model (no radio traffic); false on other
+// radios.
+bool ft8x7SettingAvailable(Ft8x7Setting setting);
 // Unsupported on other radios, and for IPO/ATT/NAR where the band has none (or is not known).
 // Unexpected when a CW setting's stored value does not fit the map.
 FeatureStatus ft8x7SettingQuery(Ft8x7Setting setting, Ft8x7SettingState& out);
@@ -187,8 +309,11 @@ FeatureStatus ft817AntennaToggle(Ft8x7SettingState& out);
 // the value read back. Menu 75 of the band group of the current frequency, HF and 6 m 5..100,
 // VHF 5..50, UHF 2..20; Invalid for any other value. Failed while transmitting or when the
 // read-back differs; Unexpected when the stored byte is out of range (nothing written).
-// Unsupported on the FT-817/818.
-FeatureStatus ft8x7RfPowerSet(uint16_t watts, Ft8x7SettingState& out);
+// Unsupported on the FT-817/818. hz: a frequency of the band group to set, 0 for the current
+// one.
+FeatureStatus ft8x7RfPowerSet(uint16_t watts, Ft8x7SettingState& out, uint64_t hz = 0);
+// The watts ft8x7RfPowerSet takes for the band group of the current frequency, hzOut.
+FeatureStatus ft8x7RfPowerRange(uint64_t& hzOut, uint16_t& minOut, uint16_t& maxOut);
 // The same for the FT-817/818 power level; Unsupported on the FT-857/897.
 FeatureStatus ft817PowerLevelSet(Ft817PowerLevel level, Ft8x7SettingState& out);
 // Experimental (caps.setRadioMenu): AGC in the EEPROM, on the FT-817/818 and FT-857/897; out
@@ -201,6 +326,8 @@ FeatureStatus ft8x7MicEqSet(YaesuFt857MicEq eq, Ft8x7SettingState& out);
 // holds the value read back. Failed while transmitting or when the read-back differs.
 FeatureStatus ft8x7CwBfoSet(Ft857CwBfo bfo, Ft8x7SettingState& out);
 
+// Tone squelch. Over CAT (caps.getTone): Icom 16 42 and 16 43, Yaesu CT0, CTCSS only, both
+// (encode and decode) or TX (encode only); the FT-891 also reads DCS. On the FT-8x7:
 // FT-8x7 tone squelch. The FT-857/897 reads it from the current band in the EEPROM, live;
 // the FT-817/818 cannot, so there it is the mode HamTRC last set. Unsupported on other radios,
 // outside the amateur bands, on the FT-817/818 before HamTRC has set a mode, and for a mode the
@@ -218,3 +345,10 @@ FeatureStatus toneDirStep(YaesuToneMode& out);
 // tone type and wait for the other. CAT cannot switch it. Unsupported on other radios (the
 // FT-817/818 has none) and outside the amateur bands.
 FeatureStatus splitToneQuery(bool& on);
+// The CTCSS tone over CAT (caps.getCtcss), in tenths of a Hz: Icom 1B 00 (a set writes the tone
+// squelch tone 1B 01 too), Yaesu CN00. Invalid for a tone outside the 50 standard ones.
+FeatureStatus ctcssToneQuery(uint16_t& tenthsOut);
+FeatureStatus ctcssToneSet(uint16_t tenths, uint16_t& tenthsOut);
+// The repeater shift over CAT (caps.getRptShift): the IC-705 0F, Yaesu OS0 (FM only).
+FeatureStatus rptShiftQuery(RptShift& out);
+FeatureStatus rptShiftSet(RptShift shift);

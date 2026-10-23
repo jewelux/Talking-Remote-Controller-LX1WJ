@@ -31,8 +31,8 @@ The NanoVNA's USB-C cable goes into the controller's **native USB socket**, as f
 
 ## Keys
 
-Bank 1 is the NanoVNA bank. Bank 9 works as on every radio: profile, volume, speech and the USB
-state on `1`. Every other bank is free (a beep). Bank 2 is kept for calibration later.
+Bank 1 is the NanoVNA bank. Bank 8 `0` says the USB state, and Bank 9 works as on every radio:
+profile, volume and speech. Every other key is free (a beep). Bank 2 is kept for calibration later.
 
 | Key | Press | What it does |
 |---|---|---|
@@ -119,7 +119,7 @@ measurement summary and any unexpected reply. `USB?` shows the USB connection.
 
 On the second USB socket's console, with the NanoVNA-F V2 on the native socket:
 
-1. Choose profile 30 (Bank 9 `A` long, `3` `0`, `D`): "nano v n a". Switch the NanoVNA on:
+1. Choose profile 30 (Bank 9 `1` long, `3` `0`, `D`): "nano v n a". Switch the NanoVNA on:
    "usb on".
 2. `VNA version` and Bank 1 `7`: the version is printed and said. `VNA SN` and Bank 1 `9`: the
    serial number. `VNA info` prints the device

@@ -513,7 +513,7 @@ YaesuEepromWrite yaesuFt8x7SetMicGain(Ft8x7MicGain gain, uint8_t value, uint8_t&
 }
 
 YaesuEepromWrite yaesuFt8x7StepMicGain(Ft8x7MicGain gain, int steps, uint8_t& valueOut, uint32_t timeoutMs) {
-  return rewriteMicGain(gain, [steps](uint8_t stored) { return ft8x7PercentStep(stored, steps); }, valueOut,
+  return rewriteMicGain(gain, [steps](uint8_t stored) { return percentStep(stored, steps); }, valueOut,
                         timeoutMs);
 }
 
@@ -569,7 +569,7 @@ YaesuEepromWrite yaesuFt8x7SetVoxGain(uint8_t value, uint8_t& valueOut, uint32_t
 YaesuEepromWrite yaesuFt8x7StepVoxGain(int steps, uint8_t& valueOut, uint32_t timeoutMs) {
   return rewriteVoxGain(
       [steps](uint8_t stored) {
-        const uint8_t stepped = ft8x7PercentStep(stored, steps);
+        const uint8_t stepped = percentStep(stored, steps);
         return stepped < 1 ? (uint8_t)1 : stepped;
       },
       valueOut, timeoutMs);

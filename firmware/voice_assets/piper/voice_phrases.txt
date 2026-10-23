@@ -59,6 +59,7 @@ z
 
 # Letter abbreviations
 a g c | | a g c,
+a l c | | a.l.c.
 a m | | A.M
 c w
 c w r
@@ -86,20 +87,27 @@ baud
 both
 cancel
 choose
+down
 equals
 error
 experimental
 fast
 frequency
 hertz
+help
 high
 kilohertz
 megahertz
+maximum
 menu
+mid
+semi
 level
 lock
+minimum
 minus
 mode
+next
 normal
 not available
 off | | Off.
@@ -111,6 +119,7 @@ plus
 power
 profile
 reset
+round
 row
 slow
 speed
@@ -121,6 +130,7 @@ sync
 timeout
 verbose | | verbose,
 volume
+up
 watts
 
 # Radio operating words
@@ -156,6 +166,8 @@ weight
 side tone | sidetone
 key
 reverse
+keyer
+break in
 paddle
 
 # Filter / DSP
@@ -196,3 +208,4 @@ icom
 kenwood
 xiegu
 yaesu
+focus

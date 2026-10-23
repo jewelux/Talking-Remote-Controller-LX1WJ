@@ -21,15 +21,19 @@ TEST(expectations_rows_are_well_formed) {
     CHECK(r.families != 0);
     CHECK_EQ(r.families & ~ALL, 0);
     CHECK(r.bank >= 1 && r.bank <= 9);
-    CHECK(r.bank != 7);
     CHECK(isBankKey(r.key));
     CHECK(r.shortAction && *r.shortAction);
     CHECK(r.longAction && *r.longAction);
     CHECK(r.doubleAction && *r.doubleAction);
+    CHECK(r.doubleHoldAction && *r.doubleHoldAction);
+    CHECK(r.focus && *r.focus);
     // Each sentinel is only valid in its own column.
     CHECK(!isSentinel(r.shortAction) || strcmp(r.shortAction, "unassigned") == 0);
     CHECK(!isSentinel(r.longAction) || strcmp(r.longAction, "none") == 0);
     CHECK(strcmp(r.doubleAction, "unassigned") != 0);
+    CHECK(!isSentinel(r.doubleHoldAction) || strcmp(r.doubleHoldAction, "none") == 0);
+    // A double hold needs the wait for a double click.
+    CHECK(strcmp(r.doubleHoldAction, "none") == 0 || strcmp(r.doubleAction, "-") != 0);
   }
 }
 
@@ -66,16 +70,21 @@ TEST(expectations_assigned_keys_cover_all_families) {
 }
 
 TEST(expectations_lookup_defaults_to_unassigned) {
-  const Row &r = lookup(IC7300, 7, '1');
+  const Row &r = lookup(IC7300, 8, '9');
   CHECK_EQ(r.shortAction, "unassigned");
   CHECK_EQ(r.longAction, "none");
   CHECK_EQ(r.doubleAction, "-");
-  CHECK_EQ(lookup(FT817, 1, 'A').shortAction, "unassigned");
+  CHECK_EQ(r.doubleHoldAction, "none");
+  CHECK_EQ(r.focus, "-");
+  CHECK_EQ(lookup(FT817, 9, '9').shortAction, "unassigned");
 }
 
 TEST(expectations_lookup_picks_the_family_row) {
-  CHECK_EQ(lookup(FTDX10, 2, '4').shortAction, "send(GT?)");
-  CHECK_EQ(lookup(IC706, 2, '4').shortAction, "queryBank2NrLevel");
-  CHECK_EQ(lookup(TS480, 2, '4').shortAction, "unassigned");
+  CHECK_EQ(lookup(FTDX10, 8, '4').shortAction, "send(PS?)");
+  CHECK_EQ(lookup(FT857, 2, '4').shortAction, "settingSay(HPF)");
+  CHECK_EQ(lookup(TS480, 2, '6').shortAction, "settingSay(PBT2)");
+  CHECK_EQ(lookup(TS480, 8, '6').shortAction, "unassigned");
   CHECK_EQ(lookup(IC7300, 9, '4').shortAction, "queryBank9TuningSpeech");
+  CHECK_EQ(lookup(FT857, 4, '5').shortAction, "settingSay(MICEQ)");
+  CHECK_EQ(lookup(IC7300, 8, '3').longAction, "toggleBank8Transceive");
 }

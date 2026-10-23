@@ -410,7 +410,7 @@ uint8_t ft817LevelFromByte(uint8_t b) {
   return value > 100 ? 100 : value;
 }
 
-uint8_t ft8x7PercentStep(uint8_t value, int steps) {
+uint8_t percentStep(uint8_t value, int steps) {
   if (steps > 100) steps = 100;
   if (steps < -100) steps = -100;
   const int stepped = (value > 100 ? 100 : value) + steps;

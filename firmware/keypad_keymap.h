@@ -20,19 +20,26 @@ enum class KeypadLayout : uint8_t {
   Ft8x7,    // PROTO_YAESU_FT8X7 with no known model: Generic plus Bank 6
   Ft817,    // RadioModel Ft817 and Ft818
   Ft857,    // RadioModel Ft857 (FT-857, FT-897)
-  NanoVna,  // PROTO_NANOVNA: not a radio; Bank 1 measures, Bank 9 as everywhere, the rest free
-  Qmx,      // RadioModel::Qmx: Generic plus the PA voltage on Bank 1
+  NanoVna,  // PROTO_NANOVNA: not a radio; Bank 1 measures, Bank 8 0 USB and Bank 9 as everywhere
+  Qmx,      // RadioModel::Qmx: Generic, with the PA voltage for the RF power keys
 };
 
 // What the keymap depends on. The glue fills this in from the active profile
 // each time it looks up a key.
 struct KeypadTraits {
   KeypadLayout layout = KeypadLayout::Generic;
-  bool supportsMonitor = false;     // protocolSupportsMonitor()
   bool supportsTransceive = false;  // protocolSupportsTransceive()
   bool canGetRfPower = false;       // currentProfile().caps.getRfPower
+  // The settings the radio has (settingOps available(), AGC by caps.getAgc, the Bank 6 shift
+  // and tone type): a key names them as its focus and second value only where they are.
+  SettingSet settings;
 };
 
 // What key does on bank for this radio. An empty binding for keys the keymap
-// does not handle, including '*', 'D' and '#'.
-KeyBinding keymapLookup(const KeypadTraits& traits, uint8_t bank, char key);
+// does not handle, including '*', 'D' and '#'. focus: the bank's focus, which
+// A, B and C are bound for; Home is keymapHomeFocus.
+KeyBinding keymapLookup(const KeypadTraits& traits, uint8_t bank, char key, Setting focus = Setting::Home);
+
+// The focus of bank before any of its keys has set one: Bank 5 the RIT offset,
+// Bank 9 the profile, else None.
+Setting keymapHomeFocus(const KeypadTraits& traits, uint8_t bank);

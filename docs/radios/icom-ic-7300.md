@@ -112,8 +112,9 @@ New features and new radios come with a new firmware.
 Each set is read back. The sets are not yet tested on a radio.
 
 The IC-705 and IC-7760 profiles answer these too. The VOX delay sits at a different menu
-address on each model (IC-7300 `1A 05 0191`, IC-705 `0359`, IC-7760 `0182`, as Hamlib reads
-them); the IC-705 and IC-7760 ones are not yet tested on a radio.
+address on each model: IC-7300 `1A 05 0191`, IC-705 `0359`, as each CI-V guide and Hamlib give
+them. The IC-7760 has no `VOXDELAY`: Hamlib reads `0182`, which its CI-V guide lists as the
+Internet access line, and the guide puts the VOX delay at `0365`.
 
 ### VFO / Split / Bandstack
 
@@ -180,12 +181,14 @@ The current keypad concept uses radio-specific banks with:
 | Receive / DSP | `NR?`, `NR ON/OFF` | Bank 2: `1` short / `1` long |
 | Receive / DSP | `NB?`, `NB ON/OFF` | Bank 2: `2` short / `2` long |
 | Receive / DSP | `NOTCH?`, `NOTCH ON/OFF`, `NOTCH NAR/MID/WIDE` | Bank 2: `3` short / `3` long |
-| Receive / DSP | `NRLEVEL?`, `NRLEVEL STEP 10/-10` | Bank 2: `4` short / `4` long / `4` double click |
-| Receive / DSP | `NBLEVEL?`, `NBLEVEL STEP 10/-10` | Bank 2: `5` short / `5` long / `5` double click |
-| Receive / DSP | `PBT1?`, `PBT1 STEP 10/-10` | Bank 2: `6` short / `6` long / `6` double click |
-| Receive / DSP | `PBT2?`, `PBT2 STEP 10/-10` | Bank 2: `7` short / `7` long / `7` double click |
-| Receive / DSP | `FILSHAPE?`, `FILSHAPE TOGGLE` | Bank 2: `8` short / `8` long |
-| Receive / DSP | `FILWIDTH?`, `FILWIDTH NEXT/PREV` | Bank 2: `9` short / `9` long / `9` double click |
+| Receive / DSP | `NRLEVEL?`, `NRLEVEL STEP 10/-10` | Bank 2: `1` double click; `1` short then hold for the entry; then `B` / `C` |
+| Receive / DSP | `NBLEVEL?`, `NBLEVEL STEP 10/-10` | Bank 2: `2` double click; `2` short then hold for the entry; then `B` / `C` |
+| Receive / DSP | `PBT1?`, `PBT1 STEP 10/-10` | Bank 2: `4` short / `4` long for the entry; then `B` / `C`, `A` double click centre |
+| Receive / DSP | `PBT2?`, `PBT2 STEP 10/-10` | Bank 2: `6` short / `6` long for the entry; then `B` / `C`, `A` double click centre |
+| Receive / DSP | `FILWIDTH?`, `FILWIDTH NEXT/PREV` | Bank 2: `5` short / `5` long; then `B` / `C` |
+| Receive / DSP | `FILSHAPE?`, `FILSHAPE TOGGLE` | Bank 2: `5` double click / `5` short then hold |
+| Receive / DSP | `AGC?`, `AGC <speed>` | Bank 2: `7` short / `7` long |
+| Receive / DSP | `PREAMP?`, `ATT?` | Bank 2: `8` and `9` short / long for the next level |
 
 ### Bank 3 - VFO / Split / Bandstack
 
@@ -200,14 +203,19 @@ The current keypad concept uses radio-specific banks with:
 | VFO / Split / Bandstack | `BSTACK? 2`, `BSTACK 2` | Bank 3: `8` short / `8` long |
 | VFO / Split / Bandstack | `BSTACK? 3`, `BSTACK 3` | Bank 3: `9` short / `9` long |
 
-### Bank 4 - TX / Monitor / Antenna
+### Bank 4 - Phone Transmit
 
 | Command family | Commands | Bank / keys |
 |---|---|---|
-| TX / Monitor / Antenna | `TUNER?`, `TUNER ON/OFF`, `TUNE` | Bank 4: `0` short / `0` long / `0` double click |
-| TX / Monitor / Antenna | `MONITOR?`, `MONITOR TOGGLE` | Bank 4: `1` short / `1` long |
-| TX / Monitor / Antenna | `MONLEVEL?`, `MONLEVEL STEP 10/-10` | Bank 4: `2` short / `2` long / `2` double click |
-| TX / Monitor / Antenna | `TRANSCEIVE?`, `TRANSCEIVE TOGGLE` | Bank 4: `3` short / `3` long |
+| Tuner | `TUNER?`, `TUNER ON/OFF`, `TUNE` | Bank 4: `0` short / `0` long / `0` double click |
+| Speech processor | `PROC?`, `PROC TOGGLE`, `PROCLEVEL?`, `PROCLEVEL <0..100>` | Bank 4: `1` short / `1` long / `1` double click / `1` short, then hold |
+| VOX | `VOX?`, `VOX TOGGLE`, `VOXGAIN?`, `VOXGAIN <0..100>` | Bank 4: `2` short / `2` long / `2` double click / `2` short, then hold |
+| Monitor | `MONITOR?`, `MONITOR TOGGLE`, `MONLEVEL?`, `MONLEVEL <0..100>` | Bank 4: `3` short / `3` long / `3` double click / `3` short, then hold |
+| Mic gain | `MICGAIN?`, `MICGAIN <0..100>` | Bank 4: `7` short / `7` long |
+| RF power | `RFPOWER?`, `RFPOWER <W>` | Bank 4: `8` short / `8` long |
+| VOX delay | `VOXDELAY?`, `VOXDELAY <ms>` | Bank 4: `9` short / `9` long |
+
+`A`, `B` and `C` act on the level last touched: `B`/`C` step it by 5 (VOX delay 100 ms).
 
 ### Bank 5 - Fine Tuning / RIT
 
@@ -220,22 +228,51 @@ The current keypad concept uses radio-specific banks with:
 | Fine tuning / RIT | `RIT STEP -1`, `RIT STEP -500` | Bank 5: `4` short / `4` long |
 | Fine tuning / RIT | `RIT STEP 1`, `RIT STEP 500` | Bank 5: `5` short / `5` long |
 
+### Bank 6 - Repeater / Tone
+
+| Command family | Commands | Bank / keys |
+|---|---|---|
+| Repeater shift (IC-705) | `RPT SIMPLEX`, `RPT MINUS`, `RPT PLUS` | Bank 6: `0` short / `0` long / `0` double click |
+| Tone squelch | `TONE?`, `TONE CTCSS`, `TONE OFF` | Bank 6: `2` short / `2` long / `2` double click |
+| CTCSS tone | `CTCSS?`, `CTCSS <Hz>` | Bank 6: `3` short / `3` long |
+| Encode or decode | `TONEDIR?`, `TONEDIR NEXT` | Bank 6: `5` short / `5` long |
+
+After `3`, `B`/`C` walk the CTCSS tones and set each at once. The repeater offset and DCS say
+"not available"; the IC-7300 and IC-7760 also have no repeater shift. Not yet tested on a radio.
+
+### Bank 7 - CW
+
+| Command family | Commands | Bank / keys |
+|---|---|---|
+| Tuner | `TUNER?`, `TUNER ON/OFF`, `TUNE` | Bank 7: `0` short / `0` long / `0` double click |
+| Break-in | `BK?`, `BK OFF / SEMI / FULL` | Bank 7: `2` short / `2` long (off, semi, full) |
+| CW pitch | `CWPITCH?`, `CWPITCH <300..900>` | Bank 7: `5` short / `5` long |
+| RF power | `RFPOWER?`, `RFPOWER <W>` | Bank 7: `8` short / `8` long |
+
+`A`, `B` and `C` act on the last of break-in, pitch and RF power touched: `B`/`C` walk the
+break-in and step the pitch by 10 Hz. The keyer, its speed, the sidetone, weight, key reverse and
+break-in delay say "not available".
+
+### Bank 8 - Transceive
+
+| Command family | Commands | Bank / keys |
+|---|---|---|
+| Transceive | `TRANSCEIVE?`, `TRANSCEIVE TOGGLE` | Bank 8: `3` short / `3` long |
+
 ### Bank 9 - Profile / System
 
 | Command family | Commands | Bank / keys |
 |---|---|---|
-| Profile / System | Speak current profile | Bank 9: `A` short |
-| Profile / System | Start profile selection | Bank 9: `A` long, then `1..9`, then `Enter` |
-| Profile / System | `PROFILE RESET` (baud and CI-V address to the defaults) | Bank 9: `A` double click |
+| Profile / System | Speak current profile | Bank 9: `1` or `A` short |
+| Profile / System | Start profile selection | Bank 9: `1` or `A` long, then `1..9`, then `Enter` |
+| Profile / System | `PROFILE RESET` (baud and CI-V address to the defaults) | Bank 9: `1` or `A` double click |
 | Profile / System | `PROFILE NEXT` | Bank 9: `B` short |
 | Profile / System | `PROFILE PREV` | Bank 9: `C` short |
 | Profile / System | `EXPERIMENTAL?`, `EXPERIMENTAL TOGGLE` | Bank 9: `0` short / `0` long |
 | Profile / System | `TUNINGSPEECH?`, `TUNINGSPEECH TOGGLE` | Bank 9: `4` short / `4` long |
 | Profile / System | `VERBOSE?`, `VERBOSE TOGGLE` | Bank 9: `5` short / `5` long |
-| Profile / System | `SPEED?`, next speed (slow, normal, fast) | Bank 9: `6` short / `6` long |
-| Profile / System | `VOLUME DOWN / DOWN FAST` | Bank 9: `7` short / `7` long |
-| Profile / System | `VOLUME UP / UP FAST` | Bank 9: `8` short / `8` long |
-| Profile / System | `VOLUME?` | Bank 9: `9` short |
+| Profile / System | `VOLUME?`, volume entry | Bank 9: `7` short / `7` long |
+| Profile / System | `SPEED?`, next speed (slow, normal, fast) | Bank 9: `8` short / `8` long |
 
 ---
 
@@ -250,13 +287,17 @@ The following families were checked during real-device work on the IC-7300:
 - `VFO A/B MODE`
 - `SPLIT`
 - `RIT`
-- `LOCK`
 - `PBT1`, `PBT2`
-- `FILSHAPE`
 - `FILWIDTH`
-- `MONITOR`, `MONLEVEL`
+- `MONLEVEL`
 - `TRANSCEIVE`
 - `BSTACK`
+
+`LOCK`, `FILSHAPE`, the notch width and `MONITOR` were on this list, but they sent `1A 05`
+menu items 0022, 0023, 0024 and `1C 02`, which the IC-7300 manual lists as the beep level
+limit, the confirmation beep, the band edge beep and the transmit frequency monitor. They
+now send `16 50`, `16 56`, `16 57` and `16 45`, as in the manual and in Hamlib, and need
+a new test on the radio.
 
 This does not mean every edge case is finished forever, but it does mean the
 profile is already well beyond a minimal proof of concept.

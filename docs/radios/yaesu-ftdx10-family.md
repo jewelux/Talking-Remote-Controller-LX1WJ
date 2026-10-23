@@ -7,6 +7,7 @@ Profiles (built in):
 - slot 11: FTDX-10
 - slot 12: FTDX-101D
 - slot 13: FTDX-101MP
+- slot 15: FT-891
 
 ## Current First Block
 
@@ -22,12 +23,39 @@ Implemented and documented for the current field-test phase:
 - lock read and set
 - tuner read, set, and tune start
 - NR, NB, notch read and set
-- preamp read and set
-- AGC query plus fast and slow presets
+- preamp and attenuator read and set (`PREAMP? | PREAMP OFF | 1 | 2`, `ATT? | ATT OFF | 6 | 12 | 18`,
+  on the FT-891 `PREAMP OFF | ON` and `ATT OFF | ON`, Bank 2 `8` and `9`): `PA0` 0 IPO, 1 AMP1,
+  2 AMP2 and `RA0` 0 off, 1..3 for 6, 12 and 18 dB, as the CAT manuals and Hamlib have them, each
+  set read back. The raw `PA` console commands are gone.
+- break-in and keyer (`BK? | BK OFF | ON | TOGGLE`, `KYR? | KYR OFF | ON | TOGGLE`, Bank 7 `2` and
+  `1`): `BI` and `KR`, 0 off and 1 on, as the CAT manuals and Hamlib have them, read back.
+- NR and NB levels (`NRLEVEL <1..15>`, `NBLEVEL <0..10>`, each also `?` and `STEP <+-n>`;
+  Bank 2 `1` and `2` double press): `RL0` and `NL0`, read back.
+- tone squelch (`TONE? | TONE OFF | CTCSS`, `TONEDIR? | TONEDIR NEXT`, `CTCSS? | CTCSS <Hz>`):
+  `CT0` 1 encode and decode, 2 encode only, and `CN00` with the manual's 50-tone table; repeater
+  shift (`RPT? | RPT SIMPLEX | PLUS | MINUS`): `OS0`, FM only. Each set is read back. Bank 6: `0`
+  the shift, `2` the tone, `3` the CTCSS tone (`B`/`C` walk the tones), `5` encode or decode.
+- auto notch (`ANOTCH? | ANOTCH OFF | ON | TOGGLE`, Bank 2 `0`): `BC0`, 0 off and 1 on, read back.
+- ALC meter (`ALC?`, Bank 1 `5`): `RM4`, said in percent of 0..255, as the CAT manuals give the
+  meter.
+- CW speed, pitch and delay (`CWSPEED <4..60>`, `CWPITCH <300..1050>`, `CWDELAY <30..3000>`,
+  each also `?` and `STEP <+-n>`; Bank 7 `1` double, `5`, `9`): `KS` in WPM, `KP` 00..75 for 300..1050
+  Hz, `SD` a step of the VOX delay table (the FTDX10 manual and Hamlib), read back. The FTDX101
+  has no `CWDELAY`: its manual sends `SD` in ms, Hamlib as steps.
+- RF power (`RFPOWER? | RFPOWER <5..100 W>`, Bank 1 `6`): `PC` in watts, as the CAT manuals,
+  Hamlib and flrig have it, read back. Not on the FTDX101MP: its manual says 005-100 and Hamlib
+  scales `PC` to 200 W.
+- AGC read and set (`AGC?`, `AGC OFF | FAST | MID | SLOW | AUTO`, Bank 2 `7`): `GT0`, as the CAT
+  manual and Hamlib have it; auto reads back as auto, whichever speed the radio picked
 - speech processor and its level (`PR0`, `PL`), mic gain (`MG`), VOX with its gain and delay
-  (`VX`, `VG`, `VD`) read and set, console only (`PROC`, `PROCLEVEL`, `MICGAIN`, `VOX`,
-  `VOXGAIN`, `VOXDELAY`). Each set is read back. The sets are not yet tested on a radio: `PROC ON`
+  (`VX`, `VG`, `VD`) read and set (`PROC`, `PROCLEVEL`, `MICGAIN`, `VOX`, `VOXGAIN`, `VOXDELAY`;
+  Bank 4 `1`, `2`, `7` and `9`). Each set is read back. The sets are not yet tested on a radio: `PROC ON`
   sends `PR01`, and `PR02` (the manual's on) when that does not read back as on
+- on the FT-891 the same, but `VD` is in ms (`VD0030`–`VD3000`, Hamlib and flrig agree). flrig
+  notes that the FT-891 takes `PR` only in SSB; in other modes `PROC` says "error"
+- on the FTDX101D/MP the same but `PR` and `PL`: its CAT manual says `PR01` is off and `PR02` on,
+  Hamlib that `PR01` is on. `VD` is a step as on the FTDX10 (the CAT manual and Hamlib; flrig
+  sends ms). Hamlib notes that the FTDX101 takes no `MG` in CW and RTTY
 - power-state query, off, and on path
 - IF query
 - ID query

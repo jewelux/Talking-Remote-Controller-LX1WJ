@@ -4,6 +4,7 @@
 #include "ui_keypad.h"
 #include "keypad_input.h"
 #include "keypad_keymap.h"
+#include "keypad_setting_ops.h"
 #include "radio_catalog.h"
 #include "radio_monitor.h"
 #include "radio_profile.h"
@@ -70,9 +71,18 @@ static KeypadTraits currentKeypadTraits() {
   else if (currentProtocolType() == PROTO_YAESU_FT8X7) t.layout = KeypadLayout::Ft8x7;
   else if (currentProtocolType() == PROTO_CIV) t.layout = KeypadLayout::Civ;
   else if (currentRadioModel() == RadioModel::Qmx) t.layout = KeypadLayout::Qmx;
-  t.supportsMonitor = protocolSupportsMonitor();
   t.supportsTransceive = protocolSupportsTransceive();
   t.canGetRfPower = currentProfile().caps.getRfPower;
+  for (uint8_t i = 0; i < (uint8_t)Setting::Count; ++i) {
+    const SettingOps* ops = settingOps((Setting)i);
+    if (ops && ops->available()) t.settings.add((Setting)i);
+  }
+  const RadioCapabilities& caps = currentProfile().caps;
+  if (caps.getAgc) t.settings.add(Setting::Agc);
+  // Bank 6: the FT-8x7 sets the shift and the tone by its own CAT commands.
+  const bool ft8x7 = currentProtocolType() == PROTO_YAESU_FT8X7;
+  if (ft8x7 || caps.setRptShift) t.settings.add(Setting::RptShift);
+  if (ft8x7 || caps.getTone) t.settings.add(Setting::ToneType);
   return t;
 }
 
@@ -90,6 +100,25 @@ void keypadSendNow(const String& cmd) {
 
 namespace {
 
+// The verb of a help trace: "CMD BANK2 1 LONG -> HELP TOGGLE NR".
+const char* helpVerbName(HelpVerb verb) {
+  switch (verb) {
+    case HelpVerb::Say: return "SAY";
+    case HelpVerb::Toggle: return "TOGGLE";
+    case HelpVerb::Next: return "NEXT";
+    case HelpVerb::Entry: return "ENTRY";
+    case HelpVerb::Pick: return "PICK";
+    case HelpVerb::Run: return "RUN";
+    case HelpVerb::Centre: return "CENTRE";
+    case HelpVerb::Up: return "UP";
+    case HelpVerb::Down: return "DOWN";
+    case HelpVerb::UpFast: return "UP FAST";
+    case HelpVerb::DownFast: return "DOWN FAST";
+    case HelpVerb::NotAvailable: return "NOT AVAILABLE";
+    default: return "NONE";
+  }
+}
+
 class KeypadUiListener : public KeypadInputListener {
  public:
   void onActivity(bool pressed) override {
@@ -100,8 +129,20 @@ class KeypadUiListener : public KeypadInputListener {
     if (pressed) silenceSpeechForKeyPress();
   }
 
-  KeyBinding keyBinding(uint8_t bank, char key) override {
-    return keymapLookup(currentKeypadTraits(), bank, key);
+  KeyBinding keyBinding(uint8_t bank, char key, Setting focus) override {
+    return keymapLookup(currentKeypadTraits(), bank, key, focus);
+  }
+
+  Setting homeFocus(uint8_t bank) override { return keymapHomeFocus(currentKeypadTraits(), bank); }
+
+  void onHelpMode(bool on) override {
+    printKeypadCommand("HELP {}", on ? "ON" : "OFF");
+    speakHelpMode(on);
+  }
+
+  void onHelp(const char* key, const GestureHelp& help) override {
+    printKeypadCommand("{} -> HELP {} {}", key, helpVerbName(help.verb), help.label ? help.label : "");
+    speakHelp(help);
   }
 
   void onBankQuery(uint8_t bank) override {
@@ -125,6 +166,17 @@ class KeypadUiListener : public KeypadInputListener {
 
   void onDigitAccepted(const EntrySpec& entry, char key, const char* digits) override {
     keypadEntryDigit(entry, key, digits);
+  }
+
+  void onValueDigit(const ValueSpec& spec, char key, const char* digits) override {
+    keypadValueDigit(spec, key, digits);
+  }
+  void onValueSay(const ValueSpec& spec, int32_t value) override { keypadValueSay(spec, value); }
+  void onValueStepped(const ValueSpec& spec, int32_t value) override { keypadValueStepped(spec, value); }
+  void onValueStaged(const ValueSpec& spec, int32_t value) override { keypadValueStaged(spec, value); }
+  void onLimit(const char* name, bool atMax) override { keypadValueLimit(name, atMax); }
+  void onValueCommit(const ValueSpec& spec, int32_t value, TargetVfo) override {
+    keypadValueCommit(spec, value);
   }
 
   void onRejected(const char* label) override { keypadReportUnassigned(label); }
@@ -170,8 +222,16 @@ void keypadBeginEntry(InputMode mode, TargetVfo targetVfo) {
   s_input.beginEntry(mode, targetVfo);
 }
 
-void keypadBeginChoiceSelect(const ChoiceSpec& spec, TargetVfo targetVfo) {
-  s_input.beginChoiceSelect(spec, targetVfo);
+void keypadBeginChoiceSelect(const ChoiceSpec& spec, TargetVfo targetVfo, const EntrySeed& seed) {
+  s_input.beginChoiceSelect(spec, targetVfo, seed);
+}
+
+void keypadBeginValueEntry(const ValueSpec& spec, const EntrySeed& seed) {
+  s_input.beginValueEntry(spec, seed);
+}
+
+bool keypadNudgeChoice(const ChoiceSpec& spec, const EntrySeed& seed, int8_t dir, TargetVfo targetVfo) {
+  return s_input.nudgeChoice(spec, seed, dir, targetVfo);
 }
 
 void keypadBeginProfileSelect() {
@@ -185,6 +245,12 @@ void initKeypadUi() {
 }
 
 void pollKeypadUi() {
+  // Another profile, from a key or the console: every bank back to its home focus.
+  static uint8_t focusProfile = g_profileId;
+  if (g_profileId != focusProfile) {
+    focusProfile = g_profileId;
+    s_input.resetFocus();
+  }
   (void)keypad.getKeys();
   s_input.poll(millis());
   // An open entry or selection waits for more keys: keep the radio unpolled.

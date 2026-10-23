@@ -2,6 +2,6 @@
 
 NAME := keypad_tests
 # Pure firmware sources under test. They must not include Arduino.h.
-FIRMWARE_SRCS := keypad_input.cpp keypad_keymap.cpp
+FIRMWARE_SRCS := keypad_input.cpp keypad_keymap.cpp keypad_settings.cpp keypad_labels.cpp keypad_value_entry.cpp
 
 include ../common/host_tests.mk

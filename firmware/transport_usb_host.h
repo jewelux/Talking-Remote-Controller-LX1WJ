@@ -38,7 +38,7 @@ void usbHostFlushInput();
 
 UsbLinkEvent usbHostTakeEvent();
 
-// For the Bank 9 USB key: the same facts as USB?, as numbers.
+// For the Bank 8 USB key: the same facts as USB?, as numbers.
 struct UsbHostSummary {
   bool started;         // the host runs
   bool failed;          // it could not start, or was held after a crash restart

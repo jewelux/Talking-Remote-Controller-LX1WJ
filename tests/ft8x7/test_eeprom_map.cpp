@@ -782,13 +782,13 @@ TEST(ft857_level_step_takes_any_number_of_steps) {
 }
 
 TEST(percent_step_stays_within_0_to_100) {
-  CHECK_EQ(ft8x7PercentStep(50, 5), 55);
-  CHECK_EQ(ft8x7PercentStep(50, -5), 45);
-  CHECK_EQ(ft8x7PercentStep(98, 5), 100);
-  CHECK_EQ(ft8x7PercentStep(3, -5), 0);
-  CHECK_EQ(ft8x7PercentStep(50, INT_MAX), 100);
-  CHECK_EQ(ft8x7PercentStep(50, INT_MIN), 0);
-  CHECK_EQ(ft8x7PercentStep(127, 0), 100);  // above 100 counts as 100
+  CHECK_EQ(percentStep(50, 5), 55);
+  CHECK_EQ(percentStep(50, -5), 45);
+  CHECK_EQ(percentStep(98, 5), 100);
+  CHECK_EQ(percentStep(3, -5), 0);
+  CHECK_EQ(percentStep(50, INT_MAX), 100);
+  CHECK_EQ(percentStep(50, INT_MIN), 0);
+  CHECK_EQ(percentStep(127, 0), 100);  // above 100 counts as 100
 }
 
 TEST(ft857_rf_power_range_per_band_group) {

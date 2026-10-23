@@ -63,6 +63,199 @@ void speakNotchState(const NotchState& state) {
   }
 }
 
+const char* agcModeName(AgcMode mode) {
+  switch (mode) {
+    case AgcMode::Fast: return "FAST";
+    case AgcMode::Mid: return "MID";
+    case AgcMode::Slow: return "SLOW";
+    case AgcMode::Auto: return "AUTO";
+    case AgcMode::Off: break;
+  }
+  return "OFF";
+}
+
+String agcText(AgcMode mode) {
+  return String("AGC ") + agcModeName(mode);
+}
+
+void speakAgc(AgcMode mode) {
+  if (!g_speechEnabled) return;
+  speakLabel("agc");
+  speakToken(agcModeName(mode));
+}
+
+String rxLevelText(RxLevel level, uint16_t value) {
+  return String(level == RxLevel::Nr ? "NRLEVEL " : "NBLEVEL ") + String((int)value);
+}
+
+void speakRxLevel(RxLevel level, uint16_t value) {
+  if (!g_speechEnabled) return;
+  speakLabel(level == RxLevel::Nr ? "noisereduction" : "noiseblanker");
+  speakDigitsAndPoint(String((int)value));
+}
+
+// 885 -> "88.5".
+static String toneTenthsLabel(uint16_t tenths) {
+  return String((int)(tenths / 10)) + "." + String((int)(tenths % 10));
+}
+
+String ctcssText(uint16_t tenths) {
+  return String("CTCSS ") + toneTenthsLabel(tenths) + " Hz";
+}
+
+void speakCtcss(uint16_t tenths) {
+  if (!g_speechEnabled) return;
+  speakLabel("ctcss");
+  speakDigitsAndPoint(toneTenthsLabel(tenths));
+}
+
+const char* rptShiftName(RptShift shift) {
+  switch (shift) {
+    case RptShift::Plus: return "PLUS";
+    case RptShift::Minus: return "MINUS";
+    case RptShift::Simplex: break;
+  }
+  return "SIMPLEX";
+}
+
+String rptShiftText(RptShift shift) {
+  return String("RPT ") + rptShiftName(shift);
+}
+
+void speakRptShift(RptShift shift) {
+  if (!g_speechEnabled) return;
+  speakLabel("repeater");
+  speakToken(shift == RptShift::Plus ? "plus" : shift == RptShift::Minus ? "minus" : "off");
+}
+
+String autoNotchText(bool on) {
+  return on ? "ANOTCH ON" : "ANOTCH OFF";
+}
+
+void speakAutoNotch(bool on) {
+  speakTokenState("auto notch", on);
+}
+
+String attText(const AttState& state) {
+  if (!state.on) return "ATT OFF";
+  if (!state.db) return "ATT ON";
+  return String("ATT ") + String((int)state.db) + " DB";
+}
+
+void speakAtt(const AttState& state) {
+  if (!g_speechEnabled) return;
+  if (!state.on || !state.db) {
+    speakTokenState("attenuator", state.on);
+    return;
+  }
+  speakLabel("attenuator");
+  speakNumber(String((int)state.db));
+}
+
+String preampText(uint8_t level) {
+  if (!level) return "PREAMP OFF";
+  if (preampLevels() <= 1) return "PREAMP ON";
+  return String("PREAMP ") + String((int)level);
+}
+
+void speakPreamp(uint8_t level) {
+  if (!g_speechEnabled) return;
+  if (!level || preampLevels() <= 1) {
+    speakTokenState("preamplifier", level != 0);
+    return;
+  }
+  speakLabel("preamplifier");
+  playDigit(level);
+}
+
+// 25 -> "2.5", 50 -> "5".
+static String wattsText(uint16_t tenths) {
+  String text = String((int)(tenths / 10));
+  if (tenths % 10) text += "." + String((int)(tenths % 10));
+  return text;
+}
+
+String rfPowerText(uint16_t tenths) {
+  return String("RFPOWER ") + wattsText(tenths) + " W";
+}
+
+void speakRfPower(uint16_t tenths) {
+  if (!g_speechEnabled) return;
+  speakLabel("power");
+  speakNumber(wattsText(tenths));
+  playSilenceMs(60);
+  speakToken("watts");
+}
+
+const char* breakInModeName(BreakInMode mode) {
+  switch (mode) {
+    case BreakInMode::On: return "ON";
+    case BreakInMode::Semi: return "SEMI";
+    case BreakInMode::Full: return "FULL";
+    case BreakInMode::Off: break;
+  }
+  return "OFF";
+}
+
+String breakInText(BreakInMode mode) {
+  return String("BK ") + breakInModeName(mode);
+}
+
+void speakBreakIn(BreakInMode mode) {
+  if (!g_speechEnabled) return;
+  speakLabel("breakin");
+  speakToken(breakInModeName(mode));
+}
+
+String keyerText(bool on) {
+  return on ? "KYR ON" : "KYR OFF";
+}
+
+void speakKeyer(bool on) {
+  speakTokenState("keyer", on);
+}
+
+const char* cwLevelName(CwLevel level) {
+  switch (level) {
+    case CwLevel::Pitch: return "CWPITCH";
+    case CwLevel::Delay: return "CWDELAY";
+    case CwLevel::Speed: break;
+  }
+  return "CWSPEED";
+}
+
+String cwLevelText(CwLevel level, uint16_t value) {
+  String text = String(cwLevelName(level)) + " ";
+  if (level == CwLevel::Speed) return text + String(value) + " WPM";
+  if (level == CwLevel::Pitch) return text + String(value) + " Hz";
+  return text + (value == 0 ? String("FULL") : String(value) + " ms");
+}
+
+void speakCwLevel(CwLevel level, uint16_t value) {
+  if (!g_speechEnabled) return;
+  if (level == CwLevel::Speed) {
+    speakLabel("cw speed");
+    speakDigitsAndPoint(String(value));
+    return;
+  }
+  speakLabel(level == CwLevel::Pitch ? "cw pitch" : "cw delay");
+  if (level == CwLevel::Delay && value == 0) {
+    speakToken("full");
+    return;
+  }
+  speakNumber(String(value));
+  playSilenceMs(60);
+  speakToken(level == CwLevel::Pitch ? "hertz" : "ms");
+}
+
+String alcText(uint8_t percent) {
+  return String("ALC ") + String((int)percent) + "%";
+}
+
+void speakAlc(uint8_t percent) {
+  speakTokenPercent("alc", percent);
+}
+
 String procStateText(bool on) {
   return on ? "PROC ON" : "PROC OFF";
 }
@@ -265,12 +458,6 @@ static String spelledLetters(const char* name) {
   return spelled;
 }
 
-// 25 -> "2.5", 50 -> "5".
-static String wattsText(uint16_t tenths) {
-  String text = String((int)(tenths / 10));
-  if (tenths % 10) text += "." + String((int)(tenths % 10));
-  return text;
-}
 
 const char* ft817PowerLevelName(Ft817PowerLevel level) {
   switch (level) {
@@ -404,11 +591,11 @@ void speakFt8x7Setting(const Ft8x7SettingState& state) {
     speakDigitsAndPoint(String(state.value));
     return;
   }
-  // "low cut 300 hertz": the radio's HPF cutoff; high cut is its LPF. "b p f 240 hertz": the
-  // DSP bandpass width.
+  // "low cut 300 hertz": the radio's HPF cutoff; high cut is its LPF. "cw filterwidth 240 hertz":
+  // the DSP bandpass width.
   if (state.setting == Ft8x7Setting::BpfWidth || state.setting == Ft8x7Setting::LowCut ||
       state.setting == Ft8x7Setting::HighCut) {
-    speakLabel(state.setting == Ft8x7Setting::BpfWidth ? "b p f"
+    speakLabel(state.setting == Ft8x7Setting::BpfWidth ? "cw filterwidth"
                : state.setting == Ft8x7Setting::LowCut ? "lowcut"
                                                        : "highcut");
     speakNumber(String(state.value));
@@ -458,6 +645,9 @@ void speakFt8x7Setting(const Ft8x7SettingState& state) {
     speakTokenState("attenuator", state.on);
     return;
   }
-  // "BK" -> "b k"
+  if (state.setting == Ft8x7Setting::BreakIn || state.setting == Ft8x7Setting::Keyer) {
+    speakTokenState(state.setting == Ft8x7Setting::Keyer ? "keyer" : "breakin", state.on);
+    return;
+  }
   speakTokenState(spelledLetters(ft8x7SettingName(state.setting)), state.on);
 }

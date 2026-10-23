@@ -1,10 +1,8 @@
-// Bank 9 keypad actions: profiles, tuning speech, volume, speech speed, experimental mode and the
-// USB radio link.
+// Bank 9 keypad actions: profiles, tuning speech, volume, speech speed and experimental mode.
 #include "ui_keypad_bank.h"
 #include "radio_catalog.h"
 #include "radio_prefs.h"
 #include "radio_profile.h"
-#include "transport_usb_host.h"
 #include "ui_console_support.h"
 #include "ui_keypad.h"
 
@@ -104,20 +102,6 @@ static void speakVolumeWithLevel(uint8_t lvl) {
   speakVolumeLevel(lvl);
 }
 
-void adjustBank9Volume(int delta) {
-  printKeypadAction("VOLUME {}{}", delta < 0 ? "DOWN" : "UP", delta < -1 || delta > 1 ? " FAST" : "");
-  int next = (int)g_volumeLevel + delta;
-  if (next < 1) next = 1;
-  if (next > 9) next = 9;
-  applyVolumeLevel((uint8_t)next);
-  saveVolumeToNvs((uint8_t)next);
-  printKeypadStatus("VOLUME {}", next);
-  if (g_speechEnabled) {
-    speakVolumeWithLevel((uint8_t)next);
-    speakValueOk();
-  }
-}
-
 void queryBank9Volume() {
   printKeypadAction("VOLUME?");
   printKeypadStatus("VOLUME {}", g_volumeLevel);
@@ -161,37 +145,4 @@ void queryBank9Profile() {
   if (!g_speechEnabled) return;
   speakLabel("profile");
   speakProfileIdentityFromSlot(g_profileId, false);
-}
-
-static void speakCount(const char* label, uint32_t n) {
-  playSilenceMs(60);
-  speakToken(label);
-  speakNumber(String(n));
-}
-
-// "usb on" with the bytes sent to and received from the radio; "tx 12 rx 0" means the radio does
-// not answer. "usb off" with the USB devices seen since the start; "usb off zero" means nothing
-// plugged into the native socket reached the controller. "usb error": the host could not start
-// or was held after a crash restart.
-void queryBank9Usb() {
-  printKeypadAction("USB?");
-  const UsbHostSummary usb = usbHostSummary();
-  const char* state = usb.failed ? "error" : !usb.started ? "notavailable" : usb.serialOpen ? "on" : "off";
-  if (usb.serialOpen) {
-    printKeypadStatus("USB ON TX {} RX {}", usb.txBytes, usb.rxBytes);
-  } else if (usb.started) {
-    printKeypadStatus("USB OFF DEVICES {}", usb.devicesSeen);
-  } else {
-    printKeypadStatus("USB {}", usb.failed ? "ERROR" : "NOT AVAILABLE");
-  }
-  if (!g_speechEnabled) return;
-  const char* const tokens[] = {"usb", state};
-  speakTokens(tokens, 2);
-  if (usb.serialOpen) {
-    speakCount("tx", usb.txBytes);
-    speakCount("rx", usb.rxBytes);
-  } else if (usb.started) {
-    playSilenceMs(60);
-    speakNumber(String(usb.devicesSeen));
-  }
 }

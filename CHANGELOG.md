@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Icom S-meter
+
+- the S-meter on Icom CI-V radios uses Icom's scale (0 = S0, 120 = S9, 241 = S9+60 dB, as in
+  the IC-7300 CI-V reference and Hamlib). Before, it used S0 = 21 and S9 = 297, so a signal at
+  S9 was spoken "3", S9+10 dB "4", and nothing above S8 was ever spoken. Above S9 it now says
+  "9 plus 10" up to "9 plus 60", in 10 dB steps like the radio's scale. Host tests in
+  `tests/civmeter`. The IC-706 is assumed to use the same scale; not yet checked on a radio
+
 ### Hardware documentation
 
 - **new folder `docs/hardware/`**: all hardware files moved here (same layout on `main` and `development`).
@@ -39,7 +47,7 @@
   "cancel" (it said "ok"; cancelling bank or profile select was silent). With nothing to cancel it
   beeps
 - holding a key that has no long action beeps once the hold time is reached, and releasing it does
-  nothing. Before, the release ran the key's short action. This includes `D` and `#`
+  nothing. Before, the release ran the key's short action. This includes `#`
 - a key that waits for a possible double press (e.g. Bank 1 `0`, `1`, `2`) answers as soon as
   another key is pressed, before that key. Before, the two answers came in the wrong order, or the
   first press was lost
@@ -53,6 +61,23 @@
 - a key that does nothing gives a short beep instead of silence: keys with no action on the current
   bank, and keys an entry or selection does not take
 - choosing a profile number with no stored profile says "not available"
+- final keypad layout (see `docs/keypad-map.md`): Bank 2 (receive), Bank 4 (phone transmit) and
+  Bank 7 (CW) are laid out alike, with the switches on the top row and their level on a double
+  press; Bank 6 (repeater and tone) also works on the CAT radios; many keys moved. The new keys are
+  not yet tested on the CAT radios
+- Bank 1 `5` says the ALC meter while transmitting, in percent of full scale, on the Icoms and the
+  FTDX10, FTDX101 and FT-891 (console `ALC?`). The FT-817/818/857/897 say the radio's own meter,
+  0 to 15 ("a.l.c. 8"), and "a.l.c. rx" in receive
+- Bank 1 `6` says the RF power setting and long press enters it in watts on the FTDX10, FTDX101D,
+  FT-891, TS-480 and KX2 too, as on the Icoms
+- `A`, `B` and `C` act on the bank's focus, the setting of the last key used on that bank: `A`
+  says it, `A` long opens its entry, `B` and `C` step it up and down (held: a bigger step)
+- Bank 8: `A`, `B` and `C` act on the baud rate, and after `7` or `8` on the FT-8x7 row or menu
+  item (experimental)
+- entries (RF power, levels, CTCSS, DCS) and picks (mode, AGC) start from the radio's value; `B`
+  and `C` step it, `D` sets it. RF power, the mode and the FT-8x7 settings always wait for `D`
+- help mode: `D` long, then each key says what it would do and changes nothing; `D` long or `#`
+  ends it
 
 ### Frequency
 
@@ -95,6 +120,8 @@
 - a CI-V address with the hex digit E (e.g. E0) says "e" instead of "error"
 - the S-meter says dB over S9 as a word ("S meter nine plus twenty")
 - WFM is said as "wfm" instead of being spelled out
+- break-in and the keyer are said as words ("break in semi", "keyer on") instead of being spelled
+  "b k" and "k y r". This needs the new voice pack
 - the RX/TX query (Bank 1 `1`, and Bank 3 `6` on radios other than the FT-8x7 and FTDX10) says
   "transceiver rx" or "transceiver tx" instead of "transceiver off" or "on"
 - Bank 9 says what a value is: the volume keys say "volume five" (plus "ok" after a change), the
@@ -131,25 +158,59 @@
   break-in, keyer and IF shift, on the FT-857/897 also PROC, CW speed, the gains and the DSP filter
   widths. `CLAR ON | OFF` is gone, use `RIT ON | OFF`; `CLAR OFFSET` is now `RIT OFFSET`
 - `PROC?` says whether the speech processor is on ("processor on") and `PROCLEVEL?` says its level
-  ("processor level 50"), on the FT-857/897 (menu 74), the IC-7300, IC-705 and IC-7760 (COMP)
-  and the FTDX10. On the FT-857/897, experimental mode can also change them (see below)
+  ("processor level 50"), on the FT-857/897 (menu 74), the IC-7300, IC-705 and IC-7760 (COMP),
+  the FTDX10, the FT-891 and the TS-480 (its processor input level). On the FT-857/897,
+  experimental mode can also change them (see below)
 - `MICGAIN?` says the mic gain ("mic gain 50") on the IC-7300, IC-705 and IC-7760, the FTDX10,
-  the FT-817/818 and the FT-857/897. The FT-817 and FT-857/897 have one for each mode, so it says the one of the
-  current mode: SSB, AM, FM, DIG, and on the FT-817 also packet. In CW, and in packet on the
-  FT-857/897, it says "not available". On the FT-817/818 and FT-857/897, experimental mode can
-  also change it (see below)
+  FTDX101D/MP and FT-891, the TS-480, the FT-817/818 and the FT-857/897. The FT-817 and
+  FT-857/897 have one for each mode, so it says the one of the current mode: SSB, AM, FM, DIG,
+  and on the FT-817 also packet. In CW, and in packet on the FT-857/897, it says "not
+  available". On the FT-817/818 and FT-857/897, experimental mode can also change it (see below)
 - `VOX?` says whether VOX is on ("vox on"), `VOXGAIN?` says its gain ("vox gain 50") and
-  `VOXDELAY?` its delay ("vox delay 500 m s"), on the IC-7300, IC-705 and IC-7760, the FTDX10,
-  the FT-817/818 (menus 51 and 50) and the FT-857/897 (menus 88 and 87). On the other radios
-  these commands say "not available"
+  `VOXDELAY?` its delay ("vox delay 500 m s"), on the IC-7300 and IC-705, the FTDX10,
+  FTDX101D/MP and FT-891, the TS-480, the FT-817/818 (menus 51 and 50) and the FT-857/897 (menus
+  88 and 87). The IC-7760 has VOX and its gain, but no delay. On the other radios these commands
+  say "not available"
 - FT-817/818/857/897: the console reads the CW menu settings: speed, pitch, delay, weight, side
   tone and key reverse, on the FT-857/897 also QSK, auto mode, paddle and BFO (`CWSPEED?`,
   `CWPITCH?` …, see `HELP CW`). Not yet tested on the FT-817/818
-- on the IC-7300, IC-705, IC-7760 and FTDX10 the console can also change these: `PROC ON | OFF |
-  TOGGLE`, `VOX ON | OFF | TOGGLE`, `PROCLEVEL`, `MICGAIN` and `VOXGAIN <0..100>`, and
-  `VOXDELAY <ms>`, set to the radio's nearest step (IC-7300, IC-705, IC-7760 0–2000 ms, FTDX10
-  30–3000 ms). Each also takes `STEP <+-n>`: a level in percent, the delay in the radio's steps.
-  Not yet tested on these radios
+- on the IC-7300, IC-705, IC-7760, FTDX10, FT-891 and TS-480 the console can also change these:
+  `PROC ON | OFF | TOGGLE`, `VOX ON | OFF | TOGGLE`, `PROCLEVEL`, `MICGAIN` and
+  `VOXGAIN <0..100>` (TS-480 `VOXGAIN <0..9>`), and `VOXDELAY <ms>`, set to the radio's nearest
+  step (IC-7300 and IC-705 0–2000 ms, FTDX10, FTDX101D/MP and FT-891 30–3000 ms, TS-480
+  0–3000 ms in 150 ms steps). The FTDX101D/MP change all but PROC. Each also takes
+  `STEP <+-n>`: a level in percent, the delay in the radio's steps (100 ms on the FT-891).
+  `PROCLEVEL` on the TS-480 sets the processor input level and keeps its output level. `HELP`
+  lists only the ones the radio has, with its ranges. Not yet tested on these radios
+- `AGC?` says the AGC ("agc fast") and `AGC OFF | FAST | MID | SLOW | AUTO` sets it, each set read
+  back: on the IC-7300, IC-705 and IC-7760 fast, mid and slow; on the FTDX10, FTDX101D/MP and
+  FT-891 all five, and a Yaesu set to auto reads back as auto; on the TS-480 off, fast and slow
+  (not in FM); on the KX2 fast and slow. `HELP` lists the radio's own. `GT?`, `GT FAST`,
+  `GT SLOW` and `GT OFF` are gone. Not yet tested on these radios
+- `PREAMP?` says the preamp and `PREAMP OFF | ON | 1 | 2` sets it; `ATT?` says the attenuator
+  ("attenuator 12") and `ATT OFF | ON | <dB>` sets it. Each set is read back. Preamp levels 1 and 2
+  on the IC-7300, IC-705, IC-7760, FTDX10 and FTDX101D/MP (AMP1 and AMP2), on and off on the
+  FT-891, TS-480 and KX2. Attenuator 20 dB on the IC-7300 and IC-705; 6, 12 and 18 dB on the
+  IC-7760, FTDX10 and FTDX101D/MP; 10 dB on the KX2; on and off on the FT-891 and TS-480. The
+  raw `PA?`, `PA ON`, `PA OFF` and `PA TOGGLE` are gone. Not yet tested on these radios
+- `RFPOWER?` and `RFPOWER <W>` also work on the FTDX10, FTDX101D, FT-891 and TS-480 (5–100 W) and
+  the KX2 (0–15 W), each set read back; `HELP` gives the radio's range. Not on the FTDX101MP, whose
+  manual and Hamlib disagree on the scale. Not yet tested on these radios
+- `BK?` and `BK OFF | ON | TOGGLE` also work on the IC-7300, IC-705, IC-7760 (with `SEMI` and
+  `FULL`; `ON` is semi), FTDX10, FTDX101D/MP and FT-891, and `KYR?` and `KYR OFF | ON | TOGGLE` on
+  these Yaesus, each set read back. Not yet tested on these radios
+- `TONE? | TONE OFF | CTCSS`, `TONEDIR? | TONEDIR NEXT` and `CTCSS? | CTCSS <Hz>` also work on the
+  IC-7300, IC-705, IC-7760, FTDX10, FTDX101D/MP and FT-891: CTCSS only, both ways or encode only
+  (TX), and the tone read from the radio. `RPT? | RPT SIMPLEX | PLUS | MINUS` sets the repeater
+  shift on the IC-705 and these Yaesus (FM). Each set is read back. Not yet tested on these radios
+- `NRLEVEL` (1–15) and `NBLEVEL` (0–10), each `?`, a level or `STEP <+-n>`, also work on the
+  FTDX10, FTDX101D/MP and FT-891, in the radio's own steps, read back. On the FTDX10 they said
+  "not available" before. Not yet tested on these radios
+- `CWSPEED`, `CWPITCH` and `CWDELAY` (`?`, a value, or `STEP <+-n>`) also work on the CAT radios
+  where the sources agree: the speed on the FTDX10, FTDX101D/MP, FT-891 (4–60 WPM), TS-480 (10–60)
+  and KX2 (8–50); the pitch on the IC-7300, IC-705, IC-7760 (300–900 Hz) and these Yaesus
+  (300–1050 Hz); the delay on the FTDX10 and FT-891 (30–3000 ms) and TS-480 (0–1000 ms,
+  `CWDELAY FULL` or 0 for full break-in). Each set is read back. Not yet tested on these radios
 
 ### Radio profiles
 
@@ -159,11 +220,11 @@
   8 FT-817, 9 FT-857, 10 FT-897, 11 FTDX10, 12 FTDX101D, 13 FTDX101MP, 14 FT-818, 15 FT-891,
   17 IC-705, 18 IC-7760
 - the baud rate can be set on every radio, not only on CI-V radios. Bank 8 `2` short says it
-  ("baud 4 8 0 0"), long and double press step down and up through the rates the radio offers
-  (FT-817/818/857/897: 4800, 9600, 38400; FTDX10, FTDX101 and FT-891: 4800 to 38400; TS-480:
-  4800 to 57600; KX2: 4800 to 38400). Before, `2` short and long stepped up and down. Console
-  `BAUD <rate>` refuses other rates and lists them. The choice is kept for each profile, and
-  `PROFILE?` lists the rates
+  ("baud 4 8 0 0"), `2` long picks one, Bank 8 `B` and `C` step up and down through the rates
+  the radio offers (FT-817/818/857/897: 4800, 9600, 38400; FTDX10, FTDX101 and FT-891: 4800 to
+  38400; TS-480: 4800 to 57600; KX2: 4800 to 38400). Before, `2` short and long stepped up and
+  down. Console `BAUD <rate>` refuses other rates and lists them. The choice is kept for each
+  profile, and `PROFILE?` lists the rates
 - Bank 9 `A` double press resets the profile: its baud rate and CI-V address go back to the
   defaults, and HamTRC says "profile reset". Console `PROFILE RESET`, and `PROFILE RESET ALL`
   for every profile
@@ -172,6 +233,34 @@
 
 ### Radios
 
+- Icom: `LOCK`, `FILSHAPE`, the notch width (`NOTCH NAR | MID | WIDE`) and `MONITOR` now use the
+  commands in Icom's CI-V table. Before, on the IC-7300 they changed the beep level limit, the
+  confirmation beep, the band edge beep and the transmit frequency monitor instead, and read those
+  back as if they worked. If you used them, check these four settings in the radio's menu
+- IC-705 and IC-7760: `TRANSCEIVE` sent the IC-7300's menu address, which is a different item on
+  these radios. The IC-705 now uses its own (0131); on the IC-7760 it says "not available"
+- IC-7760: `VOXDELAY` says "not available". It wrote menu item 0182, which the IC-7760 CI-V guide
+  lists as the Internet access line setting; the guide puts the VOX delay elsewhere than Hamlib
+  does. If you used `VOXDELAY` on an IC-7760, check that setting in the radio's menu
+- each Icom gets only the commands its CI-V guide and Hamlib agree on, and a command the radio
+  lacks says "not available" at once instead of waiting for a timeout. The IC-705 now has
+  everything the IC-7300 has: RF power (up to 10 W), NR and NB levels, the manual notch and its
+  width, twin PBT, filter type, lock, monitor, the external tuner (AH-705), band stack, VFO A/B,
+  split and RIT. The IC-706 reads frequency, mode and the S-meter, no longer power and SWR
+- console commands the radio profile cannot do say "not available" (they printed "no reply")
+- FTDX101D/MP: `LOCK ON | OFF` sends LK7 and LK4 as these radios expect (main and sub dial
+  together), and a read of 4 counts as unlocked. Before, LK1 and LK0 locked or unlocked the main
+  dial only and a read of 4 counted as locked
+- FTDX101D/MP and FT-891: the mode is read and set with `MD0`, as on the FTDX10
+- FTDX101D/MP and FT-891: RX/TX, TX frequency and VFO mode say "not available"; their commands are
+  confirmed only on the FTDX10
+- TS-480: SWR is read with `RM;` (it sent `RM1;`, which selects a meter and gets no answer). RTTY-R
+  is mode 9 (it sent 8, which is no mode on the TS-480), and DIGI, which the TS-480 does not have,
+  is gone
+- the raw ASCII commands (`FB`, `FR`, `FT`, `RX`, `TX`, `AK?`, `SWT`, `SWH`, `IF?`, `ID?`, `OM?`)
+  work only on Kenwood, Elecraft and Yaesu ASCII radios; elsewhere they say "not available"
+  instead of sending bytes the radio reads as other commands. `FB <kHz>` sends 9 digits on Yaesu
+  ASCII radios (it sent 11)
 - FT-817/818/857/897: the frequency is polled in the background again. When the radio is off or
   disconnected, polling slows down so the keypad stays responsive
 - FT-817/818/857/897: fixed the S-meter always reading S0

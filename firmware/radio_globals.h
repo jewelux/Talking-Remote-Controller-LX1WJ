@@ -3,6 +3,9 @@
 #include "radio_profile_table.h"
 #include "radio_types.h"
 
+// How long a CAT query waits for the radio's reply.
+inline constexpr uint32_t kCatReplyTimeoutMs = 800;
+
 // The slot of the active profile.
 extern uint8_t g_profileId;
 extern uint8_t g_lastSavedProfile;

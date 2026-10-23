@@ -22,7 +22,7 @@ const char* modeToString(uint8_t mode) {
 
 void speakMode(uint8_t mode) {
 #if HAVE_MODE_VOICE
-  if (g_verboseSpeech) {
+  if (labelSpoken()) {
     speakToken("mode");
     playSilenceMs(120);
   }

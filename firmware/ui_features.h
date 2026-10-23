@@ -20,6 +20,59 @@ void speakNbState(bool on);
 String notchStateText(const NotchState& state);
 void speakNotchState(const NotchState& state);
 
+// "OFF", "FAST", "MID", "SLOW", "AUTO".
+const char* agcModeName(AgcMode mode);
+// "AGC FAST"; "agc fast".
+String agcText(AgcMode mode);
+void speakAgc(AgcMode mode);
+
+// "NRLEVEL 8", "NBLEVEL 5": a level in the radio's own steps; "noise reduction 8".
+String rxLevelText(RxLevel level, uint16_t value);
+void speakRxLevel(RxLevel level, uint16_t value);
+
+// "CTCSS 88.5 Hz"; "c t c s s 88.5".
+String ctcssText(uint16_t tenths);
+void speakCtcss(uint16_t tenths);
+// "RPT PLUS", "RPT MINUS", "RPT SIMPLEX"; "repeater plus", "repeater off" (as Bank 6).
+const char* rptShiftName(RptShift shift);
+String rptShiftText(RptShift shift);
+void speakRptShift(RptShift shift);
+
+// "ANOTCH ON"; "auto notch on".
+String autoNotchText(bool on);
+void speakAutoNotch(bool on);
+
+// "ATT OFF", "ATT ON", or with its dB: "ATT 12 DB"; "attenuator 12".
+String attText(const AttState& state);
+void speakAtt(const AttState& state);
+
+// "PREAMP OFF", "PREAMP ON" where it has one level, else "PREAMP 1", "PREAMP 2"; "preamplifier 1".
+String preampText(uint8_t level);
+void speakPreamp(uint8_t level);
+
+// "RFPOWER 50 W", "RFPOWER 0.5 W"; "power 50 watts".
+String rfPowerText(uint16_t tenths);
+void speakRfPower(uint16_t tenths);
+
+// "OFF", "ON", "SEMI", "FULL".
+const char* breakInModeName(BreakInMode mode);
+// "BK SEMI"; "b k semi".
+String breakInText(BreakInMode mode);
+void speakBreakIn(BreakInMode mode);
+// "KYR ON"; "k y r on".
+String keyerText(bool on);
+void speakKeyer(bool on);
+
+// "CWSPEED 20 WPM", "CWPITCH 700 Hz", "CWDELAY 250 ms", "CWDELAY FULL"; spoken as the FT-8x7
+// CW menus are.
+const char* cwLevelName(CwLevel level);
+String cwLevelText(CwLevel level, uint16_t value);
+void speakCwLevel(CwLevel level, uint16_t value);
+
+// "ALC 45%"; "a.l.c. 45 percent".
+String alcText(uint8_t percent);
+void speakAlc(uint8_t percent);
+
 // "PROC ON", "PROC OFF"; "processor on".
 String procStateText(bool on);
 void speakProcState(bool on);

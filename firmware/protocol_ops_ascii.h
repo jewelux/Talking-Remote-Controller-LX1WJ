@@ -12,10 +12,53 @@ bool asciiQuerySWRRaw(const RadioProfile& sp, int32_t& rawOut, uint32_t timeoutM
 bool asciiQueryStatusLine(const RadioProfile& sp, String& lineOut, uint32_t timeoutMs);
 bool asciiQueryIdLine(const RadioProfile& sp, String& lineOut, uint32_t timeoutMs);
 bool asciiQueryOmLine(const RadioProfile& sp, String& lineOut, uint32_t timeoutMs);
-bool asciiQueryPreamp(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
-bool asciiSetPreamp(const RadioProfile& sp, bool on);
-bool asciiQueryAgcLine(const RadioProfile& sp, String& lineOut, uint32_t timeoutMs);
-bool asciiSetAgcCommand(const RadioProfile& sp, const char* cmd);
+// The preamp level (PA, 0..settings.preampLevels) and the attenuator step (RA,
+// 0..settings.attLevels) by settings.frontEnd (caps.getPreamp, setPreamp, getAtt, setAtt); the
+// sets are read back.
+bool asciiQueryPreampLevel(const RadioProfile& sp, uint8_t& levelOut, uint32_t timeoutMs);
+bool asciiSetPreampLevel(const RadioProfile& sp, uint8_t level);
+bool asciiQueryAttStep(const RadioProfile& sp, uint8_t& stepOut, uint32_t timeoutMs);
+bool asciiSetAttStep(const RadioProfile& sp, uint8_t step);
+// The RF power by settings.rfPower (caps.getRfPower, setRfPower), in tenths of a watt; the set,
+// in watts, is read back.
+bool asciiQueryRfPowerTenths(const RadioProfile& sp, uint16_t& tenthsOut, uint32_t timeoutMs);
+bool asciiSetRfPowerWatts(const RadioProfile& sp, uint16_t watts);
+// Yaesu BI (break-in, caps.getBreakIn, setBreakIn) and KR (keyer, caps.getKeyer, setKeyer), on
+// or off; the sets are read back.
+bool asciiQueryBreakIn(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
+bool asciiSetBreakIn(const RadioProfile& sp, bool on);
+// Yaesu RL0 (the NR level, 1..15) and NL0 (the NB level, 0..10), caps.getNrLevel, setNrLevel,
+// getNbLevel, setNbLevel; the set is read back.
+bool asciiQueryRxLevel(const RadioProfile& sp, RxLevel level, uint16_t& valueOut, uint32_t timeoutMs);
+bool asciiSetRxLevel(const RadioProfile& sp, RxLevel level, uint16_t value);
+// Yaesu CT0 (0 off, 1 CTCSS encode and decode, 2 CTCSS encode; the FT-891 answers 3 for DCS),
+// CN00 (the CTCSS tone, in tenths of a Hz) and OS0 (repeater shift, FM only): caps.getTone,
+// getCtcss, getRptShift and their sets, read back.
+bool asciiQueryToneCode(const RadioProfile& sp, uint8_t& codeOut, uint32_t timeoutMs);
+bool asciiSetToneCode(const RadioProfile& sp, uint8_t code);
+bool asciiQueryCtcssTenths(const RadioProfile& sp, uint16_t& tenthsOut, uint32_t timeoutMs);
+bool asciiSetCtcssTenths(const RadioProfile& sp, uint16_t tenths);
+bool asciiQueryRptShift(const RadioProfile& sp, RptShift& out, uint32_t timeoutMs);
+bool asciiSetRptShift(const RadioProfile& sp, RptShift shift);
+// Yaesu BC0, the auto notch (caps.getAutoNotch, setAutoNotch); the set is read back.
+bool asciiQueryAutoNotch(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
+bool asciiSetAutoNotch(const RadioProfile& sp, bool on);
+bool asciiQueryKeyer(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
+bool asciiSetKeyer(const RadioProfile& sp, bool on);
+// The CW keyer speed (KS, WPM), pitch (Yaesu KP, Hz) and break-in delay (SD, ms) by the
+// profile's settings (caps.getCwSpeed ... setCwDelay); the sets are read back, the delay set to
+// the radio's step nearest ms.
+// Yaesu RM4, the ALC meter, 0..255 (caps.getAlc).
+bool asciiQueryAlcRaw(const RadioProfile& sp, uint16_t& rawOut, uint32_t timeoutMs);
+bool asciiQueryCwSpeed(const RadioProfile& sp, uint16_t& wpmOut, uint32_t timeoutMs);
+bool asciiSetCwSpeed(const RadioProfile& sp, uint16_t wpm);
+bool asciiQueryCwPitch(const RadioProfile& sp, uint16_t& hzOut, uint32_t timeoutMs);
+bool asciiSetCwPitch(const RadioProfile& sp, uint16_t hz);
+bool asciiQueryCwDelayMs(const RadioProfile& sp, uint16_t& msOut, uint32_t timeoutMs);
+bool asciiSetCwDelayMs(const RadioProfile& sp, uint16_t ms);
+// AGC by settings.agc (caps.getAgc, setAgc); the set is read back. AUTO reads back as AUTO.
+bool asciiQueryAgc(const RadioProfile& sp, AgcMode& out, uint32_t timeoutMs);
+bool asciiSetAgc(const RadioProfile& sp, AgcMode mode);
 bool asciiQueryPowerState(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
 bool asciiSetPowerState(const RadioProfile& sp, bool on);
 bool asciiQueryTuner(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
@@ -32,26 +75,23 @@ bool asciiSetNotch(const RadioProfile& sp, bool on);
 bool asciiQueryLock(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
 bool asciiSetLock(const RadioProfile& sp, bool on);
 bool asciiQueryYaesuRadioInfoFlag(const RadioProfile& sp, const char* code, bool& onOut, uint32_t timeoutMs);
-// Yaesu FTDX speech processor (PR0) and its level (PL, 0..100).
-bool asciiQueryYaesuProc(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
-bool asciiQueryYaesuProcLevel(const RadioProfile& sp, uint8_t& levelOut, uint32_t timeoutMs);
-// Yaesu FTDX mic gain (MG, 0..100).
-bool asciiQueryYaesuMicGain(const RadioProfile& sp, uint8_t& levelOut, uint32_t timeoutMs);
-// Yaesu FTDX VOX (VX) and its gain (VG, 0..100).
-bool asciiQueryYaesuVox(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
-bool asciiQueryYaesuVoxGain(const RadioProfile& sp, uint8_t& levelOut, uint32_t timeoutMs);
-// Yaesu FTDX VOX delay (VD), in ms.
-bool asciiQueryYaesuVoxDelayMs(const RadioProfile& sp, uint16_t& msOut, uint32_t timeoutMs);
-// The writes of the above, each read back: caps.setProc, setMicGain, setVox. Levels 0..100; the
-// VOX delay goes to the VD step nearest ms, 30..3000. Not yet tested on a radio.
-bool asciiSetYaesuProc(const RadioProfile& sp, bool on);
-bool asciiSetYaesuProcLevel(const RadioProfile& sp, uint8_t level);
-bool asciiSetYaesuMicGain(const RadioProfile& sp, uint8_t level);
-bool asciiSetYaesuVox(const RadioProfile& sp, bool on);
-bool asciiSetYaesuVoxGain(const RadioProfile& sp, uint8_t level);
-bool asciiSetYaesuVoxDelayMs(const RadioProfile& sp, uint16_t ms);
-// The VD delay steps of its steps from the one nearest ms, kept within 30..3000.
-uint16_t asciiYaesuVoxDelayStep(uint16_t ms, int steps);
+// Speech processor (Yaesu PR0, TS-480 PR) and its level (PL, 0..100; on the TS-480 the input
+// level), mic gain (MG, 0..100), VOX (VX), its gain (VG, 0..settings.voxGainMax) and delay (VD,
+// in ms, as settings.voxDelay says): the Yaesu ASCII radios and the TS-480.
+bool asciiQueryProc(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
+bool asciiQueryProcLevel(const RadioProfile& sp, uint8_t& levelOut, uint32_t timeoutMs);
+bool asciiQueryMicGain(const RadioProfile& sp, uint8_t& levelOut, uint32_t timeoutMs);
+bool asciiQueryVox(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
+bool asciiQueryVoxGain(const RadioProfile& sp, uint8_t& levelOut, uint32_t timeoutMs);
+bool asciiQueryVoxDelayMs(const RadioProfile& sp, uint16_t& msOut, uint32_t timeoutMs);
+// The writes of the above, each read back: caps.setProc, setMicGain, setVox. The VOX delay goes
+// to the radio's step nearest ms. Not yet tested on a radio.
+bool asciiSetProc(const RadioProfile& sp, bool on);
+bool asciiSetProcLevel(const RadioProfile& sp, uint8_t level);
+bool asciiSetMicGain(const RadioProfile& sp, uint8_t level);
+bool asciiSetVox(const RadioProfile& sp, bool on);
+bool asciiSetVoxGain(const RadioProfile& sp, uint8_t level);
+bool asciiSetVoxDelayMs(const RadioProfile& sp, uint16_t ms);
 bool asciiQueryActiveVfoA(const RadioProfile& sp, bool& vfoAOut, uint32_t timeoutMs);
 bool asciiSelectVfoA(const RadioProfile& sp);
 bool asciiSelectVfoB(const RadioProfile& sp);

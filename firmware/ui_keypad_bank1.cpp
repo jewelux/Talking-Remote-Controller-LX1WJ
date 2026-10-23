@@ -9,9 +9,9 @@
 static bool queryDialLockReliable(bool& onOut) {
   // One EEPROM read on the FT-8x7. No stale fallback: a toggle must start from the radio's real
   // state.
-  if (currentProtocolType() == PROTO_YAESU_FT8X7) return queryDialLock(onOut, 800);
+  if (currentProtocolType() == PROTO_YAESU_FT8X7) return queryDialLock(onOut, kCatReplyTimeoutMs);
   for (uint8_t attempt = 0; attempt < 3; ++attempt) {
-    if (queryDialLock(onOut, 800)) {
+    if (queryDialLock(onOut, kCatReplyTimeoutMs)) {
       rememberDialLockState(onOut);
       return true;
     }
@@ -42,7 +42,7 @@ void queryBank1RxTx() {
     return;
   }
   bool tx = false;
-  if (!queryRxTxStatus(tx, 800)) { keypadReportFailure("RXTX?"); return; }
+  if (!queryRxTxStatus(tx, kCatReplyTimeoutMs)) { keypadReportFailure("RXTX?"); return; }
   printKeypadStatus("{}", tx ? "TX" : "RX");
   speakRxTxState(tx);
 }
@@ -50,7 +50,7 @@ void queryBank1RxTx() {
 void queryBank1Frequency() {
   printKeypadAction("FREQ?");
   uint64_t hz = 0;
-  if (!queryFrequency(hz, 800)) {
+  if (!queryFrequency(hz, kCatReplyTimeoutMs)) {
     keypadReportFailure("FREQ?");
     return;
   }
@@ -62,10 +62,10 @@ void queryBank1Frequency() {
 void queryBank1TxFrequency() {
   printKeypadAction("TXFREQ?");
   uint64_t hz = 0;
-  if (!queryTxFrequency(hz, 800)) {
+  if (!queryTxFrequency(hz, kCatReplyTimeoutMs)) {
     // FT-8x7 without a TX frequency reply: say the frequency instead.
     if (currentProtocolType() == PROTO_YAESU_FT8X7) {
-      if (queryFrequency(hz, 800)) {
+      if (queryFrequency(hz, kCatReplyTimeoutMs)) {
         printKeypadStatus("TXFREQ: {} MHz", RadioFrequency::fromHz(hz));
         speakQueriedFrequencyHz(hz);
       } else {
@@ -85,7 +85,7 @@ void queryBank1Ft857TxFrequency() {
   printKeypadAction("TXFREQ?");
   uint64_t hz = 0;
   bool splitOn = false;
-  if (querySplit(splitOn, 800) && !splitOn && queryFrequency(hz, 800)) {
+  if (querySplit(splitOn, kCatReplyTimeoutMs) && !splitOn && queryFrequency(hz, kCatReplyTimeoutMs)) {
     printKeypadStatus("TXFREQ: {} MHz", RadioFrequency::fromHz(hz));
     speakQueriedFrequencyHz(hz);
   } else {
@@ -119,7 +119,7 @@ void roundActiveFrequency(uint32_t stepHz) {
   prepareKeypadRadioWrite();
 
   uint64_t hz = 0;
-  if (!queryFrequency(hz, 800)) {
+  if (!queryFrequency(hz, kCatReplyTimeoutMs)) {
     // Radio not responding: do not round or announce a stale value.
     keypadReportFailure("ROUND");
     return;
@@ -177,20 +177,54 @@ void beginBank1PaVoltSet() {
   speakPrompt("volts");
 }
 
-void beginBank1RfPowerSet() {
-  if (!currentProfile().caps.setRfPower) {
-    printKeypadStatus("RFPOWER -> unavailable");
-    speakKeypadFailure("RFPOWER", KeypadFailure::NotAvailable);
-    return;
-  }
+// The FT-817/818 picks one of its levels, read first so that B and C walk from it.
+static void beginFt817PowerSelect() {
   printKeypadAction("RFPOWER");
-  if (currentProtocolType() == PROTO_YAESU_FT8X7 && currentIsFt817Family()) {
-    keypadBeginChoiceSelect(kFt817PowerChoice);
-  } else {
-    keypadBeginEntry(InputMode::RfPowerEntry);
-  }
+  prepareKeypadSpeechResponse();
+  Ft8x7SettingState state;
+  if (keypadReportFeatureFailure(ft8x7SettingQuery(Ft8x7Setting::RfPower, state), "RFPOWER")) return;
+  EntrySeed seed;
+  seed.known = state.hasPowerLevel;
+  seed.value = (uint8_t)state.powerLevel;
+  keypadBeginChoiceSelect(kFt817PowerChoice, TargetVfo::Current, seed);
   printKeypadStatus("POWER PLEASE");
   speakPrompt("power");
+}
+
+static bool picksFt817PowerLevel() {
+  return currentProtocolType() == PROTO_YAESU_FT8X7 && currentIsFt817Family() && currentProfile().caps.setRfPower;
+}
+
+void beginBank1RfPowerSet() {
+  if (picksFt817PowerLevel()) {
+    beginFt817PowerSelect();
+    return;
+  }
+  settingEntry(Setting::RfPower);
+}
+
+void nudgeBank1RfPower(int8_t dir, bool big) {
+  if (!picksFt817PowerLevel()) {
+    keypadSettingNudge(Setting::RfPower, dir, big);
+    return;
+  }
+  // Four levels: a big step is one too.
+  printKeypadAction("RFPOWER {}", dir > 0 ? "UP" : "DOWN");
+  prepareKeypadSpeechResponse();
+  Ft8x7SettingState state;
+  if (keypadReportFeatureFailure(ft8x7SettingQuery(Ft8x7Setting::RfPower, state), "RFPOWER")) return;
+  if (!state.hasPowerLevel) {
+    keypadReportFeatureFailure(FeatureStatus::NoReply, "RFPOWER");
+    return;
+  }
+  EntrySeed seed;
+  seed.known = true;
+  seed.value = (uint8_t)state.powerLevel;
+  if (!keypadNudgeChoice(kFt817PowerChoice, seed, dir)) {
+    keypadValueLimit("RFPOWER", dir > 0);
+    return;
+  }
+  speakPlease();
 }
 
 void toggleBank1Lock() {
@@ -210,8 +244,9 @@ void toggleBank1Lock() {
 
 static void sendBank1Query(const String& cmd) {
   printKeypadAction("{}", cmd.c_str());
-  // The SWR, RF power and PA voltage replies say their own word, so saying it here too doubles it.
-  if (cmd != "SWR?" && cmd != "RFPOWER?" && cmd != "PAVOLT?") speakKeypadCommandWord(cmd);
+  // The SWR, RF power, ALC and PA voltage replies say their own word, so saying it here too
+  // doubles it.
+  if (cmd != "SWR?" && cmd != "RFPOWER?" && cmd != "ALC?" && cmd != "PAVOLT?") speakKeypadCommandWord(cmd);
   keypadSendNow(cmd);
 }
 
@@ -225,6 +260,8 @@ void queryBank1Smeter() { sendBank1Query("SM?"); }
 
 void queryBank1Swr() { sendBank1Query("SWR?"); }
 
+void queryBank1Alc() { sendBank1Query("ALC?"); }
+
 void queryBank1Mode() { sendBank1Query("MODE?"); }
 
 void beginBank1ModeSelect() {
@@ -232,4 +269,20 @@ void beginBank1ModeSelect() {
   printKeypadAction("MODE");
   printKeypadStatus("MODE PLEASE");
   speakPrompt("mode");
+}
+
+// The mode is read, never stepped live: the pick opens one mode away, in digit order.
+void nudgeBank1Mode(int8_t dir) {
+  printKeypadAction("MODE {}", dir > 0 ? "UP" : "DOWN");
+  prepareKeypadSpeechResponse();
+  uint8_t mode = 0;
+  if (!queryMode(mode, kCatReplyTimeoutMs)) {
+    keypadReportFailure("MODE");
+    return;
+  }
+  if (!keypadNudgeModeSelect(mode, dir)) {
+    keypadValueLimit("MODE", dir > 0);
+    return;
+  }
+  speakPlease();
 }

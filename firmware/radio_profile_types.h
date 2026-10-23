@@ -6,6 +6,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "radio_setting_types.h"
+
 enum ProtocolType : uint8_t {
   PROTO_CIV = 0,
   PROTO_KENWOOD_ASCII = 1,
@@ -16,6 +18,11 @@ enum ProtocolType : uint8_t {
   // Not a radio: a NanoVNA's text shell (nanovna_client.*). No radio function runs on it.
   PROTO_NANOVNA = 6
 };
+
+// The ASCII CAT protocols (protocol_ops_ascii.h): Kenwood, Elecraft and the Yaesu FTDX family.
+constexpr bool isAsciiProtocol(ProtocolType protocol) {
+  return protocol == PROTO_KENWOOD_ASCII || protocol == PROTO_ELECRAFT_ASCII || protocol == PROTO_YAESU_FTDX_ASCII;
+}
 
 // Only bool members, all off unless a profile sets them: EXPERIMENTAL ON sets
 // them all through a bool array (radio_catalog.cpp).
@@ -29,6 +36,7 @@ struct RadioCapabilities {
   bool getRfPower = false;
   bool setRfPower = false;
   bool getSwr = false;
+  bool getAlc = false;  // the ALC meter while transmitting (Icom 15 13, Yaesu RM4)
   bool getRxTx = false;
   bool getTxFreq = false;
   bool getNr = false;
@@ -43,6 +51,16 @@ struct RadioCapabilities {
   bool setNotch = false;
   bool getNotchWidth = false;
   bool setNotchWidth = false;
+  bool getAutoNotch = false;  // Icom 16 41, Yaesu BC0 (not the manual notch above)
+  bool setAutoNotch = false;
+  // CAT tone squelch (CTCSS encode, or encode and decode), its tone, and the repeater shift. The
+  // FT-8x7 has its own (radio_features_tone.cpp, Bank 6) and leaves these off.
+  bool getTone = false;
+  bool setTone = false;
+  bool getCtcss = false;
+  bool setCtcss = false;
+  bool getRptShift = false;
+  bool setRptShift = false;
   bool getPbtInner = false;
   bool setPbtInner = false;
   bool getPbtOuter = false;
@@ -71,6 +89,28 @@ struct RadioCapabilities {
   bool getRit = false;
   bool setRit = false;
   bool getBandStack = false;
+  // AGC. The FT-8x7 reads it from its EEPROM and writes it there under setRadioMenu.
+  bool getAgc = false;
+  bool setAgc = false;
+  // The RX attenuator. The FT-857/897 reads it from its EEPROM, read only.
+  bool getAtt = false;
+  bool setAtt = false;
+  bool getPreamp = false;
+  bool setPreamp = false;
+  // CW break-in and the electronic keyer. The FT-8x7 reads them from its EEPROM and writes them
+  // there under setRadioMenu.
+  bool getBreakIn = false;
+  bool setBreakIn = false;
+  bool getKeyer = false;
+  bool setKeyer = false;
+  // The CW keyer speed, pitch and break-in delay. The FT-8x7 reads them from its EEPROM and
+  // writes them there under setRadioMenu.
+  bool getCwSpeed = false;
+  bool setCwSpeed = false;
+  bool getCwPitch = false;
+  bool setCwPitch = false;
+  bool getCwDelay = false;
+  bool setCwDelay = false;
   // Speech processor and its level, mic gain, VOX with its gain and delay. The FT-8x7 writes
   // them to the EEPROM under setRadioMenu instead.
   bool getProc = false;
@@ -162,13 +202,6 @@ struct AsciiCommandSet {
   const char* nbGet = "";
   const char* nbOnCmd = "";
   const char* nbOffCmd = "";
-  const char* preampGet = "";
-  const char* preampOnCmd = "";
-  const char* preampOffCmd = "";
-  const char* agcGet = "";
-  const char* agcFastCmd = "";
-  const char* agcSlowCmd = "";
-  const char* agcOffCmd = "";
   const char* powerStateGet = "";
   const char* powerStateOnCmd = "";
   const char* powerStateOffCmd = "";
@@ -189,6 +222,9 @@ struct AsciiCommandSet {
   const char* lockGet = "";
   const char* lockOnCmd = "";
   const char* lockOffCmd = "";
+  // The first reply digits that mean unlocked. The FTDX101 locks main and sub apart: LK7 locks
+  // both, LK4 unlocks both, and a read of 0 or 4 is unlocked (Hamlib newcat).
+  const char* lockOffDigits = "0";
   const char* freqReplyPrefix = "";
   const char* modeReplyPrefix = "";
   const char* ifReplyPrefix = "";
@@ -199,8 +235,6 @@ struct AsciiCommandSet {
   const char* swrReplyPrefix = "";
   const char* nrReplyPrefix = "";
   const char* nbReplyPrefix = "";
-  const char* preampReplyPrefix = "";
-  const char* agcReplyPrefix = "";
   const char* powerStateReplyPrefix = "";
   const char* tunerReplyPrefix = "";
   const char* splitReplyPrefix = "";
@@ -237,6 +271,44 @@ struct Ft8x7Bank6Profile {
   uint16_t dcsDefaultCode = 23;
 };
 
+// How an ASCII radio's VD sets the VOX delay.
+enum class VoxDelayEncoding : uint8_t {
+  None,        // no VD that two sources agree on: VOXDELAY is not available
+  YaesuSteps,  // VD00..33, the step table in cat_setting_codec.h (FTDX10)
+  Ms4,         // VDnnnn in ms, in voxDelayStepMs steps (FT-891, TS-480)
+};
+
+// The setting values that differ between models. CI-V keeps the rest in code (civVoxDelayAddr),
+// the FT-8x7 in its EEPROM map.
+struct SettingEncodings {
+  VoxDelayEncoding voxDelay = VoxDelayEncoding::None;
+  uint16_t voxDelayMinMs = 0;
+  uint16_t voxDelayMaxMs = 0;
+  uint16_t voxDelayStepMs = 0;  // Ms4: the radio's resolution
+  uint8_t voxGainMax = 100;     // VG 0..voxGainMax
+  AgcEncoding agc = AgcEncoding::None;
+  // The preamp's levels (0 none, 1 on, 2 P.AMP1/AMP1 and P.AMP2/AMP2) and the attenuator's
+  // steps, attDb[n - 1] dB for step n (0 where only one source gives the dB). frontEnd says how
+  // an ASCII radio sends them; CI-V uses 16 02 and 11 (the attenuator in dB).
+  FrontEndEncoding frontEnd = FrontEndEncoding::None;
+  uint8_t preampLevels = 0;
+  uint8_t attLevels = 0;
+  uint8_t attDb[3] = {};
+  // An ASCII radio's RF power, rfPowerMinWatts..the profile's rfPowerMaxWatts. CI-V uses 14 0A.
+  RfPowerEncoding rfPower = RfPowerEncoding::None;
+  uint8_t rfPowerMinWatts = 0;
+  // An ASCII radio's CW: KS in WPM, cwSpeedMinWpm..cwSpeedMaxWpm (0 where none); KP the Yaesu
+  // way, 00..75 = 300..1050 Hz; SD as cwDelay says, cwDelayMinMs..cwDelayMaxMs (YaesuSteps the
+  // VD table, Ms4 in cwDelayStepMs steps). CI-V uses 14 09 for the pitch.
+  uint8_t cwSpeedMinWpm = 0;
+  uint8_t cwSpeedMaxWpm = 0;
+  bool cwPitchKp = false;
+  VoxDelayEncoding cwDelay = VoxDelayEncoding::None;
+  uint16_t cwDelayMinMs = 0;
+  uint16_t cwDelayMaxMs = 0;
+  uint16_t cwDelayStepMs = 0;
+};
+
 inline constexpr AsciiCommandSet kNoAsciiCommands{};
 inline constexpr ModeCodes kNoModeCodes{};
 
@@ -252,6 +324,7 @@ struct RadioProfile {
   RadioCapabilities caps{};
   const AsciiCommandSet* commands = &kNoAsciiCommands;
   const ModeCodes* modes = &kNoModeCodes;
+  SettingEncodings settings{};
   uint16_t rfPowerMaxWatts = 100;
   Ft8x7Bank6Profile ft8x7Bank6{};
 };

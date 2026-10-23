@@ -15,8 +15,24 @@ void speakSValue(const SMeterReading& reading);
 bool speakToken(const String& token);
 bool speakTokens(const char* const* tokens, size_t count, uint16_t gapMs = 60);
 // The name said before a value ("power" in "power 50 watts") and the gap after
-// it. Verbose off says neither.
+// it. Verbose off says neither, unless a LabelModeScope says otherwise.
 bool speakLabel(const String& token);
+// Whether a label is said. Verbose follows the verbose setting; Always and Never
+// are for the keypad, which names a value on its first step and not after.
+enum class LabelMode : uint8_t { Verbose, Always, Never };
+// The label mode until the scope ends; scopes nest.
+class LabelModeScope {
+ public:
+  explicit LabelModeScope(LabelMode mode);
+  ~LabelModeScope();
+  LabelModeScope(const LabelModeScope&) = delete;
+  LabelModeScope& operator=(const LabelModeScope&) = delete;
+
+ private:
+  LabelMode previous_;
+};
+// True when speakLabel would say a label now. For names said without it.
+bool labelSpoken();
 bool speakTokenState(const String& token, bool on);
 bool speakTokenPercent(const String& token, uint8_t percent);
 // The "ok" after a changed value ("volume five ok"), with the gap before it.
@@ -26,6 +42,8 @@ void speakOk();
 void speakError();
 void speakTimeout();
 void speakNotAvailable();
+// "maximum" or "minimum": a step past the end of a range, which changes nothing.
+void speakLimit(bool atMax);
 void playBeep();
 void voiceTest();
 // Digits and letters one by one, each its own clip: a profile's voice digits ("qmx"), a serial

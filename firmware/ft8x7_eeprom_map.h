@@ -246,7 +246,7 @@ static constexpr uint16_t FT817_VOX_GAIN_ADDR = 0x0063;
 // The mic gains and the VOX gain: bits 6..0, 0..100.
 uint8_t ft817LevelFromByte(uint8_t b);
 // value + steps, kept within 0..100, however large steps is.
-uint8_t ft8x7PercentStep(uint8_t value, int steps);
+uint8_t percentStep(uint8_t value, int steps);
 // The byte that sets a mic gain to value, bit 7 of old kept (another setting: 0x6B bit 7 is menu
 // 52 EXTEND). False, and out untouched, when value is above 100, or when old holds a level above
 // 100: the map then does not fit the radio, and nothing may be written.

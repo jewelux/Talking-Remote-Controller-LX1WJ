@@ -36,6 +36,7 @@ to completion, and that action talks to the radio synchronously.
   │                       │ keymapLookup   keypad_keymap.*     pure C++: which action, per radio
   │                       ▼
   │                    bank actions        ui_keypad_bankN.cpp, ui_keypad_entry.cpp
+  │                    settings engine     ui_keypad_settings.cpp, keypad_setting_ops*.cpp
   ├─ processCommand() ─ console            ui_console.cpp
   │                       │
   │                       ▼
@@ -57,12 +58,14 @@ to completion, and that action talks to the radio synchronously.
 
 | Area | Files | Owns |
 |---|---|---|
-| Keypad logic | `keypad_input.*`, `keypad_keymap.*`, `keypad_actions.h`, `keypad_digit_buffer.h` | Gestures, modes, entries; the key → action table. No `Arduino.h`. |
+| Keypad logic | `keypad_input.*`, `keypad_keymap.*`, `keypad_actions.h`, `keypad_digit_buffer.h`, `keypad_value_entry.*`, `keypad_settings.*`, `keypad_labels.*`, `keypad_help.h` | Gestures, modes, entries, focus and help mode; the key → action table; the list of settings and their spoken names. No `Arduino.h`. |
 | Keypad glue and actions | `ui_keypad.cpp`, `ui_keypad_common.*`, `ui_keypad_bankN.cpp`, `ui_keypad_entry.cpp` | Carrying out the decision: radio calls, serial trace, speech |
+| Keypad settings | `keypad_setting_ops*.cpp`, `ui_keypad_settings.cpp` | How each setting is read, stepped, typed and set on the current radio (`SettingOps`), and the actions of A, B and C on the focus |
 | Console | `ui_console*.cpp` | Serial commands (`HELP` lists them) |
-| Shared features | `radio_features.*`, `ui_features.*` | NR, NB and notch, used by both keypad and console |
+| Shared features | `radio_features*.cpp`, `radio_features.h`, `ui_features.*` | Settings used by both keypad and console: NR, NB and notch in `radio_features.cpp`, PROC, mic gain and VOX in `_tx`, the FT-8x7 EEPROM settings in `_ft8x7`, tone squelch in `_tone` |
 | Radio API | `radio_protocol.*`, `radio_runtime.*`, `radio_state.*` | Protocol-independent calls, and the tracked `live` state |
 | Protocols | `protocol_ops_*`, `protocol_*`, `packet_*`, `transport_serial.*`, `transport_usb_host.*` | CI-V, Kenwood/Elecraft/FTDX ASCII, Yaesu FT-8x7 5-byte CAT; the UARTs, or a USB radio's serial port |
+| CAT setting values | `cat_setting_codec.*` | How CAT radios encode setting values: CI-V levels and RF power, the Yaesu ASCII VOX delay steps, lock reply digits. No `Arduino.h` |
 | FT-8x7 fields | `ft8x7_codec.*`, `ft8x7_eeprom_map.*`, `ft8x7_model.h` | CAT frame fields, the EEPROM map per model, the FT-8x7 model from the `RadioModel`. No `Arduino.h`; `protocol_ft8x7_eeprom.*` reads the EEPROM with them |
 | Profiles | `radio_profile_types.h`, `radio_profile_table.*`, `radio_catalog.*`, `radio_profile.*` | What a radio is (connection, protocol, capabilities, command strings), the built-in radios, the active one, and switching between them. The types and the table have no `Arduino.h` |
 | Speech | `ui_speech.*`, `voice_pack*`, `audio_stretch.*` | Tokens, the audio queue, the clips in the voice pack partition, and the speech speed (time-stretch). `voice_pack_format.*` and `audio_stretch.*` have no `Arduino.h` |
@@ -132,13 +135,14 @@ built into the firmware, `voice_fallback.h`) and prints `VOICE PACK MISSING`;
 
 ### Host tests (no hardware)
 
-The keypad logic and the FT-8x7 frame and EEPROM decoding are plain C++ and
-are tested with g++:
+The keypad logic, the FT-8x7 frame and EEPROM decoding and the CAT setting
+values are plain C++ and are tested with g++:
 
 ```sh
 make -C tests/keypad               # build and run everything
 make -C tests/keypad FILTER=hold   # only tests whose name contains "hold"
 make -C tests/ft8x7                # FT-817/857/897 CAT fields and EEPROM map
+make -C tests/cat                  # CAT setting values (CI-V levels, Yaesu ASCII steps)
 make -C tests/audio                # voice pack layout, speech speed
 ```
 
@@ -198,9 +202,10 @@ change the handler table.
 | Key | Short | Long (700 ms) |
 |---|---|---|
 | `*` | Say the bank | Bank select: "bank please", then one digit; a digit while `*` is still held picks the bank of the next key only |
-| `0`–`9`, `A`–`C` | Bank function | Bank function (hold) |
-| `D` | Enter: commit an entry or selection | – |
-| `#` | Clear: cancel whatever is pending | – |
+| `0`–`9` | Bank function | Bank function (hold) |
+| `A`–`C` | Say (A) or step (B up, C down) the bank's focus | Entry (A) or big step (B, C) |
+| `D` | Enter: commit an entry or selection | Help mode on or off (Normal mode only) |
+| `#` | Clear: cancel whatever is pending, end help mode | – |
 
 Gestures:
 
@@ -217,29 +222,47 @@ Gestures:
   hold is a plain long press. While the second press is down on a waiting key,
   its short is held back until the key is released or the hold fires.
 
+Focus:
+
+- **The focus is the setting A, B and C act on**: the `focus` of the last
+  digit key that ran in the bank. Each bank keeps its own; a key with no
+  focus leaves it as it is. Bank 5 starts on the RIT offset and Bank 9 on
+  the profile (`keymapHomeFocus`); the other banks start with none, and A, B
+  and C then say "not available".
+- **Live or Confirm.** A CAT setting is set at once by B and C, read back and
+  said. RF power, the mode and the FT-8x7 EEPROM settings are read once and
+  open their entry or pick one step away, staged; `D` writes ("power 45 watts
+  please", then `D`).
+- **Help mode** (`D` long) routes every bank key gesture to the listener's
+  `onHelp` with the key's `GestureHelp`, instead of running it. The focus
+  still moves, so A, B and C tell what they would act on.
+
 ### The three pieces
 
 ```
  Keypad library ──► keypadEvent() ──► KeypadInput::onKey(key, gesture, ms)
                    (ui_keypad.cpp)           │
                                              │ "which action?"
-                                             ├──────────► listener.keyBinding(bank, key)
-                                             │                 └► keymapLookup(traits, bank, key)
+                                             ├──────────► listener.keyBinding(bank, key, focus)
+                                             │                 └► keymapLookup(traits, bank, key, focus)
                                              │
-                                             │ "run it" / "entry got a digit" / "commit" / "reject"
+                                             │ "run it" / "help" / "entry got a digit" / "commit" / "reject"
                                              └──────────► KeypadUiListener (ui_keypad.cpp)
-                                                               └► bank action / entry commit / beep
+                                                               └► bank action / help / entry commit / beep
 ```
 
 1. **`KeypadInput`** (`keypad_input.*`) *decides*. It tracks the mode, the
-   digits typed, the pending double click and the swallowed releases. It never
-   talks to the radio or the speaker; everything goes out through
-   `KeypadInputListener`.
+   digits typed, the pending double click, the swallowed releases, each
+   bank's focus and help mode. It never talks to the radio or the speaker;
+   everything goes out through `KeypadInputListener`.
 2. **The keymap** (`keypad_keymap.cpp`) answers "what does this key do on this
-   radio?" by returning a `KeyBinding {short, hold, double, doubleHold, waitsForDouble}`.
+   radio?" by returning a `KeyBinding`: the short, hold, double and double-hold
+   actions, whether it waits for a double, its `focus`, and the help of each
+   gesture.
 3. **`KeypadUiListener`** (`ui_keypad.cpp`) *carries it out*. It interrupts
    speech on a press, builds `KeypadTraits` from the active profile, and routes
-   entries to `ui_keypad_entry.cpp`.
+   entries to `ui_keypad_entry.cpp` and value entries to
+   `ui_keypad_settings.cpp`.
 
 Pieces 1 and 2 include no `Arduino.h`, which is why they can be host-tested.
 Keep it that way.
@@ -252,11 +275,12 @@ Keep it that way.
             ┌────────┐  '*' hold                ┌─────────────┐      │
             │ Normal │ ───────────────────────► │ BankSelect  │ ─ digit commits at once
             └────────┘                          └─────────────┘
-                 │  action calls keypadBeginEntry / BeginChoiceSelect / BeginProfileSelect
+                 │  action calls keypadBeginEntry / BeginChoiceSelect / BeginValueEntry / …
                  ├──────────────────────────► ProfileSelect   (1–2 digits, D)
-                 ├──────────────────────────► ChoiceSelect    (a key of its ChoiceSpec, D)
-                 └──────────────────────────► FreqEntry, RfPowerEntry, CivAddrEntry,
-                                              RptOffsetEntry, CtcssEntry, DcsEntry  (digits, D)
+                 ├──────────────────────────► ChoiceSelect    (a key of its ChoiceSpec, or A/B/C; D)
+                 ├──────────────────────────► ValueEntry      (digits, '*', A/B/C by its ValueSpec; D)
+                 └──────────────────────────► FreqEntry, CivAddrEntry, RptOffsetEntry,
+                                              MenuEntry, RowEntry  (digits, D)
 ```
 
 - **Normal** mode waits for the release so it can tell short, long and double
@@ -268,14 +292,19 @@ Keep it that way.
 - **30 s with no key event** (`kEntryTimeoutMs`) ends any mode other than
   Normal: `poll()` calls the listener's `onEntryTimeout`.
 
-How each entry takes digits is one table row in `keypad_input.cpp`:
+A setting's value (RF power, a level, a CTCSS tone) is typed in
+**ValueEntry**, ruled by the `ValueSpec` its `SettingOps` fills in: range,
+step, point or sign on `*`, digits. A says the value so far, B and C step it,
+`D` sets it; a value typed past the range is snapped to the end and staged
+("maximum", then `D` again). The entries that are not a setting take digits
+by one table row each in `keypad_input.cpp`:
 
 ```cpp
 constexpr EntrySpec kEntries[] = {
     // mode                     name           len  commits zero  fraction unit
     {InputMode::BankSelect,     "BANK SELECT", 1,   true,   false, 0,      ""},
     {InputMode::FreqEntry,      "FREQ",        12,  false,  true,  5,      ""},
-    {InputMode::RfPowerEntry,   "RFPOWER",     3,   false,  true,  0,      " W"},
+    {InputMode::CivAddrEntry,   "CIVADDR",     3,   false,  true,  0,      ""},
     ...
 };
 ```
@@ -283,19 +312,17 @@ constexpr EntrySpec kEntries[] = {
 ### The keymap
 
 ```cpp
-KeyBinding bank2(const KeypadTraits& t, char key) {
-  const bool civ = t.layout == L::Civ;
-  const bool ftdx10 = t.layout == L::Ftdx10;
+KeyBinding bank2(const KeypadTraits& t, char key) {      // A, B and C: focusKey, in keymapLookup
+  const bool ft8x7 = isFt8x7(t);
   switch (key) {
-    case '3': return bind(queryBank2Notch, toggleBank2Notch);        // short, long
-    case '4':
-      if (civ) {
-        return bind(queryBank2NrLevel, [] { adjustBank2NrLevel(10); },
-                   [] { adjustBank2NrLevel(-10); });                 // short, long, double
-      }
-      if (ftdx10) return bind(SEND("GT?"), SEND("GT FAST"), SEND("GT SLOW"));
-      return {};                                                      // unassigned: beep
-    ...
+    case '1': return switchWithLevel<Setting::NrLevel>(t, queryBank2Nr, toggleBank2Nr, "NR");
+    case '3':
+      return withFocusIfHas(t, bind(queryBank2Notch, toggleBank2Notch).help("NOTCH", V::Say, V::Toggle),
+                            Setting::Notch);
+    case '4': return ft8x7 ? settingKey<Setting::RxLowCut>(t) : settingKey<Setting::PbtInner>(t);
+    case '8':
+      if (ft8x7) return bind(queryBank2Ft8x7Ipo).help("IPO", V::Say);
+      ...
 ```
 
 - `bind(short, hold, double, doubleHold)`: pass `nullptr` for no action. A key
@@ -304,12 +331,31 @@ KeyBinding bank2(const KeypadTraits& t, char key) {
 - `waitOnly` as the double action means "wait anyway, but do nothing on a
   double press". Use it when a key next to a double-click key should feel the
   same.
-- `SEND("CMD")` makes the key run the console command `CMD`. Most FTDX10 keys
+- `.help(label, shortVerb, holdVerb, …)` is what help mode says for each
+  gesture: the label's spoken name with a `HelpVerb` (`Say`, `Toggle`,
+  `Next`, `Entry`, `Pick`, `Up`, …). `helpShort`, `helpHold`, `helpDouble`
+  and `helpDoubleHold` give one gesture a label of its own. Every gesture
+  with an action needs help, and every label a row in `kSpokenLabels`; the
+  tests check both.
+- `.withFocus(setting)` makes the key set its bank's focus when it runs;
+  `withFocusIfHas(t, key, setting)` only where the radio has the setting.
+- The builders for a `Setting` derive all of it from the setting:
+  `settingKey<S>(t)` (short says, long opens its entry or pick, focus S) and
+  `switchWithLevel<Level>(t, say, toggle, label)` (short says, long toggles,
+  double says the level, short then hold opens the level's entry; just the
+  switch where the radio has no level). The actions they bind are the
+  generic `settingSay`, `settingEntry` and `settingNext` (a short list steps
+  on a hold).
+- `focusKey(key, focus)` binds A, B and C to `focusSay`, `focusEntry`,
+  `focusCentre` and `focusStep`/`focusBigStep`. A waits for a double only
+  when the focus has a centre.
+- `SEND("CMD")` makes the key run the console command `CMD`. Many FTDX10 keys
   work this way.
 - A captureless lambda carries an argument: `[] { adjustBank5Rit(-10); }`.
 - `KeypadTraits` is everything the keymap may look at: `layout` (`Generic`,
-  `Civ`, `Ftdx10`, `Ft8x7`, `Ft817`, `Ft857`) plus a few flags
-  (`supportsMonitor`, `canGetRfPower`, …).
+  `Civ`, `Ftdx10`, `Ft8x7`, `Ft817`, `Ft857`), a few flags
+  (`canGetRfPower`, `supportsTransceive`), and `settings`, the `SettingSet`
+  of what this radio has.
 
 > **The golden rule** (`keypad_actions.h`): the keymap picks the action for
 > the radio's layout, and the action does not check the layout again. An
@@ -319,8 +365,9 @@ KeyBinding bank2(const KeypadTraits& t, char key) {
 ### Walkthrough: Bank 2, long press on `3` (notch)
 
 1. The key is held for 700 ms. `KeypadInput::held()` looks up the binding
-   `bind(queryBank2Notch, toggleBank2Notch)` and runs the hold action with the
-   active key named `"BANK2 3 LONG"`.
+   `bind(queryBank2Notch, toggleBank2Notch)`, sets Bank 2's focus to `Notch`
+   where the radio has it, and runs the hold action with the active key named
+   `"BANK2 3 LONG"`.
 2. The action, in `ui_keypad_bank2.cpp`:
 
    ```cpp
@@ -341,6 +388,27 @@ KeyBinding bank2(const KeypadTraits& t, char key) {
 4. The console command `NOTCH TOGGLE` calls the same `notchToggle()`, so the
    key and the command behave the same.
 
+### Walkthrough: Bank 2, `1` double, then `B` (NR level)
+
+1. `1` is bound by `switchWithLevel<Setting::NrLevel>`. The double press runs
+   `settingSay(NrLevel)` (`ui_keypad_settings.cpp`) and sets Bank 2's focus to
+   `NrLevel`. `settingSay` finds the setting's `SettingOps`, reads the value
+   with `read` and says it with `speak`.
+2. `B` is bound by `focusKey` to `focusStep(1)`. That calls
+   `keypadSettingNudge(NrLevel, 1, false)`:
+   - `limits` fills the `ValueSpec`: 0 to 100 in steps of 5 on an Icom, the
+     radio's own steps on a Yaesu.
+   - `read` gets the value now.
+   - `ValueEntry::step` moves it one step, or reports the end of the range
+     ("maximum").
+   - The setting is live (`confirm` is null or false), so `write` sets it and
+     the read-back value is said, with the name on the first step after
+     another key.
+3. On the FT-857/897 the NR level is in the EEPROM, so `confirm` is true:
+   the entry opens staged at the new value ("noise reduction level 5
+   please"), further B and C step it with no radio traffic, and `D` writes
+   once through `keypadValueCommit`.
+
 ### Walkthrough: Bank 1, long press on `0` (frequency entry)
 
 1. `beginBank1FrequencySet()` calls
@@ -360,29 +428,31 @@ KeyBinding bank2(const KeypadTraits& t, char key) {
 
 ## 4. Recipes
 
-The recipes share one running example: the **preamp**. Today it exists only
-as ASCII console commands (`PA?`, `PA ON`), so turning it into a real
-cross-radio feature with a key exercises every layer.
+The recipes share one running example: the **preamp**, as a plain on/off
+setting with a key, which exercises every layer. HamTRC has the real one
+(`PREAMP?`, Bank 2 `8`): it adds levels and per-model encodings, so read
+`preampQuery` in `radio_features.cpp` next to the recipes.
 
 ### 4.1 Add a key action
 
-Suppose Bank 4 key `4` should be "preamp?" on a short press and "toggle
-preamp" on a long press, on CI-V radios.
+Suppose Bank 8 key `9`, free on every radio, should be "preamp?" on a short
+press and "toggle preamp" on a long press, on CI-V radios. A value that B and
+C should step, or that is typed, is a setting instead: see 4.3.
 
 **1. Declare** the actions in `keypad_actions.h`, under the bank. Use plain
 types only.
 
 ```cpp
-// ---- Bank 4 ----
-void queryBank4Preamp();
-void toggleBank4Preamp();
+// ---- Bank 8 ----
+void queryBank8Preamp();
+void toggleBank8Preamp();
 ```
 
-**2. Implement** them in `ui_keypad_bank4.cpp`. Every action has the same
+**2. Implement** them in `ui_keypad_bank8.cpp`. Every action has the same
 shape:
 
 ```cpp
-void toggleBank4Preamp() {
+void toggleBank8Preamp() {
   printKeypadAction("PREAMP");                  // trace first, always
   prepareKeypadSpeechResponse();
   bool on = false;
@@ -392,13 +462,17 @@ void toggleBank4Preamp() {
 }
 ```
 
-**3. Bind** the actions in `keypad_keymap.cpp`:
+**3. Bind** the actions in `keypad_keymap.cpp`, with what help mode says for
+each gesture:
 
 ```cpp
-    case '4':
-      if (t.layout == L::Civ) return bind(queryBank4Preamp, toggleBank4Preamp);
+    case '9':
+      if (t.layout == L::Civ) return bind(queryBank8Preamp, toggleBank8Preamp).help("PREAMP", V::Say, V::Toggle);
       return {};
 ```
+
+The label (`"PREAMP"`) needs a row in `kSpokenLabels` (`keypad_labels.cpp`)
+with the words that say it.
 
 **4. Update the tests.** The keymap is checked against a table of what every
 key does for every radio family.
@@ -406,8 +480,8 @@ key does for every radio family.
 - `tests/keypad/test_keymap.cpp`: add a recording stub for each new action.
 
   ```cpp
-  void queryBank4Preamp() { record("queryBank4Preamp"); }
-  void toggleBank4Preamp() { record("toggleBank4Preamp"); }
+  void queryBank8Preamp() { record("queryBank8Preamp"); }
+  void toggleBank8Preamp() { record("toggleBank8Preamp"); }
   ```
 
 - `tests/keypad/keymap_expectations.inc`: add rows that together cover all
@@ -415,18 +489,21 @@ key does for every radio family.
   row for every family.
 
   ```
-  KEYMAP_ROW(CIV,      4, '4', "queryBank4Preamp", "toggleBank4Preamp", "-")
-  KEYMAP_ROW(NOT(CIV), 4, '4', "unassigned",       "none",              "-")
+  KEYMAP_ROW(CIV,      8, '9', "queryBank8Preamp", "toggleBank8Preamp", "-", "none", "-")
+  KEYMAP_ROW(NOT(CIV), 8, '9', "unassigned",       "none",              "-", "none", "-")
   ```
 
-  The columns are short, long, double. The sentinels are `unassigned` (short
-  press beeps), `none` (no hold action), `-` (does not wait for a double
-  press), and `none` in the double column (waits, but has no double action).
+  The columns are short, long, double, double hold and focus. The sentinels
+  are `unassigned` (short press beeps), `none` (no hold or double-hold
+  action), `-` in the double column (does not wait for a double press),
+  `none` in the double column (waits, but has no double action), and `-` in
+  the focus column (the key sets no focus). The file's header explains each.
 
-**5. Run** `make -C tests/keypad`, then build the firmware.
+**5. Run** `make -C tests/keypad`, then build the firmware. The tests also
+fail on a gesture with no help, or a help label with no spoken name.
 
-**6. Document** the key in the radio's page under `docs/radios/`, and add a
-user-facing line to `CHANGELOG.md`.
+**6. Document** the key in `docs/keypad-map.md` and the radio's page under
+`docs/radios/`, and add a user-facing line to `CHANGELOG.md`.
 
 ### 4.2 Make a key behave differently on one radio
 
@@ -448,51 +525,74 @@ case '2':
 - **Naming:** a radio-specific action carries the radio in its name, e.g.
   `queryBank1Ft857TxFrequency`.
 
-### 4.3 Add a numeric entry
+### 4.3 Add a setting (focus, B/C steps, typed entry)
 
-Example: typing a CW keyer speed.
+A value the user reads, steps with B and C and types is a `Setting` with a
+`SettingOps`. The keymap, the focus, help mode and the value entry then come
+from that one description, on every radio. Example: the CW pitch (Bank 7 `5`).
 
-1. Add `InputMode::KeyerSpeedEntry` to the enum in `keypad_input.h`.
-2. Add a row to `kEntries` in `keypad_input.cpp`:
+1. **Name it.** Add `CwPitch` to `enum class Setting` (`keypad_settings.h`),
+   and its row to `kSettings` (`keypad_settings.cpp`), in the same order:
 
    ```cpp
-   {InputMode::KeyerSpeedEntry, "KEYSPEED", 2, false, false, 0, " WPM"},
+   {S::CwPitch,       K::Number, false, "CWPITCH"},
    ```
 
-   The fields, in order:
+   The kind (`Switch`, `List`, `Number`) picks the help wording, the bool says
+   whether A double brings it back to a centre, and the label is the trace
+   label. Add the label's words to `kSpokenLabels` (`keypad_labels.cpp`);
+   its entry prompt says them too ("cw pitch please").
 
-   | Field | Meaning |
+2. **Describe it on the radio.** Add a `SettingOps` row in the ops file of its
+   bank (`keypad_setting_ops_rx.cpp`, `_tx`, `_cw`, or
+   `keypad_setting_ops.cpp` for the rest):
+
+   ```cpp
+   {Setting::CwPitch, cwAvailable<CwLevel::Pitch>, cwLimits<CwLevel::Pitch>, cwRead<CwLevel::Pitch>,
+    cwWrite<CwLevel::Pitch>, cwText<CwLevel::Pitch>, speakCw<CwLevel::Pitch>, isFt8x7},
+   ```
+
+   | Field | Does |
    |---|---|
-   | `name` | Label used in beeps and the trace |
-   | `maxLen` | Maximum characters, the point included |
-   | `commitsWhenFull` | The last digit commits without Enter |
-   | `leadingZero` | `0` may be the first digit |
-   | `maxFraction` | Digits allowed after the `*` point; 0 means no point |
-   | `unit` | Shown after the digits while typing |
+   | `available` | The radio has it, by its caps; no radio traffic |
+   | `limits` | Fills the `ValueSpec` (its name and setting already set): range, `step` or `stepFn`, `bigSteps`, `scale` and `pointDigits` for a fraction, `sign` for a minus, digits and unit. `Unsupported` where it cannot be set |
+   | `read`, `write` | The shared feature functions (recipe 4.4), in the spec's units; `write` returns the value read back |
+   | `text`, `speak` | Trace text and speech of one value, from `ui_features.*` |
+   | `confirm` | True where B and C stage the entry for `D` instead of writing at once: RF power, the FT-8x7 EEPROM settings |
+   | `centre` | What A double sets, where the setting has a centre |
 
-3. In `ui_keypad_entry.cpp`, write `commitKeyerSpeed(const char* digits)` and
-   add its `case` to `keypadEntryCommit()`.
-4. Write the action that starts the entry:
+   The per-radio differences (Icom percent, Yaesu steps, FT-857 menu) stay
+   inside these functions. Steps that need radio traffic do not belong in
+   `stepFn`: a Confirm entry steps with no radio traffic at all.
+
+3. **Bind it.** `currentKeypadTraits()` adds every setting whose
+   `available()` is true to `t.settings`, so the keymap only has to pick the
+   builder:
 
    ```cpp
-   void beginBank4KeyerSpeedEntry() {
-     printKeypadAction("KEYSPEED");
-     keypadBeginEntry(InputMode::KeyerSpeedEntry);
-     // "speed" needs a clip first (4.7)
-     if (g_speechEnabled) { speakToken("speed"); playSilenceMs(80); speakToken("please"); }
-   }
+   case '5': return settingKey<Setting::CwPitch>(t);
    ```
 
-5. Bind the action (recipe 4.1). Add tests to
-   `tests/keypad/test_keypad_input.cpp` covering the digits the entry refuses.
-   The existing `input_*` tests show the `tap()`, `hold()` and `typeKeys()`
-   helpers.
+   Use `switchWithLevel<Level>` for a switch with a level on a double, and
+   `.withFocus(setting)` on a key of its own (recipe 4.1) that should hand
+   its value to A, B and C.
 
-For a setting with a few values, such as AGC, use a choice select: a key picks
-a value and says it, `D` applies it. It needs only a `ChoiceSpec`: the keys and
-values, what to say and the commit. Example: the FT-817 power level in
-`ui_keypad_bank1.cpp`. Mode select passes a `pick` function instead of the
-table, since its modes depend on the profile.
+4. **Test it.** Add the setting to `traitsFor()` in
+   `tests/keypad/test_keymap.cpp` for the families that have it, and the key's
+   rows to `keymap_expectations.inc`, with the setting's label in the focus
+   column. Any pure step function goes into its suite (`tests/cat`,
+   `tests/ft8x7`).
+
+An entry that is not a setting's value (the frequency, the CI-V address)
+is an `InputMode` with a row in `kEntries` (`keypad_input.cpp`), whose fields
+are explained next to `EntrySpec` in `keypad_input.h`, and a `case` in
+`keypadEntryCommit()` (`ui_keypad_entry.cpp`).
+
+For a setting with a few named values, such as AGC, use a choice select: a
+key picks a value and says it, `D` applies it. It needs only a `ChoiceSpec`:
+the keys and values, what to say and the commit. Example: the FT-817 power
+level in `ui_keypad_bank1.cpp`. Mode select passes a `pick` function instead
+of the table, since its modes depend on the profile.
 
 ```cpp
 static constexpr ChoiceOption kFt817PowerKeys[] = {
@@ -502,6 +602,11 @@ static constexpr ChoiceSpec kFt817PowerChoice = {
 ...
 keypadBeginChoiceSelect(kFt817PowerChoice);
 ```
+
+In a choice select A says the value, B and C walk to the next one in key
+order (`cycles = true` goes round, as the mode and AGC do; a level stops at
+the end). `keypadNudgeChoice` opens it from the radio's value one step away,
+staged, for a B or C on the focus.
 
 ### 4.4 Add a radio feature, layer by layer
 
@@ -523,10 +628,12 @@ every step below names its NB counterpart.
   `PROFILE?` shows them.
 
 **2. Command strings (ASCII protocols only).** The NB counterparts are
-`nbGet`, `nbOnCmd` and `nb_get`. Preamp already has these:
-`sp.commands->preampGet`, `preampOnCmd`, `preampOffCmd` and
-`preampReplyPrefix`. For a new command, add the fields to `AsciiCommandSet`
-and set them in the command tables of `radio_profile_table.cpp`.
+`nbGet`, `nbOnCmd` and `nb_get`. For a new command, add the fields to
+`AsciiCommandSet` and set them in the command tables of
+`radio_profile_table.cpp`. Where the models encode the value differently,
+put an encoding in the profile's `SettingEncodings` instead and the
+encoding itself in `cat_setting_codec.*`, with a test in `tests/cat`; the
+real preamp does so with `frontEnd` and `preampLevels`.
 
 **3. Protocol ops.** Each op takes the profile and checks the capability
 first. The CI-V ops are hard-coded bytes; the ASCII ops are driven by the
@@ -539,7 +646,7 @@ bool civQueryPreamp(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
   return civQueryToggleSub(0x02, onOut, timeoutMs);
 }
 
-// protocol_ops_ascii.cpp — asciiQueryPreamp exists; add the caps check like asciiQueryNb
+// protocol_ops_ascii.cpp — the caps check first, like asciiQueryNb
 bool asciiQueryPreamp(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
   if (!sp.caps.getPreamp || !sp.commands->preampGet[0] || !sp.commands->preampReplyPrefix[0]) return false;
   ...
@@ -601,11 +708,11 @@ FeatureStatus preampToggle(bool& on) {
 and `PREAMP TOGGLE` next to `handleConsoleFeatureCommand()`, calling the same
 functions, and list them in `printHelp()` as one line,
 `helpLine("PREAMP? | PREAMP ON | OFF | TOGGLE")`, under the radio's
-`HELP_RADIO` heading (raw protocol tools go under `HELP_DIAG`). Existing console commands (here
-the FTDX `PA?`) should move onto the shared operation rather than keep a
-second implementation.
+`HELP_RADIO` heading (raw protocol tools go under `HELP_DIAG`). Existing console commands for
+the same setting (as the raw FTDX `PA?` was) should move onto the shared operation rather than
+keep a second implementation.
 
-**8. Key.** Follow recipe 4.1.
+**8. Key.** Follow recipe 4.1, or 4.3 for a value that B and C step.
 
 **9. Profiles and docs.**
 
@@ -776,14 +883,16 @@ and the same situation must always sound the same:
 | The radio did not answer | "timeout" | `keypadReportIfTimedOut` |
 | Invalid value, or the radio refused or answered wrongly | "error" | `speakError` |
 | A radio call returned false | one of the three above | `keypadReportFailure` |
-
-"not available", "timeout" and "error" are said through `speakKeypadFailure`, which
-puts the function's name first when verbose is on ("tuner not available"). It looks
-the trace label up in `kSpokenLabels`; a new label needs a row there (an FT-8x7
-setting like `AGC?` is spelled instead).
+| B or C at the end of the range | "maximum" or "minimum", nothing set | `speakLimit` |
+| A value staged, waiting for `D` | the value, then "please" | `speakPlease` |
 | `#` cancelled something | "cancel" | the listener's `onClear` |
 | An entry or selection waited 30 s for a key | "timeout" | the listener's `onEntryTimeout` |
 | Asking for input | "<thing> please" | e.g. "frequency please" |
+
+"not available", "timeout" and "error" are said through `speakKeypadFailure`, which
+puts the function's name first when verbose is on ("tuner not available"). It looks
+the trace label up in `kSpokenLabels` (`keypad_labels.cpp`); a new label needs a row
+there, or it is spelled letter by letter.
 
 - **Build the answer by appending speech.** Only a new key press interrupts
   speech (`silenceSpeechForKeyPress`), so never call `audioAbortNow()` from an
@@ -878,6 +987,8 @@ pattern):
 |---|---|
 | Change what a key does | `keypad_keymap.cpp`, then the tests |
 | Change how an action behaves | `ui_keypad_bankN.cpp` |
+| Change how a setting is read, stepped or typed | its `SettingOps` in `keypad_setting_ops*.cpp` |
+| Change what A, B and C do on the focus | `ui_keypad_settings.cpp` |
 | Change what Enter does for an entry | `ui_keypad_entry.cpp` |
 | Change gestures, timing, Enter/Clear rules | `keypad_input.cpp`, then `test_keypad_input.cpp` |
 | Add a console command | `ui_console.cpp` (plus `printHelp`) |

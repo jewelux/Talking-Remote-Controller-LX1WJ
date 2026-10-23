@@ -34,6 +34,24 @@ Global rules:
 - Press one key at a time. If a second key goes down while another is still held, the radio beeps
   and ignores both keys until you let go of all of them; nothing is run or cancelled
 - `*` while entering a frequency: the decimal point (see Bank 1 `0` long below)
+- `D` long: help mode on or off. In help mode each key press (short, long or double) says what it
+  would do, for example "up power" or "choose mode", and changes nothing. `*` still changes banks.
+  `D` long or `#` ends help mode
+
+`A`, `B` and `C` act on the bank's focus, the setting of the last key you used on that bank that
+has one: Bank 1 `6` RF power or `9` mode, Bank 5 the RIT offset, Bank 9 `7` volume or
+`8` speech speed, or `1` the profile, Bank 8 `2` baud rate, `7` row or `8` menu item. A key with nothing to move, such as a meter, leaves the focus as it was. Each bank
+keeps its own focus. Bank 5 starts on the RIT offset, Bank 8 on the baud rate and Bank 9 on the profile.
+
+- `A` short: the focus with its name
+- `A` long: its entry or selection
+- `A` double: back to the centre where there is one (RIT offset 0, normal speech speed, profile reset)
+- `B` / `C` short: one step up / down. The first step names the setting, the next ones give only
+  the value. Past the end you hear "maximum" or "minimum" and nothing changes
+- `B` / `C` long: a bigger step; the mode, the profile and the baud rate have none and say "not available"
+- RF power and the mode wait for `D`. `B` or `C` reads the value and opens its entry one step
+  away, ending in "please"; more `B` and `C` presses step, `D` sets, `#` cancels
+- With no focus on the bank, `A`, `B` and `C` say "not available"
 
 Frequencies are spoken in full: the megahertz digits, "point", then the remaining digits with
 trailing zeros dropped (always at least one decimal) — for example 7.12345 MHz is spoken "seven
@@ -57,13 +75,21 @@ Every answer first says what it is, then the value: "power 50 watts", "noise bla
 The setting is kept after power off. Prompts such as "frequency please" and messages such as
 "not available" stay the same. Console: `VERBOSE?` and `VERBOSE ON | OFF | TOGGLE`.
 
+## Volume
+
+- Bank 9, `7` short: says the volume, e.g. "volume five"
+- Bank 9, `7` long: volume entry, `1` to `9`, then `D`
+- after `7`, `B` / `C` turn the volume up / down
+
+The setting is kept after power off.
+
 ## Speech Speed
 
 The words can be spoken slow, normal or fast. The pauses between them follow, and the voice keeps
 its pitch.
 
-- Bank 9, `6` short: says the speed, e.g. "speed normal"
-- Bank 9, `6` long: the next speed (slow, normal, fast, then slow again), said at the new speed
+- Bank 9, `8` short: says the speed, e.g. "speed normal"
+- Bank 9, `8` long: the next speed (slow, normal, fast, then slow again), said at the new speed
 
 The setting is kept after power off. Console: `SPEED?` and `SPEED SLOW | NORMAL | FAST`.
 
@@ -80,14 +106,20 @@ The setting is not saved; after power off the profile applies again. Console: `E
 
 On the FT-817/818 and FT-857/897, experimental mode also lets HamTRC change settings that CAT can
 only read, by writing them to the radio's memory: the menu item and soft key row (Bank 8), AGC and
-the noise blanker, and on the FT-857/897 noise reduction, notch, the noise reduction and blanker
+the noise blanker, and on the FT-857/897 noise reduction, auto notch, the noise reduction and blanker
 levels, and the DSP bandpass filter with its low and high cut (Bank 2), and the RF power (Bank 1
-`6`). From the console it can also set the mic gain (`MICGAIN`), VOX with its gain and delay
-(`VOX`, `VOXGAIN`, `VOXDELAY`), break-in (`BK`) and the keyer (`KYR`), on the FT-817/818 the
-antenna jack (`ANT`), and on the FT-857/897 the speech processor (`PROC`, `PROCLEVEL`) and the TX
-equalizer (`MICEQ`). On the IC-7300, IC-705, IC-7760 and FTDX10 the console sets the speech
-processor, mic gain and VOX without experimental mode. See the
-[keypad map](docs/keypad-map.md).
+`6`), the mic gain and VOX with its gain and delay (`MICGAIN`, `VOX`, `VOXGAIN`, `VOXDELAY`, Bank
+4), and on the FT-857/897 the speech processor (`PROC`, `PROCLEVEL`) and the TX equalizer (`MICEQ`,
+Bank 4), the keyer with its speed, break-in, the sidetone, CW pitch, weight, key reverse and the
+break-in delay, and on the FT-857/897 the QSK time and the keyer type (Bank 7). From the console it
+can also set the FT-817/818 antenna jack (`ANT`). On the IC-7300, IC-705, IC-7760, FTDX10, FTDX101, FT-891 and TS-480 the
+console and Bank 4 set the speech processor, mic gain and VOX without experimental mode (the FTDX101 and
+IC-7760 not all of them), and on these and the KX2 the AGC, also from Bank 2 `7`, and the preamp
+and attenuator (`PREAMP`, `ATT`, Bank 2 `8` and `9`) and, but on the FTDX101MP, the RF power
+(`RFPOWER`, Bank 1 `6`). The Icoms and these Yaesus also set break-in (`BK`) and the Yaesus the
+keyer (`KYR`), from Bank 7 `2` and `1` too, and the CW speed, pitch and delay (`CWSPEED`,
+`CWPITCH`, `CWDELAY`, Bank 7 `1` double, `5` and `9`) where the radio has them. In FM the console also sets the
+tone squelch (`TONE`, `TONEDIR`, `CTCSS`) and the repeater shift (`RPT`). See the [keypad map](docs/keypad-map.md).
 
 ## Practical Everyday Use
 
@@ -121,16 +153,17 @@ Mode digits:
 Bank 8 adjusts the connection settings stored for the selected profile.
 
 - Bank 8, `2` short: speak the current baud rate
-- Bank 8, `2` long: move to the previous baud rate the radio offers
-- Bank 8, `2` double press: move to the next baud rate
+- Bank 8, `2` long, a digit, `D`: pick a baud rate; `1` is the slowest the radio offers, `2` the
+  next, and so on
 - CI-V radios only: Bank 8, `1` short: speak the current CI-V address
 - CI-V radios only: Bank 8, `1` long, digits, `D`: set CI-V address as a decimal value from `0`
   to `255`
+- Bank 8, `B` / `C`: move to the next / previous baud rate the radio offers
 
 Set the same baud rate on the radio. The FT-817, FT-818, FT-857 and FT-897 offer 4800, 9600 and
 38400 baud.
 
-Bank 9, `A` double press resets the selected profile: its baud rate and CI-V address go back to
+Bank 9, `1` double press resets the selected profile: its baud rate and CI-V address go back to
 the profile's defaults, and HamTRC says "profile reset". The console command is
 `PROFILE RESET`; `PROFILE RESET ALL` resets every profile.
 
@@ -143,16 +176,19 @@ Use these keypad functions first:
 - Bank 1, `0` short or long: read or set frequency
 - Bank 1, `3` short or long: read or toggle lock
 - Bank 1, `4` short: power meter
-- Bank 1, `5` short, long, or double: tuner query, tuner toggle, tune
-- Bank 1, `6` short or long: preamp query or toggle
+- Bank 4, `0` short, long, or double: tuner query, tuner toggle, tune
+- Bank 1, `5` short: ALC while transmitting
 - Bank 1, `7` short: S-meter
 - Bank 1, `8` short: SWR
 - Bank 1, `9` short or long: read or set mode
-- Bank 2, `1`, `2`, `3` short or long: NR, NB, notch query or toggle
-- Bank 2, `4` short, long, or double: AGC query, fast, slow
-- Bank 2, `5` short, long, or double: power-state query, off, on
-- Bank 2, `6` short: IF info
-- Bank 2, `7` short: radio ID
+- Bank 2, `1`, `2`, `3` short or long: NR, NB, notch query or toggle (FT-857/897: auto notch)
+- Bank 2, `1` and `2` double: NR and NB level
+- Bank 2, `0` short or long: auto notch query or toggle
+- Bank 2, `7` short or long: AGC query or select
+- Bank 2, `8` and `9` short or long: preamp and attenuator query, or the next level
+- Bank 8, `4` short, long, or double: power-state query, off, on
+- Bank 8, `5` short: radio ID
+- Bank 8, `6` short: IF info
 - Bank 3, `0` short or long: split query or toggle
 - Bank 3, `1` short or long: VFO-A frequency or select VFO-A
 - Bank 3, `2` short or long: VFO-B frequency or select VFO-B

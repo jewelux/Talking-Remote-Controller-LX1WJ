@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+#include "keypad_settings.h"
+
 // The keypad actions the keymap (keypad_keymap.cpp) can run. Only plain types
 // here, so the keymap stays Arduino-free and the host tests (tests/keypad) can
 // link it against a recording stub. The firmware implements these in the
@@ -20,6 +22,23 @@
 // ---- Any bank ----
 // "CMD <key> -> <cmd>", then the console command cmd. Most FTDX10 keys are one.
 void sendKeypadCommand(const char* cmd);
+
+// ---- Any bank: one Setting through its SettingOps ----
+// "not available" where the radio lacks it.
+void settingSay(Setting setting);    // its name and value
+void settingEntry(Setting setting);  // its entry, from the radio's value: "<name> please"
+// A short list (filter, preamp): the next value, from the last back to the first, set at once.
+void settingNext(Setting setting);
+
+// ---- A, B and C: the bank's focus (keypadActiveFocus()) ----
+// "not available" with no focus, or where the radio lacks it.
+void focusSay();    // A short: its name and value
+void focusEntry();  // A long: its entry or pick
+void focusCentre(); // A double: back to its centre (RIT 0, normal speed, the profile reset)
+// B (dir 1) or C (-1): one step, or a big one. A live setting is set and said at once; RF
+// power and the mode open their entry or pick one step away, staged for Enter.
+void focusStep(int8_t dir);
+void focusBigStep(int8_t dir);
 
 // ---- Bank 1 ----
 void queryBank1Frequency();
@@ -41,49 +60,45 @@ void queryBank1PaVolt();
 void beginBank1PaVoltSet();
 void queryBank1Smeter();   // "SM?", sent or staged
 void queryBank1Swr();      // "SWR?", sent or staged
+void queryBank1Alc();      // "ALC?", sent or staged
 void queryBank1Mode();     // "MODE?", sent or staged
 void beginBank1ModeSelect();  // "MODE", mode select, "mode please"
 
 // ---- Bank 2 ----
+// The NR, NB and notch switches; the toggles go off -> on (TS-480 NR 1 -> NR 2, Icom notch
+// NAR -> MID -> WIDE) -> off. Their levels are Settings (settingSay).
 void queryBank2Nr();
 void toggleBank2Nr();
 void queryBank2Nb();
 void toggleBank2Nb();
 void queryBank2Notch();
 void toggleBank2Notch();
-void queryBank2NrLevel();
-void adjustBank2NrLevel(int deltaPercent);
-void queryBank2NbLevel();
-void adjustBank2NbLevel(int deltaPercent);
-void queryBank2PbtInner();
-void adjustBank2PbtInner(int delta);
-void queryBank2PbtOuter();
-void adjustBank2PbtOuter(int delta);
+void queryBank2Ft8x7AutoNotch();
+void toggleBank2Ft8x7AutoNotch();
+// Icom filter shape ("FILSHAPE?" is the console command): soft <-> sharp.
 void toggleBank2FilterShape();
-void queryBank2FilterWidth();
-void cycleBank2FilterWidth(int delta);
-// FT-8x7 settings read from the radio's EEPROM. The FT-817 has only AGC of these.
-void queryBank2Ft8x7NrLevel();
-void queryBank2Ft8x7NbLevel();
+// AGC (agcQuery), and its select: 0 off, 1 auto, 2 fast, 3 slow, 4 mid, of the speeds the radio
+// can be set to, then Enter sets it. On the FT-8x7 experimental, written to the EEPROM.
+void queryBank2Agc();
+void beginBank2AgcSelect();
+// The auto notch (autoNotchQuery) and its toggle.
+void queryBank2AutoNotch();
+void toggleBank2AutoNotch();
+// The attenuator (attQuery) and the preamp (preampQuery); the steps go to the next level, from
+// the last one to off.
+void queryBank2Att();
+void stepBank2Att();
+void queryBank2Preamp();
+void stepBank2Preamp();
+// FT-8x7 settings read from the radio's EEPROM.
 void queryBank2Ft8x7Dbf();
-void queryBank2Ft8x7LowCut();
-void queryBank2Ft8x7HighCut();
-void queryBank2Ft8x7MicEq();
 void queryBank2Ft8x7Ipo();
-void queryBank2Ft8x7Att();
-void queryBank2Ft8x7Agc();
 void queryBank2Ft817Antenna();
-// Experimental, FT-857/897, written to the radio's EEPROM; "not available" unless EXPERIMENTAL
-// is on. The steps are the radio's: NR level (menu 49) and NB level (menu 63) 1 each, low cut
-// (menu 46) 60 Hz, high cut (menu 47) about 160 Hz.
-void stepBank2Ft8x7NrLevel(int delta);
-void stepBank2Ft8x7NbLevel(int delta);
+// Experimental, written to the radio's EEPROM; "not available" unless EXPERIMENTAL is on. The
+// FT-857/897 DBF (both its bits, as the radio's key) and the FT-817/818 antenna jack of the
+// current band.
 void toggleBank2Ft8x7Dbf();
-// Experimental, FT-817/818 and FT-857/897: picks AGC with 0 off, 1 auto, 2 fast, 3 slow, then
-// Enter writes it to the radio's EEPROM.
-void beginBank2Ft8x7AgcSelect();
-void stepBank2Ft8x7LowCut(int delta);
-void stepBank2Ft8x7HighCut(int delta);
+void toggleBank2Ft817Antenna();
 
 // ---- Bank 3 ----
 void queryBank3Split();
@@ -123,10 +138,6 @@ void recallBank3BandStack(uint8_t reg);
 void queryBank4Tuner();
 void toggleBank4Tuner();
 void triggerBank4Tune();
-void toggleBank4Monitor();
-void queryBank4MonitorLevel();
-void adjustBank4MonitorLevel(int deltaPercent);
-void toggleBank4Transceive();
 
 // ---- Bank 5 ----
 void queryBank5Rit();
@@ -136,15 +147,16 @@ void adjustBank5Rit(int32_t deltaHz);
 void setBank5RitOff();  // "RIT OFF", RIT off or "RIT -> unsupported"
 
 // ---- Bank 6 ----
+// The repeater shift: on the FT-8x7 its own CAT command, elsewhere caps.setRptShift.
 void setBank6RepeaterOff();
 void setBank6RepeaterMinus();
 void setBank6RepeaterPlus();
-// preset 1 or 2: the profile's rpt_offset_1 or rpt_offset_2 (default 600 kHz
-// and 7.6 MHz).
+// FT-8x7: preset 1 or 2, the profile's rpt_offset_1 or rpt_offset_2 (default
+// 600 kHz and 7.6 MHz).
 void setBank6RepeaterOffsetPreset(uint8_t preset);
 void beginBank6RepeaterOffsetEntry();
 // The tone squelch type ("TONE?"), and off, CTCSS or DCS; CTCSS and DCS keep
-// encode only.
+// encode only. Over CAT CTCSS only.
 void queryBank6Tone();
 void setBank6ToneOff();
 void setBank6ToneModeCtcss();
@@ -154,20 +166,19 @@ void queryBank6ToneDir();
 void stepBank6ToneDir();
 // FT-857/897 split tone, menu 79 ("SPLITTONE?").
 void queryBank6SplitTone();
-void queryBank6CtcssDefault();
-void beginBank6CtcssEntry();
-void queryBank6DcsDefault();
-void beginBank6DcsEntry();
 
 // ---- Bank 8 ----
 void queryBank8CivAddress();
 void beginBank8CivAddressEntry();
 void queryBank8Baud();  // "BAUD?", says "baud 4800"
-// 1: the next rate the radio offers, -1: the previous one, wrapping around.
-void cycleBank8Baud(int delta);
+// The rates the radio offers on keys 1, 2, ... (slowest first); Enter sets the one picked.
+void beginBank8BaudSelect();
+void toggleBank8Transceive();
 // FT-8x7: the soft key (function) row and menu item saved when the radio's menu was last exited.
 void queryBank8Ft8x7Row();
 void queryBank8Ft8x7Menu();
+// "USB?": the USB radio link, "usb on/off/error" with counts, or "usb not available".
+void queryBank8Usb();
 // Experimental: a row or menu item number, then Enter, written to the radio's EEPROM.
 void beginBank8Ft8x7RowEntry();
 void beginBank8Ft8x7MenuEntry();
@@ -180,7 +191,6 @@ void toggleBank9Verbose();
 void queryBank9Experimental();   // "EXPERIMENTAL?", says "experimental on/off"
 void toggleBank9Experimental();  // not saved, off after a restart
 // -1/1: "VOLUME DOWN/UP"; -2/2: "VOLUME DOWN/UP FAST".
-void adjustBank9Volume(int delta);
 void queryBank9Volume();   // "VOLUME?", speaks the volume
 void queryBank9Speed();    // "SPEED?", says "speed normal"
 void stepBank9Speed();     // "SPEED NEXT": slow, normal, fast, slow again
@@ -190,8 +200,6 @@ void beginBank9ProfileSelect();
 void resetBank9Profile();
 void selectNextProfile();
 void selectPrevProfile();
-// "USB?": the USB radio link, "usb on/off/error" with counts, or "usb not available".
-void queryBank9Usb();
 
 // ---- NanoVNA (KeypadLayout::NanoVna, Bank 1) ----
 // "SWEEP": says "sweep", runs the scan, then "best match <swr> at <MHz>, worst match ...".

@@ -2,11 +2,13 @@
 // A recording stub implements keypad_actions.h: each action appends its name
 // and arguments, spelled as in keymap_expectations.inc.
 #include <cstdarg>
+#include <initializer_list>
 #include <string>
 
 #include "keymap_expectations.h"
 #include "keypad_actions.h"
 #include "keypad_keymap.h"
+#include "keypad_labels.h"
 #include "test_runner.h"
 
 using namespace keymap_expect;
@@ -36,10 +38,39 @@ KeypadTraits traitsFor(uint16_t family) {
   else if (family == FT857) t.layout = KeypadLayout::Ft857;
   else if (family == FT8X7_OTHER) t.layout = KeypadLayout::Ft8x7;
   else if (family == QMX) t.layout = KeypadLayout::Qmx;
-  // Monitor and transceive are PROTO_CIV only (radio_protocol.cpp).
-  t.supportsMonitor = (family & CIV) != 0;
+  // Transceive is PROTO_CIV only (radio_protocol.cpp).
   t.supportsTransceive = (family & CIV) != 0;
-  t.canGetRfPower = family == IC7300;
+  t.canGetRfPower = family == IC7300 || family == TS480 || family == FTDX10 || family == FT891;
+  // The settings, as the profiles' caps give them.
+  using S = Setting;
+  auto add = [&t](std::initializer_list<Setting> settings) {
+    for (Setting s : settings) t.settings.add(s);
+  };
+  if (family == IC7300) {
+    add({S::NrLevel, S::NbLevel, S::Notch, S::PbtInner, S::PbtOuter, S::FilterSlot, S::Agc, S::Preamp, S::Att});
+  }
+  if (family == TS480) add({S::Agc, S::Preamp, S::Att});
+  if (family == FTDX10 || family == FT891) add({S::NrLevel, S::NbLevel, S::Agc, S::Preamp, S::Att});
+  if (family == FT817) add({S::Agc});
+  if (family == FT857) add({S::NrLevel, S::NbLevel, S::RxLowCut, S::RxHighCut, S::BpfWidth, S::Agc, S::Att});
+  if (family == IC7300) add({S::Monitor, S::MonitorLevel});
+  if (family == IC7300 || family == TS480 || family == FTDX10 || family == FT891 || family == FT857) {
+    add({S::Proc, S::ProcLevel});
+  }
+  if (family != IC706 && family != FT8X7_OTHER && family != QMX) add({S::Vox, S::VoxGain, S::MicGain, S::VoxDelay});
+  if (family == FT857) add({S::TxEq, S::TxLowCut, S::TxHighCut});
+  // Bank 7.
+  if (family == IC7300) add({S::BreakIn, S::CwPitch});
+  if (family == TS480) add({S::CwSpeed, S::CwDelay});
+  if (family == FTDX10 || family == FT891) add({S::Keyer, S::CwSpeed, S::BreakIn, S::CwPitch, S::CwDelay});
+  if (family == FT817 || family == FT857) {
+    add({S::Keyer, S::CwSpeed, S::BreakIn, S::Sidetone, S::CwPitch, S::CwWeight, S::KeyReverse, S::CwDelay});
+  }
+  if (family == FT857) add({S::Qsk, S::Paddle});
+  // Bank 6.
+  if (family & (FT8X7 | FTDX10 | FT891)) add({S::RptShift, S::ToneType, S::Ctcss});
+  if (family == IC7300) add({S::ToneType, S::Ctcss});
+  if (family & FT8X7) add({S::Dcs});
   return t;
 }
 
@@ -57,7 +88,7 @@ std::string outcome(KeyAction action, uint8_t bank, char key, const char *gestur
 
 bool isEmpty(const KeyBinding &b) {
   return !b.shortAction && !b.holdAction && !b.doubleAction && !b.doubleHoldAction &&
-         !b.waitsForDouble;
+         !b.waitsForDouble && b.focus == Setting::None;
 }
 
 void checkOutcome(const Family &f, uint8_t bank, char key, const char *gesture,
@@ -84,6 +115,16 @@ void forEachKey(Fn fn) {
 
 void sendKeypadCommand(const char *cmd) { record("send(%s)", cmd); }
 
+void settingSay(Setting s) { record("settingSay(%s)", settingInfo(s).label); }
+void settingEntry(Setting s) { record("settingEntry(%s)", settingInfo(s).label); }
+void settingNext(Setting s) { record("settingNext(%s)", settingInfo(s).label); }
+
+void focusSay() { record("focusSay"); }
+void focusEntry() { record("focusEntry"); }
+void focusCentre() { record("focusCentre"); }
+void focusStep(int8_t d) { record("focusStep(%d)", (int)d); }
+void focusBigStep(int8_t d) { record("focusBigStep(%d)", (int)d); }
+
 void queryBank1Frequency() { record("queryBank1Frequency"); }
 void beginBank1FrequencySet() { record("beginBank1FrequencySet"); }
 void roundActiveFrequency(uint32_t hz) { record("roundActiveFrequency(%u)", (unsigned)hz); }
@@ -108,33 +149,23 @@ void queryBank2Nb() { record("queryBank2Nb"); }
 void toggleBank2Nb() { record("toggleBank2Nb"); }
 void queryBank2Notch() { record("queryBank2Notch"); }
 void toggleBank2Notch() { record("toggleBank2Notch"); }
-void queryBank2NrLevel() { record("queryBank2NrLevel"); }
-void adjustBank2NrLevel(int d) { record("adjustBank2NrLevel(%d)", d); }
-void queryBank2NbLevel() { record("queryBank2NbLevel"); }
-void adjustBank2NbLevel(int d) { record("adjustBank2NbLevel(%d)", d); }
-void queryBank2PbtInner() { record("queryBank2PbtInner"); }
-void adjustBank2PbtInner(int d) { record("adjustBank2PbtInner(%d)", d); }
-void queryBank2PbtOuter() { record("queryBank2PbtOuter"); }
-void adjustBank2PbtOuter(int d) { record("adjustBank2PbtOuter(%d)", d); }
+void queryBank2Ft8x7AutoNotch() { record("queryBank2Ft8x7AutoNotch"); }
+void toggleBank2Ft8x7AutoNotch() { record("toggleBank2Ft8x7AutoNotch"); }
 void toggleBank2FilterShape() { record("toggleBank2FilterShape"); }
-void queryBank2FilterWidth() { record("queryBank2FilterWidth"); }
-void cycleBank2FilterWidth(int d) { record("cycleBank2FilterWidth(%d)", d); }
-void queryBank2Ft8x7NrLevel() { record("queryBank2Ft8x7NrLevel"); }
-void queryBank2Ft8x7NbLevel() { record("queryBank2Ft8x7NbLevel"); }
 void queryBank2Ft8x7Dbf() { record("queryBank2Ft8x7Dbf"); }
-void queryBank2Ft8x7LowCut() { record("queryBank2Ft8x7LowCut"); }
-void queryBank2Ft8x7HighCut() { record("queryBank2Ft8x7HighCut"); }
-void queryBank2Ft8x7MicEq() { record("queryBank2Ft8x7MicEq"); }
 void queryBank2Ft8x7Ipo() { record("queryBank2Ft8x7Ipo"); }
-void queryBank2Ft8x7Att() { record("queryBank2Ft8x7Att"); }
-void queryBank2Ft8x7Agc() { record("queryBank2Ft8x7Agc"); }
+void queryBank1Alc() { record("queryBank1Alc"); }
+void queryBank2AutoNotch() { record("queryBank2AutoNotch"); }
+void toggleBank2AutoNotch() { record("toggleBank2AutoNotch"); }
+void queryBank2Att() { record("queryBank2Att"); }
+void stepBank2Att() { record("stepBank2Att"); }
+void queryBank2Preamp() { record("queryBank2Preamp"); }
+void stepBank2Preamp() { record("stepBank2Preamp"); }
+void queryBank2Agc() { record("queryBank2Agc"); }
 void queryBank2Ft817Antenna() { record("queryBank2Ft817Antenna"); }
-void stepBank2Ft8x7NrLevel(int d) { record("stepBank2Ft8x7NrLevel(%d)", d); }
-void stepBank2Ft8x7NbLevel(int d) { record("stepBank2Ft8x7NbLevel(%d)", d); }
 void toggleBank2Ft8x7Dbf() { record("toggleBank2Ft8x7Dbf"); }
-void beginBank2Ft8x7AgcSelect() { record("beginBank2Ft8x7AgcSelect"); }
-void stepBank2Ft8x7LowCut(int d) { record("stepBank2Ft8x7LowCut(%d)", d); }
-void stepBank2Ft8x7HighCut(int d) { record("stepBank2Ft8x7HighCut(%d)", d); }
+void toggleBank2Ft817Antenna() { record("toggleBank2Ft817Antenna"); }
+void beginBank2AgcSelect() { record("beginBank2AgcSelect"); }
 
 void queryBank3Split() { record("queryBank3Split"); }
 void toggleBank3Split() { record("toggleBank3Split"); }
@@ -170,10 +201,6 @@ void recallBank3BandStack(uint8_t r) { record("recallBank3BandStack(%u)", r); }
 void queryBank4Tuner() { record("queryBank4Tuner"); }
 void toggleBank4Tuner() { record("toggleBank4Tuner"); }
 void triggerBank4Tune() { record("triggerBank4Tune"); }
-void toggleBank4Monitor() { record("toggleBank4Monitor"); }
-void queryBank4MonitorLevel() { record("queryBank4MonitorLevel"); }
-void adjustBank4MonitorLevel(int d) { record("adjustBank4MonitorLevel(%d)", d); }
-void toggleBank4Transceive() { record("toggleBank4Transceive"); }
 
 void queryBank5Rit() { record("queryBank5Rit"); }
 void toggleBank5Rit() { record("toggleBank5Rit"); }
@@ -193,17 +220,15 @@ void queryBank6Tone() { record("queryBank6Tone"); }
 void queryBank6ToneDir() { record("queryBank6ToneDir"); }
 void stepBank6ToneDir() { record("stepBank6ToneDir"); }
 void queryBank6SplitTone() { record("queryBank6SplitTone"); }
-void queryBank6CtcssDefault() { record("queryBank6CtcssDefault"); }
-void beginBank6CtcssEntry() { record("beginBank6CtcssEntry"); }
-void queryBank6DcsDefault() { record("queryBank6DcsDefault"); }
-void beginBank6DcsEntry() { record("beginBank6DcsEntry"); }
 
 void queryBank8CivAddress() { record("queryBank8CivAddress"); }
 void beginBank8CivAddressEntry() { record("beginBank8CivAddressEntry"); }
 void queryBank8Baud() { record("queryBank8Baud"); }
-void cycleBank8Baud(int d) { record("cycleBank8Baud(%d)", d); }
+void beginBank8BaudSelect() { record("beginBank8BaudSelect"); }
+void toggleBank8Transceive() { record("toggleBank8Transceive"); }
 void queryBank8Ft8x7Row() { record("queryBank8Ft8x7Row"); }
 void queryBank8Ft8x7Menu() { record("queryBank8Ft8x7Menu"); }
+void queryBank8Usb() { record("queryBank8Usb"); }
 void beginBank8Ft8x7RowEntry() { record("beginBank8Ft8x7RowEntry"); }
 void beginBank8Ft8x7MenuEntry() { record("beginBank8Ft8x7MenuEntry"); }
 
@@ -213,14 +238,12 @@ void queryBank9Verbose() { record("queryBank9Verbose"); }
 void toggleBank9Verbose() { record("toggleBank9Verbose"); }
 void queryBank9Experimental() { record("queryBank9Experimental"); }
 void toggleBank9Experimental() { record("toggleBank9Experimental"); }
-void adjustBank9Volume(int d) { record("adjustBank9Volume(%d)", d); }
 void queryBank9Volume() { record("queryBank9Volume"); }
 void queryBank9Speed() { record("queryBank9Speed"); }
 void stepBank9Speed() { record("stepBank9Speed"); }
 void queryBank9Profile() { record("queryBank9Profile"); }
 void beginBank9ProfileSelect() { record("beginBank9ProfileSelect"); }
 void resetBank9Profile() { record("resetBank9Profile"); }
-void queryBank9Usb() { record("queryBank9Usb"); }
 void selectNextProfile() { record("selectNextProfile"); }
 void selectPrevProfile() { record("selectPrevProfile"); }
 
@@ -286,14 +309,39 @@ TEST(keymap_double_click_matches_expectations) {
   });
 }
 
-// The matrix has no double hold column: Bank 6 '2' is the one key with a double hold.
-TEST(keymap_double_hold) {
+TEST(keymap_double_hold_matches_expectations) {
   forEachKey([](const Family &f, const KeypadTraits &t, uint8_t bank, char key) {
-    const bool expected = (f.bit & FT8X7) && bank == 6 && key == '2';
     const KeyAction action = keymapLookup(t, bank, key).doubleHoldAction;
     checkOutcome(f, bank, key, "double hold", outcome(action, bank, key, "DOUBLE LONG", "none"),
-                 expected ? "setBank6ToneModeDcs" : "none");
+                 lookup(f.bit, bank, key).doubleHoldAction);
   });
+}
+
+TEST(keymap_focus_matches_expectations) {
+  forEachKey([](const Family &f, const KeypadTraits &t, uint8_t bank, char key) {
+    const Setting focus = keymapLookup(t, bank, key).focus;
+    checkOutcome(f, bank, key, "focus", focus == Setting::None ? "-" : settingInfo(focus).label,
+                 lookup(f.bit, bank, key).focus);
+  });
+}
+
+// A waits for a double only when the focus has a centre; the bank's own focus is passed in.
+TEST(keymap_focus_keys_follow_the_focus) {
+  const KeypadTraits t = traitsFor(IC7300);
+  CHECK(keymapLookup(t, 9, 'A').waitsForDouble);
+  CHECK(keymapLookup(t, 9, 'A', Setting::SpeechSpeed).waitsForDouble);
+  CHECK(!keymapLookup(t, 9, 'A', Setting::Volume).waitsForDouble);
+  CHECK(!keymapLookup(t, 9, 'A', Setting::None).waitsForDouble);
+  CHECK(!keymapLookup(t, 1, 'A', Setting::RfPower).waitsForDouble);
+  CHECK(keymapLookup(t, 1, 'B', Setting::Mode).shortAction != nullptr);
+  CHECK(keymapHomeFocus(t, 5) == Setting::RitOffset);
+  CHECK(keymapHomeFocus(t, 9) == Setting::Profile);
+  CHECK(keymapHomeFocus(t, 8) == Setting::Baud);
+  CHECK(!keymapLookup(t, 8, 'A').waitsForDouble);
+  CHECK(keymapHomeFocus(t, 1) == Setting::None);
+  CHECK(keymapLookup(t, 2, 'A', Setting::PbtInner).waitsForDouble);
+  CHECK(keymapLookup(t, 7, 'A', Setting::BreakIn).shortAction != nullptr);
+  CHECK(keymapLookup(t, 4, 'A', Setting::MicGain).shortAction != nullptr);
 }
 
 TEST(keymap_ignores_state_machine_keys_and_other_banks) {
@@ -303,15 +351,71 @@ TEST(keymap_ignores_state_machine_keys_and_other_banks) {
     for (uint8_t bank = 0; bank <= 10; ++bank) CHECK(isEmpty(keymapLookup(t, bank, *k)));
   }
   CHECK(isEmpty(keymapLookup(t, 0, '1')));
-  CHECK(isEmpty(keymapLookup(t, 7, '1')));
+  CHECK(isEmpty(keymapLookup(t, 8, '9')));
   CHECK(isEmpty(keymapLookup(t, 10, '1')));
   CHECK(g_calls.empty());
+}
+
+// Help mode says every gesture that has an action, by a name kSpokenLabels has; a gesture with
+// no action has no help. "not available" may stand alone (A, B and C with no focus).
+void checkHelp(const Family &f, uint8_t bank, char key, Setting focus, const char *gesture, KeyAction action,
+               const GestureHelp &help) {
+  const char *problem = nullptr;
+  if (!action) {
+    if (help.verb != HelpVerb::None) problem = "help without an action";
+  } else if (help.verb == HelpVerb::None) {
+    problem = "no help";
+  } else if (!help.label) {
+    if (help.verb != HelpVerb::NotAvailable) problem = "help without a label";
+  } else if (!spokenLabelWords(help.label)) {
+    problem = "help label with no spoken name";
+  }
+  if (!problem) return;
+  fprintf(stderr, "  %s bank %u key %c focus %s %s: %s (%s)\n", f.name, bank, key,
+          settingInfo(focus).label, gesture, problem, help.label ? help.label : "-");
+  ++::test::g_checkFailures;
+}
+
+void checkBindingHelp(const Family &f, uint8_t bank, char key, Setting focus, const KeyBinding &b) {
+  checkHelp(f, bank, key, focus, "short", b.shortAction, b.shortHelp);
+  checkHelp(f, bank, key, focus, "long", b.holdAction, b.holdHelp);
+  checkHelp(f, bank, key, focus, "double", b.doubleAction, b.doubleHelp);
+  checkHelp(f, bank, key, focus, "double hold", b.doubleHoldAction, b.doubleHoldHelp);
+}
+
+TEST(keymap_every_gesture_has_help) {
+  forEachKey([](const Family &f, const KeypadTraits &t, uint8_t bank, char key) {
+    checkBindingHelp(f, bank, key, Setting::Home, keymapLookup(t, bank, key));
+    if (key != 'A' && key != 'B' && key != 'C') return;
+    // A, B and C for every focus a key could give them.
+    for (uint8_t s = 0; s < (uint8_t)Setting::Count; ++s) {
+      if ((Setting)s == Setting::Home) continue;
+      checkBindingHelp(f, bank, key, (Setting)s, keymapLookup(t, bank, key, (Setting)s));
+    }
+  });
+}
+
+TEST(keymap_focus_keys_help_names_the_focus) {
+  const KeypadTraits t = traitsFor(IC7300);
+  const KeyBinding a = keymapLookup(t, 9, 'A');
+  CHECK(strcmp(a.shortHelp.label, "PROFILE") == 0);
+  CHECK(a.shortHelp.verb == HelpVerb::Say);
+  CHECK(a.holdHelp.verb == HelpVerb::Pick);
+  CHECK(a.doubleHelp.verb == HelpVerb::Centre);
+  const KeyBinding b = keymapLookup(t, 1, 'B', Setting::RfPower);
+  CHECK(strcmp(b.shortHelp.label, "RFPOWER") == 0);
+  CHECK(b.shortHelp.verb == HelpVerb::Up);
+  CHECK(b.holdHelp.verb == HelpVerb::UpFast);
+  CHECK(keymapLookup(t, 1, 'A', Setting::RfPower).holdHelp.verb == HelpVerb::Entry);
+  const KeyBinding none = keymapLookup(t, 1, 'C', Setting::None);
+  CHECK(none.shortHelp.label == nullptr);
+  CHECK(none.shortHelp.verb == HelpVerb::NotAvailable);
 }
 
 // ---- NanoVNA ----
 //
 // Not a radio, so not in the characterization matrix: a layout of its own. Bank 1 measures,
-// Bank 9 is the radios' Bank 9, and every other key is free.
+// Bank 8 0 is the USB link, Bank 9 is the radios' Bank 9, and every other key is free.
 
 namespace {
 
@@ -334,6 +438,7 @@ constexpr NanoVnaKey kNanoVnaKeys[] = {
     {1, '9', "queryNanoVnaSerialNumber", "none", "-"},
     {1, 'B', "stepNanoVnaBand(1)", "none", "-"},
     {1, 'C', "stepNanoVnaBand(-1)", "none", "-"},
+    {8, '0', "queryBank8Usb", "none", "-"},
 };
 
 constexpr NanoVnaKey kNanoVnaFree = {0, 0, "unassigned", "none", "-"};
@@ -360,6 +465,7 @@ TEST(keymap_nanovna_banks_1_to_8) {
     for (const char *k = kBankKeys; *k; ++k) {
       const NanoVnaKey &expected = nanoVnaExpected(bank, *k);
       const KeyBinding b = keymapLookup(t, bank, *k);
+      checkBindingHelp(kNanoVnaFamily, bank, *k, Setting::Home, b);
       const bool waits = strcmp(expected.doubleAction, "-") != 0;
       CHECK_EQ(b.waitsForDouble, waits);
       CHECK(b.doubleHoldAction == nullptr);

@@ -13,10 +13,10 @@ been connected yet.
 | S-meter (Bank 1 `7`, console `SM?`) | `SM` | in dB; said as S0 to S9, then S9 plus tens of dB. `SM?` also answers on the second socket, with the raw reply |
 | Output power (Bank 1 `4`, console `PO?`) | `PC` | in tenths of a watt, said as watts ("power 4.5 watts"); "power rx" in receive. Also on the second socket |
 | SWR (Bank 1 `8`, console `SWR?`) | `SW` | in hundredths, said as "swr 1.21"; "swr rx" in receive. Also on the second socket |
-| PA voltage (Bank 1 `6`, console `PAVOLT?`) | `MM` | the Protection menu's Max. PA voltage, which sets the output power; said as "p a 7.5 volts". Also on the second socket |
+| PA voltage (Bank 1 `6`, also Bank 4 and 7 `8`; console `PAVOLT?`) | `MM` | the Protection menu's Max. PA voltage, which sets the output power; said as "p a 7.5 volts". Also on the second socket |
 | PA voltage set (Bank 1 `6` long, console `PAVOLT <V>`) | `MM`, `MU` | 1.0 to 15.0 V, one decimal; written to the QMX's memory, read back and applied (see below) |
 | Radio ID and model (console `ID?`, `OM?`, `IF?`) | `ID`, `OM`, `IF` | `ID020` (TS-480), `OMQC` |
-| USB connection state (console `USB?`, Bank 9 `1`) | | also on the second USB socket |
+| USB connection state (console `USB?`, Bank 8 `0`) | | also on the second USB socket |
 
 While the QMX is connected, the full console is not reachable (see Connecting): use the keypad.
 `ID?`, `OM?` and `IF?` are for a later setup with the console on the second socket.
@@ -82,14 +82,14 @@ After "error" or "timeout" the QMX may still hold the new value: read it with Ba
 | A USB device without a serial port (sound card, CP210x adapter) | "usb error", after 3 s if no serial port opens meanwhile |
 | The controller restarted after a crash with this profile | "usb error"; the USB host stays off until profile 21 is chosen again |
 
-### Bank 9 `1`: the USB state, without a computer
+### Bank 8 `0`: the USB state, without a computer
 
 | Spoken | Meaning | What to try |
 |---|---|---|
-| "usb on", "tx" bytes, "rx" bytes | the serial port is open; bytes sent to and received from the QMX since the start | press Bank 1 `0` (frequency), then Bank 9 `1` again: "tx" grows; if "rx" stays zero, the QMX does not answer CAT (check that its first COM port is the CAT port; switch it off and on) |
+| "usb on", "tx" bytes, "rx" bytes | the serial port is open; bytes sent to and received from the QMX since the start | press Bank 1 `0` (frequency), then Bank 8 `0` again: "tx" grows; if "rx" stays zero, the QMX does not answer CAT (check that its first COM port is the CAT port; switch it off and on) |
 | "usb off zero" | the host runs, but no USB device has reached the controller | check the cable, and that the QMX is switched on |
 | "usb off" and a number above zero | devices came, but none is open now: no CDC serial port, or it was unplugged | unplug the QMX and plug it in again; listen for "usb on" |
-| "usb error" | the host could not start, or was held after a crash restart | choose profile 21 again (Bank 9 `A` long, `2` `1`, `D`) |
+| "usb error" | the host could not start, or was held after a crash restart | choose profile 21 again (Bank 9 `1` long, `2` `1`, `D`) |
 | "usb not available" | the active profile does not use USB | choose profile 21 |
 
 Choosing another profile restarts the controller, so the native socket goes back to the PC
@@ -100,7 +100,7 @@ it while the QMX is connected, so that nothing meant for the NanoVNA reaches the
 
 1. On the second USB socket's console, `USB?` says `USB host: on` and `serial port: none`.
 2. Plug in the QMX and switch it on: "usb on". `USB?` shows the device and `serial port: open`.
-   If nothing is heard, `USB?` lists what the controller saw, and Bank 9 `1` says it without a
+   If nothing is heard, `USB?` lists what the controller saw, and Bank 8 `0` says it without a
    computer (see the table above). With no device at all, the `port:` line of `USB?` tells
    whether the QMX shows itself on the cable (`D+=1`); see the developer notes below.
 3. Bank 1 `0` short: the frequency. Tune the QMX: the new frequency is announced.

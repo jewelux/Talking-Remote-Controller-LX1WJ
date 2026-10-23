@@ -28,6 +28,9 @@ jobs:
       - name: Radio profile unit tests
         run: make -C tests/profiles
 
+      - name: CAT setting codec unit tests
+        run: make -C tests/cat
+
       - name: FT-847 unit tests
         run: make -C tests/ft847
 
@@ -35,6 +38,8 @@ jobs:
         run: make -C tests/qmx
       - name: NanoVNA unit tests
         run: make -C tests/nanovna
+      - name: Icom S-meter unit tests
+        run: make -C tests/civmeter
 
       - name: Audio unit tests
         run: make -C tests/audio

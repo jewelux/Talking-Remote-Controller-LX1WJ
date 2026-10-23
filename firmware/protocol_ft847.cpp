@@ -251,7 +251,7 @@ Ft847NarrowResult ft847QueryNarrow(uint8_t& modeBaseOut, bool& narrowOut, uint32
 
 Ft847NarrowResult ft847SetNarrow(bool narrow, uint8_t& modeBaseOut) {
   bool wasNarrow = false;
-  const Ft847NarrowResult read = ft847QueryNarrow(modeBaseOut, wasNarrow, 800);
+  const Ft847NarrowResult read = ft847QueryNarrow(modeBaseOut, wasNarrow, kCatReplyTimeoutMs);
   if (read != Ft847NarrowResult::Ok) return read;
   if (!ft847ModeCanBeNarrow(modeBaseOut)) return Ft847NarrowResult::NotAvailable;
   uint8_t frame[5];

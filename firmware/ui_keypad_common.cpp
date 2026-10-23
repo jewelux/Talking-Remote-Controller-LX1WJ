@@ -1,4 +1,5 @@
 #include "ui_keypad_common.h"
+#include "keypad_labels.h"
 #include "ui_features.h"
 
 #include "radio_catalog.h"
@@ -20,80 +21,12 @@ void keypadForgetRadioActivity() {
   s_writesBeforeKey = serialTransportWriteCount();
 }
 
-struct SpokenLabel {
-  const char* label;  // trace label without '?'
-  const char* words;  // clip tokens
-};
-
-static constexpr SpokenLabel kSpokenLabels[] = {
-  {"A=B", "a equals b"},
-  {"AGC", "agc"},
-  {"ANT", "antenna"},
-  {"ATT", "attenuator"},
-  {"BATTERY", "battery"},
-  {"BAUD", "baud"},
-  {"BSTACK", "band stack"},
-  {"CAL", "calibration"},
-  {"CIVADDR", "c i"},
-  {"CTCSS", "ctcss"},
-  {"DBF", "bandpassfilter"},
-  {"DCS", "dcs"},
-  {"FILSHAPE", "filtershape"},
-  {"FILWIDTH", "filterwidth"},
-  {"FREQ", "frequency"},
-  {"HPF", "lowcut"},
-  {"IPO", "preamplifier"},
-  {"LOCK", "lock"},
-  {"LPF", "highcut"},
-  {"MENU", "menu"},
-  {"MICEQ", "tx equalizer"},
-  {"MODE", "mode"},
-  {"MONITOR", "monitor"},
-  {"MONLEVEL", "monitor level"},
-  {"NAR", "narrow"},
-  {"NB", "noiseblanker"},
-  {"NBLEVEL", "noiseblanker level"},
-  {"NOTCH", "notch"},
-  {"NR", "noisereduction"},
-  {"NRLEVEL", "noisereduction level"},
-  {"PBT1", "pbt one"},
-  {"PBT2", "pbt two"},
-  {"PROFILE", "profile"},
-  {"RFPOWER", "power"},
-  {"RIT", "rit"},
-  {"ROUND", "frequency"},
-  {"ROW", "row"},
-  {"RXTX", "transceiver"},
-  {"SPLIT", "split"},
-  {"SPLITTONE", "split tone"},
-  {"START", "start"},
-  {"STOP", "stop"},
-  {"SWEEP", "sweep"},
-  {"TONE", "tone"},
-  {"TONEDIR", "tone"},
-  {"TRANSCEIVE", "transceive"},
-  {"TUNE", "tune"},
-  {"TUNER", "tuner"},
-  {"TXFREQ", "tx frequency"},
-  {"VERSION", "version"},
-  {"VFO A", "vfo a"},
-  {"VFO B", "vfo b"},
-  {"VFOA", "vfo a"},
-  {"VFOA FREQ", "vfo a frequency"},
-  {"VFOA MODE", "vfo a mode"},
-  {"VFOB", "vfo b"},
-  {"VFOB FREQ", "vfo b frequency"},
-  {"VFOB MODE", "vfo b mode"},
-};
-
-// The FT-8x7 EEPROM settings not in the table (BK?, KYR? ...) are
-// spelled, as their answers say them.
+// A label kSpokenLabels (keypad_labels.cpp) has no row for (CWAUTO?, ...) is
+// spelled, as its answer says it.
 static String spokenLabel(const char* label) {
   String name(label);
   if (name.endsWith("?")) name.remove(name.length() - 1);
-  for (const SpokenLabel& entry : kSpokenLabels) {
-    if (name == entry.label) return entry.words;
-  }
+  if (const char* words = spokenLabelWords(name.c_str())) return words;
   String spelled;
   for (size_t i = 0; i < name.length(); ++i) {
     if (name[i] < 'A' || name[i] > 'Z') return String();
@@ -232,7 +165,7 @@ void speakCivAddressValue(uint8_t addr, bool ok) {
   if (!g_speechEnabled) return;
   char hex[3] = "";
   formatHexByte(addr, hex, sizeof(hex));
-  if (g_verboseSpeech) {
+  if (labelSpoken()) {
     speakToken("c");
     playSilenceMs(50);
     speakToken("i");
@@ -272,6 +205,31 @@ void speakFrequencyWord() {
 void speakPlease() {
   if (!g_speechEnabled) return;
   speakToken("please");
+}
+
+void speakHelpMode(bool on) {
+  LabelModeScope named(LabelMode::Always);
+  speakTokenState("help", on);
+}
+
+void speakHelp(const GestureHelp& help) {
+  if (!g_speechEnabled || help.verb == HelpVerb::None) return;
+  LabelModeScope named(LabelMode::Always);
+  switch (help.verb) {
+    case HelpVerb::Next: speakToken("next"); break;
+    case HelpVerb::Entry:
+    case HelpVerb::Pick: speakToken("choose"); break;
+    case HelpVerb::Centre: speakToken("reset"); break;
+    case HelpVerb::Up: speakToken("up"); break;
+    case HelpVerb::Down: speakToken("down"); break;
+    case HelpVerb::UpFast: speakToken("up fast"); break;
+    case HelpVerb::DownFast: speakToken("down fast"); break;
+    default: break;
+  }
+  const String name = help.label ? spokenLabel(help.label) : String();
+  if (name.length()) speakLabel(name);
+  if (help.verb == HelpVerb::Toggle) speakToken("on off");
+  if (help.verb == HelpVerb::NotAvailable) speakNotAvailable();
 }
 
 void speakPrompt(const char* token) {
