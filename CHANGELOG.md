@@ -24,6 +24,9 @@
 - V2 schematic updated: D1 removed (board powered via the ESP32 USB-C port, modules included), SD-module
   leftovers removed. The PCB keeps the D1 footprint: wire link for USB supply, or a diode (1N400x / Schottky)
   for a separate 5 V supply on J5. The two large pads at the top of the PCB hold the RS-232 module
+- **new: optional line out for demo units** in `docs/hardware/line-out/`: 3.5 mm jack for a mixer or
+  active speaker, with low-pass, isolation transformer and level divider, because the MAX98357A bridged
+  output must not be tied to ground. Proposed circuit, not yet built and measured
 
 ### Keypad
 
