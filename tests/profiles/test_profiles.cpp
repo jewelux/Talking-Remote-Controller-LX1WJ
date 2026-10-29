@@ -429,6 +429,11 @@ TEST(tone_and_repeater_caps) {
   for (uint8_t s : none) CHECK(!slot(s).caps.getTone && !slot(s).caps.getCtcss && !slot(s).caps.getRptShift);
 }
 
+// Tone decode only: none yet. The FT-897 takes it over CAT but does not squelch on it.
+TEST(no_profile_has_tone_decode_only) {
+  for (uint8_t s = 1; s <= 18; ++s) CHECK(!slot(s).caps.setToneDecodeOnly);
+}
+
 TEST(g106_is_ttl_civ_with_freq_and_mode_only) {
   const RadioProfile& g106 = slot(5);
   CHECK(g106.protocol == PROTO_CIV);

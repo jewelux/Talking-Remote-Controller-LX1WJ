@@ -349,12 +349,13 @@ FeatureStatus ft8x7CwBfoSet(Ft857CwBfo bfo, Ft8x7SettingState& out);
 // radio has no CAT command for (on the FT-817/818 DCS encode only).
 FeatureStatus toneModeQuery(YaesuToneMode& out);
 FeatureStatus toneOff();
-// CTCSS or DCS, keeping encode only (tx only) and decode only (rx only); from off or a mixed
-// mode, both. Where the radio cannot keep it (FT-817/818 DCS), both.
+// CTCSS or DCS in the direction last seen on (g_toneDir), also from off. Where the radio cannot
+// set that direction (FT-817/818 DCS encode only, decode only without caps.setToneDecodeOnly),
+// both.
 FeatureStatus toneTypeSet(YaesuToneType type, YaesuToneMode& out);
-// Both -> TX only (encode only) -> RX only (decode only) -> both, keeping the type; a mixed mode
-// counts as both. The FT-817/818 has no RX only, so there TX only goes back to both. With the
-// tone off nothing is sent and out is off.
+// Both -> TX only (encode only) -> RX only (decode only, with caps.setToneDecodeOnly) -> both,
+// keeping the type; a mixed mode counts as both. With the tone off nothing is sent and out is
+// off.
 FeatureStatus toneDirStep(YaesuToneMode& out);
 // FT-857/897 split tone (menu 79) of the current band, which lets the radio's own keys send one
 // tone type and wait for the other. CAT cannot switch it. Unsupported on other radios (the

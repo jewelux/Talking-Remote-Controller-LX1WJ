@@ -1047,8 +1047,9 @@ void printHelp(const String& topicArg) {
     helpLine("DCS? | DCS <code>");
     helpLine(ft857Family ? "TONE? | TONE OFF | CTCSS | DCS  (read from the radio)"
                          : "TONE? | TONE OFF | CTCSS | DCS  (TONE? says the mode last set)");
-    helpLine(ft857Family ? "TONEDIR? | TONEDIR NEXT  (BOTH, encode only TX, decode only RX in turn)"
-                         : "TONEDIR? | TONEDIR NEXT  (BOTH or encode only TX)");
+    helpLine(currentProfile().caps.setToneDecodeOnly
+                 ? "TONEDIR? | TONEDIR NEXT  (BOTH, encode only TX, decode only RX in turn)"
+                 : "TONEDIR? | TONEDIR NEXT  (BOTH or encode only TX)");
     if (ft857Family) helpLine("SPLITTONE?  (menu 79 of the current band, read only)");
     helpLine("PS? | PS OFF | ON");
     if (ft817 || ft857Family) helpLine("VFO SYNC A | B  (set the tracked VFO)");

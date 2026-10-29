@@ -347,15 +347,15 @@
   preamplifier is on when IPO is off); the FT-817 has no DSP, so these say "not available".
   With experimental mode off, HamTRC only reads these settings
 - FT-817/818/857/897: CTCSS and DCS can be set to encode only: the tone is sent, but the squelch
-  does not wait for it. The FT-857/897 can also be set to decode only: the squelch waits for the
-  tone, but none is sent. Bank 6 `5` short says "tone tx" for encode only, "tone rx" for decode
-  only or "tone both"; `5` long steps from both to TX, RX and back to both. The FT-817/818 has no
-  decode only and no DCS encode only, so there `5` long switches between TX and both
+  does not wait for it. Bank 6 `5` short says "tone tx" for encode only or "tone both"; `5` long
+  switches between them. The FT-817/818 has no DCS encode only. Decode only is not offered: the
+  FT-897 accepts it over CAT but its squelch stays open
 - FT-817/818/857/897: Bank 6 `2` short says the tone type ("tone ctcss", "tone dcs", "tone off").
   The FT-857/897 reads it from the radio, except on a memory channel, where it says "not
   available". The FT-817/818 says what HamTRC last set on the current band. Tone off has
   moved to `2` double press, DCS to `2` short press then hold; `2` long is still CTCSS. Switching
-  between CTCSS and DCS keeps encode only and decode only. Console: `TONE? | OFF | CTCSS | DCS`,
+  between CTCSS and DCS keeps encode only, and so does switching the tone off and
+  on again, also after HamTRC restarts and on the CAT radios. Console: `TONE? | OFF | CTCSS | DCS`,
   `TONEDIR? | NEXT`
 - FT-857/897: with split tone (menu 79) the radio can send one tone type and wait for the other.
   Bank 6 `2` short then says the received type first ("tone ctcss rx dcs tx") and `5` short says

@@ -275,8 +275,8 @@ and KX3 say "not available".
 | `3` long | CTCSS tone entry | CTCSS tone entry | CTCSS tone entry | CTCSS tone entry |
 | `4` short | not available | not available | not available | DCS code (the last set, or 023) |
 | `4` long | free | free | free | DCS code entry |
-| `5` short | encode only (TX) or encode and decode (both) | the same | the same | encode only (TX), decode only (RX), encode and decode (both), or split |
-| `5` long | step between both and TX | step between both and TX | step between both and TX | step from both to TX, RX and back to both (FT-817/818: TX and both, CTCSS only) |
+| `5` short | encode only (TX) or encode and decode (both) | the same | the same | encode only (TX), encode and decode (both), or split |
+| `5` long | step between both and TX | step between both and TX | step between both and TX | step between both and TX (FT-817/818: CTCSS only) |
 | `6` short | free | free | free | split tone on or off (FT-857/897 menu 79; FT-817/818: not available) |
 | `A` `B` `C` | focus | focus | focus | focus |
 

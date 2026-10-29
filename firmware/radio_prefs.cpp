@@ -80,6 +80,21 @@ void saveSpeechSpeedToNvs(uint8_t speed) {
   prefs.end();
 }
 
+ToneDir loadToneDirFromNvs(ToneDir fallback) {
+  Preferences prefs;
+  if (!prefs.begin("talkingrc", false)) return fallback;
+  uint8_t v = prefs.getUChar("tonedir", (uint8_t)fallback);
+  prefs.end();
+  return v <= (uint8_t)ToneDir::RxOnly ? (ToneDir)v : fallback;
+}
+
+void saveToneDirToNvs(ToneDir dir) {
+  Preferences prefs;
+  if (!prefs.begin("talkingrc", false)) return;
+  prefs.putUChar("tonedir", (uint8_t)dir);
+  prefs.end();
+}
+
 static String connectionKey(const char* prefix, uint8_t id) {
   return String(prefix) + String((int)id);
 }

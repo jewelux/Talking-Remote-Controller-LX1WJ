@@ -13,6 +13,8 @@ void saveVolumeToNvs(uint8_t level);
 // The SpeechSpeed as its number; applySpeechSpeed() checks the range.
 uint8_t loadSpeechSpeedFromNvs(uint8_t fallback);
 void saveSpeechSpeedToNvs(uint8_t speed);
+ToneDir loadToneDirFromNvs(ToneDir fallback);
+void saveToneDirToNvs(ToneDir dir);
 // The CI-V address and baud the user picked for the profile in slot id. Leaves
 // civAddr and baud as they are, and returns false, when none were saved.
 bool loadConnectionOverrideFromNvs(uint8_t id, uint8_t& civAddr, uint32_t& baud);
