@@ -142,17 +142,11 @@ static void commitAgc(uint8_t value, TargetVfo) {
 
 static constexpr ChoiceSpec kAgcChoice = {"AGC SELECT", nullptr, 0, pickAgc, sayPickedAgc, commitAgc, true};
 
-static bool agcCanSetAny() {
-  for (const AgcMode mode : {AgcMode::Off, AgcMode::Fast, AgcMode::Mid, AgcMode::Slow, AgcMode::Auto}) {
-    if (agcCanSet(mode)) return true;
-  }
-  return false;
-}
-
 void beginBank2AgcSelect() {
   printKeypadAction("AGC");
-  if (!agcCanSetAny()) {
-    keypadReportNotAvailable("AGC");
+  const FeatureStatus access = agcWriteAccess();
+  if (access != FeatureStatus::Ok) {
+    keypadReportRefusal("AGC", access);
     return;
   }
   keypadBeginChoiceSelect(kAgcChoice);
@@ -181,7 +175,7 @@ static bool nextAgc(AgcMode mode, int8_t dir, AgcMode& out) {
 void nudgeBank2Agc(int8_t dir, bool) {
   printKeypadAction("AGC {}", dir > 0 ? "UP" : "DOWN");
   KeypadAnswer answer("AGC", keypadStepNaming());
-  if (answer.unavailable(agcCanSetAny())) return;
+  if (answer.failed(agcWriteAccess())) return;
   AgcMode mode = AgcMode::Off;
   if (answer.failed(agcQuery(mode))) return;
   if (currentProtocolType() == PROTO_YAESU_FT8X7) {

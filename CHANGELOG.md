@@ -287,8 +287,8 @@
 - FT-817: Bank 3 `1` long toggles VFO A/B and `2` long copies the active VFO to the other (A=B)
 - FT-817/818/857/897, experimental: Bank 8 `8` long and `7` long set the menu item and the soft
   key (function) row the radio's menu opens at: type the number, then `D`. The console commands
-  are `MENU <n>` and `ROW <n>`. They work only with experimental mode on, otherwise they say "not
-  available". A number the radio does not offer says "error": on the FT-857/897 menu 1–88 (1–91
+  are `MENU <n>` and `ROW <n>`. They work only with experimental mode on, otherwise they say
+  "experimental". A number the radio does not offer says "error": on the FT-857/897 menu 1–88 (1–91
   with menu 1 EXT MENU on) and rows 1–17, on the FT-817/818 menu 1–52 (1–57 with menu 52 EXTEND
   on) and rows 1–12. Keep the radio's menu closed meanwhile, since the radio saves its own values
   when the menu is exited
@@ -324,8 +324,8 @@
     `ANT FRONT | REAR | TOGGLE` sets the antenna jack (menu 07) of the current band
   - console only: the CW menu settings, e.g. `CWSPEED 20`, `CWDELAY FULL`, `KEYREV ON`
   - HamTRC writes these settings to the radio's memory and the radio follows at once. They say
-    "error" while transmitting, and work only with experimental mode on, otherwise they say "not
-    available"
+    "error" while transmitting, and work only with experimental mode on, otherwise they say
+    "experimental"
 - FT-817/818/857/897: the SWR reading no longer sends the radio a command that writes to its
   internal memory, and `ALC?` no longer answers with a fixed memory value
 - FT-817/818/857/897: `PO?` and `SWR?` (Bank 1 `4` and `8`) work while transmitting. Power is said in

@@ -11,6 +11,8 @@ void selectActiveProfile(const RadioProfile& profile, uint32_t baud, uint8_t civ
 const RadioProfile& currentProfile();
 // Sets g_experimentalCaps and turns the active profile's capabilities to match.
 void setExperimentalCaps(bool on);
+// The capabilities EXPERIMENTAL ON gives the active profile: every one on.
+const RadioCapabilities& experimentalCaps();
 const ConnectionProfile& currentConnectionProfile();
 ProtocolType currentProtocolType();
 RadioModel currentRadioModel();

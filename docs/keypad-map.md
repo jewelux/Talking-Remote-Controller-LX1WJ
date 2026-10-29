@@ -65,7 +65,7 @@ one step away, ending in "please". More `B` and `C` presses step with no radio t
 held: the big step, as before the entry opened), `D` sets,
 `#` cancels. The FT-817/818 power steps through its levels and stops at the lowest and highest. The
 mode walks the modes in the order of the mode select digits and goes round: after the last comes
-the first. The FT-8x7 settings need experimental mode; without it `B` and `C` say "not available". The other
+the first. The FT-8x7 settings need experimental mode; without it `B` and `C` say "experimental". The other
 settings change at once.
 
 In a pick of named choices (mode, AGC), `B` and `C` go round. Levels and numbers stop at the end

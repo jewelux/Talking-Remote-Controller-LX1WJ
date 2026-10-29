@@ -5,11 +5,11 @@
 void queryBank8Ft8x7Row() { queryKeypadFt8x7Setting(Ft8x7Setting::Row); }
 void queryBank8Ft8x7Menu() { queryKeypadFt8x7Setting(Ft8x7Setting::Menu); }
 
-// Experimental: "not available" at once unless EXPERIMENTAL is on.
+// Experimental: "experimental" at once unless EXPERIMENTAL is on.
 static void beginBank8Ft8x7MenuRowEntry(InputMode mode, const char* label, const char* token) {
   printKeypadAction("{} ENTRY", label);
   if (!currentProfile().caps.setRadioMenu) {
-    keypadReportNotAvailable(label);
+    keypadReportExperimental(label);
     return;
   }
   keypadBeginEntry(mode);
@@ -28,7 +28,10 @@ static void stepBank8Ft8x7MenuRow(Ft8x7Setting setting, int8_t dir, bool big) {
   const char* label = row ? "ROW" : "MENU";
   printKeypadAction("{} {}", label, keypadStepWord(dir, big));
   KeypadAnswer answer(label, keypadStepNaming());
-  if (answer.unavailable(currentProfile().caps.setRadioMenu)) return;
+  if (!currentProfile().caps.setRadioMenu) {
+    answer.fail(KeypadFailure::Experimental);
+    return;
+  }
   prepareKeypadRadioWrite();
   Ft8x7SettingState state;
   if (answer.failed(ft8x7SettingQuery(setting, state))) return;

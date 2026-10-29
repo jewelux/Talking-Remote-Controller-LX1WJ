@@ -52,6 +52,21 @@ inline bool isAsciiRadio() {
   return isAsciiProtocol(currentProtocolType());
 }
 
+// Whether a write can be made, judged by canSet(caps), which asks nothing of the radio: Ok where
+// the active caps allow it; Experimental where EXPERIMENTAL ON would (on the FT-8x7, an EEPROM
+// write); else Unsupported. With EXPERIMENTAL ON the active caps are experimentalCaps(), so a
+// write they refuse is Unsupported.
+template <typename CanSet>
+FeatureStatus writeAccess(CanSet canSet) {
+  if (canSet(currentProfile().caps)) return FeatureStatus::Ok;
+  return isFt8x7() && canSet(experimentalCaps()) ? FeatureStatus::Experimental : FeatureStatus::Unsupported;
+}
+
+// writeAccess for a write that needs just cap, e.g. &RadioCapabilities::setNb.
+inline FeatureStatus capWriteAccess(bool RadioCapabilities::*cap) {
+  return writeAccess([cap](const RadioCapabilities& caps) { return caps.*cap; });
+}
+
 // FT-8x7: flips flag from the EEPROM byte read for the write. on is the flag as written.
 inline FeatureStatus ft8x7ToggleFlag(Ft8x7Flag flag, bool& on) {
   return eepromWriteStatus(yaesuFt8x7ToggleFlag(flag, on, kFt8x7TimeoutMs));

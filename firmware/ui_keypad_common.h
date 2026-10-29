@@ -110,8 +110,9 @@ void printKeypadAction(LineFormat<sizeof...(Args)> format, const Args&... args) 
 // A key event: radio traffic and timeouts from before it are not this key's doing.
 void keypadForgetRadioActivity();
 
-// What went wrong, said "not available", "timeout" or "error".
-enum class KeypadFailure : uint8_t { NotAvailable, Timeout, Error };
+// What went wrong, said "not available", "experimental" (it needs EXPERIMENTAL ON),
+// "timeout" or "error".
+enum class KeypadFailure : uint8_t { NotAvailable, Experimental, Timeout, Error };
 // The failure of a key that asks nothing of the radio, with verbose on after its
 // name ("profile not available"). label is the trace label, e.g. "PROFILE"; a
 // label with no row in kSpokenLabels is spelled.
@@ -119,6 +120,10 @@ void speakKeypadFailure(const char* label, KeypadFailure failure);
 // A key that asks nothing of the radio cannot run here: prints "<label> -> not
 // available" and says it. (A beep is only for a key with no action.)
 void keypadReportNotAvailable(const char* label);
+// The same for a key that needs EXPERIMENTAL ON: "<label> -> experimental".
+void keypadReportExperimental(const char* label);
+// keypadReportExperimental for Experimental (a write access), else keypadReportNotAvailable.
+void keypadReportRefusal(const char* label, FeatureStatus refusal);
 
 // How a KeypadAnswer names its key.
 enum class AnswerNaming : uint8_t {
@@ -148,8 +153,8 @@ class KeypadAnswer {
   KeypadAnswer(const KeypadAnswer&) = delete;
   KeypadAnswer& operator=(const KeypadAnswer&) = delete;
 
-  // A shared feature operation: "not available" when unsupported, "timeout" or
-  // "error" otherwise, and true. Ok: false.
+  // A shared feature operation: "not available" when unsupported, "experimental"
+  // when it needs EXPERIMENTAL ON, "timeout" or "error" otherwise, and true. Ok: false.
   bool failed(FeatureStatus status);
   // available false: the radio or profile has no such function. Says "not
   // available" and returns true.

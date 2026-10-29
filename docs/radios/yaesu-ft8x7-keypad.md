@@ -40,7 +40,7 @@ Important practical note:
 
 ## Bank 2 - Radio Settings
 
-All Bank 2 keys read settings from the radio's EEPROM, since CAT cannot. With experimental mode on, some also change them by writing the EEPROM: a long press on `1`, `2`, `3` and `5` switches the setting (FT-817: `2` only), and on the FT-857/897 a long press on `4` and `6` opens the low or high cut entry. The NR level, NB level and CW filter width are a double press of `1`, `2` and `5`; a press then a hold opens their entry. `7` long picks AGC: `0` off, `1` auto, `2` fast, `3` slow, then `Enter`. On the FT-817, `0` long switches the antenna jack. Without experimental mode a long press says "not available".
+All Bank 2 keys read settings from the radio's EEPROM, since CAT cannot. With experimental mode on, some also change them by writing the EEPROM: a long press on `1`, `2`, `3` and `5` switches the setting (FT-817: `2` only), and on the FT-857/897 a long press on `4` and `6` opens the low or high cut entry. The NR level, NB level and CW filter width are a double press of `1`, `2` and `5`; a press then a hold opens their entry. `7` long picks AGC: `0` off, `1` auto, `2` fast, `3` slow, then `Enter`. On the FT-817, `0` long switches the antenna jack. Without experimental mode a long press says "experimental".
 
 `A`, `B` and `C` act on the last of these keys used (see the [keypad map](../keypad-map.md)): `B` and `C` read the value once and open its entry one step away, ending in "please"; more `B` and `C` presses step with no radio traffic, and `Enter` writes it. They need experimental mode too.
 
@@ -232,7 +232,7 @@ delay is FULL, and `0` typed in the delay entry sets FULL.
 radio's CAT RATE menu.
 
 `7` long and `8` long are experimental and work only with experimental mode on (Bank 9 `0` long);
-otherwise they say "not available". They write the radio's EEPROM, where it keeps the menu item
+otherwise they say "experimental". They write the radio's EEPROM, where it keeps the menu item
 and row, and say the value read back, e.g. "menu 12". A number out of range says "error" and
 nothing is written. Leave the radio's menu closed while setting them: the radio saves its own
 values when the menu is exited.

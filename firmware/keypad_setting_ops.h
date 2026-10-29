@@ -35,8 +35,8 @@ struct SettingOps {
   int32_t centre = 0;
 };
 
-// For the ops files: a switch, 0 off and 1 on, set where canSet; Unsupported where it cannot be.
-FeatureStatus switchSettingLimits(ValueSpec& spec, bool canSet);
+// For the ops files: a switch, 0 off and 1 on, where writeAccess() is Ok; else what it returns.
+FeatureStatus switchSettingLimits(ValueSpec& spec, FeatureStatus (*writeAccess)());
 // For the ops tables: available on every radio, or a confirm that always waits for Enter.
 inline bool always() { return true; }
 

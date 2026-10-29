@@ -49,6 +49,7 @@ static void speakFailureWord(KeypadFailure failure) {
   if (!g_speechEnabled) return;
   switch (failure) {
     case KeypadFailure::NotAvailable: speakNotAvailable(); break;
+    case KeypadFailure::Experimental: speakToken("experimental"); break;
     case KeypadFailure::Timeout: speakTimeout(); break;
     case KeypadFailure::Error: speakError(); break;
   }
@@ -57,6 +58,7 @@ static void speakFailureWord(KeypadFailure failure) {
 static const char* failureText(KeypadFailure failure) {
   switch (failure) {
     case KeypadFailure::NotAvailable: return "not available";
+    case KeypadFailure::Experimental: return "experimental";
     case KeypadFailure::Timeout: return "timeout";
     default: return "failed";
   }
@@ -71,6 +73,16 @@ void speakKeypadFailure(const char* label, KeypadFailure failure) {
 void keypadReportNotAvailable(const char* label) {
   printKeypadStatus("{} -> not available", label);
   speakKeypadFailure(label, KeypadFailure::NotAvailable);
+}
+
+void keypadReportExperimental(const char* label) {
+  printKeypadStatus("{} -> experimental", label);
+  speakKeypadFailure(label, KeypadFailure::Experimental);
+}
+
+void keypadReportRefusal(const char* label, FeatureStatus refusal) {
+  if (refusal == FeatureStatus::Experimental) keypadReportExperimental(label);
+  else keypadReportNotAvailable(label);
 }
 
 // Holds polling and says the name now where naming wants it: true when the user
@@ -102,6 +114,7 @@ bool KeypadAnswer::failed(FeatureStatus status) {
   switch (status) {
     case FeatureStatus::Ok: return false;
     case FeatureStatus::Unsupported: fail(KeypadFailure::NotAvailable); return true;
+    case FeatureStatus::Experimental: fail(KeypadFailure::Experimental); return true;
     case FeatureStatus::Timeout: fail(KeypadFailure::Timeout); return true;
     default: break;
   }

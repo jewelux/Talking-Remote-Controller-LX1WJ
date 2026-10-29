@@ -179,10 +179,10 @@ FeatureStatus ft8x7SettingQuery(Ft8x7Setting setting, Ft8x7SettingState& out) {
 
 FeatureStatus ft8x7MenuRowSet(Ft8x7Setting setting, uint8_t number, Ft8x7SettingState& out) {
   const bool row = setting == Ft8x7Setting::Row;
-  if ((!row && setting != Ft8x7Setting::Menu) || !currentProfile().caps.setRadioMenu ||
-      currentFt8x7Model() == Ft8x7Model::None) {
+  if ((!row && setting != Ft8x7Setting::Menu) || currentFt8x7Model() == Ft8x7Model::None) {
     return FeatureStatus::Unsupported;
   }
+  if (!currentProfile().caps.setRadioMenu) return capWriteAccess(&RadioCapabilities::setRadioMenu);
   out = Ft8x7SettingState();
   out.setting = setting;
   return eepromWriteStatus(yaesuFt8x7SetMenuOrRow(row, number, out.number, kFt8x7TimeoutMs));
@@ -202,11 +202,10 @@ static bool ft8x7SettableLevel(Ft8x7Setting setting, YaesuFt857Level& levelOut) 
 
 // caps.setNrLevel, caps.setNbLevel, or for the width and the cuts caps.setRadioMenu; no FT-8x7
 // profile sets them.
-static bool ft8x7LevelSetAllowed(Ft8x7Setting setting) {
-  const RadioCapabilities& caps = currentProfile().caps;
-  if (setting == Ft8x7Setting::NrLevel) return caps.setNrLevel;
-  if (setting == Ft8x7Setting::NbLevel) return caps.setNbLevel;
-  return caps.setRadioMenu;
+FeatureStatus ft8x7LevelWriteAccess(Ft8x7Setting setting) {
+  if (setting == Ft8x7Setting::NrLevel) return capWriteAccess(&RadioCapabilities::setNrLevel);
+  if (setting == Ft8x7Setting::NbLevel) return capWriteAccess(&RadioCapabilities::setNbLevel);
+  return capWriteAccess(&RadioCapabilities::setRadioMenu);
 }
 
 bool ft8x7LevelRange(Ft8x7Setting setting, uint16_t& minOut, uint16_t& maxOut) {
@@ -224,7 +223,8 @@ FeatureStatus ft8x7LevelSet(Ft8x7Setting setting, uint16_t value, Ft8x7SettingSt
          : !ft8x7SettableLevel(setting, level) || !currentIsFt857Family()) {
     return FeatureStatus::Unsupported;
   }
-  if (!ft8x7LevelSetAllowed(setting)) return FeatureStatus::Unsupported;
+  const FeatureStatus access = ft8x7LevelWriteAccess(setting);
+  if (access != FeatureStatus::Ok) return access;
   out = Ft8x7SettingState();
   out.setting = setting;
   if (cw) return eepromWriteStatus(yaesuFt8x7SetCwLevel(cwLevel, value, out.value, kFt8x7TimeoutMs));
@@ -239,7 +239,8 @@ FeatureStatus ft8x7LevelStep(Ft8x7Setting setting, int delta, Ft8x7SettingState&
          : !ft8x7SettableLevel(setting, level) || !currentIsFt857Family()) {
     return FeatureStatus::Unsupported;
   }
-  if (!ft8x7LevelSetAllowed(setting)) return FeatureStatus::Unsupported;
+  const FeatureStatus access = ft8x7LevelWriteAccess(setting);
+  if (access != FeatureStatus::Ok) return access;
   out = Ft8x7SettingState();
   out.setting = setting;
   if (cw) return eepromWriteStatus(yaesuFt8x7StepCwLevel(cwLevel, delta, out.value, kFt8x7TimeoutMs));
@@ -247,14 +248,18 @@ FeatureStatus ft8x7LevelStep(Ft8x7Setting setting, int delta, Ft8x7SettingState&
 }
 
 // DBF, BK, KYR and the CW flags, where the model keeps them; IF shift is read only.
-static bool ft8x7FlagSettable(Ft8x7Setting setting, Ft8x7Flag& flag) {
-  if (!currentProfile().caps.setRadioMenu || setting == Ft8x7Setting::IfShift) return false;
-  return ft8x7SettingFlag(setting, flag) && ft8x7SettingSupported(setting, currentFt8x7Model());
+static FeatureStatus ft8x7FlagSettable(Ft8x7Setting setting, Ft8x7Flag& flag) {
+  if (setting == Ft8x7Setting::IfShift || !ft8x7SettingFlag(setting, flag) ||
+      !ft8x7SettingSupported(setting, currentFt8x7Model())) {
+    return FeatureStatus::Unsupported;
+  }
+  return capWriteAccess(&RadioCapabilities::setRadioMenu);
 }
 
 FeatureStatus ft8x7FlagSettingSet(Ft8x7Setting setting, bool on, Ft8x7SettingState& out) {
   Ft8x7Flag flag = Ft8x7Flag::Nb;
-  if (!ft8x7FlagSettable(setting, flag)) return FeatureStatus::Unsupported;
+  const FeatureStatus settable = ft8x7FlagSettable(setting, flag);
+  if (settable != FeatureStatus::Ok) return settable;
   out = Ft8x7SettingState();
   out.setting = setting;
   const FeatureStatus status = eepromWriteStatus(yaesuFt8x7SetFlag(flag, on, kFt8x7TimeoutMs));
@@ -265,7 +270,8 @@ FeatureStatus ft8x7FlagSettingSet(Ft8x7Setting setting, bool on, Ft8x7SettingSta
 
 FeatureStatus ft8x7FlagSettingToggle(Ft8x7Setting setting, Ft8x7SettingState& out) {
   Ft8x7Flag flag = Ft8x7Flag::Nb;
-  if (!ft8x7FlagSettable(setting, flag)) return FeatureStatus::Unsupported;
+  const FeatureStatus settable = ft8x7FlagSettable(setting, flag);
+  if (settable != FeatureStatus::Ok) return settable;
   out = Ft8x7SettingState();
   out.setting = setting;
   return ft8x7ToggleFlag(flag, out.on);
@@ -273,7 +279,8 @@ FeatureStatus ft8x7FlagSettingToggle(Ft8x7Setting setting, Ft8x7SettingState& ou
 
 // rear: nullptr toggles.
 static FeatureStatus ft817AntennaWrite(const bool* rear, Ft8x7SettingState& out) {
-  if (!currentProfile().caps.setRadioMenu || !currentIsFt817Family()) return FeatureStatus::Unsupported;
+  if (!currentIsFt817Family()) return FeatureStatus::Unsupported;
+  if (!currentProfile().caps.setRadioMenu) return capWriteAccess(&RadioCapabilities::setRadioMenu);
   out = Ft8x7SettingState();
   out.setting = Ft8x7Setting::Antenna;
   uint64_t hz = 0;
@@ -291,7 +298,10 @@ FeatureStatus ft817AntennaToggle(Ft8x7SettingState& out) {
 }
 
 FeatureStatus ft8x7RfPowerRange(uint64_t& hzOut, uint16_t& minOut, uint16_t& maxOut) {
-  if (!currentProfile().caps.setRfPower || !currentIsFt857Family()) return FeatureStatus::Unsupported;
+  // The FT-817/818 picks a level, with EXPERIMENTAL ON.
+  if (currentFt8x7Model() == Ft8x7Model::None) return FeatureStatus::Unsupported;
+  if (!currentProfile().caps.setRfPower) return capWriteAccess(&RadioCapabilities::setRfPower);
+  if (!currentIsFt857Family()) return FeatureStatus::Unsupported;
   if (!queryFrequency(hzOut, kFt8x7TimeoutMs)) return failure(FeatureStatus::NoReply);
   uint8_t lo = 0;
   uint8_t hi = 0;
@@ -302,7 +312,8 @@ FeatureStatus ft8x7RfPowerRange(uint64_t& hzOut, uint16_t& minOut, uint16_t& max
 }
 
 FeatureStatus ft8x7RfPowerSet(uint16_t watts, Ft8x7SettingState& out, uint64_t hz) {
-  if (!currentProfile().caps.setRfPower || !currentIsFt857Family()) return FeatureStatus::Unsupported;
+  if (!currentIsFt857Family()) return FeatureStatus::Unsupported;
+  if (!currentProfile().caps.setRfPower) return capWriteAccess(&RadioCapabilities::setRfPower);
   out = Ft8x7SettingState();
   out.setting = Ft8x7Setting::RfPower;
   // Above any band's maximum; also keeps the cast below from wrapping.
@@ -316,7 +327,8 @@ FeatureStatus ft8x7RfPowerSet(uint16_t watts, Ft8x7SettingState& out, uint64_t h
 }
 
 FeatureStatus ft817PowerLevelSet(Ft817PowerLevel level, Ft8x7SettingState& out) {
-  if (!currentProfile().caps.setRfPower || !currentIsFt817Family()) return FeatureStatus::Unsupported;
+  if (!currentIsFt817Family()) return FeatureStatus::Unsupported;
+  if (!currentProfile().caps.setRfPower) return capWriteAccess(&RadioCapabilities::setRfPower);
   out = Ft8x7SettingState();
   out.setting = Ft8x7Setting::RfPower;
   Ft817PowerLevel read = level;
@@ -326,23 +338,24 @@ FeatureStatus ft817PowerLevelSet(Ft817PowerLevel level, Ft8x7SettingState& out) 
 }
 
 FeatureStatus ft8x7AgcSet(YaesuAgc agc, Ft8x7SettingState& out) {
-  if (!currentProfile().caps.setRadioMenu || currentFt8x7Model() == Ft8x7Model::None) {
-    return FeatureStatus::Unsupported;
-  }
+  if (currentFt8x7Model() == Ft8x7Model::None) return FeatureStatus::Unsupported;
+  if (!currentProfile().caps.setRadioMenu) return capWriteAccess(&RadioCapabilities::setRadioMenu);
   out = Ft8x7SettingState();
   out.setting = Ft8x7Setting::Agc;
   return eepromWriteStatus(yaesuFt8x7SetAgc(agc, out.agc, kFt8x7TimeoutMs));
 }
 
 FeatureStatus ft8x7MicEqSet(YaesuFt857MicEq eq, Ft8x7SettingState& out) {
-  if (!currentProfile().caps.setRadioMenu || !currentIsFt857Family()) return FeatureStatus::Unsupported;
+  if (!currentIsFt857Family()) return FeatureStatus::Unsupported;
+  if (!currentProfile().caps.setRadioMenu) return capWriteAccess(&RadioCapabilities::setRadioMenu);
   out = Ft8x7SettingState();
   out.setting = Ft8x7Setting::MicEq;
   return eepromWriteStatus(yaesuFt857SetMicEq(eq, out.micEq, kFt8x7TimeoutMs));
 }
 
 FeatureStatus ft8x7CwBfoSet(Ft857CwBfo bfo, Ft8x7SettingState& out) {
-  if (!currentProfile().caps.setRadioMenu || !currentIsFt857Family()) return FeatureStatus::Unsupported;
+  if (!currentIsFt857Family()) return FeatureStatus::Unsupported;
+  if (!currentProfile().caps.setRadioMenu) return capWriteAccess(&RadioCapabilities::setRadioMenu);
   out = Ft8x7SettingState();
   out.setting = Ft8x7Setting::CwBfo;
   return eepromWriteStatus(yaesuFt857SetCwBfo(bfo, out.cwBfo, kFt8x7TimeoutMs));

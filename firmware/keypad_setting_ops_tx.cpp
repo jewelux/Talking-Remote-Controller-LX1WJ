@@ -44,14 +44,14 @@ FeatureStatus switchWrite(FeatureStatus (*set)(bool), FeatureStatus (*read)(bool
 
 // ---- Speech processor and its level ----
 
-FeatureStatus procLimits(ValueSpec& spec) { return switchSettingLimits(spec, procCanSet()); }
+FeatureStatus procLimits(ValueSpec& spec) { return switchSettingLimits(spec, procWriteAccess); }
 FeatureStatus procRead(int32_t& value) { return switchRead(procQuery, value); }
 FeatureStatus procWrite(int32_t value, int32_t& readBack) { return switchWrite(procSet, procQuery, value, readBack); }
 String procText(int32_t value) { return procStateText(value != 0); }
 void speakProc(int32_t value) { speakProcState(value != 0); }
 
 FeatureStatus procLevelLimits(ValueSpec& spec) {
-  if (!procCanSet()) return FeatureStatus::Unsupported;
+  if (!procCanSet()) return procWriteAccess();
   return levelLimits(spec, 0, 100);
 }
 
@@ -74,13 +74,7 @@ void speakProcLevelOf(int32_t value) { speakProcLevel((uint8_t)value); }
 
 // ---- VOX and its gain ----
 
-bool voxCanSet() {
-  uint8_t min = 0;
-  uint8_t max = 0;
-  return voxGainRange(min, max);
-}
-
-FeatureStatus voxLimits(ValueSpec& spec) { return switchSettingLimits(spec, voxCanSet()); }
+FeatureStatus voxLimits(ValueSpec& spec) { return switchSettingLimits(spec, voxWriteAccess); }
 FeatureStatus voxRead(int32_t& value) { return switchRead(voxQuery, value); }
 FeatureStatus voxWrite(int32_t value, int32_t& readBack) { return switchWrite(voxSet, voxQuery, value, readBack); }
 String voxText(int32_t value) { return voxStateText(value != 0); }
@@ -90,7 +84,7 @@ void speakVox(int32_t value) { speakVoxState(value != 0); }
 FeatureStatus voxGainLimits(ValueSpec& spec) {
   uint8_t min = 0;
   uint8_t max = 0;
-  if (!voxGainRange(min, max)) return FeatureStatus::Unsupported;
+  if (!voxGainRange(min, max)) return voxWriteAccess();
   return levelLimits(spec, min, max);
 }
 
@@ -116,7 +110,11 @@ void speakVoxGainOf(int32_t value) { speakVoxGain((uint8_t)value); }
 bool monitorAvailable() { return protocolSupportsMonitor() && currentProfile().caps.getMonitor; }
 
 FeatureStatus monitorLimits(ValueSpec& spec) {
-  return switchSettingLimits(spec, monitorAvailable() && currentProfile().caps.setMonitor);
+  return switchSettingLimits(spec, [] {
+    return writeAccess([](const RadioCapabilities& caps) {
+      return protocolSupportsMonitor() && caps.getMonitor && caps.setMonitor;
+    });
+  });
 }
 
 FeatureStatus monitorQuery(bool& on) {
@@ -195,7 +193,8 @@ Ft8x7SettingState micEqState(int32_t value) {
 }
 
 FeatureStatus txEqLimits(ValueSpec& spec) {
-  if (!txEqAvailable() || !currentProfile().caps.setRadioMenu) return FeatureStatus::Unsupported;
+  if (!txEqAvailable()) return FeatureStatus::Unsupported;
+  if (!currentProfile().caps.setRadioMenu) return capWriteAccess(&RadioCapabilities::setRadioMenu);
   spec.min = (int32_t)YaesuFt857MicEq::Off;
   spec.max = (int32_t)YaesuFt857MicEq::Both;
   spec.maxDigits = 1;
@@ -226,7 +225,7 @@ constexpr uint8_t kTxCutBit = S == Setting::TxHighCut ? 0x01 : 0x02;
 
 template <Setting S>
 FeatureStatus txCutLimits(ValueSpec& spec) {
-  return switchSettingLimits(spec, txEqAvailable() && currentProfile().caps.setRadioMenu);
+  return switchSettingLimits(spec, [] { return txEqAvailable() ? capWriteAccess(&RadioCapabilities::setRadioMenu) : FeatureStatus::Unsupported; });
 }
 
 template <Setting S>
@@ -266,7 +265,7 @@ void speakTxCut(int32_t value) {
 Ft8x7MicGain s_micGainMenu = Ft8x7MicGain::Ssb;
 
 FeatureStatus micGainLimits(ValueSpec& spec) {
-  if (!micGainCanSet()) return FeatureStatus::Unsupported;
+  if (!micGainCanSet()) return micGainWriteAccess();
   if (isFt8x7()) {
     const FeatureStatus status = ft8x7MicGainMenu(s_micGainMenu);
     if (status != FeatureStatus::Ok) return status;
@@ -304,7 +303,7 @@ int32_t stepAsciiVoxDelay(int32_t ms, int8_t dir) {
 FeatureStatus voxDelayLimits(ValueSpec& spec) {
   uint16_t min = 0;
   uint16_t max = 0;
-  if (!voxDelayRange(min, max)) return FeatureStatus::Unsupported;
+  if (!voxDelayRange(min, max)) return voxDelayWriteAccess();
   spec.min = min;
   spec.max = max;
   spec.maxDigits = 4;

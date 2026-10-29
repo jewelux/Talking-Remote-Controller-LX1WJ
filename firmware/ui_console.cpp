@@ -250,6 +250,13 @@ static void reportNotAvailable(const char* message) {
   if (g_speechEnabled) speakNotAvailable();
 }
 
+// Report a command that needs EXPERIMENTAL ON while it is off, and say "experimental".
+static void reportExperimental(const char* label) {
+  Serial.print(label);
+  Serial.println(" -> experimental (EXPERIMENTAL ON to allow)");
+  if (g_speechEnabled) speakToken("experimental");
+}
+
 // A shared feature operation (radio_features.h) that did not succeed: print
 // why, with the speech the other console commands give. Ok: false.
 static bool reportFeatureFailure(FeatureStatus status, const char* label) {
@@ -257,6 +264,9 @@ static bool reportFeatureFailure(FeatureStatus status, const char* label) {
     case FeatureStatus::Ok: return false;
     case FeatureStatus::Unsupported:
       reportNotAvailable((String(label) + " -> unsupported").c_str());
+      return true;
+    case FeatureStatus::Experimental:
+      reportExperimental(label);
       return true;
     case FeatureStatus::Timeout:
       Serial.print(label);

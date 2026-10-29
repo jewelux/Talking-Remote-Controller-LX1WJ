@@ -26,7 +26,7 @@ Ft8x7SettingState ft8x7State(Ft8x7Setting setting, int32_t value) {
 
 // ---- The keyer ----
 
-FeatureStatus keyerLimits(ValueSpec& spec) { return switchSettingLimits(spec, keyerCanSet()); }
+FeatureStatus keyerLimits(ValueSpec& spec) { return switchSettingLimits(spec, keyerWriteAccess); }
 
 FeatureStatus keyerRead(int32_t& value) {
   bool on = false;
@@ -58,7 +58,7 @@ int32_t stepCivBreakIn(int32_t mode, int8_t dir) {
 }
 
 FeatureStatus breakInLimits(ValueSpec& spec) {
-  const FeatureStatus status = switchSettingLimits(spec, breakInCanSet(BreakInMode::On));
+  const FeatureStatus status = switchSettingLimits(spec, [] { return breakInWriteAccess(BreakInMode::On); });
   if (status != FeatureStatus::Ok || !isCiv()) return status;
   spec.max = (int32_t)BreakInMode::Full;
   spec.stepFn = stepCivBreakIn;
@@ -137,7 +137,7 @@ template <CwLevel L>
 FeatureStatus cwLimits(ValueSpec& spec) {
   uint16_t min = 0;
   uint16_t max = 0;
-  if (!cwLevelRange(L, min, max)) return FeatureStatus::Unsupported;
+  if (!cwLevelRange(L, min, max)) return cwLevelWriteAccess(L);
   spec.min = min;
   spec.max = max;
   spec.maxDigits = L == CwLevel::Speed ? 2 : 4;
@@ -217,9 +217,8 @@ template <Ft8x7Setting S>
 FeatureStatus ft8x7LevelLimits(ValueSpec& spec) {
   uint16_t min = 0;
   uint16_t max = 0;
-  if (!ft8x7Available<S>() || !currentProfile().caps.setRadioMenu || !ft8x7LevelRange(S, min, max)) {
-    return FeatureStatus::Unsupported;
-  }
+  if (!ft8x7Available<S>() || !ft8x7LevelRange(S, min, max)) return FeatureStatus::Unsupported;
+  if (!currentProfile().caps.setRadioMenu) return capWriteAccess(&RadioCapabilities::setRadioMenu);
   spec.min = min;
   spec.max = max;
   spec.maxDigits = S == Ft8x7Setting::Sidetone ? 3 : 2;
@@ -246,7 +245,7 @@ FeatureStatus ft8x7LevelWrite(int32_t value, int32_t& readBack) {
 
 template <Ft8x7Setting S>
 FeatureStatus ft8x7FlagLimits(ValueSpec& spec) {
-  return switchSettingLimits(spec, ft8x7Available<S>() && currentProfile().caps.setRadioMenu);
+  return switchSettingLimits(spec, [] { return ft8x7Available<S>() ? capWriteAccess(&RadioCapabilities::setRadioMenu) : FeatureStatus::Unsupported; });
 }
 
 template <Ft8x7Setting S>
