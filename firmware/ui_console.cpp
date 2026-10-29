@@ -219,6 +219,12 @@ static bool usbConsoleReady() {
 // Bytes the transport had written when the current command started.
 static uint32_t s_writesBeforeCommand = 0;
 
+// A failure the console only prints. Run by a key it says "error": every key answers
+// (KeypadAnswer has already said the key's name).
+static void speakOtherFailure() {
+  if (g_keypadExecuting && g_speechEnabled) speakError();
+}
+
 // Report a failed radio command. If the radio never answered, say "timeout". If nothing was
 // sent, the profile has no command for it: say "not available". Other failures stay silent.
 static void reportCommandFailure(const char* label, const char* reason) {
@@ -235,6 +241,7 @@ static void reportCommandFailure(const char* label, const char* reason) {
   }
   Serial.print(" -> ");
   Serial.println(reason);
+  speakOtherFailure();
 }
 
 // Report a command the radio or profile cannot do, and say "not available".
@@ -260,6 +267,7 @@ static bool reportFeatureFailure(FeatureStatus status, const char* label) {
       Serial.print(label);
       Serial.print(" -> ");
       Serial.println(featureStatusText(status));
+      speakOtherFailure();
       return true;
   }
 }
@@ -431,11 +439,6 @@ static bool handleConsoleFeatureCommand(const String& upper) {
   return false;
 }
 
-static void speakConsoleTokenOrGap(const char* token) {
-  if (!g_speechEnabled) return;
-  if (!speakToken(token)) speakError();
-}
-
 static void speakRitStateAndOffset(bool on, int32_t offset) {
   if (!g_speechEnabled) return;
   speakTokenState("rit", on);
@@ -521,12 +524,6 @@ static void speakBandStackLabel(uint8_t reg) {
   if (!g_speechEnabled) return;
   speakLabel("b stack");
   playDigit((int)reg);
-}
-
-// A key already spoke its own label, so its reply is just the mode name.
-static void speakModeReply(uint8_t mode) {
-  if (g_keypadExecuting) speakModeName(mode);
-  else speakMode(mode);
 }
 
 static bool isCurrentYaesuFt8x7() {
@@ -1301,7 +1298,7 @@ static bool handleConsoleProfileCommands(const String& line, const String& upper
     uint8_t bandCode = 0;
     BandStackEntry entry;
     if (reg < 1 || reg > 3) { Serial.println("BSTACK? -> invalid register (use 1..3)"); return true; }
-    if (!queryFrequency(hz, kCatReplyTimeoutMs) || !bandCodeFromFrequency(hz, bandCode)) { Serial.println("BSTACK? -> no current band"); return true; }
+    if (!queryFrequency(hz, kCatReplyTimeoutMs) || !bandCodeFromFrequency(hz, bandCode)) { reportCommandFailure("BSTACK?", "no current band"); return true; }
     if (!queryBandStackEntry(bandCode, (uint8_t)reg, entry, kCatReplyTimeoutMs)) { reportCommandFailure("BSTACK?", "no reply"); return true; }
     Serial.print("BSTACK ");
     Serial.print(bandLabelForCode(entry.bandCode));
@@ -1331,7 +1328,7 @@ static bool handleConsoleProfileCommands(const String& line, const String& upper
     uint8_t bandCode = 0;
     BandStackEntry entry;
     if (reg < 1 || reg > 3) { Serial.println("BSTACK -> invalid register (use 1..3)"); return true; }
-    if (!queryFrequency(hz, kCatReplyTimeoutMs) || !bandCodeFromFrequency(hz, bandCode)) { Serial.println("BSTACK -> no current band"); return true; }
+    if (!queryFrequency(hz, kCatReplyTimeoutMs) || !bandCodeFromFrequency(hz, bandCode)) { reportCommandFailure("BSTACK", "no current band"); return true; }
     if (!queryBandStackEntry(bandCode, (uint8_t)reg, entry, kCatReplyTimeoutMs)) { reportCommandFailure("BSTACK", "no reply"); return true; }
     if (!applyFrequencyAndTrack(entry.freqHz, true) || !applyModeAndTrack(entry.mode, entry.filter)) { reportCommandFailure("BSTACK", "failed"); return true; }
     Serial.print("BSTACK ");
@@ -3137,7 +3134,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   if (upper == "MODE?") {
     if (!refreshLiveMode()) { reportCommandFailure("MODE?", "no reply"); return true; }
     Serial.println(modeToString(live.mode));
-    speakModeReply(live.mode);
+    speakMode(live.mode);
     return true;
   }
   if (upper.startsWith("MODE ")) {
@@ -3147,7 +3144,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
       return true;
     }
     Serial.println("SET MODE -> command sent");
-    speakModeReply(mode);
+    speakMode(mode);
     return true;
   }
   if (isRawAsciiConsoleCommand(upper) && !currentProtocolIsAscii()) {
@@ -3186,7 +3183,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     if (!asciiQueryStatusLine(sp, rsp, kCatReplyTimeoutMs)) { reportCommandFailure("IF?", "no reply"); return true; }
     Serial.print("IF: ");
     Serial.println(rsp);
-    speakConsoleTokenOrGap("if");
+    speakDone("if");
     return true;
   }
   if (upper == "ID?") {
@@ -3194,7 +3191,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     if (!asciiQueryIdLine(sp, rsp, kCatReplyTimeoutMs)) { reportCommandFailure("ID?", "no reply"); return true; }
     Serial.print("ID: ");
     printAsciiReplyPayload(rsp, sp.commands->idReplyPrefix);
-    speakConsoleTokenOrGap("id");
+    speakDone("id");
     return true;
   }
   if (upper == "OM?") {
@@ -3353,7 +3350,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   if (upper == "TUNE") {
     if (!startTune()) { reportCommandFailure("TUNE", "failed"); return true; }
     Serial.println("TUNE");
-    if (g_speechEnabled) speakToken("tune");
+    speakDone("tune");
     return true;
   }
   if (upper == "RXTX?") {
@@ -3375,13 +3372,13 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
   if (upper == "VFO A") {
     if (!selectVfoA()) { reportCommandFailure("VFO A", "failed"); return true; }
     Serial.println("VFO A");
-    speakVfoLabel('A');
+    speakDone("vfo a");
     return true;
   }
   if (upper == "VFO B") {
     if (!selectVfoB()) { reportCommandFailure("VFO B", "failed"); return true; }
     Serial.println("VFO B");
-    speakVfoLabel('B');
+    speakDone("vfo b");
     return true;
   }
   if (upper == "MAIN?") {
@@ -3408,7 +3405,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     if (!queryVfoMode(true, mode, filter, kCatReplyTimeoutMs)) { reportCommandFailure("MAIN MODE?", "no reply"); return true; }
     Serial.print("MAIN MODE: ");
     Serial.println(modeToString(mode));
-    speakModeReply(mode);
+    speakMode(mode);
     return true;
   }
   if (upper.startsWith("SUB MODE?")) {
@@ -3417,7 +3414,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     if (!queryVfoMode(false, mode, filter, kCatReplyTimeoutMs)) { reportCommandFailure("SUB MODE?", "no reply"); return true; }
     Serial.print("SUB MODE: ");
     Serial.println(modeToString(mode));
-    speakModeReply(mode);
+    speakMode(mode);
     return true;
   }
   if (upper.startsWith("MAIN MODE ")) {
@@ -3466,7 +3463,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     if (!queryVfoMode(true, mode, filter, kCatReplyTimeoutMs)) { reportCommandFailure("VFOA MODE?", "no reply"); return true; }
     Serial.print("VFOA MODE: ");
     Serial.println(modeToString(mode));
-    speakModeReply(mode);
+    speakMode(mode);
     return true;
   }
   if (upper.startsWith("VFOB MODE?")) {
@@ -3475,7 +3472,7 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     if (!queryVfoMode(false, mode, filter, kCatReplyTimeoutMs)) { reportCommandFailure("VFOB MODE?", "no reply"); return true; }
     Serial.print("VFOB MODE: ");
     Serial.println(modeToString(mode));
-    speakModeReply(mode);
+    speakMode(mode);
     return true;
   }
   if (upper.startsWith("VFOA MODE ")) {

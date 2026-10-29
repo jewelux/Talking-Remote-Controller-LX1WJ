@@ -24,6 +24,8 @@ static bool rejectFt8x7WriteWhileTx(const char* statusLabel) {
   bool tx = false;
   if (!queryRxTxStatus(tx, kCatReplyTimeoutMs) || !tx) return false;
   printKeypadStatus("{} -> TX", statusLabel);
+  // Not the entry's value: named as verbose has it.
+  LabelModeScope labels(LabelMode::Verbose);
   speakRxTxState(true);
   return true;
 }
@@ -87,18 +89,18 @@ static void commitProfile(const char* digits) {
     printKeypadStatus("PROFILE {}", slot);
     speakCurrentProfile();
   } else {
-    printKeypadStatus("PROFILE -> not available");
-    speakKeypadFailure("PROFILE", KeypadFailure::NotAvailable);
+    keypadReportNotAvailable("PROFILE");
   }
 }
 
+// Just the frequency set: the prompt already said what it is.
 static void commitFrequency(const char* digits, TargetVfo targetVfo) {
+  KeypadAnswer answer("FREQ", AnswerNaming::OnFailure);
   prepareKeypadRadioWrite();
   if (rejectFt8x7WriteWhileTx("FREQ")) return;
   RadioFrequency parsedFreq;
   if (!RadioFrequency::parseEntry(String(digits), parsedFreq)) {
-    printKeypadStatus("FREQ -> invalid");
-    speakKeypadFailure("FREQ", KeypadFailure::Error);
+    answer.fail(KeypadFailure::Error);
     return;
   }
   const uint64_t hz = parsedFreq.hz();
@@ -125,9 +127,8 @@ static void commitFrequency(const char* digits, TargetVfo targetVfo) {
     }
     else printKeypadStatus("FREQ: {} MHz", RadioFrequency::fromHz(hz));
     if (g_speechEnabled) speakDigitsAndPoint(hzToMHzString3(hz));
-  } else if (!keypadReportIfTimedOut("FREQ")) {
-    printKeypadStatus("FREQ -> {}", currentProtocolType() == PROTO_YAESU_FT8X7 ? "no change" : "failed");
-    speakKeypadFailure("FREQ", KeypadFailure::Error);
+  } else if (!answer.timedOut()) {
+    answer.fail(KeypadFailure::Error);
   }
 }
 
@@ -147,6 +148,7 @@ static void commitCivAddress(const char* digits) {
 
 static void commitRepeaterOffset(const char* digits) {
   printKeypadCommand("ENTER -> RPTSHIFT");
+  KeypadAnswer answer("RPTSHIFT", AnswerNaming::OnFailure);
   uint64_t hz = (uint64_t)atoi(digits) * 1000ULL;
   yaesuCatSetRepeaterOffsetHzRaw(hz);
   printKeypadStatus("RPTSHIFT {} MHz", RadioFrequency::fromHz(hz));
@@ -157,9 +159,10 @@ static void commitRepeaterOffset(const char* digits) {
 static void commitMenuRow(Ft8x7Setting setting, const char* digits) {
   const char* label = setting == Ft8x7Setting::Row ? "ROW" : "MENU";
   printKeypadCommand("ENTER -> {} {}", label, digits);
+  KeypadAnswer answer(label, AnswerNaming::OnFailure);
   prepareKeypadRadioWrite();
   Ft8x7SettingState state;
-  keypadReportFt8x7Setting(ft8x7MenuRowSet(setting, (uint8_t)atoi(digits), state), label, state);
+  keypadReportFt8x7Setting(answer, ft8x7MenuRowSet(setting, (uint8_t)atoi(digits), state), state);
 }
 
 void keypadEntryCommit(InputMode mode, const char* digits, TargetVfo targetVfo) {
@@ -189,7 +192,9 @@ static void sayPickedMode(char key, uint8_t mode) {
   speakModeName(mode);
 }
 
+// Just the mode set: the prompt already said what it is.
 static void commitMode(uint8_t mode, TargetVfo targetVfo) {
+  KeypadAnswer answer("MODE", AnswerNaming::OnFailure);
   prepareKeypadRadioWrite();
   if (rejectFt8x7WriteWhileTx("MODE")) return;
   if (targetVfo == TargetVfo::A) printKeypadCommand("ENTER -> VFOA MODE");
@@ -204,9 +209,8 @@ static void commitMode(uint8_t mode, TargetVfo targetVfo) {
     else if (targetVfo == TargetVfo::B) printKeypadStatus("VFOB MODE: {}", modeToString(mode));
     else printKeypadStatus("MODE: {}", modeToString(mode));
     if (g_speechEnabled) speakModeName(mode);
-  } else if (!keypadReportIfTimedOut("MODE")) {
-    printKeypadStatus("MODE -> {}", currentProtocolType() == PROTO_YAESU_FT8X7 ? "no change" : "failed");
-    speakKeypadFailure("MODE", KeypadFailure::Error);
+  } else if (!answer.timedOut()) {
+    answer.fail(KeypadFailure::Error);
   }
 }
 

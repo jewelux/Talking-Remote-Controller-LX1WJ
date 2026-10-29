@@ -18,8 +18,11 @@ bool speakTokens(const char* const* tokens, size_t count, uint16_t gapMs = 60);
 // it. Verbose off says neither, unless a LabelModeScope says otherwise.
 bool speakLabel(const String& token);
 // Whether a label is said. Verbose follows the verbose setting; Always and Never
-// are for the keypad, which names a value on its first step and not after.
+// are for the keypad, which names a value on its first step and not after. Never
+// means the name was already said (by a KeypadAnswer or an entry's prompt).
 enum class LabelMode : uint8_t { Verbose, Always, Never };
+// The label mode now.
+LabelMode labelMode();
 // The label mode until the scope ends; scopes nest.
 class LabelModeScope {
  public:
@@ -38,6 +41,9 @@ bool speakTokenPercent(const String& token, uint8_t percent);
 // The "ok" after a changed value ("volume five ok"), with the gap before it.
 // Verbose off says neither.
 void speakValueOk();
+// The answer of a command with no value to say ("tune", "vfo a"): its name, or
+// "ok" where the name was already said (LabelMode::Never; verbose off says nothing).
+void speakDone(const String& name);
 void speakOk();
 void speakError();
 void speakTimeout();

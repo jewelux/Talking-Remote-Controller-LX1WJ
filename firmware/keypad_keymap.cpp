@@ -507,7 +507,7 @@ KeyBinding breakInKey(const KeypadTraits& t) {
 }
 
 // CW, the twin of Bank 4: the top row the keyer with its speed, break-in and the sidetone, the
-// middle row the keyer type, pitch and weight, the bottom row key reverse, RF power and the
+// middle row the keyer type, pitch and weight, the bottom row paddle reverse, RF power and the
 // break-in delay, '0' the tuner. The FT-8x7 keeps these in its EEPROM: read always, set only
 // experimentally.
 KeyBinding bank7(const KeypadTraits& t, char key) {

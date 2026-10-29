@@ -69,6 +69,10 @@ Every answer first says what it is, then the value: "power 50 watts", "noise bla
 "volume five ok". Once you know the keys, you can turn the names off and hear only the values:
 "50 watts", "40 percent", "five". Units stay, and the "ok" after a change is dropped.
 
+A key that asks the radio says its name at once, while the radio answers, so you hear "power"
+first and "50 watts" a moment later. If the radio does not answer, you hear "power timeout" after
+less than a second.
+
 - Bank 9, `5` short: says "verbose on" or "verbose off"
 - Bank 9, `5` long: switches between the two
 

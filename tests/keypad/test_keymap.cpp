@@ -4,6 +4,7 @@
 #include <cstdarg>
 #include <initializer_list>
 #include <string>
+#include <vector>
 
 #include "keymap_expectations.h"
 #include "keypad_actions.h"
@@ -16,6 +17,8 @@ using namespace keymap_expect;
 namespace {
 
 std::string g_calls;
+// Every console command a key sent, for keymap_sent_commands_have_spoken_names.
+std::vector<std::string> g_sent;
 // The key and gesture outcome() runs, as KeypadInput names it for
 // keypadActiveKey(): "BANK2 8 SHORT".
 char g_key[24] = "";
@@ -112,7 +115,10 @@ void forEachKey(Fn fn) {
 
 // ---- Recording stub for keypad_actions.h ----
 
-void sendKeypadCommand(const char *cmd) { record("send(%s)", cmd); }
+void sendKeypadCommand(const char *cmd) {
+  record("send(%s)", cmd);
+  g_sent.push_back(cmd);
+}
 
 void settingSay(Setting s) { record("settingSay(%s)", settingInfo(s).label); }
 void settingEntry(Setting s) { record("settingEntry(%s)", settingInfo(s).label); }
@@ -392,4 +398,24 @@ TEST(keymap_focus_keys_help_names_the_focus) {
   const KeyBinding none = keymapLookup(t, 1, 'C', Setting::None);
   CHECK(none.shortHelp.label == nullptr);
   CHECK(none.shortHelp.verb == HelpVerb::NotAvailable);
+}
+
+// A key that runs a console command is named by keypadCommandLabel at once, so each
+// command needs a row in kSpokenLabels.
+TEST(keymap_sent_commands_have_spoken_names) {
+  forEachKey([](const Family &f, const KeypadTraits &t, uint8_t bank, char key) {
+    const KeyBinding b = keymapLookup(t, bank, key);
+    g_sent.clear();
+    for (KeyAction action : {b.shortAction, b.holdAction, b.doubleAction, b.doubleHoldAction}) {
+      outcome(action, bank, key, "ANY", "");
+    }
+    for (const std::string &cmd : g_sent) {
+      char label[32];
+      keypadCommandLabel(cmd.c_str(), label, sizeof(label));
+      if (spokenLabelWords(label)) continue;
+      fprintf(stderr, "  %s bank %u key %c: %s (%s) has no spoken name\n", f.name, bank, key,
+              cmd.c_str(), label);
+      ++::test::g_checkFailures;
+    }
+  });
 }

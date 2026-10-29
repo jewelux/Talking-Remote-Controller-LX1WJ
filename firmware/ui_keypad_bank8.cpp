@@ -8,7 +8,10 @@ void queryBank8Ft8x7Menu() { queryKeypadFt8x7Setting(Ft8x7Setting::Menu); }
 // Experimental: "not available" at once unless EXPERIMENTAL is on.
 static void beginBank8Ft8x7MenuRowEntry(InputMode mode, const char* label, const char* token) {
   printKeypadAction("{} ENTRY", label);
-  if (keypadReportIfUnsupported(currentProfile().caps.setRadioMenu, label)) return;
+  if (!currentProfile().caps.setRadioMenu) {
+    keypadReportNotAvailable(label);
+    return;
+  }
   keypadBeginEntry(mode);
   printKeypadStatus("{} PLEASE", label);
   speakPrompt(token);
@@ -24,10 +27,11 @@ static void stepBank8Ft8x7MenuRow(Ft8x7Setting setting, int8_t dir, bool big) {
   const bool row = setting == Ft8x7Setting::Row;
   const char* label = row ? "ROW" : "MENU";
   printKeypadAction("{} {}", label, keypadStepWord(dir, big));
-  if (keypadReportIfUnsupported(currentProfile().caps.setRadioMenu, label)) return;
+  KeypadAnswer answer(label, keypadStepNaming());
+  if (answer.unavailable(currentProfile().caps.setRadioMenu)) return;
   prepareKeypadRadioWrite();
   Ft8x7SettingState state;
-  if (keypadReportFeatureFailure(ft8x7SettingQuery(setting, state), label)) return;
+  if (answer.failed(ft8x7SettingQuery(setting, state))) return;
   const int step = big ? (row ? 5 : 10) : 1;
   const int next = state.number + (dir > 0 ? step : -step);
   if (next < 1 || next > 255) {
@@ -39,7 +43,7 @@ static void stepBank8Ft8x7MenuRow(Ft8x7Setting setting, int8_t dir, bool big) {
     keypadValueLimit(label, dir > 0);
     return;
   }
-  keypadReportFt8x7Setting(status, label, state);
+  keypadReportFt8x7Setting(answer, status, state);
 }
 
 void stepBank8Ft8x7Row(int8_t dir, bool big) { stepBank8Ft8x7MenuRow(Ft8x7Setting::Row, dir, big); }
@@ -52,8 +56,7 @@ static bool currentProfileAllowsCivSetup() {
 void queryBank8CivAddress() {
   printKeypadAction("CIVADDR?");
   if (!currentProfileAllowsCivSetup()) {
-    printKeypadStatus("CIVADDR -> unavailable");
-    speakKeypadFailure("CIVADDR", KeypadFailure::NotAvailable);
+    keypadReportNotAvailable("CIVADDR");
     return;
   }
   char hex[3] = "";
@@ -65,8 +68,7 @@ void queryBank8CivAddress() {
 void beginBank8CivAddressEntry() {
   printKeypadAction("CIVADDR");
   if (!currentProfileAllowsCivSetup()) {
-    printKeypadStatus("CIVADDR -> unavailable");
-    speakKeypadFailure("CIVADDR", KeypadFailure::NotAvailable);
+    keypadReportNotAvailable("CIVADDR");
     return;
   }
   keypadBeginEntry(InputMode::CivAddrEntry);
@@ -96,8 +98,9 @@ static int currentBaudIndex(const BaudRates& bauds) {
 
 // Sets the baud, keeps it for the profile and says it.
 static void applyBaud(uint32_t baud) {
+  KeypadAnswer answer("BAUD");
   if (!setCurrentBaud(baud)) {
-    keypadReportFailure("BAUD");
+    answer.radioFailed();
     return;
   }
   printKeypadStatus("BAUD {}", baud);
@@ -107,8 +110,9 @@ static void applyBaud(uint32_t baud) {
 // The next or previous rate the radio offers, going round, set at once; there is no big step.
 void stepBank8Baud(int8_t dir, bool big) {
   printKeypadAction("BAUD {}", keypadStepWord(dir, big));
+  KeypadAnswer answer("BAUD");
   const BaudRates& bauds = currentProfile().link.bauds;
-  if (keypadReportIfUnsupported(bauds.count >= 2 && !big, "BAUD")) return;
+  if (answer.unavailable(bauds.count >= 2 && !big)) return;
   const int count = bauds.count;
   applyBaud(bauds.rates[(currentBaudIndex(bauds) + (dir < 0 ? count - 1 : 1)) % count]);
 }
@@ -140,7 +144,10 @@ static constexpr ChoiceSpec kBaudChoice = {"BAUD SELECT", nullptr, 0, pickBaud, 
 void beginBank8BaudSelect() {
   printKeypadAction("BAUD");
   const BaudRates& bauds = currentProfile().link.bauds;
-  if (keypadReportIfUnsupported(bauds.count >= 2, "BAUD")) return;
+  if (bauds.count < 2) {
+    keypadReportNotAvailable("BAUD");
+    return;
+  }
   EntrySeed seed;
   seed.known = true;
   seed.value = currentBaudIndex(bauds);
@@ -151,10 +158,11 @@ void beginBank8BaudSelect() {
 
 void toggleBank8Transceive() {
   printKeypadAction("TRANSCEIVE");
-  if (keypadReportIfUnsupported(protocolSupportsTransceive(), "TRANSCEIVE")) return;
+  KeypadAnswer answer("TRANSCEIVE");
+  if (answer.unavailable(protocolSupportsTransceive())) return;
   bool on = false;
-  if (!queryTransceiveEnabled(on, kCatReplyTimeoutMs)) { keypadReportFailure("TRANSCEIVE"); return; }
-  if (!setTransceiveEnabled(!on)) { keypadReportFailure("TRANSCEIVE"); return; }
+  if (!queryTransceiveEnabled(on, kCatReplyTimeoutMs)) { answer.radioFailed(); return; }
+  if (!setTransceiveEnabled(!on)) { answer.radioFailed(); return; }
   printKeypadStatus("TRANSCEIVE {}", !on ? "ON" : "OFF");
   speakTokenState("transceiver", !on);
 }

@@ -30,6 +30,13 @@
 
 ### Keypad
 
+- with verbose on, a key that asks the radio says its name at once and the value when the radio
+  answers; a failure always names what failed
+- a radio that does not answer says "timeout" after the same short wait on every key (mode,
+  frequency and lock used to take about 2.5 seconds)
+- a key with no value to report (VFO A, tune, A=B) says "ok" once done; Enter in an entry says
+  just the value set
+- the PO meter is now "tx power", the FTDX10 power switch "power"
 - in an entry (frequency, RF power, repeater shift, CTCSS, DCS, CI-V address) and in bank,
   profile and mode select, a key acts as soon as it is pressed; holding or releasing it does
   nothing more

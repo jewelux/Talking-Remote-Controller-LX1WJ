@@ -205,8 +205,8 @@ one step away, and `D` writes it. The FT-817/818 addresses are from the KA7OEI m
 | `5` long | CW pitch entry (experimental) | CW pitch entry (experimental) |
 | `6` short | `CWWEIGHT?`: CW weight (menu 22) | `CWWEIGHT?`: CW weight (menu 32) |
 | `6` long | CW weight entry, `*` as the point (experimental) | CW weight entry, `*` as the point (experimental) |
-| `7` short | `KEYREV?`: key reverse (menu 19) | `KEYREV?`: key reverse (menu 25) |
-| `7` long | key reverse on/off (experimental) | key reverse on/off (experimental) |
+| `7` short | `KEYREV?`: paddle reverse (menu 19) | `KEYREV?`: paddle reverse (menu 25) |
+| `7` long | paddle reverse on/off (experimental) | paddle reverse on/off (experimental) |
 | `8` short | `RFPOWER?` | `RFPOWER?` |
 | `8` long | RF power level select (experimental) | RF power entry (experimental) |
 | `9` short | `CWDELAY?`: break-in delay | `CWDELAY?`: break-in delay (menu 24) |

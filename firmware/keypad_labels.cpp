@@ -27,6 +27,8 @@ constexpr SpokenLabel kSpokenLabels[] = {
   {"BSTACK3", "band stack three"},
   {"CIVADDR", "c i"},
   {"CTCSS", "ctcss"},
+  {"CWAUTO", "cw auto"},
+  {"CWBFO", "cw b f o"},
   {"CWDELAY", "cw delay"},
   {"CWPITCH", "cw pitch"},
   {"CWSPEED", "cw speed"},
@@ -42,7 +44,7 @@ constexpr SpokenLabel kSpokenLabels[] = {
   {"ID", "i d"},
   {"IF", "i f"},
   {"IPO", "preamplifier"},
-  {"KEYREV", "key reverse"},
+  {"KEYREV", "paddle reverse"},
   {"KYR", "keyer"},
   {"LOCK", "lock"},
   {"LPF", "highcut"},
@@ -55,7 +57,7 @@ constexpr SpokenLabel kSpokenLabels[] = {
   {"NAR", "narrow"},
   {"NB", "noiseblanker"},
   {"NBLEVEL", "noiseblanker level"},
-  {"NOTCH", "notch"},
+  {"NOTCH", "notch filter"},
   {"NR", "noisereduction"},
   {"NRLEVEL", "noisereduction level"},
   {"PADDLE", "paddle"},
@@ -69,6 +71,7 @@ constexpr SpokenLabel kSpokenLabels[] = {
   {"PS", "power"},
   {"PS OFF", "power off"},
   {"PS ON", "power on"},
+  {"PTT", "ptt"},
   {"PTT OFF", "ptt off"},
   {"PTT ON", "ptt on"},
   {"QSK", "q s k"},
@@ -131,4 +134,37 @@ const char* spokenLabelWords(const char* label) {
     if (strlen(entry.label) == len && strncmp(entry.label, label, len) == 0) return entry.words;
   }
   return nullptr;
+}
+
+namespace {
+
+// The words a console reply says itself, so a command's label leaves them out.
+bool repliedWord(const char* word, size_t len) {
+  static const char* const kStates[] = {"ON", "OFF", "TOGGLE"};
+  for (const char* state : kStates) {
+    if (strlen(state) == len && strncmp(state, word, len) == 0) return true;
+  }
+  if (!len) return false;
+  for (size_t i = 0; i < len; ++i) {
+    if (word[i] < '0' || word[i] > '9') return false;
+  }
+  return true;
+}
+
+}  // namespace
+
+void keypadCommandLabel(const char* command, char* out, size_t outSize) {
+  if (!outSize) return;
+  size_t len = 0;
+  for (const char* c = command; *c && len + 1 < outSize; ++c) {
+    if (*c != '?') out[len++] = *c;
+  }
+  while (len && out[len - 1] == ' ') --len;
+  size_t word = len;
+  while (word && out[word - 1] != ' ') --word;
+  if (word && repliedWord(out + word, len - word)) {
+    len = word;
+    while (len && out[len - 1] == ' ') --len;
+  }
+  out[len] = '\0';
 }

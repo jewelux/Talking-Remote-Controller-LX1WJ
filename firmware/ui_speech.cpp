@@ -407,8 +407,7 @@ static bool playTens(int tens) {
 
 void speakSValue(const SMeterReading& reading) {
   if (!g_speechEnabled) return;
-  // From the keypad, the key already said "s meter" (speakKeypadCommandWord).
-  if (!g_keypadExecuting) speakLabel("s_meter");
+  speakLabel("s_meter");
   playDigit((int)min<uint8_t>(reading.sUnits, 9));
   if (reading.dbOverS9) {
     playSilenceMs(60);
@@ -467,6 +466,8 @@ static LabelMode s_labelMode = LabelMode::Verbose;
 LabelModeScope::LabelModeScope(LabelMode mode) : previous_(s_labelMode) { s_labelMode = mode; }
 LabelModeScope::~LabelModeScope() { s_labelMode = previous_; }
 
+LabelMode labelMode() { return s_labelMode; }
+
 bool labelSpoken() {
   switch (s_labelMode) {
     case LabelMode::Always: return true;
@@ -501,6 +502,12 @@ void speakValueOk() {
   if (!g_speechEnabled || !g_verboseSpeech) return;
   playSilenceMs(60);
   speakOk();
+}
+
+void speakDone(const String& name) {
+  if (!g_speechEnabled) return;
+  if (s_labelMode == LabelMode::Never) speakValueOk();
+  else speakToken(name);
 }
 
 void speakOk() { speakToken("ok"); }
