@@ -102,6 +102,7 @@
 - with tuning speech off (Bank 9 `4` long), HamTRC no longer reads the frequency from the radio in
   the background: while no key or command is used, it sends nothing to the radio. Turning tuning
   speech on again does not announce the frequency the radio is on; the next tuning is announced
+- Bank 9 `4` calls tuning speech "auto frequency" ("auto frequency on")
 
 ### Speech and sounds
 
@@ -330,7 +331,7 @@
   internal memory, and `ALC?` no longer answers with a fixed memory value
 - FT-817/818/857/897: `PO?` and `SWR?` (Bank 1 `4` and `8`) work while transmitting. Power is said in
   meter bars from 0 to 15, SWR as a value from 1.0 to 10, with "high" when the radio flags a high
-  SWR ("swr high 3.7"). In receive they say "power rx" and "swr rx". `ALC?` and `MOD?` (modulation)
+  SWR ("swr high 3.7"). In receive they say "power tx only" and "swr tx only". `ALC?` and `MOD?` (modulation)
   print 0–15
 - FT-817/818/857/897: split status is read from the radio, also after split was changed on the
   radio's front panel. Before, it was remembered from HamTRC's own split commands, or read with the
@@ -417,7 +418,7 @@
   never selects FM; if the radio is switched to FM on its front panel, HamTRC sends PTT OFF at
   once, says "FM not available" and stops polling until a query finds another mode. Details and
   the tests in `docs/radios/yaesu-ft-847.md`. Console `F847POLL OFF | ON` pauses the poll
-- `PO?` and Bank 1 `4` say the PO/ALC meter (0..31) while transmitting, "power rx" in receive
+- `PO?` and Bank 1 `4` say the PO/ALC meter (0..31) while transmitting, "power tx only" in receive
 - `NAR? | ON | OFF | TOGGLE` switch the narrow filter in CW, CW-R and AM, like the radio's NAR
   key ("cw n"); no key yet
 - not yet: PTT, satellite mode, repeater shift, CTCSS and DCS

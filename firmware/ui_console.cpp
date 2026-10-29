@@ -1512,13 +1512,13 @@ static bool handleConsoleToggleCommands(const String& line, const String& upper)
   return false;
 }
 
-// FT-8x7 meters exist only while transmitting: in receive, say "<meter> rx".
+// FT-8x7 meters exist only while transmitting: in receive, say "<meter> tx only".
 static void reportFt8x7MeterInReceive(const char* label, const char* meterToken) {
   Serial.print(label);
-  Serial.println(": RX (not transmitting)");
+  Serial.println(": TX only (not transmitting)");
   if (!g_speechEnabled) return;
   speakLabel(meterToken);
-  speakToken("rx");
+  speakToken("tx only");
 }
 
 // ALC? and MOD?: a 0..15 meter of 0xBD. Said with meterToken, printed only without it.
@@ -1535,7 +1535,7 @@ static void reportFt8x7BdMeter(const char* command, const char* label, uint8_t Y
       return;
     }
     Serial.print(label);
-    Serial.println(": RX (not transmitting)");
+    Serial.println(": TX only (not transmitting)");
     return;
   }
   Serial.print(label);

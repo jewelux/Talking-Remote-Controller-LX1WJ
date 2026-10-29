@@ -105,7 +105,7 @@ constexpr SpokenLabel kSpokenLabels[] = {
   {"TRANSCEIVE", "transceive"},
   {"TUNE", "tune"},
   {"TUNER", "tuner"},
-  {"TUNINGSPEECH", "tune frequency"},
+  {"TUNINGSPEECH", "auto frequency"},
   {"TXFREQ", "tx frequency"},
   {"TXHIGHCUT", "tx highcut"},
   {"TXLOWCUT", "tx lowcut"},

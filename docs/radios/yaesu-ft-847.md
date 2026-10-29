@@ -13,7 +13,7 @@ All serial console commands were tested on 6 Oct 2026 (dummy load, no antenna):
 | Mode read and set | `MODE?`, `MODE LIST`, `MODE <name>`, `F847MODE?` | LSB, USB, CW, CW-R, AM; narrow variants read as their mode; `MODE FM` is rejected |
 | RX/TX status | `F847TX?`, `RXTX?` | RX and TX (MOX) both read correctly |
 | S-meter | `SM?`, `F847RX?` | read in SSB and AM; in FM the radio does not answer it. Not yet compared with a real signal |
-| Power while transmitting: the radio's PO/ALC meter, 0..31 ("power 12"; "power rx" in receive) | `PO?` | keypad Bank 1 `4` |
+| Power while transmitting: the radio's PO/ALC meter, 0..31 ("power 12"; "power tx only" in receive) | `PO?` | keypad Bank 1 `4` |
 | Narrow filter in CW, CW-R and AM, like the radio's NAR key ("cw n" when on; "not available" in SSB). CW-N needs the optional YF-115C filter and menu 33 on | `NAR?`, `NAR ON`, `NAR OFF`, `NAR TOGGLE` | AM-N and CW-N tried. No keypad key yet (to agree with Jan) |
 | CAT OFF and ON by hand | `F847CAT OFF`, `F847CAT ON` | no reply while off, works again after on |
 | CAT ON after the radio was switched off and on | | automatic |
@@ -144,7 +144,7 @@ Turn the trace on first, so every frame shows: `F847TRACE ON`.
 | 12 | FM guard: switch the radio to FM on its front panel | a short transmit, then receive; HamTRC says "FM not available" and the console shows the FM note; `F847?` says the poll is stopped | Radio keeps transmitting: `F847RAW 0000000088`, report it |
 | 13 | Back to USB on the radio, then `FREQ?` | the frequency; `F847?` says the poll is running again | |
 | 14 | Keypad: Bank 1 keys (frequency, mode, S-meter) | spoken answers; keys for features the FT-847 lacks say "not available" | |
-| 15 | `PO?` in receive | `PO: RX (not transmitting)`, spoken "power rx" | |
+| 15 | `PO?` in receive | `PO: TX only (not transmitting)`, spoken "power tx only" | |
 | 16 | Press MOX on the radio (dummy load), `PO?`, release MOX | `PO: n of 31`, spoken "power n"; compare with the radio's meter | |
 | 17 | Radio in AM: `NAR ON`, `NAR?`, `NAR OFF` | the radio's NAR icon follows; "am n", then "am" | |
 | 18 | Radio in USB: `NAR ON` | `NAR -> not available in USB` | |
