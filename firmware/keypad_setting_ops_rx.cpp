@@ -36,14 +36,6 @@ YaesuFt857Level ft857Level(Ft8x7Setting setting) {
   }
 }
 
-// What lets ft8x7LevelSet write it: caps.setNrLevel, caps.setNbLevel, else caps.setRadioMenu.
-bool ft857LevelWritable(Ft8x7Setting setting) {
-  const RadioCapabilities& caps = currentProfile().caps;
-  if (setting == Ft8x7Setting::NrLevel) return caps.setNrLevel;
-  if (setting == Ft8x7Setting::NbLevel) return caps.setNbLevel;
-  return caps.setRadioMenu;
-}
-
 template <Ft8x7Setting S>
 int32_t stepFt857(int32_t value, int8_t dir) {
   return ft857LevelStep(ft857Level(S), (uint16_t)value, dir);
@@ -53,9 +45,9 @@ template <Ft8x7Setting S>
 FeatureStatus ft857Limits(ValueSpec& spec) {
   uint16_t min = 0;
   uint16_t max = 0;
-  if (!currentIsFt857Family() || !ft857LevelWritable(S) || !ft8x7LevelRange(S, min, max)) {
-    return FeatureStatus::Unsupported;
-  }
+  if (!currentIsFt857Family() || !ft8x7LevelRange(S, min, max)) return FeatureStatus::Unsupported;
+  const FeatureStatus access = ft8x7LevelWriteAccess(S);
+  if (access != FeatureStatus::Ok) return access;
   spec.min = min;
   spec.max = max;
   spec.maxDigits = max >= 1000 ? 4 : 3;

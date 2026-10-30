@@ -40,7 +40,7 @@ Important practical note:
 
 ## Bank 2 - Radio Settings
 
-All Bank 2 keys read settings from the radio's EEPROM, since CAT cannot. With experimental mode on, some also change them by writing the EEPROM: a long press on `1`, `2`, `3` and `5` switches the setting (FT-817: `2` only), and on the FT-857/897 a long press on `4` and `6` opens the low or high cut entry. The NR level, NB level and CW filter width are a double press of `1`, `2` and `5`; a press then a hold opens their entry. `7` long picks AGC: `0` off, `1` auto, `2` fast, `3` slow, then `Enter`. On the FT-817, `0` long switches the antenna jack. Without experimental mode a long press says "not available".
+All Bank 2 keys read settings from the radio's EEPROM, since CAT cannot. With experimental mode on, some also change them by writing the EEPROM: a long press on `1`, `2`, `3` and `5` switches the setting (FT-817: `2` only), and on the FT-857/897 a long press on `4` and `6` opens the low or high cut entry. The NR level, NB level and CW filter width are a double press of `1`, `2` and `5`; a press then a hold opens their entry. `7` long picks AGC: `0` off, `1` auto, `2` fast, `3` slow, then `Enter`. On the FT-817, `0` long switches the antenna jack. Without experimental mode a long press says "experimental".
 
 `A`, `B` and `C` act on the last of these keys used (see the [keypad map](../keypad-map.md)): `B` and `C` read the value once and open its entry one step away, ending in "please"; more `B` and `C` presses step with no radio traffic, and `Enter` writes it. They need experimental mode too.
 
@@ -157,13 +157,13 @@ Bank 6 tone handling:
 
 - `2` short = tone type: off, CTCSS or DCS
 - `2` long = CTCSS, `2` short then hold = DCS, `2` double click = off
-- `5` short = TX (encode only: the tone is sent, the squelch does not wait for it), RX (decode
-  only: the squelch waits for the tone, none is sent), BOTH (encode and decode, tone squelch) or
-  SPLIT (one type sent, the other awaited)
-- `5` long = steps BOTH, TX, RX and back to BOTH, keeping the type; from SPLIT it goes to TX with
-  the sent type; with the tone off it changes nothing. The FT-817 has no RX, so there it switches
-  between TX and BOTH
-- switching the type keeps TX, RX or BOTH; from off or SPLIT it sets BOTH
+- `5` short = TX (encode only: the tone is sent, the squelch does not wait for it), BOTH (encode
+  and decode, tone squelch) or SPLIT (one type sent, the other awaited). RX (decode only) is said
+  when CAT left it set; the FT-897 stores it but its squelch stays open, so HamTRC no longer sets it
+- `5` long = switches between BOTH and TX, keeping the type; from SPLIT it goes to TX with the sent
+  type, from RX to BOTH; with the tone off it changes nothing
+- switching the type keeps TX or BOTH; from SPLIT it sets BOTH; from off it goes back to the
+  direction the tone had before it was switched off, also after HamTRC restarts
 - `6` short = split tone (menu 79), "split tone on" or "split tone off". With it on, the radio's
   own keys can send one type and wait for the other; `2` short then says the received type first,
   e.g. "tone ctcss rx dcs tx". The radio keeps split tone per band, and a mixed mode stays when
@@ -205,8 +205,8 @@ one step away, and `D` writes it. The FT-817/818 addresses are from the KA7OEI m
 | `5` long | CW pitch entry (experimental) | CW pitch entry (experimental) |
 | `6` short | `CWWEIGHT?`: CW weight (menu 22) | `CWWEIGHT?`: CW weight (menu 32) |
 | `6` long | CW weight entry, `*` as the point (experimental) | CW weight entry, `*` as the point (experimental) |
-| `7` short | `KEYREV?`: key reverse (menu 19) | `KEYREV?`: key reverse (menu 25) |
-| `7` long | key reverse on/off (experimental) | key reverse on/off (experimental) |
+| `7` short | `KEYREV?`: paddle reverse (menu 19) | `KEYREV?`: paddle reverse (menu 25) |
+| `7` long | paddle reverse on/off (experimental) | paddle reverse on/off (experimental) |
 | `8` short | `RFPOWER?` | `RFPOWER?` |
 | `8` long | RF power level select (experimental) | RF power entry (experimental) |
 | `9` short | `CWDELAY?`: break-in delay | `CWDELAY?`: break-in delay (menu 24) |
@@ -232,7 +232,7 @@ delay is FULL, and `0` typed in the delay entry sets FULL.
 radio's CAT RATE menu.
 
 `7` long and `8` long are experimental and work only with experimental mode on (Bank 9 `0` long);
-otherwise they say "not available". They write the radio's EEPROM, where it keeps the menu item
+otherwise they say "experimental". They write the radio's EEPROM, where it keeps the menu item
 and row, and say the value read back, e.g. "menu 12". A number out of range says "error" and
 nothing is written. Leave the radio's menu closed while setting them: the radio saves its own
 values when the menu is exited.

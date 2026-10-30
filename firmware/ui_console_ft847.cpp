@@ -107,10 +107,10 @@ static void handlePowerQuery() {
     return;
   }
   if (!ft847TxStatusTransmitting(tx)) {
-    Serial.println("PO: RX (not transmitting)");
+    Serial.println("PO: TX only (not transmitting)");
     if (g_speechEnabled) {
       speakLabel("power");
-      speakToken("rx");
+      speakToken("tx only");
     }
     return;
   }

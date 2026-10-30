@@ -1,6 +1,5 @@
 // The keypad's settings engine: entries of a Setting through its SettingOps
 // (keypad_setting_ops.cpp), and what a value entry says while it runs.
-#include "keypad_labels.h"
 #include "keypad_setting_ops.h"
 #include "ui_keypad_common.h"
 #include "ui_speech.h"
@@ -19,25 +18,26 @@ ValueSpec specOf(Setting setting) {
 
 // The radio's value is read once here, so B and C step from it with no more
 // radio traffic; Enter writes once.
+// The prompt is the name, said at once, and "please" once the value is read.
 void settingEntry(Setting setting) {
   const SettingOps* ops = settingOps(setting);
   const char* label = settingInfo(setting).label;
-  if (keypadReportIfUnsupported(ops && ops->available(), label)) return;
   printKeypadAction("{} ENTRY", label);
-  prepareKeypadSpeechResponse();
+  KeypadAnswer answer(label, AnswerNaming::Always);
+  if (answer.unavailable(ops && ops->available())) return;
   ValueSpec spec = specOf(setting);
-  if (keypadReportFeatureFailure(ops->limits(spec), label)) return;
+  if (answer.failed(ops->limits(spec))) return;
   EntrySeed seed;
   int32_t value = 0;
   const FeatureStatus read = ops->read(value);
   // A radio that cannot say its value still takes one typed.
-  if (read != FeatureStatus::Unsupported && keypadReportFeatureFailure(read, label)) return;
+  if (read != FeatureStatus::Unsupported && answer.failed(read)) return;
   seed.known = read == FeatureStatus::Ok;
   seed.value = value;
   keypadBeginValueEntry(spec, seed);
   if (seed.known) printKeypadStatus("{} PLEASE ({})", label, ops->text(value).c_str());
   else printKeypadStatus("{} PLEASE", label);
-  if (const char* words = spokenLabelWords(label)) speakPrompt(words);
+  speakPlease();
 }
 
 void keypadValueDigit(const ValueSpec& spec, char key, const char* digits) {
@@ -86,13 +86,15 @@ void keypadValueLimit(const char* name, bool atMax) {
   speakLimit(atMax);
 }
 
+// Just the value read back: the entry already said what it is.
 void keypadValueCommit(const ValueSpec& spec, int32_t value) {
   const SettingOps* ops = valueOps(spec);
   if (!ops) return;
   printKeypadCommand("ENTER -> {}", ops->text(value).c_str());
+  KeypadAnswer answer(spec.name, AnswerNaming::OnFailure);
   prepareKeypadRadioWrite();
   int32_t readBack = value;
-  if (keypadReportFeatureFailure(ops->write(value, readBack), spec.name)) return;
+  if (answer.failed(ops->write(value, readBack))) return;
   printKeypadStatus("{}", ops->text(readBack).c_str());
   ops->speak(readBack);
 }
@@ -128,16 +130,14 @@ EntrySeed knownSeed(int32_t value) {
 // A, B or C with no focus, or a gesture the focus has nothing for.
 void reportNotAvailable(const char* label) {
   printKeypadAction("{}", label);
-  keypadReportIfUnsupported(false, label);
+  keypadReportNotAvailable(label);
 }
 
-// Sets value and says what the radio read back: named on the first step after
-// another key, then just the value.
-void writeAndSay(const SettingOps& ops, int32_t value, LabelMode labels) {
-  const char* label = settingInfo(ops.setting).label;
+// Sets value and says what the radio read back, the name as the answer has it.
+void writeAndSay(KeypadAnswer& answer, const SettingOps& ops, int32_t value) {
   prepareKeypadRadioWrite();
   int32_t readBack = value;
-  if (keypadReportFeatureFailure(ops.write(value, readBack), label)) {
+  if (answer.failed(ops.write(value, readBack))) {
     s_recent.setting = Setting::None;
     return;
   }
@@ -145,19 +145,16 @@ void writeAndSay(const SettingOps& ops, int32_t value, LabelMode labels) {
   s_recent.value = readBack;
   s_recent.atMs = millis();
   printKeypadStatus("{}", ops.text(readBack).c_str());
-  LabelModeScope scope(labels);
   ops.speak(readBack);
 }
 
 // The range, then the value now: false, with the failure said, when either is missing.
-bool readForStep(const SettingOps& ops, ValueSpec& spec, int32_t& value) {
-  const char* label = settingInfo(ops.setting).label;
-  if (keypadReportIfUnsupported(ops.available(), label)) return false;
-  prepareKeypadSpeechResponse();
+bool readForStep(KeypadAnswer& answer, const SettingOps& ops, ValueSpec& spec, int32_t& value) {
+  if (answer.unavailable(ops.available())) return false;
   spec = specOf(ops.setting);
-  if (keypadReportFeatureFailure(ops.limits(spec), label)) return false;
+  if (answer.failed(ops.limits(spec))) return false;
   if (recentValue(ops.setting, value)) return true;
-  return !keypadReportFeatureFailure(ops.read(value), label);
+  return !answer.failed(ops.read(value));
 }
 
 // What A, B and C do for a focus that is more than its SettingOps, or has none.
@@ -234,10 +231,11 @@ void keypadSettingNudge(Setting setting, int8_t dir, bool big) {
   const SettingOps* ops = settingOps(setting);
   const char* label = settingInfo(setting).label;
   printKeypadAction("{} {}", label, keypadStepWord(dir, big));
-  if (keypadReportIfUnsupported(ops != nullptr, label)) return;
+  KeypadAnswer answer(label, keypadStepNaming());
+  if (answer.unavailable(ops != nullptr)) return;
   ValueSpec spec;
   int32_t value = 0;
-  if (!readForStep(*ops, spec, value)) return;
+  if (!readForStep(answer, *ops, spec, value)) return;
   ValueEntry entry;
   entry.begin(spec, knownSeed(value));
   if (entry.step(dir, big ? spec.bigSteps : 1) != ValueEntry::Step::Moved) {
@@ -246,17 +244,14 @@ void keypadSettingNudge(Setting setting, int8_t dir, bool big) {
   }
   entry.current(value);
   if (!ops->confirm || !ops->confirm()) {
-    writeAndSay(*ops, value, keypadActiveFocusIsNew() ? LabelMode::Always : LabelMode::Never);
+    writeAndSay(answer, *ops, value);
     return;
   }
   EntrySeed staged = knownSeed(value);
   staged.staged = true;
   keypadBeginValueEntry(spec, staged);
   printKeypadStatus("{} STAGE: {} PLEASE", label, ops->text(value).c_str());
-  {
-    LabelModeScope named(LabelMode::Always);
-    ops->speak(value);
-  }
+  ops->speak(value);
   speakPlease();
 }
 
@@ -264,10 +259,10 @@ void settingSay(Setting setting) {
   const SettingOps* ops = settingOps(setting);
   const char* label = settingInfo(setting).label;
   printKeypadAction("{}?", label);
-  if (keypadReportIfUnsupported(ops && ops->available(), label)) return;
-  prepareKeypadSpeechResponse();
+  KeypadAnswer answer(label);
+  if (answer.unavailable(ops && ops->available())) return;
   int32_t value = 0;
-  if (keypadReportFeatureFailure(ops->read(value), label)) return;
+  if (answer.failed(ops->read(value))) return;
   printKeypadStatus("{}", ops->text(value).c_str());
   ops->speak(value);
 }
@@ -277,15 +272,16 @@ void settingNext(Setting setting) {
   const SettingOps* ops = settingOps(setting);
   const char* label = settingInfo(setting).label;
   printKeypadAction("{} NEXT", label);
-  if (keypadReportIfUnsupported(ops != nullptr, label)) return;
+  KeypadAnswer answer(label);
+  if (answer.unavailable(ops != nullptr)) return;
   ValueSpec spec;
   int32_t value = 0;
-  if (!readForStep(*ops, spec, value)) return;
+  if (!readForStep(answer, *ops, spec, value)) return;
   ValueEntry entry;
   entry.begin(spec, knownSeed(value));
   if (entry.step(1) == ValueEntry::Step::Moved) entry.current(value);
   else value = spec.min;
-  writeAndSay(*ops, value, LabelMode::Verbose);
+  writeAndSay(answer, *ops, value);
 }
 
 // A short says the name, verbose off too.
@@ -318,8 +314,9 @@ void focusCentre() {
     return;
   }
   printKeypadAction("{} CENTRE", label);
-  if (keypadReportIfUnsupported(ops->available(), label)) return;
-  writeAndSay(*ops, ops->centre, LabelMode::Always);
+  KeypadAnswer answer(label, AnswerNaming::Always);
+  if (answer.unavailable(ops->available())) return;
+  writeAndSay(answer, *ops, ops->centre);
 }
 
 void focusStep(int8_t dir) { stepFocus(dir, false); }

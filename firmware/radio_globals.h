@@ -19,6 +19,8 @@ extern bool g_speechEnabled;
 extern bool g_tuningSpeakEnabled;
 // Off: answers say only the value, not its name ("50 watts" for "power 50 watts").
 extern bool g_verboseSpeech;
+// The direction of the last tone mode on, set or read: tone switched on from off takes it. Saved.
+extern ToneDir g_toneDir;
 extern uint32_t g_suppressFreqSpeakUntilMs;
 extern uint32_t g_suspendPollingUntilMs;
 extern LiveState live;

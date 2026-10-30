@@ -28,7 +28,8 @@ int32_t stepRfPower(int32_t tenths, int8_t dir) {
   return tenths <= 200 ? tenths - 10 : (tenths - 1) / 50 * 50;
 }
 
-bool rfPowerAvailable() { return currentProfile().caps.setRfPower; }
+// The FT-8x7 too, where it is set only experimentally: its limits say so.
+bool rfPowerAvailable() { return currentProfile().caps.setRfPower || currentFt8x7Model() != Ft8x7Model::None; }
 
 FeatureStatus rfPowerLimits(ValueSpec& spec) {
   uint16_t min = 0;
@@ -297,8 +298,9 @@ const SettingOps* settingOps(Setting setting) {
   return cwSettingOps(setting);
 }
 
-FeatureStatus switchSettingLimits(ValueSpec& spec, bool canSet) {
-  if (!canSet) return FeatureStatus::Unsupported;
+FeatureStatus switchSettingLimits(ValueSpec& spec, FeatureStatus (*writeAccess)()) {
+  const FeatureStatus access = writeAccess();
+  if (access != FeatureStatus::Ok) return access;
   spec.min = 0;
   spec.max = 1;
   spec.maxDigits = 1;

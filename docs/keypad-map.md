@@ -68,7 +68,7 @@ one step away, ending in "please". More `B` and `C` presses step with no radio t
 held: the big step, as before the entry opened), `D` sets,
 `#` cancels. The FT-817/818 power steps through its levels and stops at the lowest and highest. The
 mode walks the modes in the order of the mode select digits and goes round: after the last comes
-the first. The FT-8x7 settings need experimental mode; without it `B` and `C` say "not available". The other
+the first. The FT-8x7 settings need experimental mode; without it `B` and `C` say "experimental". The other
 settings change at once.
 
 In a pick of named choices (mode, AGC), `B` and `C` go round. Levels and numbers stop at the end
@@ -278,8 +278,8 @@ and KX3 say "not available".
 | `3` long | CTCSS tone entry | CTCSS tone entry | CTCSS tone entry | CTCSS tone entry |
 | `4` short | not available | not available | not available | DCS code (the last set, or 023) |
 | `4` long | free | free | free | DCS code entry |
-| `5` short | encode only (TX) or encode and decode (both) | the same | the same | encode only (TX), decode only (RX), encode and decode (both), or split |
-| `5` long | step between both and TX | step between both and TX | step between both and TX | step from both to TX, RX and back to both (FT-817/818: TX and both, CTCSS only) |
+| `5` short | encode only (TX) or encode and decode (both) | the same | the same | encode only (TX), encode and decode (both), or split |
+| `5` long | step between both and TX | step between both and TX | step between both and TX | step between both and TX (FT-817/818: CTCSS only) |
 | `6` short | free | free | free | split tone on or off (FT-857/897 menu 79; FT-817/818: not available) |
 | `A` `B` `C` | focus | focus | focus | focus |
 
@@ -289,7 +289,7 @@ each at once. A walk stops at the first and last tone or code.
 ## Bank 7 - CW
 
 The twin of Bank 4. Top row: the keyer with its speed, break-in, the sidetone. Middle row: the
-keyer type, pitch, weight. Bottom row: key reverse, RF power, break-in delay.
+keyer type, pitch, weight. Bottom row: paddle reverse, RF power, break-in delay.
 
 | Key | Icom | FTDX10 | Kenwood, Elecraft, other FTDX | FT-817/818 | FT-857/897 |
 |---|---|---|---|---|---|
@@ -312,8 +312,8 @@ keyer type, pitch, weight. Bottom row: key reverse, RF power, break-in delay.
 | `5` long | CW pitch entry | CW pitch entry | CW pitch entry | CW pitch entry (experimental) | CW pitch entry (experimental) |
 | `6` short | not available | not available | not available | CW weight | CW weight |
 | `6` long | free | free | free | CW weight entry (experimental) | CW weight entry (experimental) |
-| `7` short | not available | not available | not available | key reverse | key reverse |
-| `7` long | free | free | free | key reverse on/off (experimental) | key reverse on/off (experimental) |
+| `7` short | not available | not available | not available | paddle reverse | paddle reverse |
+| `7` long | free | free | free | paddle reverse on/off (experimental) | paddle reverse on/off (experimental) |
 | `8` short | RF power setting (IC-706: free) | RF power setting | RF power setting (FTDX101MP: free; QMX: PA voltage) | RF power setting | RF power setting |
 | `8` long | RF power entry | RF power entry | RF power entry (QMX: PA voltage entry) | RF power level select (experimental) | RF power entry (experimental) |
 | `9` short | not available | break-in delay | break-in delay (FT-891, TS-480) | break-in delay | break-in delay |

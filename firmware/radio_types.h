@@ -87,6 +87,9 @@ struct SMeterReading {
   }
 };
 
+// Tone squelch direction: encode and decode, encode only, decode only.
+enum class ToneDir : uint8_t { Both, TxOnly, RxOnly };
+
 struct LiveState {
   bool freqValid = false;
   uint64_t freqHz = 0;

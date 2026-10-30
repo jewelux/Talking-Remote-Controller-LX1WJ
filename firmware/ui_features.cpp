@@ -4,6 +4,7 @@
 const char* featureStatusText(FeatureStatus status) {
   switch (status) {
     case FeatureStatus::Unsupported: return "unsupported";
+    case FeatureStatus::Experimental: return "experimental";
     case FeatureStatus::Timeout: return "timeout";
     case FeatureStatus::NoReply: return "no reply";
     case FeatureStatus::Failed: return "failed";

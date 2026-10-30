@@ -8,27 +8,27 @@
 
 void queryBank2Nr() {
   printKeypadAction("NR?");
-  prepareKeypadSpeechResponse();
+  KeypadAnswer answer("NR?");
   NrState state;
-  if (keypadReportFeatureFailure(nrQuery(state), "NR?")) return;
+  if (answer.failed(nrQuery(state))) return;
   printKeypadStatus("{}", nrStateText(state).c_str());
   speakNrState(state);
 }
 
 void queryBank2Nb() {
   printKeypadAction("NB?");
-  prepareKeypadSpeechResponse();
+  KeypadAnswer answer("NB?");
   bool on = false;
-  if (keypadReportFeatureFailure(nbQuery(on), "NB?")) return;
+  if (answer.failed(nbQuery(on))) return;
   printKeypadStatus("{}", nbStateText(on).c_str());
   speakNbState(on);
 }
 
 void queryBank2Notch() {
   printKeypadAction("NOTCH?");
-  prepareKeypadSpeechResponse();
+  KeypadAnswer answer("NOTCH?");
   NotchState state;
-  if (keypadReportFeatureFailure(notchQuery(state), "NOTCH?")) return;
+  if (answer.failed(notchQuery(state))) return;
   printKeypadStatus("{}", notchStateText(state).c_str());
   speakNotchState(state);
 }
@@ -39,77 +39,77 @@ void queryBank2Ft817Antenna() { queryKeypadFt8x7Setting(Ft8x7Setting::Antenna); 
 
 void toggleBank2Ft8x7Dbf() {
   printKeypadAction("DBF");
-  prepareKeypadSpeechResponse();
+  KeypadAnswer answer("DBF");
   Ft8x7SettingState state;
-  keypadReportFt8x7Setting(ft8x7FlagSettingToggle(Ft8x7Setting::Dbf, state), "DBF", state);
+  keypadReportFt8x7Setting(answer, ft8x7FlagSettingToggle(Ft8x7Setting::Dbf, state), state);
 }
 
 void toggleBank2Ft817Antenna() {
   printKeypadAction("ANT");
-  prepareKeypadSpeechResponse();
+  KeypadAnswer answer("ANT");
   Ft8x7SettingState state;
-  keypadReportFt8x7Setting(ft817AntennaToggle(state), "ANT", state);
+  keypadReportFt8x7Setting(answer, ft817AntennaToggle(state), state);
 }
 
 void queryBank2Agc() {
   printKeypadAction("AGC?");
-  prepareKeypadSpeechResponse();
+  KeypadAnswer answer("AGC?");
   AgcMode mode = AgcMode::Off;
-  if (keypadReportFeatureFailure(agcQuery(mode), "AGC?")) return;
+  if (answer.failed(agcQuery(mode))) return;
   printKeypadStatus("{}", agcText(mode).c_str());
   speakAgc(mode);
 }
 
 void queryBank2AutoNotch() {
   printKeypadAction("ANOTCH?");
-  prepareKeypadSpeechResponse();
+  KeypadAnswer answer("ANOTCH?");
   bool on = false;
-  if (keypadReportFeatureFailure(autoNotchQuery(on), "ANOTCH?")) return;
+  if (answer.failed(autoNotchQuery(on))) return;
   printKeypadStatus("{}", autoNotchText(on).c_str());
   speakAutoNotch(on);
 }
 
 void toggleBank2AutoNotch() {
   printKeypadAction("ANOTCH");
-  prepareKeypadSpeechResponse();
+  KeypadAnswer answer("ANOTCH");
   bool on = false;
-  if (keypadReportFeatureFailure(autoNotchToggle(on), "ANOTCH")) return;
+  if (answer.failed(autoNotchToggle(on))) return;
   printKeypadStatus("{}", autoNotchText(on).c_str());
   speakAutoNotch(on);
 }
 
 void queryBank2Att() {
   printKeypadAction("ATT?");
-  prepareKeypadSpeechResponse();
+  KeypadAnswer answer("ATT?");
   AttState state;
-  if (keypadReportFeatureFailure(attQuery(state), "ATT?")) return;
+  if (answer.failed(attQuery(state))) return;
   printKeypadStatus("{}", attText(state).c_str());
   speakAtt(state);
 }
 
 void stepBank2Att() {
   printKeypadAction("ATT");
-  prepareKeypadSpeechResponse();
+  KeypadAnswer answer("ATT");
   AttState state;
-  if (keypadReportFeatureFailure(attStep(state), "ATT")) return;
+  if (answer.failed(attStep(state))) return;
   printKeypadStatus("{}", attText(state).c_str());
   speakAtt(state);
 }
 
 void queryBank2Preamp() {
   printKeypadAction("PREAMP?");
-  prepareKeypadSpeechResponse();
+  KeypadAnswer answer("PREAMP?");
   uint8_t level = 0;
-  if (keypadReportFeatureFailure(preampQuery(level), "PREAMP?")) return;
+  if (answer.failed(preampQuery(level))) return;
   printKeypadStatus("{}", preampText(level).c_str());
   speakPreamp(level);
 }
 
 void stepBank2Preamp() {
   printKeypadAction("PREAMP");
-  prepareKeypadSpeechResponse();
+  KeypadAnswer answer("PREAMP");
   uint8_t level = 0;
-  if (keypadReportFeatureFailure(preampStep(level), "PREAMP")) return;
+  if (answer.failed(preampStep(level))) return;
   printKeypadStatus("{}", preampText(level).c_str());
   speakPreamp(level);
 }
@@ -132,29 +132,23 @@ static void sayPickedAgc(char key, uint8_t value) {
 
 static void commitAgc(uint8_t value, TargetVfo) {
   printKeypadCommand("ENTER -> AGC {}", agcModeName((AgcMode)value));
+  KeypadAnswer answer("AGC", AnswerNaming::OnFailure);
   prepareKeypadRadioWrite();
   AgcMode mode = AgcMode::Off;
-  if (keypadReportFeatureFailure(agcSet((AgcMode)value, mode), "AGC")) return;
+  if (answer.failed(agcSet((AgcMode)value, mode))) return;
   printKeypadStatus("{}", agcText(mode).c_str());
   speakAgc(mode);
 }
 
 static constexpr ChoiceSpec kAgcChoice = {"AGC SELECT", nullptr, 0, pickAgc, sayPickedAgc, commitAgc, true};
 
-static bool agcCanSetAny() {
-  for (const AgcMode mode : {AgcMode::Off, AgcMode::Fast, AgcMode::Mid, AgcMode::Slow, AgcMode::Auto}) {
-    if (agcCanSet(mode)) return true;
-  }
-  return false;
-}
-
 void beginBank2AgcSelect() {
-  if (!agcCanSetAny()) {
-    printKeypadStatus("AGC -> unavailable");
-    speakKeypadFailure("AGC", KeypadFailure::NotAvailable);
+  printKeypadAction("AGC");
+  const FeatureStatus access = agcWriteAccess();
+  if (access != FeatureStatus::Ok) {
+    keypadReportRefusal("AGC", access);
     return;
   }
-  printKeypadAction("AGC");
   keypadBeginChoiceSelect(kAgcChoice);
   printKeypadStatus("AGC PLEASE");
   speakPrompt("agc");
@@ -180,10 +174,10 @@ static bool nextAgc(AgcMode mode, int8_t dir, AgcMode& out) {
 
 void nudgeBank2Agc(int8_t dir, bool) {
   printKeypadAction("AGC {}", dir > 0 ? "UP" : "DOWN");
-  if (keypadReportIfUnsupported(agcCanSetAny(), "AGC")) return;
-  prepareKeypadSpeechResponse();
+  KeypadAnswer answer("AGC", keypadStepNaming());
+  if (answer.failed(agcWriteAccess())) return;
   AgcMode mode = AgcMode::Off;
-  if (keypadReportFeatureFailure(agcQuery(mode), "AGC")) return;
+  if (answer.failed(agcQuery(mode))) return;
   if (currentProtocolType() == PROTO_YAESU_FT8X7) {
     EntrySeed seed;
     seed.known = true;
@@ -201,35 +195,34 @@ void nudgeBank2Agc(int8_t dir, bool) {
     return;
   }
   prepareKeypadRadioWrite();
-  if (keypadReportFeatureFailure(agcSet(next, mode), "AGC")) return;
+  if (answer.failed(agcSet(next, mode))) return;
   printKeypadStatus("{}", agcText(mode).c_str());
-  LabelModeScope labels(keypadActiveFocusIsNew() ? LabelMode::Always : LabelMode::Never);
   speakAgc(mode);
 }
 
 void toggleBank2Nr() {
   printKeypadAction("NR");
-  prepareKeypadSpeechResponse();
+  KeypadAnswer answer("NR");
   NrState state;
-  if (keypadReportFeatureFailure(nrToggle(state), "NR")) return;
+  if (answer.failed(nrToggle(state))) return;
   printKeypadStatus("{}", nrStateText(state).c_str());
   speakNrState(state);
 }
 
 void toggleBank2Nb() {
   printKeypadAction("NB");
-  prepareKeypadSpeechResponse();
+  KeypadAnswer answer("NB");
   bool on = false;
-  if (keypadReportFeatureFailure(nbToggle(on), "NB")) return;
+  if (answer.failed(nbToggle(on))) return;
   printKeypadStatus("{}", nbStateText(on).c_str());
   speakNbState(on);
 }
 
 void toggleBank2Notch() {
   printKeypadAction("NOTCH");
-  prepareKeypadSpeechResponse();
+  KeypadAnswer answer("NOTCH");
   NotchState state;
-  if (keypadReportFeatureFailure(notchToggle(state), "NOTCH")) return;
+  if (answer.failed(notchToggle(state))) return;
   printKeypadStatus("{}", notchStateText(state).c_str());
   speakNotchState(state);
 }
@@ -237,27 +230,28 @@ void toggleBank2Notch() {
 // The FT-857/897 DSP notch is an auto notch: the notch operations, spoken as the auto notch.
 void queryBank2Ft8x7AutoNotch() {
   printKeypadAction("ANOTCH?");
-  prepareKeypadSpeechResponse();
+  KeypadAnswer answer("ANOTCH?");
   NotchState state;
-  if (keypadReportFeatureFailure(notchQuery(state), "ANOTCH?")) return;
+  if (answer.failed(notchQuery(state))) return;
   printKeypadStatus("{}", autoNotchText(state.on).c_str());
   speakAutoNotch(state.on);
 }
 
 void toggleBank2Ft8x7AutoNotch() {
   printKeypadAction("ANOTCH");
-  prepareKeypadSpeechResponse();
+  KeypadAnswer answer("ANOTCH");
   NotchState state;
-  if (keypadReportFeatureFailure(notchToggle(state), "ANOTCH")) return;
+  if (answer.failed(notchToggle(state))) return;
   printKeypadStatus("{}", autoNotchText(state.on).c_str());
   speakAutoNotch(state.on);
 }
 
 void toggleBank2FilterShape() {
   printKeypadAction("FILSHAPE");
+  KeypadAnswer answer("FILSHAPE");
   bool soft = false;
-  if (!queryFilterShape(soft, kCatReplyTimeoutMs)) { keypadReportFailure("FILSHAPE"); return; }
-  if (!setFilterShape(!soft)) { keypadReportFailure("FILSHAPE"); return; }
+  if (!queryFilterShape(soft, kCatReplyTimeoutMs)) { answer.radioFailed(); return; }
+  if (!setFilterShape(!soft)) { answer.radioFailed(); return; }
   printKeypadStatus("FILSHAPE {}", !soft ? "SOFT" : "SHARP");
   if (g_speechEnabled) {
     speakLabel("filtershape");

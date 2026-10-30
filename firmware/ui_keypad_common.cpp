@@ -36,74 +36,137 @@ static String spokenLabel(const char* label) {
   return spelled;
 }
 
-void speakKeypadFailure(const char* label, KeypadFailure failure) {
+// The name, said whatever the label mode, and the gap after it.
+static void speakName(const char* label) {
   if (!g_speechEnabled) return;
   const String name = spokenLabel(label);
-  if (name.length()) speakLabel(name);
+  if (!name.length()) return;
+  speakToken(name);
+  playSilenceMs(60);
+}
+
+static void speakFailureWord(KeypadFailure failure) {
+  if (!g_speechEnabled) return;
   switch (failure) {
     case KeypadFailure::NotAvailable: speakNotAvailable(); break;
+    case KeypadFailure::Experimental: speakToken("experimental"); break;
     case KeypadFailure::Timeout: speakTimeout(); break;
     case KeypadFailure::Error: speakError(); break;
   }
 }
 
-bool keypadReportIfTimedOut(const char* label) {
-  if (!g_radioReplyTimedOut) return false;
-  printKeypadStatus("{} -> timeout", label);
-  speakKeypadFailure(label, KeypadFailure::Timeout);
+static const char* failureText(KeypadFailure failure) {
+  switch (failure) {
+    case KeypadFailure::NotAvailable: return "not available";
+    case KeypadFailure::Experimental: return "experimental";
+    case KeypadFailure::Timeout: return "timeout";
+    default: return "failed";
+  }
+}
+
+void speakKeypadFailure(const char* label, KeypadFailure failure) {
+  if (!g_speechEnabled) return;
+  if (labelSpoken()) speakName(label);
+  speakFailureWord(failure);
+}
+
+void keypadReportNotAvailable(const char* label) {
+  printKeypadStatus("{} -> not available", label);
+  speakKeypadFailure(label, KeypadFailure::NotAvailable);
+}
+
+void keypadReportExperimental(const char* label) {
+  printKeypadStatus("{} -> experimental", label);
+  speakKeypadFailure(label, KeypadFailure::Experimental);
+}
+
+void keypadReportRefusal(const char* label, FeatureStatus refusal) {
+  if (refusal == FeatureStatus::Experimental) keypadReportExperimental(label);
+  else keypadReportNotAvailable(label);
+}
+
+// Holds polling and says the name now where naming wants it: true when the user
+// has heard it, now or from an answer around this one (LabelMode::Never).
+static bool beginAnswer(const char* label, AnswerNaming naming) {
+  prepareKeypadSpeechResponse();
+  if (labelMode() == LabelMode::Never) return true;
+  if (naming == AnswerNaming::OnFailure) return false;
+  if (naming == AnswerNaming::Labels && !labelSpoken()) return false;
+  speakName(label);
   return true;
 }
 
-void keypadReportFailure(const char* label) {
-  if (keypadReportIfTimedOut(label)) return;
-  // Nothing went to the radio: the profile has no command for it.
-  if (serialTransportWriteCount() == s_writesBeforeKey) {
-    keypadReportIfUnsupported(false, label);
-    return;
+KeypadAnswer::KeypadAnswer(const char* label, AnswerNaming naming)
+    : label_(label),
+      named_(beginAnswer(label, naming)),
+      labels_(named_ || naming == AnswerNaming::OnFailure ? LabelMode::Never : labelMode()) {}
+
+void KeypadAnswer::sayName() const { speakName(label_); }
+
+void KeypadAnswer::fail(KeypadFailure failure) {
+  printKeypadStatus("{} -> {}", label_, failureText(failure));
+  if (!g_speechEnabled) return;
+  if (!named_ && g_verboseSpeech) sayName();
+  speakFailureWord(failure);
+}
+
+bool KeypadAnswer::failed(FeatureStatus status) {
+  switch (status) {
+    case FeatureStatus::Ok: return false;
+    case FeatureStatus::Unsupported: fail(KeypadFailure::NotAvailable); return true;
+    case FeatureStatus::Experimental: fail(KeypadFailure::Experimental); return true;
+    case FeatureStatus::Timeout: fail(KeypadFailure::Timeout); return true;
+    default: break;
   }
-  printKeypadStatus("{} -> failed", label);
-  speakKeypadFailure(label, KeypadFailure::Error);
+  printKeypadStatus("{} -> {}", label_, featureStatusText(status));
+  if (!g_speechEnabled) return true;
+  if (!named_ && g_verboseSpeech) sayName();
+  speakFailureWord(KeypadFailure::Error);
+  return true;
+}
+
+bool KeypadAnswer::unavailable(bool available) {
+  if (available) return false;
+  fail(KeypadFailure::NotAvailable);
+  return true;
+}
+
+bool KeypadAnswer::timedOut() {
+  if (!g_radioReplyTimedOut) return false;
+  fail(KeypadFailure::Timeout);
+  return true;
+}
+
+void KeypadAnswer::radioFailed() {
+  if (timedOut()) return;
+  // Nothing went to the radio: the profile has no command for it.
+  if (serialTransportWriteCount() == s_writesBeforeKey) fail(KeypadFailure::NotAvailable);
+  else fail(KeypadFailure::Error);
+}
+
+void KeypadAnswer::done() { speakDone(spokenLabel(label_)); }
+
+AnswerNaming keypadStepNaming() {
+  return keypadActiveFocusIsNew() ? AnswerNaming::Always : AnswerNaming::OnFailure;
 }
 
 void queryKeypadFt8x7Setting(Ft8x7Setting setting) {
   const char* label = ft8x7SettingLabel(setting);
   printKeypadAction("{}", label);
-  prepareKeypadSpeechResponse();
+  KeypadAnswer answer(label);
   Ft8x7SettingState state;
-  keypadReportFt8x7Setting(ft8x7SettingQuery(setting, state), label, state);
+  keypadReportFt8x7Setting(answer, ft8x7SettingQuery(setting, state), state);
 }
 
-void keypadReportFt8x7Setting(FeatureStatus status, const char* label, const Ft8x7SettingState& state) {
-  if (keypadReportFeatureFailure(status, label)) return;
+void keypadReportFt8x7Setting(KeypadAnswer& answer, FeatureStatus status, const Ft8x7SettingState& state) {
+  if (answer.failed(status)) return;
   printKeypadStatus("{}", ft8x7SettingText(state).c_str());
   speakFt8x7Setting(state);
-}
-
-bool keypadReportFeatureFailure(FeatureStatus status, const char* label) {
-  switch (status) {
-    case FeatureStatus::Ok: return false;
-    case FeatureStatus::Unsupported: return keypadReportIfUnsupported(false, label);
-    case FeatureStatus::Timeout:
-      printKeypadStatus("{} -> timeout", label);
-      speakKeypadFailure(label, KeypadFailure::Timeout);
-      return true;
-    default:
-      printKeypadStatus("{} -> {}", label, featureStatusText(status));
-      speakKeypadFailure(label, KeypadFailure::Error);
-      return true;
-  }
 }
 
 void keypadReportUnassigned(const char* label) {
   printKeypadStatus("{} -> unassigned", label);
   playBeep();
-}
-
-bool keypadReportIfUnsupported(bool supported, const char* label) {
-  if (supported) return false;
-  printKeypadStatus("{} -> not available", label);
-  speakKeypadFailure(label, KeypadFailure::NotAvailable);
-  return true;
 }
 
 void reportFtdx10HiddenKey() {
@@ -260,11 +323,13 @@ void speakVfoFrequencyLabel(char which) {
   speakFrequencyWord();
 }
 
-// Verbose off: "a 7.1".
+// Verbose off: "a 7.1". After the name ("vfo a" from a KeypadAnswer): "7.1".
 void speakVfoFrequency(char which, uint64_t hz) {
   if (!g_speechEnabled) return;
-  speakVfoLabel(which);
-  playSilenceMs(60);
+  if (labelMode() != LabelMode::Never) {
+    speakVfoLabel(which);
+    playSilenceMs(60);
+  }
   speakLabel("frequency");
   speakDigitsAndPoint(hzToMHzString3(hz));
 }
@@ -292,6 +357,8 @@ bool guardFt8x7VfoToggleLock() {
   bool on = false;
   if (!queryDialLock(on, 300) || !on) return true;
   printKeypadStatus("LOCK ON");
+  // Not the key's own value: named as verbose has it, inside an answer too.
+  LabelModeScope labels(LabelMode::Verbose);
   if (g_speechEnabled) speakTokenState("lock", true);
   return false;
 }
@@ -317,16 +384,6 @@ void speakFeatureValue(const char* featureToken, uint8_t value) {
   if (!g_speechEnabled) return;
   speakLabel(featureToken);
   speakDigitsAndPoint(String((int)value));
-}
-
-void speakKeypadCommandWord(const String& cmd) {
-  if (!g_speechEnabled) return;
-  if (cmd == "FREQ?") speakLabel("frequency");
-  else if (cmd == "MODE?") speakLabel("mode");
-  else if (cmd == "SM?") speakLabel("s_meter");
-  else if (cmd == "SWR?") speakLabel("swr");
-  else if (cmd == "RFPOWER?") speakLabel("power");
-  else if (cmd == "NOTCH?") speakLabel("notch filter");
 }
 
 void sendKeypadCommand(const char* cmd) {

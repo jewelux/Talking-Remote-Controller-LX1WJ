@@ -13,6 +13,7 @@
 enum class FeatureStatus : uint8_t {
   Ok,
   Unsupported,  // the profile has no such feature
+  Experimental, // an FT-8x7 EEPROM write while EXPERIMENTAL is off
   Timeout,      // the radio did not answer (g_radioReplyTimedOut)
   NoReply,      // a read got no usable answer
   Failed,       // a write was not accepted
@@ -83,8 +84,11 @@ FeatureStatus agcQuery(AgcMode& out);
 // all five; TS-480 OFF, FAST, SLOW; KX2 FAST, SLOW), and experimentally (caps.setRadioMenu) on the
 // FT-8x7, which has no MID.
 bool agcCanSet(AgcMode mode);
-// Sets mode, which the radio confirms on a read-back, into out. Unsupported where agcCanSet is
-// false; FT-8x7 errors as procLevelSet.
+// Whether the radio can be set to some mode: Ok; Experimental where it needs EXPERIMENTAL ON (an
+// FT-8x7 EEPROM write); else Unsupported. Every ...WriteAccess below says the same of its write.
+FeatureStatus agcWriteAccess();
+// Sets mode, which the radio confirms on a read-back, into out. Experimental or Unsupported where
+// agcCanSet is false; FT-8x7 errors as procLevelSet.
 FeatureStatus agcSet(AgcMode mode, AgcMode& out);
 
 // The RX attenuator. db is 0 where the radio does not say how many dB it takes off.
@@ -132,8 +136,9 @@ FeatureStatus breakInQuery(BreakInMode& out);
 // Whether the radio can be set to mode: Icom OFF, SEMI, FULL and ON (as SEMI); Yaesu OFF and ON;
 // on the FT-8x7 OFF and ON, experimentally (caps.setRadioMenu).
 bool breakInCanSet(BreakInMode mode);
-// Sets mode, which the radio confirms on a read-back, into out; Unsupported where breakInCanSet
-// is false.
+FeatureStatus breakInWriteAccess(BreakInMode mode);
+// Sets mode, which the radio confirms on a read-back, into out; breakInWriteAccess where
+// breakInCanSet is false.
 FeatureStatus breakInSet(BreakInMode mode, BreakInMode& out);
 // Off -> on (Icom SEMI) -> off, from the break-in read.
 FeatureStatus breakInToggle(BreakInMode& out);
@@ -145,6 +150,7 @@ FeatureStatus keyerToggle(bool& out);
 bool breakInSupported();
 bool keyerSupported();
 bool keyerCanSet();
+FeatureStatus keyerWriteAccess();
 
 // The ALC meter in percent of full scale (caps.getAlc): Icom 15 13, 0..120; Yaesu RM4, 0..255.
 // 0 when not transmitting. The FT-8x7 reads its own (ALC?, 0..15).
@@ -158,6 +164,7 @@ FeatureStatus cwLevelQuery(CwLevel level, uint16_t& valueOut);
 bool cwLevelSupported(CwLevel level);
 // The values it can be set to; false where it cannot (on the FT-8x7 only experimentally).
 bool cwLevelRange(CwLevel level, uint16_t& minOut, uint16_t& maxOut);
+FeatureStatus cwLevelWriteAccess(CwLevel level);
 // Sets value, to the radio's step nearest it, which the radio confirms on a read-back, into
 // valueOut. Invalid outside the range.
 FeatureStatus cwLevelSet(CwLevel level, uint16_t value, uint16_t& valueOut);
@@ -173,9 +180,13 @@ FeatureStatus cwLevelStep(CwLevel level, int delta, uint16_t& valueOut);
 // experimentally).
 bool procSupported();
 bool procCanSet();
+FeatureStatus procWriteAccess();
 bool micGainSupported();
 bool micGainCanSet();
+FeatureStatus micGainWriteAccess();
 bool voxSupported();
+// The VOX switch, its gain and (with settings.voxDelay on the ASCII radios) its delay.
+FeatureStatus voxWriteAccess();
 FeatureStatus procQuery(bool& on);
 // 0..100.
 FeatureStatus procLevelQuery(uint8_t& level);
@@ -225,6 +236,7 @@ FeatureStatus voxGainStep(int delta, uint8_t& levelOut);
 // The VOX delays in ms the radio takes: CI-V 0..2000, FTDX10 and FT-891 30..3000, TS-480 0..3000,
 // FT-857/897 100..3000, FT-817/818 100..2500. False where it cannot be set.
 bool voxDelayRange(uint16_t& minOut, uint16_t& maxOut);
+FeatureStatus voxDelayWriteAccess();
 // Sets the radio's step nearest ms; msOut holds the delay read back. Invalid outside the range.
 FeatureStatus voxDelaySet(uint16_t ms, uint16_t& msOut);
 // delta of the radio's steps (100 ms; FTDX10 its VD steps, TS-480 150 ms) from the delay read, kept
@@ -282,6 +294,9 @@ FeatureStatus ft8x7MenuRowSet(Ft8x7Setting setting, uint8_t number, Ft8x7Setting
 // 100..1000 Hz, HighCut 1000..6000 Hz, the CW levels as ft8x7CwLevelRange gives them for the
 // radio. False for other settings, and for a CW level the radio does not keep.
 bool ft8x7LevelRange(Ft8x7Setting setting, uint16_t& minOut, uint16_t& maxOut);
+// Whether ft8x7LevelSet may write setting, by the caps below; Experimental where it needs
+// EXPERIMENTAL ON.
+FeatureStatus ft8x7LevelWriteAccess(Ft8x7Setting setting);
 // Experimental (caps.setNrLevel, caps.setNbLevel, and caps.setRadioMenu for the width and the
 // cuts): sets the FT-857/897 NrLevel (menu 49), NbLevel (menu 63), BpfWidth (menu 45, DSP BPF
 // 60, 120 or 240 Hz), LowCut (menu 46, DSP HPF) or HighCut (menu 47, DSP LPF) in the EEPROM,
@@ -334,12 +349,13 @@ FeatureStatus ft8x7CwBfoSet(Ft857CwBfo bfo, Ft8x7SettingState& out);
 // radio has no CAT command for (on the FT-817/818 DCS encode only).
 FeatureStatus toneModeQuery(YaesuToneMode& out);
 FeatureStatus toneOff();
-// CTCSS or DCS, keeping encode only (tx only) and decode only (rx only); from off or a mixed
-// mode, both. Where the radio cannot keep it (FT-817/818 DCS), both.
+// CTCSS or DCS in the direction last seen on (g_toneDir), also from off. Where the radio cannot
+// set that direction (FT-817/818 DCS encode only, decode only without caps.setToneDecodeOnly),
+// both.
 FeatureStatus toneTypeSet(YaesuToneType type, YaesuToneMode& out);
-// Both -> TX only (encode only) -> RX only (decode only) -> both, keeping the type; a mixed mode
-// counts as both. The FT-817/818 has no RX only, so there TX only goes back to both. With the
-// tone off nothing is sent and out is off.
+// Both -> TX only (encode only) -> RX only (decode only, with caps.setToneDecodeOnly) -> both,
+// keeping the type; a mixed mode counts as both. With the tone off nothing is sent and out is
+// off.
 FeatureStatus toneDirStep(YaesuToneMode& out);
 // FT-857/897 split tone (menu 79) of the current band, which lets the radio's own keys send one
 // tone type and wait for the other. CAT cannot switch it. Unsupported on other radios (the

@@ -72,6 +72,7 @@ void setup() {
   g_tuningSpeakEnabled = loadTuningSpeakFromNvs(true);
   g_verboseSpeech = loadVerboseFromNvs(true);
   holdUsbHostIfCrashed(g_profileId);
+  g_toneDir = loadToneDirFromNvs(ToneDir::Both);
   applyProfile(g_profileId, false);
 
   DBG_PRINT("Talking Remote Controller LX1WJ (");

@@ -24,9 +24,19 @@
 - V2 schematic updated: D1 removed (board powered via the ESP32 USB-C port, modules included), SD-module
   leftovers removed. The PCB keeps the D1 footprint: wire link for USB supply, or a diode (1N400x / Schottky)
   for a separate 5 V supply on J5. The two large pads at the top of the PCB hold the RS-232 module
+- **new: optional line out for demo units** in `docs/hardware/line-out/`: 3.5 mm jack for a mixer or
+  active speaker, with low-pass, isolation transformer and level divider, because the MAX98357A bridged
+  output must not be tied to ground. Proposed circuit, not yet built and measured
 
 ### Keypad
 
+- with verbose on, a key that asks the radio says its name at once and the value when the radio
+  answers; a failure always names what failed
+- a radio that does not answer says "timeout" after the same short wait on every key (mode,
+  frequency and lock used to take about 2.5 seconds)
+- a key with no value to report (VFO A, tune, A=B) says "ok" once done; Enter in an entry says
+  just the value set
+- the PO meter is now "tx power", the FTDX10 power switch "power"
 - in an entry (frequency, RF power, repeater shift, CTCSS, DCS, CI-V address) and in bank,
   profile and mode select, a key acts as soon as it is pressed; holding or releasing it does
   nothing more
@@ -67,7 +77,7 @@
   not yet tested on the CAT radios
 - Bank 1 `5` says the ALC meter while transmitting, in percent of full scale, on the Icoms and the
   FTDX10, FTDX101 and FT-891 (console `ALC?`). The FT-817/818/857/897 say the radio's own meter,
-  0 to 15 ("a.l.c. 8"), and "a.l.c. rx" in receive
+  0 to 15 ("a.l.c. 8"), and "a.l.c. tx only" in receive
 - Bank 1 `6` says the RF power setting and long press enters it in watts on the FTDX10, FTDX101D,
   FT-891, TS-480 and KX2 too, as on the Icoms
 - `A`, `B` and `C` act on the bank's focus, the setting of the last key used on that bank: `A`
@@ -92,6 +102,7 @@
 - with tuning speech off (Bank 9 `4` long), HamTRC no longer reads the frequency from the radio in
   the background: while no key or command is used, it sends nothing to the radio. Turning tuning
   speech on again does not announce the frequency the radio is on; the next tuning is announced
+- Bank 9 `4` calls tuning speech "auto frequency" ("auto frequency on")
 
 ### Speech and sounds
 
@@ -277,8 +288,8 @@
 - FT-817: Bank 3 `1` long toggles VFO A/B and `2` long copies the active VFO to the other (A=B)
 - FT-817/818/857/897, experimental: Bank 8 `8` long and `7` long set the menu item and the soft
   key (function) row the radio's menu opens at: type the number, then `D`. The console commands
-  are `MENU <n>` and `ROW <n>`. They work only with experimental mode on, otherwise they say "not
-  available". A number the radio does not offer says "error": on the FT-857/897 menu 1–88 (1–91
+  are `MENU <n>` and `ROW <n>`. They work only with experimental mode on, otherwise they say
+  "experimental". A number the radio does not offer says "error": on the FT-857/897 menu 1–88 (1–91
   with menu 1 EXT MENU on) and rows 1–17, on the FT-817/818 menu 1–52 (1–57 with menu 52 EXTEND
   on) and rows 1–12. Keep the radio's menu closed meanwhile, since the radio saves its own values
   when the menu is exited
@@ -314,13 +325,13 @@
     `ANT FRONT | REAR | TOGGLE` sets the antenna jack (menu 07) of the current band
   - console only: the CW menu settings, e.g. `CWSPEED 20`, `CWDELAY FULL`, `KEYREV ON`
   - HamTRC writes these settings to the radio's memory and the radio follows at once. They say
-    "error" while transmitting, and work only with experimental mode on, otherwise they say "not
-    available"
+    "error" while transmitting, and work only with experimental mode on, otherwise they say
+    "experimental"
 - FT-817/818/857/897: the SWR reading no longer sends the radio a command that writes to its
   internal memory, and `ALC?` no longer answers with a fixed memory value
 - FT-817/818/857/897: `PO?` and `SWR?` (Bank 1 `4` and `8`) work while transmitting. Power is said in
   meter bars from 0 to 15, SWR as a value from 1.0 to 10, with "high" when the radio flags a high
-  SWR ("swr high 3.7"). In receive they say "power rx" and "swr rx". `ALC?` and `MOD?` (modulation)
+  SWR ("swr high 3.7"). In receive they say "power tx only" and "swr tx only". `ALC?` and `MOD?` (modulation)
   print 0–15
 - FT-817/818/857/897: split status is read from the radio, also after split was changed on the
   radio's front panel. Before, it was remembered from HamTRC's own split commands, or read with the
@@ -336,15 +347,15 @@
   preamplifier is on when IPO is off); the FT-817 has no DSP, so these say "not available".
   With experimental mode off, HamTRC only reads these settings
 - FT-817/818/857/897: CTCSS and DCS can be set to encode only: the tone is sent, but the squelch
-  does not wait for it. The FT-857/897 can also be set to decode only: the squelch waits for the
-  tone, but none is sent. Bank 6 `5` short says "tone tx" for encode only, "tone rx" for decode
-  only or "tone both"; `5` long steps from both to TX, RX and back to both. The FT-817/818 has no
-  decode only and no DCS encode only, so there `5` long switches between TX and both
+  does not wait for it. Bank 6 `5` short says "tone tx" for encode only or "tone both"; `5` long
+  switches between them. The FT-817/818 has no DCS encode only. Decode only is not offered: the
+  FT-897 accepts it over CAT but its squelch stays open
 - FT-817/818/857/897: Bank 6 `2` short says the tone type ("tone ctcss", "tone dcs", "tone off").
   The FT-857/897 reads it from the radio, except on a memory channel, where it says "not
   available". The FT-817/818 says what HamTRC last set on the current band. Tone off has
   moved to `2` double press, DCS to `2` short press then hold; `2` long is still CTCSS. Switching
-  between CTCSS and DCS keeps encode only and decode only. Console: `TONE? | OFF | CTCSS | DCS`,
+  between CTCSS and DCS keeps encode only, and so does switching the tone off and
+  on again, also after HamTRC restarts and on the CAT radios. Console: `TONE? | OFF | CTCSS | DCS`,
   `TONEDIR? | NEXT`
 - FT-857/897: with split tone (menu 79) the radio can send one tone type and wait for the other.
   Bank 6 `2` short then says the received type first ("tone ctcss rx dcs tx") and `5` short says
@@ -407,7 +418,7 @@
   never selects FM; if the radio is switched to FM on its front panel, HamTRC sends PTT OFF at
   once, says "FM not available" and stops polling until a query finds another mode. Details and
   the tests in `docs/radios/yaesu-ft-847.md`. Console `F847POLL OFF | ON` pauses the poll
-- `PO?` and Bank 1 `4` say the PO/ALC meter (0..31) while transmitting, "power rx" in receive
+- `PO?` and Bank 1 `4` say the PO/ALC meter (0..31) while transmitting, "power tx only" in receive
 - `NAR? | ON | OFF | TOGGLE` switch the narrow filter in CW, CW-R and AM, like the radio's NAR
   key ("cw n"); no key yet
 - not yet: PTT, satellite mode, repeater shift, CTCSS and DCS

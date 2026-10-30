@@ -4,6 +4,7 @@
 #include "ui_keypad.h"
 #include "keypad_input.h"
 #include "keypad_keymap.h"
+#include "keypad_labels.h"
 #include "keypad_setting_ops.h"
 #include "radio_catalog.h"
 #include "radio_monitor.h"
@@ -91,10 +92,14 @@ void keypadSendNow(const String& cmd) {
     Serial.print("CMD SEND ");
     Serial.println(cmd);
   }
-  prepareKeypadSpeechResponse();
-  g_keypadExecuting = true;
-  processCommand(cmd);
-  g_keypadExecuting = false;
+  char label[32];
+  keypadCommandLabel(cmd.c_str(), label, sizeof(label));
+  {
+    KeypadAnswer answer(label);
+    g_keypadExecuting = true;
+    processCommand(cmd);
+    g_keypadExecuting = false;
+  }
   holdKeypadPolling();
 }
 

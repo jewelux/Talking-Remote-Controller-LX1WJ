@@ -6,6 +6,7 @@
 #include "keypad_input.h"
 #include "radio_features.h"
 #include "radio_globals.h"
+#include "ui_speech.h"
 
 // Helpers shared by the keypad UI files.
 
@@ -25,9 +26,9 @@ void keypadBeginModeSelect(TargetVfo targetVfo);
 bool keypadNudgeModeSelect(uint8_t mode, int8_t dir);
 void keypadBeginProfileSelect();
 
-// Runs a console command for a key, with the keypad's polling and speech holds.
+// Runs a console command for a key in a KeypadAnswer named by keypadCommandLabel
+// (keypad_labels.h): the name at once, the console's reply without it.
 void keypadSendNow(const String& cmd);
-void speakKeypadCommandWord(const String& cmd);
 
 // Entries and selections (ui_keypad_entry.cpp), called by the state machine.
 void keypadEntryDigit(const EntrySpec& entry, char key, const char* digits);
@@ -110,32 +111,89 @@ void printKeypadAction(LineFormat<sizeof...(Args)> format, const Args&... args) 
 
 // A key event: radio traffic and timeouts from before it are not this key's doing.
 void keypadForgetRadioActivity();
-// The answer to a key whose function did not work: with verbose on, the
-// function's name first ("tuner not available", "split timeout"). label is the
-// trace label, e.g. "TUNER?"; a label with no spoken name gives the bare answer.
-enum class KeypadFailure : uint8_t { NotAvailable, Timeout, Error };
+
+// What went wrong, said "not available", "experimental" (it needs EXPERIMENTAL ON),
+// "timeout" or "error".
+enum class KeypadFailure : uint8_t { NotAvailable, Experimental, Timeout, Error };
+// The failure of a key that asks nothing of the radio, with verbose on after its
+// name ("profile not available"). label is the trace label, e.g. "PROFILE"; a
+// label with no row in kSpokenLabels is spelled.
 void speakKeypadFailure(const char* label, KeypadFailure failure);
-// Keypad feedback. Each prints a status line and gives the matching audio cue.
-// Radio gave no answer: say "timeout" and return true. Otherwise return false, so
-// the caller keeps its own handling of the failure (unsupported, rejected).
-bool keypadReportIfTimedOut(const char* label);
-// A radio operation failed: say "timeout" when the radio gave no answer, "not
-// available" when nothing was sent (the profile has no command for it), and
-// "error" otherwise (the radio refused it or answered something else).
-void keypadReportFailure(const char* label);
-// A shared feature operation did not succeed: say "not available" when
-// unsupported, "timeout" or "error" otherwise, and return true. Ok: false.
-bool keypadReportFeatureFailure(FeatureStatus status, const char* label);
+// A key that asks nothing of the radio cannot run here: prints "<label> -> not
+// available" and says it. (A beep is only for a key with no action.)
+void keypadReportNotAvailable(const char* label);
+// The same for a key that needs EXPERIMENTAL ON: "<label> -> experimental".
+void keypadReportExperimental(const char* label);
+// keypadReportExperimental for Experimental (a write access), else keypadReportNotAvailable.
+void keypadReportRefusal(const char* label, FeatureStatus refusal);
+
+// How a KeypadAnswer names its key.
+enum class AnswerNaming : uint8_t {
+  Labels,     // at once, where a label is said: verbose on, or a LabelModeScope says so
+  Always,     // at once, verbose off too: an entry that ends in "please"
+  OnFailure,  // not now, the user just heard it: only before a failure, with verbose on
+};
+
+// The answer to a key that talks to the radio. It holds polling and says the
+// key's name at once, so the name plays while the radio is asked; then, for the
+// answer's life, speakLabel says nothing (LabelMode::Never), so a value speaker
+// (speakNrState, ops->speak, a console reply) gives just the value. A failure
+// names the key when verbose is on and the name was not said yet. An answer made
+// inside another one (a key that runs another action) says no name again.
+//
+//   printKeypadAction("NR?");
+//   KeypadAnswer answer("NR?");                      // "noisereduction"
+//   NrState state;
+//   if (answer.failed(nrQuery(state))) return;       // "timeout"
+//   printKeypadStatus("{}", nrStateText(state).c_str());
+//   speakNrState(state);                             // "on"
+//
+// Every failure prints "<label> -> <what>" too.
+class KeypadAnswer {
+ public:
+  explicit KeypadAnswer(const char* label, AnswerNaming naming = AnswerNaming::Labels);
+  KeypadAnswer(const KeypadAnswer&) = delete;
+  KeypadAnswer& operator=(const KeypadAnswer&) = delete;
+
+  // A shared feature operation: "not available" when unsupported, "experimental"
+  // when it needs EXPERIMENTAL ON, "timeout" or "error" otherwise, and true. Ok: false.
+  bool failed(FeatureStatus status);
+  // available false: the radio or profile has no such function. Says "not
+  // available" and returns true.
+  bool unavailable(bool available);
+  // The radio gave no answer: says "timeout" and returns true. Otherwise false, so
+  // the caller says its own failure.
+  bool timedOut();
+  // A radio call returned false: "timeout" when the radio gave no answer, "not
+  // available" when nothing was sent (the profile has no command for it), and
+  // "error" otherwise (the radio refused it or answered something else).
+  void radioFailed();
+  void fail(KeypadFailure failure);
+  // A command with no value to say worked: "ok" after its name (verbose off: nothing),
+  // or its name where it was not said.
+  void done();
+  // The name was said, now or by an answer around this one.
+  bool named() const { return named_; }
+
+ private:
+  void sayName() const;
+
+  const char* label_;
+  bool named_;
+  LabelModeScope labels_;
+};
+
+// How a B or C step names its setting: at once on the first step after another
+// key, verbose off too; on a repeat only before a failure.
+AnswerNaming keypadStepNaming();
+
 // Reads an FT-8x7 EEPROM setting, prints and speaks it; the FT-817 says "not available" for what it lacks.
 void queryKeypadFt8x7Setting(Ft8x7Setting setting);
-// An FT-8x7 setting read or written: the failure as keypadReportFeatureFailure says it, else
-// state printed and spoken.
-void keypadReportFt8x7Setting(FeatureStatus status, const char* label, const Ft8x7SettingState& state);
+// An FT-8x7 setting read or written: the failure as answer.failed says it, else state printed
+// and spoken.
+void keypadReportFt8x7Setting(KeypadAnswer& answer, FeatureStatus status, const Ft8x7SettingState& state);
 // The key has no action here: short beep.
 void keypadReportUnassigned(const char* label);
-// When supported is false the key's feature is missing on this radio or profile:
-// say "not available" and return true. (A beep is only for a key with no action.)
-bool keypadReportIfUnsupported(bool supported, const char* label);
 // The key is hidden on the FTDX10 layout: say "not available".
 void reportFtdx10HiddenKey();
 

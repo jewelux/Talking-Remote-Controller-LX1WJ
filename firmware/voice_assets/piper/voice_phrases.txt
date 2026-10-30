@@ -113,6 +113,7 @@ not available
 off | | Off.
 ok
 on | | On.
+only
 percent
 please
 plus

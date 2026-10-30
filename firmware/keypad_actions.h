@@ -52,7 +52,7 @@ void toggleBank1Lock();
 void queryBank1Power();    // "PO?", sent or staged
 void queryBank1RfPower();  // "RFPOWER?", sent or staged
 // The watts entry; on the FT-817/818 a level, picked by 1 (L1) .. 4 (High). Experimental on
-// the FT-8x7, "not available" unless EXPERIMENTAL is on.
+// the FT-8x7, "experimental" unless EXPERIMENTAL is on.
 void beginBank1RfPowerSet();
 // QMX: the Max. PA voltage, which sets its output power. "PAVOLT?", sent or staged; the entry
 // takes volts with one decimal.
@@ -94,7 +94,7 @@ void stepBank2Preamp();
 void queryBank2Ft8x7Dbf();
 void queryBank2Ft8x7Ipo();
 void queryBank2Ft817Antenna();
-// Experimental, written to the radio's EEPROM; "not available" unless EXPERIMENTAL is on. The
+// Experimental, written to the radio's EEPROM; "experimental" unless EXPERIMENTAL is on. The
 // FT-857/897 DBF (both its bits, as the radio's key) and the FT-817/818 antenna jack of the
 // current band.
 void toggleBank2Ft8x7Dbf();
@@ -161,7 +161,8 @@ void queryBank6Tone();
 void setBank6ToneOff();
 void setBank6ToneModeCtcss();
 void setBank6ToneModeDcs();
-// Encode only, decode only or both ("TONEDIR?"), and the step to the next of them.
+// Encode only, decode only (where the radio has it) or both ("TONEDIR?"), and the step to the
+// next of them.
 void queryBank6ToneDir();
 void stepBank6ToneDir();
 // FT-857/897 split tone, menu 79 ("SPLITTONE?").

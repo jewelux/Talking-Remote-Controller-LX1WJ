@@ -11,8 +11,8 @@ been connected yet.
 | Frequency read and set | `FA` | VFO A, 11 digits |
 | Mode read and set | `MD` | LSB 1, USB 2, CW 3, AM 5, CW-R 7, DIGI 9 (USB; 6, Digi on LSB, is read as DIGI too) |
 | S-meter (Bank 1 `7`, console `SM?`) | `SM` | in dB; said as S0 to S9, then S9 plus tens of dB. `SM?` also answers on the second socket, with the raw reply |
-| Output power (Bank 1 `4`, console `PO?`) | `PC` | in tenths of a watt, said as watts ("power 4.5 watts"); "power rx" in receive. Also on the second socket |
-| SWR (Bank 1 `8`, console `SWR?`) | `SW` | in hundredths, said as "swr 1.21"; "swr rx" in receive. Also on the second socket |
+| Output power (Bank 1 `4`, console `PO?`) | `PC` | in tenths of a watt, said as watts ("power 4.5 watts"); "power tx only" in receive. Also on the second socket |
+| SWR (Bank 1 `8`, console `SWR?`) | `SW` | in hundredths, said as "swr 1.21"; "swr tx only" in receive. Also on the second socket |
 | PA voltage (Bank 1 `6`, also Bank 4 and 7 `8`; console `PAVOLT?`) | `MM` | the Protection menu's Max. PA voltage, which sets the output power; said as "p a 7.5 volts". Also on the second socket |
 | PA voltage set (Bank 1 `6` long, console `PAVOLT <V>`) | `MM`, `MU` | 1.0 to 15.0 V, one decimal; written to the QMX's memory, read back and applied (see below) |
 | Radio ID and model (console `ID?`, `OM?`, `IF?`) | `ID`, `OM`, `IF` | `ID020` (TS-480), `OMQC` |
@@ -109,7 +109,7 @@ it while the QMX is connected, so that nothing meant for the NanoVNA reaches the
    `7` says it from the keypad. With no antenna it should be near S0, with a strong signal S9
    plus. Note the raw value for the developer notes below.
 6. Power and SWR in receive: `PO?` and `SWR?` on the second socket print `RX (not transmitting)`;
-   Bank 1 `4` says "power rx", Bank 1 `8` "swr rx".
+   Bank 1 `4` says "power tx only", Bank 1 `8` "swr tx only".
 7. Power and SWR while transmitting, into a dummy load (key down, or a Digi tone from the PC):
    `PO?` prints the watts and `SWR?` the SWR; on a dummy load the SWR should be near 1.0. If the
    QMX answers in receive with a number instead of the bare reply, note it for the developer

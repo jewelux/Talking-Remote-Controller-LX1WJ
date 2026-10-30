@@ -14,6 +14,7 @@ static uint32_t currentFt8x7RepeaterOffsetHz(uint8_t index) {
 // says what it reads back: the Yaesu OS0 works in FM only.
 static void setBank6RepeaterShift(RptShift shift, uint8_t ft8x7Byte) {
   printKeypadAction("{}", rptShiftText(shift).c_str());
+  KeypadAnswer answer("RPT");
   if (currentProtocolType() == PROTO_YAESU_FT8X7) {
     yaesuCatSetRepeaterShiftRaw(ft8x7Byte);
     printKeypadStatus("{}", rptShiftText(shift).c_str());
@@ -21,7 +22,7 @@ static void setBank6RepeaterShift(RptShift shift, uint8_t ft8x7Byte) {
     return;
   }
   prepareKeypadRadioWrite();
-  if (keypadReportFeatureFailure(rptShiftSet(shift), "RPT")) return;
+  if (answer.failed(rptShiftSet(shift))) return;
   RptShift readBack = shift;
   if (rptShiftQuery(readBack) != FeatureStatus::Ok) readBack = shift;
   printKeypadStatus("{}", rptShiftText(readBack).c_str());
@@ -30,6 +31,7 @@ static void setBank6RepeaterShift(RptShift shift, uint8_t ft8x7Byte) {
 
 static void setBank6Ft8x7RepeaterOffsetHz(uint64_t hz) {
   printKeypadAction("RPTSHIFT {}", RadioFrequency::fromHz(hz));
+  KeypadAnswer answer("RPTSHIFT");
   yaesuCatSetRepeaterOffsetHzRaw(hz);
   printKeypadStatus("RPTSHIFT {} MHz", RadioFrequency::fromHz(hz));
   if (!g_speechEnabled) return;
@@ -39,9 +41,9 @@ static void setBank6Ft8x7RepeaterOffsetHz(uint64_t hz) {
 
 static void setBank6ToneType(YaesuToneType type) {
   printKeypadAction("TONE {}", type == YaesuToneType::Ctcss ? "CTCSS" : "DCS");
-  prepareKeypadSpeechResponse();
+  KeypadAnswer answer("TONE");
   YaesuToneMode mode;
-  if (keypadReportFeatureFailure(toneTypeSet(type, mode), "TONE")) return;
+  if (answer.failed(toneTypeSet(type, mode))) return;
   printKeypadStatus("{}", toneModeText(mode).c_str());
   speakToneMode(mode);
 }
@@ -73,7 +75,7 @@ void setBank6RepeaterPlus() {
 void setBank6RepeaterOffsetPreset(uint8_t preset) {
   if (currentProtocolType() != PROTO_YAESU_FT8X7) {
     printKeypadAction("RPTSHIFT");
-    keypadReportIfUnsupported(false, "RPTSHIFT");
+    keypadReportNotAvailable("RPTSHIFT");
     return;
   }
   setBank6Ft8x7RepeaterOffsetHz(currentFt8x7RepeaterOffsetHz(preset - 1));
@@ -81,17 +83,17 @@ void setBank6RepeaterOffsetPreset(uint8_t preset) {
 
 void queryBank6Tone() {
   printKeypadAction("TONE?");
-  prepareKeypadSpeechResponse();
+  KeypadAnswer answer("TONE?");
   YaesuToneMode mode;
-  if (keypadReportFeatureFailure(toneModeQuery(mode), "TONE?")) return;
+  if (answer.failed(toneModeQuery(mode))) return;
   printKeypadStatus("{}", toneTypeText(mode).c_str());
   speakToneType(mode);
 }
 
 void setBank6ToneOff() {
   printKeypadAction("TONE OFF");
-  prepareKeypadSpeechResponse();
-  if (keypadReportFeatureFailure(toneOff(), "TONE")) return;
+  KeypadAnswer answer("TONE");
+  if (answer.failed(toneOff())) return;
   const YaesuToneMode off;
   printKeypadStatus("{}", toneModeText(off).c_str());
   speakToneMode(off);
@@ -107,27 +109,27 @@ void setBank6ToneModeDcs() {
 
 void queryBank6ToneDir() {
   printKeypadAction("TONEDIR?");
-  prepareKeypadSpeechResponse();
+  KeypadAnswer answer("TONEDIR?");
   YaesuToneMode mode;
-  if (keypadReportFeatureFailure(toneModeQuery(mode), "TONEDIR?")) return;
+  if (answer.failed(toneModeQuery(mode))) return;
   printKeypadStatus("{}", toneDirText(mode).c_str());
   speakToneDir(mode);
 }
 
 void stepBank6ToneDir() {
   printKeypadAction("TONEDIR");
-  prepareKeypadSpeechResponse();
+  KeypadAnswer answer("TONEDIR");
   YaesuToneMode mode;
-  if (keypadReportFeatureFailure(toneDirStep(mode), "TONEDIR")) return;
+  if (answer.failed(toneDirStep(mode))) return;
   printKeypadStatus("{}", toneModeText(mode).c_str());
   speakToneMode(mode);
 }
 
 void queryBank6SplitTone() {
   printKeypadAction("SPLITTONE?");
-  prepareKeypadSpeechResponse();
+  KeypadAnswer answer("SPLITTONE?");
   bool on = false;
-  if (keypadReportFeatureFailure(splitToneQuery(on), "SPLITTONE?")) return;
+  if (answer.failed(splitToneQuery(on))) return;
   printKeypadStatus("{}", splitToneText(on).c_str());
   speakSplitTone(on);
 }

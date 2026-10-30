@@ -61,6 +61,10 @@ struct RadioCapabilities {
   bool setCtcss = false;
   bool getRptShift = false;
   bool setRptShift = false;
+  // Tone decode only (RX only: the squelch waits for the tone, none is sent), on the FT-8x7 and
+  // the CAT radios alike. Off where CAT can set it but the radio does not squelch on it (FT-897,
+  // tested 2026-10-29); no profile sets it yet.
+  bool setToneDecodeOnly = false;
   bool getPbtInner = false;
   bool setPbtInner = false;
   bool getPbtOuter = false;

@@ -53,24 +53,36 @@ FeatureStatus agcQuery(AgcMode& out) {
   return ok ? FeatureStatus::Ok : failure(FeatureStatus::NoReply);
 }
 
-bool agcCanSet(AgcMode mode) {
-  const RadioProfile& sp = currentProfile();
-  if (!sp.caps.getAgc) return false;
+static bool agcCanSet(AgcMode mode, const RadioCapabilities& caps) {
+  if (!caps.getAgc) return false;
   if (currentProtocolType() == PROTO_CIV) {
     uint8_t raw = 0;
-    return sp.caps.setAgc && civAgcEncode(mode, raw);
+    return caps.setAgc && civAgcEncode(mode, raw);
   }
   if (isAsciiAgc()) {
     char cmd[8];
-    return sp.caps.setAgc && asciiAgcEncode(sp.settings.agc, mode, cmd, sizeof(cmd));
+    return caps.setAgc && asciiAgcEncode(currentProfile().settings.agc, mode, cmd, sizeof(cmd));
   }
   if (!isFt8x7()) return false;
   YaesuAgc agc = YaesuAgc::Off;
-  return sp.caps.setRadioMenu && currentFt8x7Model() != Ft8x7Model::None && ft8x7AgcFromMode(mode, agc);
+  return caps.setRadioMenu && currentFt8x7Model() != Ft8x7Model::None && ft8x7AgcFromMode(mode, agc);
+}
+
+bool agcCanSet(AgcMode mode) { return agcCanSet(mode, currentProfile().caps); }
+
+FeatureStatus agcWriteAccess() {
+  return writeAccess([](const RadioCapabilities& caps) {
+    for (const AgcMode mode : {AgcMode::Off, AgcMode::Fast, AgcMode::Mid, AgcMode::Slow, AgcMode::Auto}) {
+      if (agcCanSet(mode, caps)) return true;
+    }
+    return false;
+  });
 }
 
 FeatureStatus agcSet(AgcMode mode, AgcMode& out) {
-  if (!agcCanSet(mode)) return FeatureStatus::Unsupported;
+  if (!agcCanSet(mode)) {
+    return writeAccess([mode](const RadioCapabilities& caps) { return agcCanSet(mode, caps); });
+  }
   const RadioProfile& sp = currentProfile();
   if (!isFt8x7()) {
     const bool ok = currentProtocolType() == PROTO_CIV ? civSetAgc(sp, mode) : asciiSetAgc(sp, mode);
@@ -327,7 +339,8 @@ FeatureStatus nrQuery(NrState& out) {
 }
 
 FeatureStatus nrSet(bool on) {
-  if (!currentProfile().caps.setNr || isFt817WithoutDsp()) return FeatureStatus::Unsupported;
+  if (isFt817WithoutDsp()) return FeatureStatus::Unsupported;
+  if (!currentProfile().caps.setNr) return capWriteAccess(&RadioCapabilities::setNr);
   if (!applyNrAndTrack(on)) return failure(FeatureStatus::Failed);
   return FeatureStatus::Ok;
 }
@@ -342,7 +355,8 @@ FeatureStatus nrSetLevel(uint8_t level, NrState& out) {
 }
 
 FeatureStatus nrToggle(NrState& out) {
-  if (!currentProfile().caps.setNr || isFt817WithoutDsp()) return FeatureStatus::Unsupported;
+  if (isFt817WithoutDsp()) return FeatureStatus::Unsupported;
+  if (!currentProfile().caps.setNr) return capWriteAccess(&RadioCapabilities::setNr);
   if (isTs480()) return ts480NrStep(out);
   bool next = false;
   if (isFt8x7()) {
@@ -369,13 +383,13 @@ FeatureStatus nbQuery(bool& on) {
 }
 
 FeatureStatus nbSet(bool on) {
-  if (!currentProfile().caps.setNb) return FeatureStatus::Unsupported;
+  if (!currentProfile().caps.setNb) return capWriteAccess(&RadioCapabilities::setNb);
   if (!applyNbAndTrack(on)) return failure(FeatureStatus::Failed);
   return FeatureStatus::Ok;
 }
 
 FeatureStatus nbToggle(bool& on) {
-  if (!currentProfile().caps.setNb) return FeatureStatus::Unsupported;
+  if (!currentProfile().caps.setNb) return capWriteAccess(&RadioCapabilities::setNb);
   if (isFt8x7()) {
     const FeatureStatus status = ft8x7ToggleFlag(Ft8x7Flag::Nb, on);
     if (status == FeatureStatus::Ok) rememberLiveNb(on, millis());
@@ -399,7 +413,8 @@ FeatureStatus notchQuery(NotchState& out) {
 }
 
 FeatureStatus notchSet(bool on) {
-  if (!currentProfile().caps.setNotch || isFt817WithoutDsp()) return FeatureStatus::Unsupported;
+  if (isFt817WithoutDsp()) return FeatureStatus::Unsupported;
+  if (!currentProfile().caps.setNotch) return capWriteAccess(&RadioCapabilities::setNotch);
   if (!applyNotchAndTrack(on)) return failure(FeatureStatus::Failed);
   return FeatureStatus::Ok;
 }
@@ -428,7 +443,8 @@ static FeatureStatus applyNotchWidth(NotchWidth width, NotchState& out) {
 }
 
 FeatureStatus notchToggle(NotchState& out) {
-  if (!currentProfile().caps.setNotch || isFt817WithoutDsp()) return FeatureStatus::Unsupported;
+  if (isFt817WithoutDsp()) return FeatureStatus::Unsupported;
+  if (!currentProfile().caps.setNotch) return capWriteAccess(&RadioCapabilities::setNotch);
   if (isFt8x7()) {
     bool on = false;
     const FeatureStatus status = ft8x7ToggleFlag(Ft8x7Flag::Dnf, on);

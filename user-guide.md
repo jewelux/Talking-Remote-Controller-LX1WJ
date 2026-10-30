@@ -69,6 +69,10 @@ Every answer first says what it is, then the value: "power 50 watts", "noise bla
 "volume five ok". Once you know the keys, you can turn the names off and hear only the values:
 "50 watts", "40 percent", "five". Units stay, and the "ok" after a change is dropped.
 
+A key that asks the radio says its name at once, while the radio answers, so you hear "power"
+first and "50 watts" a moment later. If the radio does not answer, you hear "power timeout" after
+less than a second.
+
 - Bank 9, `5` short: says "verbose on" or "verbose off"
 - Bank 9, `5` long: switches between the two
 
@@ -112,7 +116,7 @@ levels, and the DSP bandpass filter with its low and high cut (Bank 2), and the 
 4), and on the FT-857/897 the speech processor (`PROC`, `PROCLEVEL`) and the TX equalizer (`MICEQ`,
 Bank 4), the keyer with its speed, break-in, the sidetone, CW pitch, weight, key reverse and the
 break-in delay, and on the FT-857/897 the QSK time and the keyer type (Bank 7). From the console it
-can also set the FT-817/818 antenna jack (`ANT`). On the IC-7300, IC-705, IC-7760, FTDX10, FTDX101, FT-891 and TS-480 the
+can also set the FT-817/818 antenna jack (`ANT`). With experimental mode off, these say "experimental". On the IC-7300, IC-705, IC-7760, FTDX10, FTDX101, FT-891 and TS-480 the
 console and Bank 4 set the speech processor, mic gain and VOX without experimental mode (the FTDX101 and
 IC-7760 not all of them), and on these and the KX2 the AGC, also from Bank 2 `7`, and the preamp
 and attenuator (`PREAMP`, `ATT`, Bank 2 `8` and `9`) and, but on the FTDX101MP, the RF power

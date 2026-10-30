@@ -373,11 +373,11 @@ KeyBinding bank2(const KeypadTraits& t, char key) {      // A, B and C: focusKey
    ```cpp
    void toggleBank2Notch() {
      printKeypadAction("NOTCH");                 // "CMD BANK2 3 LONG -> NOTCH"
-     prepareKeypadSpeechResponse();              // hold polling and tuning speech
+     KeypadAnswer answer("NOTCH");               // holds polling, says "notch filter" now
      NotchState state;
-     if (keypadReportFeatureFailure(notchToggle(state), "NOTCH")) return;
+     if (answer.failed(notchToggle(state))) return;  // "timeout", "error", ...
      printKeypadStatus("{}", notchStateText(state).c_str());  // "NOTCH ON"
-     speakNotchState(state);                     // "notch filter" "on"
+     speakNotchState(state);                     // "on": the name was said
    }
    ```
 
@@ -454,9 +454,9 @@ shape:
 ```cpp
 void toggleBank8Preamp() {
   printKeypadAction("PREAMP");                  // trace first, always
-  prepareKeypadSpeechResponse();
+  KeypadAnswer answer("PREAMP");                // the name at once, while the radio is asked
   bool on = false;
-  if (keypadReportFeatureFailure(preampToggle(on), "PREAMP")) return;  // "not available" / "timeout" / "error"
+  if (answer.failed(preampToggle(on))) return;  // "not available" / "timeout" / "error"
   printKeypadStatus("PREAMP {}", on ? "ON" : "OFF");
   speakTokenState("preamp", on);                // needs a "preamp" clip, see 4.7
 }
@@ -879,20 +879,35 @@ and the same situation must always sound the same:
 | Situation | Feedback | Helper |
 |---|---|---|
 | Key has no action here, or the entry does not take the key | beep | `keypadReportUnassigned` (the state machine calls it) |
-| The radio or profile has no command for it, or it cannot run here | "not available" | `keypadReportIfUnsupported`, `FeatureStatus::Unsupported` |
-| The radio did not answer | "timeout" | `keypadReportIfTimedOut` |
+| The radio or profile has no command for it, or it cannot run here | "not available" | `answer.unavailable`, `FeatureStatus::Unsupported`, `keypadReportNotAvailable` (no radio) |
+| The radio did not answer | "timeout" | `answer.timedOut` |
 | Invalid value, or the radio refused or answered wrongly | "error" | `speakError` |
-| A radio call returned false | one of the three above | `keypadReportFailure` |
+| A radio call returned false | one of the three above | `answer.radioFailed` |
+| A command with no value to say worked | "ok" after its name | `answer.done` |
 | B or C at the end of the range | "maximum" or "minimum", nothing set | `speakLimit` |
 | A value staged, waiting for `D` | the value, then "please" | `speakPlease` |
 | `#` cancelled something | "cancel" | the listener's `onClear` |
 | An entry or selection waited 30 s for a key | "timeout" | the listener's `onEntryTimeout` |
 | Asking for input | "<thing> please" | e.g. "frequency please" |
 
-"not available", "timeout" and "error" are said through `speakKeypadFailure`, which
-puts the function's name first when verbose is on ("tuner not available"). It looks
-the trace label up in `kSpokenLabels` (`keypad_labels.cpp`); a new label needs a row
-there, or it is spelled letter by letter.
+**Every key that talks to the radio answers through a `KeypadAnswer`**
+(`ui_keypad_common.h`), made right after the trace line. It says the key's name
+at once, so the name plays while the radio is asked, and holds polling. For the
+rest of the action `speakLabel` is silent, so the value speaker says just the
+value: "noisereduction" … "on", never the name twice. A failure says just
+"timeout" after the name; when the name was not said (verbose off, a repeated
+B or C step), verbose on puts it before the failure. The name comes from
+`kSpokenLabels` (`keypad_labels.cpp`), looked up by the trace label; a new
+label needs a row there, or it is spelled letter by letter.
+
+- `AnswerNaming::Always` for an entry that ends in "please" (the name is the
+  prompt), `keypadStepNaming()` for B and C, `AnswerNaming::OnFailure` for
+  Enter (the prompt already named the value).
+- A key that runs another action, or a console command (`keypadSendNow`, named
+  by `keypadCommandLabel`), keeps one name: an answer made inside another one
+  says none.
+- A key that asks nothing of the radio reports with `keypadReportNotAvailable`
+  or `speakKeypadFailure`.
 
 - **Build the answer by appending speech.** Only a new key press interrupts
   speech (`silenceSpeechForKeyPress`), so never call `audioAbortNow()` from an
@@ -916,10 +931,12 @@ there, or it is spelled letter by letter.
 **Blocking and the radio bus.**
 
 - An action blocks `loop()` while it waits for the radio. Pass explicit
-  timeouts (800 ms is the convention) and never loop without a bound.
-- Call `prepareKeypadSpeechResponse()` (or `prepareKeypadRadioWrite()` when
-  the key writes to the radio) so background polling does not talk over your
-  exchange.
+  timeouts (`kCatReplyTimeoutMs`, 800 ms) and never loop without a bound. A
+  radio that does not answer must cost one wait: retry only a garbled reply,
+  never a timeout (`retryBadReply` in `radio_runtime.h`).
+- The `KeypadAnswer` holds background polling so it does not talk over your
+  exchange; call `prepareKeypadRadioWrite()` too when the key writes to the
+  radio.
 - Read before you toggle: use the tracked `live` value when it is valid,
   otherwise query. After a write, read back where the protocol allows it.
 
@@ -1001,12 +1018,12 @@ pattern):
 
 ### `FeatureStatus` → feedback
 
-| Status | Keypad (`keypadReportFeatureFailure`) | Console |
+| Status | Keypad (`answer.failed`) | Console |
 |---|---|---|
 | `Ok` | caller prints and speaks the state | same |
 | `Unsupported` | "not available", `"X -> not available"` | "not available" |
 | `Timeout` | "timeout" | "timeout" |
-| `NoReply`, `Failed`, `Unexpected` | "error", `"X -> no reply"` / `"X -> failed"` / `"X -> unexpected value"` | printed only, no sound |
+| `NoReply`, `Failed`, `Unexpected` | "error", `"X -> no reply"` / `"X -> failed"` / `"X -> unexpected value"` | printed only; "error" when a key ran it |
 
 ### Profile fields
 

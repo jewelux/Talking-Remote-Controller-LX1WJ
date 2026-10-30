@@ -8,7 +8,7 @@
 
 void speakTuningSpeechState() {
   if (!g_speechEnabled) return;
-  speakTokenState("tune frequency", g_tuningSpeakEnabled);
+  speakTokenState("auto frequency", g_tuningSpeakEnabled);
 }
 
 void setTuningSpeechEnabled(bool enabled) {

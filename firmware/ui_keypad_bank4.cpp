@@ -3,27 +3,30 @@
 
 void queryBank4Tuner() {
   printKeypadAction("TUNER?");
-  if (keypadReportIfUnsupported(protocolSupportsTuner(), "TUNER?")) return;
+  KeypadAnswer answer("TUNER?");
+  if (answer.unavailable(protocolSupportsTuner())) return;
   bool on = false;
-  if (!queryTuner(on, kCatReplyTimeoutMs)) { keypadReportFailure("TUNER?"); return; }
+  if (!queryTuner(on, kCatReplyTimeoutMs)) { answer.radioFailed(); return; }
   printKeypadStatus("TUNER {}", on ? "ON" : "OFF");
   speakTokenState("tuner", on);
 }
 
 void toggleBank4Tuner() {
   printKeypadAction("TUNER");
-  if (keypadReportIfUnsupported(protocolSupportsTuner(), "TUNER")) return;
+  KeypadAnswer answer("TUNER");
+  if (answer.unavailable(protocolSupportsTuner())) return;
   bool on = false;
-  if (!queryTuner(on, kCatReplyTimeoutMs)) { keypadReportFailure("TUNER"); return; }
-  if (!setTuner(!on)) { keypadReportFailure("TUNER"); return; }
+  if (!queryTuner(on, kCatReplyTimeoutMs)) { answer.radioFailed(); return; }
+  if (!setTuner(!on)) { answer.radioFailed(); return; }
   printKeypadStatus("TUNER {}", !on ? "ON" : "OFF");
   speakTokenState("tuner", !on);
 }
 
 void triggerBank4Tune() {
   printKeypadAction("TUNE");
-  if (keypadReportIfUnsupported(protocolSupportsTuner(), "TUNE")) return;
-  if (!startTune()) { keypadReportFailure("TUNE"); return; }
+  KeypadAnswer answer("TUNE");
+  if (answer.unavailable(protocolSupportsTuner())) return;
+  if (!startTune()) { answer.radioFailed(); return; }
   printKeypadStatus("TUNE");
-  if (g_speechEnabled) speakToken("tune");
+  answer.done();
 }
