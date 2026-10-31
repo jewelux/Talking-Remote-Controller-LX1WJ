@@ -25,3 +25,7 @@ void clearConnectionOverrideInNvs(uint8_t id);
 // returns false, when none were saved.
 bool loadNanoVnaSetupFromNvs(uint32_t& startHz, uint32_t& stopHz, int8_t& calSlot);
 void saveNanoVnaSetupToNvs(uint32_t startHz, uint32_t stopHz, int8_t calSlot);
+// The NanoVNA's IARU region as its number (1-3), kept apart from the setup so a setup saved
+// before it still loads; the caller checks it.
+uint8_t loadNanoVnaRegionFromNvs(uint8_t fallback);
+void saveNanoVnaRegionToNvs(uint8_t region);

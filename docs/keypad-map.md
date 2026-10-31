@@ -11,7 +11,7 @@ Columns:
 - **FT-817/818** and **FT-857/897**: the Yaesu FT-8x7 radios
 
 The NanoVNA profile is not a radio and has a layout of its own; see
-[NanoVNA](#nanovna-profile-30) at the end.
+[NanoVNA](#nanovna-profile-70) at the end.
 
 Besides the functions, the tables say:
 
@@ -42,6 +42,7 @@ back to its starting focus.
 | 1 | `6` RF power, `9` mode | none |
 | 2 | `1` NR level, `2` NB level, `3` notch (FT-857/897: auto notch), `4` low cut or PBT inner, `5` CW filter width or filter, `6` high cut or PBT outer, `7` AGC, `8` preamp, `9` attenuator | none |
 | 3 | none yet | none |
+| 1 (NanoVNA) | `4` band, `5` region, `6` calibration | band |
 | 4 | `1` processor level, `2` VOX gain, `3` monitor level (Icom), `5` TX equalizer, `7` mic gain, `8` RF power, `9` VOX delay | none |
 | 5 | `1`-`5` RIT offset | RIT offset |
 | 6 | `3` CTCSS tone, `4` DCS code (FT-8x7) | none |
@@ -386,7 +387,7 @@ profile's baud rate and CI-V address to its defaults, `B` next profile, `C` prev
 
 `2`, `3`, `6` and `9` are free. `B` and `C` step the volume once `7` has made it the focus.
 
-## NanoVNA (profile 30)
+## NanoVNA (profile 70)
 
 Bank 1 is the NanoVNA bank, Bank 8 `0` the USB link and Bank 9 is as above. Every other key is
 free. Details in [docs/radios/nanovna.md](radios/nanovna.md).
@@ -400,12 +401,16 @@ free. Details in [docs/radios/nanovna.md](radios/nanovna.md).
 | `2` short | sweep stop |
 | `2` long | sweep stop entry in MHz |
 | `3` short | sweep range: band preset, or start and stop |
-| `5` short | calibration slot |
-| `5` long | calibration select: `0`–`6` slot, `A` auto |
+| `4` short | band preset, or start and stop |
+| `4` long | band entry: the wavelength, then `D` |
+| `5` short | IARU region |
+| `5` long | region select: `1`–`3` |
+| `6` short | calibration slot |
+| `6` long | calibration select: `0`–`6` slot, `A` auto |
 | `7` short | connection test (firmware version) |
 | `8` short | battery voltage |
 | `9` short | serial number |
-| `B` short | next band preset |
-| `C` short | previous band preset |
+| `A` `B` `C` | focus: the band, until `5` or `6` moves it to the region or calibration; `4` brings it back |
 
-`4`, `6` and `A` are free.
+With the band as the focus: `B` next band preset, `C` previous. With the region: `B` and `C` step
+1 to 3 and go round. With the calibration: `B` and `C` step auto, then slots 0 to 6.

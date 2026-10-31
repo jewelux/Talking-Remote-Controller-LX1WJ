@@ -260,7 +260,10 @@ void beginNanoVnaStartEntry() { record("beginNanoVnaStartEntry"); }
 void queryNanoVnaStop() { record("queryNanoVnaStop"); }
 void beginNanoVnaStopEntry() { record("beginNanoVnaStopEntry"); }
 void queryNanoVnaRange() { record("queryNanoVnaRange"); }
-void stepNanoVnaBand(int d) { record("stepNanoVnaBand(%d)", d); }
+void queryNanoVnaBand() { record("queryNanoVnaBand"); }
+void beginNanoVnaBandEntry() { record("beginNanoVnaBandEntry"); }
+void queryNanoVnaRegion() { record("queryNanoVnaRegion"); }
+void beginNanoVnaRegionSelect() { record("beginNanoVnaRegionSelect"); }
 void queryNanoVnaCalibration() { record("queryNanoVnaCalibration"); }
 void beginNanoVnaCalibrationSelect() { record("beginNanoVnaCalibrationSelect"); }
 void testNanoVna() { record("testNanoVna"); }
@@ -421,7 +424,8 @@ TEST(keymap_focus_keys_help_names_the_focus) {
 // ---- NanoVNA ----
 //
 // Not a radio, so not in the characterization matrix: a layout of its own. Bank 1 measures,
-// Bank 8 0 is the USB link, Bank 9 is the radios' Bank 9, and every other key is free.
+// Bank 8 0 is the USB link, Bank 9 is the radios' Bank 9, and every other key is free. Bank 1's
+// A, B and C act on its focus (band, region, calibration), the band before any key gives one.
 
 namespace {
 
@@ -438,12 +442,15 @@ constexpr NanoVnaKey kNanoVnaKeys[] = {
     {1, '1', "queryNanoVnaStart", "beginNanoVnaStartEntry", "-"},
     {1, '2', "queryNanoVnaStop", "beginNanoVnaStopEntry", "-"},
     {1, '3', "queryNanoVnaRange", "none", "-"},
-    {1, '5', "queryNanoVnaCalibration", "beginNanoVnaCalibrationSelect", "-"},
+    {1, '4', "queryNanoVnaBand", "beginNanoVnaBandEntry", "-"},
+    {1, '5', "queryNanoVnaRegion", "beginNanoVnaRegionSelect", "-"},
+    {1, '6', "queryNanoVnaCalibration", "beginNanoVnaCalibrationSelect", "-"},
     {1, '7', "testNanoVna", "none", "-"},
     {1, '8', "queryNanoVnaBattery", "none", "-"},
     {1, '9', "queryNanoVnaSerialNumber", "none", "-"},
-    {1, 'B', "stepNanoVnaBand(1)", "none", "-"},
-    {1, 'C', "stepNanoVnaBand(-1)", "none", "-"},
+    {1, 'A', "focusSay", "focusEntry", "-"},
+    {1, 'B', "focusStep(1)", "focusBigStep(1)", "-"},
+    {1, 'C', "focusStep(-1)", "focusBigStep(-1)", "-"},
     {8, '0', "queryBank8Usb", "none", "-"},
 };
 
@@ -481,6 +488,30 @@ TEST(keymap_nanovna_banks_1_to_8) {
                    expected.longAction);
       checkOutcome(kNanoVnaFamily, bank, *k, "double",
                    outcome(b.doubleAction, bank, *k, "DOUBLE", waits ? "none" : "-"), expected.doubleAction);
+    }
+  }
+}
+
+TEST(keymap_nanovna_bank1_focus) {
+  const KeypadTraits t = nanoVnaTraits();
+  CHECK(keymapHomeFocus(t, 1) == Setting::VnaBand);
+  CHECK(keymapHomeFocus(t, 9) == Setting::Profile);
+  CHECK(keymapLookup(t, 1, '4').focus == Setting::VnaBand);
+  CHECK(keymapLookup(t, 1, '5').focus == Setting::VnaRegion);
+  CHECK(keymapLookup(t, 1, '6').focus == Setting::VnaCal);
+  const KeyBinding home = keymapLookup(t, 1, 'B');
+  CHECK(strcmp(home.shortHelp.label, "BAND") == 0);
+  CHECK(home.shortHelp.verb == HelpVerb::Up);
+  CHECK(keymapLookup(t, 1, 'A').holdHelp.verb == HelpVerb::Entry);
+  const KeyBinding region = keymapLookup(t, 1, 'C', Setting::VnaRegion);
+  CHECK(strcmp(region.shortHelp.label, "REGION") == 0);
+  CHECK(region.shortHelp.verb == HelpVerb::Down);
+  CHECK(keymapLookup(t, 1, 'A', Setting::VnaCal).holdHelp.verb == HelpVerb::Pick);
+  // Bank 1's A, B and C for every focus have help.
+  for (const char key : {'A', 'B', 'C'}) {
+    for (uint8_t s = 0; s < (uint8_t)Setting::Count; ++s) {
+      if ((Setting)s == Setting::Home) continue;
+      checkBindingHelp(kNanoVnaFamily, 1, key, (Setting)s, keymapLookup(t, 1, key, (Setting)s));
     }
   }
 }

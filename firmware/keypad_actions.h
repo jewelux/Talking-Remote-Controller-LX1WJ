@@ -212,10 +212,18 @@ void beginNanoVnaStartEntry();  // "START": entry in MHz, "start please"
 void queryNanoVnaStop();
 void beginNanoVnaStopEntry();
 void queryNanoVnaRange();  // "RANGE?": "band 80 meters", or "start ... stop ..."
-// "BAND NEXT/PREV": the next or previous IARU Region 1 band preset, said as for RANGE?.
-void stepNanoVnaBand(int direction);
+void queryNanoVnaBand();   // "BAND?": as RANGE?
+// "BAND": the band typed as its wavelength (80, 70 for 70 cm, 1*25), D applies it.
+void beginNanoVnaBandEntry();
+void queryNanoVnaRegion();        // "REGION?": "region 1"
+void beginNanoVnaRegionSelect();  // "REGION": 1-3, D applies it
 void queryNanoVnaCalibration();        // "CAL?": the slot, or "auto"
 void beginNanoVnaCalibrationSelect();  // "CAL": 0-6 a slot, A auto, D applies it
+// B and C on the Bank 1 focus. The band (the region's presets) and the region (1-3) wrap around;
+// the calibration (auto, 0-6) stops at its ends. None has a big step.
+void stepNanoVnaBand(int8_t dir, bool big);
+void stepNanoVnaRegion(int8_t dir, bool big);
+void stepNanoVnaCalibration(int8_t dir, bool big);
 void testNanoVna();                    // "VERSION?": "version 1 point 0 ...", or "ok"
 void queryNanoVnaBattery();            // "BATTERY?": "battery 4.26 volts"
 void queryNanoVnaSerialNumber();       // "SN?": "s n 5 7 3 6 ..."

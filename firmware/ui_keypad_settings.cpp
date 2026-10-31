@@ -194,6 +194,9 @@ constexpr FocusActions kFocusActions[] = {
     {Setting::Baud, queryBank8Baud, beginBank8BaudSelect, nullptr, stepBank8Baud},
     {Setting::Ft8x7Menu, queryBank8Ft8x7Menu, beginBank8Ft8x7MenuEntry, nullptr, stepBank8Ft8x7Menu},
     {Setting::Ft8x7Row, queryBank8Ft8x7Row, beginBank8Ft8x7RowEntry, nullptr, stepBank8Ft8x7Row},
+    {Setting::VnaBand, queryNanoVnaBand, beginNanoVnaBandEntry, nullptr, stepNanoVnaBand},
+    {Setting::VnaRegion, queryNanoVnaRegion, beginNanoVnaRegionSelect, nullptr, stepNanoVnaRegion},
+    {Setting::VnaCal, queryNanoVnaCalibration, beginNanoVnaCalibrationSelect, nullptr, stepNanoVnaCalibration},
 };
 
 const FocusActions* focusActions(Setting setting) {

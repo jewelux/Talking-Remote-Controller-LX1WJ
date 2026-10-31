@@ -1248,7 +1248,7 @@ void printHelp(const String& topicArg) {
   helpHeading(HELP_DIAG, "Diagnostics:");
   if (!ftdx10) helpLine("BSTACK <1..3> | BSTACK? <1..3>  (hamTRC internal)");
   helpLine("USB?  (USB host and the radio on the native USB socket; also on the UART socket, as are SM? and, for the QMX, PO?, SWR? and PAVOLT)");
-  helpLine("VNA? | VNA <shell command> | VNASCAN  (NanoVNA profile, on the UART socket only)");
+  helpLine("VNA? | VNA <shell command> | VNASCAN | VNAREGION? | VNAREGION 1|2|3  (NanoVNA profile, on the UART socket only)");
   if (ft847) {
     printFt847ConsoleDiagHelp();
   } else if (otherRadio || ft8x7) {
@@ -4021,11 +4021,27 @@ static void reportNanoVnaNotStarted(NanoVnaStatus status, Print& output) {
 }
 
 // Serial0 is the console while the USB host holds the native socket, so the NanoVNA answers here:
-// VNA? the setup and last result, VNASCAN a measurement as on the keys, VNA <command> any shell
-// command as typed (the F V2 has upper-case ones, such as SN), its reply printed.
+// VNA? the setup and last result, VNASCAN a measurement as on the keys, VNAREGION? and
+// VNAREGION <1-3> the IARU region of the band presets, VNA <command> any shell command as typed
+// (the F V2 has upper-case ones, such as SN), its reply printed.
 static bool handleNanoVnaServiceCommand(const String& line, const String& upper, Print& output) {
   if (upper == "VNA?") {
     nanoVnaPrintStatus(output);
+    return true;
+  }
+  if (upper == "VNAREGION?") {
+    output.printf("VNAREGION: %u\n", (unsigned)nanoVnaSetup().region);
+    return true;
+  }
+  if (upper == "VNAREGION" || upper.startsWith("VNAREGION ")) {
+    String value = upper.substring(10);
+    value.trim();
+    if (value.length() != 1 || !nanoVnaRegionValid((uint8_t)(value[0] - '0'))) {
+      output.println("VNAREGION -> usage: VNAREGION 1|2|3");
+      return true;
+    }
+    nanoVnaSetRegion((NanoVnaRegion)(value[0] - '0'));
+    output.println("VNAREGION -> ok");
     return true;
   }
   if (upper == "VNASCAN") {

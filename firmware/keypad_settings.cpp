@@ -65,6 +65,10 @@ constexpr SettingInfo kSettings[] = {
     {S::Profile,       K::List,   true,  "PROFILE"},
     {S::SpeechSpeed,   K::List,   true,  "SPEED"},
     {S::Volume,        K::Number, false, "VOLUME"},
+    // The band is typed as its wavelength: an entry.
+    {S::VnaBand,       K::Number, false, "BAND"},
+    {S::VnaRegion,     K::List,   false, "REGION"},
+    {S::VnaCal,        K::List,   false, "CAL"},
 };
 
 static_assert(sizeof(kSettings) / sizeof(kSettings[0]) == (size_t)Setting::Count,

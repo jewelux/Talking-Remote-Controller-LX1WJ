@@ -10,23 +10,79 @@ namespace {
 constexpr char kPrompt[] = "ch> ";
 constexpr size_t kPromptLen = sizeof(kPrompt) - 1;
 
-// IARU Region 1 band plan edges.
-constexpr NanoVnaBand kBands[] = {
-    {160, NanoVnaBandUnit::Meters, 1810000, 2000000},
-    {80, NanoVnaBandUnit::Meters, 3500000, 3800000},
-    {60, NanoVnaBandUnit::Meters, 5351500, 5366500},
-    {40, NanoVnaBandUnit::Meters, 7000000, 7200000},
-    {30, NanoVnaBandUnit::Meters, 10100000, 10150000},
-    {20, NanoVnaBandUnit::Meters, 14000000, 14350000},
-    {17, NanoVnaBandUnit::Meters, 18068000, 18168000},
-    {15, NanoVnaBandUnit::Meters, 21000000, 21450000},
-    {12, NanoVnaBandUnit::Meters, 24890000, 24990000},
-    {10, NanoVnaBandUnit::Meters, 28000000, 29700000},
-    {6, NanoVnaBandUnit::Meters, 50000000, 52000000},
-    {2, NanoVnaBandUnit::Meters, 144000000, 146000000},
-    {70, NanoVnaBandUnit::Centimeters, 430000000, 440000000},
+// The IARU band plan edges of each region. The HF bands from 30 m up and 60 m are the same in
+// all three; Region 2 alone has 1.25 m.
+constexpr NanoVnaBand kRegion1Bands[] = {
+    {16000, 1810000, 2000000},
+    {8000, 3500000, 3800000},
+    {6000, 5351500, 5366500},
+    {4000, 7000000, 7200000},
+    {3000, 10100000, 10150000},
+    {2000, 14000000, 14350000},
+    {1700, 18068000, 18168000},
+    {1500, 21000000, 21450000},
+    {1200, 24890000, 24990000},
+    {1000, 28000000, 29700000},
+    {600, 50000000, 52000000},
+    {200, 144000000, 146000000},
+    {70, 430000000, 440000000},
+    {23, 1240000000, 1300000000},
 };
-constexpr size_t kBandCount = sizeof(kBands) / sizeof(kBands[0]);
+
+constexpr NanoVnaBand kRegion2Bands[] = {
+    {16000, 1800000, 2000000},
+    {8000, 3500000, 4000000},
+    {6000, 5351500, 5366500},
+    {4000, 7000000, 7300000},
+    {3000, 10100000, 10150000},
+    {2000, 14000000, 14350000},
+    {1700, 18068000, 18168000},
+    {1500, 21000000, 21450000},
+    {1200, 24890000, 24990000},
+    {1000, 28000000, 29700000},
+    {600, 50000000, 54000000},
+    {200, 144000000, 148000000},
+    {125, 222000000, 225000000},
+    {70, 420000000, 450000000},
+    {23, 1240000000, 1300000000},
+};
+
+constexpr NanoVnaBand kRegion3Bands[] = {
+    {16000, 1800000, 2000000},
+    {8000, 3500000, 3900000},
+    {6000, 5351500, 5366500},
+    {4000, 7000000, 7200000},
+    {3000, 10100000, 10150000},
+    {2000, 14000000, 14350000},
+    {1700, 18068000, 18168000},
+    {1500, 21000000, 21450000},
+    {1200, 24890000, 24990000},
+    {1000, 28000000, 29700000},
+    {600, 50000000, 54000000},
+    {200, 144000000, 148000000},
+    {70, 430000000, 440000000},
+    {23, 1240000000, 1300000000},
+};
+
+struct BandTable {
+  const NanoVnaBand* bands;
+  size_t count;
+};
+
+template <size_t N>
+constexpr BandTable tableOf(const NanoVnaBand (&bands)[N]) {
+  return {bands, N};
+}
+
+// An unknown region gets Region 1's.
+BandTable bandsFor(NanoVnaRegion region) {
+  switch (region) {
+    case NanoVnaRegion::R2: return tableOf(kRegion2Bands);
+    case NanoVnaRegion::R3: return tableOf(kRegion3Bands);
+    case NanoVnaRegion::R1: break;
+  }
+  return tableOf(kRegion1Bands);
+}
 
 bool isDigit(char c) { return c >= '0' && c <= '9'; }
 
@@ -172,34 +228,112 @@ bool nanoVnaFormatSwr(float swr, char* out, size_t outLen) {
   return false;
 }
 
-size_t nanoVnaBandCount() { return kBandCount; }
-
-const NanoVnaBand& nanoVnaBandAt(size_t index) {
-  return kBands[index < kBandCount ? index : 0];
+bool nanoVnaRegionValid(uint8_t value) {
+  return value >= (uint8_t)NanoVnaRegion::R1 && value <= (uint8_t)NanoVnaRegion::R3;
 }
 
-int nanoVnaBandMatching(uint32_t startHz, uint32_t stopHz) {
-  for (size_t i = 0; i < kBandCount; ++i) {
-    if (kBands[i].startHz == startHz && kBands[i].stopHz == stopHz) return (int)i;
+bool nanoVnaBandInMeters(const NanoVnaBand& band) { return band.centimeters >= 100; }
+
+void nanoVnaBandNumber(const NanoVnaBand& band, char* out, size_t outLen) {
+  if (!out || !outLen) return;
+  if (!nanoVnaBandInMeters(band)) {
+    snprintf(out, outLen, "%u", (unsigned)band.centimeters);
+    return;
+  }
+  const unsigned whole = band.centimeters / 100;
+  const unsigned rest = band.centimeters % 100;
+  if (!rest) {
+    snprintf(out, outLen, "%u", whole);
+  } else if (rest % 10 == 0) {
+    snprintf(out, outLen, "%u.%u", whole, rest / 10);
+  } else {
+    snprintf(out, outLen, "%u.%02u", whole, rest);
+  }
+}
+
+void nanoVnaBandText(const NanoVnaBand& band, char* out, size_t outLen) {
+  if (!out || !outLen) return;
+  char number[12];
+  nanoVnaBandNumber(band, number, sizeof(number));
+  snprintf(out, outLen, "%s %s", number, nanoVnaBandInMeters(band) ? "m" : "cm");
+}
+
+size_t nanoVnaBandCount(NanoVnaRegion region) { return bandsFor(region).count; }
+
+const NanoVnaBand& nanoVnaBandAt(NanoVnaRegion region, size_t index) {
+  const BandTable t = bandsFor(region);
+  return t.bands[index < t.count ? index : 0];
+}
+
+int nanoVnaBandMatching(NanoVnaRegion region, uint32_t startHz, uint32_t stopHz) {
+  const BandTable t = bandsFor(region);
+  for (size_t i = 0; i < t.count; ++i) {
+    if (t.bands[i].startHz == startHz && t.bands[i].stopHz == stopHz) return (int)i;
   }
   return -1;
 }
 
-size_t nanoVnaAdjacentBand(uint32_t startHz, uint32_t stopHz, int direction) {
-  const int band = nanoVnaBandMatching(startHz, stopHz);
+size_t nanoVnaAdjacentBand(NanoVnaRegion region, uint32_t startHz, uint32_t stopHz, int direction) {
+  const BandTable t = bandsFor(region);
+  const int band = nanoVnaBandMatching(region, startHz, stopHz);
   if (direction > 0) {
-    if (band >= 0) return ((size_t)band + 1) % kBandCount;
-    for (size_t i = 0; i < kBandCount; ++i) {
-      if (kBands[i].startHz > startHz) return i;
+    if (band >= 0) return ((size_t)band + 1) % t.count;
+    for (size_t i = 0; i < t.count; ++i) {
+      if (t.bands[i].startHz > startHz) return i;
     }
     return 0;
   }
-  if (band >= 0) return ((size_t)band + kBandCount - 1) % kBandCount;
+  if (band >= 0) return ((size_t)band + t.count - 1) % t.count;
   // A range that starts on a band's edge goes back to that band, as one inside it does.
-  for (size_t i = kBandCount; i-- > 0;) {
-    if (kBands[i].startHz <= startHz) return i;
+  for (size_t i = t.count; i-- > 0;) {
+    if (t.bands[i].startHz <= startHz) return i;
   }
-  return kBandCount - 1;
+  return t.count - 1;
+}
+
+namespace {
+
+int bandWithCentimeters(NanoVnaRegion region, uint32_t centimeters, bool meters) {
+  const BandTable t = bandsFor(region);
+  for (size_t i = 0; i < t.count; ++i) {
+    if (t.bands[i].centimeters == centimeters && nanoVnaBandInMeters(t.bands[i]) == meters) return (int)i;
+  }
+  return -1;
+}
+
+}  // namespace
+
+int nanoVnaBandByWavelength(NanoVnaRegion region, const char* text) {
+  if (!text || !isDigit(*text)) return -1;
+  uint32_t whole = 0;
+  const char* p = text;
+  for (; isDigit(*p); ++p) {
+    if (whole > 100000) return -1;
+    whole = whole * 10 + (uint32_t)(*p - '0');
+  }
+  uint32_t hundredths = 0;
+  bool point = false;
+  if (*p == '*' || *p == '.') {
+    point = true;
+    ++p;
+    uint32_t scale = 10;
+    for (; isDigit(*p); ++p) {
+      if (!scale) return -1;
+      hundredths += (uint32_t)(*p - '0') * scale;
+      scale /= 10;
+    }
+  }
+  if (*p) return -1;
+  const int inMeters = bandWithCentimeters(region, whole * 100 + hundredths, true);
+  if (inMeters >= 0 || point) return inMeters;
+  return bandWithCentimeters(region, whole, false);
+}
+
+int nanoVnaSameBand(NanoVnaRegion from, NanoVnaRegion to, uint32_t startHz, uint32_t stopHz) {
+  const int band = nanoVnaBandMatching(from, startHz, stopHz);
+  if (band < 0) return -1;
+  const NanoVnaBand& b = nanoVnaBandAt(from, (size_t)band);
+  return bandWithCentimeters(to, b.centimeters, nanoVnaBandInMeters(b));
 }
 
 bool nanoVnaFrequencyValid(uint64_t hz) {

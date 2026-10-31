@@ -430,7 +430,7 @@
 
 ### NanoVNA over USB (new, experimental)
 
-- new built-in profile 30 for a NanoVNA on the controller's native USB socket: it measures the SWR
+- new built-in profile 70 for a NanoVNA on the controller's native USB socket: it measures the SWR
   of an antenna over a band and says the best and worst match. Tested with a NanoVNA-F V2. Details
   in `docs/radios/nanovna.md`
 

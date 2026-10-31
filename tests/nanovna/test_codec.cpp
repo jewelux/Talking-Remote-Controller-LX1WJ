@@ -1,5 +1,5 @@
 // Tests for the NanoVNA shell codec (firmware/nanovna_codec.*): the reply reader, scan lines,
-// SWR, the sweep summary, the band presets and the command lines.
+// SWR, the sweep summary, the band presets of each region and the command lines.
 #include <cmath>
 #include <string>
 #include <vector>
@@ -172,45 +172,142 @@ TEST(swr_from_99_95_and_infinity_is_99_plus) {
   CHECK(over);
 }
 
-TEST(bands_run_from_160_m_to_70_cm_in_order) {
-  CHECK_EQ(nanoVnaBandCount(), 13u);
-  CHECK_EQ((unsigned)nanoVnaBandAt(0).wavelength, 160u);
-  CHECK_EQ(nanoVnaBandAt(1).startHz, 3500000u);
-  CHECK_EQ(nanoVnaBandAt(1).stopHz, 3800000u);
-  const NanoVnaBand& last = nanoVnaBandAt(nanoVnaBandCount() - 1);
-  CHECK_EQ((unsigned)last.wavelength, 70u);
-  CHECK(last.unit == NanoVnaBandUnit::Centimeters);
-  for (size_t i = 0; i < nanoVnaBandCount(); ++i) {
-    const NanoVnaBand& b = nanoVnaBandAt(i);
-    CHECK(nanoVnaRangeValid(b.startHz, b.stopHz));
-    if (i > 0) CHECK(b.startHz > nanoVnaBandAt(i - 1).stopHz);
+namespace {
+
+constexpr NanoVnaRegion R1 = NanoVnaRegion::R1;
+constexpr NanoVnaRegion R2 = NanoVnaRegion::R2;
+constexpr NanoVnaRegion R3 = NanoVnaRegion::R3;
+
+std::string bandText(NanoVnaRegion region, int index) {
+  if (index < 0) return "none";
+  char text[16];
+  nanoVnaBandText(nanoVnaBandAt(region, (size_t)index), text, sizeof(text));
+  return text;
+}
+
+}  // namespace
+
+TEST(regions_are_1_to_3) {
+  CHECK(!nanoVnaRegionValid(0));
+  CHECK(nanoVnaRegionValid(1));
+  CHECK(nanoVnaRegionValid(3));
+  CHECK(!nanoVnaRegionValid(4));
+}
+
+TEST(bands_of_each_region_run_from_160_m_to_23_cm_in_order) {
+  CHECK_EQ(nanoVnaBandCount(R1), 14u);
+  CHECK_EQ(nanoVnaBandCount(R2), 15u);
+  CHECK_EQ(nanoVnaBandCount(R3), 14u);
+  for (NanoVnaRegion region : {R1, R2, R3}) {
+    CHECK_EQ(bandText(region, 0), std::string("160 m"));
+    CHECK_EQ(bandText(region, (int)nanoVnaBandCount(region) - 1), std::string("23 cm"));
+    for (size_t i = 0; i < nanoVnaBandCount(region); ++i) {
+      const NanoVnaBand& b = nanoVnaBandAt(region, i);
+      CHECK(nanoVnaRangeValid(b.startHz, b.stopHz));
+      if (i > 0) CHECK(b.startHz > nanoVnaBandAt(region, i - 1).stopHz);
+    }
   }
 }
 
+TEST(band_edges_differ_by_region) {
+  CHECK_EQ(nanoVnaBandAt(R1, 1).stopHz, 3800000u);
+  CHECK_EQ(nanoVnaBandAt(R2, 1).stopHz, 4000000u);
+  CHECK_EQ(nanoVnaBandAt(R3, 1).stopHz, 3900000u);
+  CHECK_EQ(nanoVnaBandAt(R1, 0).startHz, 1810000u);
+  CHECK_EQ(nanoVnaBandAt(R2, 0).startHz, 1800000u);
+  CHECK_EQ(nanoVnaBandMatching(R1, 430000000, 440000000), 12);
+  CHECK_EQ(nanoVnaBandMatching(R2, 420000000, 450000000), 13);
+  CHECK_EQ(nanoVnaBandMatching(R2, 430000000, 440000000), -1);
+  CHECK_EQ(nanoVnaBandMatching(R3, 430000000, 440000000), 12);
+  CHECK_EQ(nanoVnaBandMatching(R2, 222000000, 225000000), 12);
+  CHECK_EQ(nanoVnaBandMatching(R1, 222000000, 225000000), -1);
+  CHECK_EQ(nanoVnaBandMatching(R3, 1240000000, 1300000000), 13);
+}
+
+TEST(band_text_and_number) {
+  CHECK_EQ(bandText(R1, 1), std::string("80 m"));
+  CHECK_EQ(bandText(R2, 12), std::string("1.25 m"));
+  CHECK_EQ(bandText(R1, 12), std::string("70 cm"));
+  char number[12];
+  nanoVnaBandNumber(nanoVnaBandAt(R2, 12), number, sizeof(number));
+  CHECK_EQ(number, "1.25");
+  nanoVnaBandNumber(nanoVnaBandAt(R1, 11), number, sizeof(number));
+  CHECK_EQ(number, "2");
+  CHECK(nanoVnaBandInMeters(nanoVnaBandAt(R1, 11)));
+  CHECK(!nanoVnaBandInMeters(nanoVnaBandAt(R1, 12)));
+}
+
 TEST(band_matching_needs_both_edges) {
-  CHECK_EQ(nanoVnaBandMatching(3500000, 3800000), 1);
-  CHECK_EQ(nanoVnaBandMatching(3500000, 3700000), -1);
-  CHECK_EQ(nanoVnaBandMatching(430000000, 440000000), 12);
+  CHECK_EQ(nanoVnaBandMatching(R1, 3500000, 3800000), 1);
+  CHECK_EQ(nanoVnaBandMatching(R1, 3500000, 3700000), -1);
+  CHECK_EQ(nanoVnaBandMatching(R2, 3500000, 3800000), -1);
 }
 
 TEST(adjacent_band_steps_and_wraps) {
-  CHECK_EQ(nanoVnaAdjacentBand(3500000, 3800000, 1), 2u);
-  CHECK_EQ(nanoVnaAdjacentBand(3500000, 3800000, -1), 0u);
-  CHECK_EQ(nanoVnaAdjacentBand(430000000, 440000000, 1), 0u);
-  CHECK_EQ(nanoVnaAdjacentBand(1810000, 2000000, -1), 12u);
+  CHECK_EQ(nanoVnaAdjacentBand(R1, 3500000, 3800000, 1), 2u);
+  CHECK_EQ(nanoVnaAdjacentBand(R1, 3500000, 3800000, -1), 0u);
+  CHECK_EQ(nanoVnaAdjacentBand(R1, 430000000, 440000000, 1), 13u);
+  CHECK_EQ(nanoVnaAdjacentBand(R1, 1240000000, 1300000000, 1), 0u);
+  CHECK_EQ(nanoVnaAdjacentBand(R1, 1810000, 2000000, -1), 13u);
+  // Region 2: 2 m, 1.25 m, 70 cm.
+  CHECK_EQ(nanoVnaAdjacentBand(R2, 144000000, 148000000, 1), 12u);
+  CHECK_EQ(nanoVnaAdjacentBand(R2, 222000000, 225000000, 1), 13u);
+  CHECK_EQ(nanoVnaAdjacentBand(R2, 1800000, 2000000, -1), 14u);
 }
 
 TEST(adjacent_band_from_a_range_of_its_own_goes_by_its_start) {
   // 3.6-3.7 MHz lies in 80 m: next is 60 m, previous is 80 m itself.
-  CHECK_EQ(nanoVnaAdjacentBand(3600000, 3700000, 1), 2u);
-  CHECK_EQ(nanoVnaAdjacentBand(3600000, 3700000, -1), 1u);
+  CHECK_EQ(nanoVnaAdjacentBand(R1, 3600000, 3700000, 1), 2u);
+  CHECK_EQ(nanoVnaAdjacentBand(R1, 3600000, 3700000, -1), 1u);
   // Starting on a band's edge counts as inside it.
-  CHECK_EQ(nanoVnaAdjacentBand(3500000, 3700000, 1), 2u);
-  CHECK_EQ(nanoVnaAdjacentBand(3500000, 3700000, -1), 1u);
-  CHECK_EQ(nanoVnaAdjacentBand(100000, 200000, 1), 0u);
-  CHECK_EQ(nanoVnaAdjacentBand(100000, 200000, -1), 12u);
-  CHECK_EQ(nanoVnaAdjacentBand(1000000000, 1100000000, 1), 0u);
-  CHECK_EQ(nanoVnaAdjacentBand(1000000000, 1100000000, -1), 12u);
+  CHECK_EQ(nanoVnaAdjacentBand(R1, 3500000, 3700000, 1), 2u);
+  CHECK_EQ(nanoVnaAdjacentBand(R1, 3500000, 3700000, -1), 1u);
+  CHECK_EQ(nanoVnaAdjacentBand(R1, 100000, 200000, 1), 0u);
+  CHECK_EQ(nanoVnaAdjacentBand(R1, 100000, 200000, -1), 13u);
+  // 1.0-1.1 GHz: between 70 cm and 23 cm.
+  CHECK_EQ(nanoVnaAdjacentBand(R1, 1000000000, 1100000000, 1), 13u);
+  CHECK_EQ(nanoVnaAdjacentBand(R1, 1000000000, 1100000000, -1), 12u);
+  CHECK_EQ(nanoVnaAdjacentBand(R1, 2000000000, 2100000000, 1), 0u);
+  CHECK_EQ(nanoVnaAdjacentBand(R1, 2000000000, 2100000000, -1), 13u);
+  // The 3.8-4.0 MHz part of Region 2's 80 m: Region 1 goes by its start alone.
+  CHECK_EQ(nanoVnaAdjacentBand(R1, 3900000, 4000000, 1), 2u);
+}
+
+TEST(band_by_wavelength) {
+  CHECK_EQ(bandText(R1, nanoVnaBandByWavelength(R1, "80")), std::string("80 m"));
+  CHECK_EQ(bandText(R1, nanoVnaBandByWavelength(R1, "160")), std::string("160 m"));
+  CHECK_EQ(bandText(R1, nanoVnaBandByWavelength(R1, "2")), std::string("2 m"));
+  // No 70 m or 23 m band: centimeters.
+  CHECK_EQ(bandText(R1, nanoVnaBandByWavelength(R1, "70")), std::string("70 cm"));
+  CHECK_EQ(bandText(R3, nanoVnaBandByWavelength(R3, "23")), std::string("23 cm"));
+  // 1.25 m in Region 2 only, with the keypad's point or a real one.
+  CHECK_EQ(bandText(R2, nanoVnaBandByWavelength(R2, "1*25")), std::string("1.25 m"));
+  CHECK_EQ(bandText(R2, nanoVnaBandByWavelength(R2, "1.25")), std::string("1.25 m"));
+  CHECK_EQ(nanoVnaBandByWavelength(R1, "1*25"), -1);
+  CHECK_EQ(nanoVnaBandByWavelength(R3, "1*25"), -1);
+  // A point never means centimeters.
+  CHECK_EQ(nanoVnaBandByWavelength(R1, "70*"), -1);
+  CHECK_EQ(bandText(R1, nanoVnaBandByWavelength(R1, "80*0")), std::string("80 m"));
+  CHECK_EQ(nanoVnaBandByWavelength(R1, "99"), -1);
+  CHECK_EQ(nanoVnaBandByWavelength(R1, "0"), -1);
+  CHECK_EQ(nanoVnaBandByWavelength(R1, ""), -1);
+  CHECK_EQ(nanoVnaBandByWavelength(R1, "*5"), -1);
+  CHECK_EQ(nanoVnaBandByWavelength(R2, "1*255"), -1);
+  CHECK_EQ(nanoVnaBandByWavelength(R1, "8x"), -1);
+  CHECK_EQ(nanoVnaBandByWavelength(R1, nullptr), -1);
+}
+
+TEST(same_band_in_another_region) {
+  // 80 m: 3.5-3.8 in Region 1 is 3.5-4.0 in Region 2.
+  const int band = nanoVnaSameBand(R1, R2, 3500000, 3800000);
+  CHECK_EQ(bandText(R2, band), std::string("80 m"));
+  CHECK_EQ(nanoVnaBandAt(R2, (size_t)band).stopHz, 4000000u);
+  CHECK_EQ(bandText(R1, nanoVnaSameBand(R2, R1, 420000000, 450000000)), std::string("70 cm"));
+  CHECK_EQ(bandText(R1, nanoVnaSameBand(R3, R1, 1240000000, 1300000000)), std::string("23 cm"));
+  // Not a band of the old region, or one the new region lacks.
+  CHECK_EQ(nanoVnaSameBand(R1, R2, 3600000, 3700000), -1);
+  CHECK_EQ(nanoVnaSameBand(R2, R1, 3500000, 3800000), -1);
+  CHECK_EQ(nanoVnaSameBand(R2, R3, 222000000, 225000000), -1);
 }
 
 TEST(range_check) {

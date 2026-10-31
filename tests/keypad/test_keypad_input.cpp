@@ -28,6 +28,7 @@ const char *modeName(InputMode m) {
     case InputMode::SweepStartEntry: return "SweepStartEntry";
     case InputMode::SweepStopEntry: return "SweepStopEntry";
     case InputMode::PaVoltEntry: return "PaVoltEntry";
+    case InputMode::BandEntry: return "BandEntry";
   }
   return "?";
 }
@@ -1484,7 +1485,8 @@ TEST(input_every_entry_mode_has_its_rules) {
                                InputMode::FreqEntry,      InputMode::CivAddrEntry,
                                InputMode::RptOffsetEntry, InputMode::MenuEntry,
                                InputMode::RowEntry,       InputMode::SweepStartEntry,
-                               InputMode::SweepStopEntry, InputMode::PaVoltEntry};
+                               InputMode::SweepStopEntry, InputMode::PaVoltEntry,
+                               InputMode::BandEntry};
   for (InputMode m : entries) {
     const EntrySpec *e = keypadEntrySpec(m);
     CHECK(e != nullptr);
@@ -1524,6 +1526,27 @@ TEST(input_sweep_entries_take_mhz_like_freq) {
   CHECK_EQ(in.mode(), InputMode::Normal);
   CHECK_LOG(f, "digit SweepStartEntry 3 3", "digit SweepStartEntry * 3*", "digit SweepStartEntry 5 3*5",
             "commit SweepStartEntry [3*5] vfo0");
+}
+
+// The NanoVNA band is typed as its wavelength: 80, 70 (cm), 1.25 with two decimals.
+TEST(input_band_entry_takes_a_wavelength) {
+  const EntrySpec *e = keypadEntrySpec(InputMode::BandEntry);
+  CHECK(e != nullptr);
+  if (!e) return;
+  CHECK_EQ(e->name, "BAND");
+  CHECK_EQ(e->maxFraction, 2);
+
+  Fake f;
+  KeypadInput in(f);
+  in.beginEntry(InputMode::BandEntry);
+  tap(in, '1', 1000);
+  tap(in, '*', 1100);
+  tap(in, '2', 1200);
+  tap(in, '5', 1300);
+  tap(in, 'D', 1400);
+  CHECK_EQ(in.mode(), InputMode::Normal);
+  CHECK_LOG(f, "digit BandEntry 1 1", "digit BandEntry * 1*", "digit BandEntry 2 1*2", "digit BandEntry 5 1*25",
+            "commit BandEntry [1*25] vfo0");
 }
 
 // --- Entry timeout ---------------------------------------------------------------------

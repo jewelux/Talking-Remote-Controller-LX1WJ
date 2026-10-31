@@ -74,6 +74,10 @@ enum class Setting : uint8_t {
   Profile,
   SpeechSpeed,
   Volume,
+  // NanoVNA, Bank 1
+  VnaBand,
+  VnaRegion,
+  VnaCal,
   Count
 };
 

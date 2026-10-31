@@ -479,7 +479,7 @@ constexpr RadioProfile kProfiles[] = {
      .model = RadioModel::Qmx, .protocol = PROTO_KENWOOD_ASCII,
      .link = {.port = RadioPort::UsbHost, .baud = 9600, .bauds = kQmxBauds},
      .caps = kQmxCaps, .commands = &kQmxCommands, .modes = &kQmxModes},
-    {.slot = 30, .name = "NanoVNA", .vendor = VoiceVendor::NanoVna, .protocol = PROTO_NANOVNA,
+    {.slot = 70, .name = "NanoVNA", .vendor = VoiceVendor::NanoVna, .protocol = PROTO_NANOVNA,
      .link = {.port = RadioPort::UsbHost, .baud = 115200, .bauds = kNanoVnaBauds}},
 };
 

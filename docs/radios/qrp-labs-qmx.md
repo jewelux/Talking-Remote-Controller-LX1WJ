@@ -93,7 +93,7 @@ After "error" or "timeout" the QMX may still hold the new value: read it with Ba
 | "usb not available" | the active profile does not use USB | choose profile 21 |
 
 Choosing another profile restarts the controller, so the native socket goes back to the PC
-console. The new profile is announced after the restart. The NanoVNA profile (30) also restarts
+console. The new profile is announced after the restart. The NanoVNA profile (70) also restarts
 it while the QMX is connected, so that nothing meant for the NanoVNA reaches the QMX.
 
 ## Test plan

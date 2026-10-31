@@ -119,8 +119,8 @@ TEST(default_slot_is_used) {
   CHECK(profileForSlot(kDefaultProfileSlot) != nullptr);
 }
 
-// Slots 1-18 are all in use since the FT-847 took 16, the QMX has 21 and the NanoVNA 30; 19-20
-// and 22-29 are free.
+// Slots 1-18 are all in use since the FT-847 took 16, the QMX has 21 and the NanoVNA 70; 19-20
+// and 22-69 are free.
 TEST(adjacent_slot_skips_free_slots) {
   CHECK_EQ(adjacentProfileSlot(15, 1), 16);
   CHECK_EQ(adjacentProfileSlot(16, 1), 17);
@@ -129,13 +129,15 @@ TEST(adjacent_slot_skips_free_slots) {
   CHECK_EQ(adjacentProfileSlot(21, -1), 18);
   CHECK_EQ(adjacentProfileSlot(19, -1), 18);
   CHECK_EQ(adjacentProfileSlot(19, 1), 21);
-  CHECK_EQ(adjacentProfileSlot(21, 1), 30);
+  CHECK_EQ(adjacentProfileSlot(21, 1), 70);
+  CHECK_EQ(adjacentProfileSlot(70, -1), 21);
   CHECK_EQ(adjacentProfileSlot(30, -1), 21);
+  CHECK_EQ(adjacentProfileSlot(30, 1), 70);
 }
 
 TEST(adjacent_slot_wraps_around) {
-  CHECK_EQ(adjacentProfileSlot(30, 1), 1);
-  CHECK_EQ(adjacentProfileSlot(1, -1), 30);
+  CHECK_EQ(adjacentProfileSlot(70, 1), 1);
+  CHECK_EQ(adjacentProfileSlot(1, -1), 70);
 }
 
 TEST(adjacent_slot_without_direction_stays) {
@@ -500,7 +502,7 @@ TEST(qmx_is_kenwood_cat_over_usb_with_freq_mode_and_meters) {
 
 // Not a radio: no cap, so nothing polls its shell; it is reached through nanovna_client.*.
 TEST(nanovna_is_a_shell_over_usb_with_no_radio_caps) {
-  const RadioProfile& vna = slot(30);
+  const RadioProfile& vna = slot(70);
   CHECK_EQ(vna.name, "NanoVNA");
   CHECK(vna.protocol == PROTO_NANOVNA);
   CHECK(vna.vendor == VoiceVendor::NanoVna);

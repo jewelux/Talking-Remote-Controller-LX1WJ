@@ -563,13 +563,20 @@ KeyBinding nanoVnaBank1(char key) {
     case '1': return bind(queryNanoVnaStart, beginNanoVnaStartEntry).help("START", V::Say, V::Entry);
     case '2': return bind(queryNanoVnaStop, beginNanoVnaStopEntry).help("STOP", V::Say, V::Entry);
     case '3': return bind(queryNanoVnaRange).help("RANGE", V::Say);
-    case '5': return bind(queryNanoVnaCalibration, beginNanoVnaCalibrationSelect).help("CAL", V::Say, V::Pick);
+    // A, B and C act on the focus these give, as on the radios' banks.
+    case '4':
+      return bind(queryNanoVnaBand, beginNanoVnaBandEntry).withFocus(Setting::VnaBand).help("BAND", V::Say, V::Entry);
+    case '5':
+      return bind(queryNanoVnaRegion, beginNanoVnaRegionSelect)
+          .withFocus(Setting::VnaRegion)
+          .help("REGION", V::Say, V::Pick);
+    case '6':
+      return bind(queryNanoVnaCalibration, beginNanoVnaCalibrationSelect)
+          .withFocus(Setting::VnaCal)
+          .help("CAL", V::Say, V::Pick);
     case '7': return bind(testNanoVna).help("VERSION", V::Say);
     case '8': return bind(queryNanoVnaBattery).help("BATTERY", V::Say);
     case '9': return bind(queryNanoVnaSerialNumber).help("SN", V::Say);
-    // As the profile keys of Bank 9: B next, C previous.
-    case 'B': return bind([] { stepNanoVnaBand(1); }).help("BAND", V::Up);
-    case 'C': return bind([] { stepNanoVnaBand(-1); }).help("BAND", V::Down);
     default: return {};
   }
 }
@@ -578,7 +585,9 @@ KeyBinding nanoVnaBank1(char key) {
 
 }  // namespace
 
-Setting keymapHomeFocus(const KeypadTraits&, uint8_t bank) {
+Setting keymapHomeFocus(const KeypadTraits& traits, uint8_t bank) {
+  // The NanoVNA's B and C step the bands until another key gives a focus.
+  if (traits.layout == L::NanoVna && bank == 1) return Setting::VnaBand;
   switch (bank) {
     case 5: return Setting::RitOffset;
     case 8: return Setting::Baud;
@@ -590,6 +599,9 @@ Setting keymapHomeFocus(const KeypadTraits&, uint8_t bank) {
 KeyBinding keymapLookup(const KeypadTraits& traits, uint8_t bank, char key, Setting focus) {
   if (bank < 1 || bank > 9) return {};
   if (traits.layout == L::NanoVna) {
+    if (bank == 1 && isFocusKey(key)) {
+      return focusKey(key, focus == Setting::Home ? keymapHomeFocus(traits, bank) : focus);
+    }
     if (bank == 1) return nanoVnaBank1(key);
     if (bank == 8) return key == '0' ? usbKey() : KeyBinding{};
     if (bank != 9) return {};

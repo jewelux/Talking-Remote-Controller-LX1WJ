@@ -1,7 +1,7 @@
 #pragma once
 
 // The NanoVNA text shell, without Arduino so the host tests can check it (tests/nanovna): its
-// replies, scan lines, the SWR they give, and the band presets.
+// replies, scan lines, the SWR they give, and the band presets of each IARU region.
 //
 // The shell is the edy555 one of the NanoVNA, -H, -H4, -F and -F V2 (NanoVNA-F V2 user guide,
 // chapter 7; DiSlord NanoVNA-D main.c). The NanoVNA V2 and V2Plus4 speak a binary protocol
@@ -77,22 +77,37 @@ struct NanoVnaSweepSummary {
 // said as "99 plus".
 bool nanoVnaFormatSwr(float swr, char* out, size_t outLen);
 
-// The amateur bands the keys step through: IARU Region 1, 160 m to 70 cm.
-enum class NanoVnaBandUnit : uint8_t { Meters, Centimeters };
+// The amateur bands the keys step through, by IARU region: 160 m to 23 cm, and 1.25 m in
+// Region 2. Region 1 is the default.
+enum class NanoVnaRegion : uint8_t { R1 = 1, R2 = 2, R3 = 3 };
+bool nanoVnaRegionValid(uint8_t value);
+
 struct NanoVnaBand {
-  uint16_t wavelength;  // 160 for 160 m, 70 for 70 cm
-  NanoVnaBandUnit unit;
+  uint16_t centimeters;  // 16000 for 160 m, 125 for 1.25 m, 70 for 70 cm
   uint32_t startHz;
   uint32_t stopHz;
 };
-size_t nanoVnaBandCount();
-const NanoVnaBand& nanoVnaBandAt(size_t index);
+// Named in meters from 1 m up, below that in centimeters.
+bool nanoVnaBandInMeters(const NanoVnaBand& band);
+// The wavelength in its unit, as said: "80", "1.25", "70".
+void nanoVnaBandNumber(const NanoVnaBand& band, char* out, size_t outLen);
+// "80 m", "1.25 m", "70 cm".
+void nanoVnaBandText(const NanoVnaBand& band, char* out, size_t outLen);
+
+size_t nanoVnaBandCount(NanoVnaRegion region);
+const NanoVnaBand& nanoVnaBandAt(NanoVnaRegion region, size_t index);
 // The band the range is exactly, or -1 for a range of its own.
-int nanoVnaBandMatching(uint32_t startHz, uint32_t stopHz);
+int nanoVnaBandMatching(NanoVnaRegion region, uint32_t startHz, uint32_t stopHz);
 // The band after (direction > 0) or before (direction < 0) the range, by its start: from a range
 // of its own, the first band that starts above it, or the last that starts at or below it. It
 // wraps around at either end, like the profiles.
-size_t nanoVnaAdjacentBand(uint32_t startHz, uint32_t stopHz, int direction);
+size_t nanoVnaAdjacentBand(NanoVnaRegion region, uint32_t startHz, uint32_t stopHz, int direction);
+// The band named by its wavelength as typed: "80" is 80 m, "1*25" (or "1.25") 1.25 m. A whole
+// number with no band in meters is taken in centimeters: "70" is 70 cm, "23" 23 cm. -1 for none.
+int nanoVnaBandByWavelength(NanoVnaRegion region, const char* text);
+// The band in region to that is the same band as the range in region from, or -1 when the range
+// is no band of from, or to has no such band (1.25 m outside Region 2).
+int nanoVnaSameBand(NanoVnaRegion from, NanoVnaRegion to, uint32_t startHz, uint32_t stopHz);
 
 bool nanoVnaFrequencyValid(uint64_t hz);
 // Both valid, start below stop.

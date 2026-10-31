@@ -19,7 +19,7 @@ enum class NanoVnaStatus : uint8_t {
   NotAvailable,  // the active profile is not a NanoVNA
   NotConnected,  // its serial port is not open, or closed during the job
   Busy,          // another job runs
-  BadRange,      // the start is not below the stop
+  BadRange,      // the start equals the stop
   Timeout,       // no prompt within the step's time
   DeviceError,   // the device refused a command; NanoVnaResult::text has its reply
   NoData,        // the scan gave no point
@@ -42,11 +42,12 @@ using NanoVnaDone = void (*)(const NanoVnaResult& result);
 // No recall before a measurement: the calibration the device has loaded.
 constexpr int8_t kNanoVnaCalAuto = -1;
 
-// What the keys set, kept in NVS. Starts on 80 m with the device's own calibration.
+// What the keys set, kept in NVS. Starts on 80 m in Region 1 with the device's own calibration.
 struct NanoVnaSetup {
   uint32_t startHz;
   uint32_t stopHz;
   int8_t calSlot;  // 0..kNanoVnaCalSlots-1, or kNanoVnaCalAuto
+  NanoVnaRegion region;  // the band presets
 };
 
 void initNanoVna();
@@ -62,6 +63,9 @@ void nanoVnaSetStart(uint32_t hz);
 void nanoVnaSetStop(uint32_t hz);
 void nanoVnaSetRange(uint32_t startHz, uint32_t stopHz);
 void nanoVnaSetCalSlot(int8_t slot);
+// A range that is a band of the old region becomes the same band of the new one (80 m 3.5-3.8 in
+// Region 1 is 3.5-4.0 in Region 2); a range of its own, or a band the new region lacks, stays.
+void nanoVnaSetRegion(NanoVnaRegion region);
 // The last measurement that worked, or nullptr.
 const NanoVnaResult* nanoVnaLastMeasure();
 
@@ -69,8 +73,8 @@ const NanoVnaResult* nanoVnaLastMeasure();
 // status means it did not start, and done is not called.
 //
 // Measure: recall of the calibration slot (none for auto), the device's own sweep set to the range
-// so its screen shows it, the scan, and resume, which also runs after a failed scan. BadRange when
-// the start is not below the stop.
+// so its screen shows it, the scan, and resume, which also runs after a failed scan. A stop below the
+// start is swapped for the sweep; BadRange when they are the same.
 NanoVnaStatus nanoVnaStartMeasure(NanoVnaDone done);
 NanoVnaStatus nanoVnaStartVersion(NanoVnaDone done);
 // "SN": the serial number, in NanoVnaResult::text (the F V2 has it; older models refuse it).

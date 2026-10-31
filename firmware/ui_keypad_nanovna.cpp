@@ -1,6 +1,6 @@
-// NanoVNA keypad actions (KeypadLayout::NanoVna, Bank 1): the sweep range, band presets,
-// calibration slot, the version test and the measurement, which nanovna_client.* runs in the
-// background and reports here.
+// NanoVNA keypad actions (KeypadLayout::NanoVna, Bank 1): the sweep range, band presets and their
+// IARU region, calibration slot, the version test and the measurement, which nanovna_client.* runs
+// in the background and reports here.
 #include "ui_keypad_bank.h"
 #include "nanovna_client.h"
 #include "radio_frequency.h"
@@ -16,16 +16,23 @@ void speakMhz(uint32_t hz) {
   speakDigitsAndPoint(mhzText(hz));
 }
 
-// "band 8 0 meters" for a preset, "start 3.6 stop 3.7" for a range of its own.
+NanoVnaRegion region() { return nanoVnaSetup().region; }
+
+// "band 8 0 meters" (or "1 point 2 5 meters", "7 0 centimeters") for a preset, "start 3.6 stop
+// 3.7" for a range of its own.
 void speakRange(uint32_t startHz, uint32_t stopHz) {
-  const int band = nanoVnaBandMatching(startHz, stopHz);
+  const int band = nanoVnaBandMatching(region(), startHz, stopHz);
   if (band >= 0) {
-    const NanoVnaBand& b = nanoVnaBandAt((size_t)band);
-    printKeypadStatus("BAND {} {}", (unsigned)b.wavelength, b.unit == NanoVnaBandUnit::Meters ? "m" : "cm");
+    const NanoVnaBand& b = nanoVnaBandAt(region(), (size_t)band);
+    char text[16];
+    nanoVnaBandText(b, text, sizeof(text));
+    printKeypadStatus("BAND {}", text);
     if (!g_speechEnabled) return;
+    char number[12];
+    nanoVnaBandNumber(b, number, sizeof(number));
     speakLabel("band");
-    speakNumber(String((unsigned)b.wavelength));
-    speakToken(b.unit == NanoVnaBandUnit::Meters ? "meters" : "centimeters");
+    speakNumber(String(number));
+    speakToken(nanoVnaBandInMeters(b) ? "meters" : "centimeters");
     return;
   }
   printKeypadStatus("RANGE {} - {} MHz", mhzText(startHz).c_str(), mhzText(stopHz).c_str());
@@ -188,6 +195,17 @@ void onRecalled(const NanoVnaResult& result) {
   speakValueOk();
 }
 
+// The slot is kept, and recalled before each measurement. With the NanoVNA there and idle it is
+// recalled now, and kept only once the device has taken it: a slot the device does not have says
+// "error" at once and leaves the old one. Without the NanoVNA it is kept as it is.
+void applyCalibration(int8_t slot) {
+  s_recallingSlot = slot;
+  if (slot != kNanoVnaCalAuto && nanoVnaStartRecall((uint8_t)slot, onRecalled) == NanoVnaStatus::Ok) return;
+  nanoVnaSetCalSlot(slot);
+  speakCalibration(slot);
+  speakValueOk();
+}
+
 // 'A' picks auto: no recall, the calibration the device has loaded.
 constexpr uint8_t kCalAutoValue = 0xFF;
 
@@ -206,22 +224,56 @@ void sayPickedCalibration(char key, uint8_t value) {
   }
 }
 
-// The slot is kept, and recalled before each measurement. With the NanoVNA there and idle it is
-// recalled now, and kept only once the device has taken it: a slot the device does not have says
-// "error" at once and leaves the old one. Without the NanoVNA it is kept as it is.
 void commitCalibration(uint8_t value, TargetVfo) {
-  const int8_t slot = value == kCalAutoValue ? kNanoVnaCalAuto : (int8_t)value;
   printKeypadCommand("ENTER -> CAL {}", value == kCalAutoValue ? "AUTO" : String((unsigned)value).c_str());
-  s_recallingSlot = slot;
-  if (slot != kNanoVnaCalAuto && nanoVnaStartRecall((uint8_t)slot, onRecalled) == NanoVnaStatus::Ok) return;
-  nanoVnaSetCalSlot(slot);
-  speakCalibration(slot);
-  speakValueOk();
+  applyCalibration(value == kCalAutoValue ? kNanoVnaCalAuto : (int8_t)value);
 }
 
 constexpr ChoiceSpec kCalChoice = {
     "CAL SELECT", kCalKeys, sizeof(kCalKeys) / sizeof(kCalKeys[0]), nullptr, sayPickedCalibration,
     commitCalibration};
+
+void speakRegion(NanoVnaRegion r) {
+  printKeypadStatus("REGION: {}", (unsigned)r);
+  if (!g_speechEnabled) return;
+  speakLabel("region");
+  speakNumber(String((unsigned)r));
+}
+
+// "region 2 ok", then the band when the range moved to the same band of the new region.
+void applyRegion(NanoVnaRegion r) {
+  const NanoVnaSetup before = nanoVnaSetup();
+  nanoVnaSetRegion(r);
+  const NanoVnaSetup& after = nanoVnaSetup();
+  speakRegion(r);
+  speakValueOk();
+  if (after.startHz != before.startHz || after.stopHz != before.stopHz) speakRange(after.startHz, after.stopHz);
+}
+
+constexpr ChoiceOption kRegionKeys[] = {
+    {'1', (uint8_t)NanoVnaRegion::R1}, {'2', (uint8_t)NanoVnaRegion::R2}, {'3', (uint8_t)NanoVnaRegion::R3}};
+
+void sayPickedRegion(char key, uint8_t value) {
+  printKeypadCommand("REGION SELECT -> {}", key);
+  if (g_speechEnabled) speakNumber(String((unsigned)value));
+}
+
+void commitRegion(uint8_t value, TargetVfo) {
+  printKeypadCommand("ENTER -> REGION {}", (unsigned)value);
+  applyRegion((NanoVnaRegion)value);
+}
+
+constexpr ChoiceSpec kRegionChoice = {
+    "REGION SELECT", kRegionKeys, sizeof(kRegionKeys) / sizeof(kRegionKeys[0]), nullptr, sayPickedRegion,
+    commitRegion, true};
+
+// B or C held: none of the Bank 1 focuses has a big step.
+bool refuseBigStep(const char* label, int8_t dir, bool big) {
+  if (!big) return false;
+  printKeypadAction("{} {}", label, keypadStepWord(dir, big));
+  keypadReportNotAvailable(label);
+  return true;
+}
 
 }  // namespace
 
@@ -231,8 +283,7 @@ void measureNanoVna() {
   const NanoVnaSetup& setup = nanoVnaSetup();
   const NanoVnaStatus status = nanoVnaStartMeasure(onMeasured);
   if (status == NanoVnaStatus::BadRange) {
-    printKeypadStatus("SWEEP -> start {} MHz is not below stop {} MHz", mhzText(setup.startHz).c_str(),
-                      mhzText(setup.stopHz).c_str());
+    printKeypadStatus("SWEEP -> start and stop are both {} MHz", mhzText(setup.startHz).c_str());
     speakKeypadFailure("SWEEP", KeypadFailure::Error);
     return;
   }
@@ -240,7 +291,9 @@ void measureNanoVna() {
     reportNanoVnaStatus("SWEEP", status);
     return;
   }
-  printKeypadStatus("SWEEP {} - {} MHz", mhzText(setup.startHz).c_str(), mhzText(setup.stopHz).c_str());
+  // A stop below the start is swept the other way round.
+  printKeypadStatus("SWEEP {} - {} MHz", mhzText(min(setup.startHz, setup.stopHz)).c_str(),
+                    mhzText(max(setup.startHz, setup.stopHz)).c_str());
   if (g_speechEnabled) speakToken("sweep");
 }
 
@@ -294,13 +347,75 @@ void queryNanoVnaRange() {
   speakRange(nanoVnaSetup().startHz, nanoVnaSetup().stopHz);
 }
 
-void stepNanoVnaBand(int direction) {
-  printKeypadAction("BAND {}", direction > 0 ? "NEXT" : "PREV");
+void queryNanoVnaBand() {
+  printKeypadAction("BAND?");
+  prepareKeypadSpeechResponse();
+  speakRange(nanoVnaSetup().startHz, nanoVnaSetup().stopHz);
+}
+
+void beginNanoVnaBandEntry() {
+  printKeypadAction("BAND");
+  keypadBeginEntry(InputMode::BandEntry);
+  speakPrompt("band");
+}
+
+void stepNanoVnaBand(int8_t dir, bool big) {
+  if (refuseBigStep("BAND", dir, big)) return;
+  printKeypadAction("BAND {}", keypadStepWord(dir, big));
   prepareKeypadSpeechResponse();
   const NanoVnaSetup& setup = nanoVnaSetup();
-  const NanoVnaBand& band = nanoVnaBandAt(nanoVnaAdjacentBand(setup.startHz, setup.stopHz, direction));
+  const NanoVnaBand& band =
+      nanoVnaBandAt(setup.region, nanoVnaAdjacentBand(setup.region, setup.startHz, setup.stopHz, dir));
   nanoVnaSetRange(band.startHz, band.stopHz);
   speakRange(band.startHz, band.stopHz);
+}
+
+void keypadCommitNanoVnaBand(const char* digits) {
+  printKeypadCommand("ENTER -> BAND");
+  const int band = nanoVnaBandByWavelength(region(), digits);
+  if (band < 0) {
+    printKeypadStatus("BAND -> no band {} in region {}", digits, (unsigned)region());
+    speakKeypadFailure("BAND", KeypadFailure::Error);
+    return;
+  }
+  const NanoVnaBand& b = nanoVnaBandAt(region(), (size_t)band);
+  nanoVnaSetRange(b.startHz, b.stopHz);
+  speakRange(b.startHz, b.stopHz);
+}
+
+void queryNanoVnaRegion() {
+  printKeypadAction("REGION?");
+  prepareKeypadSpeechResponse();
+  speakRegion(region());
+}
+
+void beginNanoVnaRegionSelect() {
+  printKeypadAction("REGION");
+  keypadBeginChoiceSelect(kRegionChoice);
+  printKeypadStatus("REGION PLEASE");
+  speakPrompt("region");
+}
+
+void stepNanoVnaRegion(int8_t dir, bool big) {
+  if (refuseBigStep("REGION", dir, big)) return;
+  printKeypadAction("REGION {}", keypadStepWord(dir, big));
+  prepareKeypadSpeechResponse();
+  // 1, 2, 3, then 1 again; C from 1 goes to 3.
+  const int next = ((int)region() - 1 + dir + 3) % 3 + 1;
+  applyRegion((NanoVnaRegion)next);
+}
+
+void stepNanoVnaCalibration(int8_t dir, bool big) {
+  if (refuseBigStep("CAL", dir, big)) return;
+  printKeypadAction("CAL {}", keypadStepWord(dir, big));
+  prepareKeypadSpeechResponse();
+  // Auto, then the slots 0-6.
+  const int next = (int)nanoVnaSetup().calSlot + dir;
+  if (next < kNanoVnaCalAuto || next >= (int)kNanoVnaCalSlots) {
+    keypadValueLimit("CAL", dir > 0);
+    return;
+  }
+  applyCalibration((int8_t)next);
 }
 
 void queryNanoVnaCalibration() {

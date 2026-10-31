@@ -35,6 +35,7 @@ void keypadEntryDigit(const EntrySpec& entry, char key, const char* digits);
 void keypadEntryCommit(InputMode mode, const char* digits, TargetVfo targetVfo);
 // NanoVNA sweep start or stop entry (ui_keypad_nanovna.cpp).
 void keypadCommitNanoVnaFrequency(InputMode mode, const char* digits);
+void keypadCommitNanoVnaBand(const char* digits);
 // The settings engine (ui_keypad_settings.cpp). B or C on setting (big: a big step): a live
 // setting is set and said at once; a Confirm one opens its entry one step away, "power 45
 // watts please".

@@ -118,7 +118,7 @@ speaks or sets the CI-V address. Bank 9 `1` double press (console `PROFILE RESET
 | 17 | Icom IC-705 | CI-V jack | 9600 | 4800, 9600, 19200, 38400, 57600, 115200 |
 | 18 | Icom IC-7760 | CI-V jack | 19200 | 4800, 9600, 19200, 38400, 57600, 115200 |
 | 21 | QRP Labs QMX | native USB socket (USB host) | 9600 | 9600 (ignored by the radio) |
-| 30 | NanoVNA | native USB socket (USB host) | 115200 | 115200 (ignored by the device) |
+| 70 | NanoVNA | native USB socket (USB host) | 115200 | 115200 (ignored by the device) |
 
 The Icom CI-V jack itself goes up to 19200 baud on the IC-7300, IC-705 and IC-706; HamTRC
 still offers the faster rates on every CI-V profile.

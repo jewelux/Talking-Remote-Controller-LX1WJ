@@ -20,7 +20,7 @@ constexpr uint32_t kScanTimeoutMs = 20000;
 constexpr size_t kPollBudgetBytes = 512;
 constexpr size_t kReadChunkBytes = 64;
 
-constexpr NanoVnaSetup kDefaultSetup = {3500000, 3800000, kNanoVnaCalAuto};
+constexpr NanoVnaSetup kDefaultSetup = {3500000, 3800000, kNanoVnaCalAuto, NanoVnaRegion::R1};
 
 struct Job {
   bool active = false;
@@ -239,8 +239,9 @@ NanoVnaStatus startJob(const Step* steps, uint8_t count, NanoVnaDone done, const
   s_job.failure = NanoVnaStatus::Ok;
   s_job.done = done;
   s_job.result = NanoVnaResult{};
-  s_job.result.startHz = s_setup.startHz;
-  s_job.result.stopHz = s_setup.stopHz;
+  // A stop below the start is swept the other way round; the setup keeps them as typed.
+  s_job.result.startHz = min(s_setup.startHz, s_setup.stopHz);
+  s_job.result.stopHz = max(s_setup.startHz, s_setup.stopHz);
   serialTransportFlushInput();
   if (!sendStep()) {
     // Not started, so done is not called.
@@ -262,6 +263,8 @@ void initNanoVna() {
       saved.calSlot >= kNanoVnaCalAuto && saved.calSlot < (int8_t)kNanoVnaCalSlots) {
     s_setup = saved;
   }
+  const uint8_t region = loadNanoVnaRegionFromNvs((uint8_t)kDefaultSetup.region);
+  s_setup.region = nanoVnaRegionValid(region) ? (NanoVnaRegion)region : kDefaultSetup.region;
 }
 
 void pollNanoVna() {
@@ -342,13 +345,25 @@ void nanoVnaSetCalSlot(int8_t slot) {
   saveSetup();
 }
 
+void nanoVnaSetRegion(NanoVnaRegion region) {
+  const int band = nanoVnaSameBand(s_setup.region, region, s_setup.startHz, s_setup.stopHz);
+  s_setup.region = region;
+  saveNanoVnaRegionToNvs((uint8_t)region);
+  if (band < 0) return;
+  const NanoVnaBand& b = nanoVnaBandAt(region, (size_t)band);
+  nanoVnaSetRange(b.startHz, b.stopHz);
+}
+
 const NanoVnaResult* nanoVnaLastMeasure() {
   return s_hasLastMeasure ? &s_lastMeasure : nullptr;
 }
 
 NanoVnaStatus nanoVnaStartMeasure(NanoVnaDone done) {
-  // The device would set the stop to the start and leave its screen on zero span.
-  if (nanoVnaActive() && !nanoVnaRangeValid(s_setup.startHz, s_setup.stopHz)) return NanoVnaStatus::BadRange;
+  // A stop below the start is swapped (startJob). The same start and stop would leave the
+  // device's screen on zero span.
+  const uint32_t low = min(s_setup.startHz, s_setup.stopHz);
+  const uint32_t high = max(s_setup.startHz, s_setup.stopHz);
+  if (nanoVnaActive() && !nanoVnaRangeValid(low, high)) return NanoVnaStatus::BadRange;
   Step steps[4];
   uint8_t count = 0;
   if (s_setup.calSlot != kNanoVnaCalAuto) steps[count++] = Step::Recall;
@@ -397,7 +412,7 @@ const char* nanoVnaStatusName(NanoVnaStatus status) {
     case NanoVnaStatus::NotAvailable: return "not a NanoVNA profile";
     case NanoVnaStatus::NotConnected: return "not connected";
     case NanoVnaStatus::Busy: return "busy";
-    case NanoVnaStatus::BadRange: return "start not below stop";
+    case NanoVnaStatus::BadRange: return "start equals stop";
     case NanoVnaStatus::Timeout: return "timeout";
     case NanoVnaStatus::DeviceError: return "device error";
     case NanoVnaStatus::NoData: return "no data";
@@ -407,15 +422,17 @@ const char* nanoVnaStatusName(NanoVnaStatus status) {
 
 void nanoVnaPrintStatus(Print& out) {
   if (!nanoVnaActive()) {
-    out.println("NanoVNA: profile 30 is not active");
+    out.println("NanoVNA: profile 70 is not active");
   } else {
     out.printf("NanoVNA: %s, %s\n", linkReady() ? "connected" : "not connected", s_job.active ? "busy" : "idle");
   }
+  out.printf("  region: %u\n", (unsigned)s_setup.region);
   out.printf("  range: %lu - %lu Hz", (unsigned long)s_setup.startHz, (unsigned long)s_setup.stopHz);
-  const int band = nanoVnaBandMatching(s_setup.startHz, s_setup.stopHz);
+  const int band = nanoVnaBandMatching(s_setup.region, s_setup.startHz, s_setup.stopHz);
   if (band >= 0) {
-    const NanoVnaBand& b = nanoVnaBandAt((size_t)band);
-    out.printf(" (%u %s)", (unsigned)b.wavelength, b.unit == NanoVnaBandUnit::Meters ? "m" : "cm");
+    char text[16];
+    nanoVnaBandText(nanoVnaBandAt(s_setup.region, (size_t)band), text, sizeof(text));
+    out.printf(" (%s)", text);
   }
   out.println();
   if (s_setup.calSlot == kNanoVnaCalAuto) {

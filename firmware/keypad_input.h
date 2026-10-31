@@ -35,6 +35,7 @@ enum class InputMode : uint8_t {
   SweepStartEntry,  // NanoVNA sweep start, in MHz like FreqEntry
   SweepStopEntry,   // NanoVNA sweep stop
   PaVoltEntry,      // QMX Max. PA voltage, in volts with one decimal
+  BandEntry,        // NanoVNA band, as its wavelength: 80, 70 (cm), 1.25
 };
 
 // How bank select, profile select or an entry takes digits. One row per mode

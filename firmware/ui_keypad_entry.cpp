@@ -185,6 +185,7 @@ void keypadEntryCommit(InputMode mode, const char* digits, TargetVfo targetVfo) 
     case InputMode::SweepStartEntry:
     case InputMode::SweepStopEntry: keypadCommitNanoVnaFrequency(mode, digits); return;
     case InputMode::PaVoltEntry: commitPaVolt(digits); return;
+    case InputMode::BandEntry: keypadCommitNanoVnaBand(digits); return;
     case InputMode::Normal:
     case InputMode::ChoiceSelect:
     case InputMode::ValueEntry: return;

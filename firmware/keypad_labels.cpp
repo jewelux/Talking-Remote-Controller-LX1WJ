@@ -80,6 +80,7 @@ constexpr SpokenLabel kSpokenLabels[] = {
   {"PTT ON", "ptt on"},
   {"QSK", "q s k"},
   {"RANGE", "start stop"},
+  {"REGION", "region"},
   {"RFPOWER", "power"},
   {"RIT", "rit"},
   {"RIT OFF", "rit off"},

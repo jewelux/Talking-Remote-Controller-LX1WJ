@@ -155,3 +155,18 @@ void saveNanoVnaSetupToNvs(uint32_t startHz, uint32_t stopHz, int8_t calSlot) {
   prefs.putChar("vnacal", calSlot);
   prefs.end();
 }
+
+uint8_t loadNanoVnaRegionFromNvs(uint8_t fallback) {
+  Preferences prefs;
+  if (!prefs.begin("talkingrc", false)) return fallback;
+  const uint8_t v = prefs.getUChar("vnaregion", fallback);
+  prefs.end();
+  return v;
+}
+
+void saveNanoVnaRegionToNvs(uint8_t region) {
+  Preferences prefs;
+  if (!prefs.begin("talkingrc", false)) return;
+  prefs.putUChar("vnaregion", region);
+  prefs.end();
+}
