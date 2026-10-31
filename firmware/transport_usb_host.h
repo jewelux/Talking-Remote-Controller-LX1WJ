@@ -13,7 +13,8 @@ enum class UsbLinkEvent : uint8_t {
   None,
   SerialReady,   // a radio's serial port is open
   SerialGone,    // that radio was unplugged or switched off
-  NoSerialPort,  // a device without a CDC-ACM serial port came, e.g. a sound card or a CP210x
+  NoSerialPort,  // a device without a CDC-ACM serial port came, e.g. a sound card or a CP210x, or
+                 // one the USB Host Library could not enumerate
   Held,          // the host was kept off after a crash restart (usbHostHoldAfterCrash)
 };
 
@@ -43,7 +44,7 @@ struct UsbHostSummary {
   bool started;         // the host runs
   bool failed;          // it could not start, or was held after a crash restart
   bool serialOpen;      // a radio's serial port is open
-  uint32_t devicesSeen; // USB devices plugged in since the host started, hubs included
+  uint32_t devicesSeen; // USB devices that answered since the host started, hubs included
   uint32_t txBytes;     // sent to the radio
   uint32_t rxBytes;     // received from the radio
 };

@@ -35,6 +35,8 @@ constexpr size_t kControlTransferBytes = sizeof(usb_setup_packet_t) + 8;
 constexpr size_t kMaxPendingDevices = 4;
 constexpr size_t kLogLines = 12;
 constexpr size_t kLogLineChars = 80;
+// From the device descriptor to the library's new-device event takes well under a second.
+constexpr uint32_t kEnumTimeoutMs = 3000;
 
 enum class PortState : uint8_t { Idle, Configuring, Ready, Closing };
 
@@ -80,6 +82,12 @@ char s_product[33] = "";
 volatile uint32_t s_rxBytes = 0;
 volatile uint32_t s_txBytes = 0;
 uint32_t s_devicesSeen = 0;
+// A device that gave its device descriptor and is still being enumerated (set by usbLib in the
+// enumeration filter, cleared by usbClient at the new-device event).
+volatile bool s_enumPending = false;
+volatile uint32_t s_enumSinceMs = 0;
+volatile uint16_t s_enumVid = 0;
+volatile uint16_t s_enumPid = 0;
 char s_log[kLogLines][kLogLineChars];
 size_t s_logNext = 0;
 size_t s_logCount = 0;
@@ -248,7 +256,9 @@ void inspectDevice(uint8_t addr) {
     logEvent("device %u could not be opened: %s", addr, esp_err_to_name(err));
     return;
   }
+#if !CONFIG_USB_HOST_ENABLE_ENUM_FILTER_CALLBACK
   ++s_devicesSeen;
+#endif
   const usb_device_desc_t* dd = nullptr;
   const usb_config_desc_t* cfg = nullptr;
   (void)usb_host_get_device_descriptor(dev, &dd);
@@ -301,6 +311,7 @@ void beginClose() {
 
 void onClientEvent(const usb_host_client_event_msg_t* msg, void*) {
   if (msg->event == USB_HOST_CLIENT_EVENT_NEW_DEV) {
+    s_enumPending = false;
     if (s_pendingCount < kMaxPendingDevices) {
       s_pendingAddrs[s_pendingCount++] = msg->new_dev.address;
     } else {
@@ -344,6 +355,15 @@ void serviceConfiguring() {
   if (!s_inParked) submitIn();
   logEvent("serial port open");
   pushEvent(UsbLinkEvent::SerialReady);
+}
+
+// A device that answered but never came as a new device: the library gave up on it, e.g. on a
+// descriptor it could not take. Its E lines are on Serial0.
+void serviceEnumTimeout() {
+  if (!s_enumPending || millis() - s_enumSinceMs < kEnumTimeoutMs) return;
+  s_enumPending = false;
+  logEvent("device %04X:%04X was not set up: enumeration failed", s_enumVid, s_enumPid);
+  pushEvent(UsbLinkEvent::NoSerialPort);
 }
 
 // Restarts the read that waited for the main loop to take the bytes before it.
@@ -404,6 +424,7 @@ void clientTask(void*) {
   for (;;) {
     (void)usb_host_client_handle_events(s_client, pdMS_TO_TICKS(10));
     serviceNewDevices();
+    serviceEnumTimeout();
     serviceConfiguring();
     serviceRx();
     serviceTx();
@@ -461,10 +482,17 @@ void printPortRegisters(Print& out) {
 
 // The core is built with CONFIG_USB_HOST_ENABLE_ENUM_FILTER_CALLBACK, and with that the USB Host
 // Library cancels every enumeration when no filter is set, with only a warning that the core does
-// not print. Takes every device in its first configuration.
+// not print. Takes every device in its first configuration. Runs once per device that answered,
+// before its configuration is read, so it counts the devices seen and starts the enumeration watch.
 #if CONFIG_USB_HOST_ENABLE_ENUM_FILTER_CALLBACK
-bool acceptEveryDevice(const usb_device_desc_t*, uint8_t* bConfigurationValue) {
+bool acceptEveryDevice(const usb_device_desc_t* dd, uint8_t* bConfigurationValue) {
   *bConfigurationValue = 1;
+  ++s_devicesSeen;
+  s_enumVid = dd->idVendor;
+  s_enumPid = dd->idProduct;
+  s_enumSinceMs = millis();
+  s_enumPending = true;
+  logEvent("device %04X:%04X answered, reading its configuration", dd->idVendor, dd->idProduct);
   return true;
 }
 #endif

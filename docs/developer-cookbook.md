@@ -99,7 +99,7 @@ The CI settings in `.github/workflows/firmware.yml` are the reference:
 
 ```sh
 arduino-cli config init --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
-arduino-cli core install esp32:esp32@3.3.11
+arduino-cli core install esp32:esp32@3.3.12
 arduino-cli lib install Keypad
 
 # arduino-cli needs the sketch folder to be named like the .ino, so stage a copy:

@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 env:
-  ESP32_CORE: "3.3.11"
+  ESP32_CORE: "3.3.12"
   ESP32_INDEX: https://espressif.github.io/arduino-esp32/package_esp32_index.json
   # Matches docs/Arduino IDE Tools Settings.txt; PartitionScheme=custom picks up firmware/partitions.csv
   FQBN: esp32:esp32:esp32s3:FlashSize=16M,FlashMode=dio,CDCOnBoot=cdc,USBMode=hwcdc,PartitionScheme=custom
