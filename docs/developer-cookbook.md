@@ -746,7 +746,9 @@ for.
 ```
 
 - `name` is shown and logged; `vendor` and `voiceDigits` are spoken when the
-  profile is picked.
+  profile is picked. `voiceSuffix` adds a word spoken whole after the digits,
+  from an existing clip (`"usb"` on the IC-705 USB profile);
+  `check_voice_tokens.py` checks that the clip exists.
 - `link` is the port (`CivJack`, `Rs232`, `CatTtl`, or `UsbHost` for a radio
   on the native USB socket), the default baud, the
   rates the radio itself offers, and the CI-V address on CI-V radios. The user
@@ -755,7 +757,14 @@ for.
 - `caps` lists only what the radio really does. Reuse a family set when it
   fits; otherwise add a `constexpr RadioCapabilities` to the family section.
 - ASCII radios need `commands` and `modes`; FT-8x7 radios need `modes`. A mode
-  left empty is gone from the keypad mode select and from `MODE LIST`.
+  left empty is gone from the keypad mode select and from `MODE LIST`. A CI-V
+  radio takes every Icom mode unless `civModes` lists its own
+  (`civModeBit(0x00) | …`, as the X6100).
+- A `UsbHost` radio also says, in `link`, which of its CDC-ACM ports is the
+  CAT port (`usbSerialIndex`, 0 the first) and whether DTR and RTS go on
+  (`usbDtr`, `usbRts`). Keep both off on a radio that can key on them. The
+  baud goes out as the port's line coding: a USB-to-serial chip in the radio
+  (the X6100's CH342) needs the right one.
 - Leave `model` out unless an existing quirk path applies (see below).
 
 Two traps:
@@ -1030,7 +1039,7 @@ pattern):
 | Field | Holds | Notes |
 |---|---|---|
 | `slot`, `name` | The number the user picks it by, the name shown | Unique slots, table in slot order |
-| `vendor`, `voiceDigits` | What is spoken for the profile | Digits and lowercase letters, one by one |
+| `vendor`, `voiceDigits`, `voiceSuffix` | What is spoken for the profile | Digits and lowercase letters one by one, then the suffix as one clip (`"usb"`), if any |
 | `model` | `RadioModel` quirk path | `Generic` unless code checks the model |
 | `protocol` | `ProtocolType` | |
 | `link` | `port`, default `baud`, `bauds` offered, `civAddr` | The user's baud and CI-V address are saved per slot |

@@ -11,6 +11,7 @@
 #include "soc/usb_dwc_struct.h"
 #include "soc/usb_wrap_struct.h"
 #include "usb/usb_host.h"
+#include "usb_cdc_descriptor.h"
 
 // Two tasks on core 0 run the USB host: usbLib runs the library, usbClient opens the radio's
 // serial port and moves its bytes. The main loop talks to usbClient through two stream buffers,
@@ -18,15 +19,15 @@
 
 namespace {
 
-// CDC-ACM (USB CDC PSTN subclass): the ACM control interface and its class requests.
-constexpr uint8_t kCdcSubclassAcm = 0x02;
+// CDC-ACM (USB CDC PSTN subclass): the class requests of the ACM control interface. The line
+// coding carries the profile's baud: a virtual COM port (QMX, NanoVNA, IC-705) ignores it, a
+// USB-UART bridge (the X6100's CH342) runs its UART at it. SET_CONTROL_LINE_STATE sets DTR (bit 0)
+// and RTS (bit 1) as the profile says.
 constexpr uint8_t kCdcSetLineCoding = 0x20;
 constexpr uint8_t kCdcSetControlLineState = 0x22;
-// A virtual COM port ignores the baud; the line coding is sent because some devices wait for it.
-constexpr uint32_t kLineCodingBaud = 9600;
-// DTR on, RTS off. The QMX keys nothing on either line.
 constexpr uint16_t kControlLineDtr = 0x0001;
-constexpr uint8_t kNoInterface = 0xFF;
+constexpr uint16_t kControlLineRts = 0x0002;
+constexpr uint8_t kNoInterface = kCdcNoInterface;
 
 constexpr size_t kRxBufferBytes = 2048;
 constexpr size_t kTxBufferBytes = 256;
@@ -40,12 +41,7 @@ constexpr uint32_t kEnumTimeoutMs = 3000;
 
 enum class PortState : uint8_t { Idle, Configuring, Ready, Closing };
 
-struct SerialPortDesc {
-  uint8_t dataIntf;
-  uint8_t commIntf;
-  uint8_t epIn;
-  uint8_t epOut;
-};
+using SerialPortDesc = CdcPortDesc;
 
 usb_host_client_handle_t s_client = nullptr;
 StreamBufferHandle_t s_rx = nullptr;  // usbClient -> main loop
@@ -55,6 +51,12 @@ SemaphoreHandle_t s_logLock = nullptr;
 usb_transfer_t* s_inXfer = nullptr;
 usb_transfer_t* s_outXfer = nullptr;
 usb_transfer_t* s_ctrlXfer = nullptr;
+
+// What the next port opens with (the main loop sets it) and what the open one was opened with
+// (usbClient copies it when it inspects the device).
+portMUX_TYPE s_linkLock = portMUX_INITIALIZER_UNLOCKED;
+UsbLinkSettings s_requestedLink;
+UsbLinkSettings s_openLink;
 
 bool s_started = false;
 bool s_holdOnce = false;
@@ -139,41 +141,6 @@ void productName(usb_device_handle_t dev, char* out, size_t outLen) {
     out[n++] = (c >= 32 && c < 127) ? (char)c : '?';
   }
   out[n] = '\0';
-}
-
-// The first CDC data interface with a bulk IN and a bulk OUT endpoint, and the ACM control
-// interface before it, which takes the line setup.
-bool findSerialPort(const usb_config_desc_t* cfg, SerialPortDesc& port) {
-  uint8_t lastComm = kNoInterface;
-  int offset = 0;
-  const usb_standard_desc_t* desc = reinterpret_cast<const usb_standard_desc_t*>(cfg);
-  while ((desc = usb_parse_next_descriptor_of_type(desc, cfg->wTotalLength, USB_B_DESCRIPTOR_TYPE_INTERFACE,
-                                                   &offset)) != nullptr) {
-    const usb_intf_desc_t* intf = reinterpret_cast<const usb_intf_desc_t*>(desc);
-    if (intf->bAlternateSetting != 0) continue;
-    if (intf->bInterfaceClass == USB_CLASS_COMM && intf->bInterfaceSubClass == kCdcSubclassAcm) {
-      lastComm = intf->bInterfaceNumber;
-      continue;
-    }
-    if (intf->bInterfaceClass != USB_CLASS_CDC_DATA) continue;
-    uint8_t epIn = 0;
-    uint8_t epOut = 0;
-    for (int i = 0; i < intf->bNumEndpoints; ++i) {
-      int epOffset = offset;
-      const usb_ep_desc_t* ep = usb_parse_endpoint_descriptor_by_index(intf, i, cfg->wTotalLength, &epOffset);
-      if (!ep || (ep->bmAttributes & USB_BM_ATTRIBUTES_XFERTYPE_MASK) != USB_BM_ATTRIBUTES_XFER_BULK) continue;
-      if (ep->bEndpointAddress & USB_B_ENDPOINT_ADDRESS_EP_DIR_MASK) {
-        epIn = ep->bEndpointAddress;
-      } else {
-        epOut = ep->bEndpointAddress;
-      }
-    }
-    if (epIn && epOut) {
-      port = {intf->bInterfaceNumber, lastComm, epIn, epOut};
-      return true;
-    }
-  }
-  return false;
 }
 
 void submitIn() {
@@ -268,9 +235,18 @@ void inspectDevice(uint8_t addr) {
   logEvent("device %04X:%04X class %02X \"%s\"", dd ? dd->idVendor : 0, dd ? dd->idProduct : 0,
            dd ? dd->bDeviceClass : 0, product);
 
+  UsbLinkSettings link;
+  taskENTER_CRITICAL(&s_linkLock);
+  link = s_requestedLink;
+  taskEXIT_CRITICAL(&s_linkLock);
   SerialPortDesc port;
-  if ((dd && dd->bDeviceClass == USB_CLASS_HUB) || !cfg || !findSerialPort(cfg, port)) {
-    logEvent("  no CDC-ACM serial port");
+  if ((dd && dd->bDeviceClass == USB_CLASS_HUB) || !cfg ||
+      !findCdcSerialPort(reinterpret_cast<const uint8_t*>(cfg), cfg->wTotalLength, link.serialIndex, port)) {
+    if (link.serialIndex == 0) {
+      logEvent("  no CDC-ACM serial port");
+    } else {
+      logEvent("  no CDC-ACM serial port %u (counted from 0)", link.serialIndex);
+    }
     usb_host_device_close(s_client, dev);
     if (!dd || dd->bDeviceClass != USB_CLASS_HUB) pushEvent(UsbLinkEvent::NoSerialPort);
     return;
@@ -289,6 +265,9 @@ void inspectDevice(uint8_t addr) {
   }
   s_dev = dev;
   s_port = port;
+  taskENTER_CRITICAL(&s_linkLock);
+  s_openLink = link;
+  taskEXIT_CRITICAL(&s_linkLock);
   s_vid = dd ? dd->idVendor : 0;
   s_pid = dd ? dd->idProduct : 0;
   strlcpy(s_product, product, sizeof(s_product));
@@ -336,8 +315,8 @@ void serviceConfiguring() {
   if (s_state != PortState::Configuring || s_ctrlBusy) return;
   const bool hasControl = s_port.commIntf != kNoInterface;
   if (hasControl && s_configStep == 0) {
-    const uint8_t coding[7] = {(uint8_t)kLineCodingBaud, (uint8_t)(kLineCodingBaud >> 8),
-                               (uint8_t)(kLineCodingBaud >> 16), (uint8_t)(kLineCodingBaud >> 24),
+    const uint32_t baud = s_openLink.baud;
+    const uint8_t coding[7] = {(uint8_t)baud, (uint8_t)(baud >> 8), (uint8_t)(baud >> 16), (uint8_t)(baud >> 24),
                                0 /* 1 stop bit */, 0 /* no parity */, 8 /* data bits */};
     s_configStep = 1;
     submitClassRequest(kCdcSetLineCoding, 0, coding, sizeof(coding));
@@ -345,7 +324,8 @@ void serviceConfiguring() {
   }
   if (hasControl && s_configStep == 1) {
     s_configStep = 2;
-    submitClassRequest(kCdcSetControlLineState, kControlLineDtr, nullptr, 0);
+    const uint16_t lines = (uint16_t)((s_openLink.dtr ? kControlLineDtr : 0) | (s_openLink.rts ? kControlLineRts : 0));
+    submitClassRequest(kCdcSetControlLineState, lines, nullptr, 0);
     return;
   }
   s_state = PortState::Ready;
@@ -506,6 +486,21 @@ bool allocTransfer(size_t bytes, usb_transfer_cb_t callback, usb_transfer_t** ou
 
 }  // namespace
 
+void usbHostSetLink(const UsbLinkSettings& link) {
+  taskENTER_CRITICAL(&s_linkLock);
+  s_requestedLink = link;
+  taskEXIT_CRITICAL(&s_linkLock);
+}
+
+bool usbHostOpenLinkMatches(const UsbLinkSettings& link) {
+  if (s_state == PortState::Idle) return true;
+  taskENTER_CRITICAL(&s_linkLock);
+  const UsbLinkSettings open = s_openLink;
+  taskEXIT_CRITICAL(&s_linkLock);
+  return open.baud == link.baud && open.serialIndex == link.serialIndex && open.dtr == link.dtr &&
+         open.rts == link.rts;
+}
+
 bool usbHostStart() {
   if (s_started) return true;
   if (!s_logLock) {
@@ -637,6 +632,17 @@ void usbHostPrintStatus(Print& out) {
   out.println(stateName(state));
   if (state != PortState::Idle) {
     out.printf("  device: %04X:%04X \"%s\"\n", s_vid, s_pid, s_product);
+    taskENTER_CRITICAL(&s_linkLock);
+    const UsbLinkSettings open = s_openLink;
+    taskEXIT_CRITICAL(&s_linkLock);
+    out.printf("  port: CDC port %u (counted from 0), interface %u, %lu baud, DTR %s, RTS %s\n", open.serialIndex,
+               s_port.dataIntf, (unsigned long)open.baud, open.dtr ? "on" : "off", open.rts ? "on" : "off");
+  } else {
+    taskENTER_CRITICAL(&s_linkLock);
+    const UsbLinkSettings next = s_requestedLink;
+    taskEXIT_CRITICAL(&s_linkLock);
+    out.printf("  opens: CDC port %u (counted from 0), %lu baud, DTR %s, RTS %s\n", next.serialIndex,
+               (unsigned long)next.baud, next.dtr ? "on" : "off", next.rts ? "on" : "off");
   }
   out.printf("  bytes: rx=%lu tx=%lu  devices seen: %lu\n", (unsigned long)s_rxBytes, (unsigned long)s_txBytes,
              (unsigned long)s_devicesSeen);

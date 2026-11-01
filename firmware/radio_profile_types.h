@@ -163,6 +163,13 @@ struct LinkDefaults {
   uint32_t baud = 0;
   BaudRates bauds{};
   uint8_t civAddr = 0;  // CI-V radios only
+  // UsbHost only. The radio's serial port, counted from 0 among its CDC-ACM ports (the X6100's CAT
+  // is its second, CH342 port B), and the DTR and RTS lines HamTRC sets when it opens the port. A
+  // radio that can key on DTR or RTS (IC-705 USB SEND, X6100 CW on RTS) gets both off. The baud
+  // goes out as the line coding: a USB-UART bridge (the X6100's CH342) needs the radio's rate.
+  uint8_t usbSerialIndex = 0;
+  bool usbDtr = true;
+  bool usbRts = false;
 };
 
 // Spoken before the profile's voice digits.
@@ -313,6 +320,14 @@ struct SettingEncodings {
   uint16_t cwDelayStepMs = 0;
 };
 
+// RadioProfile::civModes: the bit of CI-V mode byte mode (0x00 LSB .. 0x08 RTTY-R).
+constexpr uint16_t civModeBit(uint8_t mode) { return mode < 16 ? (uint16_t)(1u << mode) : 0; }
+
+// Whether a CI-V profile with these civModes takes the mode: every mode when civModes is 0.
+constexpr bool civModeOffered(uint16_t civModes, uint8_t mode) {
+  return civModes == 0 || (civModes & civModeBit(mode)) != 0;
+}
+
 inline constexpr AsciiCommandSet kNoAsciiCommands{};
 inline constexpr ModeCodes kNoModeCodes{};
 
@@ -322,6 +337,8 @@ struct RadioProfile {
   const char* name = "";     // shown and logged
   VoiceVendor vendor = VoiceVendor::Icom;
   const char* voiceDigits = "";  // spoken one by one after the vendor: digits and lowercase letters
+  // A word spoken whole after the digits, as one clip ("usb"), or "" for none.
+  const char* voiceSuffix = "";
   RadioModel model = RadioModel::Generic;
   ProtocolType protocol = PROTO_CIV;
   LinkDefaults link{};
@@ -330,5 +347,8 @@ struct RadioProfile {
   const ModeCodes* modes = &kNoModeCodes;
   SettingEncodings settings{};
   uint16_t rfPowerMaxWatts = 100;
+  // CI-V only: the modes the radio takes, bit n for CI-V mode byte n (civModeBit). 0 is every
+  // Icom mode. Mode select and MODE LIST leave the others out.
+  uint16_t civModes = 0;
   Ft8x7Bank6Profile ft8x7Bank6{};
 };

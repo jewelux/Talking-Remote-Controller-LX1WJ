@@ -28,6 +28,8 @@ enum class AgcEncoding : uint8_t {
   YaesuGt0,    // GT0n: 0 off, 1 fast, 2 mid, 3 slow, 4 auto; read 4..6 is auto (FTDX10/101, FT-891)
   KenwoodGt,   // GTnnn: 000 off, 001 fast, 002 slow (TS-480)
   ElecraftGt,  // GTnnn: 002 fast, 004 slow (KX2)
+  // CI-V 16 12 with 00 off (the Xiegu X6100); the Icoms leave it None: their 16 12 has no off.
+  CivWithOff,
 };
 
 // How an ASCII radio's PA and RA read and set the preamp and the attenuator. The Icoms all use

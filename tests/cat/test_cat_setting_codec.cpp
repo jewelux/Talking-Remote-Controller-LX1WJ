@@ -146,16 +146,35 @@ TEST(ft8x7_agc_maps_both_ways_and_has_no_mid) {
 }
 
 TEST(civ_agc_is_fast_mid_slow) {
+  constexpr AgcEncoding icom = AgcEncoding::None;
   AgcMode mode = AgcMode::Off;
-  CHECK(civAgcDecode(0x01, mode) && mode == AgcMode::Fast);
-  CHECK(civAgcDecode(0x02, mode) && mode == AgcMode::Mid);
-  CHECK(civAgcDecode(0x03, mode) && mode == AgcMode::Slow);
-  CHECK(!civAgcDecode(0x00, mode));
-  CHECK(!civAgcDecode(0x04, mode));
+  CHECK(civAgcDecode(icom, 0x01, mode) && mode == AgcMode::Fast);
+  CHECK(civAgcDecode(icom, 0x02, mode) && mode == AgcMode::Mid);
+  CHECK(civAgcDecode(icom, 0x03, mode) && mode == AgcMode::Slow);
+  CHECK(!civAgcDecode(icom, 0x00, mode));
+  CHECK(!civAgcDecode(icom, 0x04, mode));
   uint8_t raw = 0;
-  CHECK(civAgcEncode(AgcMode::Mid, raw) && raw == 0x02);
-  CHECK(!civAgcEncode(AgcMode::Off, raw));
-  CHECK(!civAgcEncode(AgcMode::Auto, raw));
+  CHECK(civAgcEncode(icom, AgcMode::Mid, raw) && raw == 0x02);
+  CHECK(!civAgcEncode(icom, AgcMode::Off, raw));
+  CHECK(!civAgcEncode(icom, AgcMode::Auto, raw));
+}
+
+// The X6100's 16 12 has 00 off as well (its CI-V table).
+TEST(civ_agc_with_off) {
+  constexpr AgcEncoding x6100 = AgcEncoding::CivWithOff;
+  AgcMode mode = AgcMode::Fast;
+  CHECK(civAgcDecode(x6100, 0x00, mode) && mode == AgcMode::Off);
+  CHECK(civAgcDecode(x6100, 0x03, mode) && mode == AgcMode::Slow);
+  CHECK(!civAgcDecode(x6100, 0x04, mode));
+  uint8_t raw = 0xFF;
+  CHECK(civAgcEncode(x6100, AgcMode::Off, raw) && raw == 0x00);
+  CHECK(civAgcEncode(x6100, AgcMode::Fast, raw) && raw == 0x01);
+  CHECK(!civAgcEncode(x6100, AgcMode::Auto, raw));
+  // Not an ASCII GT encoding.
+  char cmd[8];
+  CHECK(asciiAgcReadCommand(x6100) == nullptr);
+  CHECK(!asciiAgcEncode(x6100, AgcMode::Fast, cmd, sizeof(cmd)));
+  CHECK(!asciiAgcDecode(x6100, "001", mode));
 }
 
 TEST(yaesu_agc_gt0) {

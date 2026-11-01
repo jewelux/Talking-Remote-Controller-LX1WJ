@@ -269,7 +269,7 @@ bool civQueryMode(const RadioProfile& sp, uint8_t& modeOut, uint32_t timeoutMs) 
 }
 
 bool civSetMode(const RadioProfile& sp, uint8_t mode, uint8_t filter) {
-  if (!sp.caps.setMode) return false;
+  if (!sp.caps.setMode || !civModeOffered(sp.civModes, mode)) return false;
   uint8_t pl[2] = {mode, filter};
   civFlushInput();
   civSend(0x06, pl, 2);
@@ -544,16 +544,16 @@ bool civSetPbtOuter(const RadioProfile& sp, uint16_t value) {
 }
 
 // 16 12: the AGC time constant preset, 01 fast, 02 mid, 03 slow (the IC-7300, IC-705 and IC-7760
-// CI-V guides, Hamlib).
+// CI-V guides, Hamlib); 00 off on the Xiegu X6100 (settings.agc CivWithOff).
 bool civQueryAgc(const RadioProfile& sp, AgcMode& out, uint32_t timeoutMs) {
   if (sp.protocol != PROTO_CIV || !sp.caps.getAgc) return false;
   uint8_t raw = 0;
-  return civQuery16Byte(0x12, raw, timeoutMs) && civAgcDecode(raw, out);
+  return civQuery16Byte(0x12, raw, timeoutMs) && civAgcDecode(sp.settings.agc, raw, out);
 }
 
 bool civSetAgc(const RadioProfile& sp, AgcMode mode) {
   uint8_t raw = 0;
-  if (sp.protocol != PROTO_CIV || !sp.caps.setAgc || !civAgcEncode(mode, raw)) return false;
+  if (sp.protocol != PROTO_CIV || !sp.caps.setAgc || !civAgcEncode(sp.settings.agc, mode, raw)) return false;
   if (!civSet16Byte(0x12, raw)) return false;
   return civSettleAndVerify(sp, civQueryAgc, mode);
 }
@@ -841,8 +841,8 @@ bool civQueryRxTxStatus(const RadioProfile& sp, bool& txOut, uint32_t timeoutMs)
   if (sp.protocol != PROTO_CIV || !sp.caps.getRxTx) return false;
   uint8_t value = 0;
   if (!civQuery1CByte(0x00, value, timeoutMs)) return false;
-  if (value > 0x01) return false;
-  txOut = value == 0x01;
+  // 00 receive, 01 transmit on the Icoms; the X6100's CI-V table: 0 receive, any other transmit.
+  txOut = value != 0x00;
   return true;
 }
 
@@ -973,7 +973,7 @@ bool civQueryVfoMode(const RadioProfile& sp, bool targetVfoA, uint8_t& modeOut, 
 }
 
 bool civSetVfoMode(const RadioProfile& sp, bool targetVfoA, uint8_t mode, uint8_t filter) {
-  if (sp.protocol != PROTO_CIV || !sp.caps.setVfoMode) return false;
+  if (sp.protocol != PROTO_CIV || !sp.caps.setVfoMode || !civModeOffered(sp.civModes, mode)) return false;
   if (isIcom7760Profile(sp)) return civSetMainSubMode(civMainSubSelector(targetVfoA), mode, filter);
   if (!civEnsureActiveVfoKnown(sp)) return false;
   const uint8_t pl[] = {civEncodeVfoSelector(targetVfoA), mode, 0x00, filter};

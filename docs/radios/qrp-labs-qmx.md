@@ -154,8 +154,9 @@ it while the QMX is connected, so that nothing meant for the NanoVNA reaches the
   `MU;` exists from firmware 1_04_001; before it the QMX answers `?;`, which is ignored. A read
   skips redraw text, also when it runs into the reply.
 - USB host and CDC-ACM: `firmware/transport_usb_host.*`, on the ESP-IDF USB Host Library of the
-  ESP32 core (no extra library). It opens the first CDC data interface with a bulk IN and OUT
-  endpoint, sends SET_LINE_CODING and SET_CONTROL_LINE_STATE (DTR on) to the ACM control interface
+  ESP32 core (no extra library). It opens the CDC data interface the profile names (the first for
+  the QMX, `link.usbSerialIndex` 0) with a bulk IN and OUT endpoint, sends SET_LINE_CODING (the
+  profile's baud, 9600) and SET_CONTROL_LINE_STATE (DTR on, `link.usbDtr`) to the ACM control interface
   before it, and moves bytes through two stream buffers. External hubs are supported by the core.
 - The ESP32 core is built with `CONFIG_USB_HOST_ENABLE_ENUM_FILTER_CALLBACK`. With it, the USB Host
   Library cancels every device after SET_ADDRESS unless `usb_host_config_t.enum_filter_cb` is set,

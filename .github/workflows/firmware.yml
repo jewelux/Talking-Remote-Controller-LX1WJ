@@ -40,6 +40,8 @@ jobs:
         run: make -C tests/nanovna
       - name: Icom S-meter unit tests
         run: make -C tests/civmeter
+      - name: USB descriptor unit tests
+        run: make -C tests/usb
 
       - name: Audio unit tests
         run: make -C tests/audio

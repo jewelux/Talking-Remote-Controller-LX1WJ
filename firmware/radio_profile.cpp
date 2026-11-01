@@ -95,6 +95,10 @@ void printActiveProfileDetails() {
   Serial.println(voiceVendorName(sp.vendor));
   Serial.print("  voice_digits: ");
   Serial.println(sp.voiceDigits);
+  if (sp.voiceSuffix[0]) {
+    Serial.print("  voice_suffix: ");
+    Serial.println(sp.voiceSuffix);
+  }
   Serial.print("  caps: freq=");
   Serial.print(sp.caps.getFreq ? "R" : "-");
   Serial.print(sp.caps.setFreq ? "W" : "-");
@@ -184,12 +188,26 @@ void applyProfile(uint8_t slot, bool report) {
   const RadioProfile* profile = profileForSlot(slot);
   if (!profile) profile = profileForSlot(kDefaultProfileSlot);
 
+  // The baud and CI-V address saved for this slot, if any; a baud the radio
+  // does not offer falls back to its default.
+  uint8_t civAddr = profile->link.civAddr;
+  uint32_t baud = profile->link.baud;
+  (void)loadConnectionOverrideFromNvs(profile->slot, civAddr, baud);
+  if (!profile->link.bauds.contains(baud)) baud = profile->link.baud;
+
   // The USB host keeps the native USB socket until a restart, and the PC console needs it back.
   // A USB device of another protocol (the QMX and the NanoVNA) restarts too: what the open port
   // would get next is meant for the other device. A CR ends the QMX's CAT, and CAT polls hang the
-  // NanoVNA. The restart comes up with the new profile, and says its name.
+  // NanoVNA. So does an open port set up otherwise (another CDC port, baud, DTR or RTS: the IC-705
+  // and the X6100 both speak CI-V, on different ports and lines). The restart comes up with the new
+  // profile, and says its name.
+  UsbLinkSettings usbLink;
+  usbLink.baud = baud;
+  usbLink.serialIndex = profile->link.usbSerialIndex;
+  usbLink.dtr = profile->link.usbDtr;
+  usbLink.rts = profile->link.usbRts;
   const bool otherUsbDevice = profile->link.port == RadioPort::UsbHost && usbHostSerialReady() &&
-                              profile->protocol != currentProtocolType();
+                              (profile->protocol != currentProtocolType() || !usbHostOpenLinkMatches(usbLink));
   if (usbHostStarted() && (profile->link.port != RadioPort::UsbHost || otherUsbDevice)) {
     saveProfileToNvs(profile->slot);
     Serial0.print("[PROFILE] ");
@@ -200,13 +218,6 @@ void applyProfile(uint8_t slot, bool report) {
     ESP.restart();
   }
   g_profileId = profile->slot;
-
-  // The baud and CI-V address saved for this slot, if any; a baud the radio
-  // does not offer falls back to its default.
-  uint8_t civAddr = profile->link.civAddr;
-  uint32_t baud = profile->link.baud;
-  (void)loadConnectionOverrideFromNvs(g_profileId, civAddr, baud);
-  if (!profile->link.bauds.contains(baud)) baud = profile->link.baud;
   selectActiveProfile(*profile, baud, civAddr);
 
   const ConnectionProfile& p = currentConnectionProfile();

@@ -694,9 +694,9 @@ static bool parseTwoHexByteArgs(const String& input, uint8_t& firstOut, uint8_t&
   return parseHexByteString(a, firstOut) && parseHexByteString(b, secondOut);
 }
 
-static void printHexByte2(uint8_t b) {
-  if (b < 0x10) Serial.print('0');
-  Serial.print(b, HEX);
+static void printHexByte2(uint8_t b, Print& out = Serial) {
+  if (b < 0x10) out.print('0');
+  out.print(b, HEX);
 }
 
 static bool parseCivRawArgs(String args, uint8_t& cmdOut, uint8_t* payloadOut, size_t& payloadLenOut, size_t payloadMax) {
@@ -728,16 +728,19 @@ static bool parseCivRawArgs(String args, uint8_t& cmdOut, uint8_t* payloadOut, s
   return true;
 }
 
-static bool printCivRawTransaction(uint8_t cmd, const uint8_t* payload, size_t payloadLen, bool query) {
+// Frames from any address but HamTRC's own (an echo) are shown, so a radio set to another CI-V
+// address shows itself, e.g. in its transceive frames to 00.
+static bool printCivRawTransaction(uint8_t cmd, const uint8_t* payload, size_t payloadLen, bool query,
+                                   Print& out) {
   civFlushInput();
   civSend(cmd, payload, payloadLen);
-  Serial.print(query ? "CIVRAW? TX: " : "CIVRAW TX: ");
-  printHexByte2(cmd);
+  out.print(query ? "CIVRAW? TX: " : "CIVRAW TX: ");
+  printHexByte2(cmd, out);
   for (size_t i = 0; i < payloadLen; ++i) {
-    Serial.print(' ');
-    printHexByte2(payload[i]);
+    out.print(' ');
+    printHexByte2(payload[i], out);
   }
-  Serial.println();
+  out.println();
 
   const uint32_t start = millis();
   bool any = false;
@@ -747,26 +750,47 @@ static bool printCivRawTransaction(uint8_t cmd, const uint8_t* payload, size_t p
     if (!n) continue;
     const std::optional<CivFrame> d = civDecode(buf, n);
     if (!d) continue;
-    if (d->from != currentConnectionProfile().civAddr) continue;
+    if (d->from == CIV_CTRL_ADDR) continue;
     any = true;
-    Serial.print("CIVRAW RX: to=");
-    printHexByte2(d->to);
-    Serial.print(" from=");
-    printHexByte2(d->from);
-    Serial.print(" cmd=");
-    printHexByte2(d->cmd);
-    Serial.print(" payload=");
+    out.print("CIVRAW RX: to=");
+    printHexByte2(d->to, out);
+    out.print(" from=");
+    printHexByte2(d->from, out);
+    out.print(" cmd=");
+    printHexByte2(d->cmd, out);
+    out.print(" payload=");
     if (!d->payloadLen) {
-      Serial.print("(none)");
+      out.print("(none)");
     } else {
       for (size_t i = 0; i < d->payloadLen; ++i) {
-        if (i) Serial.print(' ');
-        printHexByte2(d->payload[i]);
+        if (i) out.print(' ');
+        printHexByte2(d->payload[i], out);
       }
     }
-    Serial.println();
+    out.println();
   }
-  if (!any) Serial.println("CIVRAW RX: no reply");
+  if (!any) out.println("CIVRAW RX: no reply");
+  return true;
+}
+
+// CIVRAW? <cmd> [data] and CIVRAW <cmd> [data]: one raw CI-V frame and what came back. On the
+// console, and on Serial0 while a CI-V radio holds the USB host (processHamtrcServiceCommand).
+static bool handleCivRaw(const String& upper, Print& out) {
+  if (!upper.startsWith("CIVRAW? ") && !upper.startsWith("CIVRAW ")) return false;
+  uint8_t cmd = 0;
+  uint8_t payload[32] = {0};
+  size_t payloadLen = 0;
+  const bool query = upper.startsWith("CIVRAW? ");
+  const int prefixLen = query ? 8 : 7;
+  if (currentProtocolType() != PROTO_CIV) {
+    out.println("CIVRAW -> CI-V profile required");
+    return true;
+  }
+  if (!parseCivRawArgs(upper.substring(prefixLen), cmd, payload, payloadLen, sizeof(payload))) {
+    out.println(query ? "CIVRAW? -> use: CIVRAW? 14 0A" : "CIVRAW -> use: CIVRAW 14 0A 00 26");
+    return true;
+  }
+  printCivRawTransaction(cmd, payload, payloadLen, query, out);
   return true;
 }
 
@@ -1296,23 +1320,7 @@ static bool handleConsoleInfoCommands(const String& upper) {
   if (upper.startsWith("HELP ")) { printHelp(upper.substring(5)); return true; }
   if (upper == "STATUS?") { printStatusSummary(); return true; }
   if (upper == "MODE LIST") { printModeList(); return true; }
-  if (upper.startsWith("CIVRAW? ") || upper.startsWith("CIVRAW ")) {
-    uint8_t cmd = 0;
-    uint8_t payload[32] = {0};
-    size_t payloadLen = 0;
-    const bool query = upper.startsWith("CIVRAW? ");
-    const int prefixLen = query ? 8 : 7;
-    if (currentProtocolType() != PROTO_CIV) {
-      Serial.println("CIVRAW -> CI-V profile required");
-      return true;
-    }
-    if (!parseCivRawArgs(upper.substring(prefixLen), cmd, payload, payloadLen, sizeof(payload))) {
-      Serial.println(query ? "CIVRAW? -> use: CIVRAW? 14 0A" : "CIVRAW -> use: CIVRAW 14 0A 00 26");
-      return true;
-    }
-    printCivRawTransaction(cmd, payload, payloadLen, query);
-    return true;
-  }
+  if (handleCivRaw(upper, Serial)) return true;
   if (upper == "EXPERIMENTAL?") {
     Serial.print("EXPERIMENTAL ");
     Serial.println(g_experimentalCaps ? "ON" : "OFF");
@@ -4070,11 +4078,15 @@ bool processHamtrcServiceCommand(String line, Print& output) {
   const bool qmx = currentRadioModel() == RadioModel::Qmx;
   const bool qmxTxMeter = qmx && (upper == "PO?" || upper == "SWR?");
   const bool qmxPaVolt = qmx && (upper == "PAVOLT?" || upper.startsWith("PAVOLT "));
-  if (upper != "SM?" && !qmxTxMeter && !qmxPaVolt) return false;
+  // A CI-V radio on USB (IC-705, X6100): raw frames, to check a reply no one has seen yet.
+  const bool civRaw = currentProtocolType() == PROTO_CIV && upper.startsWith("CIVRAW");
+  if (upper != "SM?" && !qmxTxMeter && !qmxPaVolt && !civRaw) return false;
   g_radioReplyTimedOut = false;
   s_writesBeforeCommand = serialTransportWriteCount();
   audioAbortNow();
-  if (qmxTxMeter) {
+  if (civRaw) {
+    if (!handleCivRaw(upper, output)) output.println("CIVRAW -> use: CIVRAW? 14 0A or CIVRAW 14 0A 00 26");
+  } else if (qmxTxMeter) {
     answerQmxTxMeter(upper == "SWR?", output);
   } else if (qmxPaVolt) {
     answerQmxPaVolt(line, upper, output);

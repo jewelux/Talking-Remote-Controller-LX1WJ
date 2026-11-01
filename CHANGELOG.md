@@ -428,6 +428,22 @@
 - new built-in profile 21 for the QRP Labs QMX on the controller's native USB socket. Not yet
   tested on a radio. Details in `docs/radios/qrp-labs-qmx.md`
 
+### Icom IC-705 and Xiegu X6100 over USB (new, experimental)
+
+- new built-in profile 22 for the Xiegu X6100 on its DEV USB port, and profile 23 for the
+  IC-705 on its own USB port, both on the controller's native USB socket. Not yet tested on a
+  radio. Details in `docs/radios/xiegu-x6100.md` and `docs/radios/icom-ic-705-usb.md`
+- the IC-705 on USB does everything the IC-705 on the CI-V jack (profile 17) does
+- the X6100 gets frequency, mode, S-meter, SWR, RF power, NR, NB, AGC (with off), preamp,
+  lock, tuner, VFO A and B, RIT, processor, mic gain and VOX. The rest says "not available":
+  the X6100 lacks it, or its CI-V table gives no scale or another format
+- mode select offers the X6100 only its own modes: LSB, USB, AM, CW, FM and CW-R
+- HamTRC keeps DTR and RTS off on both, so neither radio can be keyed by them
+- `CIVRAW` also answers on the second USB socket while a CI-V radio is on USB, and now shows a
+  radio that answers from another CI-V address
+- choosing another USB profile restarts the controller also when both speak CI-V, and a new
+  baud on a USB profile restarts it too
+
 ### NanoVNA over USB (new, experimental)
 
 - new built-in profile 70 for a NanoVNA on the controller's native USB socket: it measures the SWR

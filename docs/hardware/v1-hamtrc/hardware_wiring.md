@@ -120,26 +120,31 @@ Series resistors provide basic protection and can improve signal robustness.
 
 ---
 
-## 6. ESP32-S3 Native USB as USB Host (QRP Labs QMX, experimental)
+## 6. ESP32-S3 Native USB as USB Host (QMX, X6100, IC-705, experimental)
 
-A radio with only a USB connection (profile 21, QRP Labs QMX) plugs into the ESP32-S3's native
-USB socket, GPIO 19 (D-) and GPIO 20 (D+). HamTRC is then the USB host. No wiring is needed
-beyond the radio's USB cable.
+A radio on USB (profile 21 QRP Labs QMX, 22 Xiegu X6100, 23 Icom IC-705) plugs into the
+ESP32-S3's native USB socket, GPIO 19 (D-) and GPIO 20 (D+). HamTRC is then the USB host. No
+wiring is needed beyond the radio's USB cable.
 
 On a board with two USB-C sockets (ESP32-S3-DevKitC-1 and copies such as the YD-ESP32-S3):
 
 | Socket | Chip | Normal profiles | USB radio profile |
 |---|---|---|---|
 | native USB ("USB", "OTG") | ESP32-S3 itself | PC console and flashing | the radio |
-| USB-to-serial ("COM", "UART") | CH343 or CP210x on UART0 | flashing | flashing, `HAMTRC?`, `SM?`, `PO?`, `SWR?`, `PAVOLT` and `USB?` only |
+| USB-to-serial ("COM", "UART") | CH343 or CP210x on UART0 | flashing | flashing, `HAMTRC?`, `USB?`, `SM?`; `PO?`, `SWR?`, `PAVOLT` on the QMX; `CIVRAW` on the X6100 and IC-705 |
 
 ### 5 V on the native socket
 
 A USB host supplies 5 V to the device. Most ESP32-S3 boards do not put 5 V out on the native
 socket, because a diode blocks it. A device that takes its USB power from the cable is then not
 seen at all. A device with its own supply does not need it: a NanoVNA running on its battery was
-found and answered with no 5 V on the socket. The QMX has its own supply too, so it should work
-the same way.
+found and answered with no 5 V on the socket. That is not the rule: a device that follows the
+USB standard waits for the 5 V before it shows itself, even with its own supply. The X6100's DEV
+port is such a device (a USB hub inside), and the IC-705 most likely too. They need the 5 V on
+the socket.
+
+- The IC-705 takes power from USB to run and charge its battery unless its USB Power Input
+  menu item is OFF. Set it OFF before connecting it to the controller.
 
 - On the YD-ESP32-S3 and similar boards, close the solder jumper marked `USB-OTG`. It bypasses the
   diode, so the board's 5 V reaches the native socket.

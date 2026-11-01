@@ -8,10 +8,12 @@ It is meant as a short engineering overview, not as a promise list.
 | ICOM IC-7300 | CI-V | implemented | implemented | implemented | implemented | implemented | implemented | tested on hardware | See `docs/radios/icom-ic-7300.md` for the extended command map. |
 | ICOM IC-7300 RS-232 | RS-232 | implemented | implemented | implemented | implemented | implemented | implemented | not recently verified | Intended to mirror the CI-V path. |
 | ICOM IC-705 | CI-V | implemented | implemented | implemented | implemented | implemented | implemented | not tested | Everything the IC-7300 has, checked against the IC-705 CI-V reference guide; the tuner command drives an AH-705. |
+| ICOM IC-705 USB | CI-V over USB | implemented | implemented | implemented | implemented | implemented | implemented | not tested | Experimental. As the IC-705 on the CI-V jack, through the IC-705's own USB port (USB host on the native USB socket, DTR and RTS off). See `docs/radios/icom-ic-705-usb.md`. |
 | ICOM IC-7760 | CI-V | implemented | implemented | implemented | implemented | implemented | implemented | not tested | As the IC-7300 (its CI-V reference guide) but no transceive and no VOX delay; main and sub through command 29. |
 | ICOM IC-706 CI-V | CI-V | implemented | implemented | n/a | implemented | n/a | implemented | not recently verified | Frequency, mode and S-meter. No IC-706 variant has the PO or SWR meter command. |
 | ICOM IC-706 RS-232 | RS-232 | implemented | implemented | n/a | implemented | n/a | implemented | not recently verified | As the CI-V slot. |
 | Xiegu G106 | CI-V (TTL) | implemented | implemented | n/a | n/a | n/a | implemented | not recently verified | Frequency and mode only. |
+| Xiegu X6100 | CI-V over USB | implemented | implemented (no RTTY) | n/a | implemented | implemented | implemented | not tested | Experimental. DEV port, SERIAL-B, 19200 baud, USB host on the native USB socket. The commands its CI-V table and Hamlib agree on; no attenuator, split, notch, PBT, power or ALC meter. See `docs/radios/xiegu-x6100.md`. |
 | Kenwood TS-480 | ASCII / CAT | implemented | implemented | n/a | implemented | implemented | implemented | not tested | SWR from `RM;` (SWR, COMP and ALC in one reply). NR and NB; PROC, mic gain and VOX (see below). |
 | Elecraft KX2 | ASCII / CAT | implemented | implemented | implemented | implemented | implemented | implemented | not tested | NB, preamp, attenuator, AGC fast and slow, power switch. |
 | Yaesu FT-817 | CAT | implemented | implemented | implemented | implemented | implemented | implemented | tested on hardware | FT8x7 family notes are documented separately. |
@@ -36,6 +38,7 @@ them in its EEPROM: see the FT-8x7 pages.
 | Radio | `AGC` | `PREAMP` | `ATT` | `RFPOWER` | `PROC`, `PROCLEVEL` | `MICGAIN` | `VOX`, `VOXGAIN` | `VOXDELAY` | Sources |
 |---|---|---|---|---|---|---|---|---|---|
 | IC-7300, IC-705 | fast, mid, slow | off, 1, 2 | 20 dB | 0–100 W, IC-705 0–10 W | COMP, 0–100 | 0–100 | 0–100 | 0–2000 ms | CI-V guide, Hamlib |
+| X6100 | off, fast, mid, slow | on | – | 0–10 W | COMP, 0–100 | 0–100 | 0–100 | – | Radioddity CI-V table, Hamlib |
 | IC-7760 | fast, mid, slow | off, 1, 2 | 6, 12, 18 dB | 0–200 W | COMP, 0–100 | 0–100 | 0–100 | – | CI-V guide, Hamlib |
 | FTDX10 | off, fast, mid, slow, auto | IPO, AMP1, AMP2 | 6, 12, 18 dB | 5–100 W | `PR0`, `PL` 0–100 | 0–100 | 0–100 | 30–3000 ms (VD step) | CAT manual, Hamlib |
 | FTDX101D/MP | off, fast, mid, slow, auto | IPO, AMP1, AMP2 | 6, 12, 18 dB | D: 5–100 W, MP: – | – | 0–100 | 0–100 | 30–3000 ms (VD step) | CAT manual, Hamlib, flrig |
@@ -51,9 +54,12 @@ and no attenuator. "on" means the sources do not agree on the dB. The FTDX101MP 
 goes to 200 W, but HamTRC sets up to 100 W, as the TS-480SAT; in AM both stop at 25 or 50 W, and
 the KX2 at 12 W on 80–20 m, so a higher set reads back as an error.
 
+The X6100 has an attenuator, but its `11` switches it over whatever it is sent, so HamTRC does
+not offer it.
+
 None of these sets is tested on a radio yet.
 
-`NRLEVEL` and `NBLEVEL` are in percent on the Icoms (`14 06`, `14 12`), in the radio's own steps on
+`NRLEVEL` and `NBLEVEL` are in percent on the Icoms and the X6100 (`14 06`, `14 12`), in the radio's own steps on
 the FTDX10, FTDX101 and FT-891 (`RL0` 1–15, `NL0` 0–10, their CAT manuals and Hamlib), and the
 menu values on the FT-857/897.
 
@@ -118,6 +124,8 @@ speaks or sets the CI-V address. Bank 9 `1` double press (console `PROFILE RESET
 | 17 | Icom IC-705 | CI-V jack | 9600 | 4800, 9600, 19200, 38400, 57600, 115200 |
 | 18 | Icom IC-7760 | CI-V jack | 19200 | 4800, 9600, 19200, 38400, 57600, 115200 |
 | 21 | QRP Labs QMX | native USB socket (USB host) | 9600 | 9600 (ignored by the radio) |
+| 22 | Xiegu X6100 | native USB socket (USB host), SERIAL-B | 19200 | 19200 |
+| 23 | Icom IC-705 USB | native USB socket (USB host), port A | 115200 | 4800, 9600, 19200, 38400, 57600, 115200 (ignored when the IC-705's CI-V USB Baud Rate is Auto) |
 | 70 | NanoVNA | native USB socket (USB host) | 115200 | 115200 (ignored by the device) |
 
 The Icom CI-V jack itself goes up to 19200 baud on the IC-7300, IC-705 and IC-706; HamTRC

@@ -226,9 +226,12 @@ void pollRadioLinkEvents() {
       resetLiveRadioState();
       // A NanoVNA is not a radio: nothing is read from it until a key asks.
       if (currentProtocolType() != PROTO_NANOVNA) {
-        // Auto-info off, in case a PC program left it on: its IF lines would answer our queries.
-        (void)asciiPacketSendCommand("AI0;");
-        delay(10);
+        // ASCII CAT: auto-info off, in case a PC program left it on: its IF lines would answer our
+        // queries. A CI-V radio (IC-705, X6100) gets no ASCII.
+        if (isAsciiProtocol(currentProtocolType())) {
+          (void)asciiPacketSendCommand("AI0;");
+          delay(10);
+        }
         (void)refreshLiveFrequency();
         (void)refreshLiveMode();
       }

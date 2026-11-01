@@ -57,7 +57,7 @@ static bool agcCanSet(AgcMode mode, const RadioCapabilities& caps) {
   if (!caps.getAgc) return false;
   if (currentProtocolType() == PROTO_CIV) {
     uint8_t raw = 0;
-    return caps.setAgc && civAgcEncode(mode, raw);
+    return caps.setAgc && civAgcEncode(currentProfile().settings.agc, mode, raw);
   }
   if (isAsciiAgc()) {
     char cmd[8];

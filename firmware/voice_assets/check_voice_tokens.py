@@ -13,6 +13,7 @@ the aliases in kVoiceAliases:
   - the word tables in ui_speech.cpp (static const char* const k...[])
   - the parts of every alias in kVoiceAliases
   - the words of every keypad label in kSpokenLabels
+  - the voiceSuffix of every radio profile
 
 The functions in RUNTIME_TOKEN_FUNCTIONS return words that are spoken, or
 spelled, at run time. Their literals are not checked, but a clip they name
@@ -68,6 +69,7 @@ ALIAS_TABLE = re.compile(r"\bkVoiceAliases\[\]\s*=\s*\{(.*?)\n\};", re.S)
 ALIAS = re.compile(r'\{\s*"(\w+)",\s*\{([^}]*)\}')
 LABEL_TABLE = re.compile(r"\bkSpokenLabels\[\]\s*=\s*\{(.*?)\n\};", re.S)
 LABEL = re.compile(r'\{\s*"[^"]*",\s*("[^"]*")\s*\}')
+PROFILE_SUFFIX = re.compile(rf"\.voiceSuffix\s*=\s*({STRING})")
 
 
 def blank_comments(src: str) -> str:
@@ -130,6 +132,8 @@ def main() -> None:
         for definition in DEFINITION.finditer(text):
             for lit in LITERAL.finditer(enclosed(text, definition.end())):
                 runtime.update(words(lit.group(1)))
+        for suffix in PROFILE_SUFFIX.finditer(text):
+            note(suffix.group(1), suffix.start())
         for table in LABEL_TABLE.finditer(text):
             for label in LABEL.finditer(table.group(1)):
                 note(label.group(1), table.start(1) + label.start())

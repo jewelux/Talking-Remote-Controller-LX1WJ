@@ -56,6 +56,10 @@ struct ConnectionProfile {
   uint32_t baud;
   uint8_t civAddr;  // CI-V radios only
   SerialFraming framing;
+  // UsbHost only (LinkDefaults).
+  uint8_t usbSerialIndex;
+  bool usbDtr;
+  bool usbRts;
 };
 
 enum NotchWidth : uint8_t {

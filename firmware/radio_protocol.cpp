@@ -126,8 +126,9 @@ bool canSetMode(uint8_t mode) {
   ProtocolType pt = currentProtocolType();
   const RadioProfile& sp = currentProfile();
   if (!sp.caps.setMode) return false;
-  // CI-V sends the mode as it is; the others need the profile's code for it.
-  if (pt == PROTO_CIV) return true;
+  // CI-V sends the mode as it is, where the profile offers it; the others need the profile's code
+  // for it.
+  if (pt == PROTO_CIV) return civModeOffered(sp.civModes, mode);
   String code;
   if (isAsciiProtocol(pt)) {
     return sp.commands->modeSetFormat[0] && profileModeCodeForInternal(sp, mode, code);

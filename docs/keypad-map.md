@@ -5,7 +5,7 @@ column a group of radios.
 
 Columns:
 
-- **Icom**: CI-V radios (IC-7300, IC-705, IC-706 and others)
+- **Icom**: CI-V radios (IC-7300, IC-705, IC-706 and others, the Xiegu X6100 too)
 - **FTDX10**: the FTDX10 family profile; most keys run a console command
 - **Kenwood, Elecraft, other FTDX**: TS-480, KX2, KX3, FT-891 and other Yaesu FTDX radios
 - **FT-817/818** and **FT-857/897**: the Yaesu FT-8x7 radios
@@ -149,15 +149,15 @@ and FT-891 NR 1-15, NB 0-10; FT-857/897 NR 1-16, NB 0-100). PBT is in the radio'
 127, with 0 the centre. The FT-857/897 CW filter width (DSP bandpass width) is 60, 120 or 240 Hz.
 
 AGC select: `0` off, `1` auto, `2` fast, `3` slow, `4` mid, then `D`. Only the radio's own speeds
-are taken: Icom fast, mid and slow; FTDX10, FTDX101 and FT-891 all five; TS-480 off, fast and
+are taken: Icom fast, mid and slow; X6100 off, fast, mid and slow; FTDX10, FTDX101 and FT-891 all five; TS-480 off, fast and
 slow; KX2 fast and slow; FT-8x7 off, auto, fast and slow. The IC-706 and G106 say "not
 available".
 
 Preamp and attenuator: a hold goes to the next level and from the last one to off. Preamp: IC-7300,
-IC-705, IC-7760, FTDX10 and FTDX101 off, 1, 2; FT-891, TS-480 and KX2 off and on. Attenuator:
+IC-705, IC-7760, FTDX10 and FTDX101 off, 1, 2; FT-891, TS-480, KX2 and X6100 off and on. Attenuator:
 IC-7300 and IC-705 20 dB; IC-7760, FTDX10 and FTDX101 6, 12 and 18 dB; KX2 10 dB; FT-891 and TS-480
 on. The FT-857/897 preamp and attenuator are read only; the IC-706, G106 and FT-817 say "not
-available".
+available", and the X6100 for the attenuator.
 
 The FT-857/897 TX equalizer is on Bank 4 `4`-`6`; the FTDX10 power state, ID and status line are on
 Bank 8.

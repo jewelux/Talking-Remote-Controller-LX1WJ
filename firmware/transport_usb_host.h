@@ -3,20 +3,35 @@
 #include <Arduino.h>
 
 // A radio on the ESP32-S3 native USB socket (RadioPort::UsbHost). HamTRC is the USB host and talks
-// to the first CDC-ACM serial port the radio offers: the CAT port of a QRP Labs QMX, or the shell
-// of a NanoVNA (which also answers VNA commands on Serial0, see nanovna_client.h). Starting the
-// host takes the socket from the PC console until the next restart; the console on the UART0
-// socket (Serial0) still answers HAMTRC?, USB?, SM?, and PO?, SWR? and PAVOLT for the QMX.
+// to the CDC-ACM serial port the profile names: the CAT port of a QRP Labs QMX, the CI-V port of
+// an IC-705 or a Xiegu X6100, or the shell of a NanoVNA (which also answers VNA commands on
+// Serial0, see nanovna_client.h). Starting the host takes the socket from the PC console until the
+// next restart; the console on the UART0 socket (Serial0) still answers HAMTRC?, USB?, SM?, and
+// PO?, SWR? and PAVOLT for the QMX.
 
 // What happened on the socket since the main loop last asked (radio_monitor.cpp reports it).
 enum class UsbLinkEvent : uint8_t {
   None,
   SerialReady,   // a radio's serial port is open
   SerialGone,    // that radio was unplugged or switched off
-  NoSerialPort,  // a device without a CDC-ACM serial port came, e.g. a sound card or a CP210x, or
-                 // one the USB Host Library could not enumerate
+  NoSerialPort,  // a device without the CDC-ACM serial port the profile names came, e.g. a sound
+                 // card or a CP210x, or one the USB Host Library could not enumerate
   Held,          // the host was kept off after a crash restart (usbHostHoldAfterCrash)
 };
+
+// How the next serial port is opened (the profile's LinkDefaults): which CDC-ACM port of the
+// device, counted from 0, the baud of its line coding, and the DTR and RTS lines.
+struct UsbLinkSettings {
+  uint32_t baud = 9600;
+  uint8_t serialIndex = 0;
+  bool dtr = true;
+  bool rts = false;
+};
+
+// Takes effect when the next port opens; an open port keeps what it was opened with.
+void usbHostSetLink(const UsbLinkSettings& link);
+// False while a port is open with other settings: the profile switch restarts then.
+bool usbHostOpenLinkMatches(const UsbLinkSettings& link);
 
 // Starts the USB host the first time; later calls do nothing. False when it could not start or
 // was held back.

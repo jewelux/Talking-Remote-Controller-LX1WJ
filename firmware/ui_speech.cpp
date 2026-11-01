@@ -590,6 +590,7 @@ void speakProfileIdentityFromSlot(uint8_t id, bool withOk) {
 
   playSilenceMs(80);
   spellCharacters(sp->voiceDigits);
+  if (sp->voiceSuffix[0]) speakClipToken(sp->voiceSuffix);
   if (withOk) {
     playSilenceMs(60);
     speakClipToken("ok");

@@ -112,8 +112,12 @@ bool ft8x7AgcFromMode(AgcMode mode, YaesuAgc& out) {
   return false;
 }
 
-bool civAgcDecode(uint8_t raw, AgcMode& out) {
+bool civAgcDecode(AgcEncoding encoding, uint8_t raw, AgcMode& out) {
   switch (raw) {
+    case 0x00:
+      if (encoding != AgcEncoding::CivWithOff) return false;
+      out = AgcMode::Off;
+      return true;
     case 0x01: out = AgcMode::Fast; return true;
     case 0x02: out = AgcMode::Mid; return true;
     case 0x03: out = AgcMode::Slow; return true;
@@ -121,8 +125,12 @@ bool civAgcDecode(uint8_t raw, AgcMode& out) {
   }
 }
 
-bool civAgcEncode(AgcMode mode, uint8_t& rawOut) {
+bool civAgcEncode(AgcEncoding encoding, AgcMode mode, uint8_t& rawOut) {
   switch (mode) {
+    case AgcMode::Off:
+      if (encoding != AgcEncoding::CivWithOff) return false;
+      rawOut = 0x00;
+      return true;
     case AgcMode::Fast: rawOut = 0x01; return true;
     case AgcMode::Mid: rawOut = 0x02; return true;
     case AgcMode::Slow: rawOut = 0x03; return true;
@@ -135,7 +143,8 @@ const char* asciiAgcReadCommand(AgcEncoding encoding) {
     case AgcEncoding::YaesuGt0: return "GT0;";
     case AgcEncoding::KenwoodGt:
     case AgcEncoding::ElecraftGt: return "GT;";
-    case AgcEncoding::None: break;
+    case AgcEncoding::None:
+    case AgcEncoding::CivWithOff: break;
   }
   return nullptr;
 }
@@ -159,7 +168,8 @@ bool asciiAgcDecode(AgcEncoding encoding, const char* digits, AgcMode& out) {
       if (!exactDigits(digits, 3, value) || (value != 2 && value != 4)) return false;
       out = value == 2 ? AgcMode::Fast : AgcMode::Slow;
       return true;
-    case AgcEncoding::None: break;
+    case AgcEncoding::None:
+    case AgcEncoding::CivWithOff: break;
   }
   return false;
 }
@@ -185,7 +195,8 @@ bool asciiAgcEncode(AgcEncoding encoding, AgcMode mode, char* out, size_t size) 
       if (mode == AgcMode::Fast) code = 2;
       else if (mode == AgcMode::Slow) code = 4;
       break;
-    case AgcEncoding::None: break;
+    case AgcEncoding::None:
+    case AgcEncoding::CivWithOff: break;
   }
   return code >= 0 && snprintf(out, size, "GT%03d;", code) == 6;
 }

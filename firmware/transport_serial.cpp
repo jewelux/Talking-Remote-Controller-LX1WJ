@@ -59,6 +59,15 @@ void serialTransportDriveTxIdle(int pin, bool invert) {
   pinMode(pin, OUTPUT);
 }
 
+UsbLinkSettings usbLinkSettingsFor(const ConnectionProfile& profile) {
+  UsbLinkSettings link;
+  link.baud = profile.baud;
+  link.serialIndex = profile.usbSerialIndex;
+  link.dtr = profile.usbDtr;
+  link.rts = profile.usbRts;
+  return link;
+}
+
 void serialTransportApplyProfile(const ConnectionProfile& profile) {
   civUart1.end();
   civUart2.end();
@@ -68,6 +77,7 @@ void serialTransportApplyProfile(const ConnectionProfile& profile) {
   pinMode(CAT_RX_PIN, INPUT);
 
   if (profile.port == RadioPort::UsbHost) {
+    usbHostSetLink(usbLinkSettingsFor(profile));
     (void)usbHostStart();
     return;
   }

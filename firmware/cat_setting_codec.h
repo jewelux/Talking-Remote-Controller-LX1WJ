@@ -43,9 +43,9 @@ AgcMode ft8x7AgcToMode(YaesuAgc agc);
 bool ft8x7AgcFromMode(AgcMode mode, YaesuAgc& out);
 
 // Icom 16 12: 01 fast, 02 mid, 03 slow. Hamlib turns AGC off through the time constant
-// instead, so OFF is not offered.
-bool civAgcDecode(uint8_t raw, AgcMode& out);
-bool civAgcEncode(AgcMode mode, uint8_t& rawOut);
+// instead, so OFF is not offered. Under AgcEncoding::CivWithOff (the Xiegu X6100), 00 is off.
+bool civAgcDecode(AgcEncoding encoding, uint8_t raw, AgcMode& out);
+bool civAgcEncode(AgcEncoding encoding, AgcMode mode, uint8_t& rawOut);
 
 // The GT command that reads AGC ("GT0;" on the Yaesus, "GT;" on the others), or nullptr.
 const char* asciiAgcReadCommand(AgcEncoding encoding);

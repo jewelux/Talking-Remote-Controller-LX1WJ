@@ -37,6 +37,10 @@ TEST(every_radio_has_a_name_and_voice_digits) {
     CHECK(p.name[0] != '\0');
     if (p.vendor != VoiceVendor::NanoVna) CHECK(p.voiceDigits[0] != '\0');
     for (const char* c = p.voiceDigits; *c; ++c) CHECK((*c >= '0' && *c <= '9') || (*c >= 'a' && *c <= 'z'));
+    // One clip name: lowercase letters, digits and '_' (check_voice_tokens.py checks the clip).
+    for (const char* c = p.voiceSuffix; *c; ++c) {
+      CHECK((*c >= '0' && *c <= '9') || (*c >= 'a' && *c <= 'z') || *c == '_');
+    }
   }
 }
 
@@ -112,6 +116,9 @@ TEST(profile_for_slot_finds_used_slots_only) {
   CHECK(profileForSlot(0) == nullptr);
   CHECK_EQ(slot(16).name, "Yaesu FT-847");
   CHECK(profileForSlot(19) == nullptr);
+  CHECK_EQ(slot(22).name, "Xiegu X6100");
+  CHECK_EQ(slot(23).name, "Icom IC-705 USB");
+  CHECK(profileForSlot(24) == nullptr);
   CHECK(profileForSlot(255) == nullptr);
 }
 
@@ -119,8 +126,8 @@ TEST(default_slot_is_used) {
   CHECK(profileForSlot(kDefaultProfileSlot) != nullptr);
 }
 
-// Slots 1-18 are all in use since the FT-847 took 16, the QMX has 21 and the NanoVNA 70; 19-20
-// and 22-69 are free.
+// Slots 1-18 are all in use since the FT-847 took 16; the QMX has 21, the X6100 22, the IC-705 on
+// USB 23 and the NanoVNA 70; 19-20 and 24-69 are free.
 TEST(adjacent_slot_skips_free_slots) {
   CHECK_EQ(adjacentProfileSlot(15, 1), 16);
   CHECK_EQ(adjacentProfileSlot(16, 1), 17);
@@ -129,9 +136,12 @@ TEST(adjacent_slot_skips_free_slots) {
   CHECK_EQ(adjacentProfileSlot(21, -1), 18);
   CHECK_EQ(adjacentProfileSlot(19, -1), 18);
   CHECK_EQ(adjacentProfileSlot(19, 1), 21);
-  CHECK_EQ(adjacentProfileSlot(21, 1), 70);
-  CHECK_EQ(adjacentProfileSlot(70, -1), 21);
-  CHECK_EQ(adjacentProfileSlot(30, -1), 21);
+  CHECK_EQ(adjacentProfileSlot(21, 1), 22);
+  CHECK_EQ(adjacentProfileSlot(22, 1), 23);
+  CHECK_EQ(adjacentProfileSlot(23, 1), 70);
+  CHECK_EQ(adjacentProfileSlot(70, -1), 23);
+  CHECK_EQ(adjacentProfileSlot(23, -1), 22);
+  CHECK_EQ(adjacentProfileSlot(30, -1), 23);
   CHECK_EQ(adjacentProfileSlot(30, 1), 70);
 }
 
@@ -163,17 +173,95 @@ TEST(icom_models) {
   CHECK(slot(17).model == RadioModel::Ic705);
   CHECK(slot(2).model == RadioModel::Generic);  // IC-706
   CHECK(slot(5).model == RadioModel::Generic);  // Xiegu G106
+  CHECK(slot(22).model == RadioModel::Generic);  // Xiegu X6100
+  CHECK(slot(23).model == RadioModel::Ic705);    // IC-705 on USB: the IC-705's menu addresses
+}
+
+// ---- The radios on the USB host ----
+
+// The X6100's CAT is its CH342's port B (the second CDC port), a UART at 19200; DTR and RTS stay
+// off because RTS keys CW. Address A4 as in Hamlib.
+TEST(x6100_usb_link) {
+  const RadioProfile& x = slot(22);
+  CHECK(x.vendor == VoiceVendor::Xiegu);
+  CHECK(x.protocol == PROTO_CIV);
+  CHECK(x.link.port == RadioPort::UsbHost);
+  CHECK_EQ(x.link.usbSerialIndex, 1);
+  CHECK(!x.link.usbDtr && !x.link.usbRts);
+  CHECK_EQ(x.link.baud, 19200u);
+  CHECK_EQ(x.link.bauds.count, 1);
+  CHECK_EQ(x.link.civAddr, 0xA4);
+  CHECK_EQ(x.rfPowerMaxWatts, 10);
+  CHECK_EQ(x.settings.preampLevels, 1);
+}
+
+// Only what the X6100's CI-V table, Hamlib and HamTRC's encoding agree on.
+TEST(x6100_caps) {
+  const RadioCapabilities& c = slot(22).caps;
+  CHECK(c.getFreq && c.setFreq && c.getMode && c.setMode && c.getSmeter && c.getSwr);
+  CHECK(c.getRfPower && c.setRfPower && c.getRxTx);
+  CHECK(c.getNr && c.setNr && c.getNrLevel && c.setNrLevel && c.getNb && c.setNb && c.getNbLevel);
+  CHECK(c.getDialLock && c.getTuner && c.startTune && c.getVfo && c.getVfoMode && c.getRit);
+  CHECK(c.getAgc && c.getPreamp && c.getProc && c.getMicGain && c.getVox);
+  // 11 toggles, 0F 01 refused, no 1C 03, 16 41 is a manual notch, unknown 14s answer 0000.
+  CHECK(!c.getAtt && !c.setAtt && !c.getSplit && !c.setSplit && !c.getTxFreq);
+  CHECK(!c.getNotch && !c.getAutoNotch && !c.getNotchWidth);
+  CHECK(!c.getPbtInner && !c.getPbtOuter && !c.getFilterWidth && !c.getFilterShape);
+  CHECK(!c.getMonitor && !c.getMonitorLevel && !c.getBreakIn && !c.getCwPitch && !c.getCwSpeed);
+  CHECK(!c.getPower && !c.getAlc && !c.getTransceive && !c.getBandStack);
+  CHECK(!c.getTone && !c.getCtcss && !c.getRptShift);
+}
+
+// The X6100 has LSB, USB, AM, CW, FM and CWR; every other CI-V radio takes every Icom mode.
+TEST(civ_mode_lists) {
+  const uint16_t x6100 = slot(22).civModes;
+  const uint8_t offered[] = {0x00, 0x01, 0x02, 0x03, 0x05, 0x07};
+  for (uint8_t m : offered) CHECK(civModeOffered(x6100, m));
+  const uint8_t missing[] = {0x04, 0x06, 0x08, 0x11, 0x12};
+  for (uint8_t m : missing) CHECK(!civModeOffered(x6100, m));
+  const uint8_t icom[] = {1, 2, 3, 4, 5, 17, 18, 23};
+  for (uint8_t s : icom) {
+    CHECK_EQ(slot(s).civModes, 0);
+    CHECK(civModeOffered(slot(s).civModes, 0x04));
+  }
+}
+
+// The IC-705's own USB port: everything slot 17 has, CI-V on its first CDC port, DTR and RTS off
+// (its USB SEND and USB Keying menus can key on either).
+TEST(ic705_usb_link) {
+  const RadioProfile& usb = slot(23);
+  const RadioProfile& jack = slot(17);
+  CHECK(usb.protocol == PROTO_CIV);
+  CHECK(usb.link.port == RadioPort::UsbHost);
+  CHECK_EQ(usb.link.usbSerialIndex, 0);
+  CHECK(!usb.link.usbDtr && !usb.link.usbRts);
+  CHECK_EQ(usb.link.civAddr, jack.link.civAddr);
+  CHECK(usb.link.bauds.contains(usb.link.baud) && usb.link.bauds.contains(19200));
+  CHECK_EQ(usb.rfPowerMaxWatts, jack.rfPowerMaxWatts);
+  CHECK(usb.caps.getRptShift && usb.caps.getTransceive && usb.caps.getAtt && usb.caps.getSplit);
+  CHECK_EQ(usb.settings.preampLevels, jack.settings.preampLevels);
+  CHECK_EQ(usb.settings.attDb[0], jack.settings.attDb[0]);
+}
+
+// The QMX and the NanoVNA keep DTR on, as tested; no serial radio has a USB port index.
+TEST(usb_link_defaults) {
+  CHECK(slot(21).link.usbDtr && !slot(21).link.usbRts && slot(21).link.usbSerialIndex == 0);
+  CHECK(slot(70).link.usbDtr && !slot(70).link.usbRts && slot(70).link.usbSerialIndex == 0);
+  for (size_t i = 0; i < profileCount(); ++i) {
+    const RadioProfile& p = profileAt(i);
+    if (p.link.port != RadioPort::UsbHost) CHECK_EQ(p.link.usbSerialIndex, 0);
+  }
 }
 
 // PROC?, MICGAIN? and VOX? say "not available" where the cap is off, instead of waiting for a
 // radio that has no such command.
 TEST(transmit_setting_caps) {
-  const uint8_t on[] = {1, 3, 17, 18, 8, 9, 10, 14, 11, 12, 13, 15, 7};
+  const uint8_t on[] = {1, 3, 17, 18, 22, 23, 8, 9, 10, 14, 11, 12, 13, 15, 7};
   for (uint8_t s : on) {
     CHECK(slot(s).caps.getMicGain);
     CHECK(slot(s).caps.getVox);
   }
-  const uint8_t proc[] = {1, 3, 17, 18, 9, 10, 11, 15, 7};
+  const uint8_t proc[] = {1, 3, 17, 18, 22, 23, 9, 10, 11, 15, 7};
   for (uint8_t s : proc) CHECK(slot(s).caps.getProc);
   const uint8_t off[] = {2, 4, 5, 6, 16};
   for (uint8_t s : off) {
@@ -221,10 +309,12 @@ TEST(every_vox_delay_encoding_is_complete) {
 // AGC: Icom 16 12, the ASCII radios by their GT encoding, the FT-8x7 from its EEPROM (set only
 // with EXPERIMENTAL on).
 TEST(agc_caps_and_encodings) {
-  const uint8_t settable[] = {1, 3, 17, 18, 6, 7, 11, 12, 13, 15};
+  const uint8_t settable[] = {1, 3, 17, 18, 22, 23, 6, 7, 11, 12, 13, 15};
   for (uint8_t s : settable) CHECK(slot(s).caps.getAgc && slot(s).caps.setAgc);
-  const uint8_t icom[] = {1, 3, 17, 18};
+  const uint8_t icom[] = {1, 3, 17, 18, 23};
   for (uint8_t s : icom) CHECK(slot(s).settings.agc == AgcEncoding::None);
+  CHECK(slot(22).caps.getAgc && slot(22).caps.setAgc);
+  CHECK(slot(22).settings.agc == AgcEncoding::CivWithOff);
   const uint8_t yaesu[] = {11, 12, 13, 15};
   for (uint8_t s : yaesu) CHECK(slot(s).settings.agc == AgcEncoding::YaesuGt0);
   CHECK(slot(7).settings.agc == AgcEncoding::KenwoodGt);
@@ -235,26 +325,33 @@ TEST(agc_caps_and_encodings) {
   for (uint8_t s : none) CHECK(!slot(s).caps.getAgc && !slot(s).caps.setAgc);
 }
 
-// An ASCII radio reads AGC only through its GT encoding, and only ASCII radios have one.
+// An ASCII radio reads AGC only through its GT encoding, and only ASCII radios have one; a CI-V
+// radio has None (Icom) or CivWithOff (X6100).
 TEST(every_ascii_agc_cap_has_an_encoding) {
   for (size_t i = 0; i < profileCount(); ++i) {
     const RadioProfile& p = profileAt(i);
-    if (isAsciiProtocol(p.protocol) && p.caps.getAgc) CHECK(p.settings.agc != AgcEncoding::None);
-    if (p.settings.agc != AgcEncoding::None) CHECK(isAsciiProtocol(p.protocol));
+    if (isAsciiProtocol(p.protocol) && p.caps.getAgc) {
+      CHECK(p.settings.agc != AgcEncoding::None && p.settings.agc != AgcEncoding::CivWithOff);
+    }
+    if (p.protocol == PROTO_CIV) {
+      CHECK(p.settings.agc == AgcEncoding::None || p.settings.agc == AgcEncoding::CivWithOff);
+    } else if (p.settings.agc != AgcEncoding::None) {
+      CHECK(isAsciiProtocol(p.protocol));
+    }
   }
 }
 
 // Preamp and attenuator: the Icoms by 16 02 and 11, the ASCII radios by PA and RA, the FT-857/897
 // ATT from its EEPROM, read only.
 TEST(preamp_and_att_caps_and_encodings) {
-  const uint8_t settable[] = {1, 3, 17, 18, 6, 7, 11, 12, 13, 15};
+  const uint8_t settable[] = {1, 3, 17, 18, 23, 6, 7, 11, 12, 13, 15};
   for (uint8_t s : settable) {
     const RadioCapabilities& c = slot(s).caps;
     CHECK(c.getPreamp && c.setPreamp && c.getAtt && c.setAtt);
     CHECK(slot(s).settings.preampLevels >= 1 && slot(s).settings.preampLevels <= 2);
     CHECK(slot(s).settings.attLevels >= 1 && slot(s).settings.attLevels <= 3);
   }
-  const uint8_t icom7300[] = {1, 3, 17};
+  const uint8_t icom7300[] = {1, 3, 17, 23};
   for (uint8_t s : icom7300) {
     CHECK_EQ(slot(s).settings.preampLevels, 2);
     CHECK_EQ(slot(s).settings.attLevels, 1);
@@ -262,6 +359,9 @@ TEST(preamp_and_att_caps_and_encodings) {
   }
   CHECK_EQ(slot(18).settings.attLevels, 3);
   CHECK_EQ(slot(18).settings.attDb[2], 18);
+  // The X6100: one preamp, and no attenuator (its 11 toggles).
+  CHECK(slot(22).caps.getPreamp && slot(22).caps.setPreamp && !slot(22).caps.getAtt);
+  CHECK_EQ(slot(22).settings.attLevels, 0);
   const uint8_t ftdx[] = {11, 12, 13};
   for (uint8_t s : ftdx) {
     CHECK(slot(s).settings.frontEnd == FrontEndEncoding::Yaesu);
@@ -296,7 +396,7 @@ TEST(every_preamp_and_att_cap_has_an_encoding) {
 // RF power: Icom 14 0A, the ASCII radios' PC in watts; not on the FTDX101MP, whose manual and
 // Hamlib disagree on the scale.
 TEST(rf_power_caps_and_ranges) {
-  const uint8_t settable[] = {1, 3, 17, 18, 6, 7, 11, 12, 15};
+  const uint8_t settable[] = {1, 3, 17, 18, 22, 23, 6, 7, 11, 12, 15};
   for (uint8_t s : settable) CHECK(slot(s).caps.getRfPower && slot(s).caps.setRfPower);
   const uint8_t pc[] = {6, 7, 11, 12, 15};
   for (uint8_t s : pc) CHECK(slot(s).settings.rfPower == RfPowerEncoding::PcWatts);
@@ -309,6 +409,8 @@ TEST(rf_power_caps_and_ranges) {
     CHECK_EQ(slot(s).rfPowerMaxWatts, 100);
   }
   CHECK_EQ(slot(17).rfPowerMaxWatts, 10);
+  CHECK_EQ(slot(22).rfPowerMaxWatts, 10);
+  CHECK_EQ(slot(23).rfPowerMaxWatts, 10);
 }
 
 // An ASCII radio reads the RF power only through its PC encoding, and only ASCII radios have one.
@@ -324,7 +426,7 @@ TEST(every_ascii_rf_power_cap_has_an_encoding) {
 // Break-in: Icom 16 47, Yaesu BI; keyer: Yaesu KR; the FT-8x7 from its EEPROM (set only with
 // EXPERIMENTAL on).
 TEST(break_in_and_keyer_caps) {
-  const uint8_t icom[] = {1, 3, 17, 18};
+  const uint8_t icom[] = {1, 3, 17, 18, 23};
   for (uint8_t s : icom) {
     CHECK(slot(s).caps.getBreakIn && slot(s).caps.setBreakIn);
     CHECK(!slot(s).caps.getKeyer);
@@ -339,13 +441,13 @@ TEST(break_in_and_keyer_caps) {
     const RadioCapabilities& c = slot(s).caps;
     CHECK(c.getBreakIn && !c.setBreakIn && c.getKeyer && !c.setKeyer);
   }
-  const uint8_t none[] = {2, 4, 5, 6, 7, 16};
+  const uint8_t none[] = {2, 4, 5, 6, 7, 16, 22};
   for (uint8_t s : none) CHECK(!slot(s).caps.getBreakIn && !slot(s).caps.getKeyer);
 }
 
 // CW speed, pitch and delay where the sources agree.
 TEST(cw_level_caps_and_ranges) {
-  const uint8_t icom[] = {1, 3, 17, 18};
+  const uint8_t icom[] = {1, 3, 17, 18, 23};
   for (uint8_t s : icom) {
     const RadioCapabilities& c = slot(s).caps;
     CHECK(c.getCwPitch && c.setCwPitch && !c.getCwSpeed && !c.getCwDelay);
@@ -396,23 +498,23 @@ TEST(every_cw_level_cap_has_an_encoding) {
 
 // ALC: Icom 15 13 and Yaesu RM4; the FT-8x7 reads its own TX meter, not through this cap.
 TEST(alc_caps) {
-  const uint8_t alc[] = {1, 3, 17, 18, 11, 12, 13, 15};
+  const uint8_t alc[] = {1, 3, 17, 18, 23, 11, 12, 13, 15};
   for (uint8_t s : alc) CHECK(slot(s).caps.getAlc);
-  const uint8_t none[] = {2, 4, 5, 6, 7, 8, 9, 10, 14, 16};
+  const uint8_t none[] = {2, 4, 5, 6, 7, 8, 9, 10, 14, 16, 22};
   for (uint8_t s : none) CHECK(!slot(s).caps.getAlc);
 }
 
 // Auto notch: Icom 16 41, Yaesu BC0.
 TEST(auto_notch_caps) {
-  const uint8_t yes[] = {1, 3, 17, 18, 11, 12, 13, 15};
+  const uint8_t yes[] = {1, 3, 17, 18, 23, 11, 12, 13, 15};
   for (uint8_t s : yes) CHECK(slot(s).caps.getAutoNotch && slot(s).caps.setAutoNotch);
-  const uint8_t no[] = {2, 4, 5, 6, 7, 8, 9, 10, 14, 16};
+  const uint8_t no[] = {2, 4, 5, 6, 7, 8, 9, 10, 14, 16, 22};
   for (uint8_t s : no) CHECK(!slot(s).caps.getAutoNotch);
 }
 
 // NR and NB levels: CI-V 14 06 and 14 12 (IC-7300 family), Yaesu RL0 and NL0.
 TEST(nr_nb_level_caps) {
-  const uint8_t yes[] = {1, 3, 17, 18, 11, 12, 13, 15};
+  const uint8_t yes[] = {1, 3, 17, 18, 22, 23, 11, 12, 13, 15};
   for (uint8_t s : yes) {
     const RadioCapabilities& c = slot(s).caps;
     CHECK(c.getNrLevel && c.setNrLevel && c.getNbLevel && c.setNbLevel);
@@ -424,16 +526,16 @@ TEST(nr_nb_level_caps) {
 // Tone squelch and its CTCSS tone: the Icoms (16 42/43, 1B 00) and the Yaesu ASCII radios (CT0,
 // CN00); the repeater shift on the IC-705 (0F) and these Yaesus (OS0). The FT-8x7 has its own.
 TEST(tone_and_repeater_caps) {
-  const uint8_t tone[] = {1, 3, 17, 18, 11, 12, 13, 15};
+  const uint8_t tone[] = {1, 3, 17, 18, 23, 11, 12, 13, 15};
   for (uint8_t s : tone) {
     const RadioCapabilities& c = slot(s).caps;
     CHECK(c.getTone && c.setTone && c.getCtcss && c.setCtcss);
   }
-  const uint8_t rpt[] = {17, 11, 12, 13, 15};
+  const uint8_t rpt[] = {17, 23, 11, 12, 13, 15};
   for (uint8_t s : rpt) CHECK(slot(s).caps.getRptShift && slot(s).caps.setRptShift);
   const uint8_t noRpt[] = {1, 3, 18};
   for (uint8_t s : noRpt) CHECK(!slot(s).caps.getRptShift);
-  const uint8_t none[] = {2, 4, 5, 6, 7, 8, 9, 10, 14, 16};
+  const uint8_t none[] = {2, 4, 5, 6, 7, 8, 9, 10, 14, 16, 22};
   for (uint8_t s : none) CHECK(!slot(s).caps.getTone && !slot(s).caps.getCtcss && !slot(s).caps.getRptShift);
 }
 

@@ -77,6 +77,56 @@ constexpr RadioCapabilities kIc7760Caps = [] {
 // three are set; a read of any other step is reported as it is.
 constexpr SettingEncodings kIc7760Settings = {.preampLevels = 2, .attLevels = 3, .attDb = {6, 12, 18}};
 
+// --- Xiegu X6100 (CI-V over its DEV USB port) ---------------------------------
+//
+// Sources: the Radioddity Extended Manual for the X6100 v1.1.8 (2024): ch. 14.5 the DEV port, ch. 15
+// the CI-V table (table 1 parts 1-5, tables 2-1..2-7), ch. 12 the release notes; and Hamlib
+// rigs/icom/xiegu.c (x6100_caps, x6100_priv_caps). The DEV port is a hub with a CM108 sound card
+// and a CH342 (1A86:55D2) with two CDC-ACM ports: A (interfaces 0/1) and B (2/3), the CAT port
+// ("SERIAL-B"). The CH342 is a real UART bridge, so the line coding must carry 19200, the rate the
+// manual gives for CAT. RTS keys CW (release notes 2022-01-25) and DTR may key too: both stay off.
+// The CI-V address is A4 (Hamlib; the manual gives none).
+//
+// Only what the manual's table has, Hamlib agrees with and HamTRC encodes the same way: the X6100
+// answers a 14 subcommand it lacks with 0000 instead of an NG, which would read as a real value.
+constexpr uint32_t kX6100Bauds[] = {19200};
+
+// Left out:
+// - the attenuator: 11 toggles it whatever byte follows, where HamTRC sends 11 00 for off;
+// - split: the table has 0F 00/01 but no read, and Hamlib saw the X6100 refuse 0F 01;
+// - the TX frequency: no 1C 03;
+// - notch and auto notch: 16 41 is the X6100's DNF, a manual notch (its frequency in 14 0D), not
+//   Icom's auto notch, and there is no 16 48 or 16 57;
+// - PBT (14 07/08), filter width (1A 03 sets nothing) and shape, monitor (16 45), break-in
+//   (16 47), the CW pitch (14 09: scale unknown), transceive and VOX delay (1A 05 menus);
+// - the PO and ALC meters (15 11/13): 0..255, but the manual gives no scale for them;
+// - the band stack (1A 01 in another format), tone squelch, CTCSS and repeater shift.
+constexpr RadioCapabilities kX6100Caps = {
+    .getFreq = true, .setFreq = true, .getMode = true, .setMode = true,  // 03, 05, 04, 06
+    .getSmeter = true,                         // 15 02: Icom scale from firmware 1.1.8 (S9 = 120)
+    .getRfPower = true, .setRfPower = true,    // 14 0A: 0..255 = 0..100 %
+    .getSwr = true,                            // 15 12: Icom scale from firmware 1.1.8
+    .getRxTx = true,                           // 1C 00 (two bytes: reads the T/RX state)
+    .getNr = true, .setNr = true, .getNrLevel = true, .setNrLevel = true,  // 16 40, 14 06
+    .getNb = true, .setNb = true, .getNbLevel = true, .setNbLevel = true,  // 16 22, 14 12
+    .getDialLock = true, .setDialLock = true,  // 16 50
+    .getTuner = true, .setTuner = true, .startTune = true,  // 1C 01 00/01/02
+    .getVfo = true, .setVfo = true,            // 07 00/01, 25 (firmware 1.1.6)
+    .getVfoMode = true, .setVfoMode = true,    // 26 (firmware 1.1.6)
+    .getRit = true, .setRit = true,            // 21 00, 21 01
+    .getAgc = true, .setAgc = true,            // 16 12: 00 off, 01 fast, 02 mid, 03 slow
+    .getPreamp = true, .setPreamp = true,      // 16 02: 00 off, 01 on
+    .getProc = true, .setProc = true,          // 16 44 (COMP), its level 14 0E
+    .getMicGain = true, .setMicGain = true,    // 14 0B
+    .getVox = true, .setVox = true,            // 16 46, its gain 14 16
+};
+
+constexpr SettingEncodings kX6100Settings = {.agc = AgcEncoding::CivWithOff, .preampLevels = 1};
+
+// Table 2-2: 00 LSB, 01 USB, 02 AM, 03 CW, 05 FM (NFM), 07 CWR. No RTTY or WFM.
+constexpr uint16_t kX6100Modes = civModeBit(0x00) | civModeBit(0x01) | civModeBit(0x02) | civModeBit(0x03) |
+                                 civModeBit(0x05) | civModeBit(0x07);
+
 // --- Elecraft ---------------------------------------------------------------
 
 constexpr uint32_t kKx2Bauds[] = {4800, 9600, 19200, 38400};
@@ -393,8 +443,7 @@ constexpr ModeCodes kYaesuAsciiModes = {
 //
 // Free slots, and what they are kept for:
 //   19-20   Kenwood and Elecraft (TS-590, K3/K3S)
-//   22      Xiegu and other compact radios (G90, X6200)
-//   23-24   experimental and protocol test profiles
+//   24-30   Xiegu and other compact radios (G90, X6200), experimental and protocol test profiles
 //   31-39   other test equipment
 
 constexpr RadioProfile kProfiles[] = {
@@ -479,6 +528,19 @@ constexpr RadioProfile kProfiles[] = {
      .model = RadioModel::Qmx, .protocol = PROTO_KENWOOD_ASCII,
      .link = {.port = RadioPort::UsbHost, .baud = 9600, .bauds = kQmxBauds},
      .caps = kQmxCaps, .commands = &kQmxCommands, .modes = &kQmxModes},
+    {.slot = 22, .name = "Xiegu X6100", .vendor = VoiceVendor::Xiegu, .voiceDigits = "x6100",
+     .protocol = PROTO_CIV,
+     .link = {.port = RadioPort::UsbHost, .baud = 19200, .bauds = kX6100Bauds, .civAddr = 0xA4,
+              .usbSerialIndex = 1, .usbDtr = false, .usbRts = false},
+     .caps = kX6100Caps, .settings = kX6100Settings, .rfPowerMaxWatts = 10, .civModes = kX6100Modes},
+    // The IC-705's own USB port: Icom's CDC-ACM driver has CI-V on port A (the first; B is GPS or
+    // RTTY decode). Its USB SEND and USB Keying menus can key on DTR or RTS, so both stay off. The
+    // baud matters only when its "CI-V USB Baud Rate" is not Auto, so it can be set to match.
+    {.slot = 23, .name = "Icom IC-705 USB", .vendor = VoiceVendor::Icom, .voiceDigits = "705",
+     .voiceSuffix = "usb", .model = RadioModel::Ic705, .protocol = PROTO_CIV,
+     .link = {.port = RadioPort::UsbHost, .baud = 115200, .bauds = kCivBauds, .civAddr = 0xA4,
+              .usbSerialIndex = 0, .usbDtr = false, .usbRts = false},
+     .caps = kIc705Caps, .settings = kIc7300Settings, .rfPowerMaxWatts = 10},
     {.slot = 70, .name = "NanoVNA", .vendor = VoiceVendor::NanoVna, .protocol = PROTO_NANOVNA,
      .link = {.port = RadioPort::UsbHost, .baud = 115200, .bauds = kNanoVnaBauds}},
 };
@@ -532,7 +594,28 @@ static_assert(slotsAscendAndAreUnique(), "kProfiles: slots must be unique, above
 static_assert(defaultBaudsAreOffered(), "kProfiles: a default baud is missing from that radio's bauds");
 static_assert(civRadiosHaveAnAddress(), "kProfiles: a CI-V radio has no CI-V address");
 static_assert(asciiRadiosHaveFreqAndModeCommands(), "kProfiles: an ASCII radio lacks freq or mode commands");
+// civModes is read on CI-V only; a mask without LSB and USB would leave mode select empty.
+constexpr bool civModesOnCivOnly() {
+  for (const RadioProfile& p : kProfiles) {
+    if (!p.civModes) continue;
+    if (p.protocol != PROTO_CIV) return false;
+    if (!civModeOffered(p.civModes, 0x00) || !civModeOffered(p.civModes, 0x01)) return false;
+  }
+  return true;
+}
+
+// usbSerialIndex picks a USB host radio's CDC port; on a serial port it would mean nothing.
+constexpr bool usbSettingsOnUsbOnly() {
+  for (const RadioProfile& p : kProfiles) {
+    if (p.link.port == RadioPort::UsbHost) continue;
+    if (p.link.usbSerialIndex != 0) return false;
+  }
+  return true;
+}
+
 static_assert(codedRadiosHaveModeCodes(), "kProfiles: an ASCII or FT-8x7 radio lacks mode codes");
+static_assert(civModesOnCivOnly(), "kProfiles: civModes is for CI-V radios, and must keep LSB and USB");
+static_assert(usbSettingsOnUsbOnly(), "kProfiles: usbSerialIndex is for USB host radios");
 
 }  // namespace
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "radio_globals.h"
+#include "transport_usb_host.h"
 
 // Drives a UART TX pin to its idle level (high, or low when inverted) without a pulse to the
 // opposite level, which the radio would read as a start bit or a break.
@@ -15,6 +16,9 @@ struct SerialPortPins {
   bool rxInvert;
 };
 const SerialPortPins& serialPortPins(RadioPort port);
+
+// The USB host settings of a UsbHost link: its port, baud and lines.
+UsbLinkSettings usbLinkSettingsFor(const ConnectionProfile& profile);
 
 // Reopens the radio UART for the active link.
 void serialTransportApplyProfile(const ConnectionProfile& profile);

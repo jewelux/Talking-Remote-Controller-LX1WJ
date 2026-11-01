@@ -3,7 +3,8 @@
 static const RadioProfile* s_base = profileForSlot(kDefaultProfileSlot);
 static RadioProfile s_active = *s_base;
 static ConnectionProfile s_connection = {s_base->link.port, s_base->link.baud, s_base->link.civAddr,
-                                         SerialFraming::Standard};
+                                         SerialFraming::Standard, s_base->link.usbSerialIndex,
+                                         s_base->link.usbDtr, s_base->link.usbRts};
 
 // RadioCapabilities has only bool members, so it can be walked as a bool array.
 static RadioCapabilities allCapsOn() {
@@ -31,7 +32,8 @@ void selectActiveProfile(const RadioProfile& profile, uint32_t baud, uint8_t civ
   applyCaps();
   const bool yaesu5ByteCat = profile.protocol == PROTO_YAESU_FT8X7 || profile.protocol == PROTO_YAESU_FT847;
   const SerialFraming framing = yaesu5ByteCat ? SerialFraming::Ft8x7Cat : SerialFraming::Standard;
-  s_connection = {profile.link.port, baud, civAddr, framing};
+  s_connection = {profile.link.port, baud, civAddr, framing, profile.link.usbSerialIndex, profile.link.usbDtr,
+                  profile.link.usbRts};
 }
 
 const RadioProfile& currentProfile() {
