@@ -61,6 +61,20 @@ and attaches it to a GitHub Release when a `v*` tag is pushed. It contains:
 
 Upload `manifest.json`, the factory image and the voice pack to the updater site.
 
+The same workflow also publishes the package to GitHub Pages (branch `gh-pages`),
+so a flash page can load it directly without manual uploads:
+
+- `https://jewelux.github.io/Talking-Remote-Controller-LX1WJ/firmware/main/manifest.json`
+- `https://jewelux.github.io/Talking-Remote-Controller-LX1WJ/firmware/development/manifest.json`
+- `https://jewelux.github.io/Talking-Remote-Controller-LX1WJ/firmware/<tag>/manifest.json`
+  for each `v*` tag (for example `v3-5-9`)
+
+`firmware/index.json` lists all published channels with version, commit and date.
+On `main` and `development` the manifest version reads like
+`V3.5.8 development eda5ca1 2026-10-29`, so the flash page tells which build it is.
+Fresh boards do not answer `HAMTRC?`; flash them with the manual update that
+skips the HAMTRC check.
+
 ## Current FTDX10 Family Scope
 
 The present documented scope is the first practical CAT block:
