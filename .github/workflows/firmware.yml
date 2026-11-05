@@ -126,6 +126,84 @@ jobs:
           name: hamtrc-${{ steps.meta.outputs.slug }}-${{ github.sha }}
           path: dist/
 
+  # Publishes the updater package to GitHub Pages (branch gh-pages), where the
+  # flash page on lx1wj.eu can load it directly (Pages allows cross-site downloads):
+  #   firmware/main/        newest build of main
+  #   firmware/development/ newest build of development
+  #   firmware/<tag slug>/  every v* tag, kept for good
+  # gh-pages holds one commit only (rebuilt each time), so old images do not pile up.
+  publish:
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/development' || startsWith(github.ref, 'refs/tags/v'))
+    needs: [host-tests, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: pages-publish
+      cancel-in-progress: false
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: hamtrc-${{ needs.build.outputs.slug }}-${{ github.sha }}
+          path: dist
+
+      - name: Update gh-pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
+          COMMIT_TIME: ${{ github.event.head_commit.timestamp }}
+        run: |
+          set -euo pipefail
+          if [ "$REF_TYPE" = tag ]; then
+            channel=$(echo "$REF_NAME" | tr 'A-Z.' 'a-z-')
+          else
+            channel="$REF_NAME"
+          fi
+          short=${SHA:0:7}
+          date=${COMMIT_TIME:0:10}
+          [ -n "$date" ] || date=$(date -u +%Y-%m-%d)
+          version=$(jq -r .version dist/manifest.json)
+          if [ "$REF_TYPE" = tag ]; then
+            label="$version"
+          else
+            label="$version $channel $short $date"
+          fi
+
+          site=site
+          url="https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git"
+          if git ls-remote --exit-code --heads "$url" gh-pages >/dev/null; then
+            git clone -q --depth 1 --branch gh-pages "$url" "$site"
+          else
+            git init -q -b gh-pages "$site"
+            git -C "$site" remote add origin "$url"
+          fi
+
+          target="$site/firmware/$channel"
+          rm -rf "$target"
+          mkdir -p "$target"
+          cp dist/*.bin "$target/"
+          jq --arg v "$label" '.version = $v' dist/manifest.json > "$target/manifest.json"
+          (cd "$target" && sha256sum *.bin manifest.json > SHA256SUMS)
+          jq -n --arg channel "$channel" --arg version "$version" --arg label "$label" \
+                --arg commit "$SHA" --arg date "$date" \
+                '{channel:$channel, version:$version, label:$label, commit:$commit, date:$date, manifest:"manifest.json"}' \
+                > "$target/info.json"
+          touch "$site/.nojekyll"
+
+          # Overview of all channels
+          (cd "$site/firmware" && jq -s '.' */info.json > index.json)
+
+          cd "$site"
+          git checkout -q --orphan publish
+          git add -A
+          git -c user.name="github-actions[bot]" -c user.email="41898099+github-actions[bot]@users.noreply.github.com" \
+              commit -q -m "Firmware $label"
+          git push -q --force origin publish:gh-pages
+          echo "Published https://${GITHUB_REPOSITORY_OWNER}.github.io/${REPO#*/}/firmware/$channel/manifest.json"
+
   release:
     if: startsWith(github.ref, 'refs/tags/v')
     needs: [host-tests, build]
