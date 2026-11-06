@@ -67,13 +67,28 @@ so a flash page can load it directly without manual uploads:
 - `https://jewelux.github.io/Talking-Remote-Controller-LX1WJ/firmware/main/manifest.json`
 - `https://jewelux.github.io/Talking-Remote-Controller-LX1WJ/firmware/development/manifest.json`
 - `https://jewelux.github.io/Talking-Remote-Controller-LX1WJ/firmware/<tag>/manifest.json`
-  for each `v*` tag (for example `v3-5-9`)
+  for each `v*` tag, with dots turned into dashes (tag `v3.5.9` is published as `v3-5-9`)
+
+The `main` channel appears with the first push to `main` that contains this
+workflow, and tag channels only for tags pushed since then. Pushes that change only
+documentation neither rebuild nor republish the firmware.
 
 `firmware/index.json` lists all published channels with version, commit and date.
 On `main` and `development` the manifest version reads like
 `V3.5.8 development eda5ca1 2026-10-29`, so the flash page tells which build it is.
-Fresh boards do not answer `HAMTRC?`; flash them with the manual update that
-skips the HAMTRC check.
+The images there carry the commit in their names
+(`hamtrc-v3-5-8-eda5ca1.factory.bin`), so a browser never mixes images of two
+builds. The previous build's images stay until the next publish. A tag channel
+holds exactly the files of its GitHub Release.
+
+A `v*` tag must match `HAMTRC_FIRMWARE_VERSION`: for `V3.5.9` that is `v3.5.9`,
+or a longer tag such as `v3.5.9-rc1`. Otherwise the build fails and nothing is
+published or released. GitHub starts no run when more than three tags are pushed
+at once. Push tags one at a time; to publish a missed tag (or any channel) again,
+use Run workflow on that tag or branch.
+
+Boards that do not answer `HAMTRC?` (new boards, firmware older than V3.5.7, boards
+in bootloader mode) are flashed with the manual update that skips the HAMTRC check.
 
 ## Current FTDX10 Family Scope
 

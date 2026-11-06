@@ -4,6 +4,9 @@ on:
   push:
     branches: [main, development]
     tags: ['v*']
+    # Pushes that cannot change the firmware neither rebuild nor republish it
+    # (GitHub does not apply path filters to tag pushes)
+    paths-ignore: ['**.md', 'docs/**', 'LICENSE*', '.github/ISSUE_TEMPLATE/**']
   pull_request:
   workflow_dispatch:
 
@@ -47,6 +50,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       slug: ${{ steps.meta.outputs.slug }}
+      date: ${{ steps.meta.outputs.date }}
     steps:
       - uses: actions/checkout@v4
 
@@ -70,11 +74,19 @@ jobs:
           ino=$(basename firmware/*.ino .ino)
           version=$(sed -n 's/.*HAMTRC_FIRMWARE_VERSION *"\(.*\)".*/\1/p' firmware/firmware_version.h)
           slug=$(echo "$version" | tr 'A-Z.' 'a-z-')
+          # A v* tag names its release, so it must match the version built (v3.5.9 or v3.5.9-rc1 for V3.5.9)
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            case "$(echo "$GITHUB_REF_NAME" | tr 'A-Z.' 'a-z-')" in
+              "$slug" | "$slug"-*) ;;
+              *) echo "::error::Tag $GITHUB_REF_NAME does not match firmware_version.h ($version)"; exit 1 ;;
+            esac
+          fi
           mkdir -p "build/$ino"
           cp firmware/*.ino firmware/*.cpp firmware/*.h firmware/partitions.csv "build/$ino/"
           echo "ino=$ino" >> "$GITHUB_OUTPUT"
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "slug=$slug" >> "$GITHUB_OUTPUT"
+          echo "date=$(git log -1 --format=%cs)" >> "$GITHUB_OUTPUT"
           echo "Building $ino ($version)"
 
       - name: Compile
@@ -131,15 +143,25 @@ jobs:
   #   firmware/main/        newest build of main
   #   firmware/development/ newest build of development
   #   firmware/<tag slug>/  every v* tag, kept for good
-  # gh-pages holds one commit only (rebuilt each time), so old images do not pile up.
+  # gh-pages holds one commit only (rebuilt each time), so old images do not pile up
+  # on the server. Branch channels name their images after the commit and keep the
+  # previous build's images until the next publish: a browser never mixes images of
+  # two builds, and a manifest still cached (Pages allows 10 minutes) finds its own.
+  # Tag channels hold the Release files unchanged.
+  # "Run workflow" on main, development or a v* tag publishes that ref again.
   publish:
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/development' || startsWith(github.ref, 'refs/tags/v'))
+    if: >-
+      ((github.event_name == 'push' && !github.event.deleted) || github.event_name == 'workflow_dispatch') &&
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/development' || startsWith(github.ref, 'refs/tags/v'))
     needs: [host-tests, build]
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: write   # push gh-pages, compare commits
+      pages: write      # find the Pages URL, request a Pages build
     concurrency:
-      group: pages-publish
+      # One publish per channel at a time; other channels run alongside and
+      # start over when gh-pages moved under them (see the push lease below)
+      group: pages-publish-${{ github.ref }}
       cancel-in-progress: false
     steps:
       - uses: actions/download-artifact@v4
@@ -154,58 +176,183 @@ jobs:
           REF_TYPE: ${{ github.ref_type }}
           REF_NAME: ${{ github.ref_name }}
           SHA: ${{ github.sha }}
-          COMMIT_TIME: ${{ github.event.head_commit.timestamp }}
+          DATE: ${{ needs.build.outputs.date }}
         run: |
           set -euo pipefail
+          (cd dist && sha256sum --check --quiet SHA256SUMS)
           if [ "$REF_TYPE" = tag ]; then
             channel=$(echo "$REF_NAME" | tr 'A-Z.' 'a-z-')
           else
             channel="$REF_NAME"
           fi
-          short=${SHA:0:7}
-          date=${COMMIT_TIME:0:10}
-          [ -n "$date" ] || date=$(date -u +%Y-%m-%d)
-          version=$(jq -r .version dist/manifest.json)
+          version=$(python3 -c 'import json; print(json.load(open("dist/manifest.json"))["version"])')
           if [ "$REF_TYPE" = tag ]; then
             label="$version"
           else
-            label="$version $channel $short $date"
+            label="$version $channel ${SHA:0:7} $DATE"
           fi
-
-          site=site
+          export CHANNEL="$channel" LABEL="$label"
           url="https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git"
-          if git ls-remote --exit-code --heads "$url" gh-pages >/dev/null; then
-            git clone -q --depth 1 --branch gh-pages "$url" "$site"
-          else
-            git init -q -b gh-pages "$site"
-            git -C "$site" remote add origin "$url"
-          fi
 
-          target="$site/firmware/$channel"
-          rm -rf "$target"
-          mkdir -p "$target"
-          cp dist/*.bin "$target/"
-          jq --arg v "$label" '.version = $v' dist/manifest.json > "$target/manifest.json"
-          (cd "$target" && sha256sum *.bin manifest.json > SHA256SUMS)
-          jq -n --arg channel "$channel" --arg version "$version" --arg label "$label" \
-                --arg commit "$SHA" --arg date "$date" \
-                '{channel:$channel, version:$version, label:$label, commit:$commit, date:$date, manifest:"manifest.json"}' \
-                > "$target/info.json"
-          touch "$site/.nojekyll"
+          # HTTP status of a failed gh api call, from its error output
+          http_status() { sed -n 's/.*(HTTP \([0-9][0-9]*\)).*/\1/p' gh.err | tail -n 1; }
 
+          # True when the branch channel in $1 already holds a newer build than $SHA
+          # (a re-run of an older run, or runs finishing out of order). Compared with
+          # the published commit, not the branch tip: pushes skipped by paths-ignore
+          # leave the tip ahead of the newest build.
+          holds_newer() {
+            local published status
+            published=$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1])).get("commit", ""))' "$1/info.json" 2>/dev/null) || return 1
+            if [ -z "$published" ] || [ "$published" = "$SHA" ]; then return 1; fi
+            if status=$(gh api "repos/$REPO/compare/$published...$SHA" --jq .status 2>gh.err); then
+              [ "$status" = behind ]
+              return
+            fi
+            case "$(http_status)" in
+              404 | 422) return 1 ;;  # the published commit is gone (history rewritten)
+            esac
+            cat gh.err >&2
+            echo "::error::Cannot compare the published $published with $SHA"
+            exit 1
+          }
+
+          # Start over when gh-pages moves between clone and push (another channel
+          # publishing, a manual fix): --force-with-lease refuses to overwrite it.
+          for attempt in 1 2 3 4 5; do
+            rm -rf site
+            lookup=0
+            git ls-remote --exit-code "$url" refs/heads/gh-pages >/dev/null || lookup=$?
+            case $lookup in
+              0)
+                git clone -q --depth 1 --branch gh-pages "$url" site
+                lease=$(git -C site rev-parse HEAD)
+                ;;
+              2)  # gh-pages does not exist yet
+                git init -q -b gh-pages site
+                git -C site remote add origin "$url"
+                lease=
+                ;;
+              *)  # never take a failed lookup for a missing branch: that would replace all channels
+                echo "::error::Cannot reach gh-pages (git ls-remote exit $lookup)"
+                exit 1
+                ;;
+            esac
+
+            if [ "$REF_TYPE" = branch ] && holds_newer "site/firmware/$channel"; then
+              echo "::notice::firmware/$channel already holds a build newer than ${SHA:0:7}; nothing to publish"
+              exit 0
+            fi
+
+            python3 - <<'PY'
+          import hashlib, json, os, shutil, sys
+          from pathlib import Path
+
+          channel, ref_type, ref = os.environ["CHANNEL"], os.environ["REF_TYPE"], os.environ["REF_NAME"]
+          sha, label, date = os.environ["SHA"], os.environ["LABEL"], os.environ["DATE"]
+          dist = Path("dist")
+          firmware = Path("site/firmware")
+          target = firmware / channel
+
+          def load(path):
+              try:
+                  return json.loads(path.read_text(encoding="utf-8"))
+              except (OSError, ValueError):
+                  return {}
+
+          def save(path, data):
+              path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+          manifest = load(dist / "manifest.json")
+          version = manifest["version"]
+
+          if ref_type == "tag":
+              # Two tags can map to one folder (v3.5.9, v3-5-9); never let one replace the other
+              owner = load(target / "info.json").get("ref", ref)
+              if owner != ref:
+                  print(f"::error::firmware/{channel} belongs to tag {owner}; tag {ref} would replace it")
+                  sys.exit(1)
+              shutil.rmtree(target, ignore_errors=True)
+              shutil.copytree(dist, target)  # the Release files, unchanged
+          else:
+              previous = {part["path"] for build in load(target / "manifest.json").get("builds", [])
+                          for part in build.get("parts", [])}
+              target.mkdir(parents=True, exist_ok=True)
+              for old in target.iterdir():
+                  if old.name not in previous:
+                      shutil.rmtree(old) if old.is_dir() else old.unlink()
+              sums = []
+              for build in manifest["builds"]:
+                  for part in build["parts"]:
+                      stem, dot, rest = part["path"].partition(".")
+                      name = f"{stem}-{sha[:7]}{dot}{rest}"
+                      shutil.copyfile(dist / part["path"], target / name)
+                      part["path"] = name
+                      sums.append(name)
+              manifest["version"] = label
+              save(target / "manifest.json", manifest)
+              sums.append("manifest.json")
+              with open(target / "SHA256SUMS", "w", encoding="utf-8", newline="\n") as out:
+                  for name in sums:
+                      out.write(f"{hashlib.sha256((target / name).read_bytes()).hexdigest()}  {name}\n")
+
+          save(target / "info.json", {"channel": channel, "ref": ref, "version": version, "label": label,
+                                      "commit": sha, "date": date, "manifest": "manifest.json"})
           # Overview of all channels
-          (cd "$site/firmware" && jq -s '.' */info.json > index.json)
+          save(firmware / "index.json", [info for info in (load(p) for p in sorted(firmware.glob("*/info.json"))) if info])
+          PY
+            touch site/.nojekyll
 
-          cd "$site"
-          git checkout -q --orphan publish
-          git add -A
-          git -c user.name="github-actions[bot]" -c user.email="41898099+github-actions[bot]@users.noreply.github.com" \
-              commit -q -m "Firmware $label"
-          git push -q --force origin publish:gh-pages
-          echo "Published https://${GITHUB_REPOSITORY_OWNER}.github.io/${REPO#*/}/firmware/$channel/manifest.json"
+            git -C site checkout -q --orphan publish
+            git -C site add -A
+            git -C site -c user.name="github-actions[bot]" -c user.email="41898099+github-actions[bot]@users.noreply.github.com" \
+                commit -q -m "Firmware $label"
+            if git -C site push -q --force-with-lease="refs/heads/gh-pages:$lease" origin publish:gh-pages; then
+              break
+            fi
+            if [ "$attempt" = 5 ]; then
+              echo "::error::gh-pages kept changing; gave up after $attempt attempts"
+              exit 1
+            fi
+            echo "gh-pages changed while publishing; starting over"
+            sleep $((attempt * 5))
+          done
+
+          # Pages deploys gh-pages in its own "pages build and deployment" run, and
+          # GitHub documents that pushes made with GITHUB_TOKEN do not start one.
+          # Wait until the new info.json is served; request a build when it is not.
+          if ! pages=$(gh api "repos/$REPO/pages" --jq .html_url 2>gh.err); then
+            if [ "$(http_status)" = 404 ]; then
+              echo "::warning::GitHub Pages is not enabled for $REPO: gh-pages is updated but not served"
+              exit 0
+            fi
+            cat gh.err >&2
+            exit 1
+          fi
+          info="${pages%/}/firmware/$channel/info.json"
+          is_live() {
+            curl -fsSL -H 'Cache-Control: no-cache' "$info?$SHA-$SECONDS" 2>/dev/null |
+              python3 -c 'import json, sys; sys.exit(json.load(sys.stdin).get("commit") != sys.argv[1])' "$SHA" 2>/dev/null
+          }
+          wait_live() {
+            local deadline=$((SECONDS + $1))
+            until is_live; do
+              [ "$SECONDS" -lt "$deadline" ] || return 1
+              sleep 10
+            done
+          }
+          if ! wait_live 180; then
+            echo "No Pages deployment within 3 minutes; requesting a Pages build"
+            gh api --method POST "repos/$REPO/pages/builds" --silent
+            if ! wait_live 600; then
+              echo "::error::$info does not show ${SHA:0:7} 10 minutes after the requested Pages build"
+              exit 1
+            fi
+          fi
+          echo "Published ${pages%/}/firmware/$channel/manifest.json"
 
   release:
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v') && !github.event.deleted
     needs: [host-tests, build]
     runs-on: ubuntu-latest
     permissions:
