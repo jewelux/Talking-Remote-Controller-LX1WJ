@@ -1,0 +1,20 @@
+{
+  "name": "HAMTRC",
+  "version": "V3.5.8 development 3c61bb1 2026-11-06",
+  "new_install_prompt_erase": false,
+  "builds": [
+    {
+      "chipFamily": "ESP32-S3",
+      "parts": [
+        {
+          "path": "hamtrc-v3-5-8-3c61bb1.factory.bin",
+          "offset": 0
+        },
+        {
+          "path": "hamtrc-v3-5-8-3c61bb1.voices.bin",
+          "offset": 8454144
+        }
+      ]
+    }
+  ]
+}
