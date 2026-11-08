@@ -265,8 +265,9 @@ class CommandRegistry:
         return None
 
     def handle_bp(self, command: str) -> Optional[str]:
-        if command == "BP0":
-            return f"BP0{1 if self.state.notch_on else 0:03d};"
+        # Read "BP P1 P2;", answer BP00 and three digits (the FTDX10 CAT manual).
+        if command == "BP00":
+            return f"BP00{1 if self.state.notch_on else 0:03d};"
         arg = command[2:]
         if arg == "0001":
             self.state.notch_on = True
@@ -318,10 +319,11 @@ class CommandRegistry:
         return f"SM0{self.state.smeter:03d};"
 
     def handle_rm(self, command: str) -> Optional[str]:
+        # The FTDX10 answers RMnPPP000: three meter digits and three zeros (the CAT manual).
         if command == "RM5":
-            return f"RM5{self.state.power_meter:03d};"
+            return f"RM5{self.state.power_meter:03d}000;"
         if command == "RM6":
-            return f"RM6{self.state.swr_meter:03d};"
+            return f"RM6{self.state.swr_meter:03d}000;"
         return None
 
     def handle_tx(self, command: str) -> Optional[str]:

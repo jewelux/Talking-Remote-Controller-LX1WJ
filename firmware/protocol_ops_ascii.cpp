@@ -93,6 +93,15 @@ bool asciiSetMode(const RadioProfile& sp, uint8_t mode) {
   return true;
 }
 
+// RM5 / RM6 on the FTDX10: RMnPPP000, three meter digits and three zeros (the CAT manual);
+// three digits are read too. The same decoding as the ALC meter.
+static bool asciiYaesuMeterRaw(const String& line, const char* prefix, int32_t& rawOut) {
+  uint16_t raw = 0;
+  if (!yaesuMeterDecode(line.c_str() + strlen(prefix), raw)) return false;
+  rawOut = raw;
+  return true;
+}
+
 bool asciiQuerySMeterRaw(const RadioProfile& sp, int32_t& rawOut, uint32_t timeoutMs) {
   if (!sp.caps.getSmeter || !sp.commands->smeterGet[0]) return false;
   String line;
@@ -104,6 +113,7 @@ bool asciiQueryPoMeterRaw(const RadioProfile& sp, int32_t& rawOut, uint32_t time
   if (!sp.caps.getPower || !sp.commands->powerGet[0]) return false;
   String line;
   if (!transactAsciiCommand(sp.commands->powerGet, line, sp.commands->powerReplyPrefix, timeoutMs)) return false;
+  if (sp.protocol == PROTO_YAESU_FTDX_ASCII) return asciiYaesuMeterRaw(line, sp.commands->powerReplyPrefix, rawOut);
   return parseAsciiSignedResponse(line, sp.commands->powerReplyPrefix, rawOut);
 }
 
@@ -111,6 +121,7 @@ bool asciiQuerySWRRaw(const RadioProfile& sp, int32_t& rawOut, uint32_t timeoutM
   if (!sp.caps.getSwr || !sp.commands->swrGet[0]) return false;
   String line;
   if (!transactAsciiCommand(sp.commands->swrGet, line, sp.commands->swrReplyPrefix, timeoutMs)) return false;
+  if (sp.protocol == PROTO_YAESU_FTDX_ASCII) return asciiYaesuMeterRaw(line, sp.commands->swrReplyPrefix, rawOut);
   return parseAsciiSignedResponse(line, sp.commands->swrReplyPrefix, rawOut);
 }
 
@@ -493,26 +504,12 @@ bool asciiSetLock(const RadioProfile& sp, bool on) {
   return asciiSendSimpleCommand(on ? sp.commands->lockOnCmd : sp.commands->lockOffCmd);
 }
 
-bool asciiQueryYaesuRadioInfoFlag(const RadioProfile& sp, const char* code, bool& onOut, uint32_t timeoutMs) {
-  if (sp.protocol != PROTO_YAESU_FTDX_ASCII || !code || !code[0]) return false;
-  char cmd[12];
-  snprintf(cmd, sizeof(cmd), "RI%s;", code);
+// TX;: 0 receive, 1 CAT TX on, 2 radio TX on (the FTDX10 CAT manual).
+bool asciiQueryYaesuTxState(const RadioProfile& sp, bool& txOut, uint32_t timeoutMs) {
+  if (sp.protocol != PROTO_YAESU_FTDX_ASCII) return false;
   String line;
-  if (!transactAsciiCommand(cmd, line, "RI", timeoutMs)) return false;
-
-  int start = 2;
-  int semi = line.indexOf(';', start);
-  if (semi < 0) semi = line.length();
-  String payload = line.substring(start, semi);
-  payload.trim();
-  const size_t codeLen = strlen(code);
-  if (payload.length() < (int)(codeLen + 1)) return false;
-  if (!payload.substring(0, (int)codeLen).equalsIgnoreCase(code)) return false;
-
-  const char state = payload[(int)codeLen];
-  if (state == '0') { onOut = false; return true; }
-  if (state == '1') { onOut = true; return true; }
-  return false;
+  if (!transactAsciiCommand("TX;", line, "TX", timeoutMs)) return false;
+  return yaesuTxStateDecode(line.c_str() + 2, txOut);
 }
 
 // PROC, mic gain and VOX on the Yaesu ASCII radios and the TS-480. Both use MG, VX, VG and VD;

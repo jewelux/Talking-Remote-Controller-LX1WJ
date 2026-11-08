@@ -109,6 +109,15 @@ bool asciiDigitsDecode(const char* digits, size_t n, uint16_t& valueOut);
 // A Yaesu RM reply after "RMn": the meter, three digits 0..255, which the FTDX10 and FTDX101
 // follow with three more (a second meter, or 000).
 bool yaesuMeterDecode(const char* digits, uint16_t& rawOut);
+
+// Yaesu newcat TX answer digit (the FTDX10 CAT manual): 0 receive, 1 CAT TX on, 2 radio TX
+// on. True when the digit is one of these; txOut is true for 1 and 2.
+bool yaesuTxStateDecode(const char* digits, bool& txOut);
+
+// Yaesu newcat MD answer codes HamTRC reads but never sets (the FTDX10, FTDX101 and FT-891
+// CAT manuals): A DATA-FM, B FM-N, C DATA-U, D AM-N, E PSK, F DATA-FM-N. Gives the internal
+// mode they are announced as: FM-N as FM, AM-N as AM, the data modes as DIGI.
+bool yaesuNewcatReadOnlyMode(const char* code, uint8_t& modeOut);
 // raw of fullScale as 0..100 %, rounded; above fullScale is 100.
 uint8_t meterPercent(uint16_t raw, uint16_t fullScale);
 
