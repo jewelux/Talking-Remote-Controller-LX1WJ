@@ -1,5 +1,6 @@
 #include "protocol_ascii.h"
 
+#include "cat_setting_codec.h"
 #include "packet_ascii.h"
 #include "debug_log.h"
 #include "ft8x7_model.h"
@@ -80,6 +81,7 @@ bool profileInternalModeForCode(const RadioProfile& sp, const String& code, uint
   if (code.equalsIgnoreCase(sp.modes->digi) && sp.modes->digi[0]) { modeOut = 0x11; return true; }
   if (code.equalsIgnoreCase(sp.modes->pkt) && sp.modes->pkt[0]) { modeOut = 0x12; return true; }
   if (code.equalsIgnoreCase(sp.modes->wfm) && sp.modes->wfm[0]) { modeOut = 0x06; return true; }
+  if (sp.protocol == PROTO_YAESU_FTDX_ASCII && yaesuNewcatReadOnlyMode(code.c_str(), modeOut)) return true;
   if (ft8x7ModelFor(sp.model) == Ft8x7Model::Ft857) {
     // FT-857/897 may report additional undocumented bytes depending on
     // installed filters and packet handling (PKT as 0xFC, read here without the top bit).

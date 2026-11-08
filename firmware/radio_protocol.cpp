@@ -432,19 +432,7 @@ bool queryRxTxStatus(bool& txOut, uint32_t timeoutMs) {
   ProtocolType pt = currentProtocolType();
   const RadioProfile& sp = currentProfile();
   if (pt == PROTO_CIV) return civQueryRxTxStatus(sp, txOut, timeoutMs);
-  if (pt == PROTO_YAESU_FTDX_ASCII && sp.caps.getRxTx) {
-    if (!ensureYaesuFtdxActiveVfoKnown(sp, timeoutMs)) return false;
-    const char* txCode = live.activeVfoA ? "5" : "6";
-    const char* rxCode = live.activeVfoA ? "7" : "8";
-    bool flag = false;
-    if (asciiQueryYaesuRadioInfoFlag(sp, txCode, flag, timeoutMs) && flag) {
-      txOut = true;
-      return true;
-    }
-    if (!asciiQueryYaesuRadioInfoFlag(sp, rxCode, flag, timeoutMs)) return false;
-    txOut = false;
-    return true;
-  }
+  if (pt == PROTO_YAESU_FTDX_ASCII && sp.caps.getRxTx) return asciiQueryYaesuTxState(sp, txOut, timeoutMs);
   if (pt == PROTO_YAESU_FT847) return ft847QueryRxTx(sp, txOut, timeoutMs);
   if (pt == PROTO_YAESU_FT8X7 && sp.caps.getRxTx) {
     uint8_t raw = 0;

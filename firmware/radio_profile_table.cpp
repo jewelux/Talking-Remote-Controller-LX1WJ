@@ -313,14 +313,14 @@ constexpr AsciiCommandSet kFtdx10Commands = {
     .tunerGet = "AC;", .tunerOnCmd = "AC001;", .tunerOffCmd = "AC000;", .tuneStartCmd = "AC002;",
     .splitGet = "ST;", .splitOnCmd = "ST1;", .splitOffCmd = "ST0;",
     .vfoGet = "VS;", .vfoACmd = "VS0;", .vfoBCmd = "VS1;", .vfoSwapCmd = "SV;",
-    .notchGet = "BP0;", .notchOnCmd = "BP0001;", .notchOffCmd = "BP0000;",
+    .notchGet = "BP00;", .notchOnCmd = "BP0001;", .notchOffCmd = "BP0000;",
     .lockGet = "LK;", .lockOnCmd = "LK1;", .lockOffCmd = "LK0;",
     .freqReplyPrefix = "FA", .modeReplyPrefix = "MD0", .ifReplyPrefix = "IF",
     .idReplyPrefix = "ID", .omReplyPrefix = "OM", .smeterReplyPrefix = "SM0",
     .powerReplyPrefix = "RM5", .swrReplyPrefix = "RM6", .nrReplyPrefix = "NR0",
     .nbReplyPrefix = "NB0",
     .powerStateReplyPrefix = "PS", .tunerReplyPrefix = "AC", .splitReplyPrefix = "ST",
-    .vfoReplyPrefix = "VS", .notchReplyPrefix = "BP0", .lockReplyPrefix = "LK",
+    .vfoReplyPrefix = "VS", .notchReplyPrefix = "BP00", .lockReplyPrefix = "LK",
 };
 
 constexpr AsciiCommandSet kFtdx101Commands = [] {

@@ -393,6 +393,41 @@ TEST(yaesu_rm_meter_and_percent) {
   CHECK_EQ(meterPercent(255, 255), 100);
   CHECK_EQ(meterPercent(0, 255), 0);
   CHECK_EQ(meterPercent(10, 0), 0);
+  // PO and SWR on the FTDX10: RM5nnn000 and RM6nnn000, as the ALC meter.
+  CHECK(yaesuMeterDecode("128000;", raw) && raw == 128);
+  CHECK(yaesuMeterDecode("000000;", raw) && raw == 0);
+  CHECK(yaesuMeterDecode("255000", raw) && raw == 255);
+}
+
+// ---- RX/TX and read-only modes on the Yaesu newcat radios ----
+
+// TX; answers TX0 receive, TX1 CAT TX on, TX2 radio TX on (the FTDX10 CAT manual).
+TEST(yaesu_tx_state) {
+  bool tx = true;
+  CHECK(yaesuTxStateDecode("0;", tx) && !tx);
+  CHECK(yaesuTxStateDecode("1;", tx) && tx);
+  tx = false;
+  CHECK(yaesuTxStateDecode("2", tx) && tx);
+  CHECK(!yaesuTxStateDecode("3;", tx));
+  CHECK(!yaesuTxStateDecode("01;", tx));
+  CHECK(!yaesuTxStateDecode(";", tx));
+  CHECK(!yaesuTxStateDecode("", tx));
+}
+
+// MD0 codes HamTRC reads but never sets (the FTDX10 CAT manual's mode table).
+TEST(yaesu_newcat_read_only_modes) {
+  uint8_t mode = 0xFF;
+  CHECK(yaesuNewcatReadOnlyMode("B", mode) && mode == 0x05);  // FM-N as FM
+  CHECK(yaesuNewcatReadOnlyMode("D", mode) && mode == 0x02);  // AM-N as AM
+  CHECK(yaesuNewcatReadOnlyMode("C", mode) && mode == 0x11);  // DATA-U as DIGI
+  CHECK(yaesuNewcatReadOnlyMode("A", mode) && mode == 0x11);  // DATA-FM
+  CHECK(yaesuNewcatReadOnlyMode("E", mode) && mode == 0x11);  // PSK
+  CHECK(yaesuNewcatReadOnlyMode("F", mode) && mode == 0x11);  // DATA-FM-N
+  CHECK(yaesuNewcatReadOnlyMode("c", mode) && mode == 0x11);
+  CHECK(!yaesuNewcatReadOnlyMode("2", mode));  // USB is in the mode table
+  CHECK(!yaesuNewcatReadOnlyMode("G", mode));
+  CHECK(!yaesuNewcatReadOnlyMode("CC", mode));
+  CHECK(!yaesuNewcatReadOnlyMode("", mode));
 }
 
 // ---- Tone ----

@@ -521,6 +521,18 @@ TEST(newcat_mode_and_lock_commands) {
   }
 }
 
+// Manual notch read: "BP P1 P2;" with P1 0 and P2 0 for on/off (the FTDX10 CAT manual),
+// answered BP00 and three digits; the FTDX101 shares the command set.
+TEST(newcat_notch_read) {
+  const uint8_t ftdx[] = {11, 12, 13};
+  for (uint8_t s : ftdx) {
+    CHECK_EQ(slot(s).commands->notchGet, "BP00;");
+    CHECK_EQ(slot(s).commands->notchReplyPrefix, "BP00");
+    CHECK_EQ(slot(s).commands->notchOnCmd, "BP0001;");
+    CHECK_EQ(slot(s).commands->notchOffCmd, "BP0000;");
+  }
+}
+
 // TS-480: RM; answers all three meters, SWR first; 9 is FSK-R and there is no DIGI.
 TEST(ts480_swr_and_mode_codes) {
   const RadioProfile& ts480 = slot(7);

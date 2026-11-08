@@ -382,6 +382,26 @@ bool yaesuMeterDecode(const char* digits, uint16_t& rawOut) {
   return true;
 }
 
+bool yaesuTxStateDecode(const char* digits, bool& txOut) {
+  if (!digits || digits[0] < '0' || digits[0] > '2') return false;
+  if (digits[1] != '\0' && digits[1] != ';') return false;
+  txOut = digits[0] != '0';
+  return true;
+}
+
+bool yaesuNewcatReadOnlyMode(const char* code, uint8_t& modeOut) {
+  if (!code || !code[0] || code[1] != '\0') return false;
+  switch (code[0]) {
+    case 'B': case 'b': modeOut = 0x05; return true;  // FM-N
+    case 'D': case 'd': modeOut = 0x02; return true;  // AM-N
+    case 'A': case 'a':                                // DATA-FM
+    case 'C': case 'c':                                // DATA-U
+    case 'E': case 'e':                                // PSK
+    case 'F': case 'f': modeOut = 0x11; return true;  // DATA-FM-N
+    default: return false;
+  }
+}
+
 uint8_t meterPercent(uint16_t raw, uint16_t fullScale) {
   if (!fullScale) return 0;
   if (raw >= fullScale) return 100;
