@@ -684,6 +684,15 @@ static bool isFtdx10ConsoleProfile() {
   return currentRadioModel() == RadioModel::Ftdx10;
 }
 
+// No filter width over Yaesu ASCII CAT: MD carries only the mode, so FILWIDTH would just send
+// back the mode it read, and a read-only one (DATA-U, FM-N, AM-N) would change.
+static bool handleYaesuAsciiFilterWidth(const String& upper) {
+  if (currentProtocolType() != PROTO_YAESU_FTDX_ASCII) return false;
+  if (upper != "FILWIDTH?" && !upper.startsWith("FILWIDTH ")) return false;
+  reportNotAvailable("FILWIDTH -> not available on Yaesu ASCII radios");
+  return true;
+}
+
 static bool handleFtdx10BlockedConsoleCommand(const String& upper) {
   if (!isFtdx10ConsoleProfile()) return false;
   if (upper == "MONITOR?" || upper == "MONITOR ON" || upper == "MONITOR OFF" || upper == "MONITOR TOGGLE") {
@@ -710,10 +719,6 @@ static bool handleFtdx10BlockedConsoleCommand(const String& upper) {
   if (upper == "FILSHAPE?" || upper == "FILSHAPE SHARP" || upper == "FILSHAPE SOFT" ||
       upper == "FILSHAPE TOGGLE") {
     reportNotAvailable("FILSHAPE -> hidden on FTDX10 (use documented Yaesu CAT later)");
-    return true;
-  }
-  if (upper == "FILWIDTH?" || upper.startsWith("FILWIDTH ")) {
-    reportNotAvailable("FILWIDTH -> hidden on FTDX10 (use documented Yaesu CAT later)");
     return true;
   }
   if (upper == "RIT?" || upper == "RIT ON" || upper == "RIT OFF" || upper.startsWith("RIT ")) {
@@ -3915,6 +3920,7 @@ void processCommand(String line) {
   if (handleConsoleInfoCommands(upper)) return;
   if (handleConsoleProfileCommands(line, upper)) return;
   if (handleConsoleConnectionCommands(line, upper)) return;
+  if (handleYaesuAsciiFilterWidth(upper)) return;
   if (handleFtdx10BlockedConsoleCommand(upper)) return;
   if (handleConsoleToggleCommands(line, upper)) return;
   if (handleConsoleAgc(upper)) return;
