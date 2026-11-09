@@ -314,11 +314,11 @@ static FeatureStatus ts480WriteNrLevel(uint8_t level, NrState& out) {
   return FeatureStatus::Ok;
 }
 
-// Steps off -> 1 -> 2 -> off from the level the radio reports (to 1 when it
-// does not answer).
+// Steps off -> 1 -> 2 -> off from the level the radio reports; nothing is sent
+// when it does not answer.
 static FeatureStatus ts480NrStep(NrState& out) {
   uint8_t level = 0;
-  (void)ts480ReadNrLevel(level);
+  if (!ts480ReadNrLevel(level)) return failure(FeatureStatus::NoReply);
   return ts480WriteNrLevel(level >= kTs480NrLevels ? 0 : level + 1, out);
 }
 

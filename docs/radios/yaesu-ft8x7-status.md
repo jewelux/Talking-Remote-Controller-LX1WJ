@@ -177,7 +177,7 @@ Shared by all bands:
 | `0x6C` | 3..0 / 7..4 | the band VFO A / VFO B is on, numbered in block order below (13 = 2 m, 14 = 70 cm, 15 = general coverage, used outside the other bands); follows the band keys |
 | `0x6A` | 7 | fast tuning, **inverted** (1 = off) |
 | `0x6A` | 6 | lock, **inverted** (0 = locked); follows the front panel key and CAT lock |
-| `0x6A` | 5 | NB (yo3ggx) |
+| `0x6A` | 5 | NB (yo3ggx); follows the radio's key at once, on and off (measured) |
 | `0x6A` | 4 | IF shift on (long press of CLAR); saved at once, survives a power cycle. The IF shift offset does not survive one and is not stored anywhere in `0x000`–`0x5FF`, also not after a band change saved the band block (measured) |
 | `0x6A` | 3 | the knob tunes IF shift (1) or RIT (0): set by switching IF shift, cleared by RIT going on, kept when RIT goes off. RIT on/off itself was not found |
 | `0x6A` | 1..0 | AGC speed: 00 auto, 01 fast, 10 slow (measured; yo3ggx has 00 slow, 01 auto, 10 fast) |
@@ -221,8 +221,8 @@ Shared by all bands:
 | `0xA8` | 7 | DSP soft key row shown, saved at once |
 | `0xA8` | 5 | AGC on (yo3ggx) |
 | `0xA8` | 3..2 | DBF: the radio's key sets or clears both bits, in LSB and CW (measured) |
-| `0xA8` | 1 | DNR (yo3ggx) |
-| `0xA8` | 0 | DNF (yo3ggx) |
+| `0xA8` | 1 | DNR (yo3ggx); follows the radio's key at once, on and off (measured) |
+| `0xA8` | 0 | DNF (yo3ggx); follows the radio's key at once, on and off (measured) |
 | `0xA9` | 1 | PROC |
 | `0xAA` / `0xAB` / `0xAC` | 7..0 | RF power (menu 75) for 6 m / VHF / UHF, as `0x9B`: 6 m 5..100, VHF 5..50, UHF 2..20 W (yo3ggx) |
 
