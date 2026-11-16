@@ -1,5 +1,6 @@
 #include "radio_catalog.h"
 #include "civ_smeter.h"
+#include "yaesu_smeter.h"
 #include "radio_globals.h"
 #include "protocol_ascii.h"
 #include "protocol_ops_ascii.h"
@@ -148,6 +149,10 @@ SMeterReading sMeterFromRaw(int32_t raw) {
   if (currentProtocolType() == PROTO_YAESU_FT8X7) return yaesuCatDecodeSMeter((uint8_t)raw);
   if (currentProtocolType() == PROTO_YAESU_FT847) return ft847SMeterFromRaw((uint8_t)raw);
   SMeterReading reading;
+  if (const SMeterScale* scale = currentProfile().smeterScale) {
+    smeterScaleDecode(*scale, raw, reading.sUnits, reading.dbOverS9);
+    return reading;
+  }
   if (currentProtocolType() == PROTO_CIV) {
     civDecodeSMeter(raw, reading.sUnits, reading.dbOverS9);
     return reading;

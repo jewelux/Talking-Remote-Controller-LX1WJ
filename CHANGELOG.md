@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Yaesu FTDX S-meter
+
+- the S-meter on the FTDX10, FTDX101D/MP and FT-891 (`SM0`, 000..255) uses Hamlib's scale for
+  each radio instead of the generic one (S0 = 21, S9 = 297), on which S9 could never be reached
+  and every signal was spoken too low; reported by Gena on her FTDX10 (16.11.2026). FTDX10 and
+  FT-891: S9 = 130; FTDX101: S9 = 160; all S9+60 dB = 255. Below S9 6 dB per S unit, above S9
+  "9 plus 10" up to "9 plus 60" in 10 dB steps, as on Icom. Profiles carry the scale
+  (`smeterScale`); host tests in `tests/yaesumeter`. Not yet compared with a radio's own meter
+
 ### Icom S-meter
 
 - the S-meter on Icom CI-V radios uses Icom's scale (0 = S0, 120 = S9, 241 = S9+60 dB, as in
