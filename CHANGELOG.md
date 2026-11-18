@@ -2,8 +2,10 @@
 
 ## Unreleased
 
-### Icom S-meter
+### S-meter
 
+- FTDX10, FTDX101D/MP and FT-891: the S-meter no longer reads too low and now goes above S9; not
+  yet compared with a radio's own meter
 - the S-meter on Icom CI-V radios uses Icom's scale (0 = S0, 120 = S9, 241 = S9+60 dB, as in
   the IC-7300 CI-V reference and Hamlib). Before, it used S0 = 21 and S9 = 297, so a signal at
   S9 was spoken "3", S9+10 dB "4", and nothing above S8 was ever spoken. Above S9 it now says

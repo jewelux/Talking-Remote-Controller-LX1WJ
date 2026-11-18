@@ -40,6 +40,9 @@ jobs:
       - name: Icom S-meter unit tests
         run: make -C tests/civmeter
 
+      - name: S-meter scale unit tests
+        run: make -C tests/smeter
+
       - name: Audio unit tests
         run: make -C tests/audio
 

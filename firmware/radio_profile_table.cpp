@@ -354,6 +354,27 @@ constexpr ModeCodes kYaesuAsciiModes = {
     .digi = "8",
 };
 
+// S-meter (SM0, 000..255). The CAT manuals give only the raw range; these are Hamlib's str_cal
+// tables. Not yet checked against a radio's own meter.
+// FTDX10: Hamlib's newcat.c yaesu_default_str_cal (the FTDX10 has no table of its own).
+constexpr SMeterCalPoint kFtdx10SMeter[] = {
+    {0, -54},  {26, -42}, {51, -30}, {81, -18}, {105, -9}, {130, 0},
+    {157, 12}, {186, 25}, {203, 35}, {237, 50}, {255, 60},
+};
+
+// FTDX101D and FTDX101MP: Hamlib's ftdx101.h FTDX101D_STR_CAL.
+constexpr SMeterCalPoint kFtdx101SMeter[] = {
+    {0, -60},  {17, -54},  {25, -48},  {34, -42},  {51, -36}, {68, -30},
+    {85, -24}, {102, -18}, {119, -12}, {136, -6}, {160, 0},  {255, 60},
+};
+
+// FT-891: Hamlib's ft891.h FT891_STR_CAL ("TBC" in Hamlib).
+constexpr SMeterCalPoint kFt891SMeter[] = {
+    {0, -54},  {12, -48}, {27, -42}, {40, -36},  {55, -30},  {65, -24},
+    {80, -18}, {95, -12}, {112, -6}, {130, 0},   {150, 10},  {172, 20},
+    {190, 30}, {220, 40}, {240, 50}, {255, 60},
+};
+
 // --- The profiles, in slot order ---------------------------------------------
 //
 // Free slots, and what they are kept for:
@@ -407,17 +428,20 @@ constexpr RadioProfile kProfiles[] = {
      .model = RadioModel::Ftdx10, .protocol = PROTO_YAESU_FTDX_ASCII,
      .link = {.port = RadioPort::Rs232, .baud = 38400, .bauds = kYaesuAsciiBauds},
      .caps = kFtdx10Caps, .commands = &kFtdx10Commands, .modes = &kYaesuAsciiModes,
-     .settings = kFtdx10Settings},
+     .settings = kFtdx10Settings,
+     .smeterScale = kFtdx10SMeter},
     {.slot = 12, .name = "Yaesu FTDX-101D", .vendor = VoiceVendor::Yaesu, .voiceDigits = "101",
      .protocol = PROTO_YAESU_FTDX_ASCII,
      .link = {.port = RadioPort::Rs232, .baud = 38400, .bauds = kYaesuAsciiBauds},
      .caps = kFtdx101Caps, .commands = &kFtdx101Commands, .modes = &kYaesuAsciiModes,
-     .settings = kFtdx10Settings},
+     .settings = kFtdx10Settings,
+     .smeterScale = kFtdx101SMeter},
     {.slot = 13, .name = "Yaesu FTDX-101MP", .vendor = VoiceVendor::Yaesu, .voiceDigits = "101",
      .protocol = PROTO_YAESU_FTDX_ASCII,
      .link = {.port = RadioPort::Rs232, .baud = 38400, .bauds = kYaesuAsciiBauds},
      .caps = kFtdx101MpCaps, .commands = &kFtdx101Commands, .modes = &kYaesuAsciiModes,
-     .settings = kFtdx10Settings},
+     .settings = kFtdx10Settings,
+     .smeterScale = kFtdx101SMeter},
     {.slot = 14, .name = "Yaesu FT-818", .vendor = VoiceVendor::Yaesu, .voiceDigits = "818",
      .model = RadioModel::Ft818, .protocol = PROTO_YAESU_FT8X7,
      .link = {.port = RadioPort::Rs232, .baud = 4800, .bauds = kFt8x7Bauds},
@@ -426,7 +450,8 @@ constexpr RadioProfile kProfiles[] = {
      .protocol = PROTO_YAESU_FTDX_ASCII,
      .link = {.port = RadioPort::Rs232, .baud = 4800, .bauds = kYaesuAsciiBauds},
      .caps = kFt891Caps, .commands = &kFt891Commands, .modes = &kYaesuAsciiModes,
-     .settings = kFt891Settings},
+     .settings = kFt891Settings,
+     .smeterScale = kFt891SMeter},
     {.slot = 16, .name = "Yaesu FT-847", .vendor = VoiceVendor::Yaesu, .voiceDigits = "847",
      .protocol = PROTO_YAESU_FT847,
      .link = {.port = RadioPort::Rs232, .baud = 4800, .bauds = kFt847Bauds},
@@ -485,12 +510,21 @@ constexpr bool codedRadiosHaveModeCodes() {
   return true;
 }
 
+// Interpolation on an S-meter scale needs ascending raw values.
+constexpr bool smeterScalesAscend() {
+  for (const RadioProfile& p : kProfiles) {
+    if (!p.smeterScale.ascends()) return false;
+  }
+  return true;
+}
+
 static_assert(kProfileCount > 0, "no profiles");
 static_assert(slotsAscendAndAreUnique(), "kProfiles: slots must be unique, above 0 and in ascending order");
 static_assert(defaultBaudsAreOffered(), "kProfiles: a default baud is missing from that radio's bauds");
 static_assert(civRadiosHaveAnAddress(), "kProfiles: a CI-V radio has no CI-V address");
 static_assert(asciiRadiosHaveFreqAndModeCommands(), "kProfiles: an ASCII radio lacks freq or mode commands");
 static_assert(codedRadiosHaveModeCodes(), "kProfiles: an ASCII or FT-8x7 radio lacks mode codes");
+static_assert(smeterScalesAscend(), "kProfiles: an S-meter scale is not in ascending order");
 
 }  // namespace
 
