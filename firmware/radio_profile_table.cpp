@@ -118,6 +118,14 @@ constexpr ModeCodes kKx2Modes = {
     .lsb = "1", .usb = "2", .am = "5", .cw = "3", .fm = "4", .cwr = "7", .rttyR = "9", .digi = "6",
 };
 
+// SM 0..15: S9 = 6, S9+20 = 9, S9+40 = 12, S9+60 = 15 (the programmer's reference, basic format;
+// connecting sends K30, so not the extended 0..21). The reference gives no points below S9; those
+// and the steps between are Hamlib's K3_SM_CAL (elecraft.h).
+constexpr SMeterCalPoint kKx2SMeter[] = {
+    {0, -54}, {1, -42}, {2, -36}, {3, -24}, {4, -12}, {5, -6}, {6, 0}, {7, 10},
+    {8, 15}, {9, 20}, {10, 30}, {11, 35}, {12, 40}, {13, 50}, {14, 55}, {15, 60},
+};
+
 // --- Kenwood ----------------------------------------------------------------
 
 constexpr uint32_t kTs480Bauds[] = {4800, 9600, 19200, 38400, 57600};
@@ -162,6 +170,14 @@ constexpr AsciiCommandSet kTs480Commands = {
 // 9 is FSK-R and 8 is no mode (Hamlib kenwood_mode_table, flrig TS480SAT). There is no DIGI.
 constexpr ModeCodes kTs480Modes = {
     .lsb = "1", .usb = "2", .am = "5", .cw = "3", .rtty = "6", .fm = "4", .cwr = "7", .rttyR = "9",
+};
+
+// SM0 0..20, as the radio's own voice guide speaks it (instruction manual, VOICE2): 0 = S0,
+// 1-3 = S1, 4..11 = S2..S9, 12 = +10, 13-14 = +20, 15 = +30, 16-17 = +40, 18 = +50, 19-20 = +60 dB.
+// Hamlib's TS480_STR_CAL agrees at each of its points.
+constexpr SMeterCalPoint kTs480SMeter[] = {
+    {0, -54}, {1, -48}, {3, -48}, {11, 0}, {12, 10}, {13, 20}, {14, 20}, {15, 30},
+    {16, 40}, {17, 40}, {18, 50}, {19, 60},
 };
 
 // --- Yaesu FT-817, FT-818, FT-857, FT-897 (5-byte CAT) -----------------------
@@ -407,11 +423,12 @@ constexpr RadioProfile kProfiles[] = {
      .protocol = PROTO_ELECRAFT_ASCII,
      .link = {.port = RadioPort::Rs232, .baud = 38400, .bauds = kKx2Bauds},
      .caps = kKx2Caps, .commands = &kKx2Commands, .modes = &kKx2Modes, .settings = kKx2Settings,
-     .rfPowerMaxWatts = 15},
+     .rfPowerMaxWatts = 15, .smeterScale = kKx2SMeter},
     {.slot = 7, .name = "Kenwood TS-480", .vendor = VoiceVendor::Kenwood, .voiceDigits = "480",
      .model = RadioModel::Ts480, .protocol = PROTO_KENWOOD_ASCII,
      .link = {.port = RadioPort::Rs232, .baud = 9600, .bauds = kTs480Bauds},
-     .caps = kTs480Caps, .commands = &kTs480Commands, .modes = &kTs480Modes, .settings = kTs480Settings},
+     .caps = kTs480Caps, .commands = &kTs480Commands, .modes = &kTs480Modes, .settings = kTs480Settings,
+     .smeterScale = kTs480SMeter},
     {.slot = 8, .name = "Yaesu FT-817", .vendor = VoiceVendor::Yaesu, .voiceDigits = "817",
      .model = RadioModel::Ft817, .protocol = PROTO_YAESU_FT8X7,
      .link = {.port = RadioPort::Rs232, .baud = 4800, .bauds = kFt8x7Bauds},
