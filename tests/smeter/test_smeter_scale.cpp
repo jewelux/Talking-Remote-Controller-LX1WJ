@@ -48,6 +48,16 @@ TEST(s_units_below_s9_and_tens_above) {
   CHECK_EQ(decode(kLinear, 110).db, 20);
 }
 
+TEST(rounds_once_from_the_exact_value) {
+  // 0.7 dB per raw step: -2.8 dB is still S9 and +4.9 dB not yet S9+10, though both would
+  // round to a whole 3 or 5 dB first.
+  constexpr SMeterCalPoint kPoints[] = {{0, -7}, {10, 0}, {20, 7}};
+  const SMeterScale scale{kPoints};
+  CHECK_EQ(decode(scale, 6).s, 9);
+  CHECK_EQ(decode(scale, 17).s, 9);
+  CHECK_EQ(decode(scale, 17).db, 0);
+}
+
 TEST(out_of_range_is_clamped) {
   CHECK_EQ(decode(kLinear, 300).s, 9);
   CHECK_EQ(decode(kLinear, 300).db, 60);
@@ -90,6 +100,7 @@ TEST(ftdx101_s9_is_160) {
   constexpr uint8_t kSlots[] = {12, 13};  // FTDX-101D, FTDX-101MP
   for (uint8_t slot : kSlots) {
     const SMeterScale& scale = scaleOfSlot(slot);
+    CHECK_EQ(decode(scale, 0).s, 0);    // -60 dB, below S0
     CHECK_EQ(decode(scale, 136).s, 8);  // -6 dB
     CHECK_EQ(decode(scale, 160).s, 9);
     CHECK_EQ(decode(scale, 160).db, 0);
