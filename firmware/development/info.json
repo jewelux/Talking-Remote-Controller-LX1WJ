@@ -1,0 +1,9 @@
+{
+  "channel": "development",
+  "ref": "development",
+  "version": "V3.5.8",
+  "label": "V3.5.8 development a5df86e 2026-11-18",
+  "commit": "a5df86e32a58064bee65b63e2eb76a06873a5a50",
+  "date": "2026-11-18",
+  "manifest": "manifest.json"
+}
