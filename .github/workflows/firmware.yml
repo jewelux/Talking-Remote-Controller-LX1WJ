@@ -10,6 +10,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Jobs that publish ask for more in their own permissions block
+permissions:
+  contents: read
+
 env:
   ESP32_CORE: "3.3.11"
   ESP32_INDEX: https://espressif.github.io/arduino-esp32/package_esp32_index.json
@@ -20,7 +24,7 @@ jobs:
   host-tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Keypad unit tests
         run: make -C tests/keypad
@@ -55,11 +59,11 @@ jobs:
       slug: ${{ steps.meta.outputs.slug }}
       date: ${{ steps.meta.outputs.date }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: arduino/setup-arduino-cli@v2
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: ~/.arduino15
           key: arduino15-esp32-${{ env.ESP32_CORE }}-keypad
@@ -136,7 +140,7 @@ jobs:
           (cd dist && sha256sum * > SHA256SUMS)
           ls -l dist
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: hamtrc-${{ steps.meta.outputs.slug }}-${{ github.sha }}
           path: dist/
@@ -167,7 +171,7 @@ jobs:
       group: pages-publish-${{ github.ref }}
       cancel-in-progress: false
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: hamtrc-${{ needs.build.outputs.slug }}-${{ github.sha }}
           path: dist
@@ -361,10 +365,10 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: hamtrc-${{ needs.build.outputs.slug }}-${{ github.sha }}
           path: dist
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           files: dist/*
