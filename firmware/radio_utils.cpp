@@ -44,11 +44,3 @@ uint8_t smRawToS(int32_t raw) {
   if (s > 9) s = 9;
   return (uint8_t)s;
 }
-
-float swrRawToValue(int32_t raw) {
-  if (raw <= 0) return 1.0f;
-  if (raw <= 48) return 1.0f + (raw / 48.0f) * 0.5f;
-  if (raw <= 80) return 1.5f + ((raw - 48) / 32.0f) * 0.5f;
-  if (raw <= 120) return 2.0f + ((raw - 80) / 40.0f) * 1.0f;
-  return 3.0f + ((raw - 120) / 135.0f) * 3.0f;
-}

@@ -13,6 +13,15 @@
   "9 plus 10" up to "9 plus 60", in 10 dB steps like the radio's scale. Host tests in
   `tests/civmeter`. The IC-706 is assumed to use the same scale; not yet checked on a radio
 
+### SWR
+
+- KX2, TS-480, FTDX10, FTDX101D/MP and FT-891: SWR reads on the radio's own scale; it read far
+  too low before (an SWR of 3 on a KX2 or TS-480 was said as 1.3 or 1.1)
+- SWR is said with one decimal on every radio. Icom radios and the FTDX10 say "SWR TX only" in
+  receive instead of 1.0
+- the console prints the radio's raw answer next to the SWR on every radio, e.g.
+  `SWR: 1.5  (raw 48)`
+
 ### Hardware documentation
 
 - **new folder `docs/hardware/`**: all hardware files moved here (same layout on `main` and `development`).

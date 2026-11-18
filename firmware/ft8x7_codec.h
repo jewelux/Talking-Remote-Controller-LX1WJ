@@ -24,9 +24,6 @@ void yaesuCatDecodeSMeterLevel(uint8_t rxStatus, uint8_t& sUnitsOut, uint8_t& db
 // measured on an FT-897; the manuals say 0 = on), bits 3..0 = PO meter.
 bool yaesuCatTxStatusTransmitting(uint8_t txStatus);
 
-// SWR for a 0..15 meter reading of 0xBD.
-float yaesuSwrFromMeter(uint8_t bars);
-
 // FT-8x7 CTCSS tone in tenths of Hz (885 = 88.5 Hz) and DCS code (23 = 023).
 // Only the standard values are valid.
 bool yaesuCtcssTenthsValid(uint16_t toneTenths);

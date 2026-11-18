@@ -1,6 +1,6 @@
 #include "radio_catalog.h"
 #include "civ_smeter.h"
-#include "smeter_scale.h"
+#include "meter_scale.h"
 #include "radio_globals.h"
 #include "protocol_ascii.h"
 #include "protocol_ops_ascii.h"
@@ -148,7 +148,7 @@ bool querySMeterRaw(int32_t& rawOut, uint32_t timeoutMs) {
 SMeterReading sMeterFromRaw(int32_t raw) {
   SMeterReading reading;
   // A profile's own scale comes before its protocol's decoder.
-  if (const SMeterScale& scale = currentProfile().smeterScale; !scale.empty()) {
+  if (const MeterScale& scale = currentProfile().smeterScale; !scale.empty()) {
     smeterScaleDecode(scale, raw, reading.sUnits, reading.dbOverS9);
     return reading;
   }

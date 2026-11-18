@@ -1518,8 +1518,21 @@ static bool handleConsoleToggleCommands(const String& line, const String& upper)
   return false;
 }
 
-// FT-8x7 meters exist only while transmitting: in receive, say "<meter> tx only".
-static void reportFt8x7MeterInReceive(const char* label, const char* meterToken) {
+// SWR? on every radio: "SWR: 1.5  (raw 48)", the raw answer kept for tuning a radio's scale.
+// Returns the SWR as spoken, "1.5".
+static String printSwr(int32_t raw, bool highSwr) {
+  const uint16_t tenths = swrTenthsFromRaw(currentProfile().swrScale, raw);
+  const String swr = String(tenths / 10) + "." + String(tenths % 10);
+  Serial.print("SWR: ");
+  Serial.print(swr);
+  Serial.print("  (raw ");
+  Serial.print(raw);
+  Serial.println(highSwr ? ", HIGH SWR)" : ")");
+  return swr;
+}
+
+// TX meters read nothing in receive: say "<meter> tx only".
+static void reportMeterInReceive(const char* label, const char* meterToken) {
   Serial.print(label);
   Serial.println(": TX only (not transmitting)");
   if (!g_speechEnabled) return;
@@ -1537,7 +1550,7 @@ static void reportFt8x7BdMeter(const char* command, const char* label, uint8_t Y
   }
   if (!meters.transmitting) {
     if (meterToken) {
-      reportFt8x7MeterInReceive(label, meterToken);
+      reportMeterInReceive(label, meterToken);
       return;
     }
     Serial.print(label);
@@ -1565,7 +1578,7 @@ static bool handleConsoleFt8x7Meters(const String& upper) {
     if (!currentProfile().caps.getPower) { reportNotAvailable("PO? -> not enabled in this profile"); return true; }
     YaesuTxMeters meters;
     if (!yaesuCatQueryTxMeters(meters, false, kCatReplyTimeoutMs)) { reportCommandFailure("PO?", "no reply"); return true; }
-    if (!meters.transmitting) { reportFt8x7MeterInReceive("PO", "power"); return true; }
+    if (!meters.transmitting) { reportMeterInReceive("PO", "power"); return true; }
     rememberLivePower(meters.po, millis());
     Serial.print("PO: ");
     Serial.print(meters.po);
@@ -1584,14 +1597,9 @@ static bool handleConsoleFt8x7Meters(const String& upper) {
     if (!currentProfile().caps.getSwr) { reportNotAvailable("SWR? -> not enabled in this profile"); return true; }
     YaesuTxMeters meters;
     if (!yaesuCatQueryTxMeters(meters, true, kCatReplyTimeoutMs)) { reportCommandFailure("SWR?", "no reply"); return true; }
-    if (!meters.transmitting) { reportFt8x7MeterInReceive("SWR", "swr"); return true; }
+    if (!meters.transmitting) { reportMeterInReceive("SWR", "swr"); return true; }
     rememberLiveSwr(meters.swr, millis());
-    const float swr = yaesuSwrFromMeter(meters.swr);
-    Serial.print("SWR: ");
-    Serial.print(swr, 1);
-    Serial.print("  (meter ");
-    Serial.print(meters.swr);
-    Serial.println(meters.highSwr ? " of 15, HIGH SWR)" : " of 15)");
+    const String swr = printSwr(meters.swr, meters.highSwr);
     if (g_speechEnabled) {
       // The warning stays with verbose off.
       if (meters.highSwr) {
@@ -1600,7 +1608,7 @@ static bool handleConsoleFt8x7Meters(const String& upper) {
       } else {
         speakLabel("swr");
       }
-      speakDigitsAndPoint(String(swr, 1));
+      speakDigitsAndPoint(swr);
     }
     return true;
   }
@@ -3293,12 +3301,15 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     return true;
   }
   if (upper == "SWR?") {
+    if (currentProfile().caps.getRxTx) {
+      bool tx = false;
+      if (queryRxTxStatus(tx) && !tx) { reportMeterInReceive("SWR", "swr"); return true; }
+    }
     if (!refreshLiveSwr()) { reportCommandFailure("SWR?", "no reply"); return true; }
-    float swr = swrRawToValue(live.swrRaw);
-    Serial.println(swr, 2);
+    const String swr = printSwr(live.swrRaw, false);
     if (g_speechEnabled) {
       speakLabel("swr");
-      speakDigitsAndPoint(String(swr, 2));
+      speakDigitsAndPoint(swr);
     }
     return true;
   }
