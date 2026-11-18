@@ -1,39 +1,16 @@
-#include "yaesu_smeter.h"
+#include "smeter_scale.h"
 
 namespace {
 
-// Hamlib newcat.c yaesu_default_str_cal, used by Hamlib for the FTDX10.
-constexpr SMeterCalPoint kFtdx10Points[] = {
-    {0, -54},  {26, -42}, {51, -30}, {81, -18}, {105, -9}, {130, 0},
-    {157, 12}, {186, 25}, {203, 35}, {237, 50}, {255, 60},
-};
-
-// Hamlib ftdx101.h FTDX101D_STR_CAL (also used for the FTDX101MP).
-constexpr SMeterCalPoint kFtdx101Points[] = {
-    {0, -60},  {17, -54}, {25, -48},  {34, -42},  {51, -36}, {68, -30},
-    {85, -24}, {102, -18}, {119, -12}, {136, -6}, {160, 0},  {255, 60},
-};
-
-// Hamlib ft891.h FT891_STR_CAL ("TBC" in Hamlib).
-constexpr SMeterCalPoint kFt891Points[] = {
-    {0, -54},  {12, -48}, {27, -42}, {40, -36},  {55, -30},  {65, -24},
-    {80, -18}, {95, -12}, {112, -6}, {130, 0},   {150, 10},  {172, 20},
-    {190, 30}, {220, 40}, {240, 50}, {255, 60},
-};
-
+// Rounds to the nearest integer, halves away from zero. den > 0.
 int32_t roundedDiv(int32_t num, int32_t den) {
-  // den > 0
   return num >= 0 ? (num + den / 2) / den : -((-num + den / 2) / den);
 }
 
 }  // namespace
 
-const SMeterScale kYaesuSMeterScaleFtdx10{kFtdx10Points};
-const SMeterScale kYaesuSMeterScaleFtdx101{kFtdx101Points};
-const SMeterScale kYaesuSMeterScaleFt891{kFt891Points};
-
 int16_t smeterScaleDbRelS9(const SMeterScale& scale, int32_t raw) {
-  if (scale.count == 0) return -54;
+  if (scale.empty()) return kSMeterDbRelS9AtS0;
   const SMeterCalPoint* p = scale.points;
   if (raw <= p[0].raw) return p[0].dbRelS9;
   for (uint8_t i = 1; i < scale.count; ++i) {
