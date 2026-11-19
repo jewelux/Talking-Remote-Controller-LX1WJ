@@ -14,7 +14,7 @@ BC | Auto notch (DNF) | implementiert | ANOTCH? und ANOTCH OFF/ON/TOGGLE (BC0, n
 BD | Band down | nein | keine FTDX10-Implementierung gefunden
 BI | Break-in | implementiert | BK? und BK OFF/ON/TOGGLE (nach CAT-Handbuch und Hamlib), mit Ruecklesen; Bank 7 2
 BM | VFO-B to memory channel | nein | keine FTDX10-Implementierung gefunden
-BP | Manual notch | teilweise | BP0/BP0000/BP0001 fuer on/off implementiert, volle Frequenzparameter nicht
+BP | Manual notch | teilweise | BP00 lesen (Read "BP P1 P2;" laut Handbuch), BP0000/BP0001 fuer on/off, volle Frequenzparameter nicht
 BS | Band select | nein | keine FTDX10-Implementierung gefunden
 BU | Band up | nein | keine FTDX10-Implementierung gefunden
 BY | Busy | nein | keine FTDX10-Implementierung gefunden
@@ -49,7 +49,7 @@ LM | Load message | nein | keine FTDX10-Implementierung gefunden
 MA | Memory channel to VFO-A | nein | keine FTDX10-Implementierung gefunden
 MB | Memory channel to VFO-B | nein | keine FTDX10-Implementierung gefunden
 MC | Memory channel | nein | keine FTDX10-Implementierung gefunden
-MD | Mode | implementiert | lesen/schreiben vorhanden
+MD | Mode | implementiert | lesen/schreiben vorhanden; DATA-U/DATA-FM/DATA-FM-N/PSK als DIGI, FM-N als FM, AM-N als AM nur lesen
 MG | Mic gain | teilweise | MG read ueber Konsole MICGAIN? vorhanden, nicht am Radio getestet
 ML | Monitor level | nein | aktuelle Monitor-Pfade sind nur fuer CI-V umgesetzt
 MR | Memory read | nein | keine FTDX10-Implementierung gefunden
@@ -79,7 +79,7 @@ RF | Roofing filter | nein | keine FTDX10-Implementierung gefunden
 RG | RF gain | nein | keine FTDX10-Implementierung gefunden
 RI | Radio information | nein | keine FTDX10-Implementierung gefunden
 RL | Noise reduction level | implementiert | NRLEVEL? und NRLEVEL 1..15 (RL0, nach CAT-Handbuch und Hamlib), mit Ruecklesen; Bank 2 1 doppelt
-RM | Read meter | teilweise | RM4 ALC (ALC?, Bank 1 5, Prozent von 0..255), RM5 power und RM6 swr vorhanden, kein generischer RM-Zugriff
+RM | Read meter | teilweise | RM4 ALC (ALC?, Bank 1 5, Prozent von 0..255), RM5 power und RM6 swr (Antwort RMnPPP000 wie im Handbuch dekodiert), kein generischer RM-Zugriff
 RS | Radio status | nein | keine FTDX10-Implementierung gefunden
 RT | RIT | nein | keine FTDX10-Implementierung gefunden
 RU | RIT up | nein | keine FTDX10-Implementierung gefunden
@@ -93,7 +93,7 @@ SS | Spectrum scope | nein | keine FTDX10-Implementierung gefunden
 ST | Split | teilweise | ST read/on/off vorhanden, kein +5 kHz quick-split Parameter
 SV | Swap VFO | vorbereitet | SV-Kommando und asciiSwapVfo vorhanden, aber kein klarer FTDX10-Userpfad in der UI
 TS | TXW | nein | keine FTDX10-Implementierung gefunden
-TX | TX set | nein | keine FTDX10-Implementierung gefunden
+TX | TX set | teilweise | nur lesen: TX; fuer die RX/TX-Abfrage (0 RX, 1 CAT TX, 2 Radio TX laut Handbuch); kein Setzen
 UL | Unlock | nein | keine FTDX10-Implementierung gefunden
 UP | Up | nein | keine FTDX10-Implementierung gefunden
 VD | VOX delay time | teilweise | VD read ueber Konsole VOXDELAY? vorhanden, nicht am Radio getestet; Stufen 00..33 = 30..3000 ms wie bei Hamlib

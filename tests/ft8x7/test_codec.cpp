@@ -98,14 +98,6 @@ TEST(tx_status_bit_7_low_means_transmitting) {
   CHECK(!yaesuCatTxStatusTransmitting(0xFF));
 }
 
-TEST(swr_follows_the_meter_calibration) {
-  CHECK_EQ(yaesuSwrFromMeter(0), 1.0f);
-  CHECK_EQ(yaesuSwrFromMeter(3), 2.13f);
-  CHECK_EQ(yaesuSwrFromMeter(9), 9.0f);
-  CHECK_EQ(yaesuSwrFromMeter(10), 10.0f);
-  CHECK_EQ(yaesuSwrFromMeter(15), 10.0f);
-}
-
 TEST(ctcss_accepts_only_standard_tones) {
   CHECK(yaesuCtcssTenthsValid(670));
   CHECK(yaesuCtcssTenthsValid(885));

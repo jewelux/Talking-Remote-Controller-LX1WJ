@@ -74,7 +74,7 @@ bool asciiQueryNotch(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
 bool asciiSetNotch(const RadioProfile& sp, bool on);
 bool asciiQueryLock(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
 bool asciiSetLock(const RadioProfile& sp, bool on);
-bool asciiQueryYaesuRadioInfoFlag(const RadioProfile& sp, const char* code, bool& onOut, uint32_t timeoutMs);
+bool asciiQueryYaesuTxState(const RadioProfile& sp, bool& txOut, uint32_t timeoutMs);
 // Speech processor (Yaesu PR0, TS-480 PR) and its level (PL, 0..100; on the TS-480 the input
 // level), mic gain (MG, 0..100), VOX (VX), its gain (VG, 0..settings.voxGainMax) and delay (VD,
 // in ms, as settings.voxDelay says): the Yaesu ASCII radios and the TS-480.

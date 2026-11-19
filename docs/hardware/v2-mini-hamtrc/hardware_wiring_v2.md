@@ -57,6 +57,13 @@ The schematic no longer contains D1, but the PCB keeps the **D1 footprint** so a
 fitted when a separate 5 V supply is used. The diode stops the external supply and the USB port from
 feeding into each other. A Schottky diode (e.g. 1N5817, ≈ 0.3 V drop) is preferred over a 1N400x (≈ 0.7 V).
 
+**USB-C chargers:** a USB-C charger switches on its 5 V only when the device signals a load through
+two 5.1 kΩ resistors on the CC pins of its USB-C port. Many low-cost ESP32-S3 boards lack them on one
+of their two ports. On the Mini-HamTRC boards built in November 2026, the **right** port (seen from
+above) got no power from a USB-C charger with a USB-C to USB-C cable, while the same port worked from
+a PC. Nothing is wrong with the board or the firmware. If a USB-C charger gives no power, use a
+charger with a USB-A output and a USB-A to USB-C cable (always 5 V), or try the other port.
+
 ---
 
 ## 2. ESP32-S3 to 4x4 Matrix Keypad (J8, 2x4 header)

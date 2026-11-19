@@ -58,5 +58,8 @@
 
 - D1 is not in the schematic any more; the PCB keeps its footprint. Fit a wire link for USB supply,
   or a diode when a separate 5 V supply is used on J5 (Schottky: ≈ 0.3 V drop, 1N400x: ≈ 0.7 V).
+- A USB-C charger with a USB-C to USB-C cable may give no power on one of the two USB-C ports of
+  low-cost ESP32-S3 boards (missing CC resistors). A USB-A charger with a USB-A to USB-C cable always
+  works; see `hardware_wiring_v2.md`, section 1.
 - The MAX3232 module is soldered onto the two large pads at the top edge of the PCB.
 - The SD-card module of V1 is no longer part of V2.

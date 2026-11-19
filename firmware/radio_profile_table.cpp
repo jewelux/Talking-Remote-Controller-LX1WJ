@@ -77,6 +77,10 @@ constexpr RadioCapabilities kIc7760Caps = [] {
 // three are set; a read of any other step is reported as it is.
 constexpr SettingEncodings kIc7760Settings = {.preampLevels = 2, .attLevels = 3, .attDb = {6, 12, 18}};
 
+// SWR (15 12, 0000..0255): 0 = 1.0, 48 = 1.5, 80 = 2.0, 120 = 3.0 (the IC-7300, IC-705 and
+// IC-7760 CI-V guides); 240 = 6.0 is Hamlib's (IC7300_SWR_CAL, IC705_SWR_CAL, IC7760_SWR_CAL).
+constexpr MeterCalPoint kIcomSwr[] = {{0, 100}, {48, 150}, {80, 200}, {120, 300}, {240, 600}};
+
 // --- Xiegu X6100 (CI-V over its DEV USB port) ---------------------------------
 //
 // Sources: the Radioddity Extended Manual for the X6100 v1.1.8 (2024): ch. 14.5 the DEV port, ch. 15
@@ -168,6 +172,18 @@ constexpr ModeCodes kKx2Modes = {
     .lsb = "1", .usb = "2", .am = "5", .cw = "3", .fm = "4", .cwr = "7", .rttyR = "9", .digi = "6",
 };
 
+// SM 0..15: S9 = 6, S9+20 = 9, S9+40 = 12, S9+60 = 15 (the programmer's reference, basic format;
+// connecting sends K30, so not the extended 0..21). The reference gives no points below S9; those
+// and the steps between are Hamlib's K3_SM_CAL (elecraft.h).
+constexpr MeterCalPoint kKx2SMeter[] = {
+    {0, -54}, {1, -42}, {2, -36}, {3, -24}, {4, -12}, {5, -6}, {6, 0}, {7, 10},
+    {8, 15}, {9, 20}, {10, 30}, {11, 35}, {12, 40}, {13, 50}, {14, 55}, {15, 60},
+};
+
+// SWnnn: the SWR in tenths, 010..999 (the programmer's reference; Hamlib divides by 10). Kept
+// from the last transmit; KX2 firmware 2.92 and later.
+constexpr MeterCalPoint kKx2Swr[] = {{10, 100}, {999, 9990}};
+
 // --- Kenwood ----------------------------------------------------------------
 
 constexpr uint32_t kTs480Bauds[] = {4800, 9600, 19200, 38400, 57600};
@@ -214,6 +230,18 @@ constexpr ModeCodes kTs480Modes = {
     .lsb = "1", .usb = "2", .am = "5", .cw = "3", .rtty = "6", .fm = "4", .cwr = "7", .rttyR = "9",
 };
 
+// SM0 0..20, as the radio's own voice guide speaks it (instruction manual, VOICE2): 0 = S0,
+// 1-3 = S1, 4..11 = S2..S9, 12 = +10, 13-14 = +20, 15 = +30, 16-17 = +40, 18 = +50, 19-20 = +60 dB.
+// Hamlib's TS480_STR_CAL agrees at each of its points.
+constexpr MeterCalPoint kTs480SMeter[] = {
+    {0, -54}, {1, -48}, {3, -48}, {11, 0}, {12, 10}, {13, 20}, {14, 20}, {15, 30},
+    {16, 40}, {17, 40}, {18, 50}, {19, 60},
+};
+
+// RM1 0..20 (RM; answers RM1, RM2 and RM3 at once): Hamlib's TS480_SWR_CAL, "approximately on
+// LCD display bars". Kenwood's command reference was not at hand.
+constexpr MeterCalPoint kTs480Swr[] = {{0, 100}, {4, 150}, {8, 200}, {12, 300}, {20, 1000}};
+
 // --- QRP Labs QMX (Kenwood TS-480 style CAT over USB) --------------------------
 
 // A USB virtual COM port ignores the baud; the list only satisfies the link checks.
@@ -236,6 +264,9 @@ constexpr AsciiCommandSet kQmxCommands = {
     .idReplyPrefix = "ID", .omReplyPrefix = "OM", .smeterReplyPrefix = "SM",
     .powerReplyPrefix = "PC", .swrReplyPrefix = "SW",
 };
+
+// SW: the SWR in hundredths, already the scale's unit (qmx_codec.*).
+constexpr MeterCalPoint kQmxSwr[] = {{100, 100}, {9999, 9999}};
 
 // The QMX Digi mode is 9 (FSR) on USB, its default, and 6 (FSK) on LSB; Hamlib and so WSJT-X set
 // USB data as 9. 8 is left out: on the QMX it is SWR tune mode, not RTTY-R.
@@ -271,6 +302,13 @@ constexpr RadioCapabilities kFt857Caps = {
     .getSplit = true, .setSplit = true, .getAgc = true, .getAtt = true,
     .getBreakIn = true, .getKeyer = true, .getCwSpeed = true, .getCwPitch = true, .getCwDelay = true,
     .getProc = true, .getMicGain = true, .getVox = true,
+};
+
+// SWR per 0xBD meter bar, 0..15, measured on an FT-817 by WA4YA/DL4YA (Hamlib's FT817_SWR_CAL);
+// 10 and up read 10. Hamlib has no FT-857 or FT-897 table, so they share it.
+constexpr MeterCalPoint kFt8x7Swr[] = {
+    {0, 100}, {1, 140}, {2, 180}, {3, 213}, {4, 225}, {5, 370}, {6, 600}, {7, 700},
+    {8, 800}, {9, 900}, {10, 1000},
 };
 
 constexpr ModeCodes kFt8x7Modes = {
@@ -398,14 +436,14 @@ constexpr AsciiCommandSet kFtdx10Commands = {
     .tunerGet = "AC;", .tunerOnCmd = "AC001;", .tunerOffCmd = "AC000;", .tuneStartCmd = "AC002;",
     .splitGet = "ST;", .splitOnCmd = "ST1;", .splitOffCmd = "ST0;",
     .vfoGet = "VS;", .vfoACmd = "VS0;", .vfoBCmd = "VS1;", .vfoSwapCmd = "SV;",
-    .notchGet = "BP0;", .notchOnCmd = "BP0001;", .notchOffCmd = "BP0000;",
+    .notchGet = "BP00;", .notchOnCmd = "BP0001;", .notchOffCmd = "BP0000;",
     .lockGet = "LK;", .lockOnCmd = "LK1;", .lockOffCmd = "LK0;",
     .freqReplyPrefix = "FA", .modeReplyPrefix = "MD0", .ifReplyPrefix = "IF",
     .idReplyPrefix = "ID", .omReplyPrefix = "OM", .smeterReplyPrefix = "SM0",
     .powerReplyPrefix = "RM5", .swrReplyPrefix = "RM6", .nrReplyPrefix = "NR0",
     .nbReplyPrefix = "NB0",
     .powerStateReplyPrefix = "PS", .tunerReplyPrefix = "AC", .splitReplyPrefix = "ST",
-    .vfoReplyPrefix = "VS", .notchReplyPrefix = "BP0", .lockReplyPrefix = "LK",
+    .vfoReplyPrefix = "VS", .notchReplyPrefix = "BP00", .lockReplyPrefix = "LK",
 };
 
 constexpr AsciiCommandSet kFtdx101Commands = [] {
@@ -439,6 +477,38 @@ constexpr ModeCodes kYaesuAsciiModes = {
     .digi = "8",
 };
 
+// S-meter (SM0, 000..255). The CAT manuals give only the raw range; these are Hamlib's str_cal
+// tables. Not yet checked against a radio's own meter.
+// FTDX10: Hamlib's newcat.c yaesu_default_str_cal (the FTDX10 has no table of its own).
+constexpr MeterCalPoint kFtdx10SMeter[] = {
+    {0, -54},  {26, -42}, {51, -30}, {81, -18}, {105, -9}, {130, 0},
+    {157, 12}, {186, 25}, {203, 35}, {237, 50}, {255, 60},
+};
+
+// FTDX101D and FTDX101MP: Hamlib's ftdx101.h FTDX101D_STR_CAL.
+constexpr MeterCalPoint kFtdx101SMeter[] = {
+    {0, -60},  {17, -54},  {25, -48},  {34, -42},  {51, -36}, {68, -30},
+    {85, -24}, {102, -18}, {119, -12}, {136, -6}, {160, 0},  {255, 60},
+};
+
+// FT-891: Hamlib's ft891.h FT891_STR_CAL ("TBC" in Hamlib).
+constexpr MeterCalPoint kFt891SMeter[] = {
+    {0, -54},  {12, -48}, {27, -42}, {40, -36},  {55, -30},  {65, -24},
+    {80, -18}, {95, -12}, {112, -6}, {130, 0},   {150, 10},  {172, 20},
+    {190, 30}, {220, 40}, {240, 50}, {255, 60},
+};
+
+// SWR (RM6, 000..255). As for the S-meter, the CAT manuals give only the raw range.
+// FTDX10, FTDX101D and FTDX101MP: Hamlib's FTDX10_SWR_CAL and FTDX101D_SWR_CAL, which agree
+// (the 101's from G3VPX's tests).
+constexpr MeterCalPoint kFtdxSwr[] = {
+    {0, 100}, {26, 120}, {52, 150}, {89, 200}, {126, 300}, {173, 400}, {236, 500}, {255, 2500},
+};
+
+// FT-891: Hamlib has no table of its own and uses newcat's yaesu_default_swr_cal, measured on
+// an FT-991.
+constexpr MeterCalPoint kFt891Swr[] = {{12, 100}, {39, 135}, {65, 150}, {89, 200}, {242, 500}};
+
 // --- The profiles, in slot order ---------------------------------------------
 //
 // Free slots, and what they are kept for:
@@ -450,7 +520,7 @@ constexpr RadioProfile kProfiles[] = {
     {.slot = 1, .name = "Icom IC-7300", .vendor = VoiceVendor::Icom, .voiceDigits = "7300",
      .model = RadioModel::Ic7300, .protocol = PROTO_CIV,
      .link = {.port = RadioPort::CivJack, .baud = 9600, .bauds = kCivBauds, .civAddr = 0x94},
-     .caps = kIc7300Caps, .settings = kIc7300Settings},
+     .caps = kIc7300Caps, .settings = kIc7300Settings, .swrScale = kIcomSwr},
     {.slot = 2, .name = "Icom 706", .vendor = VoiceVendor::Icom, .voiceDigits = "706",
      .protocol = PROTO_CIV,
      .link = {.port = RadioPort::CivJack, .baud = 9600, .bauds = kCivBauds, .civAddr = 0x58},
@@ -458,7 +528,7 @@ constexpr RadioProfile kProfiles[] = {
     {.slot = 3, .name = "Icom 7300 rs232", .vendor = VoiceVendor::Icom, .voiceDigits = "7300232",
      .model = RadioModel::Ic7300, .protocol = PROTO_CIV,
      .link = {.port = RadioPort::Rs232, .baud = 9600, .bauds = kCivBauds, .civAddr = 0x94},
-     .caps = kIc7300Caps, .settings = kIc7300Settings},
+     .caps = kIc7300Caps, .settings = kIc7300Settings, .swrScale = kIcomSwr},
     {.slot = 4, .name = "Icom 706 rs232", .vendor = VoiceVendor::Icom, .voiceDigits = "706232",
      .protocol = PROTO_CIV,
      .link = {.port = RadioPort::Rs232, .baud = 9600, .bauds = kCivBauds, .civAddr = 0x58},
@@ -471,47 +541,52 @@ constexpr RadioProfile kProfiles[] = {
      .protocol = PROTO_ELECRAFT_ASCII,
      .link = {.port = RadioPort::Rs232, .baud = 38400, .bauds = kKx2Bauds},
      .caps = kKx2Caps, .commands = &kKx2Commands, .modes = &kKx2Modes, .settings = kKx2Settings,
-     .rfPowerMaxWatts = 15},
+     .rfPowerMaxWatts = 15, .smeterScale = kKx2SMeter, .swrScale = kKx2Swr},
     {.slot = 7, .name = "Kenwood TS-480", .vendor = VoiceVendor::Kenwood, .voiceDigits = "480",
      .model = RadioModel::Ts480, .protocol = PROTO_KENWOOD_ASCII,
      .link = {.port = RadioPort::Rs232, .baud = 9600, .bauds = kTs480Bauds},
-     .caps = kTs480Caps, .commands = &kTs480Commands, .modes = &kTs480Modes, .settings = kTs480Settings},
+     .caps = kTs480Caps, .commands = &kTs480Commands, .modes = &kTs480Modes, .settings = kTs480Settings,
+     .smeterScale = kTs480SMeter, .swrScale = kTs480Swr},
     {.slot = 8, .name = "Yaesu FT-817", .vendor = VoiceVendor::Yaesu, .voiceDigits = "817",
      .model = RadioModel::Ft817, .protocol = PROTO_YAESU_FT8X7,
      .link = {.port = RadioPort::Rs232, .baud = 4800, .bauds = kFt8x7Bauds},
-     .caps = kFt817Caps, .modes = &kFt8x7Modes},
+     .caps = kFt817Caps, .modes = &kFt8x7Modes, .swrScale = kFt8x7Swr},
     {.slot = 9, .name = "Yaesu FT-857", .vendor = VoiceVendor::Yaesu, .voiceDigits = "857",
      .model = RadioModel::Ft857, .protocol = PROTO_YAESU_FT8X7,
      .link = {.port = RadioPort::Rs232, .baud = 4800, .bauds = kFt8x7Bauds},
-     .caps = kFt857Caps, .modes = &kFt8x7Modes},
+     .caps = kFt857Caps, .modes = &kFt8x7Modes, .swrScale = kFt8x7Swr},
     {.slot = 10, .name = "Yaesu FT-897", .vendor = VoiceVendor::Yaesu, .voiceDigits = "897",
      .model = RadioModel::Ft857, .protocol = PROTO_YAESU_FT8X7,
      .link = {.port = RadioPort::Rs232, .baud = 4800, .bauds = kFt8x7Bauds},
-     .caps = kFt857Caps, .modes = &kFt8x7Modes},
+     .caps = kFt857Caps, .modes = &kFt8x7Modes, .swrScale = kFt8x7Swr},
     {.slot = 11, .name = "Yaesu FTDX-10", .vendor = VoiceVendor::Yaesu, .voiceDigits = "10",
      .model = RadioModel::Ftdx10, .protocol = PROTO_YAESU_FTDX_ASCII,
      .link = {.port = RadioPort::Rs232, .baud = 38400, .bauds = kYaesuAsciiBauds},
      .caps = kFtdx10Caps, .commands = &kFtdx10Commands, .modes = &kYaesuAsciiModes,
-     .settings = kFtdx10Settings},
+     .settings = kFtdx10Settings,
+     .smeterScale = kFtdx10SMeter, .swrScale = kFtdxSwr},
     {.slot = 12, .name = "Yaesu FTDX-101D", .vendor = VoiceVendor::Yaesu, .voiceDigits = "101",
      .protocol = PROTO_YAESU_FTDX_ASCII,
      .link = {.port = RadioPort::Rs232, .baud = 38400, .bauds = kYaesuAsciiBauds},
      .caps = kFtdx101Caps, .commands = &kFtdx101Commands, .modes = &kYaesuAsciiModes,
-     .settings = kFtdx10Settings},
+     .settings = kFtdx10Settings,
+     .smeterScale = kFtdx101SMeter, .swrScale = kFtdxSwr},
     {.slot = 13, .name = "Yaesu FTDX-101MP", .vendor = VoiceVendor::Yaesu, .voiceDigits = "101",
      .protocol = PROTO_YAESU_FTDX_ASCII,
      .link = {.port = RadioPort::Rs232, .baud = 38400, .bauds = kYaesuAsciiBauds},
      .caps = kFtdx101MpCaps, .commands = &kFtdx101Commands, .modes = &kYaesuAsciiModes,
-     .settings = kFtdx10Settings},
+     .settings = kFtdx10Settings,
+     .smeterScale = kFtdx101SMeter, .swrScale = kFtdxSwr},
     {.slot = 14, .name = "Yaesu FT-818", .vendor = VoiceVendor::Yaesu, .voiceDigits = "818",
      .model = RadioModel::Ft818, .protocol = PROTO_YAESU_FT8X7,
      .link = {.port = RadioPort::Rs232, .baud = 4800, .bauds = kFt8x7Bauds},
-     .caps = kFt817Caps, .modes = &kFt8x7Modes},
+     .caps = kFt817Caps, .modes = &kFt8x7Modes, .swrScale = kFt8x7Swr},
     {.slot = 15, .name = "Yaesu FT-891", .vendor = VoiceVendor::Yaesu, .voiceDigits = "891",
      .protocol = PROTO_YAESU_FTDX_ASCII,
      .link = {.port = RadioPort::Rs232, .baud = 4800, .bauds = kYaesuAsciiBauds},
      .caps = kFt891Caps, .commands = &kFt891Commands, .modes = &kYaesuAsciiModes,
-     .settings = kFt891Settings},
+     .settings = kFt891Settings,
+     .smeterScale = kFt891SMeter, .swrScale = kFt891Swr},
     {.slot = 16, .name = "Yaesu FT-847", .vendor = VoiceVendor::Yaesu, .voiceDigits = "847",
      .protocol = PROTO_YAESU_FT847,
      .link = {.port = RadioPort::Rs232, .baud = 4800, .bauds = kFt847Bauds},
@@ -519,20 +594,23 @@ constexpr RadioProfile kProfiles[] = {
     {.slot = 17, .name = "Icom IC-705", .vendor = VoiceVendor::Icom, .voiceDigits = "705",
      .model = RadioModel::Ic705, .protocol = PROTO_CIV,
      .link = {.port = RadioPort::CivJack, .baud = 9600, .bauds = kCivBauds, .civAddr = 0xA4},
-     .caps = kIc705Caps, .settings = kIc7300Settings, .rfPowerMaxWatts = 10},
+     .caps = kIc705Caps, .settings = kIc7300Settings, .rfPowerMaxWatts = 10,
+     .swrScale = kIcomSwr},
     {.slot = 18, .name = "Icom IC-7760", .vendor = VoiceVendor::Icom, .voiceDigits = "7760",
      .model = RadioModel::Ic7760, .protocol = PROTO_CIV,
      .link = {.port = RadioPort::CivJack, .baud = 19200, .bauds = kCivBauds, .civAddr = 0xB2},
-     .caps = kIc7760Caps, .settings = kIc7760Settings, .rfPowerMaxWatts = 200},
+     .caps = kIc7760Caps, .settings = kIc7760Settings, .rfPowerMaxWatts = 200,
+     .swrScale = kIcomSwr},
     {.slot = 21, .name = "QRP Labs QMX", .vendor = VoiceVendor::QrpLabs, .voiceDigits = "qmx",
      .model = RadioModel::Qmx, .protocol = PROTO_KENWOOD_ASCII,
      .link = {.port = RadioPort::UsbHost, .baud = 9600, .bauds = kQmxBauds},
-     .caps = kQmxCaps, .commands = &kQmxCommands, .modes = &kQmxModes},
+     .caps = kQmxCaps, .commands = &kQmxCommands, .modes = &kQmxModes, .swrScale = kQmxSwr},
     {.slot = 22, .name = "Xiegu X6100", .vendor = VoiceVendor::Xiegu, .voiceDigits = "x6100",
      .protocol = PROTO_CIV,
      .link = {.port = RadioPort::UsbHost, .baud = 19200, .bauds = kX6100Bauds, .civAddr = 0xA4,
               .usbSerialIndex = 1, .usbDtr = false, .usbRts = false},
-     .caps = kX6100Caps, .settings = kX6100Settings, .rfPowerMaxWatts = 10, .civModes = kX6100Modes},
+     .caps = kX6100Caps, .settings = kX6100Settings, .rfPowerMaxWatts = 10, .civModes = kX6100Modes,
+     .swrScale = kIcomSwr},
     // The IC-705's own USB port: Icom's CDC-ACM driver has CI-V on port A (the first; B is GPS or
     // RTTY decode). Its USB SEND and USB Keying menus can key on DTR or RTS, so both stay off. The
     // baud matters only when its "CI-V USB Baud Rate" is not Auto, so it can be set to match.
@@ -540,7 +618,8 @@ constexpr RadioProfile kProfiles[] = {
      .voiceSuffix = "usb", .model = RadioModel::Ic705, .protocol = PROTO_CIV,
      .link = {.port = RadioPort::UsbHost, .baud = 115200, .bauds = kCivBauds, .civAddr = 0xA4,
               .usbSerialIndex = 0, .usbDtr = false, .usbRts = false},
-     .caps = kIc705Caps, .settings = kIc7300Settings, .rfPowerMaxWatts = 10},
+     .caps = kIc705Caps, .settings = kIc7300Settings, .rfPowerMaxWatts = 10,
+     .swrScale = kIcomSwr},
     {.slot = 70, .name = "NanoVNA", .vendor = VoiceVendor::NanoVna, .protocol = PROTO_NANOVNA,
      .link = {.port = RadioPort::UsbHost, .baud = 115200, .bauds = kNanoVnaBauds}},
 };
@@ -589,6 +668,22 @@ constexpr bool codedRadiosHaveModeCodes() {
   return true;
 }
 
+// Interpolation on a meter scale needs ascending raw values.
+constexpr bool meterScalesAscend() {
+  for (const RadioProfile& p : kProfiles) {
+    if (!p.smeterScale.ascends() || !p.swrScale.ascends()) return false;
+  }
+  return true;
+}
+
+// Each radio's SWR answer is on its own scale; there is no generic one.
+constexpr bool swrRadiosHaveAScale() {
+  for (const RadioProfile& p : kProfiles) {
+    if (p.caps.getSwr && p.swrScale.empty()) return false;
+  }
+  return true;
+}
+
 static_assert(kProfileCount > 0, "no profiles");
 static_assert(slotsAscendAndAreUnique(), "kProfiles: slots must be unique, above 0 and in ascending order");
 static_assert(defaultBaudsAreOffered(), "kProfiles: a default baud is missing from that radio's bauds");
@@ -616,6 +711,8 @@ constexpr bool usbSettingsOnUsbOnly() {
 static_assert(codedRadiosHaveModeCodes(), "kProfiles: an ASCII or FT-8x7 radio lacks mode codes");
 static_assert(civModesOnCivOnly(), "kProfiles: civModes is for CI-V radios, and must keep LSB and USB");
 static_assert(usbSettingsOnUsbOnly(), "kProfiles: usbSerialIndex is for USB host radios");
+static_assert(meterScalesAscend(), "kProfiles: a meter scale is not in ascending order");
+static_assert(swrRadiosHaveAScale(), "kProfiles: a radio with getSwr has no swrScale");
 
 }  // namespace
 

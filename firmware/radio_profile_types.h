@@ -7,6 +7,7 @@
 #include <stdint.h>
 
 #include "radio_setting_types.h"
+#include "meter_scale.h"
 
 enum ProtocolType : uint8_t {
   PROTO_CIV = 0,
@@ -351,4 +352,10 @@ struct RadioProfile {
   // Icom mode. Mode select and MODE LIST leave the others out.
   uint16_t civModes = 0;
   Ft8x7Bank6Profile ft8x7Bank6{};
+  // How the raw S-meter answer maps to S units and dB over S9 (meter_scale.h). Empty on
+  // radios that use the protocol's own decoder or the generic linear scale.
+  MeterScale smeterScale{};
+  // How the raw SWR answer maps to the SWR, values SWR x 100 (meter_scale.h). Every radio with
+  // caps.getSwr has one (checked at build time).
+  MeterScale swrScale{};
 };

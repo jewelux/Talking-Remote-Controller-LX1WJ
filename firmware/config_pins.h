@@ -1,6 +1,6 @@
 #pragma once
 
-#define DEFAULT_VOLUME_LEVEL 5
+#define DEFAULT_VOLUME_LEVEL 4
 #define USE_BUTTONS_KEYPAD 1
 
 #define KEYPAD_DEBOUNCE_MS 30

@@ -258,7 +258,8 @@ static void answerSmeterQuery(Print& output) {
   if (g_speechEnabled) speakSValue(live.sm);
 }
 
-// FT-8x7 and QMX transmit meters exist only while transmitting: in receive, say "<meter> tx only".
+// Transmit meters read nothing in receive (FT-8x7, QMX, and SWR? where the radio reports RX/TX):
+// say "<meter> tx only".
 static void reportTxMeterInReceive(const char* label, const char* meterToken, Print& output = Serial) {
   output.print(label);
   output.println(": TX only (not transmitting)");
@@ -827,6 +828,15 @@ static bool isFtdx10ConsoleProfile() {
   return currentRadioModel() == RadioModel::Ftdx10;
 }
 
+// No filter width over Yaesu ASCII CAT: MD carries only the mode, so FILWIDTH would just send
+// back the mode it read, and a read-only one (DATA-U, FM-N, AM-N) would change.
+static bool handleYaesuAsciiFilterWidth(const String& upper) {
+  if (currentProtocolType() != PROTO_YAESU_FTDX_ASCII) return false;
+  if (upper != "FILWIDTH?" && !upper.startsWith("FILWIDTH ")) return false;
+  reportNotAvailable("FILWIDTH -> not available on Yaesu ASCII radios");
+  return true;
+}
+
 static bool handleFtdx10BlockedConsoleCommand(const String& upper) {
   if (!isFtdx10ConsoleProfile()) return false;
   if (upper == "MONITOR?" || upper == "MONITOR ON" || upper == "MONITOR OFF" || upper == "MONITOR TOGGLE") {
@@ -853,10 +863,6 @@ static bool handleFtdx10BlockedConsoleCommand(const String& upper) {
   if (upper == "FILSHAPE?" || upper == "FILSHAPE SHARP" || upper == "FILSHAPE SOFT" ||
       upper == "FILSHAPE TOGGLE") {
     reportNotAvailable("FILSHAPE -> hidden on FTDX10 (use documented Yaesu CAT later)");
-    return true;
-  }
-  if (upper == "FILWIDTH?" || upper.startsWith("FILWIDTH ")) {
-    reportNotAvailable("FILWIDTH -> hidden on FTDX10 (use documented Yaesu CAT later)");
     return true;
   }
   if (upper == "RIT?" || upper == "RIT ON" || upper == "RIT OFF" || upper.startsWith("RIT ")) {
@@ -1643,6 +1649,19 @@ static bool handleConsoleToggleCommands(const String& line, const String& upper)
   return false;
 }
 
+// SWR? on every radio: "SWR: 1.5  (raw 48)", the raw answer kept for tuning a radio's scale.
+// Returns the SWR as spoken, "1.5".
+static String printSwr(int32_t raw, bool highSwr) {
+  const uint16_t tenths = swrTenthsFromRaw(currentProfile().swrScale, raw);
+  const String swr = String(tenths / 10) + "." + String(tenths % 10);
+  Serial.print("SWR: ");
+  Serial.print(swr);
+  Serial.print("  (raw ");
+  Serial.print(raw);
+  Serial.println(highSwr ? ", HIGH SWR)" : ")");
+  return swr;
+}
+
 // ALC? and MOD?: a 0..15 meter of 0xBD. Said with meterToken, printed only without it.
 static void reportFt8x7BdMeter(const char* command, const char* label, uint8_t YaesuTxMeters::*meter,
                                const char* meterToken) {
@@ -1702,12 +1721,7 @@ static bool handleConsoleFt8x7Meters(const String& upper) {
     if (!yaesuCatQueryTxMeters(meters, true, kCatReplyTimeoutMs)) { reportCommandFailure("SWR?", "no reply"); return true; }
     if (!meters.transmitting) { reportTxMeterInReceive("SWR", "swr"); return true; }
     rememberLiveSwr(meters.swr, millis());
-    const float swr = yaesuSwrFromMeter(meters.swr);
-    Serial.print("SWR: ");
-    Serial.print(swr, 1);
-    Serial.print("  (meter ");
-    Serial.print(meters.swr);
-    Serial.println(meters.highSwr ? " of 15, HIGH SWR)" : " of 15)");
+    const String swr = printSwr(meters.swr, meters.highSwr);
     if (g_speechEnabled) {
       // The warning stays with verbose off.
       if (meters.highSwr) {
@@ -1716,7 +1730,7 @@ static bool handleConsoleFt8x7Meters(const String& upper) {
       } else {
         speakLabel("swr");
       }
-      speakDigitsAndPoint(String(swr, 1));
+      speakDigitsAndPoint(swr);
     }
     return true;
   }
@@ -3412,12 +3426,15 @@ static bool handleConsoleRadioCommands(const String& line, const String& upper) 
     return true;
   }
   if (upper == "SWR?") {
+    if (currentProfile().caps.getRxTx) {
+      bool tx = false;
+      if (queryRxTxStatus(tx) && !tx) { reportTxMeterInReceive("SWR", "swr"); return true; }
+    }
     if (!refreshLiveSwr()) { reportCommandFailure("SWR?", "no reply"); return true; }
-    float swr = swrRawToValue(live.swrRaw);
-    Serial.println(swr, 2);
+    const String swr = printSwr(live.swrRaw, false);
     if (g_speechEnabled) {
       speakLabel("swr");
-      speakDigitsAndPoint(String(swr, 2));
+      speakDigitsAndPoint(swr);
     }
     return true;
   }
@@ -4118,6 +4135,7 @@ void processCommand(String line) {
   if (handleConsoleInfoCommands(upper)) return;
   if (handleConsoleProfileCommands(line, upper)) return;
   if (handleConsoleConnectionCommands(line, upper)) return;
+  if (handleYaesuAsciiFilterWidth(upper)) return;
   if (handleFtdx10BlockedConsoleCommand(upper)) return;
   if (handleConsoleToggleCommands(line, upper)) return;
   if (handleConsoleAgc(upper)) return;

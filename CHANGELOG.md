@@ -2,13 +2,25 @@
 
 ## Unreleased
 
-### Icom S-meter
+### S-meter
 
+- FTDX10, FTDX101D/MP and FT-891: the S-meter no longer reads too low and now goes above S9; not
+  yet compared with a radio's own meter
+- TS-480 and KX2: the S-meter no longer always reads S0
 - the S-meter on Icom CI-V radios uses Icom's scale (0 = S0, 120 = S9, 241 = S9+60 dB, as in
   the IC-7300 CI-V reference and Hamlib). Before, it used S0 = 21 and S9 = 297, so a signal at
   S9 was spoken "3", S9+10 dB "4", and nothing above S8 was ever spoken. Above S9 it now says
   "9 plus 10" up to "9 plus 60", in 10 dB steps like the radio's scale. Host tests in
   `tests/civmeter`. The IC-706 is assumed to use the same scale; not yet checked on a radio
+
+### SWR
+
+- KX2, TS-480, FTDX10, FTDX101D/MP and FT-891: SWR reads on the radio's own scale; it read far
+  too low before (an SWR of 3 on a KX2 or TS-480 was said as 1.3 or 1.1)
+- SWR is said with one decimal on every radio. Icom radios and the FTDX10 say "SWR TX only" in
+  receive instead of 1.0
+- the console prints the radio's raw answer next to the SWR on every radio, e.g.
+  `SWR: 1.5  (raw 48)`
 
 ### Hardware documentation
 

@@ -19,7 +19,9 @@ Implemented and documented for the current field-test phase:
 - VFO-A and VFO-B select
 - VFO-A and VFO-B mode read and set
 - split read and set
-- S-meter, power meter, SWR
+- S-meter, power meter, SWR. The S-meter (`SM0`, 000..255) follows Hamlib's scale: FTDX10 and
+  FT-891 S9 = 130, FTDX101 S9 = 160, S9+60 dB = 255 (`firmware/radio_profile_table.cpp`); not yet
+  compared with a radio's own meter
 - lock read and set
 - tuner read, set, and tune start
 - NR, NB, notch read and set

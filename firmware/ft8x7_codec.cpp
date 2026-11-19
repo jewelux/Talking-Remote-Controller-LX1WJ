@@ -46,13 +46,6 @@ bool yaesuCatTxStatusTransmitting(uint8_t txStatus) {
   return (txStatus & 0x80) == 0;
 }
 
-// SWR per meter bar, measured on an FT-817 by WA4YA/DL4YA (Hamlib's FT817_SWR_CAL).
-float yaesuSwrFromMeter(uint8_t bars) {
-  static constexpr float kSwr[] = {1.0f, 1.4f, 1.8f, 2.13f, 2.25f, 3.7f, 6.0f, 7.0f, 8.0f, 9.0f};
-  static constexpr size_t kCount = sizeof(kSwr) / sizeof(kSwr[0]);
-  return bars < kCount ? kSwr[bars] : 10.0f;
-}
-
 static constexpr uint16_t kValidCtcssTenths[] = {
   670, 693, 719, 744, 770, 797, 825, 854, 885, 915,
   948, 974, 1000, 1035, 1072, 1109, 1148, 1188, 1230, 1273,

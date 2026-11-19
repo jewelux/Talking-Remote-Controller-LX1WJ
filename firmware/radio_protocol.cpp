@@ -1,5 +1,6 @@
 #include "radio_catalog.h"
 #include "civ_smeter.h"
+#include "meter_scale.h"
 #include "radio_globals.h"
 #include "packet_ascii.h"
 #include "protocol_ascii.h"
@@ -148,9 +149,14 @@ bool querySMeterRaw(int32_t& rawOut, uint32_t timeoutMs) {
 }
 
 SMeterReading sMeterFromRaw(int32_t raw) {
+  SMeterReading reading;
+  // A profile's own scale comes before its protocol's decoder.
+  if (const MeterScale& scale = currentProfile().smeterScale; !scale.empty()) {
+    smeterScaleDecode(scale, raw, reading.sUnits, reading.dbOverS9);
+    return reading;
+  }
   if (currentProtocolType() == PROTO_YAESU_FT8X7) return yaesuCatDecodeSMeter((uint8_t)raw);
   if (currentProtocolType() == PROTO_YAESU_FT847) return ft847SMeterFromRaw((uint8_t)raw);
-  SMeterReading reading;
   if (currentProfile().model == RadioModel::Qmx) {
     qmxDecodeSMeter(raw, reading.sUnits, reading.dbOverS9);
     return reading;
@@ -494,19 +500,7 @@ bool queryRxTxStatus(bool& txOut, uint32_t timeoutMs) {
   ProtocolType pt = currentProtocolType();
   const RadioProfile& sp = currentProfile();
   if (pt == PROTO_CIV) return civQueryRxTxStatus(sp, txOut, timeoutMs);
-  if (pt == PROTO_YAESU_FTDX_ASCII && sp.caps.getRxTx) {
-    if (!ensureYaesuFtdxActiveVfoKnown(sp, timeoutMs)) return false;
-    const char* txCode = live.activeVfoA ? "5" : "6";
-    const char* rxCode = live.activeVfoA ? "7" : "8";
-    bool flag = false;
-    if (asciiQueryYaesuRadioInfoFlag(sp, txCode, flag, timeoutMs) && flag) {
-      txOut = true;
-      return true;
-    }
-    if (!asciiQueryYaesuRadioInfoFlag(sp, rxCode, flag, timeoutMs)) return false;
-    txOut = false;
-    return true;
-  }
+  if (pt == PROTO_YAESU_FTDX_ASCII && sp.caps.getRxTx) return asciiQueryYaesuTxState(sp, txOut, timeoutMs);
   if (pt == PROTO_YAESU_FT847) return ft847QueryRxTx(sp, txOut, timeoutMs);
   if (pt == PROTO_YAESU_FT8X7 && sp.caps.getRxTx) {
     uint8_t raw = 0;
