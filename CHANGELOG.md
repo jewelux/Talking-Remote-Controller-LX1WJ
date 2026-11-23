@@ -100,6 +100,11 @@
   and `C` step it, `D` sets it. RF power, the mode and the FT-8x7 settings always wait for `D`
 - help mode: `D` long, then each key says what it would do and changes nothing; `D` long or `#`
   ends it
+- receive filter keys, not yet tested on a radio:
+  - Bank 2 `3`: auto notch, double press the manual notch
+  - FTDX10, FTDX101D/MP, FT-891: Bank 2 `0` contour, `4`/`6` low and high cut, `5` width with
+    narrow on a double press (FT-891: narrow only), Bank 7 `6` APF
+  - TS-480: Bank 2 `4`/`6` low and high cut
 
 ### Frequency
 

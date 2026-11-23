@@ -33,6 +33,9 @@ struct SettingOps {
   bool (*confirm)() = nullptr;
   // What A double sets, where settingInfo says the setting has a centre.
   int32_t centre = 0;
+  // False where B and C have no step from value (the width NORMAL, which has no place among
+  // the widths): they say "not available". nullptr: they step from any value.
+  bool (*stepsFrom)(int32_t value) = nullptr;
 };
 
 // For the ops files: a switch, 0 off and 1 on, where writeAccess() is Ok; else what it returns.

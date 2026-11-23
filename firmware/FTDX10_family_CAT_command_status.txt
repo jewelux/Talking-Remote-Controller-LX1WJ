@@ -10,18 +10,18 @@ AM | VFO-A to memory channel | nein | keine FTDX10-Implementierung gefunden
 AO | AMC output level | nein | keine FTDX10-Implementierung gefunden
 AV | Anti VOX level | nein | keine FTDX10-Implementierung gefunden
 BA | VFO-B to VFO-A | nein | keine FTDX10-Implementierung gefunden
-BC | Auto notch (DNF) | implementiert | ANOTCH? und ANOTCH OFF/ON/TOGGLE (BC0, nach CAT-Handbuch und Hamlib), mit Ruecklesen; Bank 2 0
+BC | Auto notch (DNF) | implementiert | ANOTCH? und ANOTCH OFF/ON/TOGGLE (BC0, nach CAT-Handbuch und Hamlib), mit Ruecklesen; Bank 2 3
 BD | Band down | nein | keine FTDX10-Implementierung gefunden
 BI | Break-in | implementiert | BK? und BK OFF/ON/TOGGLE (nach CAT-Handbuch und Hamlib), mit Ruecklesen; Bank 7 2
 BM | VFO-B to memory channel | nein | keine FTDX10-Implementierung gefunden
-BP | Manual notch | implementiert | NOTCH? und NOTCH OFF/ON/TOGGLE (BP00000/BP00001, drei Ziffern wie Handbuch, Hamlib und flrig; vorher zwei), NOTCHFREQ? und NOTCHFREQ 10..3200 Hz (BP01, x 10 Hz), mit Ruecklesen; auch FT-891
+BP | Manual notch | implementiert | NOTCH? und NOTCH OFF/ON/TOGGLE (BP00000/BP00001, drei Ziffern wie Handbuch, Hamlib und flrig; vorher zwei), NOTCHFREQ? und NOTCHFREQ 10..3200 Hz (BP01, x 10 Hz), mit Ruecklesen; auch FT-891; Bank 2 3 doppelt, Frequenz auf A/B/C
 BS | Band select | nein | keine FTDX10-Implementierung gefunden
 BU | Band up | nein | keine FTDX10-Implementierung gefunden
 BY | Busy | nein | keine FTDX10-Implementierung gefunden
 CF | RIT/XIT | nein | keine FTDX10-Implementierung gefunden
 CH | Channel up/down | nein | keine FTDX10-Implementierung gefunden
 CN | CTCSS number | implementiert | CTCSS? und CTCSS <Hz> (CN00, 50-Ton-Tabelle des Handbuchs, nach Hamlib), mit Ruecklesen; Bank 6 3
-CO | Contour/APF | implementiert | CONTOUR, CONTOURFREQ 10..3200 Hz, APF, APFFREQ -250..250 Hz (CO00..CO03, nach Handbuch und Hamlib), mit Ruecklesen; nur Konsole
+CO | Contour/APF | implementiert | CONTOUR, CONTOURFREQ 10..3200 Hz, APF, APFFREQ -250..250 Hz (CO00..CO03, nach Handbuch und Hamlib), mit Ruecklesen; Contour Bank 2 0, APF Bank 7 6
 CS | CW spot | nein | keine FTDX10-Implementierung gefunden
 CT | CTCSS | implementiert | TONE?/TONE OFF/CTCSS und TONEDIR NEXT (CT0 1 ENC/DEC, 2 ENC, nach Handbuch und Hamlib), mit Ruecklesen; Bank 6 2 und 5
 DA | LCD contrast/dimmer | nein | keine FTDX10-Implementierung gefunden
@@ -31,7 +31,7 @@ ED | Encoder down | nein | keine FTDX10-Implementierung gefunden
 EM | Encode memory | nein | keine FTDX10-Implementierung gefunden
 EN | Encode | nein | keine FTDX10-Implementierung gefunden
 EU | Encoder up | nein | keine FTDX10-Implementierung gefunden
-EX | Menu | teilweise | nur LCUT/HCUT FREQ und SLOPE der aktuellen Betriebsart: HPF, LPF, HPFSLOPE, LPFSLOPE (Menuenummern nur aus dem CAT-Handbuch), mit Ruecklesen; nur Konsole
+EX | Menu | teilweise | nur LCUT/HCUT FREQ und SLOPE der aktuellen Betriebsart: HPF, LPF, HPFSLOPE, LPFSLOPE (Menuenummern nur aus dem CAT-Handbuch), mit Ruecklesen; HPF/LPF Bank 2 4 und 6, Flanken nur Konsole
 FA | Frequency VFO-A | implementiert | lesen/schreiben vorhanden
 FB | Frequency VFO-B | implementiert | lesen/schreiben vorhanden
 FN | Fine tuning | nein | keine FTDX10-Implementierung gefunden
@@ -57,7 +57,7 @@ MS | Meter switch | nein | keine FTDX10-Implementierung gefunden
 MT | Memory channel write/tag | nein | keine FTDX10-Implementierung gefunden
 MW | Memory write | nein | keine FTDX10-Implementierung gefunden
 MX | MOX set | nein | keine FTDX10-Implementierung gefunden
-NA | Narrow | implementiert | NAR? und NAR OFF/ON/TOGGLE (NA0, nach Handbuch und Hamlib), mit Ruecklesen; nur Konsole
+NA | Narrow | implementiert | NAR? und NAR OFF/ON/TOGGLE (NA0, nach Handbuch und Hamlib), mit Ruecklesen; Bank 2 5 doppelt (FT-891: 5)
 NB | Noise blanker | implementiert | read/on/off vorhanden
 NL | Noise blanker level | implementiert | NBLEVEL? und NBLEVEL 0..10 (NL0, nach CAT-Handbuch und Hamlib), mit Ruecklesen; Bank 2 2 doppelt
 NR | Noise reduction (DNR) | implementiert | read/on/off vorhanden
@@ -86,7 +86,7 @@ RU | RIT up | nein | keine FTDX10-Implementierung gefunden
 SC | Scan | nein | keine FTDX10-Implementierung gefunden
 SD | Semi break-in delay time | implementiert | CWDELAY? und CWDELAY 30..3000 ms (SD-Stufe wie VD, nach FTDX10-Handbuch und Hamlib), mit Ruecklesen; Bank 7 9; nicht beim FTDX101 (Handbuch ms, Hamlib Stufen)
 SF | Sub dial | nein | keine FTDX10-Implementierung gefunden
-SH | Width | implementiert | WIDTH? und WIDTH <Hz>/NORMAL/STEP (SH00nn, Tabelle 3 des Handbuchs, wie flrig; Hamlib hat bei 12..14 die FTDX101-Werte), SSB, CW, RTTY, DATA, nicht AM/FM, mit Ruecklesen; nur Konsole
+SH | Width | implementiert | WIDTH? und WIDTH <Hz>/NORMAL/STEP (SH00nn, Tabelle 3 des Handbuchs, wie flrig; Hamlib hat bei 12..14 die FTDX101-Werte), SSB, CW, RTTY, DATA, nicht AM/FM, mit Ruecklesen; Bank 2 5
 SM | S meter | teilweise | konkret SM0 Abfrage vorhanden, kein allgemeiner SM-Ausbau darueber hinaus
 SQ | Squelch level | nein | keine FTDX10-Implementierung gefunden
 SS | Spectrum scope | nein | keine FTDX10-Implementierung gefunden

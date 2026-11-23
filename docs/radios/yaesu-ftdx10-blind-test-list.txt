@@ -40,8 +40,18 @@ Bank 2, key 1 short or long - NR query or toggle
 Bank 2, key 1 double - NR level query; then B or C - NR level up or down
 Bank 2, key 2 short or long - NB query or toggle
 Bank 2, key 2 double - NB level query; then B or C - NB level up or down
-Bank 2, key 3 short or long - notch query or toggle
-Bank 2, key 0 short or long - auto notch query or toggle
+Bank 2, key 3 short or long - auto notch query or toggle
+Bank 2, key 3 double - notch query; short then hold - notch on or off
+Bank 2, key 3, then B or C - notch frequency up or down 50 Hz
+
+Receive filter (not yet tested on a radio)
+Bank 2, key 0 short or long - contour query or toggle; then B or C - contour frequency
+Bank 2, key 4 short - low cut; long - low cut entry in Hz, 0 is off; B or C - 50 Hz steps
+Bank 2, key 6 short - high cut; long - high cut entry in Hz, 0 is off; B or C - 50 Hz steps
+Bank 2, key 5 short - filter width; long - width entry in Hz; B or C - next width
+Bank 2, key 5 double - narrow query; short then hold - narrow on or off
+Bank 2, key 5, then A double - width back to NORMAL
+Bank 7, key 6 short or long - APF query or toggle (CW); then B or C - offset 10 Hz
 Bank 2, key 7 short - AGC query
 Bank 2, key 7 long - AGC select, then 0 off, 1 auto, 2 fast, 3 slow, 4 mid, then D
 

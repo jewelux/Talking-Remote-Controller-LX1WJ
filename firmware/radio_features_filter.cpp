@@ -131,6 +131,12 @@ FeatureStatus rxFilterLevelRange(RxFilterLevel level, RxFilterRange& out) {
   return FeatureStatus::Ok;
 }
 
+FeatureStatus rxFilterLevelScale(RxFilterLevel level, RxFilterScale& out) {
+  if (!rxFilterLevelSupported(level) || isFt8x7() || !rxFilterLevelByMode(level)) return FeatureStatus::Unsupported;
+  FilterModeGroup group = FilterModeGroup::Unknown;
+  return currentScale(level, group, out);
+}
+
 FeatureStatus rxFilterLevelWriteAccess(RxFilterLevel level) {
   if (!rxFilterLevelSupported(level)) return FeatureStatus::Unsupported;
   Ft8x7Setting setting;
@@ -230,10 +236,14 @@ FeatureStatus rxFilterSwitchQuery(RxFilterSwitch sw, bool& on) {
                                                                                   : failure(FeatureStatus::NoReply);
 }
 
-FeatureStatus rxFilterSwitchSet(RxFilterSwitch sw, bool on, bool& out) {
+FeatureStatus rxFilterSwitchWriteAccess(RxFilterSwitch sw) {
   // The FT-857/897 keeps NAR in its band block, which HamTRC only reads.
   if (!rxFilterSwitchSupported(sw) || isFt8x7()) return FeatureStatus::Unsupported;
-  const FeatureStatus access = writeAccess([sw](const RadioCapabilities& caps) { return rxFilterSwitchCap(caps, sw, true); });
+  return writeAccess([sw](const RadioCapabilities& caps) { return rxFilterSwitchCap(caps, sw, true); });
+}
+
+FeatureStatus rxFilterSwitchSet(RxFilterSwitch sw, bool on, bool& out) {
+  const FeatureStatus access = rxFilterSwitchWriteAccess(sw);
   if (access != FeatureStatus::Ok) return access;
   if (!asciiSetRxFilterSwitch(currentProfile(), sw, on)) return failure(FeatureStatus::Failed);
   out = on;

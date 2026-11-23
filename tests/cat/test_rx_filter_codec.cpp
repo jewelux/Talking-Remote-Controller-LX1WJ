@@ -191,6 +191,34 @@ TEST(yaesu_cut_scales) {
   CHECK(!hasScale(RxFilterEncoding::YaesuFtdx10, RxFilterLevel::LowCut, FilterModeGroup::Unknown));
 }
 
+// The keypad steps by value: the nearest code, then rxFilterScaleStep.
+TEST(scale_next_by_value) {
+  uint16_t out = 0;
+  const RxFilterScale low = scaleOf(RxFilterEncoding::YaesuFtdx10, RxFilterLevel::LowCut, FilterModeGroup::Ssb);
+  CHECK(rxFilterScaleNext(low, 0, 1, out));
+  CHECK_EQ(out, 100);
+  CHECK(rxFilterScaleNext(low, 300, -1, out));
+  CHECK_EQ(out, 250);
+  CHECK(rxFilterScaleNext(low, 320, 1, out));  // 320 is nearest 300
+  CHECK_EQ(out, 350);
+  CHECK(rxFilterScaleNext(low, 100, -1, out));
+  CHECK_EQ(out, 100);
+  CHECK(rxFilterScaleNext(low, 0, -1, out));
+  CHECK_EQ(out, 0);
+  const RxFilterScale high = scaleOf(RxFilterEncoding::YaesuFtdx10, RxFilterLevel::HighCut, FilterModeGroup::Ssb);
+  CHECK(rxFilterScaleNext(high, 0, -1, out));
+  CHECK_EQ(out, 4000);
+  CHECK(rxFilterScaleNext(high, 0, 1, out));
+  CHECK_EQ(out, 0);
+  const RxFilterScale width = scaleOf(RxFilterEncoding::YaesuFtdx10, RxFilterLevel::Width, FilterModeGroup::Cw);
+  CHECK(!rxFilterScaleNext(width, 0, 1, out));  // NORMAL
+  CHECK(rxFilterScaleNext(width, width.valueOf(5), 1, out));
+  CHECK_EQ(out, width.valueOf(6));
+  const RxFilterScale ts480 = scaleOf(RxFilterEncoding::KenwoodTs480, RxFilterLevel::LowCut, FilterModeGroup::Ssb);
+  CHECK(rxFilterScaleNext(ts480, 0, 1, out));
+  CHECK_EQ(out, 50);
+}
+
 // The EX items of each manual.
 TEST(yaesu_cut_menus) {
   char cmd[16];

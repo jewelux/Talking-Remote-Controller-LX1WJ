@@ -17,6 +17,8 @@ constexpr SpokenLabel kSpokenLabels[] = {
   {"ALC", "alc"},
   {"ANOTCH", "auto notch"},
   {"ANT", "antenna"},
+  {"APF", "a p f"},
+  {"APFFREQ", "a p f"},
   {"ATT", "attenuator"},
   {"BAUD", "baud"},
   {"BK", "breakin"},
@@ -26,6 +28,8 @@ constexpr SpokenLabel kSpokenLabels[] = {
   {"BSTACK2", "band stack two"},
   {"BSTACK3", "band stack three"},
   {"CIVADDR", "c i"},
+  {"CONTOUR", "contour"},
+  {"CONTOURFREQ", "contour frequency"},
   {"CTCSS", "ctcss"},
   {"CWAUTO", "cw auto"},
   {"CWBFO", "cw b f o"},
@@ -58,6 +62,7 @@ constexpr SpokenLabel kSpokenLabels[] = {
   {"NB", "noiseblanker"},
   {"NBLEVEL", "noiseblanker level"},
   {"NOTCH", "notch filter"},
+  {"NOTCHFREQ", "notch frequency"},
   {"NR", "noisereduction"},
   {"NRLEVEL", "noisereduction level"},
   {"PADDLE", "paddle"},
@@ -123,6 +128,7 @@ constexpr SpokenLabel kSpokenLabels[] = {
   {"VOX", "vox"},
   {"VOXDELAY", "voxdelay"},
   {"VOXGAIN", "voxgain"},
+  {"WIDTH", "filterwidth"},
 };
 
 }  // namespace

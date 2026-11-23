@@ -49,12 +49,18 @@ KeypadTraits traitsFor(uint16_t family) {
     for (Setting s : settings) t.settings.add(s);
   };
   if (family == IC7300) {
-    add({S::NrLevel, S::NbLevel, S::Notch, S::PbtInner, S::PbtOuter, S::FilterSlot, S::Agc, S::Preamp, S::Att});
+    add({S::NrLevel, S::NbLevel, S::Notch, S::AutoNotch, S::PbtInner, S::PbtOuter, S::FilterSlot, S::RxWidth, S::Agc,
+         S::Preamp, S::Att});
   }
-  if (family == TS480) add({S::Agc, S::Preamp, S::Att});
-  if (family == FTDX10 || family == FT891) add({S::NrLevel, S::NbLevel, S::Agc, S::Preamp, S::Att});
+  if (family == TS480) add({S::Agc, S::Preamp, S::Att, S::RxLowCut, S::RxHighCut});
+  if (family == FTDX10 || family == FT891) {
+    add({S::NrLevel, S::NbLevel, S::Agc, S::Preamp, S::Att, S::AutoNotch, S::NotchFreq, S::RxLowCut, S::RxHighCut,
+         S::Narrow, S::Contour, S::ContourFreq, S::Apf, S::ApfFreq});
+  }
+  // The FT-891 has no width over CAT.
+  if (family == FTDX10) add({S::RxWidth});
   if (family == FT817) add({S::Agc});
-  if (family == FT857) add({S::NrLevel, S::NbLevel, S::RxLowCut, S::RxHighCut, S::BpfWidth, S::Agc, S::Att});
+  if (family == FT857) add({S::NrLevel, S::NbLevel, S::RxLowCut, S::RxHighCut, S::BpfWidth, S::Narrow, S::Agc, S::Att});
   if (family == IC7300) add({S::Monitor, S::MonitorLevel});
   if (family == IC7300 || family == TS480 || family == FTDX10 || family == FT891 || family == FT857) {
     add({S::Proc, S::ProcLevel});

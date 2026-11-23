@@ -1,6 +1,7 @@
 // The Bank 2 receive settings the keypad steps and enters, one SettingOps each:
 // the NR and NB levels, PBT, the FT-857/897 DSP filter, the Icom filter and
-// notch, the preamp and the attenuator.
+// notch, the receive filter settings (low and high cut, width, narrow, notch
+// frequency, contour, APF), the preamp and the attenuator.
 #include "keypad_setting_ops.h"
 
 #include "cat_setting_codec.h"
@@ -8,6 +9,7 @@
 #include "radio_features_internal.h"
 #include "radio_globals.h"
 #include "radio_protocol.h"
+#include "rx_filter_codec.h"
 #include "ui_features.h"
 #include "ui_speech.h"
 
@@ -191,12 +193,10 @@ void speakRxLevelOf(int32_t value) {
 
 bool rxLevelConfirm() { return currentIsFt857Family(); }
 
-// ---- FT-857/897 low cut, high cut and DSP bandpass width ----
+// ---- FT-857/897 DSP bandpass width ----
 
 bool ft857Available() { return currentIsFt857Family(); }
 
-FeatureStatus lowCutLimits(ValueSpec& spec) { return ft857Limits<Ft8x7Setting::LowCut>(spec); }
-FeatureStatus highCutLimits(ValueSpec& spec) { return ft857Limits<Ft8x7Setting::HighCut>(spec); }
 FeatureStatus bpfWidthLimits(ValueSpec& spec) { return ft857Limits<Ft8x7Setting::BpfWidth>(spec); }
 
 // ---- Icom passband tuning: -128..127 steps of the radio's level, 0 the centre ----
@@ -344,6 +344,165 @@ FeatureStatus notchWrite(int32_t value, int32_t& readBack) {
 String notchText(int32_t value) { return notchStateText(notchStateOf(value)); }
 void speakNotch(int32_t value) { speakNotchState(notchStateOf(value)); }
 
+// ---- Receive filter levels: radio_features rxFilterLevel* ----
+//
+// The width and the cuts step through the radio's table for the current mode, which limits
+// reads; the notch and contour frequencies step 50 Hz, the APF offset 10 Hz. 0 is the width
+// NORMAL and a cut OFF, typed as 0.
+
+// The table limits last read for L, which its B and C step through with no radio traffic.
+template <RxFilterLevel L>
+RxFilterScale& lastScale() {
+  static RxFilterScale scale;
+  return scale;
+}
+
+template <RxFilterLevel L>
+int32_t stepOnScale(int32_t value, int8_t dir) {
+  uint16_t next = 0;
+  if (value < 0 || !rxFilterScaleNext(lastScale<L>(), (uint16_t)value, dir, next)) return value;
+  return next;
+}
+
+template <RxFilterLevel L>
+bool rxFilterAvailable() {
+  return rxFilterLevelSupported(L);
+}
+
+template <RxFilterLevel L>
+FeatureStatus rxFilterLimits(ValueSpec& spec) {
+  const FeatureStatus access = rxFilterLevelWriteAccess(L);
+  if (access != FeatureStatus::Ok) return access;
+  spec.unit = " Hz";
+  spec.bigSteps = 5;
+  if (rxFilterLevelByMode(L)) {
+    RxFilterScale& scale = lastScale<L>();
+    const FeatureStatus status = rxFilterLevelScale(L, scale);
+    if (status != FeatureStatus::Ok) return status;
+    spec.min = scale.hasZero() ? 0 : scale.valueOf(scale.firstValueCode());
+    spec.max = scale.valueOf(scale.last);
+    spec.stepFn = stepOnScale<L>;
+  } else {
+    RxFilterRange range;
+    const FeatureStatus status = rxFilterLevelRange(L, range);
+    if (status != FeatureStatus::Ok) return status;
+    spec.min = range.min;
+    spec.max = range.max;
+    spec.sign = range.min < 0;
+    spec.step = L == RxFilterLevel::ApfFreq ? 10 : 50;
+  }
+  spec.maxDigits = spec.max >= 10000 ? 5 : spec.max >= 1000 ? 4 : 3;
+  return FeatureStatus::Ok;
+}
+
+template <RxFilterLevel L>
+FeatureStatus rxFilterRead(int32_t& value) {
+  int16_t now = 0;
+  const FeatureStatus status = rxFilterLevelQuery(L, now);
+  value = now;
+  return status;
+}
+
+template <RxFilterLevel L>
+FeatureStatus rxFilterWrite(int32_t value, int32_t& readBack) {
+  if (value < -32768 || value > 32767) return FeatureStatus::Invalid;
+  // The entry takes 0 (off, NORMAL) to the highest value; one typed below the lowest value goes to
+  // it, the nearest the radio has, as rxFilterLevelSet does with the others.
+  const RxFilterScale& scale = lastScale<L>();
+  if (rxFilterLevelByMode(L) && scale.values && value > 0) {
+    const int32_t lowest = scale.valueOf(scale.firstValueCode());
+    if (value < lowest) value = lowest;
+  }
+  int16_t set = 0;
+  const FeatureStatus status = rxFilterLevelSet(L, (int16_t)value, set);
+  readBack = set;
+  return status;
+}
+
+template <RxFilterLevel L>
+String rxFilterText(int32_t value) {
+  return rxFilterLevelText(L, (int16_t)value);
+}
+
+template <RxFilterLevel L>
+void speakRxFilter(int32_t value) {
+  speakRxFilterLevel(L, (int16_t)value);
+}
+
+// The width NORMAL has no place among the widths to step from.
+bool widthStepsFrom(int32_t value) { return value != 0; }
+
+// The low and high cut: the FT-857/897 DSP menus (staged for Enter), else the receive filter cut.
+template <Ft8x7Setting S, RxFilterLevel L>
+bool cutAvailable() {
+  return currentIsFt857Family() || rxFilterAvailable<L>();
+}
+template <Ft8x7Setting S, RxFilterLevel L>
+FeatureStatus cutLimits(ValueSpec& spec) {
+  return currentIsFt857Family() ? ft857Limits<S>(spec) : rxFilterLimits<L>(spec);
+}
+template <Ft8x7Setting S, RxFilterLevel L>
+FeatureStatus cutRead(int32_t& value) {
+  return currentIsFt857Family() ? ft857Read<S>(value) : rxFilterRead<L>(value);
+}
+template <Ft8x7Setting S, RxFilterLevel L>
+FeatureStatus cutWrite(int32_t value, int32_t& readBack) {
+  return currentIsFt857Family() ? ft857Write<S>(value, readBack) : rxFilterWrite<L>(value, readBack);
+}
+template <Ft8x7Setting S, RxFilterLevel L>
+String cutText(int32_t value) {
+  return currentIsFt857Family() ? ft857Text<S>(value) : rxFilterText<L>(value);
+}
+template <Ft8x7Setting S, RxFilterLevel L>
+void speakCut(int32_t value) {
+  if (currentIsFt857Family()) ft857Speak<S>(value);
+  else speakRxFilter<L>(value);
+}
+bool cutConfirm() { return currentIsFt857Family(); }
+
+// ---- Receive filter switches: narrow, contour, APF; 0 off, 1 on ----
+
+template <RxFilterSwitch W>
+bool rxSwitchAvailable() {
+  return rxFilterSwitchSupported(W);
+}
+
+template <RxFilterSwitch W>
+FeatureStatus rxSwitchAccess() {
+  return rxFilterSwitchWriteAccess(W);
+}
+
+template <RxFilterSwitch W>
+FeatureStatus rxSwitchLimits(ValueSpec& spec) {
+  return switchSettingLimits(spec, rxSwitchAccess<W>);
+}
+
+template <RxFilterSwitch W>
+FeatureStatus rxSwitchRead(int32_t& value) {
+  bool on = false;
+  const FeatureStatus status = rxFilterSwitchQuery(W, on);
+  value = on ? 1 : 0;
+  return status;
+}
+
+template <RxFilterSwitch W>
+FeatureStatus rxSwitchWrite(int32_t value, int32_t& readBack) {
+  bool on = false;
+  const FeatureStatus status = rxFilterSwitchSet(W, value != 0, on);
+  readBack = on ? 1 : 0;
+  return status;
+}
+
+template <RxFilterSwitch W>
+String rxSwitchText(int32_t value) {
+  return rxFilterSwitchText(W, value != 0);
+}
+
+template <RxFilterSwitch W>
+void speakRxSwitch(int32_t value) {
+  speakRxFilterSwitch(W, value != 0);
+}
+
 // ---- Preamp: 0 off, then its levels ----
 
 bool preampAvailable() { return currentProfile().caps.getPreamp && preampLevels() > 0; }
@@ -420,6 +579,18 @@ FeatureStatus attWrite(int32_t value, int32_t& readBack) {
 String attTextOf(int32_t value) { return attText(attStateOf(value)); }
 void speakAttOf(int32_t value) { speakAtt(attStateOf(value)); }
 
+constexpr Ft8x7Setting kLowCut = Ft8x7Setting::LowCut;
+constexpr Ft8x7Setting kHighCut = Ft8x7Setting::HighCut;
+constexpr RxFilterLevel kRxLowCut = RxFilterLevel::LowCut;
+constexpr RxFilterLevel kRxHighCut = RxFilterLevel::HighCut;
+constexpr RxFilterLevel kWidth = RxFilterLevel::Width;
+constexpr RxFilterLevel kNotchFreq = RxFilterLevel::NotchFreq;
+constexpr RxFilterLevel kContourFreq = RxFilterLevel::ContourFreq;
+constexpr RxFilterLevel kApfFreq = RxFilterLevel::ApfFreq;
+constexpr RxFilterSwitch kNarrow = RxFilterSwitch::Narrow;
+constexpr RxFilterSwitch kContour = RxFilterSwitch::Contour;
+constexpr RxFilterSwitch kApf = RxFilterSwitch::Apf;
+
 constexpr SettingOps kRxOps[] = {
     {Setting::NrLevel, rxLevelAvailable<RxLevel::Nr>, rxLevelLimits<RxLevel::Nr>,
      rxLevelRead<RxLevel::Nr>, rxLevelWrite<RxLevel::Nr>, rxLevelTextOf<RxLevel::Nr>, speakRxLevelOf<RxLevel::Nr>,
@@ -427,10 +598,27 @@ constexpr SettingOps kRxOps[] = {
     {Setting::NbLevel, rxLevelAvailable<RxLevel::Nb>, rxLevelLimits<RxLevel::Nb>,
      rxLevelRead<RxLevel::Nb>, rxLevelWrite<RxLevel::Nb>, rxLevelTextOf<RxLevel::Nb>, speakRxLevelOf<RxLevel::Nb>,
      rxLevelConfirm},
-    {Setting::RxLowCut, ft857Available, lowCutLimits, ft857Read<Ft8x7Setting::LowCut>,
-     ft857Write<Ft8x7Setting::LowCut>, ft857Text<Ft8x7Setting::LowCut>, ft857Speak<Ft8x7Setting::LowCut>, always},
-    {Setting::RxHighCut, ft857Available, highCutLimits, ft857Read<Ft8x7Setting::HighCut>,
-     ft857Write<Ft8x7Setting::HighCut>, ft857Text<Ft8x7Setting::HighCut>, ft857Speak<Ft8x7Setting::HighCut>, always},
+    {Setting::RxLowCut, cutAvailable<kLowCut, kRxLowCut>, cutLimits<kLowCut, kRxLowCut>,
+     cutRead<kLowCut, kRxLowCut>, cutWrite<kLowCut, kRxLowCut>, cutText<kLowCut, kRxLowCut>,
+     speakCut<kLowCut, kRxLowCut>, cutConfirm},
+    {Setting::RxHighCut, cutAvailable<kHighCut, kRxHighCut>, cutLimits<kHighCut, kRxHighCut>,
+     cutRead<kHighCut, kRxHighCut>, cutWrite<kHighCut, kRxHighCut>, cutText<kHighCut, kRxHighCut>,
+     speakCut<kHighCut, kRxHighCut>, cutConfirm},
+    {Setting::RxWidth, rxFilterAvailable<kWidth>, rxFilterLimits<kWidth>, rxFilterRead<kWidth>,
+     rxFilterWrite<kWidth>, rxFilterText<kWidth>, speakRxFilter<kWidth>, nullptr, 0, widthStepsFrom},
+    {Setting::NotchFreq, rxFilterAvailable<kNotchFreq>, rxFilterLimits<kNotchFreq>, rxFilterRead<kNotchFreq>,
+     rxFilterWrite<kNotchFreq>, rxFilterText<kNotchFreq>, speakRxFilter<kNotchFreq>},
+    {Setting::ContourFreq, rxFilterAvailable<kContourFreq>, rxFilterLimits<kContourFreq>,
+     rxFilterRead<kContourFreq>, rxFilterWrite<kContourFreq>, rxFilterText<kContourFreq>,
+     speakRxFilter<kContourFreq>},
+    {Setting::ApfFreq, rxFilterAvailable<kApfFreq>, rxFilterLimits<kApfFreq>, rxFilterRead<kApfFreq>,
+     rxFilterWrite<kApfFreq>, rxFilterText<kApfFreq>, speakRxFilter<kApfFreq>},
+    {Setting::Narrow, rxSwitchAvailable<kNarrow>, rxSwitchLimits<kNarrow>, rxSwitchRead<kNarrow>,
+     rxSwitchWrite<kNarrow>, rxSwitchText<kNarrow>, speakRxSwitch<kNarrow>},
+    {Setting::Contour, rxSwitchAvailable<kContour>, rxSwitchLimits<kContour>, rxSwitchRead<kContour>,
+     rxSwitchWrite<kContour>, rxSwitchText<kContour>, speakRxSwitch<kContour>},
+    {Setting::Apf, rxSwitchAvailable<kApf>, rxSwitchLimits<kApf>, rxSwitchRead<kApf>, rxSwitchWrite<kApf>,
+     rxSwitchText<kApf>, speakRxSwitch<kApf>},
     {Setting::BpfWidth, ft857Available, bpfWidthLimits, ft857Read<Ft8x7Setting::BpfWidth>,
      ft857Write<Ft8x7Setting::BpfWidth>, ft857Text<Ft8x7Setting::BpfWidth>, ft857Speak<Ft8x7Setting::BpfWidth>,
      always},

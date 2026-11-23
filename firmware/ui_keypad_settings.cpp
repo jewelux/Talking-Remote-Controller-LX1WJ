@@ -32,10 +32,11 @@ void settingEntry(Setting setting) {
   const FeatureStatus read = ops->read(value);
   // A radio that cannot say its value still takes one typed.
   if (read != FeatureStatus::Unsupported && answer.failed(read)) return;
-  seed.known = read == FeatureStatus::Ok;
+  // A value B and C cannot step from is shown, but the entry starts with none.
+  seed.known = read == FeatureStatus::Ok && (!ops->stepsFrom || ops->stepsFrom(value));
   seed.value = value;
   keypadBeginValueEntry(spec, seed);
-  if (seed.known) printKeypadStatus("{} PLEASE ({})", label, ops->text(value).c_str());
+  if (read == FeatureStatus::Ok) printKeypadStatus("{} PLEASE ({})", label, ops->text(value).c_str());
   else printKeypadStatus("{} PLEASE", label);
   speakPlease();
 }
@@ -236,6 +237,7 @@ void keypadSettingNudge(Setting setting, int8_t dir, bool big) {
   ValueSpec spec;
   int32_t value = 0;
   if (!readForStep(answer, *ops, spec, value)) return;
+  if (answer.unavailable(!ops->stepsFrom || ops->stepsFrom(value))) return;
   ValueEntry entry;
   entry.begin(spec, knownSeed(value));
   if (entry.step(dir, big ? spec.bigSteps : 1) != ValueEntry::Step::Moved) {

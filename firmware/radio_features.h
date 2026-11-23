@@ -79,6 +79,8 @@ FeatureStatus yaesuRxLevelStep(RxLevel level, int delta, uint16_t& valueOut);
 
 // The values a level takes in the current mode: min..max, in the radio's steps, and 0 too with
 // zero (the width's default, NORMAL, or a cut OFF).
+struct RxFilterScale;  // rx_filter_codec.h
+
 struct RxFilterRange {
   int16_t min = 0;
   int16_t max = 0;
@@ -88,6 +90,10 @@ struct RxFilterRange {
 // Whether the radio has level in some mode, by the caps (no radio traffic).
 bool rxFilterLevelSupported(RxFilterLevel level);
 FeatureStatus rxFilterLevelRange(RxFilterLevel level, RxFilterRange& out);
+// The scale of level in the radio's current mode (reads the mode), for a level set by a code of
+// a table (rxFilterLevelByMode): Unsupported for the others, the FT-857/897 cuts and a mode
+// without it.
+FeatureStatus rxFilterLevelScale(RxFilterLevel level, RxFilterScale& out);
 FeatureStatus rxFilterLevelWriteAccess(RxFilterLevel level);
 // Unexpected when the radio holds a width or cut code its table does not have.
 FeatureStatus rxFilterLevelQuery(RxFilterLevel level, int16_t& valueOut);
@@ -101,6 +107,8 @@ FeatureStatus rxFilterLevelSet(RxFilterLevel level, int16_t value, int16_t& valu
 FeatureStatus rxFilterLevelStep(RxFilterLevel level, int delta, int16_t& valueOut);
 bool rxFilterSwitchSupported(RxFilterSwitch sw);
 FeatureStatus rxFilterSwitchQuery(RxFilterSwitch sw, bool& on);
+// Ok where sw can be set: Unsupported on the FT-857/897 (read only), Experimental as the caps say.
+FeatureStatus rxFilterSwitchWriteAccess(RxFilterSwitch sw);
 FeatureStatus rxFilterSwitchSet(RxFilterSwitch sw, bool on, bool& out);
 // Off -> on -> off, from the state read.
 FeatureStatus rxFilterSwitchToggle(RxFilterSwitch sw, bool& out);

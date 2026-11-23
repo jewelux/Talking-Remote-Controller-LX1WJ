@@ -286,6 +286,13 @@ bool rxFilterScaleStep(const RxFilterScale& scale, uint8_t code, int delta, uint
   return true;
 }
 
+bool rxFilterScaleNext(const RxFilterScale& scale, uint16_t value, int delta, uint16_t& out) {
+  uint8_t code = 0;
+  if (!rxFilterScaleStep(scale, rxFilterScaleCodeOf(scale, value), delta, code)) return false;
+  out = code == scale.first && scale.hasZero() ? 0 : scale.valueOf(code);
+  return true;
+}
+
 bool rxFilterSpanFor(RxFilterEncoding encoding, RxFilterLevel level, RxFilterSpan& out) {
   if (!rxFilterEncodingIsYaesu(encoding)) return false;
   switch (level) {

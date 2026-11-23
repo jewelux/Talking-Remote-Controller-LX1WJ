@@ -37,12 +37,12 @@ back to its starting focus.
 | Bank | Keys that set the focus | Starting focus |
 |---|---|---|
 | 1 | `6` RF power, `9` mode | none |
-| 2 | `1` NR level, `2` NB level, `3` notch (FT-857/897: auto notch), `4` low cut or PBT inner, `5` CW filter width or filter, `6` high cut or PBT outer, `7` AGC, `8` preamp, `9` attenuator | none |
+| 2 | `0` contour frequency, `1` NR level, `2` NB level, `3` notch frequency (Icom: notch width), `4` low cut or PBT inner, `5` filter width, CW filter width or filter, `6` high cut or PBT outer, `7` AGC, `8` preamp, `9` attenuator | none |
 | 3 | none yet | none |
 | 4 | `1` processor level, `2` VOX gain, `3` monitor level (Icom), `5` TX equalizer, `7` mic gain, `8` RF power, `9` VOX delay | none |
 | 5 | `1`-`5` RIT offset | RIT offset |
 | 6 | `3` CTCSS tone, `4` DCS code (FT-8x7) | none |
-| 7 | `1` keyer speed, `2` QSK time (FT-857/897) or break-in (Icom), `3` sidetone, `5` pitch, `6` weight, `8` RF power, `9` break-in delay | none |
+| 7 | `1` keyer speed, `2` QSK time (FT-857/897) or break-in (Icom), `3` sidetone, `5` pitch, `6` weight or APF offset, `8` RF power, `9` break-in delay | none |
 | 8 | `2` baud rate, `7` row and `8` menu item (FT-817/818, FT-857/897) | baud rate |
 | 9 | `7` volume, `8` speech speed | profile |
 
@@ -52,9 +52,9 @@ With no focus, `A`, `B` and `C` say "not available".
 |---|---|
 | `A` short | the focus, with its name (verbose off too) |
 | `A` long | its entry or pick; speech speed steps to the next |
-| `A` double | back to the centre: PBT 0, RIT offset 0, normal speech speed, profile reset. Only where there is one; elsewhere `A` answers at once |
+| `A` double | back to the centre: PBT 0, the filter width NORMAL, the APF offset 0, RIT offset 0, normal speech speed, profile reset. Only where there is one; elsewhere `A` answers at once |
 | `B` / `C` short | one step up / down |
-| `B` / `C` long | a big step: RF power 5 steps, NR and NB level 25 % on Icom and 5 steps elsewhere, PBT 50, low and high cut 5 steps, the Bank 4 levels and the sidetone 25, VOX delay, CW speed, pitch, weight, delay and QSK time 5 steps, RIT offset 100 Hz, CTCSS tone and DCS code 5, volume 2, FT-8x7 menu item 10 and row 5; a list (filter, notch, AGC, preamp, attenuator, CW filter width, TX equalizer, Icom break-in, speech speed) one step; the mode, the profile and the baud rate not available |
+| `B` / `C` long | a big step: RF power 5 steps, NR and NB level 25 % on Icom and 5 steps elsewhere, PBT 50, low and high cut and the filter width 5 steps, the notch and contour frequency 250 Hz, the APF offset 50 Hz, the Bank 4 levels and the sidetone 25, VOX delay, CW speed, pitch, weight, delay and QSK time 5 steps, RIT offset 100 Hz, CTCSS tone and DCS code 5, volume 2, FT-8x7 menu item 10 and row 5; a list (filter, notch, AGC, preamp, attenuator, CW filter width, TX equalizer, Icom break-in, speech speed) one step; the mode, the profile and the baud rate not available |
 
 The first `B` or `C` after another key names the focus; the next ones give only the value. A step
 past the end of the range says "maximum" or "minimum" and changes nothing.
@@ -112,8 +112,8 @@ row: AGC, preamp, attenuator.
 
 | Key | Icom | FTDX10 | Kenwood, Elecraft, other FTDX | FT-817/818 | FT-857/897 |
 |---|---|---|---|---|---|
-| `0` short | auto notch | auto notch | auto notch (FTDX101, FT-891); Kenwood and Elecraft: not available | antenna jack of the band | free (auto notch on `3`) |
-| `0` long | auto notch on/off | auto notch on/off | auto notch on/off | antenna jack front/rear (experimental) | free |
+| `0` short | free | contour | contour (FTDX101, FT-891); Kenwood and Elecraft: free | antenna jack of the band | free |
+| `0` long | free | contour on/off | contour on/off (FTDX101, FT-891) | antenna jack front/rear (experimental) | free |
 | `1` short | noise reduction | noise reduction | noise reduction | not available | noise reduction |
 | `1` long | noise reduction on/off | noise reduction on/off | noise reduction on/off; TS-480 off, NR1, NR2 | not available | noise reduction on/off (experimental) |
 | `1` double | NR level | NR level | NR level (FTDX101, FT-891); Kenwood and Elecraft: free | free | NR level |
@@ -122,16 +122,18 @@ row: AGC, preamp, attenuator.
 | `2` long | noise blanker on/off | noise blanker on/off | noise blanker on/off | noise blanker on/off (experimental) | noise blanker on/off (experimental) |
 | `2` double | NB level | NB level | NB level (FTDX101, FT-891); Kenwood and Elecraft: free | free | NB level |
 | `2` short, then hold | NB level entry | NB level entry | NB level entry (FTDX101, FT-891) | free | NB level entry (experimental) |
-| `3` short | notch | notch | notch | not available | auto notch |
-| `3` long | notch off, narrow, mid, wide | notch on/off | notch on/off | not available | auto notch on/off (experimental) |
-| `4` short | PBT inner | not available | not available | not available | low cut |
-| `4` long | PBT inner entry | not available | not available | not available | low cut entry (experimental) |
-| `5` short | filter (1-3) | not available | not available | not available | DSP bandpass filter |
-| `5` long | next filter | free | free | free | DSP bandpass filter on/off (experimental) |
-| `5` double | filter shape | free | free | free | CW filter width |
-| `5` short, then hold | filter shape soft/sharp | free | free | free | CW filter width select (experimental) |
-| `6` short | PBT outer | not available | not available | not available | high cut |
-| `6` long | PBT outer entry | not available | not available | not available | high cut entry (experimental) |
+| `3` short | auto notch (IC-706: not available) | auto notch | auto notch (FTDX101, FT-891); Kenwood and Elecraft: not available | not available | auto notch |
+| `3` long | auto notch on/off (IC-706: free) | auto notch on/off | auto notch on/off | not available | auto notch on/off (experimental) |
+| `3` double | notch (IC-706: free) | notch | notch (FTDX101, FT-891) | free | free |
+| `3` short, then hold | notch off, narrow, mid, wide (IC-706: free) | notch on/off | notch on/off (FTDX101, FT-891) | free | free |
+| `4` short | PBT inner | low cut | low cut (FTDX101, FT-891, TS-480); KX2, KX3: not available | not available | low cut |
+| `4` long | PBT inner entry | low cut entry | low cut entry | not available | low cut entry (experimental) |
+| `5` short | filter (1-3) | filter width | filter width (FTDX101); FT-891: narrow; Kenwood and Elecraft: not available | not available | DSP bandpass filter |
+| `5` long | next filter | filter width entry | filter width entry (FTDX101); FT-891: narrow on/off | free | DSP bandpass filter on/off (experimental) |
+| `5` double | filter shape | narrow | narrow (FTDX101) | free | CW filter width |
+| `5` short, then hold | filter shape soft/sharp | narrow on/off | narrow on/off (FTDX101) | free | CW filter width select (experimental) |
+| `6` short | PBT outer | high cut | high cut (FTDX101, FT-891, TS-480); KX2, KX3: not available | not available | high cut |
+| `6` long | PBT outer entry | high cut entry | high cut entry | not available | high cut entry (experimental) |
 | `7` short | AGC | AGC | AGC | AGC | AGC |
 | `7` long | AGC select | AGC select | AGC select | AGC select (experimental) | AGC select (experimental) |
 | `8` short | preamp | preamp | preamp | not available | preamplifier (IPO) |
@@ -143,6 +145,22 @@ row: AGC, preamp, attenuator.
 The NR and NB levels are in percent on Icom, in the radio's own steps elsewhere (FTDX10, FTDX101
 and FT-891 NR 1-15, NB 0-10; FT-857/897 NR 1-16, NB 0-100). PBT is in the radio's steps, -128 to
 127, with 0 the centre. The FT-857/897 CW filter width (DSP bandpass width) is 60, 120 or 240 Hz.
+
+`3` is every radio's notch key: the auto notch on a short press and a hold, the notch you set
+yourself on a double press. Where the radio has only one of them, it is on the short press and the
+hold, and `3` answers at once.
+
+The filter settings of the FTDX10, FTDX101 and FT-891 are in Hz and are those of the current mode.
+An entry goes to the radio's nearest value.
+
+- **Low and high cut**: 50 Hz steps, `0` typed is off. From off, `B` goes to the lowest low cut
+  (100 Hz) and `C` to the highest high cut (4000 Hz). Off is set only by typing `0`. On the
+  TS-480 they are its slope tune, in SSB, FM and AM, in its own steps.
+- **Filter width**: steps through the radio's widths. `0` typed or `A` double is NORMAL, the
+  radio's default width. Since NORMAL has no place among the widths, `B` and `C` say "not
+  available" from it: type a width first.
+- **Contour and notch frequency**: `B` and `C` step 50 Hz.
+- **APF offset** (Bank 7 `6`): 10 Hz steps from the CW pitch.
 
 AGC select: `0` off, `1` auto, `2` fast, `3` slow, `4` mid, then `D`. Only the radio's own speeds
 are taken: Icom fast, mid and slow; FTDX10, FTDX101 and FT-891 all five; TS-480 off, fast and
@@ -307,8 +325,8 @@ keyer type, pitch, weight. Bottom row: paddle reverse, RF power, break-in delay.
 | `4` long | free | free | free | free | keyer type ELEKEY/MICKEY (experimental) |
 | `5` short | CW pitch (IC-706: not available) | CW pitch | CW pitch (FTDX101, FT-891) | CW pitch | CW pitch |
 | `5` long | CW pitch entry | CW pitch entry | CW pitch entry | CW pitch entry (experimental) | CW pitch entry (experimental) |
-| `6` short | not available | not available | not available | CW weight | CW weight |
-| `6` long | free | free | free | CW weight entry (experimental) | CW weight entry (experimental) |
+| `6` short | not available | APF | APF (FTDX101, FT-891); Kenwood and Elecraft: not available | CW weight | CW weight |
+| `6` long | free | APF on/off | APF on/off (FTDX101, FT-891) | CW weight entry (experimental) | CW weight entry (experimental) |
 | `7` short | not available | not available | not available | paddle reverse | paddle reverse |
 | `7` long | free | free | free | paddle reverse on/off (experimental) | paddle reverse on/off (experimental) |
 | `8` short | RF power setting (IC-706: free) | RF power setting | RF power setting (FTDX101MP: free) | RF power setting | RF power setting |

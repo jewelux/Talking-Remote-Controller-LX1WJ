@@ -185,9 +185,12 @@ Use these keypad functions first:
 - Bank 1, `7` short: S-meter
 - Bank 1, `8` short: SWR
 - Bank 1, `9` short or long: read or set mode
-- Bank 2, `1`, `2`, `3` short or long: NR, NB, notch query or toggle (FT-857/897: auto notch)
+- Bank 2, `1`, `2` short or long: NR, NB query or toggle
 - Bank 2, `1` and `2` double: NR and NB level
-- Bank 2, `0` short or long: auto notch query or toggle
+- Bank 2, `3` short or long: auto notch query or toggle; double: the manual notch, its frequency on `A`, `B`, `C`
+- Bank 2, `0` short or long: contour query or toggle, its frequency on `A`, `B`, `C`
+- Bank 2, `4` and `6`: low and high cut; `5`: filter width, narrow on a double press
+- Bank 7, `6` short or long: APF query or toggle, its offset on `A`, `B`, `C`
 - Bank 2, `7` short or long: AGC query or select
 - Bank 2, `8` and `9` short or long: preamp and attenuator query, or the next level
 - Bank 8, `4` short, long, or double: power-state query, off, on

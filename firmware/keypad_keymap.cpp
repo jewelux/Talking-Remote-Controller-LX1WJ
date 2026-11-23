@@ -188,10 +188,37 @@ Key switchWithLevel(const KeypadTraits& t, Action say, Action toggle, const char
       .helpDoubleHold(levelLabel, V::Entry);
 }
 
+// The notches, on '3': the auto notch on a short and a hold, the manual notch on a double and a
+// short then hold, its frequency (Icom: its width, which its hold walks) the focus. A radio with
+// only one of them has it on the short and the hold, and no wait for a double.
+KeyBinding notchKey(const KeypadTraits& t) {
+  if (isFt8x7(t)) return bind(queryBank2Ft8x7AutoNotch, toggleBank2Ft8x7AutoNotch).help("ANOTCH", V::Say, V::Toggle);
+  const Setting focus = t.settings.has(Setting::NotchFreq) ? Setting::NotchFreq
+                        : t.settings.has(Setting::Notch)   ? Setting::Notch
+                                                           : Setting::None;
+  const V notchHold = t.layout == L::Civ ? V::Next : V::Toggle;
+  if (!t.settings.has(Setting::AutoNotch)) {
+    if (focus == Setting::None) return bind(queryBank2Notch).help("NOTCH", V::NotAvailable);
+    return bind(queryBank2Notch, toggleBank2Notch).withFocus(focus).help("NOTCH", V::Say, notchHold);
+  }
+  if (focus == Setting::None) return bind(queryBank2AutoNotch, toggleBank2AutoNotch).help("ANOTCH", V::Say, V::Toggle);
+  return bind(queryBank2AutoNotch, toggleBank2AutoNotch, queryBank2Notch, toggleBank2Notch)
+      .withFocus(focus)
+      .help("ANOTCH", V::Say, V::Toggle)
+      .helpDouble("NOTCH", V::Say)
+      .helpDoubleHold("NOTCH", notchHold);
+}
+
+// A switch S on a short and a hold, with Level the focus where the radio has it.
+template <Setting S, Setting Level>
+Key switchWithFocus(const KeypadTraits& t) {
+  return withFocusIfHas(t, bind(saySetting<S>, nextSetting<S>).help(settingInfo(S).label, V::Say, V::Toggle), Level);
+}
+
 // Receive. The top row the switches with a level, the middle row the passband (low side, filter,
-// high side), the bottom row AGC, preamp and attenuator, '0' the auto notch (FT-817: the antenna
-// jack). The FT-857/897 DSP has only an auto notch, on '3', so its '0' is free. The FT-8x7
-// keeps these in its EEPROM: read always, set only experimentally.
+// high side), the bottom row AGC, preamp and attenuator, '3' the notches, '0' the contour
+// (FT-817: the antenna jack). The FT-8x7 keeps these in its EEPROM: read always, set only
+// experimentally.
 KeyBinding bank2(const KeypadTraits& t, char key) {
   const bool ft8x7 = isFt8x7(t);
   switch (key) {
@@ -199,18 +226,18 @@ KeyBinding bank2(const KeypadTraits& t, char key) {
       if (t.layout == L::Ft817) {
         return bind(queryBank2Ft817Antenna, toggleBank2Ft817Antenna).help("ANT", V::Say, V::Toggle);
       }
-      if (ft8x7) return {};
-      return bind(queryBank2AutoNotch, toggleBank2AutoNotch).help("ANOTCH", V::Say, V::Toggle);
+      if (!t.settings.has(Setting::Contour)) return {};
+      return switchWithFocus<Setting::Contour, Setting::ContourFreq>(t);
     case '1': return switchWithLevel<Setting::NrLevel>(t, queryBank2Nr, toggleBank2Nr, "NR");
     case '2': return switchWithLevel<Setting::NbLevel>(t, queryBank2Nb, toggleBank2Nb, "NB");
-    // The Icom notch toggle walks its widths, which B and C step too.
-    case '3':
-      if (ft8x7) return bind(queryBank2Ft8x7AutoNotch, toggleBank2Ft8x7AutoNotch).help("ANOTCH", V::Say, V::Toggle);
-      return withFocusIfHas(t, bind(queryBank2Notch, toggleBank2Notch).help("NOTCH", V::Say, V::Toggle),
-                            Setting::Notch);
-    case '4': return ft8x7 ? settingKey<Setting::RxLowCut>(t) : settingKey<Setting::PbtInner>(t);
+    case '3': return notchKey(t);
+    // The low and high cut where the radio has them (and the FT-8x7 menus), else Icom PBT.
+    case '4':
+      return ft8x7 || t.settings.has(Setting::RxLowCut) ? settingKey<Setting::RxLowCut>(t)
+                                                         : settingKey<Setting::PbtInner>(t);
     case '5':
-      // FT-857/897: DBF, its bandpass width second. Icom: the filter, its shape second.
+      // FT-857/897: DBF, its bandpass width second. Icom: the filter, its shape second. Yaesu:
+      // the width, narrow second.
       if (ft8x7) {
         if (!t.settings.has(Setting::BpfWidth)) return bind(queryBank2Ft8x7Dbf).help("DBF", V::Say);
         return bind(queryBank2Ft8x7Dbf, toggleBank2Ft8x7Dbf, saySetting<Setting::BpfWidth>,
@@ -219,6 +246,18 @@ KeyBinding bank2(const KeypadTraits& t, char key) {
             .help("DBF", V::Say, V::Toggle)
             .helpDouble("BPF", V::Say)
             .helpDoubleHold("BPF", V::Pick);
+      }
+      if (!t.settings.has(Setting::FilterSlot) && t.settings.has(Setting::RxWidth)) {
+        if (!t.settings.has(Setting::Narrow)) return settingKey<Setting::RxWidth>(t);
+        return bind(saySetting<Setting::RxWidth>, enterSetting<Setting::RxWidth>, saySetting<Setting::Narrow>,
+                    nextSetting<Setting::Narrow>)
+            .withFocus(Setting::RxWidth)
+            .help("WIDTH", V::Say, V::Entry)
+            .helpDouble("NAR", V::Say)
+            .helpDoubleHold("NAR", V::Toggle);
+      }
+      if (!t.settings.has(Setting::FilterSlot) && t.settings.has(Setting::Narrow)) {
+        return switchWithFocus<Setting::Narrow, Setting::None>(t);
       }
       if (!t.settings.has(Setting::FilterSlot)) {
         return bind(saySetting<Setting::FilterSlot>).help("FILWIDTH", V::Say);
@@ -229,7 +268,9 @@ KeyBinding bank2(const KeypadTraits& t, char key) {
           .help("FILWIDTH", V::Say, V::Next)
           .helpDouble("FILSHAPE", V::Say)
           .helpDoubleHold("FILSHAPE", V::Toggle);
-    case '6': return ft8x7 ? settingKey<Setting::RxHighCut>(t) : settingKey<Setting::PbtOuter>(t);
+    case '6':
+      return ft8x7 || t.settings.has(Setting::RxHighCut) ? settingKey<Setting::RxHighCut>(t)
+                                                          : settingKey<Setting::PbtOuter>(t);
     // Every radio: what agcQuery reads, and the select of the speeds it can be set to.
     case '7':
       return withFocusIfHas(t, bind(queryBank2Agc, beginBank2AgcSelect).help("AGC", V::Say, V::Pick), Setting::Agc);
@@ -507,8 +548,8 @@ KeyBinding breakInKey(const KeypadTraits& t) {
 }
 
 // CW, the twin of Bank 4: the top row the keyer with its speed, break-in and the sidetone, the
-// middle row the keyer type, pitch and weight, the bottom row paddle reverse, RF power and the
-// break-in delay, '0' the tuner. The FT-8x7 keeps these in its EEPROM: read always, set only
+// middle row the keyer type, pitch and weight (or the APF), the bottom row paddle reverse, RF
+// power and the break-in delay, '0' the tuner. The FT-8x7 keeps these in its EEPROM: read always, set only
 // experimentally.
 KeyBinding bank7(const KeypadTraits& t, char key) {
   switch (key) {
@@ -519,7 +560,10 @@ KeyBinding bank7(const KeypadTraits& t, char key) {
     // FT-857/897: the paddle as the keyer (ELEKEY) or the mic keys (MICKEY).
     case '4': return shortListOrNotAvailable<Setting::Paddle>(t);
     case '5': return settingOrNotAvailable<Setting::CwPitch>(t);
-    case '6': return settingOrNotAvailable<Setting::CwWeight>(t);
+    // The APF where the radio has one (FTDX10, FTDX101, FT-891), next to the pitch it is set from.
+    case '6':
+      if (t.settings.has(Setting::Apf)) return switchWithFocus<Setting::Apf, Setting::ApfFreq>(t);
+      return settingOrNotAvailable<Setting::CwWeight>(t);
     case '7': return settingOrNotAvailable<Setting::KeyReverse>(t);
     case '8': return rfPowerKey(t);
     case '9': return settingOrNotAvailable<Setting::CwDelay>(t);

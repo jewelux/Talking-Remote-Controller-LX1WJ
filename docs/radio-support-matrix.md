@@ -63,7 +63,8 @@ and flrig have it) and is read back.
 
 ### Receive filter
 
-Console commands only, no keys yet. Each takes `?`, a value, and `STEP <+-n>`; a value goes to the
+Console commands; most are on Bank 2 and Bank 7 `6` too (see `docs/keypad-map.md`), but not
+the IF shift, the slopes and the Icom width. Each takes `?`, a value, and `STEP <+-n>`; a value goes to the
 radio's nearest step, and each set is read back. The width and the cuts depend on the mode: they
 are read and set for the current mode, and say "not available" in a mode without them. `STEP`
 moves a low cut up from `OFF` to its lowest value and a Yaesu high cut down from `OFF` to its

@@ -72,6 +72,10 @@ uint8_t rxFilterScaleCodeOf(const RxFilterScale& scale, uint16_t value);
 // step the other way stays at the zero code. False from a Default zero code.
 bool rxFilterScaleStep(const RxFilterScale& scale, uint8_t code, int delta, uint8_t& out);
 
+// The value delta codes on from value (taken as its nearest code), as rxFilterScaleStep: 0 for the
+// zero code. False from a Default zero code (the width NORMAL).
+bool rxFilterScaleNext(const RxFilterScale& scale, uint16_t value, int delta, uint16_t& out);
+
 // A setting the radio takes as a number within min..max in steps of step: the IF shift, the notch,
 // contour and APF frequencies.
 struct RxFilterSpan {
