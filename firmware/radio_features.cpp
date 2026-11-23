@@ -284,23 +284,29 @@ FeatureStatus preampStep(uint8_t& levelOut) {
 
 // ---- RF gain ----
 
-// The raw range of the radio's RF gain command, where settings.rfGain has one for its protocol:
-// 14 02 on CI-V, RG on the ASCII radios. EXPERIMENTAL ON turns every cap on, never this.
-static bool rfGainScale(LevelScale& out) {
-  const RfGainEncoding enc = currentProfile().settings.rfGain;
-  if (enc == RfGainEncoding::None || (enc == RfGainEncoding::Civ) != isCiv()) return false;
-  if (!isCiv() && !isAsciiRadio()) return false;
-  return rfGainScaleFor(enc, out);
+// Ok, with scaleOut the raw range of the radio's RF gain command, where it has one: caps.getRfGain
+// and settings.rfGain. EXPERIMENTAL ON turns every cap on, never the encoding, and the
+// radio_profile_table.cpp static_assert keeps that one to the radio's protocol.
+static FeatureStatus rfGainReadable(LevelScale& scaleOut) {
+  const RadioProfile& sp = currentProfile();
+  return sp.caps.getRfGain && rfGainScaleFor(sp.settings.rfGain, scaleOut) ? FeatureStatus::Ok
+                                                                           : FeatureStatus::Unsupported;
+}
+
+// rfGainReadable, then whether it may be set (caps.setRfGain, or EXPERIMENTAL ON).
+static FeatureStatus rfGainWritable(LevelScale& scaleOut) {
+  const FeatureStatus status = rfGainReadable(scaleOut);
+  return status == FeatureStatus::Ok ? capWriteAccess(&RadioCapabilities::setRfGain) : status;
 }
 
 bool rfGainSupported() {
-  LevelScale scale;
-  return currentProfile().caps.getRfGain && rfGainScale(scale);
+  LevelScale scale{};
+  return rfGainReadable(scale) == FeatureStatus::Ok;
 }
 
 FeatureStatus rfGainWriteAccess() {
-  if (!rfGainSupported()) return FeatureStatus::Unsupported;
-  return capWriteAccess(&RadioCapabilities::setRfGain);
+  LevelScale scale{};
+  return rfGainWritable(scale);
 }
 
 static FeatureStatus rfGainQueryRaw(uint16_t& rawOut) {
@@ -320,8 +326,9 @@ static FeatureStatus rfGainSetRaw(LevelScale scale, uint16_t raw, uint8_t& perce
 }
 
 FeatureStatus rfGainQuery(uint8_t& percentOut) {
-  LevelScale scale;
-  if (!currentProfile().caps.getRfGain || !rfGainScale(scale)) return FeatureStatus::Unsupported;
+  LevelScale scale{};
+  const FeatureStatus access = rfGainReadable(scale);
+  if (access != FeatureStatus::Ok) return access;
   uint16_t raw = 0;
   const FeatureStatus status = rfGainQueryRaw(raw);
   if (status == FeatureStatus::Ok) percentOut = levelScaleToPercent(scale, raw);
@@ -329,24 +336,22 @@ FeatureStatus rfGainQuery(uint8_t& percentOut) {
 }
 
 FeatureStatus rfGainSet(uint8_t percent, uint8_t& percentOut) {
-  const FeatureStatus access = rfGainWriteAccess();
+  LevelScale scale{};
+  const FeatureStatus access = rfGainWritable(scale);
   if (access != FeatureStatus::Ok) return access;
   if (percent > 100) return FeatureStatus::Invalid;
-  LevelScale scale;
-  (void)rfGainScale(scale);  // there is one: rfGainWriteAccess checked rfGainSupported
   return rfGainSetRaw(scale, levelScaleFromPercent(scale, percent), percentOut);
 }
 
 FeatureStatus rfGainStep(int deltaPercent, uint8_t& percentOut) {
-  const FeatureStatus access = rfGainWriteAccess();
+  LevelScale scale{};
+  const FeatureStatus access = rfGainWritable(scale);
   if (access != FeatureStatus::Ok) return access;
-  LevelScale scale;
-  (void)rfGainScale(scale);  // there is one: rfGainWriteAccess checked rfGainSupported
   uint16_t raw = 0;
   const FeatureStatus status = rfGainQueryRaw(raw);
   if (status != FeatureStatus::Ok) return status;
   const uint16_t next = levelScaleStep(scale, raw, deltaPercent);
-  // At an end of the range: nothing to send.
+  // At an end of the range, or no step: nothing to send.
   if (next == raw) {
     percentOut = levelScaleToPercent(scale, raw);
     return FeatureStatus::Ok;

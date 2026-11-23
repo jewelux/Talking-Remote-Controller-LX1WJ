@@ -40,6 +40,9 @@ struct SettingOps {
 
 // For the ops files: a switch, 0 off and 1 on, where writeAccess() is Ok; else what it returns.
 FeatureStatus switchSettingLimits(ValueSpec& spec, FeatureStatus (*writeAccess)());
+// For the ops files: a level of min..max, up to three digits, in steps of 5 (of 1 up to a max of
+// 9); unit as ValueSpec has it (" %"). Always Ok, for the limits function to return.
+FeatureStatus levelSettingLimits(ValueSpec& spec, int32_t min, int32_t max, const char* unit = "");
 // For the ops tables: available on every radio, or a confirm that always waits for Enter.
 inline bool always() { return true; }
 

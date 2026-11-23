@@ -163,9 +163,8 @@ FeatureStatus preampSet(uint8_t level, uint8_t& levelOut);
 // Off -> 1 -> ... -> off, from the level read.
 FeatureStatus preampStep(uint8_t& levelOut);
 
-// The RF gain (caps.getRfGain) in percent of the radio's range, settings.rfGain: Icom 14 02
-// (0..255), FTDX10 and FTDX101 RG0 (0..255, the main band), FT-891 RG0 (0..30), TS-480 RG
-// (0..100), KX2 RG (190..250 = -60..0 dB). Unsupported elsewhere (IC-706, G106, FT-8x7, FT-847).
+// The RF gain (caps.getRfGain) in percent of the range of the radio's command, settings.rfGain
+// (radio_setting_types.h RfGainEncoding). Unsupported where the profile has none.
 // Whether the radio has it, by the profile (no radio traffic).
 bool rfGainSupported();
 // Ok where it can be set (caps.setRfGain); else Unsupported.
@@ -176,7 +175,8 @@ FeatureStatus rfGainQuery(uint8_t& percentOut);
 // Invalid above 100.
 FeatureStatus rfGainSet(uint8_t percent, uint8_t& percentOut);
 // deltaPercent from the value read, kept within the range; at least one of the radio's steps, so
-// a step never sticks on a coarse range. At an end nothing is sent and percentOut is that end.
+// a step never sticks on a coarse range. At an end, or for 0, nothing is sent and percentOut is
+// the value read.
 FeatureStatus rfGainStep(int deltaPercent, uint8_t& percentOut);
 
 // RF power over CAT (caps.getRfPower), in tenths of a watt: Icom 14 0A scaled to the profile's

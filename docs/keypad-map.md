@@ -37,7 +37,7 @@ back to its starting focus.
 | Bank | Keys that set the focus | Starting focus |
 |---|---|---|
 | 1 | `6` RF power, `9` mode | none |
-| 2 | `0` contour frequency, `1` NR level, `2` NB level, `3` notch frequency (Icom: notch width), `4` low cut or PBT inner, `5` filter width, CW filter width or filter, `6` high cut or PBT outer, `7` AGC, or the RF gain after a double press, `8` preamp, `9` attenuator | none |
+| 2 | `0` contour frequency, `1` NR level, `2` NB level, `3` notch frequency (Icom: notch width), `4` low cut or PBT inner, `5` filter width, CW filter width or filter, `6` high cut or PBT outer, `7` AGC, or the RF gain after a double press or a short press then hold, `8` preamp, `9` attenuator | none |
 | 3 | none yet | none |
 | 4 | `1` processor level, `2` VOX gain, `3` monitor level (Icom), `5` TX equalizer, `7` mic gain, `8` RF power, `9` VOX delay | none |
 | 5 | `1`-`5` RIT offset | RIT offset |
@@ -149,7 +149,8 @@ and FT-891 NR 1-15, NB 0-10; FT-857/897 NR 1-16, NB 0-100). The RF gain is in pe
 radio's range on every radio, `B` and `C` 5 %; on the FT-891 and KX2, which have fewer steps, it
 reads back as the radio's nearest step. `A`, `B` and `C` follow the last press of `7`: AGC after a
 short press or a hold, the RF gain after a double press or a short press then hold. PBT is in
-the radio's steps, -128 to 127, with 0 the centre. The FT-857/897 CW filter width (DSP bandpass width) is 60, 120 or 240 Hz.
+the radio's steps, -128 to 127, with 0 the centre. The FT-857/897 CW filter width (DSP bandpass
+width) is 60, 120 or 240 Hz.
 
 `3` is every radio's notch key: the auto notch on a short press and a hold, the notch you set
 yourself on a double press. Where the radio has only one of them, it is on the short press and the

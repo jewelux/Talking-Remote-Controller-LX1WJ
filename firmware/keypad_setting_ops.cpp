@@ -298,6 +298,15 @@ const SettingOps* settingOps(Setting setting) {
   return cwSettingOps(setting);
 }
 
+FeatureStatus levelSettingLimits(ValueSpec& spec, int32_t min, int32_t max, const char* unit) {
+  spec.min = min;
+  spec.max = max;
+  spec.maxDigits = 3;
+  spec.step = max <= 9 ? 1 : 5;
+  spec.unit = unit;
+  return FeatureStatus::Ok;
+}
+
 FeatureStatus switchSettingLimits(ValueSpec& spec, FeatureStatus (*writeAccess)()) {
   const FeatureStatus access = writeAccess();
   if (access != FeatureStatus::Ok) return access;

@@ -53,9 +53,13 @@ struct Key : KeyBinding {
     k.focus = setting;
     return k;
   }
-  // The focus its double click and double hold set instead, for a key with a second setting.
-  Key withDoubleFocus(Setting setting) const {
+  // A second setting on the double click and the double hold of a key bound without them: what
+  // they run, and the focus they set instead of focus.
+  Key withDouble(Action onDouble, Action onDoubleHold, Setting setting) const {
     Key k = *this;
+    k.doubleAction = onDouble;
+    k.doubleHoldAction = onDoubleHold;
+    k.waitsForDouble = true;
     k.doubleFocus = setting;
     return k;
   }
@@ -180,6 +184,19 @@ Key settingKey(const KeypadTraits& t) {
   return withFocusIfHas(t, bind(saySetting<S>, enterSetting<S>).help(info.label, V::Say, hold), S);
 }
 
+// k with S as a second setting where the radio has it: a double click says it, a double hold
+// opens its entry or pick, and both make it the focus. Elsewhere k as it is, with no wait for a
+// double.
+template <Setting S>
+Key withSecondSetting(const KeypadTraits& t, const Key& k) {
+  if (!t.settings.has(S)) return k;
+  const SettingInfo& info = settingInfo(S);
+  const V hold = info.kind == SettingKind::Number ? V::Entry : V::Pick;
+  return k.withDouble(saySetting<S>, enterSetting<S>, S)
+      .helpDouble(info.label, V::Say)
+      .helpDoubleHold(info.label, hold);
+}
+
 // A switch with a level (NR, NB): short says it, long toggles it, a double says the level and a
 // short then hold opens the level's entry, which is the focus. Where the radio has no level,
 // just the switch, with no wait for a double.
@@ -277,19 +294,11 @@ KeyBinding bank2(const KeypadTraits& t, char key) {
     case '6':
       return ft8x7 || t.settings.has(Setting::RxHighCut) ? settingKey<Setting::RxHighCut>(t)
                                                           : settingKey<Setting::PbtOuter>(t);
-    // Every radio: what agcQuery reads, and the select of the speeds it can be set to. Where the
-    // radio has the RF gain, a double says it and a short then hold opens its entry; the focus is
-    // the one the last press named: AGC after a short or a hold, the RF gain after a double.
+    // Every radio: what agcQuery reads, and the select of the speeds it can be set to; the RF gain
+    // on the double gestures where the radio has it.
     case '7': {
-      const Key agc = withFocusIfHas(t, bind(queryBank2Agc, beginBank2AgcSelect).help("AGC", V::Say, V::Pick),
-                                     Setting::Agc);
-      if (!t.settings.has(Setting::RfGain)) return agc;
-      return bind(queryBank2Agc, beginBank2AgcSelect, saySetting<Setting::RfGain>, enterSetting<Setting::RfGain>)
-          .withFocus(agc.focus)
-          .withDoubleFocus(Setting::RfGain)
-          .help("AGC", V::Say, V::Pick)
-          .helpDouble("RFGAIN", V::Say)
-          .helpDoubleHold("RFGAIN", V::Entry);
+      const Key agc = bind(queryBank2Agc, beginBank2AgcSelect).help("AGC", V::Say, V::Pick);
+      return withSecondSetting<Setting::RfGain>(t, withFocusIfHas(t, agc, Setting::Agc));
     }
     // The FT-8x7 reads its IPO and attenuator only (the FT-817/818 not even those); the other
     // radios step to the next level on a hold.

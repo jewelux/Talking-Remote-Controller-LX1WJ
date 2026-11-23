@@ -124,13 +124,13 @@ void printActiveProfileDetails() {
   Serial.print(" filter=");
   Serial.print(sp.caps.getFilterShape ? "S" : "-");
   Serial.print(sp.caps.getFilterWidth ? "W" : "-");
-  // The receive filter: IF shift, width, narrow, notch frequency, contour, APF, cuts.
+  // The receive filter (IF shift, width, narrow, notch frequency, contour, APF, cuts), the RF gain.
   struct NamedCaps {
     const char* name;
     bool RadioCapabilities::*get;
     bool RadioCapabilities::*set;
   };
-  static constexpr NamedCaps kRxFilterCaps[] = {
+  static constexpr NamedCaps kRxCaps[] = {
       {"ifshift", &RadioCapabilities::getIfShift, &RadioCapabilities::setIfShift},
       {"width", &RadioCapabilities::getRxWidth, &RadioCapabilities::setRxWidth},
       {"nar", &RadioCapabilities::getNarrow, &RadioCapabilities::setNarrow},
@@ -138,17 +138,15 @@ void printActiveProfileDetails() {
       {"contour", &RadioCapabilities::getContour, &RadioCapabilities::setContour},
       {"apf", &RadioCapabilities::getApf, &RadioCapabilities::setApf},
       {"cut", &RadioCapabilities::getRxCut, &RadioCapabilities::setRxCut},
+      {"rfgain", &RadioCapabilities::getRfGain, &RadioCapabilities::setRfGain},
   };
-  for (const NamedCaps& c : kRxFilterCaps) {
+  for (const NamedCaps& c : kRxCaps) {
     Serial.print(' ');
     Serial.print(c.name);
     Serial.print('=');
     Serial.print(sp.caps.*c.get ? "R" : "-");
     Serial.print(sp.caps.*c.set ? "W" : "-");
   }
-  Serial.print(" rfgain=");
-  Serial.print(sp.caps.getRfGain ? "R" : "-");
-  Serial.print(sp.caps.setRfGain ? "W" : "-");
   Serial.print(" lock=");
   Serial.print(sp.caps.getDialLock ? "R" : "-");
   Serial.print(sp.caps.setDialLock ? "W" : "-");

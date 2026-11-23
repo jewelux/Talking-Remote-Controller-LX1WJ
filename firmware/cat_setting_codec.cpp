@@ -24,8 +24,11 @@ uint16_t levelScaleStep(LevelScale scale, uint16_t raw, int deltaPercent) {
   if (raw > scale.rawMax) raw = scale.rawMax;
   if (deltaPercent > 100) deltaPercent = 100;
   if (deltaPercent < -100) deltaPercent = -100;
+  // No step: raw as it is. The way through percent does not come back to every raw value of a
+  // scale wider than 100 (0..255: raw 2 is 1 %, which is raw 3).
+  if (deltaPercent == 0) return raw;
   const uint16_t next = levelScaleFromPercent(scale, levelScaleToPercent(scale, raw) + deltaPercent);
-  if (next != raw || deltaPercent == 0) return next;
+  if (next != raw) return next;
   if (deltaPercent > 0) return raw < scale.rawMax ? (uint16_t)(raw + 1) : raw;
   return raw > scale.rawMin ? (uint16_t)(raw - 1) : raw;
 }
@@ -368,10 +371,10 @@ const char* rfGainReadCommand(RfGainEncoding encoding) {
 }
 
 bool rfGainDecode(RfGainEncoding encoding, const char* digits, uint16_t& rawOut) {
-  LevelScale scale;
+  LevelScale scale{};
   int value = 0;
   if (!rfGainReplyPrefix(encoding) || !rfGainScaleFor(encoding, scale) || !exactDigits(digits, 3, value) ||
-      value > scale.rawMax) {
+      value < scale.rawMin || value > scale.rawMax) {
     return false;
   }
   rawOut = (uint16_t)value;
@@ -380,7 +383,7 @@ bool rfGainDecode(RfGainEncoding encoding, const char* digits, uint16_t& rawOut)
 
 bool rfGainEncode(RfGainEncoding encoding, uint16_t raw, char* out, size_t size) {
   const char* prefix = rfGainReplyPrefix(encoding);
-  LevelScale scale;
+  LevelScale scale{};
   if (!prefix || !out || !rfGainScaleFor(encoding, scale) || raw < scale.rawMin || raw > scale.rawMax) return false;
   const int n = snprintf(out, size, "%s%03u;", prefix, (unsigned)raw);
   return n > 0 && (size_t)n < size;

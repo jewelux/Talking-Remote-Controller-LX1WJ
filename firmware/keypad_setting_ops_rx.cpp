@@ -112,14 +112,7 @@ FeatureStatus rxLevelLimits(ValueSpec& spec) {
   if (!rxLevelAvailable<L>() || !(L == RxLevel::Nr ? caps.setNrLevel : caps.setNbLevel)) {
     return FeatureStatus::Unsupported;
   }
-  if (isCiv()) {
-    spec.min = 0;
-    spec.max = 100;
-    spec.step = 5;
-    spec.maxDigits = 3;
-    spec.unit = " %";
-    return FeatureStatus::Ok;
-  }
+  if (isCiv()) return levelSettingLimits(spec, 0, 100, " %");
   uint16_t min = 0;
   uint16_t max = 0;
   if (!yaesuRxLevelRange(L, min, max)) return FeatureStatus::Unsupported;
@@ -505,39 +498,6 @@ void speakRxSwitch(int32_t value) {
 
 // ---- Preamp: 0 off, then its levels ----
 
-// ---- RF gain, in percent of the radio's range ----
-//
-// 5 % a step, 25 % a big step; on the FT-891's 31 and the KX2's 61 raw steps each still moves the
-// radio (tests/cat level_scale_step_moves_and_stops_at_the_ends), and the read-back is what it took.
-
-FeatureStatus rfGainLimits(ValueSpec& spec) {
-  const FeatureStatus access = rfGainWriteAccess();
-  if (access != FeatureStatus::Ok) return access;
-  spec.min = 0;
-  spec.max = 100;
-  spec.step = 5;
-  spec.maxDigits = 3;
-  spec.unit = " %";
-  return FeatureStatus::Ok;
-}
-
-FeatureStatus rfGainRead(int32_t& value) {
-  uint8_t percent = 0;
-  const FeatureStatus status = rfGainQuery(percent);
-  value = percent;
-  return status;
-}
-
-FeatureStatus rfGainWrite(int32_t value, int32_t& readBack) {
-  uint8_t percent = 0;
-  const FeatureStatus status = rfGainSet((uint8_t)value, percent);
-  readBack = percent;
-  return status;
-}
-
-String rfGainTextOf(int32_t value) { return rfGainText((uint8_t)value); }
-void speakRfGainOf(int32_t value) { speakRfGain((uint8_t)value); }
-
 bool preampAvailable() { return currentProfile().caps.getPreamp && preampLevels() > 0; }
 
 FeatureStatus preampLimits(ValueSpec& spec) {
@@ -611,6 +571,35 @@ FeatureStatus attWrite(int32_t value, int32_t& readBack) {
 
 String attTextOf(int32_t value) { return attText(attStateOf(value)); }
 void speakAttOf(int32_t value) { speakAtt(attStateOf(value)); }
+
+// ---- RF gain, in percent of the radio's range ----
+//
+// B and C set the percent read back plus or minus 5 (25 a big step) with rfGainSet. 5 % is at
+// least 1.5 raw values on every radio (the FT-891's 0..30 is the coarsest), so each step moves the
+// radio; what it shows is the percent of the raw value the radio took.
+
+FeatureStatus rfGainLimits(ValueSpec& spec) {
+  const FeatureStatus access = rfGainWriteAccess();
+  if (access != FeatureStatus::Ok) return access;
+  return levelSettingLimits(spec, 0, 100, " %");
+}
+
+FeatureStatus rfGainRead(int32_t& value) {
+  uint8_t percent = 0;
+  const FeatureStatus status = rfGainQuery(percent);
+  value = percent;
+  return status;
+}
+
+FeatureStatus rfGainWrite(int32_t value, int32_t& readBack) {
+  uint8_t percent = 0;
+  const FeatureStatus status = rfGainSet((uint8_t)value, percent);
+  readBack = percent;
+  return status;
+}
+
+String rfGainTextOf(int32_t value) { return rfGainText((uint8_t)value); }
+void speakRfGainOf(int32_t value) { speakRfGain((uint8_t)value); }
 
 constexpr Ft8x7Setting kLowCut = Ft8x7Setting::LowCut;
 constexpr Ft8x7Setting kHighCut = Ft8x7Setting::HighCut;

@@ -45,7 +45,7 @@ TEST(level_scale_ends_and_clamps) {
   CHECK_EQ(levelScaleToPercent(kx2, 190), 0);
   CHECK_EQ(levelScaleToPercent(kx2, 250), 100);
   CHECK_EQ(levelScaleToPercent(kx2, 220), 50);
-  CHECK_EQ(levelScaleToPercent(kx2, 0), 0);  // below the range, as a KX could answer
+  CHECK_EQ(levelScaleToPercent(kx2, 0), 0);  // below the range
   CHECK_EQ(levelScaleToPercent(kx2, 255), 100);
   CHECK_EQ(levelScaleFromPercent(kx2, 0), 190);
   CHECK_EQ(levelScaleFromPercent(kx2, 50), 220);
@@ -82,19 +82,21 @@ TEST(level_scale_step_moves_and_stops_at_the_ends) {
         CHECK(raw == s.rawMin ? down == raw : down < raw);
         CHECK(up <= s.rawMax && down >= s.rawMin);
       }
-      CHECK_EQ(levelScaleStep(s, raw, 0), levelScaleFromPercent(s, levelScaleToPercent(s, raw)));
+      CHECK_EQ(levelScaleStep(s, raw, 0), raw);
     }
   }
   // FT-891: 5 % from 3 % (raw 1) would round back to raw 1; it goes to raw 2.
   CHECK_EQ(levelScaleStep(LevelScale{0, 30}, 1, 5), 2);
   CHECK_EQ(levelScaleStep(LevelScale{0, 255}, 128, 5), 140);
   CHECK_EQ(levelScaleStep(LevelScale{0, 255}, 250, 25), 255);
+  // No step sends nothing new, though 0..255 raw 2 is 1 %, which is raw 3.
+  CHECK_EQ(levelScaleStep(LevelScale{0, 255}, 2, 0), 2);
   // A raw value outside the scale is taken as its nearest end first.
   CHECK_EQ(levelScaleStep(LevelScale{190, 250}, 100, -5), 190);
 }
 
 TEST(rf_gain_scales) {
-  LevelScale s;
+  LevelScale s{};
   CHECK(rfGainScaleFor(RfGainEncoding::Civ, s) && s.rawMin == 0 && s.rawMax == 255);
   CHECK(rfGainScaleFor(RfGainEncoding::YaesuRg0, s) && s.rawMin == 0 && s.rawMax == 255);
   CHECK(rfGainScaleFor(RfGainEncoding::YaesuRg0Ft891, s) && s.rawMin == 0 && s.rawMax == 30);
@@ -125,7 +127,9 @@ TEST(rf_gain_decode) {
   CHECK(rfGainDecode(RfGainEncoding::KenwoodRg, "100;", raw) && raw == 100);
   CHECK(!rfGainDecode(RfGainEncoding::KenwoodRg, "101;", raw));
   CHECK(rfGainDecode(RfGainEncoding::ElecraftRg, "250;", raw) && raw == 250);
-  CHECK(rfGainDecode(RfGainEncoding::ElecraftRg, "000;", raw) && raw == 0);
+  CHECK(rfGainDecode(RfGainEncoding::ElecraftRg, "190;", raw) && raw == 190);
+  CHECK(!rfGainDecode(RfGainEncoding::ElecraftRg, "189;", raw));
+  CHECK(!rfGainDecode(RfGainEncoding::ElecraftRg, "000;", raw));
   CHECK(!rfGainDecode(RfGainEncoding::ElecraftRg, "251;", raw));
   CHECK(!rfGainDecode(RfGainEncoding::YaesuRg0, "12;", raw));
   CHECK(!rfGainDecode(RfGainEncoding::YaesuRg0, "1234;", raw));

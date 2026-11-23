@@ -29,8 +29,6 @@ bool handleConsoleRfGain(const String& line, const String& upper) {
       Serial.println("RFGAIN STEP -> use a signed percent, e.g. RFGAIN STEP -5");
       return true;
     }
-    if (delta > 100) delta = 100;
-    if (delta < -100) delta = -100;
     if (reportFeatureFailure(rfGainStep((int)delta, percent), "RFGAIN STEP")) return true;
     reply(percent);
     return true;

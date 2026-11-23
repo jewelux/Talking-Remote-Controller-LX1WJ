@@ -15,16 +15,6 @@ namespace {
 
 // The FT-8x7 keeps these in its EEPROM: B and C open the entry, staged for Enter.
 
-// A level of 0..max in steps of 5 (1 up to 9).
-FeatureStatus levelLimits(ValueSpec& spec, int32_t min, int32_t max, const char* unit = "") {
-  spec.min = min;
-  spec.max = max;
-  spec.maxDigits = 3;
-  spec.step = max <= 9 ? 1 : 5;
-  spec.unit = unit;
-  return FeatureStatus::Ok;
-}
-
 // The switch state, or what read says went wrong.
 FeatureStatus switchRead(FeatureStatus (*read)(bool&), int32_t& value) {
   bool on = false;
@@ -52,7 +42,7 @@ void speakProc(int32_t value) { speakProcState(value != 0); }
 
 FeatureStatus procLevelLimits(ValueSpec& spec) {
   if (!procCanSet()) return procWriteAccess();
-  return levelLimits(spec, 0, 100);
+  return levelSettingLimits(spec, 0, 100);
 }
 
 FeatureStatus procLevelRead(int32_t& value) {
@@ -85,7 +75,7 @@ FeatureStatus voxGainLimits(ValueSpec& spec) {
   uint8_t min = 0;
   uint8_t max = 0;
   if (!voxGainRange(min, max)) return voxWriteAccess();
-  return levelLimits(spec, min, max);
+  return levelSettingLimits(spec, min, max);
 }
 
 FeatureStatus voxGainRead(int32_t& value) {
@@ -138,7 +128,7 @@ bool monitorLevelAvailable() { return protocolSupportsMonitor() && currentProfil
 
 FeatureStatus monitorLevelLimits(ValueSpec& spec) {
   if (!monitorLevelAvailable() || !currentProfile().caps.setMonitorLevel) return FeatureStatus::Unsupported;
-  return levelLimits(spec, 0, 100, " %");
+  return levelSettingLimits(spec, 0, 100, " %");
 }
 
 FeatureStatus monitorLevelRead(int32_t& value) {
@@ -270,7 +260,7 @@ FeatureStatus micGainLimits(ValueSpec& spec) {
     const FeatureStatus status = ft8x7MicGainMenu(s_micGainMenu);
     if (status != FeatureStatus::Ok) return status;
   }
-  return levelLimits(spec, 0, 100);
+  return levelSettingLimits(spec, 0, 100);
 }
 
 FeatureStatus micGainRead(int32_t& value) {
