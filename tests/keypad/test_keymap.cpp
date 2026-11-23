@@ -53,6 +53,8 @@ KeypadTraits traitsFor(uint16_t family) {
          S::Preamp, S::Att});
   }
   if (family == TS480) add({S::Agc, S::Preamp, S::Att, S::RxLowCut, S::RxHighCut});
+  // RF gain over CAT: the Icoms but the IC-706 and G106, the TS-480 (and KX2), the Yaesu newcat radios.
+  if (family == IC7300 || family == TS480 || family == FTDX10 || family == FT891) add({S::RfGain});
   if (family == FTDX10 || family == FT891) {
     add({S::NrLevel, S::NbLevel, S::Agc, S::Preamp, S::Att, S::AutoNotch, S::NotchFreq, S::RxLowCut, S::RxHighCut,
          S::Narrow, S::Contour, S::ContourFreq, S::Apf, S::ApfFreq});
@@ -317,6 +319,26 @@ TEST(keymap_focus_matches_expectations) {
     checkOutcome(f, bank, key, "focus", focus == Setting::None ? "-" : settingInfo(focus).label,
                  lookup(f.bit, bank, key).focus);
   });
+}
+
+// Bank 2 '7': the short and the hold set AGC as the focus, the double and the double hold the RF
+// gain, where the radio has it; elsewhere no second focus.
+TEST(keymap_bank2_7_double_focus_is_rf_gain) {
+  forEachKey([](const Family &f, const KeypadTraits &t, uint8_t bank, char key) {
+    const KeyBinding b = keymapLookup(t, bank, key);
+    const bool rfGain = bank == 2 && key == '7' && t.settings.has(Setting::RfGain);
+    const Setting expected = rfGain ? Setting::RfGain : Setting::None;
+    if (b.doubleFocus != expected) {
+      fprintf(stderr, "  %s bank %u key %c: double focus %s\n", f.name, bank, key,
+              b.doubleFocus == Setting::None ? "-" : settingInfo(b.doubleFocus).label);
+      ++::test::g_checkFailures;
+    }
+  });
+  const KeyBinding ic7300 = keymapLookup(traitsFor(IC7300), 2, '7');
+  CHECK(ic7300.focusFor(false) == Setting::Agc);
+  CHECK(ic7300.focusFor(true) == Setting::RfGain);
+  const KeyBinding ft857 = keymapLookup(traitsFor(FT857), 2, '7');
+  CHECK(ft857.focusFor(true) == Setting::Agc);
 }
 
 // A waits for a double only when the focus has a centre; the bank's own focus is passed in.

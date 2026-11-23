@@ -1,7 +1,7 @@
 // The Bank 2 receive settings the keypad steps and enters, one SettingOps each:
 // the NR and NB levels, PBT, the FT-857/897 DSP filter, the Icom filter and
 // notch, the receive filter settings (low and high cut, width, narrow, notch
-// frequency, contour, APF), the preamp and the attenuator.
+// frequency, contour, APF), the preamp, the attenuator and the RF gain.
 #include "keypad_setting_ops.h"
 
 #include "cat_setting_codec.h"
@@ -505,6 +505,39 @@ void speakRxSwitch(int32_t value) {
 
 // ---- Preamp: 0 off, then its levels ----
 
+// ---- RF gain, in percent of the radio's range ----
+//
+// 5 % a step, 25 % a big step; on the FT-891's 31 and the KX2's 61 raw steps each still moves the
+// radio (tests/cat level_scale_step_moves_and_stops_at_the_ends), and the read-back is what it took.
+
+FeatureStatus rfGainLimits(ValueSpec& spec) {
+  const FeatureStatus access = rfGainWriteAccess();
+  if (access != FeatureStatus::Ok) return access;
+  spec.min = 0;
+  spec.max = 100;
+  spec.step = 5;
+  spec.maxDigits = 3;
+  spec.unit = " %";
+  return FeatureStatus::Ok;
+}
+
+FeatureStatus rfGainRead(int32_t& value) {
+  uint8_t percent = 0;
+  const FeatureStatus status = rfGainQuery(percent);
+  value = percent;
+  return status;
+}
+
+FeatureStatus rfGainWrite(int32_t value, int32_t& readBack) {
+  uint8_t percent = 0;
+  const FeatureStatus status = rfGainSet((uint8_t)value, percent);
+  readBack = percent;
+  return status;
+}
+
+String rfGainTextOf(int32_t value) { return rfGainText((uint8_t)value); }
+void speakRfGainOf(int32_t value) { speakRfGain((uint8_t)value); }
+
 bool preampAvailable() { return currentProfile().caps.getPreamp && preampLevels() > 0; }
 
 FeatureStatus preampLimits(ValueSpec& spec) {
@@ -632,6 +665,7 @@ constexpr SettingOps kRxOps[] = {
     {Setting::Preamp, preampAvailable, preampLimits, preampRead, preampWrite, preampTextOf,
      speakPreampOf},
     {Setting::Att, attAvailable, attLimits, attRead, attWrite, attTextOf, speakAttOf},
+    {Setting::RfGain, rfGainSupported, rfGainLimits, rfGainRead, rfGainWrite, rfGainTextOf, speakRfGainOf},
 };
 
 }  // namespace

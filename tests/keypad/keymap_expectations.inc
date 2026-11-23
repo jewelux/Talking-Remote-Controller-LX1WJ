@@ -139,7 +139,10 @@ KEYMAP_ROW(FT817 | FT8X7_OTHER, 2, '6', "settingSay(LPF)",   "settingEntry(LPF)"
 KEYMAP_ROW(IC7300,          2, '6', "settingSay(PBT2)",      "settingEntry(PBT2)",     "-", "none", "PBT2")
 KEYMAP_ROW(TS480 | FTDX10 | FT891, 2, '6', "settingSay(LPF)", "settingEntry(LPF)",     "-", "none", "LPF")
 KEYMAP_ROW(IC706,           2, '6', "settingSay(PBT2)",      "settingEntry(PBT2)",     "-", "none", "-")
-KEYMAP_ROW(NOT(IC706 | FT8X7_OTHER), 2, '7', "queryBank2Agc", "beginBank2AgcSelect",   "-", "none", "AGC")
+// The RF gain on the double and the double hold where the radio has it; their focus is the RF gain
+// (keymap_bank2_7_double_focus_is_rf_gain).
+KEYMAP_ROW(IC7300 | TS480 | FTDX10 | FT891, 2, '7', "queryBank2Agc", "beginBank2AgcSelect", "settingSay(RFGAIN)", "settingEntry(RFGAIN)", "AGC")
+KEYMAP_ROW(FT817 | FT857, 2, '7', "queryBank2Agc", "beginBank2AgcSelect",   "-", "none", "AGC")
 KEYMAP_ROW(IC706 | FT8X7_OTHER, 2, '7', "queryBank2Agc",     "beginBank2AgcSelect",    "-", "none", "-")
 KEYMAP_ROW(FT8X7,           2, '8', "queryBank2Ft8x7Ipo",    "none",                   "-", "none", "-")
 KEYMAP_ROW(IC7300 | TS480 | FTDX10 | FT891, 2, '8', "queryBank2Preamp", "stepBank2Preamp", "-", "none", "PREAMP")

@@ -314,7 +314,7 @@ void KeypadInput::held(char key) {
     handled = action != nullptr;
     if (handled) {
       runAction(action, doubleHold ? binding.doubleHoldHelp : binding.holdHelp, bank, key,
-                doubleHold ? "DOUBLE LONG" : "LONG", binding.focus);
+                doubleHold ? "DOUBLE LONG" : "LONG", binding.focusFor(doubleHold));
     }
   }
   if (handled || doubleHold) {
@@ -345,7 +345,7 @@ void KeypadInput::releasedNormal(char key, uint32_t nowMs) {
     pending_.active = false;
     if (binding.doubleAction) {
       oneShotBank_ = 0;
-      runAction(binding.doubleAction, binding.doubleHelp, bank, key, "DOUBLE", binding.focus);
+      runAction(binding.doubleAction, binding.doubleHelp, bank, key, "DOUBLE", binding.focusFor(true));
       return;
     }
   }

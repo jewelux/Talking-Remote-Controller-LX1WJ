@@ -53,6 +53,12 @@ struct Key : KeyBinding {
     k.focus = setting;
     return k;
   }
+  // The focus its double click and double hold set instead, for a key with a second setting.
+  Key withDoubleFocus(Setting setting) const {
+    Key k = *this;
+    k.doubleFocus = setting;
+    return k;
+  }
 
  private:
   static GestureHelp gesture(KeyAction action, const char* label, V verb) {
@@ -271,9 +277,20 @@ KeyBinding bank2(const KeypadTraits& t, char key) {
     case '6':
       return ft8x7 || t.settings.has(Setting::RxHighCut) ? settingKey<Setting::RxHighCut>(t)
                                                           : settingKey<Setting::PbtOuter>(t);
-    // Every radio: what agcQuery reads, and the select of the speeds it can be set to.
-    case '7':
-      return withFocusIfHas(t, bind(queryBank2Agc, beginBank2AgcSelect).help("AGC", V::Say, V::Pick), Setting::Agc);
+    // Every radio: what agcQuery reads, and the select of the speeds it can be set to. Where the
+    // radio has the RF gain, a double says it and a short then hold opens its entry; the focus is
+    // the one the last press named: AGC after a short or a hold, the RF gain after a double.
+    case '7': {
+      const Key agc = withFocusIfHas(t, bind(queryBank2Agc, beginBank2AgcSelect).help("AGC", V::Say, V::Pick),
+                                     Setting::Agc);
+      if (!t.settings.has(Setting::RfGain)) return agc;
+      return bind(queryBank2Agc, beginBank2AgcSelect, saySetting<Setting::RfGain>, enterSetting<Setting::RfGain>)
+          .withFocus(agc.focus)
+          .withDoubleFocus(Setting::RfGain)
+          .help("AGC", V::Say, V::Pick)
+          .helpDouble("RFGAIN", V::Say)
+          .helpDoubleHold("RFGAIN", V::Entry);
+    }
     // The FT-8x7 reads its IPO and attenuator only (the FT-817/818 not even those); the other
     // radios step to the next level on a hold.
     case '8':

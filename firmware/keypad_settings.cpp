@@ -34,6 +34,7 @@ constexpr SettingInfo kSettings[] = {
     {S::Agc,           K::List,   false, "AGC"},
     {S::Preamp,        K::List,   false, "PREAMP"},
     {S::Att,           K::List,   false, "ATT"},
+    {S::RfGain,        K::Number, false, "RFGAIN"},
     {S::Antenna,       K::List,   false, "ANT"},
     {S::Contour,       K::Switch, false, "CONTOUR"},
     {S::ContourFreq,   K::Number, false, "CONTOURFREQ"},

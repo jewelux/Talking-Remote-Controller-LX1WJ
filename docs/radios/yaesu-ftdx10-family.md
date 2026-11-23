@@ -31,7 +31,8 @@ Implemented and documented for the current field-test phase:
   set read back. The raw `PA` console commands are gone.
 - RF gain (`RFGAIN? | RFGAIN <0..100> | RFGAIN STEP <+-n>`, in percent of the radio's range):
   `RG0` 000..255 on the FTDX10 and FTDX101 (its main band), 000..030 on the FT-891, as the CAT
-  manuals, Hamlib and flrig have them, read back.
+  manuals, Hamlib and flrig have them, read back. Bank 2 `7` double press says it, `7` short then
+  hold opens its entry, and `B`/`C` then step it 5 %.
 - break-in and keyer (`BK? | BK OFF | ON | TOGGLE`, `KYR? | KYR OFF | ON | TOGGLE`, Bank 7 `2` and
   `1`): `BI` and `KR`, 0 off and 1 on, as the CAT manuals and Hamlib have them, read back.
 - NR and NB levels (`NRLEVEL <1..15>`, `NBLEVEL <0..10>`, each also `?` and `STEP <+-n>`;

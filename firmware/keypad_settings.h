@@ -37,6 +37,7 @@ enum class Setting : uint8_t {
   Agc,
   Preamp,
   Att,
+  RfGain,
   Antenna,
   Contour,
   ContourFreq,

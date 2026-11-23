@@ -120,7 +120,7 @@ can also set the FT-817/818 antenna jack (`ANT`). With experimental mode off, th
 console and Bank 4 set the speech processor, mic gain and VOX without experimental mode (the FTDX101 and
 IC-7760 not all of them), and on these and the KX2 the AGC, also from Bank 2 `7`, and the preamp
 and attenuator (`PREAMP`, `ATT`, Bank 2 `8` and `9`), the RF gain in percent of the radio's range
-(`RFGAIN`) and, but on the FTDX101MP, the RF power
+(`RFGAIN`, Bank 2 `7` double press) and, but on the FTDX101MP, the RF power
 (`RFPOWER`, Bank 1 `6`). The Icoms and these Yaesus also set break-in (`BK`) and the Yaesus the
 keyer (`KYR`), from Bank 7 `2` and `1` too, and the CW speed, pitch and delay (`CWSPEED`,
 `CWPITCH`, `CWDELAY`, Bank 7 `1` double, `5` and `9`) where the radio has them. In FM the console also sets the

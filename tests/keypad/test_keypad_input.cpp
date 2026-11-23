@@ -44,6 +44,7 @@ struct Fake : KeypadInputListener {
   std::set<std::string> holds, shorts, doubles, doubleHolds, waits;
   std::map<std::string, std::function<void()>> hooks;  // "hold 1 0" -> hook
   std::map<std::string, Setting> focuses;  // "bank key" -> the focus the key sets
+  std::map<std::string, Setting> doubleFocuses;  // "bank key" -> the focus its double gestures set
   std::map<uint8_t, Setting> homes;        // bank -> its home focus
   // The focus A, B and C were last bound for, and what the last action saw.
   Setting boundFocus = Setting::None;
@@ -82,6 +83,8 @@ struct Fake : KeypadInputListener {
     KeyBinding b;
     auto f = focuses.find(id);
     if (f != focuses.end()) b.focus = f->second;
+    auto d = doubleFocuses.find(id);
+    if (d != doubleFocuses.end()) b.doubleFocus = d->second;
     if (shorts.count(id)) b.shortAction = runFakeAction;
     if (holds.count(id)) b.holdAction = runFakeAction;
     if (doubles.count(id)) b.doubleAction = runFakeAction;
@@ -1893,6 +1896,40 @@ TEST(input_focus_is_per_bank_and_named_again_after_a_bank_change) {
   tap(in, 'B');
   CHECK(f.activeFocusNew);
   f.take();
+}
+
+// Bank 2 '7': AGC on a short and a hold, the RF gain on a double and a double hold. The focus is
+// the one the last gesture named, and the action already sees it.
+TEST(input_double_gestures_set_their_own_focus) {
+  Fake f;
+  f.shorts = {"2 7", "2 B"};
+  f.holds = {"2 7"};
+  f.doubles = {"2 7"};
+  f.doubleHolds = {"2 7"};
+  f.waits = {"2 7"};
+  f.focuses["2 7"] = Setting::Agc;
+  f.doubleFocuses["2 7"] = Setting::RfGain;
+  KeypadInput in(f);
+  in.setBank(2);
+  tap(in, '7', 1000);
+  tap(in, '7', 1100);
+  CHECK(in.focus(2) == Setting::RfGain);
+  CHECK(f.activeFocus == Setting::RfGain);
+  tap(in, 'B', 2000);
+  CHECK(f.boundFocus == Setting::RfGain);
+  hold(in, '7', 3000);
+  CHECK(in.focus(2) == Setting::Agc);
+  CHECK(f.activeFocus == Setting::Agc);
+  tap(in, '7', 4000);
+  in.onKey('7', KeyGesture::Pressed, 4100);
+  in.onKey('7', KeyGesture::Held, 4100);
+  in.onKey('7', KeyGesture::Released, 4100);
+  CHECK(in.focus(2) == Setting::RfGain);
+  tap(in, '7', 5000);
+  in.poll(6000);
+  CHECK(in.focus(2) == Setting::Agc);
+  CHECK(f.activeFocus == Setting::Agc);
+  CHECK_LOG(f, "double 2 7", "short 2 B", "hold 2 7", "doublehold 2 7", "short 2 7");
 }
 
 TEST(input_one_shot_bank_sets_its_own_focus) {

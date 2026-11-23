@@ -104,6 +104,13 @@ struct KeyBinding {
   bool waitsForDouble = false;
   // What A, B and C move once this key has acted on its bank.
   Setting focus = Setting::None;
+  // What they move after its double click or double hold instead, where that is a second
+  // setting of the key (Bank 2 '7': AGC, then the RF gain); None: focus.
+  Setting doubleFocus = Setting::None;
+  // The focus a gesture sets: doubleFocus (where set) after a double click or double hold.
+  Setting focusFor(bool doubleGesture) const {
+    return doubleGesture && doubleFocus != Setting::None ? doubleFocus : focus;
+  }
   // What help mode says for each gesture instead of running its action.
   GestureHelp shortHelp;
   GestureHelp holdHelp;

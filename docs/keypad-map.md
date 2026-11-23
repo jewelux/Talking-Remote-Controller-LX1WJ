@@ -37,7 +37,7 @@ back to its starting focus.
 | Bank | Keys that set the focus | Starting focus |
 |---|---|---|
 | 1 | `6` RF power, `9` mode | none |
-| 2 | `0` contour frequency, `1` NR level, `2` NB level, `3` notch frequency (Icom: notch width), `4` low cut or PBT inner, `5` filter width, CW filter width or filter, `6` high cut or PBT outer, `7` AGC, `8` preamp, `9` attenuator | none |
+| 2 | `0` contour frequency, `1` NR level, `2` NB level, `3` notch frequency (Icom: notch width), `4` low cut or PBT inner, `5` filter width, CW filter width or filter, `6` high cut or PBT outer, `7` AGC, or the RF gain after a double press, `8` preamp, `9` attenuator | none |
 | 3 | none yet | none |
 | 4 | `1` processor level, `2` VOX gain, `3` monitor level (Icom), `5` TX equalizer, `7` mic gain, `8` RF power, `9` VOX delay | none |
 | 5 | `1`-`5` RIT offset | RIT offset |
@@ -54,7 +54,7 @@ With no focus, `A`, `B` and `C` say "not available".
 | `A` long | its entry or pick; speech speed steps to the next |
 | `A` double | back to the centre: PBT 0, the filter width NORMAL, the APF offset 0, RIT offset 0, normal speech speed, profile reset. Only where there is one; elsewhere `A` answers at once |
 | `B` / `C` short | one step up / down |
-| `B` / `C` long | a big step: RF power 5 steps, NR and NB level 25 % on Icom and 5 steps elsewhere, PBT 50, low and high cut and the filter width 5 steps, the notch and contour frequency 250 Hz, the APF offset 50 Hz, the Bank 4 levels and the sidetone 25, VOX delay, CW speed, pitch, weight, delay and QSK time 5 steps, RIT offset 100 Hz, CTCSS tone and DCS code 5, volume 2, FT-8x7 menu item 10 and row 5; a list (filter, notch, AGC, preamp, attenuator, CW filter width, TX equalizer, Icom break-in, speech speed) one step; the mode, the profile and the baud rate not available |
+| `B` / `C` long | a big step: RF power 5 steps, NR and NB level 25 % on Icom and 5 steps elsewhere, RF gain 25 %, PBT 50, low and high cut and the filter width 5 steps, the notch and contour frequency 250 Hz, the APF offset 50 Hz, the Bank 4 levels and the sidetone 25, VOX delay, CW speed, pitch, weight, delay and QSK time 5 steps, RIT offset 100 Hz, CTCSS tone and DCS code 5, volume 2, FT-8x7 menu item 10 and row 5; a list (filter, notch, AGC, preamp, attenuator, CW filter width, TX equalizer, Icom break-in, speech speed) one step; the mode, the profile and the baud rate not available |
 
 The first `B` or `C` after another key names the focus; the next ones give only the value. A step
 past the end of the range says "maximum" or "minimum" and changes nothing.
@@ -136,6 +136,8 @@ row: AGC, preamp, attenuator.
 | `6` long | PBT outer entry | high cut entry | high cut entry | not available | high cut entry (experimental) |
 | `7` short | AGC | AGC | AGC | AGC | AGC |
 | `7` long | AGC select | AGC select | AGC select | AGC select (experimental) | AGC select (experimental) |
+| `7` double | RF gain (IC-706, G106: free) | RF gain | RF gain | free | free |
+| `7` short, then hold | RF gain entry (IC-706, G106: free) | RF gain entry | RF gain entry | free | free |
 | `8` short | preamp | preamp | preamp | not available | preamplifier (IPO) |
 | `8` long | next preamp level | next preamp level | next preamp level | free | free |
 | `9` short | attenuator | attenuator | attenuator | not available | attenuator |
@@ -143,8 +145,11 @@ row: AGC, preamp, attenuator.
 | `A` `B` `C` | focus | focus | focus | focus: AGC | focus |
 
 The NR and NB levels are in percent on Icom, in the radio's own steps elsewhere (FTDX10, FTDX101
-and FT-891 NR 1-15, NB 0-10; FT-857/897 NR 1-16, NB 0-100). PBT is in the radio's steps, -128 to
-127, with 0 the centre. The FT-857/897 CW filter width (DSP bandpass width) is 60, 120 or 240 Hz.
+and FT-891 NR 1-15, NB 0-10; FT-857/897 NR 1-16, NB 0-100). The RF gain is in percent of the
+radio's range on every radio, `B` and `C` 5 %; on the FT-891 and KX2, which have fewer steps, it
+reads back as the radio's nearest step. `A`, `B` and `C` follow the last press of `7`: AGC after a
+short press or a hold, the RF gain after a double press or a short press then hold. PBT is in
+the radio's steps, -128 to 127, with 0 the centre. The FT-857/897 CW filter width (DSP bandpass width) is 60, 120 or 240 Hz.
 
 `3` is every radio's notch key: the auto notch on a short press and a hold, the notch you set
 yourself on a double press. Where the radio has only one of them, it is on the short press and the

@@ -191,6 +191,7 @@ The current keypad concept uses radio-specific banks with:
 | Receive / DSP | `FILWIDTH?`, `FILWIDTH NEXT/PREV` | Bank 2: `5` short / `5` long; then `B` / `C` |
 | Receive / DSP | `FILSHAPE?`, `FILSHAPE TOGGLE` | Bank 2: `5` double click / `5` short then hold |
 | Receive / DSP | `AGC?`, `AGC <speed>` | Bank 2: `7` short / `7` long |
+| Receive / DSP | `RFGAIN?`, `RFGAIN STEP 5/-5` | Bank 2: `7` double click; `7` short then hold for the entry; then `B` / `C` |
 | Receive / DSP | `PREAMP?`, `ATT?` | Bank 2: `8` and `9` short / long for the next level |
 
 ### Bank 3 - VFO / Split / Bandstack
