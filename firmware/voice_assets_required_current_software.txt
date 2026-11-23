@@ -135,6 +135,7 @@ voice_filter.wav
 voice_filtershape.wav
 voice_filterwidth.wav
 voice_bandpassfilter.wav
+voice_contour.wav
 voice_highcut.wav
 voice_lowcut.wav
 voice_narrow.wav
@@ -143,6 +144,7 @@ voice_notch.wav
 voice_noisereduction.wav
 voice_noiseblanker.wav
 voice_sharp.wav
+voice_slope.wav
 voice_soft.wav
 voice_level.wav
 

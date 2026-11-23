@@ -19,6 +19,26 @@ enum class CwLevel : uint8_t { Speed, Pitch, Delay };
 // The receive DSP levels: noise reduction and noise blanker.
 enum class RxLevel : uint8_t { Nr, Nb };
 
+// The receive filter values (rx_filter_codec.h, radio_features.h rxFilterLevel*): the IF shift,
+// the width, the manual notch, contour and APF frequencies and the low and high cut in Hz, the
+// cut slopes in dB/oct. A width of 0 is the radio's default (NORMAL), a cut of 0 is off.
+enum class RxFilterLevel : uint8_t {
+  IfShift, Width, NotchFreq, ContourFreq, ApfFreq, LowCut, HighCut, LowCutSlope, HighCutSlope,
+};
+
+// The receive filter switches: narrow, contour and APF (audio peak filter).
+enum class RxFilterSwitch : uint8_t { Narrow, Contour, Apf };
+
+// How a radio sends the receive filter settings its caps name (rx_filter_codec.h).
+enum class RxFilterEncoding : uint8_t {
+  None,
+  Icom,          // 1A 03, the width as an index of the current filter (IC-7300, IC-705, IC-7760)
+  YaesuFtdx10,   // SH00nn, IS00+nnnn, NA0, BP0, CO0, the EX cut menus of the FTDX10
+  YaesuFtdx101,  // the same but the SSB width table and the EX menu numbers (main band)
+  YaesuFt891,    // IS0 with an on digit, its 4-digit EX cut menus; no width (it depends on NA)
+  KenwoodTs480,  // SL and SH, the slope tune cuts in SSB, FM and AM
+};
+
 // The repeater shift: simplex, or the TX frequency above or below.
 enum class RptShift : uint8_t { Simplex, Plus, Minus };
 

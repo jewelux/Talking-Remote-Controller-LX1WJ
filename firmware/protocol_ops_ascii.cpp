@@ -3,6 +3,7 @@
 #include "cat_setting_codec.h"
 #include "ft8x7_codec.h"
 #include "protocol_ascii.h"
+#include "protocol_ops_ascii_internal.h"
 #include "radio_protocol.h"
 #include "transport_serial.h"
 
@@ -26,23 +27,6 @@ static bool asciiParseOnOffResponse(const String& line, const char* prefix, bool
     return true;
   }
   return false;
-}
-
-static bool asciiSendSimpleCommand(const char* cmd) {
-  if (!cmd || !cmd[0]) return false;
-  serialTransportFlushInput();
-  serialTransportPrint(cmd);
-  serialTransportFlushOutput();
-  return true;
-}
-
-// Sends cmd, then reads the setting back with query: true when the radio has expected.
-template <typename T, typename U>
-static bool asciiSendAndVerify(const RadioProfile& sp, const char* cmd,
-                               bool (*query)(const RadioProfile&, T&, uint32_t), const U& expected) {
-  if (!asciiSendSimpleCommand(cmd)) return false;
-  T readBack{};
-  return query(sp, readBack, kCatReplyTimeoutMs) && readBack == expected;
 }
 
 static bool asciiQueryRawLine(const char* cmd, const char* prefix, String& lineOut, uint32_t timeoutMs) {
@@ -488,7 +472,7 @@ bool asciiQueryNotch(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {
 
 bool asciiSetNotch(const RadioProfile& sp, bool on) {
   if (!sp.caps.setNotch) return false;
-  return asciiSendSimpleCommand(on ? sp.commands->notchOnCmd : sp.commands->notchOffCmd);
+  return asciiSendAndVerify(sp, on ? sp.commands->notchOnCmd : sp.commands->notchOffCmd, asciiQueryNotch, on);
 }
 
 bool asciiQueryLock(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs) {

@@ -57,7 +57,40 @@ menu values on the FT-857/897.
 
 `ANOTCH?` and `ANOTCH OFF | ON | TOGGLE` (Bank 2 `0`) read and set the auto notch, not the
 manual notch of `NOTCH`: Icom `16 41` and Yaesu `BC0`, 0 off and 1 on (the CI-V guides and CAT
-manuals, Hamlib). The TS-480 reference has no notch command.
+manuals, Hamlib). The TS-480 reference has no notch command. `NOTCH OFF | ON` on the FTDX10,
+FTDX101D/MP and FT-891 sends `BP00000;` and `BP00001;` (three digits, as the CAT manuals, Hamlib
+and flrig have it) and is read back.
+
+### Receive filter
+
+Console commands only, no keys yet. Each takes `?`, a value, and `STEP <+-n>`; a value goes to the
+radio's nearest step, and each set is read back. The width and the cuts depend on the mode: they
+are read and set for the current mode, and say "not available" in a mode without them. `STEP`
+moves a low cut up from `OFF` to its lowest value and a Yaesu high cut down from `OFF` to its
+highest; back to `OFF` only by setting it. `WIDTH NORMAL` has no place among the widths, so
+`WIDTH STEP` needs a width set first. The slopes take only 6 or 18.
+
+| Radio | `WIDTH` | `NAR` | `IFSHIFT` | `NOTCHFREQ` | `CONTOUR`, `CONTOURFREQ` | `APF`, `APFFREQ` | `HPF`, `LPF`, slopes | Sources |
+|---|---|---|---|---|---|---|---|---|
+| IC-7300, IC-705, IC-7760 | `1A 03`: SSB, CW 50–3600 Hz, RTTY to 2700, AM 200–10000; not FM | – | – | – | – | – | – | CI-V guides, Hamlib |
+| FTDX10 | `SH0`: SSB 300–4000 Hz, CW, RTTY, DATA 50–3000, `NORMAL`; not AM, FM | `NA0` | `IS0` ±1200 Hz, 20 Hz steps | `BP01` 10–3200 Hz | `CO00`, `CO01` 10–3200 Hz | `CO02`, `CO03` ±250 Hz | EX menu of the mode: 100–1000 and 700–4000 Hz, `OFF`, 6 or 18 dB/oct | CAT manual, Hamlib, flrig; cuts CAT manual |
+| FTDX101D/MP | as FTDX10, SSB 300–3200 Hz | `NA0` | as FTDX10 | as FTDX10 | as FTDX10 | as FTDX10 | as FTDX10, its own menu numbers | CAT manuals, Hamlib, flrig; cuts CAT manuals |
+| FT-891 | – | `NA0` | `IS0`, on digit | `BP01` | as FTDX10 | as FTDX10 | its EX menus, no FM | CAT manual, Hamlib, flrig; cuts CAT manual |
+| TS-480 | – | – | – | – | – | – | `SL`, `SH` in SSB, FM and AM: low 0–1000 Hz, high 1000–5000 Hz | PC command reference, Hamlib |
+| FT-857/897 | – | `NAR?` (read) | – | – | – | – | `HPF`, `LPF`, menus 46 and 47 (experimental) | EEPROM map |
+
+The FTDX10 SSB widths 12–14 are 2250, 2400 and 2450 Hz in its CAT manual and flrig; Hamlib uses
+the FTDX101's 2200, 2300 and 2400. HamTRC follows the manual. The low and high cut are menu
+settings: their EX item numbers are only in the CAT manuals, not in Hamlib or flrig, but Hamlib's
+repeater offset items sit where those manuals put them. The FTDX101 is set for its main band. The
+TS-480 cuts are as with menu 45 (the data filter) off, which HamTRC cannot read.
+
+Left out: the FT-891 width (which widths it takes depends on `NA`, and its two manual editions
+differ); the KX2 width and shift (its quantization is not documented, Hamlib has neither); the
+TS-480 IF shift (no unit in the reference, not in Hamlib); the Icom manual notch position `14 0D`
+(no Hz scale from Icom); the IC-7760 APF (`16 32` sets on and width at once); the Icom RX
+low and high cut (`1A 05`, byte layout not confirmed); the IC-706 and G106 (no such commands);
+contour level and width and APF width (menu settings). None of this is tested on a radio yet.
 
 `TONE`, `TONEDIR` and `CTCSS` read and set the tone squelch over CAT, CTCSS only: both ways (Icom
 TSQL, `16 43`; Yaesu `CT0` 1) or encode only (Icom TONE, `16 42`; Yaesu `CT0` 2), and the tone

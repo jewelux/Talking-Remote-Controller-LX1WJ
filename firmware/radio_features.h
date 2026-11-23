@@ -71,6 +71,40 @@ FeatureStatus yaesuRxLevelSet(RxLevel level, uint16_t value, uint16_t& valueOut)
 // delta steps from the level read, kept within the range.
 FeatureStatus yaesuRxLevelStep(RxLevel level, int delta, uint16_t& valueOut);
 
+// The receive filter (radio_features_filter.cpp): levels in Hz (the cut slopes in dB/oct) and
+// switches. Icom 1A 03 (the width), the Yaesu newcat radios and the TS-480 as settings.rxFilter
+// says, the FT-857/897 low and high cut (its DSP menus, written experimentally) and NAR (read
+// only). The width and the cuts depend on the mode: each operation reads it first, and is
+// Unsupported in a mode without the setting (the Yaesu width in AM and FM, the TS-480 cuts in CW).
+
+// The values a level takes in the current mode: min..max, in the radio's steps, and 0 too with
+// zero (the width's default, NORMAL, or a cut OFF).
+struct RxFilterRange {
+  int16_t min = 0;
+  int16_t max = 0;
+  bool zero = false;
+};
+
+// Whether the radio has level in some mode, by the caps (no radio traffic).
+bool rxFilterLevelSupported(RxFilterLevel level);
+FeatureStatus rxFilterLevelRange(RxFilterLevel level, RxFilterRange& out);
+FeatureStatus rxFilterLevelWriteAccess(RxFilterLevel level);
+// Unexpected when the radio holds a width or cut code its table does not have.
+FeatureStatus rxFilterLevelQuery(RxFilterLevel level, int16_t& valueOut);
+// Sets the radio's value nearest value, which the radio confirms on a read-back, into valueOut.
+// Invalid outside the range, and for a slope other than 6 or 18.
+FeatureStatus rxFilterLevelSet(RxFilterLevel level, int16_t value, int16_t& valueOut);
+// delta of the radio's steps (a width or cut of its table, 20 Hz of IF shift, 10 Hz of the notch,
+// contour and APF) from the value read, kept within the range. A low cut steps up from OFF to its
+// lowest value, a Yaesu high cut down from OFF to its highest; back to OFF only by setting 0.
+// Invalid from the width NORMAL, which has no place among the widths.
+FeatureStatus rxFilterLevelStep(RxFilterLevel level, int delta, int16_t& valueOut);
+bool rxFilterSwitchSupported(RxFilterSwitch sw);
+FeatureStatus rxFilterSwitchQuery(RxFilterSwitch sw, bool& on);
+FeatureStatus rxFilterSwitchSet(RxFilterSwitch sw, bool on, bool& out);
+// Off -> on -> off, from the state read.
+FeatureStatus rxFilterSwitchToggle(RxFilterSwitch sw, bool& out);
+
 // Auto notch (caps.getAutoNotch): Icom 16 41, Yaesu BC0. Not the manual notch above.
 FeatureStatus autoNotchQuery(bool& on);
 FeatureStatus autoNotchSet(bool on);

@@ -38,6 +38,17 @@ Implemented and documented for the current field-test phase:
   shift (`RPT? | RPT SIMPLEX | PLUS | MINUS`): `OS0`, FM only. Each set is read back. Bank 6: `0`
   the shift, `2` the tone, `3` the CTCSS tone (`B`/`C` walk the tones), `5` encode or decode.
 - auto notch (`ANOTCH? | ANOTCH OFF | ON | TOGGLE`, Bank 2 `0`): `BC0`, 0 off and 1 on, read back.
+- manual notch (`NOTCH? | NOTCH OFF | ON | TOGGLE`, Bank 2 `3`): `BP00000;` and `BP00001;`, three
+  digits as the CAT manuals, Hamlib and flrig have it (it sent two before), read back; now on the
+  FT-891 too. Its frequency: `NOTCHFREQ? | <10..3200> | STEP <+-n>`, `BP01` in 10 Hz steps.
+- receive filter, console only (see `docs/radio-support-matrix.md`, "Receive filter"):
+  `WIDTH? | <Hz> | NORMAL | STEP <+-n>` (`SH0`, Table 3 of the CAT manual for SSB and for CW,
+  RTTY and DATA; not AM or FM; not on the FT-891), `NAR? | OFF | ON | TOGGLE` (`NA0`),
+  `IFSHIFT? | <-1200..1200> | CENTER | STEP <+-n>` (`IS0`, 20 Hz steps; on the FT-891 with its on
+  digit), `CONTOUR` and `CONTOURFREQ <10..3200>` (`CO00`, `CO01`), `APF` and
+  `APFFREQ <-250..250>` (`CO02`, `CO03`), and the low and high cut of the current mode
+  `HPF? | <100..1000> | OFF`, `LPF? | <700..4000> | OFF`, `HPFSLOPE`, `LPFSLOPE 6 | 18` (EX menus).
+  Each set is read back; not yet tested on a radio
 - ALC meter (`ALC?`, Bank 1 `5`): `RM4`, said in percent of 0..255, as the CAT manuals give the
   meter.
 - CW speed, pitch and delay (`CWSPEED <4..60>`, `CWPITCH <300..1050>`, `CWDELAY <30..3000>`,
@@ -74,7 +85,8 @@ Examples that should still be treated as later work:
 
 - memory and QMB handling
 - menu and service commands
-- contour, width, IF-shift, and similar fine controls
+- the receive filter commands (width, narrow, IF shift, notch frequency, contour, APF, cuts):
+  console only so far
 - detailed monitor and TX-audio controls
 - broad meter-source and scope handling
 

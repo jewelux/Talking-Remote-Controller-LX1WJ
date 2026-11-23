@@ -7,6 +7,8 @@
 #include "protocol_ascii.h"
 #include "protocol_civ.h"
 #include "ui_console_ft847.h"
+#include "ui_console_internal.h"
+#include "ui_console_rx_filter.h"
 #include "protocol_ops_ascii.h"
 #include "protocol_ops_yaesu.h"
 #include "protocol_yaesu_cat.h"
@@ -245,7 +247,7 @@ static void reportCommandFailure(const char* label, const char* reason) {
 }
 
 // Report a command the radio or profile cannot do, and say "not available".
-static void reportNotAvailable(const char* message) {
+void reportNotAvailable(const char* message) {
   Serial.println(message);
   if (g_speechEnabled) speakNotAvailable();
 }
@@ -259,7 +261,7 @@ static void reportExperimental(const char* label) {
 
 // A shared feature operation (radio_features.h) that did not succeed: print
 // why, with the speech the other console commands give. Ok: false.
-static bool reportFeatureFailure(FeatureStatus status, const char* label) {
+bool reportFeatureFailure(FeatureStatus status, const char* label) {
   switch (status) {
     case FeatureStatus::Ok: return false;
     case FeatureStatus::Unsupported:
@@ -481,7 +483,7 @@ static void speakSignedStepValue(const String& label, int value) {
 }
 
 // "<prefix><n>" with n an optional sign and digits, e.g. "RIT STEP -100".
-static bool parseStepArg(const String& line, const String& upper, const char* prefix, int32_t& stepOut) {
+bool parseStepArg(const String& line, const String& upper, const char* prefix, int32_t& stepOut) {
   if (!upper.startsWith(prefix)) return false;
   String arg = line.substring(strlen(prefix));
   arg.trim();
@@ -495,7 +497,7 @@ static bool parseStepArg(const String& line, const String& upper, const char* pr
 }
 
 // "<prefix><n>" with n a whole number lo..hi, e.g. "NBLEVEL 50".
-static bool parseRangedIntArg(const String& upper, const char* prefix, long lo, long hi, long& out) {
+bool parseRangedIntArg(const String& upper, const char* prefix, long lo, long hi, long& out) {
   if (!upper.startsWith(prefix)) return false;
   String arg = upper.substring(strlen(prefix));
   arg.trim();
@@ -931,6 +933,7 @@ static void printCatSettingsHelp() {
   printCwSwitchHelp();
   printCwLevelHelp();
   printCatToneHelp();
+  printRxFilterHelp();
   if (currentProfile().caps.getAlc) helpLine("ALC?  (while transmitting, percent of full scale)");
   printTxSettingsHelp();
 }
@@ -1068,7 +1071,7 @@ void printHelp(const String& topicArg) {
     }
     helpLine("ALC? | MOD?");
     helpLine(ft817 ? "AGC? | BK? | KYR? | ANT?  (radio settings)"
-                   : "AGC? | IPO? | ATT? | NAR? | DBF? | BK? | KYR?  (radio settings)");
+                   : "AGC? | IPO? | ATT? | DBF? | BK? | KYR?  (radio settings)");
     helpLine("AGC AUTO | FAST | SLOW | OFF  (experimental: writes it to the EEPROM)");
     if (!ft817) helpLine("DBF ON | OFF | TOGGLE  (experimental: DSP bandpass filter, writes it to the EEPROM)");
     helpLine("BK | KYR ON | OFF | TOGGLE  (experimental: break-in and keyer, write them to the EEPROM)");
@@ -1088,10 +1091,10 @@ void printHelp(const String& topicArg) {
     helpLine(ft817 ? "NB OFF | ON | TOGGLE  (experimental: writes it to the EEPROM)"
                    : "NR | NB | NOTCH (auto notch) OFF | ON | TOGGLE  (experimental: writes them to the EEPROM)");
     if (!ft817) {
-      helpLine("NRLEVEL? | NBLEVEL? | BPF? | HPF? | LPF? | MICEQ?  (DSP menu settings)");
+      helpLine("NRLEVEL? | NBLEVEL? | BPF? | MICEQ?  (DSP menu settings)");
       helpLine("NRLEVEL <1..16> | NBLEVEL <0..100> | NRLEVEL STEP | NBLEVEL STEP <+-n>  (experimental: menus 49 and 63)");
       helpLine("BPF 60 | 120 | 240 | BPF STEP <+-n>  (experimental: DSP bandpass width in Hz, menu 45; STEP moves by whole widths)");
-      helpLine("HPF <100..1000> | LPF <1000..6000> | HPF STEP | LPF STEP <+-n>  (experimental: menus 46 and 47, Hz to the nearest step)");
+      printRxFilterHelp();
       helpLine("MICEQ OFF | LPF | HPF | BOTH  (experimental: TX equalizer, menu 48)");
       helpLine("PROC? | PROCLEVEL?  (speech processor and menu 74)");
       helpLine("PROC ON | OFF | TOGGLE | PROCLEVEL <0..100> | PROCLEVEL STEP <+-n>  (experimental: writes them to the EEPROM)");
@@ -1623,14 +1626,13 @@ static bool handleConsoleFt8x7Meters(const String& upper) {
   return false;
 }
 
-// FT-8x7 settings read from the EEPROM, like the Bank 2 and Bank 8 keys.
+// FT-8x7 settings read from the EEPROM, like the Bank 2 and Bank 8 keys. NAR, HPF and LPF go
+// through the shared receive filter commands (ui_console_rx_filter.cpp).
 static bool handleConsoleFt8x7Settings(const String& upper) {
   static constexpr Ft8x7Setting kSettings[] = {
-    Ft8x7Setting::Ipo, Ft8x7Setting::Nar,
-    Ft8x7Setting::Dbf, Ft8x7Setting::RfPower,
+    Ft8x7Setting::Ipo, Ft8x7Setting::Dbf, Ft8x7Setting::RfPower,
     Ft8x7Setting::Menu, Ft8x7Setting::Row, Ft8x7Setting::IfShift, Ft8x7Setting::NrLevel,
-    Ft8x7Setting::NbLevel, Ft8x7Setting::BpfWidth, Ft8x7Setting::LowCut, Ft8x7Setting::HighCut,
-    Ft8x7Setting::MicEq, Ft8x7Setting::Antenna, Ft8x7Setting::CwSpeed, Ft8x7Setting::CwPitch,
+    Ft8x7Setting::NbLevel, Ft8x7Setting::BpfWidth, Ft8x7Setting::MicEq, Ft8x7Setting::Antenna, Ft8x7Setting::CwSpeed, Ft8x7Setting::CwPitch,
     Ft8x7Setting::CwDelay, Ft8x7Setting::CwWeight, Ft8x7Setting::Sidetone, Ft8x7Setting::Qsk,
     Ft8x7Setting::KeyReverse, Ft8x7Setting::CwAutoMode, Ft8x7Setting::Paddle, Ft8x7Setting::CwBfo,
   };
@@ -1665,9 +1667,9 @@ static bool handleConsoleFt8x7Settings(const String& upper) {
   return true;
 }
 
-// Experimental, FT-857/897: NRLEVEL <1..16>, NBLEVEL <0..100>, HPF <100..1000>, LPF <1000..6000>
-// (Hz, to the radio's nearest step) and <name> STEP <+-n> in the radio's steps, like Bank 2 `4`,
-// `5`, `7` and `8` long and double; BPF 60 | 120 | 240 (menu 45, Hz) console only.
+// Experimental, FT-857/897: NRLEVEL <1..16>, NBLEVEL <0..100> and <name> STEP <+-n> in the
+// radio's steps, like Bank 2 `7` and `8` long and double; BPF 60 | 120 | 240 (menu 45, Hz) console
+// only. HPF and LPF are the shared receive filter commands (ui_console_rx_filter.cpp).
 // The CW menus the same, on the FT-817/818 too: CWSPEED, CWPITCH (Hz), CWDELAY (ms, or FULL),
 // CWWEIGHT (2.5..4.5), SIDETONE and QSK (ms).
 static bool handleConsoleFt8x7LevelSet(const String& line, const String& upper) {
@@ -1681,8 +1683,6 @@ static bool handleConsoleFt8x7LevelSet(const String& line, const String& upper) 
     {"NRLEVEL", Ft8x7Setting::NrLevel, "8", "-1"},
     {"NBLEVEL", Ft8x7Setting::NbLevel, "50", "10"},
     {"BPF", Ft8x7Setting::BpfWidth, "240", "-1"},
-    {"HPF", Ft8x7Setting::LowCut, "300", "1"},
-    {"LPF", Ft8x7Setting::HighCut, "2700", "-1"},
     {"CWSPEED", Ft8x7Setting::CwSpeed, "20", "2"},
     {"CWPITCH", Ft8x7Setting::CwPitch, "600", "1"},
     {"CWDELAY", Ft8x7Setting::CwDelay, "250", "-5"},
@@ -3942,6 +3942,8 @@ void processCommand(String line) {
   if (handleConsoleYaesuRxLevels(line, upper)) return;
   if (handleConsoleCatTone(line, upper)) return;
   if (handleConsoleFt847Commands(upper)) return;
+  // After the FT-847 handler, which has its own NAR.
+  if (handleConsoleRxFilter(line, upper)) return;
   if (handleConsoleTxAudioSet(line, upper)) return;
   if (handleConsoleAdjustCommands(line, upper)) return;
   if (handleConsoleRadioCommands(line, upper)) return;

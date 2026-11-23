@@ -68,6 +68,16 @@ class RadioState:
     nr_on: bool = False
     nb_on: bool = False
     notch_on: bool = False
+    # The receive filter (the FTDX10 CAT manual): BP01 notch, IS, SH, NA, CO, the EX cut menus.
+    notch_hz: int = 1000
+    if_shift_hz: int = 0
+    width_code: int = 0
+    narrow_on: bool = False
+    contour_on: bool = False
+    contour_hz: int = 1000
+    apf_on: bool = False
+    apf_code: int = 25
+    ex_values: Dict[str, str] = field(default_factory=dict)
     power_on: bool = True
     agc_code: str = "03"
     smeter: int = 50
@@ -123,6 +133,11 @@ class CommandRegistry:
         self.handlers: Dict[str, Callable[[str], Optional[str]]] = {
             "AC": self.handle_ac,
             "BP": self.handle_bp,
+            "CO": self.handle_co,
+            "EX": self.handle_ex,
+            "IS": self.handle_is,
+            "NA": self.handle_na,
+            "SH": self.handle_sh,
             "CN": self.handle_cn,
             "CT": self.handle_ct,
             "FA": self.handle_fa,
@@ -265,14 +280,78 @@ class CommandRegistry:
         return None
 
     def handle_bp(self, command: str) -> Optional[str]:
-        # Read "BP P1 P2;", answer BP00 and three digits (the FTDX10 CAT manual).
+        # BP P1 P2 P3P3P3 (the FTDX10 CAT manual): P2 0 on/off, 1 the frequency x 10 Hz (001..320).
         if command == "BP00":
             return f"BP00{1 if self.state.notch_on else 0:03d};"
-        arg = command[2:]
-        if arg == "0001":
-            self.state.notch_on = True
-        elif arg == "0000":
-            self.state.notch_on = False
+        if command == "BP01":
+            return f"BP01{self.state.notch_hz // 10:03d};"
+        if command in ("BP00001", "BP00000"):
+            self.state.notch_on = command.endswith("1")
+        elif command.startswith("BP01") and command[4:].isdigit() and 1 <= int(command[4:]) <= 320:
+            self.state.notch_hz = int(command[4:]) * 10
+        return None
+
+    def handle_is(self, command: str) -> Optional[str]:
+        # IS P1 P2 +/- P4P4P4P4: the IF shift, 0..1200 Hz in 20 Hz steps.
+        if command == "IS0":
+            sign = "-" if self.state.if_shift_hz < 0 else "+"
+            return f"IS00{sign}{abs(self.state.if_shift_hz):04d};"
+        arg = command[4:]
+        if command.startswith("IS00") and len(arg) == 5 and arg[0] in "+-" and arg[1:].isdigit():
+            hz = int(arg[1:])
+            if hz <= 1200 and hz % 20 == 0:
+                self.state.if_shift_hz = -hz if arg[0] == "-" else hz
+        return None
+
+    def handle_sh(self, command: str) -> Optional[str]:
+        # SH P1 P2 P3P3: the width code of Table 3, 00 the default.
+        if command == "SH0":
+            return f"SH00{self.state.width_code:02d};"
+        if command.startswith("SH00") and command[4:].isdigit() and int(command[4:]) <= 23:
+            self.state.width_code = int(command[4:])
+        return None
+
+    def handle_na(self, command: str) -> Optional[str]:
+        if command == "NA0":
+            return f"NA0{_bool_digit(self.state.narrow_on)};"
+        if command in ("NA00", "NA01"):
+            self.state.narrow_on = command.endswith("1")
+        return None
+
+    def handle_co(self, command: str) -> Optional[str]:
+        # CO P1 P2 P3P3P3P3: 0 contour on/off, 1 its frequency, 2 APF on/off, 3 APF 0000..0050.
+        if command == "CO00":
+            return f"CO00{1 if self.state.contour_on else 0:04d};"
+        if command == "CO01":
+            return f"CO01{self.state.contour_hz:04d};"
+        if command == "CO02":
+            return f"CO02{1 if self.state.apf_on else 0:04d};"
+        if command == "CO03":
+            return f"CO03{self.state.apf_code:04d};"
+        arg = command[4:]
+        if len(arg) != 4 or not arg.isdigit():
+            return None
+        value = int(arg)
+        if command.startswith("CO00") and value <= 1:
+            self.state.contour_on = value == 1
+        elif command.startswith("CO01") and 10 <= value <= 3200:
+            self.state.contour_hz = value
+        elif command.startswith("CO02") and value <= 1:
+            self.state.apf_on = value == 1
+        elif command.startswith("CO03") and value <= 50:
+            self.state.apf_code = value
+        return None
+
+    def handle_ex(self, command: str) -> Optional[str]:
+        # EX P1P1 P2P2 P3P3 P4: menu items, kept as sent. The cut slopes are one digit, the rest two.
+        key = command[:8]
+        if len(command) == 8:
+            item = int(key[6:8]) if key[6:8].isdigit() else 0
+            mode = key[2:6]
+            slope_items = (8, 10) if mode in ("0101", "0102", "0103", "0201") else (10, 12)
+            default = "0" if item in slope_items else "00"
+            return f"{key}{self.state.ex_values.get(key, default)};"
+        self.state.ex_values[key] = command[8:]
         return None
 
     def handle_pa(self, command: str) -> Optional[str]:

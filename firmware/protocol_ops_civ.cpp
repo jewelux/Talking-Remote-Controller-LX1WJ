@@ -7,6 +7,7 @@
 #include "radio_protocol.h"
 #include "radio_state.h"
 #include "radio_utils.h"
+#include "rx_filter_codec.h"
 
 #include <string.h>
 
@@ -745,6 +746,49 @@ bool civSetFilterShape(const RadioProfile& sp, bool soft) {
   if (sp.protocol != PROTO_CIV || !sp.caps.setFilterShape) return false;
   if (!civSetToggleSub(0x56, soft)) return false;
   return civSettleAndVerify(sp, civQueryFilterShape, soft);
+}
+
+// The mode group the receive filter width is read in (rx_filter_codec.h).
+bool civQueryFilterModeGroup(const RadioProfile& sp, FilterModeGroup& out, uint32_t timeoutMs) {
+  uint8_t mode = 0;
+  if (sp.protocol != PROTO_CIV || !civQueryMode(sp, mode, timeoutMs)) return false;
+  out = civFilterModeGroup(mode);
+  return true;
+}
+
+// 1A 03: the width of the current filter as a BCD index (the IC-7300, IC-705 and IC-7760 CI-V
+// guides, Hamlib icom.c), in Hz on the scale of group.
+RxFilterRead civQueryRxWidth(const RadioProfile& sp, FilterModeGroup group, uint16_t& hzOut, uint32_t timeoutMs) {
+  RxFilterScale scale;
+  if (sp.protocol != PROTO_CIV || !sp.caps.getRxWidth ||
+      !rxFilterScaleFor(RxFilterEncoding::Icom, RxFilterLevel::Width, group, scale)) {
+    return RxFilterRead::NoReply;
+  }
+  civFlushInput();
+  const uint8_t sub[] = {0x03};
+  civSend(0x1A, sub, 1);
+  const std::optional<CivFrame> d = waitReply(0x1A, timeoutMs);
+  uint8_t code = 0;
+  if (!d || d->payloadLen < 2 || d->payload[0] != 0x03) return RxFilterRead::NoReply;
+  if (!civWidthCodeDecode(d->payload[1], code) || !scale.has(code)) return RxFilterRead::Unknown;
+  hzOut = scale.valueOf(code);
+  return RxFilterRead::Ok;
+}
+
+bool civSetRxWidth(const RadioProfile& sp, FilterModeGroup group, uint16_t hz) {
+  RxFilterScale scale;
+  if (sp.protocol != PROTO_CIV || !sp.caps.setRxWidth ||
+      !rxFilterScaleFor(RxFilterEncoding::Icom, RxFilterLevel::Width, group, scale)) {
+    return false;
+  }
+  const uint8_t code = rxFilterScaleCodeOf(scale, hz);
+  if (scale.valueOf(code) != hz) return false;
+  civFlushInput();
+  const uint8_t pl[] = {0x03, civWidthCodeEncode(code)};
+  civSend(0x1A, pl, 2);
+  civSettleAfterWrite();
+  uint16_t readBack = 0;
+  return civQueryRxWidth(sp, group, readBack, kCatReplyTimeoutMs) == RxFilterRead::Ok && readBack == hz;
 }
 
 // 16 45: the monitor (1C 02 is the transmit frequency monitor, a different function).

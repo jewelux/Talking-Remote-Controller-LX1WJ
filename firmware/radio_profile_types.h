@@ -122,12 +122,55 @@ struct RadioCapabilities {
   bool setMicGain = false;
   bool getVox = false;
   bool setVox = false;
+  // The receive filter settings over CAT, sent as settings.rxFilter says (rx_filter_codec.h):
+  // the IF shift, the width in Hz, narrow, the manual notch frequency, contour on/off and its
+  // frequency, APF on/off and its frequency, and the low and high cut with their slopes. The
+  // FT-857/897 keeps its own cuts and narrow (Ft8x7Setting) and leaves these off.
+  bool getIfShift = false;
+  bool setIfShift = false;
+  bool getRxWidth = false;
+  bool setRxWidth = false;
+  bool getNarrow = false;
+  bool setNarrow = false;
+  bool getNotchFreq = false;
+  bool setNotchFreq = false;
+  bool getContour = false;
+  bool setContour = false;
+  bool getApf = false;
+  bool setApf = false;
+  bool getRxCut = false;
+  bool setRxCut = false;
   // FT-8x7: the settings written to the EEPROM: the menu item and soft key row, AGC, the mic
   // gain, VOX with its gain and delay, BK and KYR, on the FT-817/818 the antenna jack, and on the
   // FT-857/897 DBF, low cut and high cut, PROC and its level and the mic EQ. No profile sets it:
   // only EXPERIMENTAL ON.
   bool setRadioMenu = false;
 };
+
+// The cap that reads (set false) or sets (set true) a receive filter level or switch.
+constexpr bool rxFilterLevelCap(const RadioCapabilities& caps, RxFilterLevel level, bool set) {
+  switch (level) {
+    case RxFilterLevel::IfShift: return set ? caps.setIfShift : caps.getIfShift;
+    case RxFilterLevel::Width: return set ? caps.setRxWidth : caps.getRxWidth;
+    case RxFilterLevel::NotchFreq: return set ? caps.setNotchFreq : caps.getNotchFreq;
+    case RxFilterLevel::ContourFreq: return set ? caps.setContour : caps.getContour;
+    case RxFilterLevel::ApfFreq: return set ? caps.setApf : caps.getApf;
+    case RxFilterLevel::LowCut:
+    case RxFilterLevel::HighCut:
+    case RxFilterLevel::LowCutSlope:
+    case RxFilterLevel::HighCutSlope: return set ? caps.setRxCut : caps.getRxCut;
+  }
+  return false;
+}
+
+constexpr bool rxFilterSwitchCap(const RadioCapabilities& caps, RxFilterSwitch sw, bool set) {
+  switch (sw) {
+    case RxFilterSwitch::Narrow: return set ? caps.setNarrow : caps.getNarrow;
+    case RxFilterSwitch::Contour: return set ? caps.setContour : caps.getContour;
+    case RxFilterSwitch::Apf: return set ? caps.setApf : caps.getApf;
+  }
+  return false;
+}
 
 // The controller's serial connector the radio is wired to. Its UART, pins and
 // line inversion are in transport_serial.cpp.
@@ -306,6 +349,8 @@ struct SettingEncodings {
   uint16_t cwDelayMinMs = 0;
   uint16_t cwDelayMaxMs = 0;
   uint16_t cwDelayStepMs = 0;
+  // The receive filter commands (caps.getIfShift ... getRxCut).
+  RxFilterEncoding rxFilter = RxFilterEncoding::None;
 };
 
 inline constexpr AsciiCommandSet kNoAsciiCommands{};

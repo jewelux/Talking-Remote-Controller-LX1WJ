@@ -98,6 +98,8 @@ New features and new radios come with a new firmware.
 - `PBT2?`, `PBT2 <-128..127>`, `PBT2 CENTER`, `PBT2 STEP <+-n>`
 - `FILSHAPE?`, `FILSHAPE SHARP`, `FILSHAPE SOFT`, `FILSHAPE TOGGLE`
 - `FILWIDTH?`, `FILWIDTH <1..3>`, `FILWIDTH NEXT`, `FILWIDTH PREV`
+- `WIDTH?`, `WIDTH <Hz>`, `WIDTH STEP <+-n>`: the width of the current filter (`1A 03`), SSB and
+  CW 50–3600 Hz, RTTY to 2700 Hz, AM 200–10000 Hz, to the nearest width; not in FM
 
 ### Transmit
 

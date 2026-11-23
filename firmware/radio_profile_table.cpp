@@ -47,13 +47,15 @@ constexpr RadioCapabilities kIc7300Caps = {
     .getAtt = true, .setAtt = true, .getPreamp = true, .setPreamp = true,
     .getBreakIn = true, .setBreakIn = true, .getCwPitch = true, .setCwPitch = true,
     .getProc = true, .setProc = true, .getMicGain = true, .setMicGain = true,
-    .getVox = true, .setVox = true,
+    .getVox = true, .setVox = true, .getRxWidth = true, .setRxWidth = true,
 };
 
 // 16 02 00..02 and 11 00/20 (the IC-7300 and IC-705 CI-V guides; Hamlib: P.AMP1, P.AMP2 and
 // 20 dB). On 144 and 430 MHz the IC-705 has only one preamp, and its attenuator works on HF and
-// 50 MHz only: a set the radio refuses reads back as an error.
-constexpr SettingEncodings kIc7300Settings = {.preampLevels = 2, .attLevels = 1, .attDb = {20}};
+// 50 MHz only: a set the radio refuses reads back as an error. 1A 03 the filter width (the CI-V
+// guides; Hamlib gives all three radios x1ax03_supported).
+constexpr SettingEncodings kIc7300Settings = {.preampLevels = 2, .attLevels = 1, .attDb = {20},
+                                              .rxFilter = RxFilterEncoding::Icom};
 
 // The IC-705: every IC-7300 command is in the IC-705 CI-V reference guide too, and Hamlib has
 // it. 1C 01 drives an external tuner (AH-705). It also has the repeater shift (0F 10..12).
@@ -75,7 +77,8 @@ constexpr RadioCapabilities kIc7760Caps = [] {
 
 // 16 02 00..02, and 11 in dB: Icom's guide has 3..45 in 3 dB steps, Hamlib 6, 12 and 18, so those
 // three are set; a read of any other step is reported as it is.
-constexpr SettingEncodings kIc7760Settings = {.preampLevels = 2, .attLevels = 3, .attDb = {6, 12, 18}};
+constexpr SettingEncodings kIc7760Settings = {.preampLevels = 2, .attLevels = 3, .attDb = {6, 12, 18},
+                                              .rxFilter = RxFilterEncoding::Icom};
 
 // SWR (15 12, 0000..0255): 0 = 1.0, 48 = 1.5, 80 = 2.0, 120 = 3.0 (the IC-7300, IC-705 and
 // IC-7760 CI-V guides); 240 = 6.0 is Hamlib's (IC7300_SWR_CAL, IC705_SWR_CAL, IC7760_SWR_CAL).
@@ -147,20 +150,23 @@ constexpr RadioCapabilities kTs480Caps = {
     .getAtt = true, .setAtt = true, .getPreamp = true, .setPreamp = true,
     .getCwSpeed = true, .setCwSpeed = true, .getCwDelay = true, .setCwDelay = true,
     .getProc = true, .setProc = true, .getMicGain = true, .setMicGain = true,
-    .getVox = true, .setVox = true,
+    .getVox = true, .setVox = true, .getRxCut = true, .setRxCut = true,
 };
 
 // VD 0..3000 ms in 150 ms steps, VG 0..9, GT 000 off, 001 fast, 002 slow, PA0/PA1 and
 // RA00/RA01 (TS-480 PC command reference; Hamlib agrees, and has 12 dB for both, which the
 // reference does not give). PC in watts, 5..100 on the TS-480SAT (25 in AM; the HX goes to 200,
 // which is not offered); Hamlib and flrig agree. KS 10..60 WPM, SD 0..1000 ms in 50 ms steps, 0
-// full break-in (the reference; Hamlib agrees). No pitch: the sources disagree on its scale.
+// full break-in (the reference; Hamlib agrees). No pitch: the sources disagree on its scale. SL and
+// SH the slope tune cuts in SSB, FM and AM (the reference and Hamlib; Hamlib has RTTY too, the
+// reference not), as they are with menu 45 (the data filter) off. No IS: the reference gives no
+// unit, Hamlib has none.
 constexpr SettingEncodings kTs480Settings = {
     .voxDelay = VoxDelayEncoding::Ms4, .voxDelayMinMs = 0, .voxDelayMaxMs = 3000, .voxDelayStepMs = 150,
     .voxGainMax = 9, .agc = AgcEncoding::KenwoodGt, .frontEnd = FrontEndEncoding::Kenwood,
     .preampLevels = 1, .attLevels = 1, .rfPower = RfPowerEncoding::PcWatts, .rfPowerMinWatts = 5,
     .cwSpeedMinWpm = 10, .cwSpeedMaxWpm = 60, .cwDelay = VoxDelayEncoding::Ms4, .cwDelayMinMs = 0,
-    .cwDelayMaxMs = 1000, .cwDelayStepMs = 50,
+    .cwDelayMaxMs = 1000, .cwDelayStepMs = 50, .rxFilter = RxFilterEncoding::KenwoodTs480,
 };
 
 constexpr AsciiCommandSet kTs480Commands = {
@@ -267,6 +273,10 @@ constexpr RadioCapabilities kFtdx10Caps = {
     .getCwDelay = true, .setCwDelay = true,
     .getProc = true, .setProc = true, .getMicGain = true, .setMicGain = true,
     .getVox = true, .setVox = true,
+    .getIfShift = true, .setIfShift = true, .getRxWidth = true, .setRxWidth = true,
+    .getNarrow = true, .setNarrow = true, .getNotchFreq = true, .setNotchFreq = true,
+    .getContour = true, .setContour = true, .getApf = true, .setApf = true,
+    .getRxCut = true, .setRxCut = true,
 };
 
 constexpr RadioCapabilities kFtdx101Caps = [] {
@@ -297,20 +307,28 @@ constexpr RadioCapabilities kFtdx101MpCaps = [] {
 // VD, GT0, PA0 and RA0 as the FTDX10 and FTDX101 CAT manuals and Hamlib have them: VD a step,
 // 30..3000 ms; PA0 0 IPO, 1 AMP1, 2 AMP2; RA0 0 off, 1..3 6, 12 and 18 dB. The FTDX101 sends
 // them for the main band. PC in watts, 5..100 (the manuals, Hamlib and flrig). KS 4..60 WPM,
-// KP 300..1050 Hz, SD a step of the VD table, 30..3000 ms (the FTDX10 manual and Hamlib).
+// KP 300..1050 Hz, SD a step of the VD table, 30..3000 ms (the FTDX10 manual and Hamlib). The
+// receive filter (rx_filter_codec.h): SH, IS, NA0, BP0, CO0 and the EX cut menus of the FTDX10
+// manual; the FTDX101 the same for its main band, with its own SSB widths and menu numbers.
 constexpr SettingEncodings kFtdx10Settings = {
     .voxDelay = VoxDelayEncoding::YaesuSteps, .voxDelayMinMs = 30, .voxDelayMaxMs = 3000,
     .agc = AgcEncoding::YaesuGt0, .frontEnd = FrontEndEncoding::Yaesu, .preampLevels = 2,
     .attLevels = 3, .attDb = {6, 12, 18}, .rfPower = RfPowerEncoding::PcWatts, .rfPowerMinWatts = 5,
     .cwSpeedMinWpm = 4, .cwSpeedMaxWpm = 60, .cwPitchKp = true, .cwDelay = VoxDelayEncoding::YaesuSteps,
-    .cwDelayMinMs = 30, .cwDelayMaxMs = 3000,
+    .cwDelayMinMs = 30, .cwDelayMaxMs = 3000, .rxFilter = RxFilterEncoding::YaesuFtdx10,
 };
+
+constexpr SettingEncodings kFtdx101Settings = [] {
+  SettingEncodings settings = kFtdx10Settings;
+  settings.rxFilter = RxFilterEncoding::YaesuFtdx101;
+  return settings;
+}();
 
 constexpr RadioCapabilities kFt891Caps = {
     .getFreq = true, .setFreq = true, .getMode = true, .setMode = true,
     .getSmeter = true, .getPower = true, .getRfPower = true, .setRfPower = true, .getSwr = true,
     .getAlc = true, .getNrLevel = true, .setNrLevel = true, .getNbLevel = true, .setNbLevel = true,
-    .getAutoNotch = true, .setAutoNotch = true, .getTone = true, .setTone = true, .getCtcss = true, .setCtcss = true,
+    .getNotch = true, .setNotch = true, .getAutoNotch = true, .setAutoNotch = true, .getTone = true, .setTone = true, .getCtcss = true, .setCtcss = true,
     .getRptShift = true, .setRptShift = true, .getDialLock = true, .setDialLock = true,
     .getTuner = true, .setTuner = true, .startTune = true,
     .getVfo = true, .setVfo = true,
@@ -321,18 +339,23 @@ constexpr RadioCapabilities kFt891Caps = {
     .getCwDelay = true, .setCwDelay = true,
     .getProc = true, .setProc = true, .getMicGain = true, .setMicGain = true,
     .getVox = true, .setVox = true,
+    .getIfShift = true, .setIfShift = true, .getNarrow = true, .setNarrow = true,
+    .getNotchFreq = true, .setNotchFreq = true, .getContour = true, .setContour = true,
+    .getApf = true, .setApf = true, .getRxCut = true, .setRxCut = true,
 };
 
 // PR0, PL, MG, VX, VG, VD, GT0, PA0 and RA0 as the FT-891 CAT manual and Hamlib newcat have
 // them (flrig agrees but for GT, which it lacks); VD in ms, 30..3000 in 10 ms steps; PA0 0 IPO,
 // 1 AMP; RA0 0 off, 1 on (Hamlib's 12 dB is not in the manual); PC in watts, 5..100; KS 4..60
-// WPM, KP 300..1050 Hz, SD 30..3000 ms (Hamlib sends ms too).
+// WPM, KP 300..1050 Hz, SD 30..3000 ms (Hamlib sends ms too). The receive filter as the FTDX10's
+// but IS (an on digit) and the EX menu numbers; no SH: its widths depend on NA, and its two manual
+// editions differ.
 constexpr SettingEncodings kFt891Settings = {
     .voxDelay = VoxDelayEncoding::Ms4, .voxDelayMinMs = 30, .voxDelayMaxMs = 3000, .voxDelayStepMs = 10,
     .agc = AgcEncoding::YaesuGt0, .frontEnd = FrontEndEncoding::Yaesu, .preampLevels = 1, .attLevels = 1,
     .rfPower = RfPowerEncoding::PcWatts, .rfPowerMinWatts = 5, .cwSpeedMinWpm = 4, .cwSpeedMaxWpm = 60,
     .cwPitchKp = true, .cwDelay = VoxDelayEncoding::Ms4, .cwDelayMinMs = 30, .cwDelayMaxMs = 3000,
-    .cwDelayStepMs = 10,
+    .cwDelayStepMs = 10, .rxFilter = RxFilterEncoding::YaesuFt891,
 };
 
 constexpr AsciiCommandSet kFtdx10Commands = {
@@ -348,7 +371,8 @@ constexpr AsciiCommandSet kFtdx10Commands = {
     .tunerGet = "AC;", .tunerOnCmd = "AC001;", .tunerOffCmd = "AC000;", .tuneStartCmd = "AC002;",
     .splitGet = "ST;", .splitOnCmd = "ST1;", .splitOffCmd = "ST0;",
     .vfoGet = "VS;", .vfoACmd = "VS0;", .vfoBCmd = "VS1;", .vfoSwapCmd = "SV;",
-    .notchGet = "BP00;", .notchOnCmd = "BP0001;", .notchOffCmd = "BP0000;",
+    // BP P1 P2 P3P3P3, three digits (the CAT manuals, Hamlib "BP00%03d", flrig).
+    .notchGet = "BP00;", .notchOnCmd = "BP00001;", .notchOffCmd = "BP00000;",
     .lockGet = "LK;", .lockOnCmd = "LK1;", .lockOffCmd = "LK0;",
     .freqReplyPrefix = "FA", .modeReplyPrefix = "MD0", .ifReplyPrefix = "IF",
     .idReplyPrefix = "ID", .omReplyPrefix = "OM", .smeterReplyPrefix = "SM0",
@@ -377,11 +401,13 @@ constexpr AsciiCommandSet kFt891Commands = {
     .tunerGet = "AC;", .tunerOnCmd = "AC001;", .tunerOffCmd = "AC000;", .tuneStartCmd = "AC002;",
     .splitGet = "ST;", .splitOnCmd = "ST1;", .splitOffCmd = "ST0;",
     .vfoGet = "VS;", .vfoACmd = "VS0;", .vfoBCmd = "VS1;", .vfoSwapCmd = "SV;",
+    .notchGet = "BP00;", .notchOnCmd = "BP00001;", .notchOffCmd = "BP00000;",
     .lockGet = "LK;", .lockOnCmd = "LK1;", .lockOffCmd = "LK0;",
     .freqReplyPrefix = "FA", .modeReplyPrefix = "MD0", .ifReplyPrefix = "IF",
     .idReplyPrefix = "ID", .omReplyPrefix = "OM", .smeterReplyPrefix = "SM0",
     .powerReplyPrefix = "RM5", .swrReplyPrefix = "RM6", .tunerReplyPrefix = "AC",
-    .splitReplyPrefix = "ST", .vfoReplyPrefix = "VS", .lockReplyPrefix = "LK",
+    .splitReplyPrefix = "ST", .vfoReplyPrefix = "VS", .notchReplyPrefix = "BP00",
+    .lockReplyPrefix = "LK",
 };
 
 constexpr ModeCodes kYaesuAsciiModes = {
@@ -481,13 +507,13 @@ constexpr RadioProfile kProfiles[] = {
      .protocol = PROTO_YAESU_FTDX_ASCII,
      .link = {.port = RadioPort::Rs232, .baud = 38400, .bauds = kYaesuAsciiBauds},
      .caps = kFtdx101Caps, .commands = &kFtdx101Commands, .modes = &kYaesuAsciiModes,
-     .settings = kFtdx10Settings,
+     .settings = kFtdx101Settings,
      .smeterScale = kFtdx101SMeter, .swrScale = kFtdxSwr},
     {.slot = 13, .name = "Yaesu FTDX-101MP", .vendor = VoiceVendor::Yaesu, .voiceDigits = "101",
      .protocol = PROTO_YAESU_FTDX_ASCII,
      .link = {.port = RadioPort::Rs232, .baud = 38400, .bauds = kYaesuAsciiBauds},
      .caps = kFtdx101MpCaps, .commands = &kFtdx101Commands, .modes = &kYaesuAsciiModes,
-     .settings = kFtdx10Settings,
+     .settings = kFtdx101Settings,
      .smeterScale = kFtdx101SMeter, .swrScale = kFtdxSwr},
     {.slot = 14, .name = "Yaesu FT-818", .vendor = VoiceVendor::Yaesu, .voiceDigits = "818",
      .model = RadioModel::Ft818, .protocol = PROTO_YAESU_FT8X7,

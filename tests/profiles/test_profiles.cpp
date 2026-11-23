@@ -521,15 +521,67 @@ TEST(newcat_mode_and_lock_commands) {
   }
 }
 
-// Manual notch read: "BP P1 P2;" with P1 0 and P2 0 for on/off (the FTDX10 CAT manual),
-// answered BP00 and three digits; the FTDX101 shares the command set.
+// Manual notch: "BP P1 P2 P3P3P3;" with P1 0 and P2 0 for on/off and three digits (the FTDX10,
+// FTDX101 and FT-891 CAT manuals, Hamlib "BP00%03d", flrig).
 TEST(newcat_notch_read) {
-  const uint8_t ftdx[] = {11, 12, 13};
-  for (uint8_t s : ftdx) {
+  const uint8_t yaesu[] = {11, 12, 13, 15};
+  for (uint8_t s : yaesu) {
+    CHECK(slot(s).caps.getNotch && slot(s).caps.setNotch);
     CHECK_EQ(slot(s).commands->notchGet, "BP00;");
     CHECK_EQ(slot(s).commands->notchReplyPrefix, "BP00");
-    CHECK_EQ(slot(s).commands->notchOnCmd, "BP0001;");
-    CHECK_EQ(slot(s).commands->notchOffCmd, "BP0000;");
+    CHECK_EQ(slot(s).commands->notchOnCmd, "BP00001;");
+    CHECK_EQ(slot(s).commands->notchOffCmd, "BP00000;");
+  }
+}
+
+// The receive filter: each radio's caps and how it sends them (rx_filter_codec.h).
+TEST(rx_filter_caps_and_encodings) {
+  struct Expect {
+    uint8_t slot;
+    RxFilterEncoding encoding;
+    bool ifShift, width, narrow, notchFreq, contour, apf, cut;
+  };
+  const Expect expect[] = {
+      {1, RxFilterEncoding::Icom, false, true, false, false, false, false, false},
+      {3, RxFilterEncoding::Icom, false, true, false, false, false, false, false},
+      {17, RxFilterEncoding::Icom, false, true, false, false, false, false, false},
+      {18, RxFilterEncoding::Icom, false, true, false, false, false, false, false},
+      {7, RxFilterEncoding::KenwoodTs480, false, false, false, false, false, false, true},
+      {11, RxFilterEncoding::YaesuFtdx10, true, true, true, true, true, true, true},
+      {12, RxFilterEncoding::YaesuFtdx101, true, true, true, true, true, true, true},
+      {13, RxFilterEncoding::YaesuFtdx101, true, true, true, true, true, true, true},
+      {15, RxFilterEncoding::YaesuFt891, true, false, true, true, true, true, true},
+  };
+  for (const Expect& e : expect) {
+    const RadioProfile& p = slot(e.slot);
+    const RadioCapabilities& c = p.caps;
+    CHECK(p.settings.rxFilter == e.encoding);
+    CHECK(c.getIfShift == e.ifShift && c.setIfShift == e.ifShift);
+    CHECK(c.getRxWidth == e.width && c.setRxWidth == e.width);
+    CHECK(c.getNarrow == e.narrow && c.setNarrow == e.narrow);
+    CHECK(c.getNotchFreq == e.notchFreq && c.setNotchFreq == e.notchFreq);
+    CHECK(c.getContour == e.contour && c.setContour == e.contour);
+    CHECK(c.getApf == e.apf && c.setApf == e.apf);
+    CHECK(c.getRxCut == e.cut && c.setRxCut == e.cut);
+  }
+  // The rest have none; the FT-857/897 keeps its cuts and NAR in its EEPROM (Ft8x7Setting).
+  const uint8_t none[] = {2, 4, 5, 6, 8, 9, 10, 14, 16};
+  for (uint8_t s : none) {
+    const RadioCapabilities& c = slot(s).caps;
+    CHECK(slot(s).settings.rxFilter == RxFilterEncoding::None);
+    CHECK(!c.getIfShift && !c.getRxWidth && !c.getNarrow && !c.getNotchFreq && !c.getContour && !c.getApf &&
+          !c.getRxCut);
+  }
+}
+
+// A receive filter cap is only on where the profile says how to send it.
+TEST(every_rx_filter_cap_has_an_encoding) {
+  for (size_t i = 0; i < profileCount(); ++i) {
+    const RadioProfile& p = profileAt(i);
+    const RadioCapabilities& c = p.caps;
+    const bool any = c.getIfShift || c.getRxWidth || c.getNarrow || c.getNotchFreq || c.getContour || c.getApf ||
+                     c.getRxCut;
+    CHECK(!any || p.settings.rxFilter != RxFilterEncoding::None);
   }
 }
 

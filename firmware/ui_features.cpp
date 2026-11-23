@@ -1,4 +1,5 @@
 #include "ui_features.h"
+#include "rx_filter_codec.h"
 #include "ui_speech.h"
 
 const char* featureStatusText(FeatureStatus status) {
@@ -93,6 +94,89 @@ void speakRxLevel(RxLevel level, uint16_t value) {
   if (!g_speechEnabled) return;
   speakLabel(level == RxLevel::Nr ? "noisereduction" : "noiseblanker");
   speakDigitsAndPoint(String((int)value));
+}
+
+const char* rxFilterLevelName(RxFilterLevel level) {
+  switch (level) {
+    case RxFilterLevel::IfShift: return "IFSHIFT";
+    case RxFilterLevel::Width: return "WIDTH";
+    case RxFilterLevel::NotchFreq: return "NOTCHFREQ";
+    case RxFilterLevel::ContourFreq: return "CONTOURFREQ";
+    case RxFilterLevel::ApfFreq: return "APFFREQ";
+    case RxFilterLevel::LowCut: return "HPF";
+    case RxFilterLevel::HighCut: return "LPF";
+    case RxFilterLevel::LowCutSlope: return "HPFSLOPE";
+    case RxFilterLevel::HighCutSlope: return "LPFSLOPE";
+  }
+  return "";
+}
+
+// The IF shift and the APF are offsets, said and shown with their sign.
+static bool rxFilterLevelSigned(RxFilterLevel level) {
+  return level == RxFilterLevel::IfShift || level == RxFilterLevel::ApfFreq;
+}
+
+const char* rxFilterZeroWord(RxFilterLevel level) {
+  if (level == RxFilterLevel::Width) return "NORMAL";
+  if (level == RxFilterLevel::LowCut || level == RxFilterLevel::HighCut) return "OFF";
+  return nullptr;
+}
+
+String rxFilterLevelText(RxFilterLevel level, int16_t value) {
+  String text = String(rxFilterLevelName(level)) + " ";
+  const char* zeroWord = rxFilterZeroWord(level);
+  if (value == 0 && zeroWord) return text + zeroWord;
+  if (rxFilterLevelIsSlope(level)) return text + String((int)value) + " dB/oct";
+  if (rxFilterLevelSigned(level) && value > 0) text += "+";
+  return text + String((int)value) + " Hz";
+}
+
+void speakRxFilterLevel(RxFilterLevel level, int16_t value) {
+  if (!g_speechEnabled) return;
+  switch (level) {
+    case RxFilterLevel::IfShift: speakLabel("if"); break;
+    case RxFilterLevel::Width: speakLabel("filterwidth"); break;
+    case RxFilterLevel::NotchFreq: speakLabel("notch frequency"); break;
+    case RxFilterLevel::ContourFreq: speakLabel("contour frequency"); break;
+    case RxFilterLevel::ApfFreq: speakLabel("a p f"); break;
+    case RxFilterLevel::LowCut: speakLabel("lowcut"); break;
+    case RxFilterLevel::HighCut: speakLabel("highcut"); break;
+    case RxFilterLevel::LowCutSlope: speakLabel("lowcut slope"); break;
+    case RxFilterLevel::HighCutSlope: speakLabel("highcut slope"); break;
+  }
+  const char* zeroWord = rxFilterZeroWord(level);
+  if (value == 0 && zeroWord) {
+    speakToken(zeroWord);
+    return;
+  }
+  if (value < 0) {
+    speakToken("minus");
+    playSilenceMs(60);
+  }
+  speakNumber(String(value < 0 ? -(int)value : (int)value));
+  playSilenceMs(60);
+  speakToken(rxFilterLevelIsSlope(level) ? "db" : "hertz");
+}
+
+const char* rxFilterSwitchName(RxFilterSwitch sw) {
+  switch (sw) {
+    case RxFilterSwitch::Narrow: return "NAR";
+    case RxFilterSwitch::Contour: return "CONTOUR";
+    case RxFilterSwitch::Apf: return "APF";
+  }
+  return "";
+}
+
+String rxFilterSwitchText(RxFilterSwitch sw, bool on) {
+  return String(rxFilterSwitchName(sw)) + (on ? " ON" : " OFF");
+}
+
+void speakRxFilterSwitch(RxFilterSwitch sw, bool on) {
+  switch (sw) {
+    case RxFilterSwitch::Narrow: speakTokenState("narrow", on); break;
+    case RxFilterSwitch::Contour: speakTokenState("contour", on); break;
+    case RxFilterSwitch::Apf: speakTokenState("a p f", on); break;
+  }
 }
 
 // 885 -> "88.5".

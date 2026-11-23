@@ -1,6 +1,7 @@
 #pragma once
 
 #include "radio_globals.h"
+#include "rx_filter_codec.h"
 
 bool civQueryFrequency(const RadioProfile& sp, uint64_t& hzOut, uint32_t timeoutMs);
 bool civSetFrequency(const RadioProfile& sp, uint64_t hz);
@@ -84,6 +85,12 @@ bool civQueryDialLock(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
 bool civSetDialLock(const RadioProfile& sp, bool on);
 bool civQueryFilterShape(const RadioProfile& sp, bool& softOut, uint32_t timeoutMs);
 bool civSetFilterShape(const RadioProfile& sp, bool soft);
+// The receive filter width (caps.getRxWidth, 1A 03) in Hz, on the scale of the mode group
+// civQueryFilterModeGroup reads; the set takes a width the scale has and is read back. The read
+// is Unknown when the radio answers with an index the scale does not have.
+bool civQueryFilterModeGroup(const RadioProfile& sp, FilterModeGroup& out, uint32_t timeoutMs);
+RxFilterRead civQueryRxWidth(const RadioProfile& sp, FilterModeGroup group, uint16_t& hzOut, uint32_t timeoutMs);
+bool civSetRxWidth(const RadioProfile& sp, FilterModeGroup group, uint16_t hz);
 bool civQueryMonitorEnabled(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
 bool civSetMonitorEnabled(const RadioProfile& sp, bool on);
 bool civQueryMonitorLevel(const RadioProfile& sp, uint16_t& valueOut, uint32_t timeoutMs);

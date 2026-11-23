@@ -1,6 +1,7 @@
 #pragma once
 
 #include "radio_globals.h"
+#include "rx_filter_codec.h"
 
 bool asciiQueryFrequency(const RadioProfile& sp, uint64_t& hzOut, uint32_t timeoutMs);
 bool asciiSetFrequency(const RadioProfile& sp, uint64_t hz);
@@ -92,6 +93,17 @@ bool asciiSetMicGain(const RadioProfile& sp, uint8_t level);
 bool asciiSetVox(const RadioProfile& sp, bool on);
 bool asciiSetVoxGain(const RadioProfile& sp, uint8_t level);
 bool asciiSetVoxDelayMs(const RadioProfile& sp, uint16_t ms);
+// The receive filter settings by settings.rxFilter (caps.getIfShift ... setRxCut,
+// protocol_ops_ascii_filter.cpp): the Yaesu newcat radios and the TS-480's cuts. The mode group is
+// the one the width and the cuts are read in (asciiQueryFilterModeGroup); the other levels ignore
+// it. A level set takes a value the radio has (rx_filter_codec.h), and every set is read back.
+// A level read is Unknown when the radio answers with a code its scale does not have.
+bool asciiQueryFilterModeGroup(const RadioProfile& sp, FilterModeGroup& out, uint32_t timeoutMs);
+RxFilterRead asciiQueryRxFilterLevel(const RadioProfile& sp, RxFilterLevel level, FilterModeGroup group,
+                                     int16_t& valueOut, uint32_t timeoutMs);
+bool asciiSetRxFilterLevel(const RadioProfile& sp, RxFilterLevel level, FilterModeGroup group, int16_t value);
+bool asciiQueryRxFilterSwitch(const RadioProfile& sp, RxFilterSwitch sw, bool& onOut, uint32_t timeoutMs);
+bool asciiSetRxFilterSwitch(const RadioProfile& sp, RxFilterSwitch sw, bool on);
 bool asciiQueryActiveVfoA(const RadioProfile& sp, bool& vfoAOut, uint32_t timeoutMs);
 bool asciiSelectVfoA(const RadioProfile& sp);
 bool asciiSelectVfoB(const RadioProfile& sp);

@@ -234,6 +234,18 @@
   and KX2 (8–50); the pitch on the IC-7300, IC-705, IC-7760 (300–900 Hz) and these Yaesus
   (300–1050 Hz); the delay on the FTDX10 and FT-891 (30–3000 ms) and TS-480 (0–1000 ms,
   `CWDELAY FULL` or 0 for full break-in). Each set is read back. Not yet tested on these radios
+- new receive filter commands, each with `?`, a value and `STEP <+-n>`, each set read back.
+  `WIDTH` sets the filter width in Hz of the current mode, to the radio's nearest width: on the
+  IC-7300, IC-705 and IC-7760 the width of the current filter, on the FTDX10 and FTDX101D/MP the
+  DSP width (`WIDTH NORMAL` for the radio's default). On the FTDX10, FTDX101D/MP and FT-891 also:
+  `NAR` (narrow), `IFSHIFT` (±1200 Hz), `NOTCHFREQ` (the manual notch, 10–3200 Hz), `CONTOUR` and
+  `CONTOURFREQ`, `APF` and `APFFREQ` (±250 Hz), and the low and high cut of the current mode, `HPF`
+  and `LPF` with `OFF`, and their slopes `HPFSLOPE` and `LPFSLOPE` (6 or 18 dB/oct), which are
+  radio menu settings. On the TS-480 `HPF` and `LPF` set its slope tune in SSB, FM and AM. On the
+  FT-857/897 `HPF`, `LPF` and `NAR?` work as before. `HELP` lists what the radio has. Not yet
+  tested on these radios
+- FTDX10 and FTDX101D/MP: `NOTCH ON | OFF` now sends the notch command as the CAT manual has it
+  and reads it back; the FT-891 has `NOTCH` too (and Bank 2 `3`)
 
 ### Radio profiles
 

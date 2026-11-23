@@ -2,6 +2,6 @@
 
 NAME := cat_tests
 # Pure firmware sources under test. They must not include Arduino.h.
-FIRMWARE_SRCS := cat_setting_codec.cpp
+FIRMWARE_SRCS := cat_setting_codec.cpp rx_filter_codec.cpp
 
 include ../common/host_tests.mk

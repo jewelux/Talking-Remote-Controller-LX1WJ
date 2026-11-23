@@ -38,6 +38,22 @@ const char* rptShiftName(RptShift shift);
 String rptShiftText(RptShift shift);
 void speakRptShift(RptShift shift);
 
+// The receive filter levels' console names: "IFSHIFT", "WIDTH", "NOTCHFREQ", "CONTOURFREQ",
+// "APFFREQ", "HPF", "LPF", "HPFSLOPE", "LPFSLOPE".
+const char* rxFilterLevelName(RxFilterLevel level);
+// The word value 0 is shown with where it is not a frequency: "NORMAL" (the width's default),
+// "OFF" (a cut); nullptr for the other levels.
+const char* rxFilterZeroWord(RxFilterLevel level);
+// "IFSHIFT -400 Hz", "WIDTH 2400 Hz", "WIDTH NORMAL", "HPF OFF", "HPFSLOPE 18 dB/oct";
+// "i f minus 4 0 0 hertz", "filterwidth normal", "lowcut off", "lowcut slope 1 8 d b".
+String rxFilterLevelText(RxFilterLevel level, int16_t value);
+void speakRxFilterLevel(RxFilterLevel level, int16_t value);
+// "NAR", "CONTOUR", "APF".
+const char* rxFilterSwitchName(RxFilterSwitch sw);
+// "NAR ON"; "narrow on", "contour on", "a p f on".
+String rxFilterSwitchText(RxFilterSwitch sw, bool on);
+void speakRxFilterSwitch(RxFilterSwitch sw, bool on);
+
 // "ANOTCH ON"; "auto notch on".
 String autoNotchText(bool on);
 void speakAutoNotch(bool on);

@@ -173,6 +173,7 @@ paddle
 
 # Filter / DSP
 bandpass filter | bandpassfilter
+contour
 equalizer
 filter
 filter shape | filtershape
@@ -184,6 +185,7 @@ noise blanker | noiseblanker
 noise reduction | noisereduction
 notch
 sharp
+slope
 soft
 
 # Vendors
