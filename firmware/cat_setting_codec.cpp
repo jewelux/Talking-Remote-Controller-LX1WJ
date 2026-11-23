@@ -4,15 +4,38 @@
 #include <stdlib.h>
 #include <string.h>
 
+uint8_t levelScaleToPercent(LevelScale scale, uint16_t raw) {
+  if (raw <= scale.rawMin || scale.rawMax <= scale.rawMin) return 0;
+  if (raw >= scale.rawMax) return 100;
+  const uint32_t span = scale.rawMax - scale.rawMin;
+  return (uint8_t)(((uint32_t)(raw - scale.rawMin) * 100U + span / 2U) / span);
+}
+
+uint16_t levelScaleFromPercent(LevelScale scale, int percent) {
+  if (scale.rawMax <= scale.rawMin) return scale.rawMin;
+  if (percent < 0) percent = 0;
+  if (percent > 100) percent = 100;
+  const uint32_t span = scale.rawMax - scale.rawMin;
+  return (uint16_t)(scale.rawMin + ((uint32_t)percent * span + 50U) / 100U);
+}
+
+uint16_t levelScaleStep(LevelScale scale, uint16_t raw, int deltaPercent) {
+  if (raw < scale.rawMin) raw = scale.rawMin;
+  if (raw > scale.rawMax) raw = scale.rawMax;
+  if (deltaPercent > 100) deltaPercent = 100;
+  if (deltaPercent < -100) deltaPercent = -100;
+  const uint16_t next = levelScaleFromPercent(scale, levelScaleToPercent(scale, raw) + deltaPercent);
+  if (next != raw || deltaPercent == 0) return next;
+  if (deltaPercent > 0) return raw < scale.rawMax ? (uint16_t)(raw + 1) : raw;
+  return raw > scale.rawMin ? (uint16_t)(raw - 1) : raw;
+}
+
 uint8_t levelRawToPercent(uint16_t raw) {
-  if (raw >= 255) return 100;
-  return (uint8_t)((raw * 100U + 127U) / 255U);
+  return levelScaleToPercent(LevelScale{0, 255}, raw);
 }
 
 uint16_t levelPercentToRaw(int percent) {
-  if (percent < 0) percent = 0;
-  if (percent > 100) percent = 100;
-  return (uint16_t)((percent * 255 + 50) / 100);
+  return levelScaleFromPercent(LevelScale{0, 255}, percent);
 }
 
 uint16_t rfPowerRawToTenths(uint16_t raw, uint16_t maxWatts) {
@@ -306,6 +329,61 @@ bool asciiRfPowerDecode(const char* digits, uint16_t& tenthsOut) {
 
 bool asciiRfPowerEncode(uint16_t watts, char* out, size_t size) {
   return watts <= 999 && snprintf(out, size, "PC%03u;", (unsigned)watts) == 6;
+}
+
+bool rfGainScaleFor(RfGainEncoding encoding, LevelScale& out) {
+  switch (encoding) {
+    case RfGainEncoding::Civ:
+    case RfGainEncoding::YaesuRg0: out = {0, 255}; return true;
+    case RfGainEncoding::YaesuRg0Ft891: out = {0, 30}; return true;
+    case RfGainEncoding::KenwoodRg: out = {0, 100}; return true;
+    case RfGainEncoding::ElecraftRg: out = {190, 250}; return true;
+    case RfGainEncoding::None: break;
+  }
+  return false;
+}
+
+const char* rfGainReplyPrefix(RfGainEncoding encoding) {
+  switch (encoding) {
+    case RfGainEncoding::YaesuRg0:
+    case RfGainEncoding::YaesuRg0Ft891: return "RG0";
+    case RfGainEncoding::KenwoodRg:
+    case RfGainEncoding::ElecraftRg: return "RG";
+    case RfGainEncoding::Civ:
+    case RfGainEncoding::None: break;
+  }
+  return nullptr;
+}
+
+const char* rfGainReadCommand(RfGainEncoding encoding) {
+  switch (encoding) {
+    case RfGainEncoding::YaesuRg0:
+    case RfGainEncoding::YaesuRg0Ft891: return "RG0;";
+    case RfGainEncoding::KenwoodRg:
+    case RfGainEncoding::ElecraftRg: return "RG;";
+    case RfGainEncoding::Civ:
+    case RfGainEncoding::None: break;
+  }
+  return nullptr;
+}
+
+bool rfGainDecode(RfGainEncoding encoding, const char* digits, uint16_t& rawOut) {
+  LevelScale scale;
+  int value = 0;
+  if (!rfGainReplyPrefix(encoding) || !rfGainScaleFor(encoding, scale) || !exactDigits(digits, 3, value) ||
+      value > scale.rawMax) {
+    return false;
+  }
+  rawOut = (uint16_t)value;
+  return true;
+}
+
+bool rfGainEncode(RfGainEncoding encoding, uint16_t raw, char* out, size_t size) {
+  const char* prefix = rfGainReplyPrefix(encoding);
+  LevelScale scale;
+  if (!prefix || !out || !rfGainScaleFor(encoding, scale) || raw < scale.rawMin || raw > scale.rawMax) return false;
+  const int n = snprintf(out, size, "%s%03u;", prefix, (unsigned)raw);
+  return n > 0 && (size_t)n < size;
 }
 
 bool civBreakInDecode(uint8_t raw, BreakInMode& out) {

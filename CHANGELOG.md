@@ -251,6 +251,10 @@
   tested on these radios
 - FTDX10 and FTDX101D/MP: `NOTCH ON | OFF` now sends the notch command as the CAT manual has it
   and reads it back; the FT-891 has `NOTCH` too (and Bank 2 `3`)
+- new `RFGAIN?`, `RFGAIN <0..100>` and `RFGAIN STEP <+-n>`: the RF gain, in percent of the radio's
+  range, on the IC-7300, IC-705, IC-7760, FTDX10, FTDX101D/MP (main band), FT-891, TS-480 and KX2.
+  Each set is read back; the FT-891 has only 31 steps and the KX2 61, so there it reads back as the
+  nearest one. Spoken as "r f gain 50 percent". Not yet tested on these radios
 
 ### Radio profiles
 

@@ -100,6 +100,9 @@ struct RadioCapabilities {
   bool setAtt = false;
   bool getPreamp = false;
   bool setPreamp = false;
+  // The RF gain over CAT, sent as settings.rfGain says.
+  bool getRfGain = false;
+  bool setRfGain = false;
   // CW break-in and the electronic keyer. The FT-8x7 reads them from its EEPROM and writes them
   // there under setRadioMenu.
   bool getBreakIn = false;
@@ -336,6 +339,8 @@ struct SettingEncodings {
   uint8_t preampLevels = 0;
   uint8_t attLevels = 0;
   uint8_t attDb[3] = {};
+  // The RF gain command and its raw range (caps.getRfGain).
+  RfGainEncoding rfGain = RfGainEncoding::None;
   // An ASCII radio's RF power, rfPowerMinWatts..the profile's rfPowerMaxWatts. CI-V uses 14 0A.
   RfPowerEncoding rfPower = RfPowerEncoding::None;
   uint8_t rfPowerMinWatts = 0;

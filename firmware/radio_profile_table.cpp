@@ -44,7 +44,7 @@ constexpr RadioCapabilities kIc7300Caps = {
     .getVfo = true, .setVfo = true, .getVfoMode = true, .setVfoMode = true,
     .getSplit = true, .setSplit = true, .getRit = true, .setRit = true,
     .getBandStack = true, .getAgc = true, .setAgc = true,
-    .getAtt = true, .setAtt = true, .getPreamp = true, .setPreamp = true,
+    .getAtt = true, .setAtt = true, .getPreamp = true, .setPreamp = true, .getRfGain = true, .setRfGain = true,
     .getBreakIn = true, .setBreakIn = true, .getCwPitch = true, .setCwPitch = true,
     .getProc = true, .setProc = true, .getMicGain = true, .setMicGain = true,
     .getVox = true, .setVox = true, .getRxWidth = true, .setRxWidth = true,
@@ -53,8 +53,10 @@ constexpr RadioCapabilities kIc7300Caps = {
 // 16 02 00..02 and 11 00/20 (the IC-7300 and IC-705 CI-V guides; Hamlib: P.AMP1, P.AMP2 and
 // 20 dB). On 144 and 430 MHz the IC-705 has only one preamp, and its attenuator works on HF and
 // 50 MHz only: a set the radio refuses reads back as an error. 1A 03 the filter width (the CI-V
-// guides; Hamlib gives all three radios x1ax03_supported).
+// guides; Hamlib gives all three radios x1ax03_supported). 14 02 the RF gain, 0000..0255 (the
+// IC-7300, IC-705 and IC-7760 CI-V guides; Hamlib and flrig scale it so).
 constexpr SettingEncodings kIc7300Settings = {.preampLevels = 2, .attLevels = 1, .attDb = {20},
+                                              .rfGain = RfGainEncoding::Civ,
                                               .rxFilter = RxFilterEncoding::Icom};
 
 // The IC-705: every IC-7300 command is in the IC-705 CI-V reference guide too, and Hamlib has
@@ -76,8 +78,11 @@ constexpr RadioCapabilities kIc7760Caps = [] {
 }();
 
 // 16 02 00..02, and 11 in dB: Icom's guide has 3..45 in 3 dB steps, Hamlib 6, 12 and 18, so those
-// three are set; a read of any other step is reported as it is.
+// three are set; a read of any other step is reported as it is. 14 02 the RF gain as on the IC-7300;
+// its guide lets 29 pick main or sub, but HamTRC sends it as its other 14 levels, for the band
+// selected (so does Hamlib).
 constexpr SettingEncodings kIc7760Settings = {.preampLevels = 2, .attLevels = 3, .attDb = {6, 12, 18},
+                                              .rfGain = RfGainEncoding::Civ,
                                               .rxFilter = RxFilterEncoding::Icom};
 
 // SWR (15 12, 0000..0255): 0 = 1.0, 48 = 1.5, 80 = 2.0, 120 = 3.0 (the IC-7300, IC-705 and
@@ -93,7 +98,7 @@ constexpr RadioCapabilities kKx2Caps = {
     .getSmeter = true, .getPower = true, .getRfPower = true, .setRfPower = true, .getSwr = true,
     .getNb = true, .setNb = true,
     .getAgc = true, .setAgc = true,
-    .getAtt = true, .setAtt = true, .getPreamp = true, .setPreamp = true,
+    .getAtt = true, .setAtt = true, .getPreamp = true, .setPreamp = true, .getRfGain = true, .setRfGain = true,
     .getCwSpeed = true, .setCwSpeed = true,
 };
 
@@ -101,11 +106,12 @@ constexpr RadioCapabilities kKx2Caps = {
 // sends GT000, the reference has off only in the K2's extended format. PA0/PA1 and RA00/RA01, the
 // attenuator 10 dB (both). PCnnn in watts, 0..15 (12 on 80-20 m: a set the radio refuses reads
 // back as an error). KS 8..50 WPM (both); no pitch: the reference reads it with CW, Hamlib
-// with PT.
+// with PT. RGnnn the RF gain, 190..250 = -60..0 dB on the KX2 and KX3 (the reference, G5; Hamlib
+// kx3_set_level and flrig KX3 agree); the K3's 000..250 is not the KX2's.
 constexpr SettingEncodings kKx2Settings = {
     .agc = AgcEncoding::ElecraftGt, .frontEnd = FrontEndEncoding::Kenwood, .preampLevels = 1,
-    .attLevels = 1, .attDb = {10}, .rfPower = RfPowerEncoding::PcWatts, .cwSpeedMinWpm = 8,
-    .cwSpeedMaxWpm = 50,
+    .attLevels = 1, .attDb = {10}, .rfGain = RfGainEncoding::ElecraftRg, .rfPower = RfPowerEncoding::PcWatts,
+    .cwSpeedMinWpm = 8, .cwSpeedMaxWpm = 50,
 };
 
 constexpr AsciiCommandSet kKx2Commands = {
@@ -147,7 +153,7 @@ constexpr RadioCapabilities kTs480Caps = {
     .getSmeter = true, .getRfPower = true, .setRfPower = true, .getSwr = true,
     .getNr = true, .setNr = true, .getNb = true, .setNb = true,
     .getAgc = true, .setAgc = true,
-    .getAtt = true, .setAtt = true, .getPreamp = true, .setPreamp = true,
+    .getAtt = true, .setAtt = true, .getPreamp = true, .setPreamp = true, .getRfGain = true, .setRfGain = true,
     .getCwSpeed = true, .setCwSpeed = true, .getCwDelay = true, .setCwDelay = true,
     .getProc = true, .setProc = true, .getMicGain = true, .setMicGain = true,
     .getVox = true, .setVox = true, .getRxCut = true, .setRxCut = true,
@@ -160,11 +166,13 @@ constexpr RadioCapabilities kTs480Caps = {
 // full break-in (the reference; Hamlib agrees). No pitch: the sources disagree on its scale. SL and
 // SH the slope tune cuts in SSB, FM and AM (the reference and Hamlib; Hamlib has RTTY too, the
 // reference not), as they are with menu 45 (the data filter) off. No IS: the reference gives no
-// unit, Hamlib has none.
+// unit, Hamlib has none. RGnnn the RF gain, 000..100 (the reference, Hamlib ts480.c and flrig; Hamlib's
+// generic kenwood.c 0..255 is not used for the TS-480).
 constexpr SettingEncodings kTs480Settings = {
     .voxDelay = VoxDelayEncoding::Ms4, .voxDelayMinMs = 0, .voxDelayMaxMs = 3000, .voxDelayStepMs = 150,
     .voxGainMax = 9, .agc = AgcEncoding::KenwoodGt, .frontEnd = FrontEndEncoding::Kenwood,
-    .preampLevels = 1, .attLevels = 1, .rfPower = RfPowerEncoding::PcWatts, .rfPowerMinWatts = 5,
+    .preampLevels = 1, .attLevels = 1, .rfGain = RfGainEncoding::KenwoodRg, .rfPower = RfPowerEncoding::PcWatts,
+    .rfPowerMinWatts = 5,
     .cwSpeedMinWpm = 10, .cwSpeedMaxWpm = 60, .cwDelay = VoxDelayEncoding::Ms4, .cwDelayMinMs = 0,
     .cwDelayMaxMs = 1000, .cwDelayStepMs = 50, .rxFilter = RxFilterEncoding::KenwoodTs480,
 };
@@ -267,7 +275,7 @@ constexpr RadioCapabilities kFtdx10Caps = {
     .getTuner = true, .setTuner = true, .startTune = true,
     .getVfo = true, .setVfo = true, .getVfoMode = true, .setVfoMode = true,
     .getSplit = true, .setSplit = true, .getAgc = true, .setAgc = true,
-    .getAtt = true, .setAtt = true, .getPreamp = true, .setPreamp = true,
+    .getAtt = true, .setAtt = true, .getPreamp = true, .setPreamp = true, .getRfGain = true, .setRfGain = true,
     .getBreakIn = true, .setBreakIn = true, .getKeyer = true, .setKeyer = true,
     .getCwSpeed = true, .setCwSpeed = true, .getCwPitch = true, .setCwPitch = true,
     .getCwDelay = true, .setCwDelay = true,
@@ -309,11 +317,14 @@ constexpr RadioCapabilities kFtdx101MpCaps = [] {
 // them for the main band. PC in watts, 5..100 (the manuals, Hamlib and flrig). KS 4..60 WPM,
 // KP 300..1050 Hz, SD a step of the VD table, 30..3000 ms (the FTDX10 manual and Hamlib). The
 // receive filter (rx_filter_codec.h): SH, IS, NA0, BP0, CO0 and the EX cut menus of the FTDX10
-// manual; the FTDX101 the same for its main band, with its own SSB widths and menu numbers.
+// manual; the FTDX101 the same for its main band, with its own SSB widths and menu numbers. RG0nnn
+// the RF gain, 000..255 (both manuals and Hamlib; flrig sends only up to 250), on the FTDX101 for
+// the main band (RG1 is the sub band).
 constexpr SettingEncodings kFtdx10Settings = {
     .voxDelay = VoxDelayEncoding::YaesuSteps, .voxDelayMinMs = 30, .voxDelayMaxMs = 3000,
     .agc = AgcEncoding::YaesuGt0, .frontEnd = FrontEndEncoding::Yaesu, .preampLevels = 2,
-    .attLevels = 3, .attDb = {6, 12, 18}, .rfPower = RfPowerEncoding::PcWatts, .rfPowerMinWatts = 5,
+    .attLevels = 3, .attDb = {6, 12, 18}, .rfGain = RfGainEncoding::YaesuRg0, .rfPower = RfPowerEncoding::PcWatts,
+    .rfPowerMinWatts = 5,
     .cwSpeedMinWpm = 4, .cwSpeedMaxWpm = 60, .cwPitchKp = true, .cwDelay = VoxDelayEncoding::YaesuSteps,
     .cwDelayMinMs = 30, .cwDelayMaxMs = 3000, .rxFilter = RxFilterEncoding::YaesuFtdx10,
 };
@@ -333,7 +344,7 @@ constexpr RadioCapabilities kFt891Caps = {
     .getTuner = true, .setTuner = true, .startTune = true,
     .getVfo = true, .setVfo = true,
     .getSplit = true, .setSplit = true, .getAgc = true, .setAgc = true,
-    .getAtt = true, .setAtt = true, .getPreamp = true, .setPreamp = true,
+    .getAtt = true, .setAtt = true, .getPreamp = true, .setPreamp = true, .getRfGain = true, .setRfGain = true,
     .getBreakIn = true, .setBreakIn = true, .getKeyer = true, .setKeyer = true,
     .getCwSpeed = true, .setCwSpeed = true, .getCwPitch = true, .setCwPitch = true,
     .getCwDelay = true, .setCwDelay = true,
@@ -349,11 +360,12 @@ constexpr RadioCapabilities kFt891Caps = {
 // 1 AMP; RA0 0 off, 1 on (Hamlib's 12 dB is not in the manual); PC in watts, 5..100; KS 4..60
 // WPM, KP 300..1050 Hz, SD 30..3000 ms (Hamlib sends ms too). The receive filter as the FTDX10's
 // but IS (an on digit) and the EX menu numbers; no SH: its widths depend on NA, and its two manual
-// editions differ.
+// editions differ. RG0nnn the RF gain, 000..030 (the manual, Hamlib ft891.c and flrig agree).
 constexpr SettingEncodings kFt891Settings = {
     .voxDelay = VoxDelayEncoding::Ms4, .voxDelayMinMs = 30, .voxDelayMaxMs = 3000, .voxDelayStepMs = 10,
     .agc = AgcEncoding::YaesuGt0, .frontEnd = FrontEndEncoding::Yaesu, .preampLevels = 1, .attLevels = 1,
-    .rfPower = RfPowerEncoding::PcWatts, .rfPowerMinWatts = 5, .cwSpeedMinWpm = 4, .cwSpeedMaxWpm = 60,
+    .rfGain = RfGainEncoding::YaesuRg0Ft891, .rfPower = RfPowerEncoding::PcWatts, .rfPowerMinWatts = 5,
+    .cwSpeedMinWpm = 4, .cwSpeedMaxWpm = 60,
     .cwPitchKp = true, .cwDelay = VoxDelayEncoding::Ms4, .cwDelayMinMs = 30, .cwDelayMaxMs = 3000,
     .cwDelayStepMs = 10, .rxFilter = RxFilterEncoding::YaesuFt891,
 };
@@ -601,6 +613,18 @@ constexpr bool swrRadiosHaveAScale() {
   return true;
 }
 
+// An RF gain cap needs settings.rfGain, and that for the radio's protocol: 14 02 on CI-V, RG on ASCII.
+constexpr bool rfGainCapsHaveAnEncoding() {
+  for (const RadioProfile& p : kProfiles) {
+    const RfGainEncoding enc = p.settings.rfGain;
+    if (!p.caps.getRfGain && !p.caps.setRfGain && enc == RfGainEncoding::None) continue;
+    if (!p.caps.getRfGain || enc == RfGainEncoding::None) return false;
+    if ((enc == RfGainEncoding::Civ) != (p.protocol == PROTO_CIV)) return false;
+    if (enc != RfGainEncoding::Civ && !isAsciiProtocol(p.protocol)) return false;
+  }
+  return true;
+}
+
 static_assert(kProfileCount > 0, "no profiles");
 static_assert(slotsAscendAndAreUnique(), "kProfiles: slots must be unique, above 0 and in ascending order");
 static_assert(defaultBaudsAreOffered(), "kProfiles: a default baud is missing from that radio's bauds");
@@ -609,6 +633,7 @@ static_assert(asciiRadiosHaveFreqAndModeCommands(), "kProfiles: an ASCII radio l
 static_assert(codedRadiosHaveModeCodes(), "kProfiles: an ASCII or FT-8x7 radio lacks mode codes");
 static_assert(meterScalesAscend(), "kProfiles: a meter scale is not in ascending order");
 static_assert(swrRadiosHaveAScale(), "kProfiles: a radio with getSwr has no swrScale");
+static_assert(rfGainCapsHaveAnEncoding(), "kProfiles: an RF gain cap without an encoding for its protocol");
 
 }  // namespace
 

@@ -188,6 +188,22 @@ bool asciiSetRfPowerWatts(const RadioProfile& sp, uint16_t watts) {
   return asciiSendAndVerify(sp, cmd, asciiQueryRfPowerTenths, watts * 10);
 }
 
+// RG0 or RG as settings.rfGain says (cat_setting_codec.h rfGainScaleFor for the ranges).
+bool asciiQueryRfGainRaw(const RadioProfile& sp, uint16_t& rawOut, uint32_t timeoutMs) {
+  const char* cmd = rfGainReadCommand(sp.settings.rfGain);
+  const char* prefix = rfGainReplyPrefix(sp.settings.rfGain);
+  if (!sp.caps.getRfGain || !cmd || !prefix) return false;
+  String line;
+  if (!transactAsciiCommand(cmd, line, prefix, timeoutMs)) return false;
+  return rfGainDecode(sp.settings.rfGain, line.c_str() + strlen(prefix), rawOut);
+}
+
+bool asciiSetRfGainRaw(const RadioProfile& sp, uint16_t raw) {
+  char cmd[10];
+  if (!sp.caps.setRfGain || !rfGainEncode(sp.settings.rfGain, raw, cmd, sizeof(cmd))) return false;
+  return asciiSendAndVerify(sp, cmd, asciiQueryRfGainRaw, raw);
+}
+
 // BI and KR, 0 off and 1 on (the FTDX10, FTDX101 and FT-891 CAT manuals, Hamlib newcat).
 static bool yaesuQueryOnOff(const char* cmd, const char* prefix, bool& onOut, uint32_t timeoutMs) {
   String line;

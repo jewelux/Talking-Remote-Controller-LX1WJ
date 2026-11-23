@@ -163,6 +163,22 @@ FeatureStatus preampSet(uint8_t level, uint8_t& levelOut);
 // Off -> 1 -> ... -> off, from the level read.
 FeatureStatus preampStep(uint8_t& levelOut);
 
+// The RF gain (caps.getRfGain) in percent of the radio's range, settings.rfGain: Icom 14 02
+// (0..255), FTDX10 and FTDX101 RG0 (0..255, the main band), FT-891 RG0 (0..30), TS-480 RG
+// (0..100), KX2 RG (190..250 = -60..0 dB). Unsupported elsewhere (IC-706, G106, FT-8x7, FT-847).
+// Whether the radio has it, by the profile (no radio traffic).
+bool rfGainSupported();
+// Ok where it can be set (caps.setRfGain); else Unsupported.
+FeatureStatus rfGainWriteAccess();
+FeatureStatus rfGainQuery(uint8_t& percentOut);
+// Sets the radio's value nearest percent, which the radio confirms on a read-back; percentOut is
+// that value in percent, which on a coarse range may differ from percent (FT-891: 51 sets 50).
+// Invalid above 100.
+FeatureStatus rfGainSet(uint8_t percent, uint8_t& percentOut);
+// deltaPercent from the value read, kept within the range; at least one of the radio's steps, so
+// a step never sticks on a coarse range. At an end nothing is sent and percentOut is that end.
+FeatureStatus rfGainStep(int deltaPercent, uint8_t& percentOut);
+
 // RF power over CAT (caps.getRfPower), in tenths of a watt: Icom 14 0A scaled to the profile's
 // rfPowerMaxWatts, the ASCII radios' PC (settings.rfPower). The FT-8x7 keeps its own
 // (ft8x7SettingQuery, ft8x7RfPowerSet); here it is Unsupported.

@@ -585,6 +585,40 @@ TEST(every_rx_filter_cap_has_an_encoding) {
   }
 }
 
+// RF gain: 14 02 on the Icoms, RG0 on the Yaesu newcat radios (the FT-891 on 0..30), RG on the
+// TS-480 (0..100) and the KX2 (190..250).
+TEST(rf_gain_caps_and_encodings) {
+  struct Expect {
+    uint8_t slot;
+    RfGainEncoding encoding;
+  };
+  const Expect expect[] = {
+      {1, RfGainEncoding::Civ},        {3, RfGainEncoding::Civ},        {17, RfGainEncoding::Civ},
+      {18, RfGainEncoding::Civ},       {6, RfGainEncoding::ElecraftRg}, {7, RfGainEncoding::KenwoodRg},
+      {11, RfGainEncoding::YaesuRg0},  {12, RfGainEncoding::YaesuRg0},  {13, RfGainEncoding::YaesuRg0},
+      {15, RfGainEncoding::YaesuRg0Ft891},
+  };
+  for (const Expect& e : expect) {
+    const RadioProfile& p = slot(e.slot);
+    CHECK(p.settings.rfGain == e.encoding);
+    CHECK(p.caps.getRfGain && p.caps.setRfGain);
+  }
+  // No RF gain over CAT: the IC-706 (no 14 command), the G106, the FT-8x7 and the FT-847.
+  const uint8_t none[] = {2, 4, 5, 8, 9, 10, 14, 16};
+  for (uint8_t s : none) {
+    CHECK(slot(s).settings.rfGain == RfGainEncoding::None);
+    CHECK(!slot(s).caps.getRfGain && !slot(s).caps.setRfGain);
+  }
+}
+
+// An RF gain cap is only on where the profile says how to send it.
+TEST(every_rf_gain_cap_has_an_encoding) {
+  for (size_t i = 0; i < profileCount(); ++i) {
+    const RadioProfile& p = profileAt(i);
+    CHECK(!(p.caps.getRfGain || p.caps.setRfGain) || p.settings.rfGain != RfGainEncoding::None);
+  }
+}
+
 // TS-480: RM; answers all three meters, SWR first; 9 is FSK-R and there is no DIGI.
 TEST(ts480_swr_and_mode_codes) {
   const RadioProfile& ts480 = slot(7);

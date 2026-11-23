@@ -25,6 +25,135 @@ TEST(civ_level_percent_round_trip) {
   }
 }
 
+// levelRawToPercent and levelPercentToRaw go through LevelScale now; they must give what their
+// own formulas gave before.
+TEST(civ_level_matches_the_old_formulas) {
+  for (int raw = 0; raw <= 300; ++raw) {
+    const int old = raw >= 255 ? 100 : (raw * 100 + 127) / 255;
+    CHECK_EQ(levelRawToPercent((uint16_t)raw), old);
+  }
+  for (int percent = -5; percent <= 105; ++percent) {
+    const int p = percent < 0 ? 0 : percent > 100 ? 100 : percent;
+    CHECK_EQ(levelPercentToRaw(percent), (p * 255 + 50) / 100);
+  }
+}
+
+// ---- Level scales (RF gain) ----
+
+TEST(level_scale_ends_and_clamps) {
+  const LevelScale kx2{190, 250};
+  CHECK_EQ(levelScaleToPercent(kx2, 190), 0);
+  CHECK_EQ(levelScaleToPercent(kx2, 250), 100);
+  CHECK_EQ(levelScaleToPercent(kx2, 220), 50);
+  CHECK_EQ(levelScaleToPercent(kx2, 0), 0);  // below the range, as a KX could answer
+  CHECK_EQ(levelScaleToPercent(kx2, 255), 100);
+  CHECK_EQ(levelScaleFromPercent(kx2, 0), 190);
+  CHECK_EQ(levelScaleFromPercent(kx2, 50), 220);
+  CHECK_EQ(levelScaleFromPercent(kx2, 100), 250);
+  CHECK_EQ(levelScaleFromPercent(kx2, -1), 190);
+  CHECK_EQ(levelScaleFromPercent(kx2, 101), 250);
+  const LevelScale ft891{0, 30};
+  CHECK_EQ(levelScaleFromPercent(ft891, 50), 15);
+  CHECK_EQ(levelScaleFromPercent(ft891, 51), 15);
+  CHECK_EQ(levelScaleToPercent(ft891, 15), 50);
+  CHECK_EQ(levelScaleToPercent(ft891, 1), 3);
+}
+
+// Every raw value of a scale of up to 100 steps comes back from its own percent.
+TEST(level_scale_raw_round_trip_on_fine_percent) {
+  const LevelScale scales[] = {{0, 30}, {0, 100}, {190, 250}};
+  for (const LevelScale& s : scales) {
+    for (uint16_t raw = s.rawMin; raw <= s.rawMax; ++raw) {
+      CHECK_EQ(levelScaleFromPercent(s, levelScaleToPercent(s, raw)), raw);
+    }
+  }
+}
+
+// A step moves in its direction from every raw value, never sticks, and stops at the ends.
+TEST(level_scale_step_moves_and_stops_at_the_ends) {
+  const LevelScale scales[] = {{0, 30}, {0, 100}, {0, 255}, {190, 250}};
+  const int deltas[] = {1, 5, 25, 100};
+  for (const LevelScale& s : scales) {
+    for (uint16_t raw = s.rawMin; raw <= s.rawMax; ++raw) {
+      for (int d : deltas) {
+        const uint16_t up = levelScaleStep(s, raw, d);
+        const uint16_t down = levelScaleStep(s, raw, -d);
+        CHECK(raw == s.rawMax ? up == raw : up > raw);
+        CHECK(raw == s.rawMin ? down == raw : down < raw);
+        CHECK(up <= s.rawMax && down >= s.rawMin);
+      }
+      CHECK_EQ(levelScaleStep(s, raw, 0), levelScaleFromPercent(s, levelScaleToPercent(s, raw)));
+    }
+  }
+  // FT-891: 5 % from 3 % (raw 1) would round back to raw 1; it goes to raw 2.
+  CHECK_EQ(levelScaleStep(LevelScale{0, 30}, 1, 5), 2);
+  CHECK_EQ(levelScaleStep(LevelScale{0, 255}, 128, 5), 140);
+  CHECK_EQ(levelScaleStep(LevelScale{0, 255}, 250, 25), 255);
+  // A raw value outside the scale is taken as its nearest end first.
+  CHECK_EQ(levelScaleStep(LevelScale{190, 250}, 100, -5), 190);
+}
+
+TEST(rf_gain_scales) {
+  LevelScale s;
+  CHECK(rfGainScaleFor(RfGainEncoding::Civ, s) && s.rawMin == 0 && s.rawMax == 255);
+  CHECK(rfGainScaleFor(RfGainEncoding::YaesuRg0, s) && s.rawMin == 0 && s.rawMax == 255);
+  CHECK(rfGainScaleFor(RfGainEncoding::YaesuRg0Ft891, s) && s.rawMin == 0 && s.rawMax == 30);
+  CHECK(rfGainScaleFor(RfGainEncoding::KenwoodRg, s) && s.rawMin == 0 && s.rawMax == 100);
+  CHECK(rfGainScaleFor(RfGainEncoding::ElecraftRg, s) && s.rawMin == 190 && s.rawMax == 250);
+  CHECK(!rfGainScaleFor(RfGainEncoding::None, s));
+}
+
+TEST(rf_gain_ascii_commands) {
+  CHECK_EQ(rfGainReadCommand(RfGainEncoding::YaesuRg0), "RG0;");
+  CHECK_EQ(rfGainReadCommand(RfGainEncoding::YaesuRg0Ft891), "RG0;");
+  CHECK_EQ(rfGainReadCommand(RfGainEncoding::KenwoodRg), "RG;");
+  CHECK_EQ(rfGainReadCommand(RfGainEncoding::ElecraftRg), "RG;");
+  CHECK(rfGainReadCommand(RfGainEncoding::Civ) == nullptr);
+  CHECK(rfGainReadCommand(RfGainEncoding::None) == nullptr);
+  CHECK_EQ(rfGainReplyPrefix(RfGainEncoding::YaesuRg0), "RG0");
+  CHECK_EQ(rfGainReplyPrefix(RfGainEncoding::KenwoodRg), "RG");
+  CHECK(rfGainReplyPrefix(RfGainEncoding::Civ) == nullptr);
+}
+
+TEST(rf_gain_decode) {
+  uint16_t raw = 0;
+  CHECK(rfGainDecode(RfGainEncoding::YaesuRg0, "128;", raw) && raw == 128);
+  CHECK(rfGainDecode(RfGainEncoding::YaesuRg0, "255", raw) && raw == 255);
+  CHECK(!rfGainDecode(RfGainEncoding::YaesuRg0, "256;", raw));
+  CHECK(rfGainDecode(RfGainEncoding::YaesuRg0Ft891, "030;", raw) && raw == 30);
+  CHECK(!rfGainDecode(RfGainEncoding::YaesuRg0Ft891, "031;", raw));
+  CHECK(rfGainDecode(RfGainEncoding::KenwoodRg, "100;", raw) && raw == 100);
+  CHECK(!rfGainDecode(RfGainEncoding::KenwoodRg, "101;", raw));
+  CHECK(rfGainDecode(RfGainEncoding::ElecraftRg, "250;", raw) && raw == 250);
+  CHECK(rfGainDecode(RfGainEncoding::ElecraftRg, "000;", raw) && raw == 0);
+  CHECK(!rfGainDecode(RfGainEncoding::ElecraftRg, "251;", raw));
+  CHECK(!rfGainDecode(RfGainEncoding::YaesuRg0, "12;", raw));
+  CHECK(!rfGainDecode(RfGainEncoding::YaesuRg0, "1234;", raw));
+  CHECK(!rfGainDecode(RfGainEncoding::YaesuRg0, "1a3;", raw));
+  CHECK(!rfGainDecode(RfGainEncoding::YaesuRg0, nullptr, raw));
+  CHECK(!rfGainDecode(RfGainEncoding::Civ, "128;", raw));
+  CHECK(!rfGainDecode(RfGainEncoding::None, "128;", raw));
+}
+
+TEST(rf_gain_encode) {
+  char out[16];
+  CHECK(rfGainEncode(RfGainEncoding::YaesuRg0, 128, out, sizeof(out)));
+  CHECK_EQ(out, "RG0128;");
+  CHECK(rfGainEncode(RfGainEncoding::YaesuRg0, 0, out, sizeof(out)));
+  CHECK_EQ(out, "RG0000;");
+  CHECK(!rfGainEncode(RfGainEncoding::YaesuRg0, 256, out, sizeof(out)));
+  CHECK(rfGainEncode(RfGainEncoding::YaesuRg0Ft891, 15, out, sizeof(out)));
+  CHECK_EQ(out, "RG0015;");
+  CHECK(!rfGainEncode(RfGainEncoding::YaesuRg0Ft891, 31, out, sizeof(out)));
+  CHECK(rfGainEncode(RfGainEncoding::KenwoodRg, 50, out, sizeof(out)));
+  CHECK_EQ(out, "RG050;");
+  CHECK(rfGainEncode(RfGainEncoding::ElecraftRg, 190, out, sizeof(out)));
+  CHECK_EQ(out, "RG190;");
+  CHECK(!rfGainEncode(RfGainEncoding::ElecraftRg, 189, out, sizeof(out)));
+  CHECK(!rfGainEncode(RfGainEncoding::Civ, 128, out, sizeof(out)));
+  CHECK(!rfGainEncode(RfGainEncoding::YaesuRg0, 128, out, 7));  // no room for the '\0'
+}
+
 // ---- RF power ----
 
 TEST(rf_power_scales_to_the_radio_maximum) {

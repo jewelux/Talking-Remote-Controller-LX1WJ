@@ -31,15 +31,15 @@ offered only where Hamlib and a second source (the maker's CAT manual, flrig or 
 its command; the others say "not available". The FT-8x7 has no CAT command for these and keeps
 them in its EEPROM: see the FT-8x7 pages.
 
-| Radio | `AGC` | `PREAMP` | `ATT` | `RFPOWER` | `PROC`, `PROCLEVEL` | `MICGAIN` | `VOX`, `VOXGAIN` | `VOXDELAY` | Sources |
-|---|---|---|---|---|---|---|---|---|---|
-| IC-7300, IC-705 | fast, mid, slow | off, 1, 2 | 20 dB | 0–100 W, IC-705 0–10 W | COMP, 0–100 | 0–100 | 0–100 | 0–2000 ms | CI-V guide, Hamlib |
-| IC-7760 | fast, mid, slow | off, 1, 2 | 6, 12, 18 dB | 0–200 W | COMP, 0–100 | 0–100 | 0–100 | – | CI-V guide, Hamlib |
-| FTDX10 | off, fast, mid, slow, auto | IPO, AMP1, AMP2 | 6, 12, 18 dB | 5–100 W | `PR0`, `PL` 0–100 | 0–100 | 0–100 | 30–3000 ms (VD step) | CAT manual, Hamlib |
-| FTDX101D/MP | off, fast, mid, slow, auto | IPO, AMP1, AMP2 | 6, 12, 18 dB | D: 5–100 W, MP: – | – | 0–100 | 0–100 | 30–3000 ms (VD step) | CAT manual, Hamlib, flrig |
-| FT-891 | off, fast, mid, slow, auto | IPO, AMP | on | 5–100 W | `PR0`, `PL` 0–100 | 0–100 | 0–100 | 30–3000 ms | CAT manual, Hamlib, flrig |
-| TS-480 | off, fast, slow | on | on | 5–100 W | `PR`, `PL` input 0–100 | 0–100 | `VG` 0–9 | 0–3000 ms, 150 ms steps | PC command reference, Hamlib |
-| KX2 | fast, slow | on | 10 dB | 0–15 W | – | – | – | – | programmer's reference, Hamlib |
+| Radio | `AGC` | `PREAMP` | `ATT` | `RFGAIN` | `RFPOWER` | `PROC`, `PROCLEVEL` | `MICGAIN` | `VOX`, `VOXGAIN` | `VOXDELAY` | Sources |
+|---|---|---|---|---|---|---|---|---|---|---|
+| IC-7300, IC-705 | fast, mid, slow | off, 1, 2 | 20 dB | `14 02` 0–255 | 0–100 W, IC-705 0–10 W | COMP, 0–100 | 0–100 | 0–100 | 0–2000 ms | CI-V guide, Hamlib |
+| IC-7760 | fast, mid, slow | off, 1, 2 | 6, 12, 18 dB | `14 02` 0–255 | 0–200 W | COMP, 0–100 | 0–100 | 0–100 | – | CI-V guide, Hamlib |
+| FTDX10 | off, fast, mid, slow, auto | IPO, AMP1, AMP2 | 6, 12, 18 dB | `RG0` 0–255 | 5–100 W | `PR0`, `PL` 0–100 | 0–100 | 0–100 | 30–3000 ms (VD step) | CAT manual, Hamlib |
+| FTDX101D/MP | off, fast, mid, slow, auto | IPO, AMP1, AMP2 | 6, 12, 18 dB | `RG0` 0–255 | D: 5–100 W, MP: – | – | 0–100 | 0–100 | 30–3000 ms (VD step) | CAT manual, Hamlib, flrig |
+| FT-891 | off, fast, mid, slow, auto | IPO, AMP | on | `RG0` 0–30 | 5–100 W | `PR0`, `PL` 0–100 | 0–100 | 0–100 | 30–3000 ms | CAT manual, Hamlib, flrig |
+| TS-480 | off, fast, slow | on | on | `RG` 0–100 | 5–100 W | `PR`, `PL` input 0–100 | 0–100 | `VG` 0–9 | 0–3000 ms, 150 ms steps | PC command reference, Hamlib |
+| KX2 | fast, slow | on | 10 dB | `RG` 190–250 | 0–15 W | – | – | – | – | programmer's reference, Hamlib |
 
 A Yaesu set to auto reads back as auto, whichever speed the radio picked. The TS-480 has no AGC
 setting in FM. The IC-7760 attenuator reads every 3 dB step Icom lists, but HamTRC sets only the
@@ -48,6 +48,14 @@ and no attenuator. "on" means the sources do not agree on the dB. The FTDX101MP 
 `PC` 5–100 where Hamlib scales it to 200 W, so its RF power says "not available". The TS-480HX
 goes to 200 W, but HamTRC sets up to 100 W, as the TS-480SAT; in AM both stop at 25 or 50 W, and
 the KX2 at 12 W on 80–20 m, so a higher set reads back as an error.
+
+`RFGAIN` is in percent of the radio's range on every radio, so the same value means the same
+part of the range: on the KX2 0 % is its lowest setting, -60 dB, and 100 % is 0 dB. The FT-891 has
+only 31 steps and the KX2 61, so a set there reads back as the nearest step (`RFGAIN 51` on the
+FT-891 gives 50), and `RFGAIN STEP` always moves at least one step. The FTDX101 is set for its main band
+and the IC-7760 for the band selected. flrig sends the FTDX10 and FTDX101 only up to 250; HamTRC
+uses the manuals' 255. The IC-706 (no `14` command), the G106, the FT-8x7 and the FT-847 have no
+RF gain over CAT.
 
 None of these sets is tested on a radio yet.
 

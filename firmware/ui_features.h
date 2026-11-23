@@ -66,6 +66,10 @@ void speakAtt(const AttState& state);
 String preampText(uint8_t level);
 void speakPreamp(uint8_t level);
 
+// "RFGAIN 50", in percent of the radio's range; "r f gain 50 percent".
+String rfGainText(uint8_t percent);
+void speakRfGain(uint8_t percent);
+
 // "RFPOWER 50 W", "RFPOWER 0.5 W"; "power 50 watts".
 String rfPowerText(uint16_t tenths);
 void speakRfPower(uint16_t tenths);

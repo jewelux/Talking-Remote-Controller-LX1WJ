@@ -20,6 +20,9 @@ bool civQueryNb(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
 bool civSetNb(const RadioProfile& sp, bool on);
 bool civQueryNbLevel(const RadioProfile& sp, uint16_t& valueOut, uint32_t timeoutMs);
 bool civSetNbLevel(const RadioProfile& sp, uint16_t value);
+// 14 02, the RF gain, 0..255 (caps.getRfGain, setRfGain, settings.rfGain Civ); the set is read back.
+bool civQueryRfGain(const RadioProfile& sp, uint16_t& rawOut, uint32_t timeoutMs);
+bool civSetRfGain(const RadioProfile& sp, uint16_t raw);
 // Speech compressor (COMP) and its level, 0..255.
 bool civQueryProc(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
 bool civQueryProcLevel(const RadioProfile& sp, uint16_t& valueOut, uint32_t timeoutMs);

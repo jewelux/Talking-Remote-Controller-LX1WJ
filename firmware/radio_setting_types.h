@@ -63,3 +63,14 @@ enum class RfPowerEncoding : uint8_t {
   None,
   PcWatts,  // PCnnn in watts (FTDX10, FTDX101D, FT-891, TS-480, KX2); the KX2 may answer PCnnnx
 };
+
+// How a radio reads and sets the RF gain (cat_setting_codec.h rfGainScaleFor). HamTRC shows it in
+// percent of the radio's range on every radio.
+enum class RfGainEncoding : uint8_t {
+  None,
+  Civ,           // 14 02, 0000..0255 in BCD (IC-7300, IC-705, IC-7760)
+  YaesuRg0,      // RG0nnn, 000..255 (FTDX10; FTDX101 main band)
+  YaesuRg0Ft891, // RG0nnn, 000..030 (FT-891)
+  KenwoodRg,     // RGnnn, 000..100 (TS-480)
+  ElecraftRg,    // RGnnn, 190..250 = -60..0 dB (KX2)
+};

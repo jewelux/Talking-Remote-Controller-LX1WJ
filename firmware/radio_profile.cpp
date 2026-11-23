@@ -146,6 +146,9 @@ void printActiveProfileDetails() {
     Serial.print(sp.caps.*c.get ? "R" : "-");
     Serial.print(sp.caps.*c.set ? "W" : "-");
   }
+  Serial.print(" rfgain=");
+  Serial.print(sp.caps.getRfGain ? "R" : "-");
+  Serial.print(sp.caps.setRfGain ? "W" : "-");
   Serial.print(" lock=");
   Serial.print(sp.caps.getDialLock ? "R" : "-");
   Serial.print(sp.caps.setDialLock ? "W" : "-");

@@ -1,8 +1,8 @@
 #pragma once
 
-// How CAT radios encode setting values: CI-V levels, RF power, the ASCII VOX delay, the
-// TS-480 processor levels, AGC, the preamp and attenuator, and the ASCII lock reply. No Arduino.h, so the host tests
-// (tests/cat) can build it.
+// How CAT radios encode setting values: CI-V levels and other level scales, the RF gain, RF power,
+// the ASCII VOX delay, the TS-480 processor levels, AGC, the preamp and attenuator, and the ASCII
+// lock reply. No Arduino.h, so the host tests (tests/cat) can build it.
 
 #include <stddef.h>
 #include <stdint.h>
@@ -10,9 +10,36 @@
 #include "ft8x7_eeprom_map.h"
 #include "radio_setting_types.h"
 
-// A CI-V 0x14 level (0..255) as 0..100 %, and back.
+// A level the radio takes as rawMin..rawMax, shown as 0..100 % of that range.
+struct LevelScale {
+  uint16_t rawMin = 0;
+  uint16_t rawMax = 255;
+};
+
+// raw as a percent of scale, rounded: below rawMin 0, at or above rawMax 100.
+uint8_t levelScaleToPercent(LevelScale scale, uint16_t raw);
+// percent (clamped to 0..100) as the nearest raw value of scale.
+uint16_t levelScaleFromPercent(LevelScale scale, int percent);
+// The raw value deltaPercent from raw, kept within scale. A step of a coarse scale that would land
+// on raw again moves one raw value instead, so a step never sticks (FT-891 0..30 in 5 % steps).
+uint16_t levelScaleStep(LevelScale scale, uint16_t raw, int deltaPercent);
+
+// A CI-V 0x14 level (0..255) as 0..100 %, and back: the LevelScale conversions on 0..255.
 uint8_t levelRawToPercent(uint16_t raw);
 uint16_t levelPercentToRaw(int percent);
+
+// The RF gain's raw range on a radio of encoding; false for None.
+bool rfGainScaleFor(RfGainEncoding encoding, LevelScale& out);
+// The ASCII command that reads the RF gain ("RG0;" Yaesu, "RG;" Kenwood and Elecraft) and the
+// prefix of its reply ("RG0", "RG"); nullptr for None and Civ.
+const char* rfGainReadCommand(RfGainEncoding encoding);
+const char* rfGainReplyPrefix(RfGainEncoding encoding);
+// The raw RF gain of a reply, given what follows its prefix: three digits (the ';' may be left
+// out), at most the scale's rawMax. Below rawMin is taken, as the radio holds it. False on
+// anything else and for None and Civ.
+bool rfGainDecode(RfGainEncoding encoding, const char* digits, uint16_t& rawOut);
+// The command that sets raw ("RG0nnn;", "RGnnn;"), into out; false outside the scale.
+bool rfGainEncode(RfGainEncoding encoding, uint16_t raw, char* out, size_t size);
 
 // A CI-V RF power level (0..255) as tenths of a watt on a radio of maxWatts (0 counts as 100), so
 // a QRP radio keeps its fractions; and watts back to the level.

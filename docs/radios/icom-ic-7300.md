@@ -92,6 +92,7 @@ New features and new radios come with a new firmware.
 - `NRLEVEL?`, `NRLEVEL <0..100>`, `NRLEVEL STEP <+-n>`
 - `NB?`, `NB ON`, `NB OFF`
 - `NBLEVEL?`, `NBLEVEL <0..100>`, `NBLEVEL STEP <+-n>`
+- `RFGAIN?`, `RFGAIN <0..100>`, `RFGAIN STEP <+-n>` (RF gain, %, `14 02`)
 - `NOTCH?`, `NOTCH ON`, `NOTCH OFF`
 - `NOTCH NAR`, `NOTCH MID`, `NOTCH WIDE`
 - `PBT1?`, `PBT1 <-128..127>`, `PBT1 CENTER`, `PBT1 STEP <+-n>`

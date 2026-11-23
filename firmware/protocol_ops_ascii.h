@@ -79,6 +79,10 @@ bool asciiQueryYaesuTxState(const RadioProfile& sp, bool& txOut, uint32_t timeou
 // Speech processor (Yaesu PR0, TS-480 PR) and its level (PL, 0..100; on the TS-480 the input
 // level), mic gain (MG, 0..100), VOX (VX), its gain (VG, 0..settings.voxGainMax) and delay (VD,
 // in ms, as settings.voxDelay says): the Yaesu ASCII radios and the TS-480.
+// The RF gain, raw, on the scale settings.rfGain gives (caps.getRfGain, setRfGain): RG0 on the Yaesu
+// newcat radios, RG on the TS-480 and KX2. The set is read back.
+bool asciiQueryRfGainRaw(const RadioProfile& sp, uint16_t& rawOut, uint32_t timeoutMs);
+bool asciiSetRfGainRaw(const RadioProfile& sp, uint16_t raw);
 bool asciiQueryProc(const RadioProfile& sp, bool& onOut, uint32_t timeoutMs);
 bool asciiQueryProcLevel(const RadioProfile& sp, uint8_t& levelOut, uint32_t timeoutMs);
 bool asciiQueryMicGain(const RadioProfile& sp, uint8_t& levelOut, uint32_t timeoutMs);

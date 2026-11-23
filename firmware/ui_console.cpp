@@ -8,6 +8,7 @@
 #include "protocol_civ.h"
 #include "ui_console_ft847.h"
 #include "ui_console_internal.h"
+#include "ui_console_rf_gain.h"
 #include "ui_console_rx_filter.h"
 #include "protocol_ops_ascii.h"
 #include "protocol_ops_yaesu.h"
@@ -925,10 +926,12 @@ static void printTxSettingsHelp() {
   }
 }
 
-// The CAT settings the profile has: AGC, front end, RF power, CW, tone, ALC, PROC, mic gain, VOX.
+// The CAT settings the profile has: AGC, front end, RF gain, RF power, CW, tone, receive filter,
+// ALC, PROC, mic gain, VOX.
 static void printCatSettingsHelp() {
   printAgcHelp();
   printFrontEndHelp();
+  printRfGainHelp();
   printRfPowerHelp();
   printCwSwitchHelp();
   printCwLevelHelp();
@@ -3944,6 +3947,7 @@ void processCommand(String line) {
   if (handleConsoleFt847Commands(upper)) return;
   // After the FT-847 handler, which has its own NAR.
   if (handleConsoleRxFilter(line, upper)) return;
+  if (handleConsoleRfGain(line, upper)) return;
   if (handleConsoleTxAudioSet(line, upper)) return;
   if (handleConsoleAdjustCommands(line, upper)) return;
   if (handleConsoleRadioCommands(line, upper)) return;

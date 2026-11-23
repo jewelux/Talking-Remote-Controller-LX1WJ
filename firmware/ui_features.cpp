@@ -253,6 +253,15 @@ void speakPreamp(uint8_t level) {
   playDigit(level);
 }
 
+String rfGainText(uint8_t percent) {
+  return String("RFGAIN ") + String((int)percent);
+}
+
+void speakRfGain(uint8_t percent) {
+  if (!g_speechEnabled) return;
+  speakTokenPercent("r f gain", percent);
+}
+
 // 25 -> "2.5", 50 -> "5".
 static String wattsText(uint16_t tenths) {
   String text = String((int)(tenths / 10));

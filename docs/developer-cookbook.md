@@ -64,7 +64,7 @@ to completion, and that action talks to the radio synchronously.
 | Shared features | `radio_features*.cpp`, `radio_features.h`, `ui_features.*` | Settings used by both keypad and console: NR, NB and notch in `radio_features.cpp`, PROC, mic gain and VOX in `_tx`, the FT-8x7 EEPROM settings in `_ft8x7`, tone squelch in `_tone` |
 | Radio API | `radio_protocol.*`, `radio_runtime.*`, `radio_state.*` | Protocol-independent calls, and the tracked `live` state |
 | Protocols | `protocol_ops_*`, `protocol_*`, `packet_*`, `transport_serial.*` | CI-V, Kenwood/Elecraft/FTDX ASCII, Yaesu FT-8x7 5-byte CAT |
-| CAT setting values | `cat_setting_codec.*` | How CAT radios encode setting values: CI-V levels and RF power, the Yaesu ASCII VOX delay steps, lock reply digits. No `Arduino.h` |
+| CAT setting values | `cat_setting_codec.*` | How CAT radios encode setting values: CI-V levels, level scales in percent (`LevelScale`), RF gain and RF power, the Yaesu ASCII VOX delay steps, lock reply digits. No `Arduino.h` |
 | FT-8x7 fields | `ft8x7_codec.*`, `ft8x7_eeprom_map.*`, `ft8x7_model.h` | CAT frame fields, the EEPROM map per model, the FT-8x7 model from the `RadioModel`. No `Arduino.h`; `protocol_ft8x7_eeprom.*` reads the EEPROM with them |
 | Profiles | `radio_profile_types.h`, `radio_profile_table.*`, `radio_catalog.*`, `radio_profile.*` | What a radio is (connection, protocol, capabilities, command strings), the built-in radios, the active one, and switching between them. The types and the table have no `Arduino.h` |
 | Speech | `ui_speech.*`, `voice_pack*`, `audio_stretch.*` | Tokens, the audio queue, the clips in the voice pack partition, and the speech speed (time-stretch). `voice_pack_format.*` and `audio_stretch.*` have no `Arduino.h` |
@@ -630,7 +630,9 @@ every step below names its NB counterpart.
 `radio_profile_table.cpp`. Where the models encode the value differently,
 put an encoding in the profile's `SettingEncodings` instead and the
 encoding itself in `cat_setting_codec.*`, with a test in `tests/cat`; the
-real preamp does so with `frontEnd` and `preampLevels`.
+real preamp does so with `frontEnd` and `preampLevels`. A level shown in
+percent whose raw range differs by radio takes a `LevelScale` (`rfGain`
+does): it converts both ways and steps by at least one raw value.
 
 **3. Protocol ops.** Each op takes the profile and checks the capability
 first. The CI-V ops are hard-coded bytes; the ASCII ops are driven by the

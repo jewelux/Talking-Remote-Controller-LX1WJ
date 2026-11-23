@@ -471,6 +471,17 @@ bool civSetMicGain(const RadioProfile& sp, uint16_t value) {
   return civSet14ValueChecked(0x0B, value);
 }
 
+// 14 02, the RF gain, 0000..0255 (the IC-7300, IC-705 and IC-7760 CI-V guides).
+bool civQueryRfGain(const RadioProfile& sp, uint16_t& rawOut, uint32_t timeoutMs) {
+  if (sp.protocol != PROTO_CIV || !sp.caps.getRfGain || sp.settings.rfGain != RfGainEncoding::Civ) return false;
+  return civQuery14Value(0x02, rawOut, timeoutMs);
+}
+
+bool civSetRfGain(const RadioProfile& sp, uint16_t raw) {
+  if (sp.protocol != PROTO_CIV || !sp.caps.setRfGain || sp.settings.rfGain != RfGainEncoding::Civ) return false;
+  return civSet14ValueChecked(0x02, raw);
+}
+
 bool civSetVox(const RadioProfile& sp, bool on) {
   if (sp.protocol != PROTO_CIV || !sp.caps.setVox) return false;
   return civSetToggleSubChecked(0x46, on);

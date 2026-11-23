@@ -29,6 +29,9 @@ Implemented and documented for the current field-test phase:
   on the FT-891 `PREAMP OFF | ON` and `ATT OFF | ON`, Bank 2 `8` and `9`): `PA0` 0 IPO, 1 AMP1,
   2 AMP2 and `RA0` 0 off, 1..3 for 6, 12 and 18 dB, as the CAT manuals and Hamlib have them, each
   set read back. The raw `PA` console commands are gone.
+- RF gain (`RFGAIN? | RFGAIN <0..100> | RFGAIN STEP <+-n>`, in percent of the radio's range):
+  `RG0` 000..255 on the FTDX10 and FTDX101 (its main band), 000..030 on the FT-891, as the CAT
+  manuals, Hamlib and flrig have them, read back.
 - break-in and keyer (`BK? | BK OFF | ON | TOGGLE`, `KYR? | KYR OFF | ON | TOGGLE`, Bank 7 `2` and
   `1`): `BI` and `KR`, 0 off and 1 on, as the CAT manuals and Hamlib have them, read back.
 - NR and NB levels (`NRLEVEL <1..15>`, `NBLEVEL <0..10>`, each also `?` and `STEP <+-n>`;

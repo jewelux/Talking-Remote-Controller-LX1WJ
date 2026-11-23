@@ -282,6 +282,78 @@ FeatureStatus preampStep(uint8_t& levelOut) {
   return preampSet(now >= preampLevels() ? 0 : now + 1, levelOut);
 }
 
+// ---- RF gain ----
+
+// The raw range of the radio's RF gain command, where settings.rfGain has one for its protocol:
+// 14 02 on CI-V, RG on the ASCII radios. EXPERIMENTAL ON turns every cap on, never this.
+static bool rfGainScale(LevelScale& out) {
+  const RfGainEncoding enc = currentProfile().settings.rfGain;
+  if (enc == RfGainEncoding::None || (enc == RfGainEncoding::Civ) != isCiv()) return false;
+  if (!isCiv() && !isAsciiRadio()) return false;
+  return rfGainScaleFor(enc, out);
+}
+
+bool rfGainSupported() {
+  LevelScale scale;
+  return currentProfile().caps.getRfGain && rfGainScale(scale);
+}
+
+FeatureStatus rfGainWriteAccess() {
+  if (!rfGainSupported()) return FeatureStatus::Unsupported;
+  return capWriteAccess(&RadioCapabilities::setRfGain);
+}
+
+static FeatureStatus rfGainQueryRaw(uint16_t& rawOut) {
+  const RadioProfile& sp = currentProfile();
+  const bool ok = isCiv() ? civQueryRfGain(sp, rawOut, kCatReplyTimeoutMs)
+                          : asciiQueryRfGainRaw(sp, rawOut, kCatReplyTimeoutMs);
+  return ok ? FeatureStatus::Ok : failure(FeatureStatus::NoReply);
+}
+
+// Sets raw, which the radio confirms on a read-back; percentOut is its percent of scale.
+static FeatureStatus rfGainSetRaw(LevelScale scale, uint16_t raw, uint8_t& percentOut) {
+  const RadioProfile& sp = currentProfile();
+  const bool ok = isCiv() ? civSetRfGain(sp, raw) : asciiSetRfGainRaw(sp, raw);
+  if (!ok) return failure(FeatureStatus::Failed);
+  percentOut = levelScaleToPercent(scale, raw);
+  return FeatureStatus::Ok;
+}
+
+FeatureStatus rfGainQuery(uint8_t& percentOut) {
+  LevelScale scale;
+  if (!currentProfile().caps.getRfGain || !rfGainScale(scale)) return FeatureStatus::Unsupported;
+  uint16_t raw = 0;
+  const FeatureStatus status = rfGainQueryRaw(raw);
+  if (status == FeatureStatus::Ok) percentOut = levelScaleToPercent(scale, raw);
+  return status;
+}
+
+FeatureStatus rfGainSet(uint8_t percent, uint8_t& percentOut) {
+  const FeatureStatus access = rfGainWriteAccess();
+  if (access != FeatureStatus::Ok) return access;
+  if (percent > 100) return FeatureStatus::Invalid;
+  LevelScale scale;
+  (void)rfGainScale(scale);  // there is one: rfGainWriteAccess checked rfGainSupported
+  return rfGainSetRaw(scale, levelScaleFromPercent(scale, percent), percentOut);
+}
+
+FeatureStatus rfGainStep(int deltaPercent, uint8_t& percentOut) {
+  const FeatureStatus access = rfGainWriteAccess();
+  if (access != FeatureStatus::Ok) return access;
+  LevelScale scale;
+  (void)rfGainScale(scale);  // there is one: rfGainWriteAccess checked rfGainSupported
+  uint16_t raw = 0;
+  const FeatureStatus status = rfGainQueryRaw(raw);
+  if (status != FeatureStatus::Ok) return status;
+  const uint16_t next = levelScaleStep(scale, raw, deltaPercent);
+  // At an end of the range: nothing to send.
+  if (next == raw) {
+    percentOut = levelScaleToPercent(scale, raw);
+    return FeatureStatus::Ok;
+  }
+  return rfGainSetRaw(scale, next, percentOut);
+}
+
 // The toggles below start from the radio's state, read each time: nothing keeps the remembered
 // one up to date when the radio's own keys change it.
 

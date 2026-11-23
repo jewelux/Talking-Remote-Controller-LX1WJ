@@ -78,6 +78,8 @@ class RadioState:
     apf_on: bool = False
     apf_code: int = 25
     ex_values: Dict[str, str] = field(default_factory=dict)
+    # RG0: the RF gain, 000..255 (the FTDX10 CAT manual).
+    rf_gain: int = 255
     power_on: bool = True
     agc_code: str = "03"
     smeter: int = 50
@@ -152,6 +154,7 @@ class CommandRegistry:
             "OS": self.handle_os,
             "PA": self.handle_pa,
             "PS": self.handle_ps,
+            "RG": self.handle_rg,
             "RI": self.handle_ri,
             "RM": self.handle_rm,
             "SM": self.handle_sm,
@@ -289,6 +292,15 @@ class CommandRegistry:
             self.state.notch_on = command.endswith("1")
         elif command.startswith("BP01") and command[4:].isdigit() and 1 <= int(command[4:]) <= 320:
             self.state.notch_hz = int(command[4:]) * 10
+        return None
+
+    def handle_rg(self, command: str) -> Optional[str]:
+        # RG P1 P2P2P2: P1 0 (fixed on the FTDX10), P2 the RF gain 000..255.
+        if command == "RG0":
+            return f"RG0{self.state.rf_gain:03d};"
+        value = self._parse_number(command[3:], 3) if command.startswith("RG0") else None
+        if value is not None and value <= 255:
+            self.state.rf_gain = value
         return None
 
     def handle_is(self, command: str) -> Optional[str]:
