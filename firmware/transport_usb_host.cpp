@@ -84,6 +84,18 @@ volatile PortState s_state = PortState::Idle;
 usb_device_handle_t s_dev = nullptr;
 SerialPortDesc s_port = {0, kNoInterface, 0, 0};
 PortChip s_chip = PortChip::CdcAcm;
+// A bulk transfer ended with an error while the device stayed: the library halts that endpoint, and
+// every later transfer fails until it is cleared (servicePipeError). Seen on the IC-7300 when its
+// USB side lost power for a moment without dropping off the bus.
+volatile bool s_pipeError = false;
+uint8_t s_pipeRecoveries = 0;
+constexpr uint8_t kMaxPipeRecoveries = 3;
+
+// An error other than the device going or the transfer being cancelled on purpose.
+bool isPipeError(usb_transfer_status_t status) {
+  return status != USB_TRANSFER_STATUS_COMPLETED && status != USB_TRANSFER_STATUS_CANCELED &&
+         status != USB_TRANSFER_STATUS_NO_DEVICE;
+}
 uint8_t s_configStep = 0;
 bool s_closeFailureLogged = false;
 volatile bool s_inBusy = false;
@@ -184,6 +196,7 @@ void onInDone(usb_transfer_t* xfer) {
     if (xfer->actual_num_bytes > 0) {
       xStreamBufferSend(s_rx, xfer->data_buffer, xfer->actual_num_bytes, 0);
       s_rxBytes += xfer->actual_num_bytes;
+      s_pipeRecoveries = 0;  // the port works again
     }
     if (s_state != PortState::Ready) return;
     if (rxHasRoom()) {
@@ -193,13 +206,17 @@ void onInDone(usb_transfer_t* xfer) {
     }
     return;
   }
-  if (s_state == PortState::Ready) logEvent("read stopped: transfer status %d", (int)xfer->status);
+  if (s_state == PortState::Ready) {
+    logEvent("read stopped: transfer status %d", (int)xfer->status);
+    if (isPipeError(xfer->status)) s_pipeError = true;
+  }
 }
 
 void onOutDone(usb_transfer_t* xfer) {
   s_outBusy = false;
   if (xfer->status != USB_TRANSFER_STATUS_COMPLETED && s_state == PortState::Ready) {
     logEvent("write failed: transfer status %d", (int)xfer->status);
+    if (isPipeError(xfer->status)) s_pipeError = true;
   }
 }
 
@@ -399,6 +416,8 @@ void serviceConfiguring() {
   // the read waits for room then, as in onInDone.
   s_inParked = !rxHasRoom();
   if (!s_inParked) submitIn();
+  s_pipeError = false;
+  s_pipeRecoveries = 0;
   logEvent("serial port open");
   pushEvent(UsbLinkEvent::SerialReady);
 }
@@ -434,10 +453,35 @@ void serviceTx() {
   const esp_err_t err = usb_host_transfer_submit(s_outXfer);
   if (err != ESP_OK) {
     s_outBusy = false;
-    logEvent("write could not start: %s", esp_err_to_name(err));
+    // A halted endpoint refuses every write: say it once and let servicePipeError clear it.
+    if (!s_pipeError) logEvent("write could not start: %s", esp_err_to_name(err));
+    if (err == ESP_ERR_INVALID_STATE) s_pipeError = true;
     return;
   }
   s_txBytes += n;
+}
+
+// Clears both endpoints after a transfer error and reads again; after kMaxPipeRecoveries in a row
+// without a read coming through, closes the port ("usb off") instead of failing every write.
+void servicePipeError() {
+  if (s_state != PortState::Ready || !s_pipeError || s_inBusy || s_outBusy) return;
+  s_pipeError = false;
+  if (++s_pipeRecoveries > kMaxPipeRecoveries) {
+    logEvent("serial port keeps failing, closing it: unplug the radio and plug it in again");
+    beginClose();
+    return;
+  }
+  for (uint8_t ep : {s_port.epIn, s_port.epOut}) {
+    (void)usb_host_endpoint_halt(s_dev, ep);
+    (void)usb_host_endpoint_flush(s_dev, ep);
+    (void)usb_host_endpoint_clear(s_dev, ep);
+  }
+  logEvent("endpoints cleared after an error (%u of %u), reading again", s_pipeRecoveries, kMaxPipeRecoveries);
+  if (rxHasRoom()) {
+    submitIn();
+  } else {
+    s_inParked = true;
+  }
 }
 
 void serviceClosing() {
@@ -474,6 +518,7 @@ void clientTask(void*) {
     serviceConfiguring();
     serviceRx();
     serviceTx();
+    servicePipeError();
     serviceClosing();
   }
 }
