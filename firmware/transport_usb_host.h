@@ -3,8 +3,9 @@
 #include <Arduino.h>
 
 // A radio on the ESP32-S3 native USB socket (RadioPort::UsbHost). HamTRC is the USB host and talks
-// to the CDC-ACM serial port the profile names: the CAT port of a QRP Labs QMX, the CI-V port of
-// an IC-705 or a Xiegu X6100, or the shell of a NanoVNA (which also answers VNA commands on
+// to the serial port the profile names: a CDC-ACM port (the CAT port of a QRP Labs QMX, the CI-V
+// port of an IC-705 or a Xiegu X6100, the shell of a NanoVNA) or a Silicon Labs CP210x UART (the
+// IC-7300's USB port) (which also answers VNA commands on
 // Serial0, see nanovna_client.h). Starting the host takes the socket from the PC console until the
 // next restart; the console on the UART0 socket (Serial0) still answers HAMTRC?, USB?, SM?, and
 // PO?, SWR? and PAVOLT for the QMX.
@@ -14,13 +15,14 @@ enum class UsbLinkEvent : uint8_t {
   None,
   SerialReady,   // a radio's serial port is open
   SerialGone,    // that radio was unplugged or switched off
-  NoSerialPort,  // a device without the CDC-ACM serial port the profile names came, e.g. a sound
-                 // card or a CP210x, or one the USB Host Library could not enumerate
+  NoSerialPort,  // a device without the CDC-ACM or CP210x serial port the profile names came, e.g.
+                 // a sound card, or one the USB Host Library could not enumerate
   Held,          // the host was kept off after a crash restart (usbHostHoldAfterCrash)
 };
 
 // How the next serial port is opened (the profile's LinkDefaults): which CDC-ACM port of the
-// device, counted from 0, the baud of its line coding, and the DTR and RTS lines.
+// device (CDC-ACM ports, or CP210x UARTs), counted from 0, the baud of its line coding, and the DTR
+// and RTS lines.
 struct UsbLinkSettings {
   uint32_t baud = 9600;
   uint8_t serialIndex = 0;

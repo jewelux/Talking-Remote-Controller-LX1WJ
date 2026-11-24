@@ -513,7 +513,8 @@ constexpr MeterCalPoint kFt891Swr[] = {{12, 100}, {39, 135}, {65, 150}, {89, 200
 //
 // Free slots, and what they are kept for:
 //   19-20   Kenwood and Elecraft (TS-590, K3/K3S)
-//   24-30   Xiegu and other compact radios (G90, X6200), experimental and protocol test profiles
+//   25-30   Xiegu and other compact radios (G90, X6200), experimental and protocol test profiles
+// (24 is the IC-7300 on its own USB port, next to the IC-705 on USB in 23.)
 //   31-39   other test equipment
 
 constexpr RadioProfile kProfiles[] = {
@@ -620,6 +621,15 @@ constexpr RadioProfile kProfiles[] = {
               .usbSerialIndex = 0, .usbDtr = false, .usbRts = false},
      .caps = kIc705Caps, .settings = kIc7300Settings, .rfPowerMaxWatts = 10,
      .swrScale = kIcomSwr},
+    // The IC-7300's USB port is a Silicon Labs CP210x UART (10C4:EA60), not CDC-ACM. 19200 works
+    // whether its CI-V USB Port is linked to [REMOTE] (then the CI-V Baud Rate, Auto by default,
+    // up to 19200) or unlinked (CI-V USB Baud Rate, Auto by default). DTR and RTS off: its USB SEND
+    // and USB Keying menus can key on either. Experimental, not tested on a radio.
+    {.slot = 24, .name = "Icom IC-7300 USB", .vendor = VoiceVendor::Icom, .voiceDigits = "7300",
+     .voiceSuffix = "usb", .model = RadioModel::Ic7300, .protocol = PROTO_CIV,
+     .link = {.port = RadioPort::UsbHost, .baud = 19200, .bauds = kCivBauds, .civAddr = 0x94,
+              .usbSerialIndex = 0, .usbDtr = false, .usbRts = false},
+     .caps = kIc7300Caps, .settings = kIc7300Settings, .swrScale = kIcomSwr},
     {.slot = 70, .name = "NanoVNA", .vendor = VoiceVendor::NanoVna, .protocol = PROTO_NANOVNA,
      .link = {.port = RadioPort::UsbHost, .baud = 115200, .bauds = kNanoVnaBauds}},
 };

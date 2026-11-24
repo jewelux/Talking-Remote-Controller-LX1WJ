@@ -120,9 +120,9 @@ Series resistors provide basic protection and can improve signal robustness.
 
 ---
 
-## 6. ESP32-S3 Native USB as USB Host (QMX, X6100, IC-705, experimental)
+## 6. ESP32-S3 Native USB as USB Host (QMX, X6100, IC-705, IC-7300, experimental)
 
-A radio on USB (profile 21 QRP Labs QMX, 22 Xiegu X6100, 23 Icom IC-705) plugs into the
+A radio on USB (profile 21 QRP Labs QMX, 22 Xiegu X6100, 23 Icom IC-705, 24 Icom IC-7300) plugs into the
 ESP32-S3's native USB socket, GPIO 19 (D-) and GPIO 20 (D+). HamTRC is then the USB host. No
 wiring is needed beyond the radio's USB cable.
 

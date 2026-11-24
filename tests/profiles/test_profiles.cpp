@@ -118,7 +118,8 @@ TEST(profile_for_slot_finds_used_slots_only) {
   CHECK(profileForSlot(19) == nullptr);
   CHECK_EQ(slot(22).name, "Xiegu X6100");
   CHECK_EQ(slot(23).name, "Icom IC-705 USB");
-  CHECK(profileForSlot(24) == nullptr);
+  CHECK_EQ(slot(24).name, "Icom IC-7300 USB");
+  CHECK(profileForSlot(25) == nullptr);
   CHECK(profileForSlot(255) == nullptr);
 }
 
@@ -127,7 +128,7 @@ TEST(default_slot_is_used) {
 }
 
 // Slots 1-18 are all in use since the FT-847 took 16; the QMX has 21, the X6100 22, the IC-705 on
-// USB 23 and the NanoVNA 70; 19-20 and 24-69 are free.
+// USB 23, the IC-7300 on USB 24 and the NanoVNA 70; 19-20 and 25-69 are free.
 TEST(adjacent_slot_skips_free_slots) {
   CHECK_EQ(adjacentProfileSlot(15, 1), 16);
   CHECK_EQ(adjacentProfileSlot(16, 1), 17);
@@ -138,10 +139,12 @@ TEST(adjacent_slot_skips_free_slots) {
   CHECK_EQ(adjacentProfileSlot(19, 1), 21);
   CHECK_EQ(adjacentProfileSlot(21, 1), 22);
   CHECK_EQ(adjacentProfileSlot(22, 1), 23);
-  CHECK_EQ(adjacentProfileSlot(23, 1), 70);
-  CHECK_EQ(adjacentProfileSlot(70, -1), 23);
+  CHECK_EQ(adjacentProfileSlot(23, 1), 24);
+  CHECK_EQ(adjacentProfileSlot(24, 1), 70);
+  CHECK_EQ(adjacentProfileSlot(70, -1), 24);
+  CHECK_EQ(adjacentProfileSlot(24, -1), 23);
   CHECK_EQ(adjacentProfileSlot(23, -1), 22);
-  CHECK_EQ(adjacentProfileSlot(30, -1), 23);
+  CHECK_EQ(adjacentProfileSlot(30, -1), 24);
   CHECK_EQ(adjacentProfileSlot(30, 1), 70);
 }
 
@@ -241,6 +244,24 @@ TEST(ic705_usb_link) {
   CHECK(usb.caps.getRptShift && usb.caps.getTransceive && usb.caps.getAtt && usb.caps.getSplit);
   CHECK_EQ(usb.settings.preampLevels, jack.settings.preampLevels);
   CHECK_EQ(usb.settings.attDb[0], jack.settings.attDb[0]);
+}
+
+// The IC-7300's own USB port (a CP210x): everything slot 1 has, DTR and RTS off, 19200 so that it
+// works with CI-V USB Port linked to [REMOTE] (the CI-V jack's rates) as well as unlinked.
+TEST(ic7300_usb_link) {
+  const RadioProfile& usb = slot(24);
+  const RadioProfile& jack = slot(1);
+  CHECK(usb.protocol == PROTO_CIV);
+  CHECK(usb.model == RadioModel::Ic7300);
+  CHECK(usb.link.port == RadioPort::UsbHost);
+  CHECK_EQ(usb.link.usbSerialIndex, 0);
+  CHECK(!usb.link.usbDtr && !usb.link.usbRts);
+  CHECK_EQ(usb.link.civAddr, jack.link.civAddr);
+  CHECK_EQ(usb.link.baud, 19200u);
+  CHECK(usb.link.bauds.contains(115200));
+  CHECK_EQ(usb.rfPowerMaxWatts, jack.rfPowerMaxWatts);
+  CHECK(usb.caps.getAtt && usb.caps.getSplit && usb.caps.getTransceive);
+  CHECK_EQ(usb.settings.preampLevels, jack.settings.preampLevels);
 }
 
 // The QMX and the NanoVNA keep DTR on, as tested; no serial radio has a USB port index.

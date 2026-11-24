@@ -6,6 +6,8 @@ constexpr uint8_t kDescInterface = 0x04;
 constexpr uint8_t kDescEndpoint = 0x05;
 constexpr uint8_t kClassComm = 0x02;
 constexpr uint8_t kClassCdcData = 0x0A;
+constexpr uint8_t kClassVendor = 0xFF;
+constexpr uint16_t kVidSiliconLabs = 0x10C4;
 constexpr uint8_t kSubclassAcm = 0x02;
 constexpr uint8_t kEpDirIn = 0x80;
 constexpr uint8_t kEpTypeMask = 0x03;
@@ -67,4 +69,52 @@ bool findCdcSerialPort(const uint8_t* config, size_t length, uint8_t index, CdcP
     pos += len;
   }
   return finishData();
+}
+
+bool isCp210x(uint16_t vid, uint16_t pid) {
+  return vid == kVidSiliconLabs && (pid == 0xEA60 || pid == 0xEA70 || pid == 0xEA71);
+}
+
+bool findCp210xSerialPort(const uint8_t* config, size_t length, uint8_t index, CdcPortDesc& out) {
+  if (!config || length < 2) return false;
+  bool inPort = false;
+  CdcPortDesc candidate;
+  uint8_t found = 0;
+
+  auto finishPort = [&]() -> bool {
+    if (!inPort) return false;
+    inPort = false;
+    if (!candidate.epIn || !candidate.epOut) return false;
+    if (found++ != index) return false;
+    out = candidate;
+    return true;
+  };
+
+  size_t pos = 0;
+  while (pos + 2 <= length) {
+    const uint8_t len = config[pos];
+    const uint8_t type = config[pos + 1];
+    if (len < 2 || pos + len > length) break;  // a broken descriptor ends the walk
+    const uint8_t* d = config + pos;
+    if (type == kDescInterface && len >= 9) {
+      if (finishPort()) return true;
+      if (d[3] == 0 && d[5] == kClassVendor) {
+        inPort = true;
+        candidate = CdcPortDesc{};
+        candidate.dataIntf = d[2];
+        candidate.commIntf = d[2];
+      }
+    } else if (type == kDescEndpoint && len >= 7 && inPort) {
+      const uint8_t address = d[2];
+      if ((d[3] & kEpTypeMask) == kEpTypeBulk) {
+        if (address & kEpDirIn) {
+          candidate.epIn = address;
+        } else {
+          candidate.epOut = address;
+        }
+      }
+    }
+    pos += len;
+  }
+  return finishPort();
 }

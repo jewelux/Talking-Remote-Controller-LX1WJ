@@ -29,6 +29,22 @@ constexpr uint16_t kControlLineDtr = 0x0001;
 constexpr uint16_t kControlLineRts = 0x0002;
 constexpr uint8_t kNoInterface = kCdcNoInterface;
 
+// Silicon Labs CP210x (AN571): vendor requests to the UART's interface. Enable the UART, 8 data
+// bits, no parity, 1 stop bit, the baud as 4 bytes, then DTR and RTS: the high byte of
+// SET_MHS says which of the two the low byte sets.
+constexpr uint8_t kCp210xIfcEnable = 0x00;
+constexpr uint8_t kCp210xSetLineCtl = 0x03;
+constexpr uint8_t kCp210xSetMhs = 0x07;
+constexpr uint8_t kCp210xSetBaudrate = 0x1E;
+constexpr uint16_t kCp210xUartEnable = 0x0001;
+constexpr uint16_t kCp210xLine8N1 = 0x0800;
+constexpr uint16_t kCp210xMhsDtr = 0x0001;
+constexpr uint16_t kCp210xMhsRts = 0x0002;
+constexpr uint16_t kCp210xMhsWriteDtrRts = 0x0300;
+
+// How the open port is set up: CDC-ACM class requests or CP210x vendor requests.
+enum class PortChip : uint8_t { CdcAcm, Cp210x };
+
 constexpr size_t kRxBufferBytes = 2048;
 constexpr size_t kTxBufferBytes = 256;
 constexpr size_t kBulkTransferBytes = 64;  // the full-speed bulk packet; a multiple of any smaller one
@@ -67,6 +83,7 @@ esp_err_t s_startError = ESP_OK;
 volatile PortState s_state = PortState::Idle;
 usb_device_handle_t s_dev = nullptr;
 SerialPortDesc s_port = {0, kNoInterface, 0, 0};
+PortChip s_chip = PortChip::CdcAcm;
 uint8_t s_configStep = 0;
 bool s_closeFailureLogged = false;
 volatile bool s_inBusy = false;
@@ -194,10 +211,10 @@ void onControlDone(usb_transfer_t* xfer) {
   }
 }
 
-void submitClassRequest(uint8_t request, uint16_t value, const uint8_t* data, uint16_t length) {
+// A class request (CDC-ACM) or a vendor request (CP210x) to the port's control interface.
+void submitPortRequest(uint8_t type, uint8_t request, uint16_t value, const uint8_t* data, uint16_t length) {
   usb_setup_packet_t* setup = reinterpret_cast<usb_setup_packet_t*>(s_ctrlXfer->data_buffer);
-  setup->bmRequestType =
-      USB_BM_REQUEST_TYPE_DIR_OUT | USB_BM_REQUEST_TYPE_TYPE_CLASS | USB_BM_REQUEST_TYPE_RECIP_INTERFACE;
+  setup->bmRequestType = USB_BM_REQUEST_TYPE_DIR_OUT | type | USB_BM_REQUEST_TYPE_RECIP_INTERFACE;
   setup->bRequest = request;
   setup->wValue = value;
   setup->wIndex = s_port.commIntf;
@@ -213,6 +230,14 @@ void submitClassRequest(uint8_t request, uint16_t value, const uint8_t* data, ui
     s_ctrlBusy = false;
     logEvent("line setup could not start: %s", esp_err_to_name(err));
   }
+}
+
+void submitClassRequest(uint8_t request, uint16_t value, const uint8_t* data, uint16_t length) {
+  submitPortRequest(USB_BM_REQUEST_TYPE_TYPE_CLASS, request, value, data, length);
+}
+
+void submitVendorRequest(uint8_t request, uint16_t value, const uint8_t* data, uint16_t length) {
+  submitPortRequest(USB_BM_REQUEST_TYPE_TYPE_VENDOR, request, value, data, length);
 }
 
 // A new device: open its serial port, or report that it has none.
@@ -240,12 +265,19 @@ void inspectDevice(uint8_t addr) {
   link = s_requestedLink;
   taskEXIT_CRITICAL(&s_linkLock);
   SerialPortDesc port;
-  if ((dd && dd->bDeviceClass == USB_CLASS_HUB) || !cfg ||
-      !findCdcSerialPort(reinterpret_cast<const uint8_t*>(cfg), cfg->wTotalLength, link.serialIndex, port)) {
+  PortChip chip = PortChip::CdcAcm;
+  const bool hub = dd && dd->bDeviceClass == USB_CLASS_HUB;
+  const uint8_t* cfgBytes = reinterpret_cast<const uint8_t*>(cfg);
+  bool found = !hub && cfg && findCdcSerialPort(cfgBytes, cfg->wTotalLength, link.serialIndex, port);
+  if (!found && !hub && cfg && dd && isCp210x(dd->idVendor, dd->idProduct)) {
+    found = findCp210xSerialPort(cfgBytes, cfg->wTotalLength, link.serialIndex, port);
+    if (found) chip = PortChip::Cp210x;
+  }
+  if (!found) {
     if (link.serialIndex == 0) {
-      logEvent("  no CDC-ACM serial port");
+      logEvent("  no CDC-ACM or CP210x serial port");
     } else {
-      logEvent("  no CDC-ACM serial port %u (counted from 0)", link.serialIndex);
+      logEvent("  no CDC-ACM or CP210x serial port %u (counted from 0)", link.serialIndex);
     }
     usb_host_device_close(s_client, dev);
     if (!dd || dd->bDeviceClass != USB_CLASS_HUB) pushEvent(UsbLinkEvent::NoSerialPort);
@@ -265,6 +297,7 @@ void inspectDevice(uint8_t addr) {
   }
   s_dev = dev;
   s_port = port;
+  s_chip = chip;
   taskENTER_CRITICAL(&s_linkLock);
   s_openLink = link;
   taskEXIT_CRITICAL(&s_linkLock);
@@ -273,8 +306,9 @@ void inspectDevice(uint8_t addr) {
   strlcpy(s_product, product, sizeof(s_product));
   s_configStep = 0;
   s_state = PortState::Configuring;
-  logEvent("  serial port: interface %u, IN %02X, OUT %02X, control interface %d", port.dataIntf, port.epIn,
-           port.epOut, port.commIntf == kNoInterface ? -1 : (int)port.commIntf);
+  logEvent("  %s serial port: interface %u, IN %02X, OUT %02X, control interface %d",
+           chip == PortChip::Cp210x ? "CP210x" : "CDC-ACM", port.dataIntf, port.epIn, port.epOut,
+           port.commIntf == kNoInterface ? -1 : (int)port.commIntf);
 }
 
 void beginClose() {
@@ -311,9 +345,41 @@ void serviceNewDevices() {
   s_pendingCount = 0;
 }
 
+// A CP210x: the UART on, 8N1, the baud, then DTR and RTS. One request per pass, each after the last
+// one finished.
+bool serviceConfiguringCp210x() {
+  switch (s_configStep) {
+    case 0:
+      s_configStep = 1;
+      submitVendorRequest(kCp210xIfcEnable, kCp210xUartEnable, nullptr, 0);
+      return true;
+    case 1:
+      s_configStep = 2;
+      submitVendorRequest(kCp210xSetLineCtl, kCp210xLine8N1, nullptr, 0);
+      return true;
+    case 2: {
+      s_configStep = 3;
+      const uint32_t baud = s_openLink.baud;
+      const uint8_t rate[4] = {(uint8_t)baud, (uint8_t)(baud >> 8), (uint8_t)(baud >> 16), (uint8_t)(baud >> 24)};
+      submitVendorRequest(kCp210xSetBaudrate, 0, rate, sizeof(rate));
+      return true;
+    }
+    case 3: {
+      s_configStep = 4;
+      const uint16_t lines = (uint16_t)(kCp210xMhsWriteDtrRts | (s_openLink.dtr ? kCp210xMhsDtr : 0) |
+                                        (s_openLink.rts ? kCp210xMhsRts : 0));
+      submitVendorRequest(kCp210xSetMhs, lines, nullptr, 0);
+      return true;
+    }
+    default:
+      return false;
+  }
+}
+
 void serviceConfiguring() {
   if (s_state != PortState::Configuring || s_ctrlBusy) return;
-  const bool hasControl = s_port.commIntf != kNoInterface;
+  if (s_chip == PortChip::Cp210x && serviceConfiguringCp210x()) return;
+  const bool hasControl = s_chip == PortChip::CdcAcm && s_port.commIntf != kNoInterface;
   if (hasControl && s_configStep == 0) {
     const uint32_t baud = s_openLink.baud;
     const uint8_t coding[7] = {(uint8_t)baud, (uint8_t)(baud >> 8), (uint8_t)(baud >> 16), (uint8_t)(baud >> 24),
@@ -635,13 +701,14 @@ void usbHostPrintStatus(Print& out) {
     taskENTER_CRITICAL(&s_linkLock);
     const UsbLinkSettings open = s_openLink;
     taskEXIT_CRITICAL(&s_linkLock);
-    out.printf("  port: CDC port %u (counted from 0), interface %u, %lu baud, DTR %s, RTS %s\n", open.serialIndex,
-               s_port.dataIntf, (unsigned long)open.baud, open.dtr ? "on" : "off", open.rts ? "on" : "off");
+    out.printf("  port: %s port %u (counted from 0), interface %u, %lu baud, DTR %s, RTS %s\n",
+               s_chip == PortChip::Cp210x ? "CP210x" : "CDC", open.serialIndex, s_port.dataIntf,
+               (unsigned long)open.baud, open.dtr ? "on" : "off", open.rts ? "on" : "off");
   } else {
     taskENTER_CRITICAL(&s_linkLock);
     const UsbLinkSettings next = s_requestedLink;
     taskEXIT_CRITICAL(&s_linkLock);
-    out.printf("  opens: CDC port %u (counted from 0), %lu baud, DTR %s, RTS %s\n", next.serialIndex,
+    out.printf("  opens: CDC or CP210x port %u (counted from 0), %lu baud, DTR %s, RTS %s\n", next.serialIndex,
                (unsigned long)next.baud, next.dtr ? "on" : "off", next.rts ? "on" : "off");
   }
   out.printf("  bytes: rx=%lu tx=%lu  devices seen: %lu\n", (unsigned long)s_rxBytes, (unsigned long)s_txBytes,

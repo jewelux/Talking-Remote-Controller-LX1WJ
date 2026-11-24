@@ -162,3 +162,78 @@ TEST(broken_descriptor_is_safe) {
   const Bytes whole = ch342();
   CHECK(!findCdcSerialPort(whole.data(), whole.size() - 3, 1, port));  // port B's OUT endpoint cut
 }
+
+// ---- Silicon Labs CP210x (the IC-7300's USB port) ----
+
+namespace {
+
+// A CP2102 as a PC reads it: one vendor-class interface with bulk IN 81 and OUT 01, 64 bytes.
+Bytes cp2102() {
+  Bytes d;
+  config(d);
+  interface(d, 0, 0, 2, 0xFF, 0x00);
+  endpoint(d, 0x81, 0x02, 64);
+  endpoint(d, 0x01, 0x02, 64);
+  finish(d);
+  return d;
+}
+
+// A CP2105: two UARTs on interfaces 0 and 1.
+Bytes cp2105() {
+  Bytes d;
+  config(d);
+  interface(d, 0, 0, 2, 0xFF, 0x00);
+  endpoint(d, 0x81, 0x02, 64);
+  endpoint(d, 0x01, 0x02, 64);
+  interface(d, 1, 0, 2, 0xFF, 0x00);
+  endpoint(d, 0x82, 0x02, 32);
+  endpoint(d, 0x02, 0x02, 32);
+  finish(d);
+  return d;
+}
+
+}  // namespace
+
+TEST(cp210x_by_vid_pid) {
+  CHECK(isCp210x(0x10C4, 0xEA60));
+  CHECK(isCp210x(0x10C4, 0xEA70));
+  CHECK(isCp210x(0x10C4, 0xEA71));
+  CHECK(!isCp210x(0x10C4, 0xEA80));  // CP2110 is HID, not a UART bridge of this kind
+  CHECK(!isCp210x(0x0C26, 0x0036));  // the IC-705's CDC-ACM port
+  CHECK(!isCp210x(0x1A86, 0x55D2));  // a CH342
+}
+
+// The requests go to the port's own interface.
+TEST(cp2102_port) {
+  const Bytes d = cp2102();
+  CdcPortDesc port;
+  CHECK(findCp210xSerialPort(d.data(), d.size(), 0, port));
+  CHECK_EQ(port.dataIntf, 0);
+  CHECK_EQ(port.commIntf, 0);
+  CHECK_EQ(port.epIn, 0x81);
+  CHECK_EQ(port.epOut, 0x01);
+  CHECK(!findCp210xSerialPort(d.data(), d.size(), 1, port));
+  CHECK(!findCdcSerialPort(d.data(), d.size(), 0, port));  // not CDC-ACM
+}
+
+TEST(cp2105_second_port) {
+  const Bytes d = cp2105();
+  CdcPortDesc port;
+  CHECK(findCp210xSerialPort(d.data(), d.size(), 1, port));
+  CHECK_EQ(port.dataIntf, 1);
+  CHECK_EQ(port.commIntf, 1);
+  CHECK_EQ(port.epIn, 0x82);
+  CHECK_EQ(port.epOut, 0x02);
+}
+
+// A CDC-ACM device and a sound card have no vendor-class UART.
+TEST(cp210x_search_skips_other_classes) {
+  const Bytes acm = ch342();
+  const Bytes audio = audioThenTwoPorts();
+  CdcPortDesc port;
+  CHECK(!findCp210xSerialPort(acm.data(), acm.size(), 0, port));
+  CHECK(!findCp210xSerialPort(audio.data(), audio.size(), 0, port));
+  Bytes cut = cp2102();
+  CHECK(!findCp210xSerialPort(cut.data(), cut.size() - 3, 0, port));  // OUT endpoint cut
+  CHECK(!findCp210xSerialPort(nullptr, 0, 0, port));
+}
