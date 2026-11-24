@@ -2,7 +2,7 @@
 
 ## Status
 
-**Experimental, not yet tested on a radio.** Profile 23 (`Icom IC-705 USB`) drives the IC-705
+**Experimental. First test on a radio on 24 Nov 2026** (Mini-HamTRC with the USB-OTG bridge closed, see #33): connection, frequency, mode, Banks 2, 3 and 6 work; transmitting not tested yet. Profile 23 (`Icom IC-705 USB`) drives the IC-705
 through its own USB port instead of the CI-V jack (profile 17). It sends the same CI-V commands as
 profile 17, so every function and key on the IC-705 works the same. See
 `docs/radios/icom-ic-7300.md` for the commands and keys, and the
@@ -14,8 +14,9 @@ What is new is only the connection:
   and "Serial Port B"); HamTRC opens **port A**;
 - HamTRC keeps **DTR and RTS off**, so the IC-705 cannot be keyed by them whatever its USB SEND
   and USB Keying menus say;
-- the baud goes out with the port setup; it matters only when the IC-705's CI-V USB Baud Rate is
-  not Auto.
+- the baud goes out with the port setup; the IC-705 has no CI-V USB Baud Rate menu item
+  (SET > Connectors > CI-V has only CI-V Address, CI-V Transceive and CI-V USB Echo Back); it
+  worked with the default 115200.
 
 ## Connecting
 
@@ -30,8 +31,6 @@ On the IC-705, in its CI-V settings:
 | Menu item | Setting | Why |
 |---|---|---|
 | CI-V Address | A4 (the default) | profile 23 uses A4; Bank 8 `1` long sets another |
-| CI-V USB Baud Rate | Auto (the default) | any other rate: set the same with Bank 8 `2` |
-| CI-V USB Port | Unlink from [REMOTE] | keeps the USB port apart from the CI-V jack; linked works too |
 | CI-V USB Echo Back | either | HamTRC ignores its own frames |
 | CI-V Transceive | either | HamTRC hears the frequency and mode the IC-705 sends when it changes |
 
