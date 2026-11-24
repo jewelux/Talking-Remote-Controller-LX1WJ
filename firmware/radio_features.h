@@ -312,10 +312,12 @@ FeatureStatus voxDelayStep(int delta, uint16_t& msOut);
 // CwWeight, Sidetone and KeyReverse on both families; Qsk, CwAutoMode, Paddle (on = MICKEY)
 // and CwBfo on the FT-857/897 only. The FT-817/818 addresses are from the KA7OEI map, not yet
 // measured.
+// Knob: on = the RF/SQL knob is squelch, off = RF gain (FT-857/897 menu 80, FT-817/818 menu 45).
 enum class Ft8x7Setting : uint8_t {
   Agc, Ipo, Att, Nar, Dbf, BreakIn, Keyer, RfPower, Menu, Row, IfShift,
   NrLevel, NbLevel, BpfWidth, LowCut, HighCut, MicEq, Antenna,
   CwSpeed, CwPitch, CwDelay, CwWeight, Sidetone, Qsk, KeyReverse, CwAutoMode, Paddle, CwBfo,
+  Knob,
 };
 
 struct Ft8x7SettingState {

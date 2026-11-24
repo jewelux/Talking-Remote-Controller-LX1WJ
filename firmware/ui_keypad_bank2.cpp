@@ -36,12 +36,20 @@ void queryBank2Notch() {
 void queryBank2Ft8x7Dbf() { queryKeypadFt8x7Setting(Ft8x7Setting::Dbf); }
 void queryBank2Ft8x7Ipo() { queryKeypadFt8x7Setting(Ft8x7Setting::Ipo); }
 void queryBank2Ft817Antenna() { queryKeypadFt8x7Setting(Ft8x7Setting::Antenna); }
+void queryBank2Ft8x7Knob() { queryKeypadFt8x7Setting(Ft8x7Setting::Knob); }
 
 void toggleBank2Ft8x7Dbf() {
   printKeypadAction("DBF");
   KeypadAnswer answer("DBF");
   Ft8x7SettingState state;
   keypadReportFt8x7Setting(answer, ft8x7FlagSettingToggle(Ft8x7Setting::Dbf, state), state);
+}
+
+void toggleBank2Ft8x7Knob() {
+  printKeypadAction("KNOB");
+  KeypadAnswer answer("KNOB");
+  Ft8x7SettingState state;
+  keypadReportFt8x7Setting(answer, ft8x7FlagSettingToggle(Ft8x7Setting::Knob, state), state);
 }
 
 void toggleBank2Ft817Antenna() {

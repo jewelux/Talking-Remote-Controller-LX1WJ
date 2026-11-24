@@ -526,7 +526,7 @@ TEST(ft817_flag_map) {
     {Ft8x7Flag::Lock, 0x0057, 0x40, true},       {Ft8x7Flag::FastTuning, 0x0057, 0x80, true},
     {Ft8x7Flag::Keyer, 0x0058, 0x10, false},     {Ft8x7Flag::BreakIn, 0x0058, 0x20, false},
     {Ft8x7Flag::Vox, 0x0058, 0x80, false},       {Ft8x7Flag::Split, 0x007A, 0x80, false},
-    {Ft8x7Flag::KeyReverse, 0x0058, 0x04, false},
+    {Ft8x7Flag::KeyReverse, 0x0058, 0x04, false}, {Ft8x7Flag::KnobIsSquelch, 0x005F, 0x80, false},
   };
   checkFlags(Ft8x7Model::Ft817, cases, sizeof(cases) / sizeof(cases[0]));
   checkFlags(Ft8x7Model::Ft818, cases, sizeof(cases) / sizeof(cases[0]));

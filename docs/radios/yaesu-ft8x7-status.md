@@ -73,6 +73,7 @@ Read with `BB`, on demand only. Addresses from the FT8x7Com FT817Setup project, 
 | `0x58` | 4 | KYR (measured, as in the map) |
 | `0x58` | 2 | CW paddle reverse (menu 19), 1 = reverse (`KEYREV?`; KA7OEI map, not measured) |
 | `0x5E` | 3..0 | CW pitch (menu 20), 300 + 50 × value Hz, 300..1000 (`CWPITCH?`; KA7OEI map, not measured) |
+| `0x5F` | 7 | SQL/RF-G (menu 45), 1 = SQL (`KNOB?`; measured; the KA7OEI map gives no polarity) |
 | `0x5F` | 4..0 | CW weight (menu 22), 1:(2.5 + 0.1 × value), 1:2.5..1:4.5 (`CWWEIGHT?`; KA7OEI map, not measured) |
 | `0x60` | all | CW delay (menu 17), × 10 ms, 10..2500 ms (`CWDELAY?`; KA7OEI map, not measured) |
 | `0x61` | 6..0 | CW side tone (menu 44), 0..100 (`SIDETONE?`; KA7OEI map, not measured) |
@@ -163,6 +164,7 @@ The active VFO cannot be read: `0x55` bit 0, which Hamlib's `get_vfo` and the KA
 | IPO, ATT, NAR and split tone write | not offered: they are kept in the band blocks, which the radio saves late from its own working state, so a write could be ignored or overwritten. IF shift stays read only too |
 | RF power write (`RFPOWER <W>`, FT-817/818 `RFPOWER HIGH/L3/L2/L1`, Bank 1 `6` long) | experimental, only with EXPERIMENTAL on. FT-857/897: whole watts of menu 75 for the band group of the current frequency; verified on an FT-897 (its menu 75 continued from the value written). FT-817/818: the level at `0x79`; verified on an FT-817 by reading it back. TX output not measured |
 | EEPROM write timing (`BC`) | the FT-817 answers a write with one byte after about 110 ms and ignores commands sent before it; HamTRC waits for it, and 120 ms on the FT-857/897. The read-back is tried twice, since the FT-817 missed the first one after a menu item write (measured) |
+| RF/SQL knob (`KNOB?`, `KNOB SQL/RFGAIN/TOGGLE`, Bank 2 `7` double and short then hold) | read verified on an FT-897 (`0x72` bit 7, 1 = SQL, part of `YSETTINGS?`); FT-817/818 `0x5F` bit 7 (menu 45), 1 = SQL, verified on an FT-817. The write is experimental, only with EXPERIMENTAL on, read-modify-write of the bit; verified on an FT-897 and an FT-817: the knob worked as RF gain at once after `KNOB RFGAIN`, Bank 2 `7` short then hold switched it back to squelch, and the FT-817 CW weight in the same byte was kept |
 | Further settings read from the EEPROM (`YSETTINGS?`: VOX, PROC, lock, fast tuning, NB, BK, KYR, DSP row, IF shift, filter, SQL/RF knob, mic EQ, menu levels, the RIT offset) | protocol only, no keys except those in Bank 2; verified on an FT-897 against the values set on the radio |
 
 ### FT-857/897 EEPROM map

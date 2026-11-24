@@ -49,6 +49,7 @@ constexpr SpokenLabel kSpokenLabels[] = {
   {"IF", "i f"},
   {"IPO", "preamplifier"},
   {"KEYREV", "paddle reverse"},
+  {"KNOB", "r f squelch"},
   {"KYR", "keyer"},
   {"LOCK", "lock"},
   {"LPF", "highcut"},

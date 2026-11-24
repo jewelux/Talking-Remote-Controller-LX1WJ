@@ -111,7 +111,8 @@ The setting is not saved; after power off the profile applies again. Console: `E
 On the FT-817/818 and FT-857/897, experimental mode also lets HamTRC change settings that CAT can
 only read, by writing them to the radio's memory: the menu item and soft key row (Bank 8), AGC and
 the noise blanker, and on the FT-857/897 noise reduction, auto notch, the noise reduction and blanker
-levels, and the DSP bandpass filter with its low and high cut (Bank 2), and the RF power (Bank 1
+levels, and the DSP bandpass filter with its low and high cut (Bank 2), whether the RF/SQL knob is
+squelch or RF gain (`KNOB`, Bank 2 `7` short then hold), and the RF power (Bank 1
 `6`), the mic gain and VOX with its gain and delay (`MICGAIN`, `VOX`, `VOXGAIN`, `VOXDELAY`, Bank
 4), and on the FT-857/897 the speech processor (`PROC`, `PROCLEVEL`) and the TX equalizer (`MICEQ`,
 Bank 4), the keyer with its speed, break-in, the sidetone, CW pitch, weight, key reverse and the

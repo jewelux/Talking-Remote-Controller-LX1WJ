@@ -58,6 +58,8 @@ All Bank 2 keys read settings from the radio's EEPROM, since CAT cannot. With ex
 | `6` short | not available (no DSP) | `LPF?`: high cut (menu 47, DSP LPF cutoff) |
 | `7` short | `AGC?` | `AGC?` |
 | `7` long | `AGC` select (experimental) | `AGC` select (experimental) |
+| `7` double click | `KNOB?`: the RF/SQL knob is squelch or RF gain (menu 45) | `KNOB?`: the RF/SQL knob is squelch or RF gain (menu 80) |
+| `7` short, then hold | knob squelch/RF gain (experimental) | knob squelch/RF gain (experimental) |
 | `8` short | not available | `IPO?`: preamplifier, on when IPO is off (HF and 6 m) |
 | `9` short | not available | `ATT?`: attenuator (HF and 6 m) |
 

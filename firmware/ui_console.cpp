@@ -1079,6 +1079,8 @@ void printHelp(const String& topicArg) {
     if (!ft817) helpLine("DBF ON | OFF | TOGGLE  (experimental: DSP bandpass filter, writes it to the EEPROM)");
     helpLine("BK | KYR ON | OFF | TOGGLE  (experimental: break-in and keyer, write them to the EEPROM)");
     if (ft817) helpLine("ANT FRONT | REAR | TOGGLE  (experimental: menu 07 jack of the current band group)");
+    helpLine(ft817 ? "KNOB? | KNOB SQL | RFGAIN | TOGGLE  (RF/SQL knob, menu 45; setting it is experimental)"
+                   : "KNOB? | KNOB SQL | RFGAIN | TOGGLE  (RF/SQL knob, menu 80; setting it is experimental)");
     helpLine(ft817 ? "CWSPEED? | CWPITCH? | CWDELAY? | CWWEIGHT? | SIDETONE? | KEYREV?  (CW menus)"
                    : "CWSPEED? | CWPITCH? | CWDELAY? | CWWEIGHT? | SIDETONE? | QSK? | KEYREV? | CWAUTO? | PADDLE? | CWBFO?  (CW menus 22..32)");
     helpLine(ft817 ? "CWSPEED <4..60> | CWPITCH <300..1000> | CWWEIGHT <2.5..4.5> | SIDETONE <0..100>  (experimental: CW menus, to the nearest step)"
@@ -1638,6 +1640,7 @@ static bool handleConsoleFt8x7Settings(const String& upper) {
     Ft8x7Setting::NbLevel, Ft8x7Setting::BpfWidth, Ft8x7Setting::MicEq, Ft8x7Setting::Antenna, Ft8x7Setting::CwSpeed, Ft8x7Setting::CwPitch,
     Ft8x7Setting::CwDelay, Ft8x7Setting::CwWeight, Ft8x7Setting::Sidetone, Ft8x7Setting::Qsk,
     Ft8x7Setting::KeyReverse, Ft8x7Setting::CwAutoMode, Ft8x7Setting::Paddle, Ft8x7Setting::CwBfo,
+    Ft8x7Setting::Knob,
   };
   for (Ft8x7Setting setting : kSettings) {
     const char* label = ft8x7SettingLabel(setting);
@@ -1981,7 +1984,8 @@ static bool handleConsoleCwLevels(const String& line, const String& upper) {
 }
 
 // Experimental: DBF ON | OFF | TOGGLE on the FT-857/897, like Bank 2 `6` long; BK, KYR, KEYREV
-// and CWAUTO the same, and PADDLE ELEKEY | MICKEY | TOGGLE (on = MICKEY).
+// and CWAUTO the same, PADDLE ELEKEY | MICKEY | TOGGLE (on = MICKEY) and KNOB SQL | RFGAIN |
+// TOGGLE (Bank 2 `7` short then hold).
 static bool handleConsoleFt8x7FlagSet(const String& upper) {
   struct FlagCommand {
     const char* name;
@@ -1994,6 +1998,7 @@ static bool handleConsoleFt8x7FlagSet(const String& upper) {
     {"KEYREV", Ft8x7Setting::KeyReverse, "ON", "OFF"},
     {"CWAUTO", Ft8x7Setting::CwAutoMode, "ON", "OFF"},
     {"PADDLE", Ft8x7Setting::Paddle, "MICKEY", "ELEKEY"},
+    {"KNOB", Ft8x7Setting::Knob, "SQL", "RFGAIN"},
   };
   for (const FlagCommand& c : kCommands) {
     const String prefix = String(c.name) + " ";

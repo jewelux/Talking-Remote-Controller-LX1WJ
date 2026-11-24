@@ -31,7 +31,7 @@ enum class Ft8x7Flag : uint8_t {
   DspRow,         // the DSP soft key row is shown (saved at once, unlike the row number)
   VfoB,           // VFO B is active; follows the A/B key and the CAT toggle
   Filter2,        // filter 2 is chosen on the CFIL row (filter 1 could not be measured)
-  KnobIsSquelch,  // menu 80: the RF/SQL knob is squelch, not RF gain
+  KnobIsSquelch,  // FT-857/897 menu 80, FT-817 menu 45: the RF/SQL knob is squelch, not RF gain
   Split,          // valid in receive; the TX status has it while transmitting
   KeyReverse,     // FT-857/897 menu 25 CW KEY REV, FT-817 menu 19 CW PADDLE: dot and dash swapped
   CwAutoMode,     // FT-857/897 menu 22: CW sent from the key in SSB too

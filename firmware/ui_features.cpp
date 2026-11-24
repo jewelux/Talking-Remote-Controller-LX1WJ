@@ -517,6 +517,7 @@ static const char* ft8x7SettingName(Ft8x7Setting setting) {
     case Ft8x7Setting::CwAutoMode: return "CWAUTO";
     case Ft8x7Setting::Paddle: return "PADDLE";
     case Ft8x7Setting::CwBfo: return "CWBFO";
+    case Ft8x7Setting::Knob: return "KNOB";
   }
   return "";
 }
@@ -588,6 +589,7 @@ String ft8x7SettingText(const Ft8x7SettingState& state) {
   }
   if (state.setting == Ft8x7Setting::MicEq) return text + ft8x7MicEqName(state.micEq);
   if (state.setting == Ft8x7Setting::Antenna) return text + (state.on ? "REAR" : "FRONT");
+  if (state.setting == Ft8x7Setting::Knob) return text + (state.on ? "SQL" : "RFGAIN");
   switch (state.setting) {
     case Ft8x7Setting::CwSpeed: return text + String(state.value) + " WPM";
     case Ft8x7Setting::CwPitch: return text + String(state.value) + " Hz";
@@ -720,6 +722,11 @@ void speakFt8x7Setting(const Ft8x7SettingState& state) {
   if (state.setting == Ft8x7Setting::Antenna) {
     speakLabel("antenna");
     speakToken(state.on ? "rear" : "front");
+    return;
+  }
+  // What the RF/SQL knob does: "squelch", "r f gain".
+  if (state.setting == Ft8x7Setting::Knob) {
+    speakToken(state.on ? "squelch" : "r f gain");
     return;
   }
   // No "shift" clip yet: printed only.

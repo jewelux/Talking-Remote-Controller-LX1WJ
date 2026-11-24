@@ -295,10 +295,17 @@ KeyBinding bank2(const KeypadTraits& t, char key) {
       return ft8x7 || t.settings.has(Setting::RxHighCut) ? settingKey<Setting::RxHighCut>(t)
                                                           : settingKey<Setting::PbtOuter>(t);
     // Every radio: what agcQuery reads, and the select of the speeds it can be set to; the RF gain
-    // on the double gestures where the radio has it.
+    // on the double gestures where the radio has it. The FT-817 and FT-857/897 have no RF gain
+    // command: their double gestures say and switch what the RF/SQL knob does.
     case '7': {
-      const Key agc = bind(queryBank2Agc, beginBank2AgcSelect).help("AGC", V::Say, V::Pick);
-      return withSecondSetting<Setting::RfGain>(t, withFocusIfHas(t, agc, Setting::Agc));
+      const Key agc = withFocusIfHas(t, bind(queryBank2Agc, beginBank2AgcSelect).help("AGC", V::Say, V::Pick),
+                                     Setting::Agc);
+      if (t.layout == L::Ft817 || t.layout == L::Ft857) {
+        return agc.withDouble(queryBank2Ft8x7Knob, toggleBank2Ft8x7Knob, Setting::None)
+            .helpDouble("KNOB", V::Say)
+            .helpDoubleHold("KNOB", V::Toggle);
+      }
+      return withSecondSetting<Setting::RfGain>(t, agc);
     }
     // The FT-8x7 reads its IPO and attenuator only (the FT-817/818 not even those); the other
     // radios step to the next level on a hold.

@@ -37,7 +37,7 @@ back to its starting focus.
 | Bank | Keys that set the focus | Starting focus |
 |---|---|---|
 | 1 | `6` RF power, `9` mode | none |
-| 2 | `0` contour frequency, `1` NR level, `2` NB level, `3` notch frequency (Icom: notch width), `4` low cut or PBT inner, `5` filter width, CW filter width or filter, `6` high cut or PBT outer, `7` AGC, or the RF gain after a double press or a short press then hold, `8` preamp, `9` attenuator | none |
+| 2 | `0` contour frequency, `1` NR level, `2` NB level, `3` notch frequency (Icom: notch width), `4` low cut or PBT inner, `5` filter width, CW filter width or filter, `6` high cut or PBT outer, `7` AGC, or the RF gain after a double press or a short press then hold (FT-8x7: AGC only), `8` preamp, `9` attenuator | none |
 | 3 | none yet | none |
 | 4 | `1` processor level, `2` VOX gain, `3` monitor level (Icom), `5` TX equalizer, `7` mic gain, `8` RF power, `9` VOX delay | none |
 | 5 | `1`-`5` RIT offset | RIT offset |
@@ -136,8 +136,8 @@ row: AGC, preamp, attenuator.
 | `6` long | PBT outer entry | high cut entry | high cut entry | not available | high cut entry (experimental) |
 | `7` short | AGC | AGC | AGC | AGC | AGC |
 | `7` long | AGC select | AGC select | AGC select | AGC select (experimental) | AGC select (experimental) |
-| `7` double | RF gain (IC-706, G106: free) | RF gain | RF gain | free | free |
-| `7` short, then hold | RF gain entry (IC-706, G106: free) | RF gain entry | RF gain entry | free | free |
+| `7` double | RF gain (IC-706, G106: free) | RF gain | RF gain | RF/SQL knob: squelch or RF gain (menu 45) | RF/SQL knob: squelch or RF gain (menu 80) |
+| `7` short, then hold | RF gain entry (IC-706, G106: free) | RF gain entry | RF gain entry | RF/SQL knob squelch/RF gain (experimental) | RF/SQL knob squelch/RF gain (experimental) |
 | `8` short | preamp | preamp | preamp | not available | preamplifier (IPO) |
 | `8` long | next preamp level | next preamp level | next preamp level | free | free |
 | `9` short | attenuator | attenuator | attenuator | not available | attenuator |

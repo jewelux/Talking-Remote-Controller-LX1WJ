@@ -175,6 +175,8 @@ void stepBank2Preamp() { record("stepBank2Preamp"); }
 void queryBank2Agc() { record("queryBank2Agc"); }
 void queryBank2Ft817Antenna() { record("queryBank2Ft817Antenna"); }
 void toggleBank2Ft8x7Dbf() { record("toggleBank2Ft8x7Dbf"); }
+void queryBank2Ft8x7Knob() { record("queryBank2Ft8x7Knob"); }
+void toggleBank2Ft8x7Knob() { record("toggleBank2Ft8x7Knob"); }
 void toggleBank2Ft817Antenna() { record("toggleBank2Ft817Antenna"); }
 void beginBank2AgcSelect() { record("beginBank2AgcSelect"); }
 

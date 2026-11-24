@@ -90,10 +90,12 @@ void stepBank2Preamp();
 void queryBank2Ft8x7Dbf();
 void queryBank2Ft8x7Ipo();
 void queryBank2Ft817Antenna();
+void queryBank2Ft8x7Knob();
 // Experimental, written to the radio's EEPROM; "experimental" unless EXPERIMENTAL is on. The
-// FT-857/897 DBF (both its bits, as the radio's key) and the FT-817/818 antenna jack of the
-// current band.
+// FT-857/897 DBF (both its bits, as the radio's key), the FT-8x7 RF/SQL knob (squelch or RF
+// gain) and the FT-817/818 antenna jack of the current band.
 void toggleBank2Ft8x7Dbf();
+void toggleBank2Ft8x7Knob();
 void toggleBank2Ft817Antenna();
 
 // ---- Bank 3 ----

@@ -44,6 +44,7 @@ const char* ft8x7SettingLabel(Ft8x7Setting setting) {
     case Ft8x7Setting::CwAutoMode: return "CWAUTO?";
     case Ft8x7Setting::Paddle: return "PADDLE?";
     case Ft8x7Setting::CwBfo: return "CWBFO?";
+    case Ft8x7Setting::Knob: return "KNOB?";
   }
   return "?";
 }
@@ -84,6 +85,7 @@ static bool ft8x7SettingFlag(Ft8x7Setting setting, Ft8x7Flag& flagOut) {
     case Ft8x7Setting::KeyReverse: flagOut = Ft8x7Flag::KeyReverse; return true;
     case Ft8x7Setting::CwAutoMode: flagOut = Ft8x7Flag::CwAutoMode; return true;
     case Ft8x7Setting::Paddle: flagOut = Ft8x7Flag::PaddleMicKey; return true;
+    case Ft8x7Setting::Knob: flagOut = Ft8x7Flag::KnobIsSquelch; return true;
     default: return false;
   }
 }
@@ -247,7 +249,7 @@ FeatureStatus ft8x7LevelStep(Ft8x7Setting setting, int delta, Ft8x7SettingState&
   return eepromWriteStatus(yaesuFt857StepLevel(level, delta, out.value, kFt8x7TimeoutMs));
 }
 
-// DBF, BK, KYR and the CW flags, where the model keeps them; IF shift is read only.
+// DBF, BK, KYR, the knob and the CW flags, where the model keeps them; IF shift is read only.
 static FeatureStatus ft8x7FlagSettable(Ft8x7Setting setting, Ft8x7Flag& flag) {
   if (setting == Ft8x7Setting::IfShift || !ft8x7SettingFlag(setting, flag) ||
       !ft8x7SettingSupported(setting, currentFt8x7Model())) {
