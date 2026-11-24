@@ -2,7 +2,9 @@ name: Firmware
 
 on:
   push:
-    branches: [main, development]
+    # TestIC705: USB host test on the Mini (IC-705 USB, profile 23, issue #33); take it out
+    # of this list again when the branch is merged into development
+    branches: [main, development, TestIC705]
     tags: ['v*']
     # Pushes that cannot change the firmware neither rebuild nor republish it
     # (GitHub does not apply path filters to tag pushes)
@@ -155,17 +157,18 @@ jobs:
   # flash page on lx1wj.eu can load it directly (Pages allows cross-site downloads):
   #   firmware/main/        newest build of main
   #   firmware/development/ newest build of development
+  #   firmware/TestIC705/   newest build of TestIC705 (USB host test, temporary)
   #   firmware/<tag slug>/  every v* tag, kept for good
   # gh-pages holds one commit only (rebuilt each time), so old images do not pile up
   # on the server. Branch channels name their images after the commit and keep the
   # previous build's images until the next publish: a browser never mixes images of
   # two builds, and a manifest still cached (Pages allows 10 minutes) finds its own.
   # Tag channels hold the Release files unchanged.
-  # "Run workflow" on main, development or a v* tag publishes that ref again.
+  # "Run workflow" on main, development, TestIC705 or a v* tag publishes that ref again.
   publish:
     if: >-
       ((github.event_name == 'push' && !github.event.deleted) || github.event_name == 'workflow_dispatch') &&
-      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/development' || startsWith(github.ref, 'refs/tags/v'))
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/development' || github.ref == 'refs/heads/TestIC705' || startsWith(github.ref, 'refs/tags/v'))
     needs: [host-tests, build]
     runs-on: ubuntu-latest
     permissions:
