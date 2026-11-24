@@ -237,3 +237,14 @@ TEST(cp210x_search_skips_other_classes) {
   CHECK(!findCp210xSerialPort(cut.data(), cut.size() - 3, 0, port));  // OUT endpoint cut
   CHECK(!findCp210xSerialPort(nullptr, 0, 0, port));
 }
+
+// The radios' TI PCM29xx audio codecs stay unconfigured; their serial ports and other devices not.
+TEST(audio_codec_left_unconfigured) {
+  CHECK(usbDeviceLeftUnconfigured(0x08BB, 0x2901));  // IC-7300, IC-705
+  CHECK(usbDeviceLeftUnconfigured(0x08BB, 0x2902));
+  CHECK(!usbDeviceLeftUnconfigured(0x08BB, 0x2046));
+  CHECK(!usbDeviceLeftUnconfigured(0x10C4, 0xEA60));  // the IC-7300's CP2102
+  CHECK(!usbDeviceLeftUnconfigured(0x0C26, 0x0036));  // the IC-705's CDC port
+  CHECK(!usbDeviceLeftUnconfigured(0x0451, 0x2046));  // the radios' hub
+  CHECK(!usbDeviceLeftUnconfigured(0x0D8C, 0x0012));  // the X6100's CM108, as before
+}

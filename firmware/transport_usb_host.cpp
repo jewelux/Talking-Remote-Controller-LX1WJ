@@ -528,12 +528,18 @@ void printPortRegisters(Print& out) {
 
 // The core is built with CONFIG_USB_HOST_ENABLE_ENUM_FILTER_CALLBACK, and with that the USB Host
 // Library cancels every enumeration when no filter is set, with only a warning that the core does
-// not print. Takes every device in its first configuration. Runs once per device that answered,
-// before its configuration is read, so it counts the devices seen and starts the enumeration watch.
+// not print. Takes every device in its first configuration, except those usbDeviceLeftUnconfigured
+// names (a radio's USB audio codec). Runs once per device that answered, before its configuration
+// is read, so it counts the devices seen and starts the enumeration watch.
 #if CONFIG_USB_HOST_ENABLE_ENUM_FILTER_CALLBACK
 bool acceptEveryDevice(const usb_device_desc_t* dd, uint8_t* bConfigurationValue) {
   *bConfigurationValue = 1;
   ++s_devicesSeen;
+  if (usbDeviceLeftUnconfigured(dd->idVendor, dd->idProduct)) {
+    logEvent("device %04X:%04X answered, left unconfigured (USB audio, not needed)", dd->idVendor,
+             dd->idProduct);
+    return false;
+  }
   s_enumVid = dd->idVendor;
   s_enumPid = dd->idProduct;
   s_enumSinceMs = millis();

@@ -118,3 +118,7 @@ bool findCp210xSerialPort(const uint8_t* config, size_t length, uint8_t index, C
   }
   return finishPort();
 }
+
+bool usbDeviceLeftUnconfigured(uint16_t vid, uint16_t pid) {
+  return vid == 0x08BB && (pid & 0xFF00) == 0x2900;
+}

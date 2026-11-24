@@ -32,3 +32,9 @@ bool isCp210x(uint16_t vid, uint16_t pid);
 // IN and a bulk OUT endpoint, in their first alternate setting. The vendor requests go to that
 // interface, so commIntf is the same as dataIntf. False when the device has fewer.
 bool findCp210xSerialPort(const uint8_t* config, size_t length, uint8_t index, CdcPortDesc& out);
+
+// Devices the host leaves unconfigured: the Texas Instruments (Burr-Brown) PCM29xx USB audio codecs,
+// 08BB:2900-29FF, the sound card behind the hub in the IC-7300 and the IC-705. HamTRC does not use
+// them, and configured the codec draws its full current from the socket's 5 V (test on the
+// IC-7300, 24 Nov 2026: the radio dropped off the bus seconds after its codec was configured).
+bool usbDeviceLeftUnconfigured(uint16_t vid, uint16_t pid);
