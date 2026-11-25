@@ -1,13 +1,14 @@
 # Bill of Materials – HamTRC V2 (Mini-HamTRC)
 
 > [!IMPORTANT]
-> **Planning to build one? Please get in touch first.**
-> The hardware is still evolving, so this documentation is deliberately kept minimal and may lag behind the bench.
-> Before you order parts or PCBs, [open a build enquiry](https://github.com/jewelux/Talking-Remote-Controller-LX1WJ/issues/new?template=build-enquiry.yml) to get the current state of the board,
-> recent changes and build tips. Feedback from builders is very welcome – every question helps to improve the documentation.
+> **This page describes the current Mini-HamTRC V2 (`development` branch).**
+> The `main` branch still contains the first prototype (V1, with SD card). Do not use `main` for a V2 build.
+> A step-by-step build page written for screen readers is at [lx1wj.eu – Build a Mini-HamTRC](https://lx1wj.eu/hamtrc/mini-review/index-en.html)
+> (also in [German](https://lx1wj.eu/hamtrc/mini-review/index.html) and [French](https://lx1wj.eu/hamtrc/mini-review/index-fr.html)).
+> Questions are welcome: [open a build enquiry](https://github.com/jewelux/Talking-Remote-Controller-LX1WJ/issues/new?template=build-enquiry.yml).
 
-> **Status: in development.** Derived from [`circuit-diagram-V2.pdf`](circuit-diagram-V2.pdf)
-> and [`pcb-layout-V2.pdf`](pcb-layout-V2.pdf). Wiring details: [`hardware_wiring_v2.md`](hardware_wiring_v2.md).
+> **Status: current V2 build (2026-11-25).** Derived from [`circuit-diagram-V2.pdf`](circuit-diagram-V2.pdf)
+> and [`pcb-layout-V2.pdf`](pcb-layout-V2.pdf), plus the parts added since (marked \*). Wiring details: [`hardware_wiring_v2.md`](hardware_wiring_v2.md).
 
 ## Modules
 
@@ -28,15 +29,20 @@
 | R3 | 1 | 1 kΩ | resistor ¼ W, axial THT | CAT-TTL TX series resistor |
 | R4 | 1 | 1 kΩ | resistor ¼ W, axial THT | CAT-TTL RX series resistor |
 | ZD1 | 1 | 3.3 V | Zener diode, e.g. BZX55C3V3 / BZX79C3V3, DO-35 | CI-V RX clamp |
-| D1 | 0–1 | – | **optional** (PCB footprint only): wire link, or diode 1N5817 Schottky (preferred) / 1N400x, DO-41 | diode only with separate 5 V supply on J5 |
+| D1 | – | – | wire link (PCB footprint only, no diode) | 5 V from J5 to the rail |
 | Q1 | 1 | BC547 | NPN, TO-92 (BC548 / BC549 also fine) | CI-V open-collector driver |
 | C5 | 1 | 100 nF | ceramic capacitor, THT | 5 V rail decoupling |
+| \* | 1 | 220 µF | electrolytic capacitor, ≥ 10 V | MAX98357A `Vin` decoupling, close to the module |
+| \* | 1 | 100 nF | ceramic capacitor, THT | MAX98357A `Vin` decoupling, close to the module |
+| \* | 1 + 1 | 4.7 kΩ + 10 kΩ | resistors ¼ W (variant A) | GPIO 9 protection: 4.7 kΩ RXD → GPIO 9, 10 kΩ GPIO 9 → GND |
+| \* | (1) | 12 kΩ | resistor ¼ W (variant B, instead of A) | GPIO 9 protection: 12 kΩ RXD → GPIO 9 |
 
 ## Connectors
 
 | Ref | Qty | Part | Function |
 |---|---|---|---|
 | J5 | 1 | 2-pin header or terminal, 2.54 mm | 5 V power input |
+| \* | 1 | USB-C panel-mount socket, power only, with 5.1 kΩ from CC1 and CC2 to GND | external 5 V input on the rear panel, red/black wires to J5 |
 | J6 | 1 | 3.5 mm stereo jack, PCB mount | CI-V (Tip = bus, Sleeve = GND) |
 | J3 | 1 | 3.5 mm stereo jack, PCB mount | CAT-TTL |
 | J8 | 1 | 2×4 pin header, 2.54 mm | keypad |
@@ -51,15 +57,17 @@
 | 1 | PCB HamTRC V2, single-sided | per `pcb-layout-V2.pdf` |
 | 6 | wire bridges (tinned copper wire) | red links in the layout PDF (+1 for D1 if no diode) |
 | 4 | M3 spacers + screws | corner mounting holes |
-| 1 | 5 V supply (≥ 1 A) | USB-C to the ESP32 board, or a separate 5 V supply on J5 (then fit D1 as diode) |
+| 1 | 5 V supply with USB-C plug | good quality plug-in supply, e.g. the official Raspberry Pi power supply, into the USB-C panel socket |
+| 1 | USB data cable for the ESP32 board | only for flashing the firmware from a computer |
 | – | cables: 3.5 mm stereo cable (CI-V / CAT), DB9 cable (RS-232) | depending on radio |
 
 ## Notes
 
-- D1 is not in the schematic any more; the PCB keeps its footprint. Fit a wire link for USB supply,
-  or a diode when a separate 5 V supply is used on J5 (Schottky: ≈ 0.3 V drop, 1N400x: ≈ 0.7 V).
-- A USB-C charger with a USB-C to USB-C cable may give no power on one of the two USB-C ports of
-  low-cost ESP32-S3 boards (missing CC resistors). A USB-A charger with a USB-A to USB-C cable always
-  works; see `hardware_wiring_v2.md`, section 1.
+- The Mini is powered from an external 5 V supply on J5 (USB-C panel socket). The USB-C ports of the
+  ESP32-S3 board are only used to flash the firmware; powered through them, the MAX modules do not get a proper
+  supply (issues #29, #31). See `hardware_wiring_v2.md`, section 1.
+- D1 is not in the schematic any more; the PCB keeps its footprint. Fit a wire link.
+- Do not close the USB-OTG solder bridge on the ESP32-S3 board; USB control of radios comes with V3.
+- RS-232 cable: Yaesu FTDX10 needs a null modem cable or adapter, Yaesu FT-847 a straight cable.
 - The MAX3232 module is soldered onto the two large pads at the top edge of the PCB.
 - The SD-card module of V1 is no longer part of V2.

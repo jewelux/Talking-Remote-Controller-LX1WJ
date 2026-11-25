@@ -1,14 +1,16 @@
 # Hardware Wiring Reference – HamTRC V2 (Mini-HamTRC)
 
 > [!IMPORTANT]
-> **Planning to build one? Please get in touch first.**
-> The hardware is still evolving, so this documentation is deliberately kept minimal and may lag behind the bench.
-> Before you order parts or PCBs, [open a build enquiry](https://github.com/jewelux/Talking-Remote-Controller-LX1WJ/issues/new?template=build-enquiry.yml) to get the current state of the board,
-> recent changes and build tips. Feedback from builders is very welcome – every question helps to improve the documentation.
+> **This page describes the current Mini-HamTRC V2 (`development` branch).**
+> The `main` branch still contains the first prototype (V1, with SD card). Do not use `main` for a V2 build.
+> A step-by-step build page written for screen readers is at [lx1wj.eu – Build a Mini-HamTRC](https://lx1wj.eu/hamtrc/mini-review/index-en.html)
+> (also in [German](https://lx1wj.eu/hamtrc/mini-review/index.html) and [French](https://lx1wj.eu/hamtrc/mini-review/index-fr.html)).
+> Questions are welcome: [open a build enquiry](https://github.com/jewelux/Talking-Remote-Controller-LX1WJ/issues/new?template=build-enquiry.yml).
 
-> **Status: in development.** V2 is the compact successor of the original board.
-> The hardware is evolving; this page describes the state of the drawings listed below
-> and may change without notice. For the V1 board see [`hardware_wiring.md`](../v1-hamtrc/hardware_wiring.md).
+> **Status: current V2 build (2026-11-25).** V2 is the compact successor of the original board.
+> This page describes the V2 as it is built now. Where it differs from the schematic below, this page is correct:
+> the power input (section 1), the amplifier supply capacitors (section 3) and the protection of GPIO 9 (section 5)
+> were improved after the schematic was drawn. For the V1 board see [`hardware_wiring.md`](../v1-hamtrc/hardware_wiring.md).
 
 | Source | File |
 |---|---|
@@ -26,7 +28,7 @@ All GPIO assignments below were read from the V2 schematic and cross-checked aga
 
 | Topic | V1 | V2 (Mini-HamTRC) |
 |---|---|---|
-| Supply | 12 V input, DC-DC module (U2), power switch (J11), 1000 µF buffer (C6) | 5 V via ESP32 USB-C, optional separate 5 V on J5; no DC-DC module, no switch |
+| Supply | 12 V input, DC-DC module (U2), power switch (J11), 1000 µF buffer (C6) | external 5 V from a USB-C power socket on J5; ESP32 USB-C ports only for flashing; no DC-DC module, no switch |
 | SD card module | J5 SD module (SPI) | **removed** (the firmware does not use it) |
 | CI-V jack | 3-pin header / 3.5 mm | 3.5 mm jack J6 (Tip = CI-V, Ring unused) |
 | CAT-TTL | 3-pin header J3 | 3.5 mm jack footprint J3 |
@@ -37,32 +39,32 @@ All GPIO assignments below were read from the V2 schematic and cross-checked aga
 
 ## 1. Power Supply
 
+The Mini-HamTRC is powered from an **external 5 V supply** through its own power input.
+The USB-C ports of the ESP32-S3 board are **not** used to power the Mini.
+
 | Connector | Pin | Signal |
 |---|---|---|
-| J5 "VCC In 5V" | 1 | +5 V |
-| J5 | 2 | GND |
+| J5 "VCC In 5V" | 1 | +5 V (red wire from the USB-C power socket) |
+| J5 | 2 | GND (black wire from the USB-C power socket) |
 
-- The **5 V rail** connects J5 pin 1, U1 pin 21 `5V0`, the MAX98357A (J4 pin 1) and the MAX3232 module (J2 pin 1).
+- **Power input:** a USB-C panel-mount socket on the rear of the box, used for power only. It needs
+  **5.1 kΩ from CC1 and from CC2 to GND**, otherwise a USB-C power supply does not switch on its 5 V.
+  Many small socket boards already have them.
+- **Power supply:** a good 5 V plug-in supply with USB-C, for example the official Raspberry Pi power supply.
+- The **5 V rail** connects J5 pin 1, U1 pin 21 `5V0` (5V pin of the ESP32 board), the MAX98357A (J4 pin 1 `Vin`)
+  and the MAX3232 module (J2 pin 1 `VCC`).
 - **C5 100 nF** decouples the 5 V rail to GND.
+- **D1 position on the PCB: wire link.** No diode is needed.
 - The ESP32-S3 board's own 3V3 output (U1 pins 1, 2) feeds the MAX98357A `SD` pin.
+- **Do not close the USB-OTG solder bridge** on the ESP32-S3 board. USB control of radios comes with V3.
 
-**Two ways to power the board – choose one:**
+**Flashing:** the ESP32-S3 board's USB-C ports are used only to flash the firmware from a computer.
+While flashing, the board is powered by the computer and the Mini does not control a radio.
+After flashing, disconnect the computer and power the Mini again from its external 5 V input.
 
-| Option | Supply | D1 position on the PCB |
-|---|---|---|
-| A (default, as in the schematic) | USB-C port of the ESP32-S3 board | **wire link** instead of D1 – USB then also powers the audio and RS-232 modules |
-| B | separate 5 V supply on J5 | **diode** fitted in D1 (1N400x / 1N5817 Schottky), anode towards J5, cathode towards `5V0` |
-
-The schematic no longer contains D1, but the PCB keeps the **D1 footprint** so a diode can be
-fitted when a separate 5 V supply is used. The diode stops the external supply and the USB port from
-feeding into each other. A Schottky diode (e.g. 1N5817, ≈ 0.3 V drop) is preferred over a 1N400x (≈ 0.7 V).
-
-**USB-C chargers:** a USB-C charger switches on its 5 V only when the device signals a load through
-two 5.1 kΩ resistors on the CC pins of its USB-C port. Many low-cost ESP32-S3 boards lack them on one
-of their two ports. On the Mini-HamTRC boards built in November 2026, the **right** port (seen from
-above) got no power from a USB-C charger with a USB-C to USB-C cable, while the same port worked from
-a PC. Nothing is wrong with the board or the firmware. If a USB-C charger gives no power, use a
-charger with a USB-A output and a USB-A to USB-C cable (always 5 V), or try the other port.
+**Why not USB power:** on the ESP32-S3 board, diodes separate the USB ports from its 5V pin. Powered only
+through USB, the two MAX modules did not get a proper supply: the 5 V rail sat at about 2.5 V, the speech
+crackled and the RS-232 interface misbehaved (issues #29 and #31).
 
 ---
 
@@ -100,6 +102,9 @@ J8 pins 1…8 map 1:1 to the keypad's 8-pin ribbon connector (pins 1–8).
 The speaker connects to the screw terminal of the MAX98357A breakout.
 `AMP_SD_PIN = -1` in the firmware, which matches the hard-wired SD pin.
 
+**Supply decoupling (not in the schematic):** a **220 µF** electrolytic capacitor (≥ 10 V) and a **100 nF**
+ceramic capacitor from `Vin` to GND, close to the module, minus of the electrolytic capacitor to GND.
+
 ---
 
 ## 4. ESP32-S3 to ICOM CI-V (J6, 3.5 mm jack)
@@ -135,11 +140,24 @@ Firmware: `RS232_RX_PIN = 9`, `RS232_TX_PIN = 10`
 | J2 Pin | MAX3232 module | Connection |
 |---|---|---|
 | 1 | VCC | +5 V rail |
-| 2 | RXD (TTL out) | GPIO 9 |
+| 2 | RXD (TTL out) | GPIO 9 **through a protection resistor**, see below |
 | 3 | TXD (TTL in) | GPIO 10 |
 | 4 | GND | GND |
 
+**Protection of GPIO 9 (not in the schematic):** the module's RXD output gives about 4.6 V, more than the
+ESP32-S3 input tolerates. Do not connect RXD directly to GPIO 9. Two tested variants:
+
+| Variant | Parts | Measured at GPIO 9 | Note |
+|---|---|---|---|
+| A | 4.7 kΩ from RXD to GPIO 9, 10 kΩ from GPIO 9 to GND | ≈ 3.2 V | independent of the firmware |
+| B | 12 kΩ from RXD to GPIO 9 | ≈ 3.2 V | one part fewer; relies on the load of the ESP32 input, so the voltage depends on how the firmware configures the pin |
+
 The DB9 connector on the module goes to the radio's RS-232 CAT port.
+
+| Radio | Cable |
+|---|---|
+| Yaesu FTDX10 | null modem cable or adapter (the radio is wired like a modem) |
+| Yaesu FT-847 | straight cable |
 
 ---
 
@@ -173,7 +191,7 @@ They are available for future extensions (keep strapping pins GPIO 0, 3, 45, 46 
 - The ESP32-S3 dev board, MAX98357A and MAX3232 modules plug into female headers.
 - **Two large rectangular pads at the top edge**: solder pads for mounting the **RS-232 (MAX3232) module**
   (mechanical fixing, no electrical net).
-- **D1 footprint** (left edge): fit a wire link or a diode, see section 1.
+- **D1 footprint** (left edge): fit a wire link, see section 1.
 
 ---
 
