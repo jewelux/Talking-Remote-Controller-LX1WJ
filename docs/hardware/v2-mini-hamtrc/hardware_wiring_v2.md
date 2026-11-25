@@ -47,9 +47,11 @@ The USB-C ports of the ESP32-S3 board are **not** used to power the Mini.
 | J5 "VCC In 5V" | 1 | +5 V (red wire from the USB-C power socket) |
 | J5 | 2 | GND (black wire from the USB-C power socket) |
 
-- **Power input:** a USB-C panel-mount socket on the rear of the box, used for power only. It needs
-  **5.1 kΩ from CC1 and from CC2 to GND**, otherwise a USB-C power supply does not switch on its 5 V.
-  Many small socket boards already have them.
+- **Power input:** a USB-C panel-mount socket on the rear of the box, power only, with two wires (red and black),
+  for example a "USB-C fast-charge" panel socket. A USB-C charger switches on its 5 V only when it sees
+  5.1 kΩ from CC1 and CC2 to GND on the device side; such sockets usually have these resistors built in.
+  If a USB-C charger with a USB-C to USB-C cable gives no power, use a supply with a fixed USB-C cable,
+  or a USB-A charger with a USB-A to USB-C cable.
 - **Power supply:** a good 5 V plug-in supply with USB-C, for example the official Raspberry Pi power supply.
 - The **5 V rail** connects J5 pin 1, U1 pin 21 `5V0` (5V pin of the ESP32 board), the MAX98357A (J4 pin 1 `Vin`)
   and the MAX3232 module (J2 pin 1 `VCC`).

@@ -42,7 +42,7 @@
 | Ref | Qty | Part | Function |
 |---|---|---|---|
 | J5 | 1 | 2-pin header or terminal, 2.54 mm | 5 V power input |
-| \* | 1 | USB-C panel-mount socket, power only, with 5.1 kΩ from CC1 and CC2 to GND | external 5 V input on the rear panel, red/black wires to J5 |
+| \* | 1 | USB-C panel-mount socket, power only, two wires (e.g. "USB-C fast-charge" panel socket, CC resistors usually built in) | external 5 V input on the rear panel, red/black wires to J5 |
 | J6 | 1 | 3.5 mm stereo jack, PCB mount | CI-V (Tip = bus, Sleeve = GND) |
 | J3 | 1 | 3.5 mm stereo jack, PCB mount | CAT-TTL |
 | J8 | 1 | 2×4 pin header, 2.54 mm | keypad |
