@@ -22,7 +22,8 @@ J4, J5 and J8 (also stored in the schematic), the TO-92 footprint of Q1 and the 
   between the MAX3232's RXD and GPIO 9. [`../hardware_wiring_v2.md`](../hardware_wiring_v2.md) describes every
   connection in words, and [`../bom_v2.md`](../bom_v2.md) lists the parts.
 - **Power:** J5 "VCC In 5V" is the external 5 V input, pin 1 +5 V, pin 2 GND. Which socket or cable goes to J5 on
-  the box is up to the builder.
+  the box is up to the builder. C6, 470 µF electrolytic, and C5, 100 nF ceramic, are in parallel on the 5 V rail.
+  C6 uses the plain capacitor symbol and the 5 mm disc footprint, which has no polarity mark: minus goes to pad 2, GND.
 - **PCB:** a two-layer layout routed with Freerouting. It has not been made or tested yet. The boards built so far
   are the single-sided layout in [`../pcb-layout-V2.pdf`](../pcb-layout-V2.pdf).
 - **ERC:** three "power pin not driven" errors at U1 (3V3, 5V0, GND), because the schematic has no `PWR_FLAG`

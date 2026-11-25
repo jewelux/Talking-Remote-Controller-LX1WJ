@@ -9,8 +9,8 @@
 
 > **Status: current V2 build (2026-11-25).** V2 is the compact successor of the original board.
 > This page describes the V2 as it is built now. The schematic shows the protection of GPIO 9 with R5, 12 kΩ (variant B, section 5,
-> added 2026-11-25). Where this page differs from the schematic, this page is correct: the external power input (section 1)
-> and the amplifier supply capacitors (section 3) were added after the schematic was drawn. For the V1 board see [`hardware_wiring.md`](../v1-hamtrc/hardware_wiring.md).
+> added 2026-11-25), the external 5 V input J5 and the supply capacitors C5 and C6. The KiCad source files are in
+> [`MiniHamTRC-V2-KiCad/`](MiniHamTRC-V2-KiCad/). For the V1 board see [`hardware_wiring.md`](../v1-hamtrc/hardware_wiring.md).
 
 | Source | File |
 |---|---|
@@ -53,7 +53,8 @@ The USB-C ports of the ESP32-S3 board are **not** used to power the Mini.
 - **Power supply:** a good, stable 5 V supply, at least 1 A.
 - The **5 V rail** connects J5 pin 1, U1 pin 21 `5V0` (5V pin of the ESP32 board), the MAX98357A (J4 pin 1 `Vin`)
   and the MAX3232 module (J2 pin 1 `VCC`).
-- **C5 100 nF** decouples the 5 V rail to GND.
+- **C6 470 µF** electrolytic (≥ 10 V) with **C5 100 nF** ceramic in parallel decouple the 5 V rail to GND.
+  Minus of C6 to GND (pad 2 on the PCB).
 - **D1 position on the PCB: wire link.** No diode is needed.
 - The ESP32-S3 board's own 3V3 output (U1 pins 1, 2) feeds the MAX98357A `SD` pin.
 - **Do not close the USB-OTG solder bridge** on the ESP32-S3 board. USB control of radios comes with V3.
@@ -102,8 +103,8 @@ J8 pins 1…8 map 1:1 to the keypad's 8-pin ribbon connector (pins 1–8).
 The speaker connects to the screw terminal of the MAX98357A breakout.
 `AMP_SD_PIN = -1` in the firmware, which matches the hard-wired SD pin.
 
-**Supply decoupling (not in the schematic):** a **220 µF** electrolytic capacitor (≥ 10 V) and a **100 nF**
-ceramic capacitor from `Vin` to GND, close to the module, minus of the electrolytic capacitor to GND.
+**Supply decoupling:** C6 **470 µF** electrolytic (≥ 10 V) and C5 **100 nF** ceramic in parallel, from the 5 V rail
+(`Vin`) to GND, close to the module, minus of C6 to GND.
 
 ---
 

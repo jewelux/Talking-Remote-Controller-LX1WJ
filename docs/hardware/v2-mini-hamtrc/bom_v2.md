@@ -32,9 +32,8 @@
 | ZD1 | 1 | 3.3 V | Zener diode, e.g. BZX55C3V3 / BZX79C3V3, DO-35 | CI-V RX clamp |
 | D1 | – | – | wire link (PCB footprint only, no diode) | 5 V from J5 to the rail |
 | Q1 | 1 | BC547 | NPN, TO-92 (BC548 / BC549 also fine) | CI-V open-collector driver |
-| C5 | 1 | 100 nF | ceramic capacitor, THT | 5 V rail decoupling |
-| \* | 1 | 220 µF | electrolytic capacitor, ≥ 10 V | MAX98357A `Vin` decoupling, close to the module |
-| \* | 1 | 100 nF | ceramic capacitor, THT | MAX98357A `Vin` decoupling, close to the module |
+| C5 | 1 | 100 nF | ceramic capacitor, THT, 5 mm pitch | 5 V rail decoupling, in parallel with C6 |
+| C6 | 1 | 470 µF | electrolytic capacitor, ≥ 10 V, radial, 5 mm pitch | 5 V rail and MAX98357A `Vin` buffer; minus to GND (pad 2) |
 | R5 | 1 | 12 kΩ | resistor ¼ W, axial THT (variant B, as in the schematic) | GPIO 9 protection: RXD → GPIO 9 |
 | \* | (1 + 1) | 4.7 kΩ + 10 kΩ | resistors ¼ W (variant A, instead of R5) | GPIO 9 protection: 4.7 kΩ RXD → GPIO 9, 10 kΩ GPIO 9 → GND |
 
