@@ -1,0 +1,12 @@
+# KiCad backups, lock files and caches
+*-backups/
+*.lck
+~*.lck
+\#auto_saved_files#
+_autosave-*
+fp-info-cache
+*.kicad_prl
+# ERC / DRC reports are generated; run them again in KiCad
+*.rpt
+erc*.json
+drc*.json

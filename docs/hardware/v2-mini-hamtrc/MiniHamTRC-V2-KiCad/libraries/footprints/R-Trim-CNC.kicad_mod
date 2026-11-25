@@ -1,0 +1,145 @@
+(footprint "R-Trim-CNC"
+	(version 20241229)
+	(generator "pcbnew")
+	(generator_version "9.0")
+	(layer "F.Cu")
+	(descr "Potentiometer, horizontal, ACP CA6-H2,5, http://www.acptechnologies.com/wp-content/uploads/2017/06/01-ACP-CA6.pdf")
+	(tags "Potentiometer horizontal ACP CA6-H2,5")
+	(property "Reference" "R8"
+		(at 1.27 -3.81 0)
+		(layer "F.SilkS")
+		(uuid "198a555c-2aae-464a-a6d8-0293573f6dbd")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Value" "20K"
+		(at 1.27 8.89 0)
+		(layer "F.Fab")
+		(uuid "35d3047f-a1ea-4149-9472-4ac43294a3c9")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" "~"
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "0af8fd60-359f-487a-8a41-213808e9702f")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" "Trimmable resistor (preset resistor)"
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "8a466a24-e32e-4447-8f05-2d8bba99be46")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(attr through_hole)
+	(fp_line
+		(start -0.11 3.61)
+		(end -0.11 1.39)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "ff59af7c-0841-4649-a961-04ef7598953a")
+	)
+	(fp_rect
+		(start -2.33 -2.33)
+		(end 2.49 7.33)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.CrtYd")
+		(uuid "5349e36c-85dd-47f0-a45b-b8fdf6f8e1d3")
+	)
+	(fp_rect
+		(start -2.43 -1.92)
+		(end 2.34 6.92)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.Fab")
+		(uuid "f11667d3-2a63-4cfc-a930-303581a3bf09")
+	)
+	(fp_rect
+		(start 0 1.5)
+		(end 2.23 3.5)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.Fab")
+		(uuid "5c467072-1356-49cb-b8bc-0c0718045cc7")
+	)
+	(fp_text user "${REFERENCE}"
+		(at 0 10.16 0)
+		(layer "F.Fab")
+		(uuid "089b10d1-e3c2-4550-b178-6b426f0af2a7")
+		(effects
+			(font
+				(size 0.78 0.78)
+				(thickness 0.12)
+			)
+		)
+	)
+	(pad "1" thru_hole rect
+		(at 0 0)
+		(size 4 2)
+		(drill 0.8)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "590a274b-0388-4c15-862d-760a38367810")
+	)
+	(pad "2" thru_hole oval
+		(at 0 5.08)
+		(size 4 2)
+		(drill 0.8)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "bad0c983-8c29-4fa3-9013-b1719caf5031")
+	)
+	(pad "3" thru_hole oval
+		(at 0 2.5)
+		(size 4 2)
+		(drill 0.8)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "758934a4-9e06-4501-ae45-1e6dda6046e3")
+	)
+	(embedded_fonts no)
+	(model "${KICAD9_3DMODEL_DIR}/Potentiometer_THT.3dshapes/Potentiometer_ACP_CA6-H2,5_Horizontal.step"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
+	)
+)

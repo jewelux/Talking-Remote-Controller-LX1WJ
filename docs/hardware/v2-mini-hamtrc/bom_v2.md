@@ -9,6 +9,7 @@
 
 > **Status: current V2 build (2026-11-25).** Derived from [`circuit-diagram-V2.pdf`](circuit-diagram-V2.pdf)
 > and [`pcb-layout-V2.pdf`](pcb-layout-V2.pdf), plus the parts added since (marked \*). Wiring details: [`hardware_wiring_v2.md`](hardware_wiring_v2.md).
+> KiCad source files: [`MiniHamTRC-V2-KiCad/`](MiniHamTRC-V2-KiCad/).
 
 ## Modules
 
@@ -42,7 +43,6 @@
 | Ref | Qty | Part | Function |
 |---|---|---|---|
 | J5 | 1 | 2-pin header or terminal, 2.54 mm | 5 V power input |
-| \* | 1 | USB-C panel-mount socket, power only, two wires (e.g. "USB-C fast-charge" panel socket, CC resistors usually built in) | external 5 V input on the rear panel, red/black wires to J5 |
 | J6 | 1 | 3.5 mm stereo jack, PCB mount | CI-V (Tip = bus, Sleeve = GND) |
 | J3 | 1 | 3.5 mm stereo jack, PCB mount | CAT-TTL |
 | J8 | 1 | 2×4 pin header, 2.54 mm | keypad |
@@ -57,13 +57,13 @@
 | 1 | PCB HamTRC V2, single-sided | per `pcb-layout-V2.pdf` |
 | 6 | wire bridges (tinned copper wire) | red links in the layout PDF (+1 for D1 if no diode) |
 | 4 | M3 spacers + screws | corner mounting holes |
-| 1 | 5 V supply with USB-C plug | good quality plug-in supply, e.g. the official Raspberry Pi power supply, into the USB-C panel socket |
+| 1 | 5 V supply, at least 1 A | good, stable plug-in supply; socket or cable to J5 as the builder prefers |
 | 1 | USB data cable for the ESP32 board | only for flashing the firmware from a computer |
 | – | cables: 3.5 mm stereo cable (CI-V / CAT), DB9 cable (RS-232) | depending on radio |
 
 ## Notes
 
-- The Mini is powered from an external 5 V supply on J5 (USB-C panel socket). The USB-C ports of the
+- The Mini is powered from an external 5 V supply on J5. The USB-C ports of the
   ESP32-S3 board are only used to flash the firmware; powered through them, the MAX modules do not get a proper
   supply (issues #29, #31). See `hardware_wiring_v2.md`, section 1.
 - D1 is not in the schematic any more; the PCB keeps its footprint. Fit a wire link.

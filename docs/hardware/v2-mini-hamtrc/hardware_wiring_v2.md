@@ -14,7 +14,8 @@
 
 | Source | File |
 |---|---|
-| Schematic | [`circuit-diagram-V2.pdf`](circuit-diagram-V2.pdf) – KiCad 10.0.1, `HamTRC_v2.kicad_sch`, Rev V3.5, 2026-09-01 |
+| Schematic | [`circuit-diagram-V2.pdf`](circuit-diagram-V2.pdf) – KiCad 10.0.1, Rev V3.5, 2026-09-01 |
+| KiCad project | [`MiniHamTRC-V2-KiCad/`](MiniHamTRC-V2-KiCad/) – schematic, PCB and libraries (KiCad 10.0) |
 | PCB layout | [`pcb-layout-V2.pdf`](pcb-layout-V2.pdf) |
 | Bill of materials | [`bom_v2.md`](bom_v2.md) |
 | Firmware pin map | [`firmware/config_pins.h`](../../../firmware/config_pins.h) |
@@ -28,7 +29,7 @@ All GPIO assignments below were read from the V2 schematic and cross-checked aga
 
 | Topic | V1 | V2 (Mini-HamTRC) |
 |---|---|---|
-| Supply | 12 V input, DC-DC module (U2), power switch (J11), 1000 µF buffer (C6) | external 5 V from a USB-C power socket on J5; ESP32 USB-C ports only for flashing; no DC-DC module, no switch |
+| Supply | 12 V input, DC-DC module (U2), power switch (J11), 1000 µF buffer (C6) | external 5 V on J5; ESP32 USB-C ports only for flashing; no DC-DC module, no switch |
 | SD card module | J5 SD module (SPI) | **removed** (the firmware does not use it) |
 | CI-V jack | 3-pin header / 3.5 mm | 3.5 mm jack J6 (Tip = CI-V, Ring unused) |
 | CAT-TTL | 3-pin header J3 | 3.5 mm jack footprint J3 |
@@ -44,15 +45,12 @@ The USB-C ports of the ESP32-S3 board are **not** used to power the Mini.
 
 | Connector | Pin | Signal |
 |---|---|---|
-| J5 "VCC In 5V" | 1 | +5 V (red wire from the USB-C power socket) |
-| J5 | 2 | GND (black wire from the USB-C power socket) |
+| J5 "VCC In 5V" | 1 | +5 V |
+| J5 | 2 | GND |
 
-- **Power input:** a USB-C panel-mount socket on the rear of the box, power only, with two wires (red and black),
-  for example a "USB-C fast-charge" panel socket. A USB-C charger switches on its 5 V only when it sees
-  5.1 kΩ from CC1 and CC2 to GND on the device side; such sockets usually have these resistors built in.
-  If a USB-C charger with a USB-C to USB-C cable gives no power, use a supply with a fixed USB-C cable,
-  or a USB-A charger with a USB-A to USB-C cable.
-- **Power supply:** a good 5 V plug-in supply with USB-C, for example the official Raspberry Pi power supply.
+- **Power input:** J5 takes the external 5 V. Which socket or cable the builder fits on the box and wires to J5
+  is up to them.
+- **Power supply:** a good, stable 5 V supply, at least 1 A.
 - The **5 V rail** connects J5 pin 1, U1 pin 21 `5V0` (5V pin of the ESP32 board), the MAX98357A (J4 pin 1 `Vin`)
   and the MAX3232 module (J2 pin 1 `VCC`).
 - **C5 100 nF** decouples the 5 V rail to GND.

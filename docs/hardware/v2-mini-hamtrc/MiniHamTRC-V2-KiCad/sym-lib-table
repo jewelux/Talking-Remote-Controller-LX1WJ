@@ -1,0 +1,4 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "_MyLibraryLX1WJ") (type "KiCad") (uri "${KIPRJMOD}/libraries/_MyLibraryLX1WJ.kicad_sym") (options "") (descr "Project-local LX1WJ symbols"))
+)

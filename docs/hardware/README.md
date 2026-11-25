@@ -9,10 +9,10 @@
 | Folder | Board | Status |
 |---|---|---|
 | [`v1-hamtrc/`](v1-hamtrc/) | HamTRC V1 – original board (12 V input, DC-DC module, SD module) | current |
-| [`v2-mini-hamtrc/`](v2-mini-hamtrc/) | HamTRC V2 – Mini-HamTRC, compact board, external 5 V via USB-C power socket | current reference build (`development` branch) |
+| [`v2-mini-hamtrc/`](v2-mini-hamtrc/) | HamTRC V2 – Mini-HamTRC, compact board, external 5 V on J5; KiCad project in [`MiniHamTRC-V2-KiCad/`](v2-mini-hamtrc/MiniHamTRC-V2-KiCad/) | current reference build (`development` branch) |
 | [`line-out/`](line-out/) | Optional 3.5 mm line out for demo units (MAX98357A bridged output) | proposed, not yet built |
 | [`proto-pcbs/`](proto-pcbs/) | Photos of early prototype boards | archive |
 
 The hardware is evolving. Each board folder contains the schematic and PCB layout as PDF
-and a wiring description; V2 also has a bill of materials.
+and a wiring description; V2 also has a bill of materials and its KiCad source files.
 The GPIO mapping is defined in [`firmware/config_pins.h`](../../firmware/config_pins.h).

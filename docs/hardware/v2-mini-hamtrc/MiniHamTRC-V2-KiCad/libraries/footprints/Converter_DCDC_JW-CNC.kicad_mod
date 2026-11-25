@@ -1,0 +1,219 @@
+(footprint "Converter_DCDC_JW-CNC"
+	(version 20241229)
+	(generator "pcbnew")
+	(generator_version "9.0")
+	(layer "F.Cu")
+	(descr "DCDC-Converter 12V - 5V")
+	(tags "DCDC-Converter")
+	(property "Reference" "U2"
+		(at 3.82 -3.44 0)
+		(layer "F.SilkS")
+		(uuid "8fc20513-fd95-4b79-897e-e3ecb4ff163f")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Value" "DC-DC-Modul-JW"
+		(at 9.5 5.9 0)
+		(layer "F.Fab")
+		(uuid "0b1c4ff3-28b0-4f94-9d8e-43d4d360162b")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "fb5ed9e6-38d0-47c3-9545-8d304fe03a26")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" "1W DC/DC converter 12V in 5V out module"
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "2d80e640-bac5-404d-a62d-a531a9795775")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(attr through_hole)
+	(fp_line
+		(start -12.8 -9.8)
+		(end 34.8 -9.8)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "bf07ea02-a941-44b1-b1b4-4e08351375e1")
+	)
+	(fp_line
+		(start -12.8 11.8)
+		(end -12.8 -9.8)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "c196b4e2-af90-4a98-a489-a24bd664a22f")
+	)
+	(fp_line
+		(start 34.8 -9.8)
+		(end 34.8 11.8)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "7d27f2e4-24f0-40a3-a2b8-97502e41e654")
+	)
+	(fp_line
+		(start 34.8 11.8)
+		(end -12.8 11.8)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "6ef64bd7-415b-4e7d-9e5c-58029a87fffd")
+	)
+	(fp_poly
+		(pts
+			(xy -10.89 -2.5) (xy -11.5 -2.06) (xy -11.5 -2.94)
+		)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(fill yes)
+		(layer "F.SilkS")
+		(uuid "21921ee2-a47a-443b-97fb-75f42b2f755f")
+	)
+	(fp_rect
+		(start -13 -10)
+		(end 35 12)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.CrtYd")
+		(uuid "73544c17-815f-4cb1-b1ec-f5b7990e61a4")
+	)
+	(fp_poly
+		(pts
+			(xy -12.7 -9.5) (xy -12.6 11.6) (xy 34.6 11.6) (xy 34.6 -9.6) (xy -0.1 -9.5)
+		)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.Fab")
+		(uuid "b78a2f09-54bf-46f5-862b-fad92663361b")
+	)
+	(fp_text user "${REFERENCE}"
+		(at 3.82 3.87 0)
+		(layer "F.Fab")
+		(uuid "c118a809-ba02-4c1b-a862-a0243e3cba9d")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(pad "1" thru_hole circle
+		(at 29 9.5)
+		(size 3 3)
+		(drill 1)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "b7189ead-4cdb-43bd-9028-7bea0a7426eb")
+	)
+	(pad "1" thru_hole circle
+		(at 31.5 9.5)
+		(size 3 3)
+		(drill 1)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "82be6d8c-5f47-4273-afaf-4393864e49bd")
+	)
+	(pad "2" thru_hole roundrect
+		(at -9.5 -7.5)
+		(size 3 3)
+		(drill 1)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(roundrect_rratio 0.166667)
+		(uuid "27b160d8-cb25-453d-96cc-0bf2ff72151a")
+	)
+	(pad "2" thru_hole roundrect
+		(at -7 -7.5)
+		(size 3 3)
+		(drill 1)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(roundrect_rratio 0.166667)
+		(uuid "10c2a9f8-02fa-4401-b811-31e93bc33d6b")
+	)
+	(pad "3" thru_hole circle
+		(at 29 -7.5)
+		(size 3 3)
+		(drill 1)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "a30df537-5690-4196-9ca1-c2a007469c3d")
+	)
+	(pad "3" thru_hole circle
+		(at 31.5 -7.5)
+		(size 3 3)
+		(drill 1)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "333a4609-033a-4c67-9b01-da3ae84ac4d7")
+	)
+	(pad "4" thru_hole circle
+		(at -9.5 9.5)
+		(size 3 3)
+		(drill 1)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "2302d7df-c553-40dc-a386-71aba7644dc9")
+	)
+	(pad "4" thru_hole circle
+		(at -7 9.5)
+		(size 3 3)
+		(drill 1)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "bee2bec5-fabe-492c-a2c6-ce8dd3bc2b82")
+	)
+	(embedded_fonts no)
+	(model "${KICAD9_3DMODEL_DIR}/Converter_DCDC.3dshapes/Converter_DCDC_TRACO_TDU1-xxxx_THT.step"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
+	)
+)

@@ -1,0 +1,418 @@
+(footprint "Transformer_Toroid_Amidon-T50_CNC"
+	(version 20241229)
+	(generator "pcbnew")
+	(generator_version "9.0")
+	(layer "F.Cu")
+	(descr "Transformer, Toroid, horizontal, laying, Diameter 14mm, Amidon T50,")
+	(tags "Transformer Toroid horizontal laying Diameter 14mm Amidon T50 ")
+	(property "Reference" "L1"
+		(at 8 -13.7 0)
+		(layer "F.SilkS")
+		(uuid "bd4ef140-5abf-4fbe-9702-c91a1a72ff87")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Value" "FT50-43"
+		(at 8 3.8 0)
+		(layer "F.Fab")
+		(uuid "4fbf429b-4c3f-4864-9eb4-023b0e0ad9b2")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" "~"
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "198e6b8d-3fce-48e6-ab3f-e7e18cda8330")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" "Inductor"
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "b4391f72-2b8d-4f01-b289-33cb7d519e4e")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(attr through_hole)
+	(fp_circle
+		(center 8 -5)
+		(end 8 -12.6)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.SilkS")
+		(uuid "d4f6b2f2-cc3e-4908-8f14-78893210b249")
+	)
+	(fp_circle
+		(center 8 -5)
+		(end 8 -8.3)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.SilkS")
+		(uuid "32ce7d86-aa85-451c-88b0-687a2a452318")
+	)
+	(fp_line
+		(start -5 -14.5)
+		(end -5 4.5)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "db49ceea-f6d1-4efe-b10a-47e5fe509908")
+	)
+	(fp_line
+		(start -5 -14.5)
+		(end 20 -14.5)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "6f36ecc2-3f0b-4656-9383-84621b1138be")
+	)
+	(fp_line
+		(start 20 4.25)
+		(end -5 4.5)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "80141176-e8aa-4233-b53a-3c1dc0eb3bfe")
+	)
+	(fp_line
+		(start 20 4.25)
+		(end 20 -14.5)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "520b7789-64a3-48f3-bc9c-e065015d1e2d")
+	)
+	(fp_line
+		(start 1.6 -8.9)
+		(end 5.2 -7)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "9500567a-b665-4b59-b262-bc3a83419581")
+	)
+	(fp_line
+		(start 1.6 -1.1)
+		(end 5 -3.1)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "355aa5a9-5292-4820-8545-4d82ba61c7d3")
+	)
+	(fp_line
+		(start 2.9 0.4)
+		(end 6.3 -1.9)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "4969b131-3ce7-41f9-9d78-a6f464e807ad")
+	)
+	(fp_line
+		(start 3.5 -11)
+		(end 6.9 -8.2)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "81d7cf57-2741-4ebc-b9d1-34573d1b679d")
+	)
+	(fp_line
+		(start 5 -3.1)
+		(end 2.9 0.4)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "d654e06f-9071-402f-9fc6-69d6a88c4b0b")
+	)
+	(fp_line
+		(start 5.2 -7)
+		(end 3.5 -11)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "b51ad09a-ab94-4fb8-bfa1-48c5cf76ac41")
+	)
+	(fp_line
+		(start 6 2.2)
+		(end 8.3 -1.6)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "2cc154bf-00c0-42a0-ae00-a093dc25ffca")
+	)
+	(fp_line
+		(start 6.3 -1.9)
+		(end 6 2.2)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "a610fa47-a39f-4d84-8895-f15287df1a47")
+	)
+	(fp_line
+		(start 6.4 -12.3)
+		(end 8.6 -8.5)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "cb83c495-33f2-41c0-af31-8058f547ad10")
+	)
+	(fp_line
+		(start 6.9 -8.2)
+		(end 6.4 -12.3)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "e4af19bd-a99b-40eb-85f5-fddf0fbcd730")
+	)
+	(fp_line
+		(start 8.3 -1.6)
+		(end 10.2 2)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "9ab39257-3b4e-4353-987a-ea20af68de0e")
+	)
+	(fp_line
+		(start 8.6 -8.5)
+		(end 9.8 -12.1)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "c261b00c-d48d-4eb4-a617-5efd68dbcb55")
+	)
+	(fp_line
+		(start 9.8 -12.1)
+		(end 10.3 -7.6)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "d4754aed-1034-4ac6-8378-e5f1c5550f41")
+	)
+	(fp_line
+		(start 10.2 -2.3)
+		(end 13.9 -1)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "37360ac0-8307-4501-a099-2f486836a3f1")
+	)
+	(fp_line
+		(start 10.2 2)
+		(end 10.2 -2.3)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "17f0a42f-0a56-4bd6-af31-0f24f59d1785")
+	)
+	(fp_line
+		(start 10.3 -7.6)
+		(end 12.8 -10.6)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "4397aee9-1987-413c-a50d-cd1ff1c7c531")
+	)
+	(fp_line
+		(start 11 -6.7)
+		(end 14.3 -8.7)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "c2e5f2df-ec21-44e3-85fc-884f6c16a77f")
+	)
+	(fp_line
+		(start 12.8 -10.6)
+		(end 11 -6.7)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "f9302520-5fe9-4667-ae8e-9c571ef6b8d9")
+	)
+	(fp_line
+		(start 13.9 -1)
+		(end 14.2 -0.9)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "2ba2471f-90f6-41cb-98ee-b57d5a5af5af")
+	)
+	(fp_circle
+		(center 8 -5)
+		(end 11.4 -5)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.Fab")
+		(uuid "99b43967-7982-4475-8e02-cda49889b814")
+	)
+	(fp_circle
+		(center 8 -5)
+		(end 15.5 -5)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.Fab")
+		(uuid "98c643e7-426e-49a6-ab50-c366cc6ed42b")
+	)
+	(fp_text user "${REFERENCE}"
+		(at 8 -5 0)
+		(layer "F.Fab")
+		(uuid "a57fbf4f-4722-48d3-879a-4c1aec1d63f9")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(pad "1" thru_hole circle
+		(at 8 0)
+		(size 3 3)
+		(drill 1.2)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "bca9ddbe-a721-4448-8017-0bb487512445")
+	)
+	(pad "1" thru_hole circle
+		(at 8 2.6)
+		(size 3 3)
+		(drill 1.2)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "b5408e64-9b4a-47c8-84f8-081974c7d923")
+	)
+	(pad "2" thru_hole circle
+		(at 8 -12.6)
+		(size 3 3)
+		(drill 1.2)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "99c03314-2856-474e-aaf5-761d5089a208")
+	)
+	(pad "2" thru_hole circle
+		(at 8 -10)
+		(size 3 3)
+		(drill 1.2)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "1132087a-9c18-4dc2-aba4-c038c725e76a")
+	)
+	(pad "3" thru_hole circle
+		(at 3 1)
+		(size 3 3)
+		(drill 1.2)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "ae32b1d8-37b7-4625-878a-8039799ef4d8")
+	)
+	(pad "3" thru_hole circle
+		(at 4.5 -1.5)
+		(size 3 3)
+		(drill 1.2)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "8f4fac18-d01d-468d-acd7-4a3db9f9c501")
+	)
+	(pad "4" thru_hole circle
+		(at 11 -8.5)
+		(size 3 3)
+		(drill 1.2)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "a032e3f0-6252-48d7-9181-9868a8d9334d")
+	)
+	(pad "4" thru_hole circle
+		(at 12.5 -11)
+		(size 3 3)
+		(drill 1.2)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "b72c98b7-8163-4d59-9af8-e96dd92af3c5")
+	)
+	(embedded_fonts no)
+	(model "${KICAD9_3DMODEL_DIR}/Transformer_THT.3dshapes/Transformer_Toroid_Horizontal_D14.0mm_Amidon-T50.step"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
+	)
+)
