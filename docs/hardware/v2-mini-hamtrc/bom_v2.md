@@ -34,8 +34,8 @@
 | C5 | 1 | 100 nF | ceramic capacitor, THT | 5 V rail decoupling |
 | \* | 1 | 220 µF | electrolytic capacitor, ≥ 10 V | MAX98357A `Vin` decoupling, close to the module |
 | \* | 1 | 100 nF | ceramic capacitor, THT | MAX98357A `Vin` decoupling, close to the module |
-| \* | 1 + 1 | 4.7 kΩ + 10 kΩ | resistors ¼ W (variant A) | GPIO 9 protection: 4.7 kΩ RXD → GPIO 9, 10 kΩ GPIO 9 → GND |
-| \* | (1) | 12 kΩ | resistor ¼ W (variant B, instead of A) | GPIO 9 protection: 12 kΩ RXD → GPIO 9 |
+| R5 | 1 | 12 kΩ | resistor ¼ W, axial THT (variant B, as in the schematic) | GPIO 9 protection: RXD → GPIO 9 |
+| \* | (1 + 1) | 4.7 kΩ + 10 kΩ | resistors ¼ W (variant A, instead of R5) | GPIO 9 protection: 4.7 kΩ RXD → GPIO 9, 10 kΩ GPIO 9 → GND |
 
 ## Connectors
 

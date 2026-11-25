@@ -8,9 +8,9 @@
 > Questions are welcome: [open a build enquiry](https://github.com/jewelux/Talking-Remote-Controller-LX1WJ/issues/new?template=build-enquiry.yml).
 
 > **Status: current V2 build (2026-11-25).** V2 is the compact successor of the original board.
-> This page describes the V2 as it is built now. Where it differs from the schematic below, this page is correct:
-> the power input (section 1), the amplifier supply capacitors (section 3) and the protection of GPIO 9 (section 5)
-> were improved after the schematic was drawn. For the V1 board see [`hardware_wiring.md`](../v1-hamtrc/hardware_wiring.md).
+> This page describes the V2 as it is built now. The schematic shows the protection of GPIO 9 with R5, 12 kΩ (variant B, section 5,
+> added 2026-11-25). Where this page differs from the schematic, this page is correct: the external power input (section 1)
+> and the amplifier supply capacitors (section 3) were added after the schematic was drawn. For the V1 board see [`hardware_wiring.md`](../v1-hamtrc/hardware_wiring.md).
 
 | Source | File |
 |---|---|
@@ -142,11 +142,11 @@ Firmware: `RS232_RX_PIN = 9`, `RS232_TX_PIN = 10`
 | J2 Pin | MAX3232 module | Connection |
 |---|---|---|
 | 1 | VCC | +5 V rail |
-| 2 | RXD (TTL out) | GPIO 9 **through a protection resistor**, see below |
+| 2 | RXD (TTL out) | GPIO 9 through **R5 12 kΩ** (or variant A), see below |
 | 3 | TXD (TTL in) | GPIO 10 |
 | 4 | GND | GND |
 
-**Protection of GPIO 9 (not in the schematic):** the module's RXD output gives about 4.6 V, more than the
+**Protection of GPIO 9 (R5 in the schematic, variant B):** the module's RXD output gives about 4.6 V, more than the
 ESP32-S3 input tolerates. Do not connect RXD directly to GPIO 9. Two tested variants:
 
 | Variant | Parts | Measured at GPIO 9 | Note |
