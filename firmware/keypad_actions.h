@@ -49,6 +49,10 @@ void queryBank1TxFrequency();
 void queryBank1Ft857TxFrequency();  // FT-857/897: the frequency when split is off, else "not available"
 void queryBank1Lock();
 void toggleBank1Lock();
+// FT-8x7 menu 04: whether the main dial tunes in AM and FM. The toggle is experimental, written to
+// the radio's EEPROM; "experimental" unless EXPERIMENTAL is on.
+void queryBank1Ft8x7AmFmDial();
+void toggleBank1Ft8x7AmFmDial();
 void queryBank1Power();    // "PO?", sent or staged
 void queryBank1RfPower();  // "RFPOWER?", sent or staged
 // The watts entry; on the FT-817/818 a level, picked by 1 (L1) .. 4 (High). Experimental on

@@ -313,11 +313,12 @@ FeatureStatus voxDelayStep(int delta, uint16_t& msOut);
 // and CwBfo on the FT-857/897 only. The FT-817/818 addresses are from the KA7OEI map, not yet
 // measured.
 // Knob: on = the RF/SQL knob is squelch, off = RF gain (FT-857/897 menu 80, FT-817/818 menu 45).
+// AmFmDial: on = the main dial tunes in AM and FM too (menu 04 AM&FM DIAL on both families).
 enum class Ft8x7Setting : uint8_t {
   Agc, Ipo, Att, Nar, Dbf, BreakIn, Keyer, RfPower, Menu, Row, IfShift,
   NrLevel, NbLevel, BpfWidth, LowCut, HighCut, MicEq, Antenna,
   CwSpeed, CwPitch, CwDelay, CwWeight, Sidetone, Qsk, KeyReverse, CwAutoMode, Paddle, CwBfo,
-  Knob,
+  Knob, AmFmDial,
 };
 
 struct Ft8x7SettingState {

@@ -1081,6 +1081,7 @@ void printHelp(const String& topicArg) {
     if (ft817) helpLine("ANT FRONT | REAR | TOGGLE  (experimental: menu 07 jack of the current band group)");
     helpLine(ft817 ? "KNOB? | KNOB SQL | RFGAIN | TOGGLE  (RF/SQL knob, menu 45; setting it is experimental)"
                    : "KNOB? | KNOB SQL | RFGAIN | TOGGLE  (RF/SQL knob, menu 80; setting it is experimental)");
+    helpLine("AMFMDIAL? | AMFMDIAL ON | OFF | TOGGLE  (main dial in AM and FM, menu 04; setting it is experimental)");
     helpLine(ft817 ? "CWSPEED? | CWPITCH? | CWDELAY? | CWWEIGHT? | SIDETONE? | KEYREV?  (CW menus)"
                    : "CWSPEED? | CWPITCH? | CWDELAY? | CWWEIGHT? | SIDETONE? | QSK? | KEYREV? | CWAUTO? | PADDLE? | CWBFO?  (CW menus 22..32)");
     helpLine(ft817 ? "CWSPEED <4..60> | CWPITCH <300..1000> | CWWEIGHT <2.5..4.5> | SIDETONE <0..100>  (experimental: CW menus, to the nearest step)"
@@ -1640,7 +1641,7 @@ static bool handleConsoleFt8x7Settings(const String& upper) {
     Ft8x7Setting::NbLevel, Ft8x7Setting::BpfWidth, Ft8x7Setting::MicEq, Ft8x7Setting::Antenna, Ft8x7Setting::CwSpeed, Ft8x7Setting::CwPitch,
     Ft8x7Setting::CwDelay, Ft8x7Setting::CwWeight, Ft8x7Setting::Sidetone, Ft8x7Setting::Qsk,
     Ft8x7Setting::KeyReverse, Ft8x7Setting::CwAutoMode, Ft8x7Setting::Paddle, Ft8x7Setting::CwBfo,
-    Ft8x7Setting::Knob,
+    Ft8x7Setting::Knob, Ft8x7Setting::AmFmDial,
   };
   for (Ft8x7Setting setting : kSettings) {
     const char* label = ft8x7SettingLabel(setting);
@@ -1984,8 +1985,8 @@ static bool handleConsoleCwLevels(const String& line, const String& upper) {
 }
 
 // Experimental: DBF ON | OFF | TOGGLE on the FT-857/897, like Bank 2 `6` long; BK, KYR, KEYREV
-// and CWAUTO the same, PADDLE ELEKEY | MICKEY | TOGGLE (on = MICKEY) and KNOB SQL | RFGAIN |
-// TOGGLE (Bank 2 `7` short then hold).
+// and CWAUTO the same, PADDLE ELEKEY | MICKEY | TOGGLE (on = MICKEY), KNOB SQL | RFGAIN |
+// TOGGLE (Bank 2 `7` short then hold) and AMFMDIAL ON | OFF | TOGGLE (Bank 1 `3` short then hold).
 static bool handleConsoleFt8x7FlagSet(const String& upper) {
   struct FlagCommand {
     const char* name;
@@ -1999,6 +2000,7 @@ static bool handleConsoleFt8x7FlagSet(const String& upper) {
     {"CWAUTO", Ft8x7Setting::CwAutoMode, "ON", "OFF"},
     {"PADDLE", Ft8x7Setting::Paddle, "MICKEY", "ELEKEY"},
     {"KNOB", Ft8x7Setting::Knob, "SQL", "RFGAIN"},
+    {"AMFMDIAL", Ft8x7Setting::AmFmDial, "ON", "OFF"},
   };
   for (const FlagCommand& c : kCommands) {
     const String prefix = String(c.name) + " ";
@@ -2790,6 +2792,7 @@ static bool handleConsoleYaesuFt8x7Commands(const String& line, const String& up
       {"VOX", Ft8x7Flag::Vox},       {"PROC", Ft8x7Flag::Proc},   {"LOCK", Ft8x7Flag::Lock},
       {"FAST", Ft8x7Flag::FastTuning}, {"NB", Ft8x7Flag::Nb},      {"BK", Ft8x7Flag::BreakIn},
       {"KYR", Ft8x7Flag::Keyer},     {"DSPROW", Ft8x7Flag::DspRow}, {"IFSHIFT", Ft8x7Flag::IfShift},
+      {"AMFMDIAL", Ft8x7Flag::AmFmDial},
     };
     for (const NamedFlag& f : flags) {
       if (!yaesuFt8x7HasFlag(f.flag)) continue;

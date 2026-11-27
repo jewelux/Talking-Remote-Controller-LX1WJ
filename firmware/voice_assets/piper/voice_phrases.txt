@@ -146,6 +146,7 @@ attenuator
 processor
 gain
 squelch
+dial
 mic gain | micgain
 vox
 vox gain | voxgain

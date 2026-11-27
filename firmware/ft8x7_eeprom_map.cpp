@@ -20,6 +20,7 @@ static constexpr Ft8x7FlagRow kFt857Flags[] = {
   {Ft8x7Flag::BreakIn, {0x006B, 0x20, false}},
   {Ft8x7Flag::Vox, {0x006B, 0x80, false}},
   {Ft8x7Flag::KnobIsSquelch, {0x0072, 0x80, false}},
+  {Ft8x7Flag::AmFmDial, {0x0076, 0x80, true}},  // menu 04, 1 = disabled; bits 6..0 are the VOX gain
   {Ft8x7Flag::PaddleMicKey, {0x007B, 0x80, false}},  // bits 6..0 are the AM mic gain
   {Ft8x7Flag::Split, {0x008D, 0x80, false}},
   {Ft8x7Flag::CwAutoMode, {0x0092, 0x80, false}},
@@ -46,6 +47,7 @@ static constexpr Ft8x7FlagRow kFt817Flags[] = {
   {Ft8x7Flag::BreakIn, {0x0058, 0x20, false}},
   {Ft8x7Flag::Vox, {0x0058, 0x80, false}},
   {Ft8x7Flag::KnobIsSquelch, {0x005F, 0x80, false}},  // menu 45, 1 = SQL (measured)
+  {Ft8x7Flag::AmFmDial, {0x0063, 0x80, true}},  // menu 04, 1 = disabled; bits 6..0 are the VOX gain
   {Ft8x7Flag::Split, {0x007A, 0x80, false}},
 };
 

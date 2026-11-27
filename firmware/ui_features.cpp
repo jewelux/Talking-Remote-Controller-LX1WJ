@@ -518,6 +518,7 @@ static const char* ft8x7SettingName(Ft8x7Setting setting) {
     case Ft8x7Setting::Paddle: return "PADDLE";
     case Ft8x7Setting::CwBfo: return "CWBFO";
     case Ft8x7Setting::Knob: return "KNOB";
+    case Ft8x7Setting::AmFmDial: return "AMFMDIAL";
   }
   return "";
 }
@@ -727,6 +728,10 @@ void speakFt8x7Setting(const Ft8x7SettingState& state) {
   // What the RF/SQL knob does: "squelch", "r f gain".
   if (state.setting == Ft8x7Setting::Knob) {
     speakToken(state.on ? "squelch" : "r f gain");
+    return;
+  }
+  if (state.setting == Ft8x7Setting::AmFmDial) {
+    speakTokenState("am fm dial", state.on);
     return;
   }
   // No "shift" clip yet: printed only.

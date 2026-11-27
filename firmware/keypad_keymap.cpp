@@ -143,9 +143,16 @@ KeyBinding bank1(const KeypadTraits& t, char key) {
       if (ftdx10) return bind(SEND("TXFREQ?"), nullptr, waitOnly).help("TXFREQ", V::Say);
       if (t.layout == L::Ft857) return bind(queryBank1Ft857TxFrequency, nullptr, waitOnly).help("TXFREQ", V::Say);
       return bind(queryBank1TxFrequency, nullptr, waitOnly).help("TXFREQ", V::Say);
-    case '3':
+    // The dial lock; on the FT-817 and FT-857/897 the double gestures say and switch whether the
+    // main dial tunes in AM and FM (menu 04).
+    case '3': {
       if (ftdx10) return bind(SEND("LOCK?"), SEND("LOCK TOGGLE")).help("LOCK", V::Say, V::Toggle);
-      return bind(queryBank1Lock, toggleBank1Lock).help("LOCK", V::Say, V::Toggle);
+      const Key lock = bind(queryBank1Lock, toggleBank1Lock).help("LOCK", V::Say, V::Toggle);
+      if (t.layout != L::Ft817 && t.layout != L::Ft857) return lock;
+      return lock.withDouble(queryBank1Ft8x7AmFmDial, toggleBank1Ft8x7AmFmDial, Setting::None)
+          .helpDouble("AMFMDIAL", V::Say)
+          .helpDoubleHold("AMFMDIAL", V::Toggle);
+    }
     case '4': return bind(queryBank1Power).help("PO", V::Say);
     case '5': return bind(queryBank1Alc).help("ALC", V::Say);
     case '6': return rfPowerKey(t);

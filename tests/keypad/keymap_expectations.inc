@@ -95,7 +95,9 @@ KEYMAP_ROW(FTDX10,          1, '2', "send(TXFREQ?)",         "none",            
 KEYMAP_ROW(FT857,           1, '2', "queryBank1Ft857TxFrequency", "none",              "none", "none", "-")
 KEYMAP_ROW(NOT(FTDX10 | FT857), 1, '2', "queryBank1TxFrequency", "none",               "none", "none", "-")
 KEYMAP_ROW(FTDX10,          1, '3', "send(LOCK?)",           "send(LOCK TOGGLE)",      "-", "none", "-")
-KEYMAP_ROW(NOT(FTDX10),     1, '3', "queryBank1Lock",        "toggleBank1Lock",        "-", "none", "-")
+// The FT-817 and FT-857/897 say and switch the AM&FM dial (menu 04) on the double gestures.
+KEYMAP_ROW(FT817 | FT857,   1, '3', "queryBank1Lock",        "toggleBank1Lock",        "queryBank1Ft8x7AmFmDial", "toggleBank1Ft8x7AmFmDial", "-")
+KEYMAP_ROW(NOT(FTDX10 | FT817 | FT857), 1, '3', "queryBank1Lock", "toggleBank1Lock",   "-", "none", "-")
 KEYMAP_ROW(ALL,             1, '4', "queryBank1Power",       "none",                   "-", "none", "-")
 // fixed: ALC was on 'A', and the FTDX10 tuner on '5' (it stays on Bank 4 '0').
 KEYMAP_ROW(ALL,             1, '5', "queryBank1Alc",        "none",                   "-", "none", "-")

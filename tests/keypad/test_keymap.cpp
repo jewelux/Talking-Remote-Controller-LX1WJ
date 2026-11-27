@@ -146,6 +146,8 @@ void queryBank1TxFrequency() { record("queryBank1TxFrequency"); }
 void queryBank1Ft857TxFrequency() { record("queryBank1Ft857TxFrequency"); }
 void queryBank1Lock() { record("queryBank1Lock"); }
 void toggleBank1Lock() { record("toggleBank1Lock"); }
+void queryBank1Ft8x7AmFmDial() { record("queryBank1Ft8x7AmFmDial"); }
+void toggleBank1Ft8x7AmFmDial() { record("toggleBank1Ft8x7AmFmDial"); }
 void queryBank1Power() { record("queryBank1Power"); }
 void queryBank1RfPower() { record("queryBank1RfPower"); }
 void beginBank1RfPowerSet() { record("beginBank1RfPowerSet"); }

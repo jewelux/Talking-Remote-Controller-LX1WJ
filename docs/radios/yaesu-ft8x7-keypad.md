@@ -30,6 +30,8 @@ Important practical note:
 | `2` short | `TXFREQ?`; falls back to `FREQ?` when the radio gives no TX frequency | `FREQ?` when split is known to be off, otherwise not available |
 | `3` short | `LOCK?` (read from the radio) | `LOCK?` (read from the radio) |
 | `3` long | `LOCK ON/OFF` | `LOCK ON/OFF` |
+| `3` double click | `AMFMDIAL?`: the main dial tunes in AM and FM (menu 04) | `AMFMDIAL?`: the main dial tunes in AM and FM (menu 04) |
+| `3` short, then hold | AM&FM dial on/off (experimental) | AM&FM dial on/off (experimental) |
 | `4` short | `PO?` | `PO?` |
 | `6` short | `RFPOWER?`: the TX power level | `RFPOWER?`: menu 75 power of the current band |
 | `6` long | experimental: `RFPOWER <level>`, `1` L1, `2` L2, `3` L3 or `4` High, then `Enter` | experimental: `RFPOWER <W>`, the watts, then `Enter` |

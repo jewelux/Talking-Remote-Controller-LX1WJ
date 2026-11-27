@@ -222,6 +222,15 @@ void toggleBank1Lock() {
   speakTokenState("lock", !on);
 }
 
+void queryBank1Ft8x7AmFmDial() { queryKeypadFt8x7Setting(Ft8x7Setting::AmFmDial); }
+
+void toggleBank1Ft8x7AmFmDial() {
+  printKeypadAction("AMFMDIAL");
+  KeypadAnswer answer("AMFMDIAL");
+  Ft8x7SettingState state;
+  keypadReportFt8x7Setting(answer, ft8x7FlagSettingToggle(Ft8x7Setting::AmFmDial, state), state);
+}
+
 static void sendBank1Query(const char* cmd) {
   printKeypadAction("{}", cmd);
   keypadSendNow(cmd);

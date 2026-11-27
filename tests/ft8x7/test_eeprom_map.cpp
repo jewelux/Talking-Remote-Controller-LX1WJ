@@ -468,6 +468,7 @@ constexpr Ft8x7Flag kAllFlags[] = {
   Ft8x7Flag::Dnr,    Ft8x7Flag::Dnf,     Ft8x7Flag::Dbf,     Ft8x7Flag::AgcOn,
   Ft8x7Flag::DspRow, Ft8x7Flag::VfoB,    Ft8x7Flag::Filter2, Ft8x7Flag::KnobIsSquelch,
   Ft8x7Flag::Split,  Ft8x7Flag::KeyReverse, Ft8x7Flag::CwAutoMode, Ft8x7Flag::PaddleMicKey,
+  Ft8x7Flag::AmFmDial,
 };
 
 void checkFlags(Ft8x7Model model, const FlagCase *cases, size_t count) {
@@ -514,7 +515,7 @@ TEST(ft857_flag_map) {
     {Ft8x7Flag::AgcOn, 0x00A8, 0x20, false},      {Ft8x7Flag::DspRow, 0x00A8, 0x80, false},
     {Ft8x7Flag::Proc, 0x00A9, 0x02, false},
     {Ft8x7Flag::KeyReverse, 0x006B, 0x04, false}, {Ft8x7Flag::PaddleMicKey, 0x007B, 0x80, false},
-    {Ft8x7Flag::CwAutoMode, 0x0092, 0x80, false},
+    {Ft8x7Flag::CwAutoMode, 0x0092, 0x80, false}, {Ft8x7Flag::AmFmDial, 0x0076, 0x80, true},
   };
   checkFlags(Ft8x7Model::Ft857, cases, sizeof(cases) / sizeof(cases[0]));
   checkNoSharedBits(Ft8x7Model::Ft857);
@@ -527,6 +528,7 @@ TEST(ft817_flag_map) {
     {Ft8x7Flag::Keyer, 0x0058, 0x10, false},     {Ft8x7Flag::BreakIn, 0x0058, 0x20, false},
     {Ft8x7Flag::Vox, 0x0058, 0x80, false},       {Ft8x7Flag::Split, 0x007A, 0x80, false},
     {Ft8x7Flag::KeyReverse, 0x0058, 0x04, false}, {Ft8x7Flag::KnobIsSquelch, 0x005F, 0x80, false},
+    {Ft8x7Flag::AmFmDial, 0x0063, 0x80, true},
   };
   checkFlags(Ft8x7Model::Ft817, cases, sizeof(cases) / sizeof(cases[0]));
   checkFlags(Ft8x7Model::Ft818, cases, sizeof(cases) / sizeof(cases[0]));

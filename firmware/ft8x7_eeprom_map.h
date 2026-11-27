@@ -36,6 +36,7 @@ enum class Ft8x7Flag : uint8_t {
   KeyReverse,     // FT-857/897 menu 25 CW KEY REV, FT-817 menu 19 CW PADDLE: dot and dash swapped
   CwAutoMode,     // FT-857/897 menu 22: CW sent from the key in SSB too
   PaddleMicKey,   // FT-857/897 menu 26 CW PADDLE: MICKEY (the mic's UP/DWN keys), else ELEKEY
+  AmFmDial,       // menu 04 AM&FM DIAL: the main dial tunes in AM and FM too
 };
 
 struct Ft8x7FlagField {

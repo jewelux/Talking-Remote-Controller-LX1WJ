@@ -79,6 +79,7 @@ Read with `BB`, on demand only. Addresses from the FT8x7Com FT817Setup project, 
 | `0x61` | 6..0 | CW side tone (menu 44), 0..100 (`SIDETONE?`; KA7OEI map, not measured) |
 | `0x62` | 5..0 | CW speed (menu 21), value + 4 = WPM, 4..60 (`CWSPEED?`; KA7OEI map, not measured). Bits 7..6 are the charge time |
 | `0x5D` | 2 | packet rate (menu 40), 1 = 9600 (KA7OEI map); picks the PKT mic gain |
+| `0x63` | 7 | AM&FM DIAL (menu 04), 1 = disabled (`AMFMDIAL?`; measured) |
 | `0x63` | 6..0 | VOX gain (menu 51), 1..100 (measured, as in the KA7OEI map) |
 | `0x64` | 4..0 | VOX delay (menu 50), × 100 ms, 100..2500 ms (measured: 300 ms is 3; the KA7OEI map's 0 = 100 ms is one step off) |
 | `0x67` | 6..0 | SSB mic gain (menu 46), 0..100 (KA7OEI map) |
@@ -165,7 +166,8 @@ The active VFO cannot be read: `0x55` bit 0, which Hamlib's `get_vfo` and the KA
 | RF power write (`RFPOWER <W>`, FT-817/818 `RFPOWER HIGH/L3/L2/L1`, Bank 1 `6` long) | experimental, only with EXPERIMENTAL on. FT-857/897: whole watts of menu 75 for the band group of the current frequency; verified on an FT-897 (its menu 75 continued from the value written). FT-817/818: the level at `0x79`; verified on an FT-817 by reading it back. TX output not measured |
 | EEPROM write timing (`BC`) | the FT-817 answers a write with one byte after about 110 ms and ignores commands sent before it; HamTRC waits for it, and 120 ms on the FT-857/897. The read-back is tried twice, since the FT-817 missed the first one after a menu item write (measured) |
 | RF/SQL knob (`KNOB?`, `KNOB SQL/RFGAIN/TOGGLE`, Bank 2 `7` double and short then hold) | read verified on an FT-897 (`0x72` bit 7, 1 = SQL, part of `YSETTINGS?`); FT-817/818 `0x5F` bit 7 (menu 45), 1 = SQL, verified on an FT-817. The write is experimental, only with EXPERIMENTAL on, read-modify-write of the bit; verified on an FT-897 and an FT-817: the knob worked as RF gain at once after `KNOB RFGAIN`, Bank 2 `7` short then hold switched it back to squelch, and the FT-817 CW weight in the same byte was kept |
-| Further settings read from the EEPROM (`YSETTINGS?`: VOX, PROC, lock, fast tuning, NB, BK, KYR, DSP row, IF shift, filter, SQL/RF knob, mic EQ, menu levels, the RIT offset) | protocol only, no keys except those in Bank 2; verified on an FT-897 against the values set on the radio |
+| AM&FM dial (`AMFMDIAL?`, `AMFMDIAL ON/OFF/TOGGLE`, Bank 1 `3` double and short then hold) | FT-857/897 `0x76` bit 7, FT-817/818 `0x63` bit 7 (menu 04), 1 = disabled, part of `YSETTINGS?`; read verified on an FT-897 and an FT-817. The write is experimental, only with EXPERIMENTAL on, read-modify-write of the bit; verified on an FT-897 and an FT-817: the main dial stopped and started tuning in FM at once after `AMFMDIAL OFF`, `ON` and `TOGGLE`, on the FT-897 Bank 1 `3` short then hold switched it, and the VOX gain in the same byte was kept |
+| Further settings read from the EEPROM (`YSETTINGS?`: VOX, PROC, lock, fast tuning, NB, BK, KYR, DSP row, IF shift, AM&FM dial, filter, SQL/RF knob, mic EQ, menu levels, the RIT offset) | protocol only, no keys except those in Bank 2; verified on an FT-897 against the values set on the radio |
 
 ### FT-857/897 EEPROM map
 
@@ -192,6 +194,7 @@ Shared by all bands:
 | `0x73`, `0x74` | 7..0, 7 | CW DELAY (menu 24), 9 bits: `0x74` bit 7 is bit 8. 2 = FULL, 3..300 = 30..3000 ms in 10 ms steps (3000 ms = `0x12C`) |
 | `0x74` | 6..0 | CW SIDE TONE (menu 29), 0..100 |
 | `0x75` | 5..0 | CW speed (menu 30), value + 4 = WPM, 4..60 |
+| `0x76` | 7 | AM&FM DIAL (menu 04): 1 = disabled, 0 = enabled (`AMFMDIAL?`; measured) |
 | `0x76` | 6..0 | VOX gain (menu 88), 1..100 |
 | `0x77` | all | VOX delay (menu 87), × 100 ms, 100..3000 ms |
 | `0x72` | 7 | SQL/RF GAIN (menu 80): 1 = SQL, 0 = RF gain |
