@@ -1,0 +1,20 @@
+{
+  "name": "HAMTRC",
+  "version": "V3.5.8 TestIC705 13c8dbb 2026-11-24",
+  "new_install_prompt_erase": false,
+  "builds": [
+    {
+      "chipFamily": "ESP32-S3",
+      "parts": [
+        {
+          "path": "hamtrc-v3-5-8-13c8dbb.factory.bin",
+          "offset": 0
+        },
+        {
+          "path": "hamtrc-v3-5-8-13c8dbb.voices.bin",
+          "offset": 8454144
+        }
+      ]
+    }
+  ]
+}

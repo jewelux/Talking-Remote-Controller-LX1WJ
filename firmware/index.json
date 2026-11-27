@@ -1,0 +1,20 @@
+[
+  {
+    "channel": "TestIC705",
+    "ref": "TestIC705",
+    "version": "V3.5.8",
+    "label": "V3.5.8 TestIC705 13c8dbb 2026-11-24",
+    "commit": "13c8dbbcf30d5660ba3c11b9e5fababa423a5f3e",
+    "date": "2026-11-24",
+    "manifest": "manifest.json"
+  },
+  {
+    "channel": "development",
+    "ref": "development",
+    "version": "V3.5.8",
+    "label": "V3.5.8 development 64e9338 2026-11-27",
+    "commit": "64e93387d4c3db65f9f99f3329c0824c0b3a7cf7",
+    "date": "2026-11-27",
+    "manifest": "manifest.json"
+  }
+]

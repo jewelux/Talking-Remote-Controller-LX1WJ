@@ -1,0 +1,9 @@
+{
+  "channel": "TestIC705",
+  "ref": "TestIC705",
+  "version": "V3.5.8",
+  "label": "V3.5.8 TestIC705 13c8dbb 2026-11-24",
+  "commit": "13c8dbbcf30d5660ba3c11b9e5fababa423a5f3e",
+  "date": "2026-11-24",
+  "manifest": "manifest.json"
+}
